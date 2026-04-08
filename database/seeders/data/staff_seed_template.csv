@@ -1,0 +1,2 @@
+name,email,username,password,dob,phone,gender,marital_status,employment_type,joining_date,department_id,department_name,branch_id,post_id,supervisor_id,office_time_id,employee_code,role_id,company_id,status,is_active,allow_holiday_check_in,bank_name,bank_account_no,bank_account_type,account_holder
+John Doe,john.doe@example.com,john.doe,12345678,1998-07-14,1234567890,male,single,permanent,2025-01-15,,ផ្នែកលក់,1,1,,1,EMP001,2,1,verified,1,0,ABC Bank,1234567890,salary,John Doe
