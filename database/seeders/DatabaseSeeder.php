@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             AttendanceSettingSeeder::class,
             LeaveTypeSeeder::class,
             FeatureSeeder::class,
+            ThemeSettingSeeder::class,
         ]);
     }
 }

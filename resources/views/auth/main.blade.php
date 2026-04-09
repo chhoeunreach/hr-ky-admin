@@ -17,10 +17,10 @@
     <title>@yield('title')</title>
     <style>
         :root {
-            --primary-color: {{ $themeColor->primary_color ?? '#ff3366' }};
-            --hover-color: {{ $themeColor->hover_color ?? '#ff3366' }};
-            --dark-primary-color: {{ $themeColor->dark_primary_color ?? '#ff3366' }};
-            --dark-hover-color: {{ $themeColor->dark_hover_color ?? '#ff3366' }};
+            --primary-color: {{ $themeColor->primary_color ?? '#0F766E' }};
+            --hover-color: {{ $themeColor->hover_color ?? '#115E59' }};
+            --dark-primary-color: {{ $themeColor->dark_primary_color ?? '#14B8A6' }};
+            --dark-hover-color: {{ $themeColor->dark_hover_color ?? '#0F766E' }};
         }
     </style>
     <!-- Fonts -->
