@@ -17,16 +17,31 @@ class RoleTableSeeder extends Seeder
      */
     public function run()
     {
-        Role::updateOrCreate([
-            'id' => '1'
-        ],
+        $roles = [
             [
-            'name' => 'admin',
-            'slug' => 'admin',
-            'is_active' => '1',
-            'backend_login_authorize' => '1',
-            'created_at' => Carbon::now(),
-            'updated_at' => Carbon::now()
-        ]);
+                'id' => 1,
+                'name' => 'admin',
+                'slug' => 'admin',
+                'is_active' => 1,
+                'backend_login_authorize' => 1,
+            ],
+            [
+                'id' => 2,
+                'name' => 'employee',
+                'slug' => 'employee',
+                'is_active' => 1,
+                'backend_login_authorize' => 0,
+            ],
+        ];
+
+        foreach ($roles as $role) {
+            Role::updateOrCreate(
+                ['id' => $role['id']],
+                array_merge($role, [
+                    'created_at' => Carbon::now(),
+                    'updated_at' => Carbon::now(),
+                ])
+            );
+        }
     }
 }

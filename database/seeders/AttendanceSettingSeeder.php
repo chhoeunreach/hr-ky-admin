@@ -39,24 +39,18 @@ class AttendanceSettingSeeder extends Seeder
                 'name' => 'Attendance Method',
                 'slug' => 'attendance_method',
                 'value'=>null,
-                'values' => json_encode(['default']),
+                'values' => json_encode(['default', 'qr']),
                 'status' => 1,
 //                'description' => 'Note: for wifi=> This setting will not affect field type users. Those type of users will still be able to perform check in checkout via mobile app.'
             ],
         ];
 
-
-        $existingKeys = DB::table('attendance_settings')->pluck('slug')->toArray();
-
-
-        $newSettings = array_filter($attendanceSetting, function ($setting) use ($existingKeys) {
-            return !in_array($setting['slug'], $existingKeys);
-        });
-
-        if (!empty($newSettings)) {
-            DB::table('attendance_settings')->insert($newSettings);
+        foreach ($attendanceSetting as $setting) {
+            DB::table('attendance_settings')->updateOrInsert(
+                ['slug' => $setting['slug']],
+                $setting
+            );
         }
-
     }
 
 }
