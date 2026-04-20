@@ -131,6 +131,8 @@ class TimeLeaveRepository
             ->addSelect(DB::raw("0 as leave_type_id"))
             ->addSelect(DB::raw("'Time Leave' as leave_type_name"))
             ->addSelect(DB::raw("'time-leave' as leave_type_slug"))
+            ->addSelect(DB::raw("1 as leave_type_status"))
+            ->addSelect(DB::raw("1 as early_exit"))
             ->addSelect(DB::raw("0 as total_leave_allocated"))
             ->selectRaw('COUNT(time_leaves.id) as leave_taken')
 
