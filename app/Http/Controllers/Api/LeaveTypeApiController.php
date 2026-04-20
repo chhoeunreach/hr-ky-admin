@@ -8,6 +8,7 @@ use App\Models\LeaveType;
 use App\Repositories\LeaveTypeRepository;
 use App\Repositories\TimeLeaveRepository;
 use App\Resources\Leave\LeaveTypeCollection;
+use Illuminate\Support\Collection;
 use Exception;
 use Illuminate\Http\JsonResponse;
 
@@ -26,13 +27,12 @@ class LeaveTypeApiController extends Controller
 
             $timeLeave = $this->timeLeaveRepository->getTimeLeaveWithLeaveTakenbyEmployee($filterParameters);
 
-            $getAllLeaveType = new LeaveTypeCollection($leaveType);
+            $mergedCollection = $leaveType instanceof Collection ? $leaveType : collect($leaveType);
+            $mergedCollection->push($timeLeave);
 
-            $timeLeaveCollection = collect([$timeLeave]);
+            $getAllLeaveType = new LeaveTypeCollection($mergedCollection);
 
-            $mergedCollection = $getAllLeaveType->merge($timeLeaveCollection);
-
-            return AppHelper::sendSuccessResponse(__('index.data_found'), $mergedCollection);
+            return AppHelper::sendSuccessResponse(__('index.data_found'), $getAllLeaveType);
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
