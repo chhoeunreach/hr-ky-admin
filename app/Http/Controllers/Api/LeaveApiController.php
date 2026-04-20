@@ -27,6 +27,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Exception;
 use Illuminate\Validation\Rule;
 
@@ -36,6 +37,26 @@ class LeaveApiController extends Controller
 
     public function __construct(protected LeaveService $leaveService, protected TimeLeaveService $timeLeaveService, protected HolidayService $holidayService, protected UserRepository $userRepository)
     {}
+
+    private function ensureCanSubmitLeaveRequest(): void
+    {
+        if (
+            ! auth('admin')->check()
+            && ! Gate::any(['leave_request_create', 'create_leave_request', 'request_leave', 'access_admin_leave'])
+        ) {
+            abort(403);
+        }
+    }
+
+    private function ensureCanSubmitTimeLeaveRequest(): void
+    {
+        if (
+            ! auth('admin')->check()
+            && ! Gate::any(['create_time_leave_request', 'time_leave_list', 'access_admin_leave'])
+        ) {
+            abort(403);
+        }
+    }
 
     public function getAllLeaveRequestOfEmployee(Request $request): JsonResponse
     {
@@ -71,7 +92,7 @@ class LeaveApiController extends Controller
     public function saveLeaveRequestDetail(LeaveRequestStoreRequest $request): JsonResponse
     {
         try {
-            $this->authorize('leave_request_create');
+            $this->ensureCanSubmitLeaveRequest();
             $permissionKeyForNotification = 'employee_leave_request';
 
             $validatedData = $request->validated();
@@ -198,7 +219,7 @@ class LeaveApiController extends Controller
     public function saveTimeLeaveRequest(TimeLeaveStoreApiRequest $request): JsonResponse
     {
         try {
-//            $this->authorize('leave_request_create');
+            $this->ensureCanSubmitTimeLeaveRequest();
             $permissionKeyForNotification = 'employee_leave_request';
 
             $validatedData = $request->validated();
