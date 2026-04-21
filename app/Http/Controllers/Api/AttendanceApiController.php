@@ -267,7 +267,12 @@ class AttendanceApiController extends Controller
 
             DB::commit();
 
-            $this->sendNotification($this->notificationData['title'],$this->notificationData['permissionKey'],$this->notificationData['time'],$this->notificationData['workedTime'] ?? null  );
+            $this->sendNotification(
+                $this->notificationData['title'] ?? __('index.check_in_notification'),
+                $this->notificationData['permissionKey'] ?? 'employee_check_in',
+                $this->notificationData['time'] ?? now(),
+                $this->notificationData['workedTime'] ?? null
+            );
             $this->sendTelegramAttendanceMessage($userDetail);
             return AppHelper::sendSuccessResponse($this->displayMessage, $this->data);
 
@@ -566,15 +571,14 @@ class AttendanceApiController extends Controller
             $validatedData['longitude'] ?? null
         );
         $this->attendanceForTelegram = $attendanceData;
+        $this->notificationData['title'] = __('index.check_in_notification');
+        $this->notificationData['permissionKey'] = 'employee_check_in';
+        $this->notificationData['time'] = $attendanceData->check_in_at;
 
-        $this->sendNotification(__('index.check_in_notification'), 'employee_check_in', $attendanceData->check_in_at);
         $this->data = (new TodayAttendanceResource($attendanceData))->toArray(request());
  
 
             // ----------- Telegram message sending -----------
-
-            $botToken = 'YOUR_BOT_TOKEN'; // Replace with your bot token
-            $chatId = '@yourchannelusername'; // Or group chat ID like -1001234567890
 
             // Get user with branch relationship
             $user = User::with('branch')->find($attendanceData->user_id);
@@ -732,12 +736,13 @@ class AttendanceApiController extends Controller
 
         $workedTime = AttendanceHelper::getEmployeeWorkedTimeInHourAndMinute($attendanceData);
 
-        $this->sendNotification(__('index.check_out_notification'), 'employee_check_out', $attendanceData->check_out_at, $workedTime);
+        $this->notificationData['title'] = __('index.check_out_notification');
+        $this->notificationData['permissionKey'] = 'employee_check_out';
+        $this->notificationData['time'] = $attendanceData->check_out_at;
+        $this->notificationData['workedTime'] = $workedTime;
+
         $this->data =(new TodayAttendanceResource($attendanceData))->toArray(request());
         // ----------- Telegram message sending for Check-Out -----------
-
-$botToken = 'YOUR_BOT_TOKEN'; // Replace with your bot token
-$chatId = '@yourchannelusername'; // Or group chat ID like -1001234567890
 
 // Get user with branch relationship
 $user = User::with('branch')->find($attendanceData->user_id);
