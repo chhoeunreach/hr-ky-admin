@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
+use App\Helpers\AttendanceLocationMessage;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\User;
@@ -586,13 +587,12 @@ class AttendanceApiController extends Controller
             $branchName = ($user && $user->branch) ? $user->branch->name : 'Unknown Branch';
             $departmentName = ($user && $user->department) ? $user->department->dept_name : 'Unknown Department';
             $checkInTime = $attendanceData->check_in_at;
-            $latitude = $attendanceData->check_in_latitude;
-            $longitude = $attendanceData->check_in_longitude;
-            $locationLink = "https://www.google.com/maps?q={$latitude},{$longitude}";
-            $locationInfo = AttendanceLocationMessage::build(
-                $latitude !== null ? (float) $latitude : null,
-                $longitude !== null ? (float) $longitude : null
-            );
+	            $latitude = $attendanceData->check_in_latitude;
+	            $longitude = $attendanceData->check_in_longitude;
+                $latitudeValue = is_numeric($latitude) ? (float) $latitude : null;
+                $longitudeValue = is_numeric($longitude) ? (float) $longitude : null;
+	            $locationLink = "https://www.google.com/maps?q={$latitudeValue},{$longitudeValue}";
+	            $locationInfo = AttendanceLocationMessage::build($latitudeValue, $longitudeValue);
 
             // Calculate status and late/early time
             $status = '✅ ពេលវេលាត្រឹមត្រូវ'; // On Time in Khmer
@@ -687,9 +687,9 @@ class AttendanceApiController extends Controller
 	                    // Send message to Telegram
                         $this->telegramSendMessage(-1002742379872, $messageText);
 
-	                    if ($latitude && $longitude) {
-                            $this->telegramSendLocation(-1002742379872, (float) $latitude, (float) $longitude);
-	                    }
+		                    if ($latitudeValue !== null && $longitudeValue !== null) {
+                            $this->telegramSendLocation(-1002742379872, $latitudeValue, $longitudeValue);
+		                    }
 
         $this->displayMessage = __('index.check_in_successful');
     }
