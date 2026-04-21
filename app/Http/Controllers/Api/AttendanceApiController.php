@@ -248,6 +248,14 @@ class AttendanceApiController extends Controller
 
                 $permissionKeyForNotification
             );
+
+            $userDetail->loadMissing([
+                'branch:id,name',
+                'department:id,dept_name',
+                'officeTime:id,opening_time,closing_time',
+            ]);
+            $this->attendanceTelegramNotificationService->notify('check_in', $userDetail, $checkIn);
+
             return AppHelper::sendSuccessResponse(__('index.check_in_successful'), $data);
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
@@ -281,6 +289,14 @@ class AttendanceApiController extends Controller
                 $permissionKeyForNotification
 
             );
+
+            $userDetail->loadMissing([
+                'branch:id,name',
+                'department:id,dept_name',
+                'officeTime:id,opening_time,closing_time',
+            ]);
+            $this->attendanceTelegramNotificationService->notify('check_out', $userDetail, $checkOut);
+
             return AppHelper::sendSuccessResponse(__('index.check_out_successful'), $data);
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
