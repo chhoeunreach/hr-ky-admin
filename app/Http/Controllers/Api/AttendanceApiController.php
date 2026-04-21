@@ -203,8 +203,91 @@ class AttendanceApiController extends Controller
 
         } catch (Exception $exception) {
             DB::rollBack();
-            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+            $code = (int) $exception->getCode();
+            $message = (string) $exception->getMessage();
+            $errorFields = null;
+
+            if ($code === 403 && $this->looksLikeWorkspaceRestriction($message)) {
+                $errorFields = $this->buildAttendanceLocationErrorFields(
+                    $validatedData['user_id'] ?? auth()->id(),
+                    $validatedData['latitude'] ?? null,
+                    $validatedData['longitude'] ?? null
+                );
+            }
+
+            return AppHelper::sendErrorResponse($message, $code, $errorFields);
         }
+    }
+
+    private function looksLikeWorkspaceRestriction(string $message): bool
+    {
+        $normalized = strtolower($message);
+        return str_contains($normalized, 'outside') && (str_contains($normalized, 'workspace') || str_contains($normalized, 'work space'));
+    }
+
+    private function buildAttendanceLocationErrorFields($userId, $latitude = null, $longitude = null): array
+    {
+        $radius = AttendanceService::DEFAULT_BRANCH_RADIUS_IN_METER;
+
+        $fields = [
+            'employee_location' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ],
+            'branch_location' => [
+                'latitude' => null,
+                'longitude' => null,
+                'radius_in_meter' => $radius,
+            ],
+            'distance_to_branch_in_meter' => null,
+            'allowed_branch_radius_in_meter' => $radius,
+            'within_branch_radius' => null,
+        ];
+
+        try {
+            $branch = $this->attendanceService->getCoordinates($userId);
+            $fields['branch_location']['latitude'] = $branch['latitude'] ?? null;
+            $fields['branch_location']['longitude'] = $branch['longitude'] ?? null;
+
+            if (
+                $latitude !== null && $longitude !== null &&
+                $fields['branch_location']['latitude'] !== null &&
+                $fields['branch_location']['longitude'] !== null
+            ) {
+                $distance = $this->calculateDistanceInMeters(
+                    (float) $latitude,
+                    (float) $longitude,
+                    (float) $fields['branch_location']['latitude'],
+                    (float) $fields['branch_location']['longitude']
+                );
+                $fields['distance_to_branch_in_meter'] = $distance;
+                $fields['within_branch_radius'] = $distance <= $radius;
+            }
+        } catch (Exception $e) {
+            // ignore; return best-effort fields
+        }
+
+        return $fields;
+    }
+
+    private function calculateDistanceInMeters(float $lat1, float $lon1, float $lat2, float $lon2): int
+    {
+        $earthRadius = 6371000;
+
+        $latFrom = deg2rad($lat1);
+        $lonFrom = deg2rad($lon1);
+        $latTo = deg2rad($lat2);
+        $lonTo = deg2rad($lon2);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(sqrt(
+            pow(sin($latDelta / 2), 2) +
+            cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)
+        ));
+
+        return (int) round($angle * $earthRadius);
     }
 
     /**
