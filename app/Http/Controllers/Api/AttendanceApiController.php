@@ -8,6 +8,7 @@ use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Jobs\SendAttendanceTelegramNotification;
 use App\Requests\Attendance\AttendanceCheckInRequest;
 use App\Requests\Attendance\AttendanceCheckOutRequest;
 use App\Resources\Attendance\EmployeeAttendanceDetailCollection;
@@ -15,7 +16,6 @@ use App\Resources\Attendance\NightAttendanceResource;
 use App\Resources\Attendance\TodayAttendanceResource;
 use App\Resources\Dashboard\EmployeeTodayAttendance;
 use App\Services\Attendance\AttendanceService;
-use App\Services\Attendance\AttendanceTelegramNotifier;
 use App\Services\Attendance\AttendanceLogService;
 use App\Services\Nfc\NfcService;
 use App\Services\Qr\QrCodeService;
@@ -41,8 +41,7 @@ class AttendanceApiController extends Controller
     public function __construct(protected AttendanceService $attendanceService,
     protected QrCodeService $qrCodeService,
     protected NfcService $nfcService,
-    protected AttendanceLogService $attendanceLogService,
-    protected AttendanceTelegramNotifier $attendanceTelegramNotifier)
+    protected AttendanceLogService $attendanceLogService)
     {}
 
     public function getEmployeeAllAttendanceDetailOfTheMonth(Request $request): JsonResponse
@@ -232,8 +231,11 @@ class AttendanceApiController extends Controller
 
         try {
             if ($userDetail instanceof User) {
-                $userDetail->loadMissing(['branch:id,name', 'department:id,name', 'officeTime:id,opening_time,closing_time,shift']);
-                $this->attendanceTelegramNotifier->notify($userDetail, $this->attendanceForTelegram, $this->notificationData);
+                SendAttendanceTelegramNotification::dispatch(
+                    $userDetail->id,
+                    $this->attendanceForTelegram->id,
+                    $this->notificationData
+                );
             }
         } catch (Exception $e) {
             Log::warning('Attendance Telegram message skipped', ['error' => $e->getMessage()]);
