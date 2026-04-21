@@ -66,3 +66,16 @@ The Laravel framework is open-sourced software licensed under the [MIT license](
 # hr-ky-admin
 # hr-ky-admin
 # hr-ky-admin
+
+## Attendance Telegram Group Notification
+
+After a successful attendance check-in / check-out, the API can send a Telegram message to a group based on the employee department.
+
+Add these keys to your `.env`:
+
+- `ATTENDANCE_TELEGRAM_ENABLED=true`
+- `ATTENDANCE_TELEGRAM_BOT_TOKEN=...`
+- `ATTENDANCE_TELEGRAM_DEFAULT_CHAT_ID=-100xxxxxxxxxx` (optional fallback)
+- `ATTENDANCE_TELEGRAM_DEPARTMENT_CHAT_IDS={"1":"-100xxx","2":"-100yyy","management":"-100zzz"}` (JSON) or `1:-100xxx,2:-100yyy` (CSV)
+- (optional) `ATTENDANCE_TELEGRAM_REVERSE_GEOCODE_ENABLED=true` (adds address from coordinates)
+- (optional) `ATTENDANCE_TELEGRAM_GEOCODE_USER_AGENT=your-app-name`

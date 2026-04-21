@@ -6,6 +6,7 @@ use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\User;
 use App\Requests\Attendance\AttendanceCheckInRequest;
 use App\Requests\Attendance\AttendanceCheckOutRequest;
@@ -14,6 +15,7 @@ use App\Resources\Attendance\NightAttendanceResource;
 use App\Resources\Attendance\TodayAttendanceResource;
 use App\Resources\Dashboard\EmployeeTodayAttendance;
 use App\Services\Attendance\AttendanceService;
+use App\Services\Attendance\AttendanceTelegramNotifier;
 use App\Services\Attendance\AttendanceLogService;
 use App\Services\Nfc\NfcService;
 use App\Services\Qr\QrCodeService;
@@ -35,10 +37,12 @@ class AttendanceApiController extends Controller
     private string $displayMessage = '';
     private array $data = [];
     private array $notificationData = [];
+    private ?Attendance $attendanceForTelegram = null;
     public function __construct(protected AttendanceService $attendanceService,
     protected QrCodeService $qrCodeService,
     protected NfcService $nfcService,
-    protected AttendanceLogService $attendanceLogService)
+    protected AttendanceLogService $attendanceLogService,
+    protected AttendanceTelegramNotifier $attendanceTelegramNotifier)
     {}
 
     public function getEmployeeAllAttendanceDetailOfTheMonth(Request $request): JsonResponse
@@ -198,6 +202,7 @@ class AttendanceApiController extends Controller
             DB::commit();
 
             $this->sendNotification($this->notificationData['title'],$this->notificationData['permissionKey'],$this->notificationData['time'],$this->notificationData['workedTime'] ?? null  );
+            $this->sendTelegramAttendanceMessage($userDetail);
             return AppHelper::sendSuccessResponse($this->displayMessage, $this->data);
 
 
@@ -216,6 +221,22 @@ class AttendanceApiController extends Controller
             }
 
             return AppHelper::sendErrorResponse($message, $code, $errorFields);
+        }
+    }
+
+    private function sendTelegramAttendanceMessage($userDetail): void
+    {
+        if (!$this->attendanceForTelegram) {
+            return;
+        }
+
+        try {
+            if ($userDetail instanceof User) {
+                $userDetail->loadMissing(['branch:id,name', 'department:id,name', 'officeTime:id,opening_time,closing_time,shift']);
+                $this->attendanceTelegramNotifier->notify($userDetail, $this->attendanceForTelegram, $this->notificationData);
+            }
+        } catch (Exception $e) {
+            Log::warning('Attendance Telegram message skipped', ['error' => $e->getMessage()]);
         }
     }
 
@@ -453,12 +474,15 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
+        $validatedData['check_in_latitude'] = $validatedData['latitude'] ?? ($validatedData['check_in_latitude'] ?? null);
+        $validatedData['check_in_longitude'] = $validatedData['longitude'] ?? ($validatedData['check_in_longitude'] ?? null);
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
         $this->attendanceService->attachLocationValidationToAttendance(
             $attendanceData,
             $validatedData['latitude'] ?? null,
             $validatedData['longitude'] ?? null
         );
+        $this->attendanceForTelegram = $attendanceData;
 
         $this->notificationData['title'] = __('index.check_in_notification');
         $this->notificationData['permissionKey'] = 'employee_check_in';
@@ -475,6 +499,8 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_out_type'] = $validatedData['attendance_type'];
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
+        $validatedData['check_out_latitude'] = $validatedData['latitude'] ?? ($validatedData['check_out_latitude'] ?? null);
+        $validatedData['check_out_longitude'] = $validatedData['longitude'] ?? ($validatedData['check_out_longitude'] ?? null);
 
         $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
         $this->attendanceService->attachLocationValidationToAttendance(
@@ -482,6 +508,7 @@ class AttendanceApiController extends Controller
             $validatedData['latitude'] ?? null,
             $validatedData['longitude'] ?? null
         );
+        $this->attendanceForTelegram = $attendanceData;
 
         $workedTime = AttendanceHelper::getEmployeeWorkedTimeInHourAndMinute($attendanceData);
 
@@ -615,7 +642,10 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
+        $validatedData['check_in_latitude'] = $validatedData['latitude'] ?? ($validatedData['check_in_latitude'] ?? null);
+        $validatedData['check_in_longitude'] = $validatedData['longitude'] ?? ($validatedData['check_in_longitude'] ?? null);
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
+        $this->attendanceForTelegram = $attendanceData;
 
         $this->notificationData['title'] = __('index.check_in_notification');
         $this->notificationData['permissionKey'] = 'employee_check_in';
@@ -632,8 +662,11 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_out_type'] = $validatedData['attendance_type'];
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
+        $validatedData['check_out_latitude'] = $validatedData['latitude'] ?? ($validatedData['check_out_latitude'] ?? null);
+        $validatedData['check_out_longitude'] = $validatedData['longitude'] ?? ($validatedData['check_out_longitude'] ?? null);
 
         $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
+        $this->attendanceForTelegram = $attendanceData;
         $workedTime = AttendanceHelper::getEmployeeWorkedTimeForNightShift($attendanceData);
 
 
