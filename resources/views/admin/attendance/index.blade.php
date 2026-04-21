@@ -565,7 +565,38 @@
                     noteModal.show();
                 });
             });
+
+            const attachGeoRedirect = (anchor) => {
+                anchor.addEventListener('click', function (e) {
+                    const href = anchor.getAttribute('href');
+                    if (!href || href === '#') return;
+
+                    if (!navigator.geolocation) {
+                        e.preventDefault();
+                        alert('Location is required, but your browser does not support GPS.');
+                        return;
+                    }
+
+                    e.preventDefault();
+
+                    navigator.geolocation.getCurrentPosition(
+                        function (pos) {
+                            const lat = pos.coords.latitude;
+                            const long = pos.coords.longitude;
+                            const url = new URL(href, window.location.origin);
+                            url.searchParams.set('lat', String(lat));
+                            url.searchParams.set('long', String(long));
+                            window.location.href = url.toString();
+                        },
+                        function () {
+                            alert('Location permission is required. Please allow GPS and try again.');
+                        },
+                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                    );
+                });
+            };
+
+            document.querySelectorAll('a#checkIn, a#checkOut').forEach(attachGeoRedirect);
         });
     </script>
 @endsection
-

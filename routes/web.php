@@ -69,6 +69,7 @@ use App\Http\Controllers\Web\TerminationTypeController;
 use App\Http\Controllers\Web\ThemeController;
 use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
+use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TrainerController;
 use App\Http\Controllers\Web\TrainingController;
 use App\Http\Controllers\Web\TrainingTypeController;
@@ -99,6 +100,12 @@ Route::any('/iclock/cdata', [BioAttendanceController::class, 'handleDevice']);
 
 /** app privacy policy route */
 Route::get('privacy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
+
+/** Telegram Notification (web) */
+Route::post('telegram/notify', [TelegramNotificationController::class, 'send'])->name('telegram.notify');
+Route::get('telegram/test', function () {
+    return view('telegram-test');
+})->name('telegram.test');
 
 Route::group([
     'prefix' => 'admin',
@@ -682,8 +689,6 @@ Route::group([
 Route::fallback(function() {
     return view('errors.404');
 });
-
-
 
 
 

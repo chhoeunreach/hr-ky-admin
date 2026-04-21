@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\TaskApiController;
 use App\Http\Controllers\Api\TaskChecklistApiController;
 use App\Http\Controllers\Api\TaskCommentApiController;
 use App\Http\Controllers\Api\TeamMeetingApiController;
+use App\Http\Controllers\Api\TelegramNotificationApiController;
 use App\Http\Controllers\Api\TrainingApiController;
 use App\Http\Controllers\Api\UserProfileApiController;
 use App\Http\Controllers\Api\WarningApiController;
@@ -143,6 +144,9 @@ Route::group([
     /** Push Notification */
     Route::post('employee/push',[PushNotificationController::class,'sendPushNotification']);
 
+    /** Telegram Notification */
+    Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
+
     /** Payslip */
     Route::post('employee/payslip',[EmployeePayrollApiController::class, 'getPayrollList']);
     Route::get('employee/payslip/{id}',[EmployeePayrollApiController::class, 'getEmployeePayslipDetailById']);
@@ -179,5 +183,4 @@ Route::group([
     /** SSF History */
     Route::get('payroll/ssf-history', [EmployeePayrollApiController::class, 'ssfHistory']);
 });
-
 
