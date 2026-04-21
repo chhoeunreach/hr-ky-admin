@@ -24,10 +24,12 @@ use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 use function PHPUnit\Framework\isEmpty;
 use function PHPUnit\Framework\isNull;
 
@@ -38,6 +40,70 @@ class AttendanceApiController extends Controller
     private array $data = [];
     private array $notificationData = [];
     private ?Attendance $attendanceForTelegram = null;
+
+    private function telegramSendMessage(int|string $chatId, string $text, ?string $parseMode = null): void
+    {
+        $botToken = (string) config('services.telegram.bot_token');
+        if ($botToken === '') {
+            Log::warning('Telegram bot token not configured (TELEGRAM_BOT_TOKEN).');
+            return;
+        }
+
+        $payload = [
+            'chat_id' => $chatId,
+            'text' => $text,
+        ];
+        if ($parseMode) {
+            $payload['parse_mode'] = $parseMode;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->timeout(8)
+                ->post("https://api.telegram.org/bot{$botToken}/sendMessage", $payload);
+
+            if (!$response->successful()) {
+                Log::warning('Telegram sendMessage failed.', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Telegram sendMessage exception.', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function telegramSendLocation(int|string $chatId, float $latitude, float $longitude): void
+    {
+        $botToken = (string) config('services.telegram.bot_token');
+        if ($botToken === '') {
+            Log::warning('Telegram bot token not configured (TELEGRAM_BOT_TOKEN).');
+            return;
+        }
+
+        try {
+            $response = Http::asForm()
+                ->timeout(8)
+                ->post("https://api.telegram.org/bot{$botToken}/sendLocation", [
+                    'chat_id' => $chatId,
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                ]);
+
+            if (!$response->successful()) {
+                Log::warning('Telegram sendLocation failed.', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
+        } catch (Throwable $e) {
+            Log::warning('Telegram sendLocation exception.', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+    }
     public function __construct(protected AttendanceService $attendanceService,
     protected QrCodeService $qrCodeService,
     protected NfcService $nfcService,
@@ -472,7 +538,21 @@ class AttendanceApiController extends Controller
     /**
      * @throws Exception
      */
-    private function processNewCheckIn($validatedData)
+    // private function processNewCheckIn($validatedData)
+    // {
+    //     $validatedData['check_in_type'] = $validatedData['attendance_type'];
+    //     $validatedData['check_in_note'] = $validatedData['note'] ?? '';
+    //     $attendanceData = $this->attendanceService->newCheckIn($validatedData);
+
+    //     $this->notificationData['title'] = __('index.check_in_notification');
+    //     $this->notificationData['permissionKey'] = 'employee_check_in';
+    //     $this->notificationData['time'] = $attendanceData->check_in_at;
+
+    //     $this->data = (new TodayAttendanceResource($attendanceData))->toArray(request());
+    //     $this->displayMessage = __('index.check_in_successful');
+    // }
+
+      private function processNewCheckIn($validatedData)
     {
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
@@ -486,18 +566,156 @@ class AttendanceApiController extends Controller
         );
         $this->attendanceForTelegram = $attendanceData;
 
-        $this->notificationData['title'] = __('index.check_in_notification');
-        $this->notificationData['permissionKey'] = 'employee_check_in';
-        $this->notificationData['time'] = $attendanceData->check_in_at;
-
+        $this->sendNotification(__('index.check_in_notification'), 'employee_check_in', $attendanceData->check_in_at);
         $this->data = (new TodayAttendanceResource($attendanceData))->toArray(request());
+ 
+
+            // ----------- Telegram message sending -----------
+
+            $botToken = 'YOUR_BOT_TOKEN'; // Replace with your bot token
+            $chatId = '@yourchannelusername'; // Or group chat ID like -1001234567890
+
+            // Get user with branch relationship
+            $user = User::with('branch')->find($attendanceData->user_id);
+
+            // Get office time
+            $officeTime = \App\Models\OfficeTime::find($attendanceData->office_time_id);
+            $officeStartTime = $officeTime ? $officeTime->opening_time : null;
+
+            $name = $user ? $user->name : 'Unknown Employee';
+            $branchName = ($user && $user->branch) ? $user->branch->name : 'Unknown Branch';
+            $departmentName = ($user && $user->department) ? $user->department->dept_name : 'Unknown Department';
+            $checkInTime = $attendanceData->check_in_at;
+            $latitude = $attendanceData->check_in_latitude;
+            $longitude = $attendanceData->check_in_longitude;
+            $locationLink = "https://www.google.com/maps?q={$latitude},{$longitude}";
+            $locationInfo = AttendanceLocationMessage::build(
+                $latitude !== null ? (float) $latitude : null,
+                $longitude !== null ? (float) $longitude : null
+            );
+
+            // Calculate status and late/early time
+            $status = '✅ ពេលវេលាត្រឹមត្រូវ'; // On Time in Khmer
+            $timeDifference = '';
+
+            if ($officeStartTime) {
+                $checkInTimestamp = strtotime($checkInTime);
+                $officeStartTimestamp = strtotime($officeStartTime);
+
+                if ($checkInTimestamp > $officeStartTimestamp) {
+                    $lateMinutes = round(($checkInTimestamp - $officeStartTimestamp) / 60);
+                    $hours = floor($lateMinutes / 60);
+                    $minutes = $lateMinutes % 60;
+
+                    // Format in Khmer
+                    $formattedLateTime = '';
+                    if ($hours > 0) {
+                        $formattedLateTime .= "{$hours}ម៉ោង";
+                    }
+                    if ($minutes > 0) {
+                        $formattedLateTime .= "{$minutes}នាទី";
+                    }
+
+                    $status = '⏰ ពេលយឺត';
+                    $timeDifference = "\n⏳ ចំនួនម៉ោងយឺត: {$formattedLateTime}";
+                } elseif ($checkInTimestamp < $officeStartTimestamp) {
+                    $earlyMinutes = round(($officeStartTimestamp - $checkInTimestamp) / 60);
+                    $hours = floor($earlyMinutes / 60);
+                    $minutes = $earlyMinutes % 60;
+
+                    // Format in Khmer
+                    $formattedEarlyTime = '';
+                    if ($hours > 0) {
+                        $formattedEarlyTime .= "{$hours}ម៉ោង";
+                    }
+                    if ($minutes > 0) {
+                        $formattedEarlyTime .= "{$minutes}នាទី";
+                    }
+
+                    $status = '🕰️ ចូលមុន';
+                    $timeDifference = "\n⏳ ចំនួនម៉ោងមុន: {$formattedEarlyTime}";
+                }
+            }
+
+                // Compose the message with opening time and time difference
+                $messageText = "👤 ឈ្មោះ: {$name} \n" .
+                            "🟢 បានស្កែនចូលនៅម៉ោង {$checkInTime} \n" .
+                            "🏢 សាខា: {$branchName} \n" .
+                                "🛒 ផ្នែក: {$departmentName} \n" .
+                            "🕑 ម៉ោងចូលការងារ: {$officeStartTime} \n" .
+                            "🕑 ស្ថានភាព: {$status}{$timeDifference} \n" .
+                            "";
+
+                $messageText .= "📍 ទីតាំងពិត: " . ($locationInfo['address'] ?? 'មិនអាចរកអាសយដ្ឋានបាន') . "\n";
+                $messageText .= "🗺️ ផែនទី: " . ($locationInfo['link'] ?? $locationLink);
+
+
+
+	               if ($departmentName == 'management') {
+                       $this->telegramSendMessage(-1002799577548, $messageText, 'HTML');
+                   }
+                   if ($departmentName == 'ជាង') {
+                       $this->telegramSendMessage(-1002842364173, $messageText);
+                   }
+
+	                        if ($branchName === 'កម្ពុជាក្រោម') {
+	                            if ($departmentName === 'មេឌៀ(KY)') {
+                                    $this->telegramSendMessage('-1002727901053', $messageText, 'HTML');
+	                            } elseif ($departmentName === 'អ្នកលក់អនឡាញ(KY)') {
+                                    $this->telegramSendMessage('-1002727901053', $messageText, 'HTML');
+	                            } else {
+                                    $this->telegramSendMessage('-1002617998738', $messageText, 'HTML');
+	                            }
+	                        }
+
+	                    if ($branchName == 'អ៊ីអន') {
+                            $this->telegramSendMessage(-1002705869028, $messageText);
+                        } elseif ($branchName == 'កាប់គោ') {
+                            $this->telegramSendMessage(-1002351902820, $messageText);
+                        } elseif ($branchName == 'ស្តុកធំ') {
+                            $this->telegramSendMessage(-1002509454514, $messageText);
+                        } elseif ($branchName == 'កម្ពុជាក្រោម') {
+                            $this->telegramSendMessage(-1002614841007, $messageText);
+                        } elseif ($branchName == 'វីអាយភី') {
+                            $this->telegramSendMessage(-1002806714995, $messageText);
+                        } else {
+                            // Optional: Handle if branch name not found
+                            \Log::error('Branch name not matched: ' . $branchName);
+                            return;
+                    }
+
+	                    // Send message to Telegram
+                        $this->telegramSendMessage(-1002742379872, $messageText);
+
+	                    if ($latitude && $longitude) {
+                            $this->telegramSendLocation(-1002742379872, (float) $latitude, (float) $longitude);
+	                    }
+
         $this->displayMessage = __('index.check_in_successful');
     }
 
     /**
      * @throws Exception
      */
-    private function processCheckOut($userTodayCheckInDetail, $validatedData)
+    // private function processCheckOut($userTodayCheckInDetail, $validatedData)
+    // {
+    //     $validatedData['check_out_type'] = $validatedData['attendance_type'];
+    //     $validatedData['check_out_note'] = $validatedData['note'] ?? '';
+
+    //     $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
+
+    //     $workedTime = AttendanceHelper::getEmployeeWorkedTimeInHourAndMinute($attendanceData);
+
+    //     $this->notificationData['title'] = __('index.check_out_notification');
+    //     $this->notificationData['permissionKey'] = 'employee_check_out';
+    //     $this->notificationData['time'] = $attendanceData->check_out_at;
+    //     $this->notificationData['workedTime'] = $workedTime;
+
+    //     $this->data =(new TodayAttendanceResource($attendanceData))->toArray(request());
+    //     $this->displayMessage = __('index.check_out_successful');
+    // }
+
+      private function processCheckOut($userTodayCheckInDetail, $validatedData)
     {
         $validatedData['check_out_type'] = $validatedData['attendance_type'];
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
@@ -514,12 +732,159 @@ class AttendanceApiController extends Controller
 
         $workedTime = AttendanceHelper::getEmployeeWorkedTimeInHourAndMinute($attendanceData);
 
-        $this->notificationData['title'] = __('index.check_out_notification');
-        $this->notificationData['permissionKey'] = 'employee_check_out';
-        $this->notificationData['time'] = $attendanceData->check_out_at;
-        $this->notificationData['workedTime'] = $workedTime;
-
+        $this->sendNotification(__('index.check_out_notification'), 'employee_check_out', $attendanceData->check_out_at, $workedTime);
         $this->data =(new TodayAttendanceResource($attendanceData))->toArray(request());
+        // ----------- Telegram message sending for Check-Out -----------
+
+$botToken = 'YOUR_BOT_TOKEN'; // Replace with your bot token
+$chatId = '@yourchannelusername'; // Or group chat ID like -1001234567890
+
+// Get user with branch relationship
+$user = User::with('branch')->find($attendanceData->user_id);
+
+// Get office time
+$officeTime = \App\Models\OfficeTime::find($attendanceData->office_time_id);
+$officeEndTime = $officeTime ? $officeTime->closing_time : null;
+
+$name = $user ? $user->name : 'Unknown Employee';
+$branchName = ($user && $user->branch) ? $user->branch->name : 'Unknown Branch';
+$departmentName = ($user && $user->department) ? $user->department->dept_name : 'Unknown Department';
+
+$checkOutTime = $attendanceData->check_out_at;
+$latitude = $attendanceData->check_out_latitude;
+$longitude = $attendanceData->check_out_longitude;
+$locationLink = "https://www.google.com/maps?q={$latitude},{$longitude}";
+
+// Calculate status and late/early time for check-out
+$status = '✅ ពេលវេលាត្រឹមត្រូវ'; // On Time in Khmer
+$timeDifference = '';
+
+if ($officeEndTime && $checkOutTime) {
+    $checkOutTimestamp = strtotime($checkOutTime);
+    $officeEndTimestamp = strtotime($officeEndTime);
+
+    if ($checkOutTimestamp < $officeEndTimestamp) {
+        // Early check-out
+        $earlyMinutes = round(($officeEndTimestamp - $checkOutTimestamp) / 60);
+        $hours = floor($earlyMinutes / 60);
+        $minutes = $earlyMinutes % 60;
+
+        // Format in Khmer
+        $formattedEarlyTime = '';
+        if ($hours > 0) {
+            $formattedEarlyTime .= "{$hours}ម៉ោង";
+        }
+        if ($minutes > 0) {
+            $formattedEarlyTime .= "{$minutes}នាទី";
+        }
+
+        $status = '🕰️ ចេញមុន';
+        $timeDifference = "\n⏳ ចំនួនម៉ោងចេញមុន: {$formattedEarlyTime}";
+
+    } elseif ($checkOutTimestamp > $officeEndTimestamp) {
+        // Late check-out
+        $lateMinutes = round(($checkOutTimestamp - $officeEndTimestamp) / 60);
+        $hours = floor($lateMinutes / 60);
+        $minutes = $lateMinutes % 60;
+
+        // Format in Khmer
+        $formattedLateTime = '';
+        if ($hours > 0) {
+            $formattedLateTime .= "{$hours}ម៉ោង";
+        }
+        if ($minutes > 0) {
+            $formattedLateTime .= "{$minutes}នាទី";
+        }
+
+        $status = '⏰ ចេញយឺត';
+        $timeDifference = "\n⏳ ចំនួនម៉ោងចេញយឺត: {$formattedLateTime}";
+    }
+}
+
+// Compose the message for check-out
+            $messageText = "👤 ឈ្មោះ {$name} \n" .
+                        "🔴 បានស្កែនចេញនៅម៉ោង{$checkOutTime} \n" .
+                        "🏢 សាខា: {$branchName} \n" .
+                        "🛒 ផ្នែក: {$departmentName} \n" .
+                        "🕑 ម៉ោងបិទការងារ: {$officeEndTime} \n" .
+                        "📊 ស្ថានភាព: {$status}{$timeDifference} \n" .
+                        "";
+
+               if ($departmentName == 'management') {
+                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                    'chat_id' => -1002799577548,
+                    // 'chat_id' => -1002742379872,
+                    'text' => $messageText,
+                    'parse_mode' => 'HTML'
+                    ]);
+                     }      
+
+               if ($departmentName == 'ជាង') {
+                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                    'chat_id' => -1002842364173,
+                    'text' => $messageText
+                    ]);
+                }
+
+                if ($branchName === 'កម្ពុជាក្រោម') {
+                    if ($departmentName === 'មេឌៀ(KY)') {
+                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                            'chat_id' => '-1002727901053',
+                            'text' => $messageText,
+                            'parse_mode' => 'HTML'
+                        ]);
+                    }elseif ($departmentName === 'អ្នកលក់អនឡាញ(KY)') {
+                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                            'chat_id' => '-1002727901053',
+                            'text' => $messageText,
+                            'parse_mode' => 'HTML'
+                        ]);
+                    } else {
+                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                            'chat_id' => '-1002617998738',
+                            'text' => $messageText,
+                            'parse_mode' => 'HTML'
+                        ]);
+                    }
+                }
+               if ($branchName == 'អ៊ីអន') {
+                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                    'chat_id' => -1002705869028,
+                    'text' => $messageText
+                ]);
+                } elseif ($branchName == 'កាប់គោ') {
+                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                        'chat_id' => -1002351902820,
+                        'text' => $messageText
+                    ]);
+                } elseif ($branchName == 'ស្តុកធំ') {
+                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                        'chat_id' => -1002509454514,
+                        'text' => $messageText
+                    ]);
+                } elseif ($branchName == 'កម្ពុជាក្រោម') {
+                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                        'chat_id' => -1002614841007,
+                        'text' => $messageText
+                    ]);
+                } elseif ($branchName == 'វីអាយភី') {
+                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+                        'chat_id' => -1002806714995,
+                        'text' => $messageText
+                    ]);
+                } else {
+                    // Optional: Handle if branch name not found
+                    \Log::error('Branch name not matched: ' . $branchName);
+                    return;
+                }
+
+            // Send message to Telegram
+            Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
+            //     'chat_id' => -1002045374993,
+                'chat_id' => -1002742379872,
+                'text' => $messageText
+            ]);
+
         $this->displayMessage = __('index.check_out_successful');
     }
 
