@@ -338,7 +338,7 @@ return [
     'late_checkin'=>'CheckIn is late than allowed time contact Admin!',
     'early_checkout'=>'You cannot check-out early!',
     'late_checkout'=>'Check-Out is late than allowed time. contact Admin',
-    'attendance_outside'=>'Cannot take Attendance outside of workspace area',
+    'attendance_outside'=>'Cannot take attendance outside of the workspace area.',
     'attendance_not_found'=>'Attendance Detail Not Found',
     'invalid_credential'=>'Invalid User Name Credentials !',
     'no_record_credentials'=>'These credentials do not match our records.',

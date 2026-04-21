@@ -501,7 +501,7 @@ class AttendanceService
                 if ($employeeWorkSpace->workspace_type == User::OFFICE) {
                     $checkEmployeeRouter = $this->routerRepo->findRouterDetailBSSID($routerBSSID);
                     if (!$checkEmployeeRouter) {
-                        throw new Exception(__('message.attendance_outside'));
+                        throw new Exception(__('message.attendance_outside'), 403);
                     }
                     $branch = $this->branchRepository->findBranchDetailById($checkEmployeeRouter->branch_id);
 
@@ -526,7 +526,7 @@ class AttendanceService
             if ($employeeWorkSpace->workspace_type == User::OFFICE) {
                 $checkEmployeeRouter = $this->routerRepo->findRouterDetailBSSID($routerBSSID);
                 if (!$checkEmployeeRouter) {
-                    throw new Exception(__('message.attendance_outside'));
+                    throw new Exception(__('message.attendance_outside'), 403);
                 }
             }
         }
