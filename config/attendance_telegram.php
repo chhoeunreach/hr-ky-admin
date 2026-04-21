@@ -22,9 +22,28 @@ return [
     // JSON or CSV string (parsed by the notifier service)
     'department_chat_ids' => env('ATTENDANCE_TELEGRAM_DEPARTMENT_CHAT_IDS', ''),
 
+    /*
+     * Optional routing rules (first match wins).
+     * JSON array example:
+     *  [
+     *    {"department":"management","chat_id":"-1002799577548"},
+     *    {"branch":"កម្ពុជាក្រោម","department":"មេឌៀ(KY)","chat_id":"-1002727901053"}
+     *  ]
+     */
+    'rules' => env('ATTENDANCE_TELEGRAM_RULES', ''),
+
+    /*
+     * Optional additional recipients for every message.
+     * Accepts JSON array (["-1001","-1002"]) or CSV (-1001,-1002).
+     */
+    'always_chat_ids' => env('ATTENDANCE_TELEGRAM_ALWAYS_CHAT_IDS', ''),
+
     // Optional reverse-geocoding (to show "real address")
     'reverse_geocode_enabled' => (bool) env('ATTENDANCE_TELEGRAM_REVERSE_GEOCODE_ENABLED', false),
     'reverse_geocode_user_agent' => env('ATTENDANCE_TELEGRAM_GEOCODE_USER_AGENT', 'hr-ky-admin-attendance-bot'),
+
+    // Optional Telegram location pin
+    'send_location_enabled' => (bool) env('ATTENDANCE_TELEGRAM_SEND_LOCATION', false),
 
     'timeout_seconds' => (int) env('ATTENDANCE_TELEGRAM_TIMEOUT', 3),
 ];

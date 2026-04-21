@@ -23,8 +23,8 @@ class AttendanceTelegramNotifier
             return;
         }
 
-        $chatId = $this->resolveChatIdForUser($user);
-        if ($chatId === null || $chatId === '') {
+        $chatIds = $this->resolveChatIdsForUser($user);
+        if ($chatIds === []) {
             return;
         }
 
@@ -70,23 +70,88 @@ class AttendanceTelegramNotifier
         $timeout = (int) config('attendance_telegram.timeout_seconds', 3);
 
         try {
-            Http::timeout(max(1, $timeout))
-                ->asForm()
-                ->post("https://api.telegram.org/bot{$token}/sendMessage", [
-                    'chat_id' => $chatId,
-                    'text' => $message,
-                ])
-                ->throw();
+            foreach ($chatIds as $chatId) {
+                Http::timeout(max(1, $timeout))
+                    ->asForm()
+                    ->post("https://api.telegram.org/bot{$token}/sendMessage", [
+                        'chat_id' => $chatId,
+                        'text' => $message,
+                    ])
+                    ->throw();
+
+                if (config('attendance_telegram.send_location_enabled') && $lat !== null && $lng !== null) {
+                    Http::timeout(max(1, $timeout))
+                        ->asForm()
+                        ->post("https://api.telegram.org/bot{$token}/sendLocation", [
+                            'chat_id' => $chatId,
+                            'latitude' => $lat,
+                            'longitude' => $lng,
+                        ])
+                        ->throw();
+                }
+            }
         } catch (Exception $e) {
             Log::warning('Attendance Telegram notify failed', [
                 'department_id' => $user->department_id ?? null,
-                'chat_id' => $chatId,
+                'chat_ids' => $chatIds,
                 'error' => $e->getMessage(),
             ]);
         }
     }
 
-    private function resolveChatIdForUser(User $user): ?string
+    private function resolveChatIdsForUser(User $user): array
+    {
+        $selectedChatId = $this->resolveChatIdFromRules($user)
+            ?? $this->resolveChatIdFromDepartmentMapping($user)
+            ?? $this->resolveDefaultChatId();
+
+        $chatIds = [];
+        if (is_string($selectedChatId) && trim($selectedChatId) !== '') {
+            $chatIds[] = trim($selectedChatId);
+        }
+
+        foreach ($this->parseChatIdList((string) config('attendance_telegram.always_chat_ids', '')) as $chatId) {
+            $chatIds[] = $chatId;
+        }
+
+        $chatIds = array_values(array_unique(array_filter(array_map('trim', $chatIds))));
+        return $chatIds;
+    }
+
+    private function resolveChatIdFromRules(User $user): ?string
+    {
+        $raw = (string) config('attendance_telegram.rules', '');
+        $rules = $this->parseRules($raw);
+        if ($rules === []) {
+            return null;
+        }
+
+        $branchName = is_string($user->branch?->name) ? trim((string) $user->branch?->name) : '';
+        $departmentName = is_string($user->department?->name) ? trim((string) $user->department?->name) : '';
+
+        foreach ($rules as $rule) {
+            $ruleChatId = trim((string) ($rule['chat_id'] ?? ''));
+            if ($ruleChatId === '') {
+                continue;
+            }
+
+            $ruleBranch = isset($rule['branch']) ? trim((string) $rule['branch']) : null;
+            $ruleDepartment = isset($rule['department']) ? trim((string) $rule['department']) : null;
+
+            if ($ruleBranch !== null && $ruleBranch !== '' && $ruleBranch !== $branchName) {
+                continue;
+            }
+            if ($ruleDepartment !== null && $ruleDepartment !== '' && $ruleDepartment !== $departmentName) {
+                continue;
+            }
+
+            return $ruleChatId;
+        }
+
+        return null;
+    }
+
+    private function resolveChatIdFromDepartmentMapping(User $user): ?string
     {
         $mappingRaw = (string) config('attendance_telegram.department_chat_ids', '');
         $mapping = $this->parseDepartmentChatIdMapping($mappingRaw);
@@ -107,6 +172,11 @@ class AttendanceTelegramNotifier
             }
         }
 
+        return null;
+    }
+
+    private function resolveDefaultChatId(): ?string
+    {
         $defaultChatId = (string) config('attendance_telegram.default_chat_id');
         return $defaultChatId !== '' ? $defaultChatId : null;
     }
@@ -146,6 +216,58 @@ class AttendanceTelegramNotifier
             $v = trim((string) $parts[1]);
             if ($k !== '' && $v !== '') {
                 $out[$k] = $v;
+            }
+        }
+        return $out;
+    }
+
+    private function parseRules(string $raw): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+
+        $json = json_decode($raw, true);
+        if (!is_array($json)) {
+            return [];
+        }
+
+        $rules = [];
+        foreach ($json as $rule) {
+            if (!is_array($rule)) {
+                continue;
+            }
+            $rules[] = $rule;
+        }
+
+        return $rules;
+    }
+
+    private function parseChatIdList(string $raw): array
+    {
+        $raw = trim($raw);
+        if ($raw === '') {
+            return [];
+        }
+
+        $json = json_decode($raw, true);
+        if (is_array($json)) {
+            $out = [];
+            foreach ($json as $v) {
+                $v = trim((string) $v);
+                if ($v !== '') {
+                    $out[] = $v;
+                }
+            }
+            return $out;
+        }
+
+        $out = [];
+        foreach (explode(',', $raw) as $v) {
+            $v = trim((string) $v);
+            if ($v !== '') {
+                $out[] = $v;
             }
         }
         return $out;
