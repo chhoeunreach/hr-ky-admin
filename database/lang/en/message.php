@@ -339,6 +339,8 @@ return [
     'early_checkout'=>'You cannot check-out early!',
     'late_checkout'=>'Check-Out is late than allowed time. contact Admin',
     'attendance_outside'=>'Cannot take attendance outside of the workspace area.',
+    'attendance_within_branch_radius'=>'Your current location is within the branch area (:radius m).',
+    'attendance_outside_branch_radius'=>'Your current location is :distance m away from the branch. Allowed radius is :radius m.',
     'attendance_not_found'=>'Attendance Detail Not Found',
     'invalid_credential'=>'Invalid User Name Credentials !',
     'no_record_credentials'=>'These credentials do not match our records.',

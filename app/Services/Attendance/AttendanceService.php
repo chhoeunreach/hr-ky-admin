@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\Log;
 
 class AttendanceService
 {
+    public const DEFAULT_BRANCH_RADIUS_IN_METER = 50;
 
     public function __construct(protected AttendanceRepository $attendanceRepo,
                                 protected UserRepository       $userRepo,
@@ -530,6 +531,87 @@ class AttendanceService
                 }
             }
         }
+    }
+
+    public function attachLocationValidationToAttendance($attendance, $latitude = null, $longitude = null)
+    {
+        $validation = $this->resolveBranchLocationValidation($attendance->user_id, $latitude, $longitude);
+
+        foreach ($validation as $key => $value) {
+            $attendance->setAttribute($key, $value);
+        }
+
+        return $attendance;
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function resolveBranchLocationValidation($userId, $latitude = null, $longitude = null): array
+    {
+        $user = $this->userRepo->findUserDetailById($userId, ['id', 'branch_id', 'workspace_type']);
+        $branch = $this->branchRepository->findBranchDetailById($user->branch_id);
+
+        $branchLatitude = $branch?->branch_location_latitude;
+        $branchLongitude = $branch?->branch_location_longitude;
+        $radius = self::DEFAULT_BRANCH_RADIUS_IN_METER;
+
+        $validation = [
+            'employee_location' => [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ],
+            'branch_location' => [
+                'latitude' => $branchLatitude,
+                'longitude' => $branchLongitude,
+            ],
+            'distance_to_branch_in_meter' => null,
+            'allowed_branch_radius_in_meter' => $radius,
+            'within_branch_radius' => null,
+            'location_validation_message' => null,
+        ];
+
+        if (
+            $latitude === null || $longitude === null ||
+            $branchLatitude === null || $branchLongitude === null
+        ) {
+            return $validation;
+        }
+
+        $distance = $this->calculateDistanceInMeters($latitude, $longitude, $branchLatitude, $branchLongitude);
+        $withinRadius = $distance <= $radius;
+
+        $validation['distance_to_branch_in_meter'] = $distance;
+        $validation['within_branch_radius'] = $withinRadius;
+        $validation['location_validation_message'] = $withinRadius
+            ? __('message.attendance_within_branch_radius', ['radius' => $radius])
+            : __('message.attendance_outside_branch_radius', ['distance' => $distance, 'radius' => $radius]);
+
+        if ($user->workspace_type == User::OFFICE && !$withinRadius) {
+            throw new Exception($validation['location_validation_message'], 403);
+        }
+
+        return $validation;
+    }
+
+    private function calculateDistanceInMeters($lat1, $lon1, $lat2, $lon2): int
+    {
+        $earthRadius = 6371000;
+
+        $latFrom = deg2rad((float) $lat1);
+        $lonFrom = deg2rad((float) $lon1);
+        $latTo = deg2rad((float) $lat2);
+        $lonTo = deg2rad((float) $lon2);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(sqrt(
+            pow(sin($latDelta / 2), 2) +
+            cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)
+        ));
+
+        return (int) round($angle * $earthRadius);
     }
 
     /**

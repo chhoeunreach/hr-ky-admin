@@ -173,8 +173,8 @@ class AttendanceApiController extends Controller
                 $latitudeKey = $isCheckIn ? 'check_in_latitude' : 'check_out_latitude';
                 $longitudeKey = $isCheckIn ? 'check_in_longitude' : 'check_out_longitude';
 
-                $validatedData[$latitudeKey] = ($userDetail['workspace_type'] == User::OFFICE) ? ($coordinate['latitude'] ?? $validatedData['latitude']): $validatedData['latitude'];
-                $validatedData[$longitudeKey] = ($userDetail['workspace_type'] == User::OFFICE)? ($coordinate['longitude'] ?? $validatedData['longitude']): $validatedData['longitude'];
+                $validatedData[$latitudeKey] = $validatedData['latitude'] ?? $coordinate['latitude'] ?? null;
+                $validatedData[$longitudeKey] = $validatedData['longitude'] ?? $coordinate['longitude'] ?? null;
 
             } else {
                 return response()->json(['success' => false, 'message' => __('index.invalid_attendance_type')]);
@@ -371,6 +371,11 @@ class AttendanceApiController extends Controller
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
+        $this->attendanceService->attachLocationValidationToAttendance(
+            $attendanceData,
+            $validatedData['latitude'] ?? null,
+            $validatedData['longitude'] ?? null
+        );
 
         $this->notificationData['title'] = __('index.check_in_notification');
         $this->notificationData['permissionKey'] = 'employee_check_in';
@@ -389,6 +394,11 @@ class AttendanceApiController extends Controller
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
 
         $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
+        $this->attendanceService->attachLocationValidationToAttendance(
+            $attendanceData,
+            $validatedData['latitude'] ?? null,
+            $validatedData['longitude'] ?? null
+        );
 
         $workedTime = AttendanceHelper::getEmployeeWorkedTimeInHourAndMinute($attendanceData);
 

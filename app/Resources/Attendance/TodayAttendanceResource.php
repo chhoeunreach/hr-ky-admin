@@ -31,10 +31,15 @@ class TodayAttendanceResource extends JsonResource
                 'latitude' => $latestLatitude,
                 'longitude' => $latestLongitude,
             ],
+            'employee_location' => $this->employee_location,
+            'branch_location' => $this->branch_location,
+            'distance_to_branch_in_meter' => $this->distance_to_branch_in_meter,
+            'allowed_branch_radius_in_meter' => $this->allowed_branch_radius_in_meter,
+            'within_branch_radius' => $this->within_branch_radius,
+            'location_validation_message' => $this->location_validation_message,
         ];
     }
 }
-
 
 
 

@@ -36,10 +36,15 @@ class NightAttendanceResource extends JsonResource
                 'latitude' => $this->night_checkout ? $this->check_out_latitude : $this->check_in_latitude,
                 'longitude' => $this->night_checkout ? $this->check_out_longitude : $this->check_in_longitude,
             ],
+            'employee_location' => $this->employee_location,
+            'branch_location' => $this->branch_location,
+            'distance_to_branch_in_meter' => $this->distance_to_branch_in_meter,
+            'allowed_branch_radius_in_meter' => $this->allowed_branch_radius_in_meter,
+            'within_branch_radius' => $this->within_branch_radius,
+            'location_validation_message' => $this->location_validation_message,
         ];
     }
 }
-
 
 
 
