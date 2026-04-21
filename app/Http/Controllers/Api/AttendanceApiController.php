@@ -680,13 +680,15 @@ class AttendanceApiController extends Controller
                             $this->telegramSendMessage(-1002509454514, $messageText);
                         } elseif ($branchName == 'កម្ពុជាក្រោម') {
                             $this->telegramSendMessage(-1002614841007, $messageText);
-                        } elseif ($branchName == 'វីអាយភី') {
-                            $this->telegramSendMessage(-1002806714995, $messageText);
-                        } else {
-                            // Optional: Handle if branch name not found
-                            \Log::error('Branch name not matched: ' . $branchName);
-                            return;
-                    }
+	                        } elseif ($branchName == 'វីអាយភី') {
+	                            $this->telegramSendMessage(-1002806714995, $messageText);
+	                        } else {
+	                            // Optional: Handle if branch name not found
+	                            Log::warning('Branch name not matched', [
+	                                'branch' => $branchName,
+	                                'department' => $departmentName,
+	                            ]);
+	                    }
 
 	                    // Send message to Telegram
                         $this->telegramSendMessage(-1002742379872, $messageText);
@@ -815,80 +817,40 @@ if ($officeEndTime && $checkOutTime) {
                         "📊 ស្ថានភាព: {$status}{$timeDifference} \n" .
                         "";
 
-               if ($departmentName == 'management') {
-                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                    'chat_id' => -1002799577548,
-                    // 'chat_id' => -1002742379872,
-                    'text' => $messageText,
-                    'parse_mode' => 'HTML'
-                    ]);
-                     }      
+	               if ($departmentName == 'management') {
+                       $this->telegramSendMessage(-1002799577548, $messageText, 'HTML');
+                   }
 
-               if ($departmentName == 'ជាង') {
-                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                    'chat_id' => -1002842364173,
-                    'text' => $messageText
-                    ]);
-                }
+	               if ($departmentName == 'ជាង') {
+                       $this->telegramSendMessage(-1002842364173, $messageText);
+	                }
 
-                if ($branchName === 'កម្ពុជាក្រោម') {
-                    if ($departmentName === 'មេឌៀ(KY)') {
-                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                            'chat_id' => '-1002727901053',
-                            'text' => $messageText,
-                            'parse_mode' => 'HTML'
-                        ]);
-                    }elseif ($departmentName === 'អ្នកលក់អនឡាញ(KY)') {
-                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                            'chat_id' => '-1002727901053',
-                            'text' => $messageText,
-                            'parse_mode' => 'HTML'
-                        ]);
-                    } else {
-                        Http::post("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                            'chat_id' => '-1002617998738',
-                            'text' => $messageText,
-                            'parse_mode' => 'HTML'
-                        ]);
-                    }
-                }
-               if ($branchName == 'អ៊ីអន') {
-                Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                    'chat_id' => -1002705869028,
-                    'text' => $messageText
-                ]);
-                } elseif ($branchName == 'កាប់គោ') {
-                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                        'chat_id' => -1002351902820,
-                        'text' => $messageText
-                    ]);
-                } elseif ($branchName == 'ស្តុកធំ') {
-                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                        'chat_id' => -1002509454514,
-                        'text' => $messageText
-                    ]);
-                } elseif ($branchName == 'កម្ពុជាក្រោម') {
-                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                        'chat_id' => -1002614841007,
-                        'text' => $messageText
-                    ]);
-                } elseif ($branchName == 'វីអាយភី') {
-                    Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-                        'chat_id' => -1002806714995,
-                        'text' => $messageText
-                    ]);
-                } else {
-                    // Optional: Handle if branch name not found
-                    \Log::error('Branch name not matched: ' . $branchName);
-                    return;
-                }
+	                if ($branchName === 'កម្ពុជាក្រោម') {
+	                    if ($departmentName === 'មេឌៀ(KY)') {
+                            $this->telegramSendMessage('-1002727901053', $messageText, 'HTML');
+	                    }elseif ($departmentName === 'អ្នកលក់អនឡាញ(KY)') {
+                            $this->telegramSendMessage('-1002727901053', $messageText, 'HTML');
+	                    } else {
+                            $this->telegramSendMessage('-1002617998738', $messageText, 'HTML');
+	                    }
+	                }
+	               if ($branchName == 'អ៊ីអន') {
+                       $this->telegramSendMessage(-1002705869028, $messageText);
+	                } elseif ($branchName == 'កាប់គោ') {
+                        $this->telegramSendMessage(-1002351902820, $messageText);
+	                } elseif ($branchName == 'ស្តុកធំ') {
+                        $this->telegramSendMessage(-1002509454514, $messageText);
+	                } elseif ($branchName == 'កម្ពុជាក្រោម') {
+                        $this->telegramSendMessage(-1002614841007, $messageText);
+	                } elseif ($branchName == 'វីអាយភី') {
+                        $this->telegramSendMessage(-1002806714995, $messageText);
+	                } else {
+	                    // Optional: Handle if branch name not found
+	                    Log::warning('Branch name not matched', ['branch' => $branchName]);
+	                }
 
-            // Send message to Telegram
-            Http::get("https://api.telegram.org/bot6813780266:AAEhpjJrKq0fSfdjHjVt3b9_REle-Sxy3Z0/sendMessage", [
-            //     'chat_id' => -1002045374993,
-                'chat_id' => -1002742379872,
-                'text' => $messageText
-            ]);
+	            // Send message to Telegram
+                $this->telegramSendMessage(-1002742379872, $messageText);
 
         $this->displayMessage = __('index.check_out_successful');
     }
