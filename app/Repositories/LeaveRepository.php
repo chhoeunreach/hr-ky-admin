@@ -23,7 +23,8 @@ class LeaveRepository
     public function getAllEmployeeLeaveRequestForExport($filterParameters, $select = ['*'], $with = [])
     {
         return $this->buildLeaveRequestListQuery($filterParameters, $select, $with)
-            ->orderBy('id', 'DESC')
+            ->orderBy('leave_requested_date', 'ASC')
+            ->orderBy('id', 'ASC')
             ->get();
     }
 

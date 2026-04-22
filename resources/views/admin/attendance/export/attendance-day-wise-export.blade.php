@@ -62,7 +62,7 @@
                     ? __('index.approved')
                     : __('index.rejected');
             } else {
-                $attendanceStatus = \App\Helpers\AttendanceHelper::getLeaveRequestLabel($selectedAttendanceDate, $userId) ?? __('index.pending');
+                $attendanceStatus = \App\Helpers\AttendanceHelper::getHolidayOrLeaveDetail($selectedAttendanceDate, $userId) ?? __('index.pending');
             }
 
             $employeeCode = $firstAttendance->employee_code ?? '';
@@ -74,8 +74,8 @@
             $updatedAt = $firstAttendance->updated_at ? date('Y-m-d H:i:s', strtotime($firstAttendance->updated_at)) : '';
         @endphp
         <tr>
-            <!-- <td style="text-align: center;">{{ $recordId }}</td> -->
-            <td>{{ ucfirst($firstAttendance->attendance_date) }}{{ ucfirst($firstAttendance->username) }}</td>
+            <td style="text-align: center;">{{ $recordId }}</td>
+            <td style="text-align: center;">{{ $displayDate }}</td>
             <td style="text-align: center;">{{ $firstAttendance->username }}</td>
             <td style="text-align: center;">{{ $firstAttendance->user_name }}</td>
             <td style="text-align: center;">{{ $timeIn }}</td>
