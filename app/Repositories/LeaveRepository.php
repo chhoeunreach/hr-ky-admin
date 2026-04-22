@@ -12,8 +12,24 @@ class LeaveRepository
 {
     public function getAllEmployeeLeaveRequest($filterParameters, $select = ['*'], $with = [])
     {
+        $leaveDetailList = $this->buildLeaveRequestListQuery($filterParameters, $select, $with);
 
-        $leaveDetailList = LeaveRequestMaster::with($with)
+        return $leaveDetailList
+            ->orderBy('id', 'DESC')
+            ->paginate( getRecordPerPage());
+
+    }
+
+    public function getAllEmployeeLeaveRequestForExport($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->buildLeaveRequestListQuery($filterParameters, $select, $with)
+            ->orderBy('id', 'DESC')
+            ->get();
+    }
+
+    private function buildLeaveRequestListQuery($filterParameters, $select = ['*'], $with = [])
+    {
+        return LeaveRequestMaster::with($with)
             ->select($select)
             ->when(isset($filterParameters['requested_by']), function ($query) use ($filterParameters) {
                 $query->where('requested_by', $filterParameters['requested_by']);
@@ -49,11 +65,6 @@ class LeaveRepository
                     $query->whereYear('leave_from', '=', $filterParameters['year']);
                 });
         }
-
-        return $leaveDetailList
-            ->orderBy('id', 'DESC')
-            ->paginate( getRecordPerPage());
-
     }
 
 //    public function getAllLeaveRequestDetailOfEmployee($filterParameters, $select = ['*'], $with = [])

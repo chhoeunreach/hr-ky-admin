@@ -53,6 +53,17 @@ class LeaveService
 
     }
 
+    public function getAllEmployeeLeaveRequestsForExport($filterParameters, $select=['*'], $with=[])
+    {
+        if (AppHelper::ifDateInBsEnabled()) {
+            $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($filterParameters['year'], $filterParameters['month']);
+            $filterParameters['start_date'] = $dateInAD['start_date'];
+            $filterParameters['end_date'] = $dateInAD['end_date'];
+        }
+
+        return $this->leaveRepo->getAllEmployeeLeaveRequestForExport($filterParameters, $select, $with);
+    }
+
     /**
      * @param $filterParameters
      * @param $select

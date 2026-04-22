@@ -114,6 +114,8 @@
                             <div class="d-flex">
                                 <button type="submit"
                                         class="btn btn-block btn-secondary me-2">{{ __('index.filter') }}</button>
+                                <a class="btn btn-block btn-success me-2"
+                                   href="{{ route('admin.leave-request.export', request()->query()) }}">Export</a>
                                 <a class="btn btn-block btn-primary"
                                    href="{{route('admin.leave-request.index')}}">{{ __('index.reset') }}</a>
                             </div>
@@ -363,7 +365,6 @@
 
     </script>
 @endsection
-
 
 
 
