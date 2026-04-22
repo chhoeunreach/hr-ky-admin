@@ -20,9 +20,46 @@ class AttendanceRepository
             'users.id AS user_id',
             'users.name AS user_name',
             'users.employee_code AS employee_code',
+            'users.username AS username',
+            'users.email AS email',
+            'users.phone AS phone',
+            'users.gender AS gender',
+            'users.marital_status AS marital_status',
+            'users.dob AS dob',
+            'users.joining_date AS joining_date',
+            'users.address AS address',
+            'users.avatar AS avatar',
+            'users.employment_type AS employment_type',
+            'users.user_type AS user_type',
+            'users.status AS user_status',
+            'users.is_active AS user_is_active',
+            'users.online_status AS online_status',
+            'users.leave_allocated AS leave_allocated',
+            'users.workspace_type AS workspace_type',
+            'users.remarks AS user_remarks',
+            'users.uuid AS uuid',
+            'users.device_type AS device_type',
+            'users.logout_status AS logout_status',
+            'users.supervisor_id AS supervisor_id',
+            'users.office_time_id AS office_time_id',
+            'users.created_by AS user_created_by',
+            'users.updated_by AS user_updated_by',
+            'users.deleted_by AS user_deleted_by',
+            'users.deleted_at AS user_deleted_at',
+            'users.allow_holiday_check_in AS allow_holiday_check_in',
+            'users.created_at AS user_created_at',
+            'users.updated_at AS user_updated_at',
             'users.company_id AS company_id',
             'users.branch_id AS branch_id',
             'companies.name AS company_name',
+            'branches.name AS branch_name',
+            'departments.dept_name AS department_name',
+            'posts.post_name AS post_name',
+            'roles.name AS role_name',
+            'supervisors.name AS supervisor_name',
+            'user_office_times.shift AS office_shift',
+            'user_office_times.opening_time AS office_opening_time',
+            'user_office_times.closing_time AS office_closing_time',
             'attendances.attendance_date',
             'attendances.attendance_status',
             'attendances.check_in_at',
@@ -37,6 +74,8 @@ class AttendanceRepository
             'attendances.check_out_type',
             'attendances.created_by',
             'attendances.updated_by',
+            'attendances.created_at',
+            'attendances.updated_at',
             'attendances.check_in_note',
             'attendances.check_out_note',
             'attendances.night_checkin',
@@ -50,6 +89,11 @@ class AttendanceRepository
         })
             ->join('companies', 'users.company_id', '=', 'companies.id')
             ->join('branches','users.branch_id','=', 'branches.id')
+            ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
+            ->leftJoin('posts', 'users.post_id', '=', 'posts.id')
+            ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+            ->leftJoin('users as supervisors', 'users.supervisor_id', '=', 'supervisors.id')
+            ->leftJoin('office_times as user_office_times', 'users.office_time_id', '=', 'user_office_times.id')
             ->leftJoin('office_times','attendances.office_time_id','office_times.id')
             ->when(isset($filterParameter['branch_id']), function($query) use ($filterParameter){
                 $query->where('users.branch_id',$filterParameter['branch_id']);

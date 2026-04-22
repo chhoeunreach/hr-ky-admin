@@ -17,27 +17,25 @@ class AttendanceCollectionExport implements FromCollection, WithHeadings, Should
 
     public function collection()
     {
-        $select = ['id', 'user_id', 'attendance_date', 'check_in_at', 'check_out_at', 'check_in_latitude', 'check_out_latitude', 'check_in_longitude',
-            'check_out_longitude', 'attendance_status'];
-        $with = ['employee:id,name'];
+        $select = ['user_id', 'attendance_date'];
+        $with = ['employee:id,name,employee_code'];
         $attendanceCollection = new Collection();
+
         Attendance::with($with)->select($select)
             ->chunk(100, function ($attendances) use ($attendanceCollection) {
                 foreach ($attendances as $data) {
+                    $employeeCode = $data->employee->employee_code ?? '';
+                    $attendanceDate = $data->attendance_date;
+
                     $attendanceCollection->push([
-                        'id' => $data->id,
-                        'user_id' => $data->employee->name ?? '',
-                        'attendance_date' => $data->attendance_date,
-                        'check_in_at' => $data->check_in_at,
-                        'check_out_at' => $data->check_out_at,
-                        'check_in_latitude' => $data->check_in_latitude,
-                        'check_out_latitude' => $data->check_out_latitude,
-                        'check_in_longitude' => $data->check_in_longitude,
-                        'check_out_longitude' => $data->check_out_longitude,
-                        'attendance_status' => $data->attendance_status
+                        'id' => $attendanceDate . $employeeCode,
+                        'date' => $attendanceDate,
+                        'employee_id' => $employeeCode,
+                        'employee_name' => $data->employee->name ?? '',
                     ]);
                 }
             });
+
         return $attendanceCollection;
     }
 
@@ -45,15 +43,9 @@ class AttendanceCollectionExport implements FromCollection, WithHeadings, Should
     {
         return [
             'Id',
-            'User Name',
-            'Attendance Date',
-            'Check In At',
-            'Check Out At',
-            'Check In latitude',
-            'Check Out latitude',
-            'Check In longitude',
-            'Check Out longitude',
-            'Attendance Status'
+            'Date',
+            'ID',
+            'Employee Name',
         ];
     }
 

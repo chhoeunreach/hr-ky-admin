@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Exports\LeaveRequestListExport;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
@@ -25,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LeaveController extends Controller
 {
@@ -40,24 +42,7 @@ class LeaveController extends Controller
     {
         if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave')) {
             try {
-                $filterParameters = [
-                    'branch_id' => $request->branch_id ?? null,
-                    'department_id' => $request->department_id ?? null,
-                    'leave_type' => $request->leave_type ?? null,
-                    'requested_by' => $request->requested_by ?? null,
-                    'month' => $request->month ?? null,
-                    'year' => $request->year ?? Carbon::now()->format('Y'),
-                    'status' => $request->status ?? null
-                ];
-
-                if(!auth('admin')->check() && auth()->check()){
-                    $filterParameters['branch_id'] = auth()->user()->branch_id;
-                }
-
-                if(AppHelper::ifDateInBsEnabled()){
-                    $nepaliDate = AppHelper::getCurrentNepaliYearMonth();
-                    $filterParameters['year'] = $request->year ?? $nepaliDate['year'];
-                }
+                $filterParameters = $this->buildLeaveRequestFilters($request);
                 $months = AppHelper::MONTHS;
                 $with = ['leaveType:id,name', 'leaveRequestedBy:id,name','requestApproval'];
                 $select = ['leave_requests_master.*'];
@@ -77,6 +62,24 @@ class LeaveController extends Controller
             abort(403); // Unauthorized
         }
 
+    }
+
+    public function export(Request $request)
+    {
+        if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave')) {
+            try {
+                $filterParameters = $this->buildLeaveRequestFilters($request);
+                $with = ['leaveType:id,name,leave_allocated', 'leaveRequestedBy:id,name,employee_code,username', 'leaveRequestUpdatedBy:id,name'];
+                $select = ['leave_requests_master.*'];
+                $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequestsForExport($filterParameters, $select, $with);
+
+                return Excel::download(new LeaveRequestListExport($leaveDetails), 'leave-request-list.xlsx');
+            } catch (Exception $exception) {
+                return redirect()->back()->with('danger', $exception->getMessage());
+            }
+        }
+
+        abort(403);
     }
 
     public function show($leaveId)
@@ -284,6 +287,30 @@ class LeaveController extends Controller
         ];
 
         return response()->json(['success' => true, 'data' => ['admin_data'=>$adminData, 'approval_data'=>$approvalData]]);
+    }
+
+    private function buildLeaveRequestFilters(Request $request): array
+    {
+        $filterParameters = [
+            'branch_id' => $request->branch_id ?? null,
+            'department_id' => $request->department_id ?? null,
+            'leave_type' => $request->leave_type ?? null,
+            'requested_by' => $request->requested_by ?? null,
+            'month' => $request->month ?? null,
+            'year' => $request->year ?? Carbon::now()->format('Y'),
+            'status' => $request->status ?? null,
+        ];
+
+        if (!auth('admin')->check() && auth()->check()) {
+            $filterParameters['branch_id'] = auth()->user()->branch_id;
+        }
+
+        if (AppHelper::ifDateInBsEnabled()) {
+            $nepaliDate = AppHelper::getCurrentNepaliYearMonth();
+            $filterParameters['year'] = $request->year ?? $nepaliDate['year'];
+        }
+
+        return $filterParameters;
     }
 
 }

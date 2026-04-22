@@ -250,6 +250,7 @@ Route::group([
         Route::get('leave-request/create', [LeaveController::class, 'createLeaveRequest'])->name('leave-request.create');
         Route::get('leave-request/add', [LeaveController::class, 'addLeaveRequest'])->name('leave-request.add');
         Route::post('leave-request/add', [LeaveController::class, 'saveLeaveRequest'])->name('leave-request.save');
+        Route::get('leave-request/export', [LeaveController::class, 'export'])->name('leave-request.export');
 
         /** Time Leave Route */
         Route::get('time-leave-request', [TimeLeaveController::class, 'index'])->name('time-leave-request.index');
@@ -689,6 +690,5 @@ Route::group([
 Route::fallback(function() {
     return view('errors.404');
 });
-
 
 
