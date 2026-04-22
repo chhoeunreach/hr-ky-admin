@@ -5,7 +5,7 @@
 
         <th style="text-align: center;"><b>ID</b></th>
         <th style="text-align: center;"><b>{{ __('index.date') }}</b></th>
-        <th style="text-align: center;"><b>ID</b></th>
+        <th style="text-align: center;"><b>User</b></th>
         <th style="text-align: center;"><b>{{ __('index.employee_name') }}</b></th>
         <th style="text-align: center;"><b>Time In</b></th>
         <th style="text-align: center;"><b>{{ __('index.check_in_at') }}</b></th>
@@ -26,7 +26,7 @@
             $firstAttendance = $userAttendances->first();
             $lastAttendance = $userAttendances->last();
             $selectedAttendanceDate = $firstAttendance->attendance_date ?? $dayDetail['attendance_date'];
-            $displayDate = \App\Helpers\AppHelper::dateInDDMMFormat($selectedAttendanceDate, $isBsEnabled);
+            $displayDate = $selectedAttendanceDate ? date('Y-m-d', strtotime($selectedAttendanceDate)) : '';
             $nightShift = \App\Helpers\AppHelper::isOnNightShift($userId);
 
             $timeIn = isset($firstAttendance->office_opening_time)
@@ -74,7 +74,7 @@
             $updatedAt = $firstAttendance->updated_at ? date('Y-m-d H:i:s', strtotime($firstAttendance->updated_at)) : '';
         @endphp
         <tr>
-            <td style="text-align: center;">{{ $recordId }}</td>
+            <td style="text-align: center;">{{ $displayDate . $firstAttendance->username }}</td>
             <td style="text-align: center;">{{ $displayDate }}</td>
             <td style="text-align: center;">{{ $firstAttendance->username }}</td>
             <td style="text-align: center;">{{ $firstAttendance->user_name }}</td>
