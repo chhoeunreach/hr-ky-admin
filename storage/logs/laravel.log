@@ -122708,3 +122708,31 @@ Did you mean one of these?
 #43 /var/www/hr-ky-admin1/public/index.php(51): Illuminate\\Foundation\\Http\\Kernel->handle()
 #44 {main}
 "} 
+[2026-04-22 06:03:04] production.INFO: firebase response {}  
+[2026-04-22 06:03:04] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002727901053"} 
+[2026-04-22 06:03:04] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002727901053"} 
+[2026-04-22 06:04:54] production.INFO: firebase response {}  
+[2026-04-22 06:04:54] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002799577548"} 
+[2026-04-22 06:04:54] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002799577548"} 
+[2026-04-22 06:05:21] production.INFO: firebase response {}  
+[2026-04-22 06:05:21] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002799577548"} 
+[2026-04-22 06:05:21] production.ERROR: Telegram bot token missing (services.telegram.bot_token). {"chatId":"-1002799577548"} 
+[2026-04-22 06:05:54] production.INFO: firebase response {}  
+[2026-04-22 09:37:38] production.ERROR: Command "server" is not defined.
+
+Did you mean one of these?
+    make:observer
+    serve {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"server\" is not defined.
+
+Did you mean one of these?
+    make:observer
+    serve at /Applications/XAMPP/xamppfiles/htdocs/hr-ky-admin1/vendor/symfony/console/Application.php:745)
+[stacktrace]
+#0 /Applications/XAMPP/xamppfiles/htdocs/hr-ky-admin1/vendor/symfony/console/Application.php(266): Symfony\\Component\\Console\\Application->find('server')
+#1 /Applications/XAMPP/xamppfiles/htdocs/hr-ky-admin1/vendor/symfony/console/Application.php(175): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#2 /Applications/XAMPP/xamppfiles/htdocs/hr-ky-admin1/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(201): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#3 /Applications/XAMPP/xamppfiles/htdocs/hr-ky-admin1/artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#4 {main}
+"} 
+[2026-04-22 09:38:04] production.INFO: firebase response {}  
+[2026-04-22 09:38:12] production.INFO: firebase response {}  

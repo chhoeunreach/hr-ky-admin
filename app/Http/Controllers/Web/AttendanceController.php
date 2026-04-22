@@ -107,10 +107,11 @@ class AttendanceController extends Controller
         try {
             $lat = request()->query('lat');
             $long = request()->query('long');
-            if (!is_numeric($lat) || !is_numeric($long)) {
-                return redirect()->back()->with('danger', 'Location is required. Please allow GPS permission and try again.');
+            if (is_numeric($lat) && is_numeric($long)) {
+                $this->checkIn($userId, $companyId, true, ['lat' => $lat, 'long' => $long]);
+            } else {
+                $this->checkIn($userId, $companyId);
             }
-            $this->checkIn($userId, $companyId, true, ['lat' => $lat, 'long' => $long]);
             return redirect()->back()->with('success', __('message.check_in'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -124,10 +125,11 @@ class AttendanceController extends Controller
         try {
             $lat = request()->query('lat');
             $long = request()->query('long');
-            if (!is_numeric($lat) || !is_numeric($long)) {
-                return redirect()->back()->with('danger', 'Location is required. Please allow GPS permission and try again.');
+            if (is_numeric($lat) && is_numeric($long)) {
+                $this->checkOut($userId, $companyId, true, ['lat' => $lat, 'long' => $long]);
+            } else {
+                $this->checkOut($userId, $companyId);
             }
-            $this->checkOut($userId, $companyId, true, ['lat' => $lat, 'long' => $long]);
             return redirect()->back()->with('success', __('message.check_out'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -338,10 +340,6 @@ class AttendanceController extends Controller
                 'lat' => $request->get('lat'),
                 'long' => $request->get('long')
             ];
-
-            if (!is_numeric($locationDetail['lat']) || !is_numeric($locationDetail['long'])) {
-                return AppHelper::sendErrorResponse('Location is required. Please allow GPS permission and try again.', 422);
-            }
 
             $this->authorize('allow_attendance');
             $userId = getAuthUserCode();

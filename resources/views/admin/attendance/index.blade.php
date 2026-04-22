@@ -572,9 +572,7 @@
                     if (!href || href === '#') return;
 
                     if (!navigator.geolocation) {
-                        e.preventDefault();
-                        alert('Location is required, but your browser does not support GPS.');
-                        return;
+                        return; // fallback: normal navigation without coords
                     }
 
                     e.preventDefault();
@@ -589,7 +587,7 @@
                             window.location.href = url.toString();
                         },
                         function () {
-                            alert('Location permission is required. Please allow GPS and try again.');
+                            window.location.href = href; // fallback if denied/error
                         },
                         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                     );
