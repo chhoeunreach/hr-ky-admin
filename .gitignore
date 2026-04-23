@@ -17,3 +17,5 @@ yarn-error.log
 /storage
 /database/storage
 .DS_Store
+/storage/*
+!/storage/.gitignore
