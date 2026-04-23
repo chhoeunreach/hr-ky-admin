@@ -1,21 +1,79 @@
-/node_modules
-/public/hot
-/public/storage
-/public/uploads/*
-!/public/uploads/.htaccess
-/storage/*.key
+# ===============================
+# Laravel
+# ===============================
 /vendor
+/node_modules
+
+# ===============================
+# Environment files
+# ===============================
 .env
-.env.backup
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
-/.idea
-/.vscode
-/storage
-/database/storage
+.env.*
+!.env.example
+
+# ===============================
+# Laravel Storage (IMPORTANT)
+# ===============================
+/storage/*.key
+/storage/app/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/debugbar/*
+
+# Allow empty folders
+!/storage/app/.gitignore
+!/storage/framework/.gitignore
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/views/.gitignore
+!/storage/logs/.gitignore
+
+# ===============================
+# Bootstrap Cache
+# ===============================
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+
+# ===============================
+# Composer
+# ===============================
+composer.lock
+
+# ===============================
+# NPM
+# ===============================
+package-lock.json
+yarn.lock
+
+# ===============================
+# IDE / Editor
+# ===============================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ===============================
+# OS Files
+# ===============================
 .DS_Store
-/storage/*
-!/storage/.gitignore
+Thumbs.db
+
+# ===============================
+# Logs
+# ===============================
+*.log
+
+# ===============================
+# PHPUnit
+# ===============================
+.phpunit.result.cache
+
+# ===============================
+# Misc
+# ===============================
+*.zip
+*.tar
+*.gz
