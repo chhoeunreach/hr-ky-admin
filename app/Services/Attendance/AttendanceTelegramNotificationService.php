@@ -115,8 +115,6 @@ class AttendanceTelegramNotificationService
                     "🕑 ម៉ោងបិទការងារ: {$officeEndTime} \n" .
                     "📊 ស្ថានភាព: {$status}{$timeDifference} \n";
             }
-
-            $messageText .= "📍 ទីតាំងពិត: " . ($locationInfo['address'] ?? 'មិនអាចរកអាសយដ្ឋានបាន') . "\n";
             $messageText .= "🗺️ ផែនទី: " . ($locationInfo['link'] ?? '');
 
             $this->telegramService->sendNotification(
