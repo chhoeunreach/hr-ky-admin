@@ -83,10 +83,22 @@ class AttendanceRepository
             'attendances.overtime',
             'attendances.undertime',
             'office_times.shift_type as shift',
+            'leave_requests_master.id AS leave_request_id',
+            'leave_requests_master.leave_from AS leave_request_from',
+            'leave_requests_master.leave_to AS leave_request_to',
+            'leave_requests_master.status AS leave_request_status',
+            'leave_types.name AS leave_request_type',
         )->leftJoin('attendances', function ($join) use ($filterParameter) {
             $join->on('users.id','=', 'attendances.user_id')
                 ->where('attendances.attendance_date','=',$filterParameter['attendance_date']);
         })
+            ->leftJoin('leave_requests_master', function ($join) use ($filterParameter) {
+                $join->on('users.id', '=', 'leave_requests_master.requested_by')
+                    ->whereDate('leave_requests_master.leave_from', '<=', $filterParameter['attendance_date'])
+                    ->whereDate('leave_requests_master.leave_to', '>=', $filterParameter['attendance_date'])
+                    ->whereIn('leave_requests_master.status', ['pending', 'approved']);
+            })
+            ->leftJoin('leave_types', 'leave_requests_master.leave_type_id', '=', 'leave_types.id')
             ->join('companies', 'users.company_id', '=', 'companies.id')
             ->join('branches','users.branch_id','=', 'branches.id')
             ->leftJoin('departments', 'users.department_id', '=', 'departments.id')

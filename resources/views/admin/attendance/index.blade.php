@@ -99,7 +99,6 @@
                                         <th class="text-center">{{ __('index.check_out_at') }}</th>
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
-
                                 <th class="text-center">{{ __('index.attendance_status') }}</th>
                                 <th class="text-center">{{ __('index.shift') }}</th>
                                 @canany(['attendance_create', 'attendance_update', 'attendance_delete'])
@@ -113,6 +112,14 @@
                                     0 => 'danger',
                                     1 => 'success',
                                 ]
+                               @endphp
+                               @php
+                                   $leaveRequestColor = [
+                                       'approved' => 'success',
+                                       'pending' => 'secondary',
+                                       'rejected' => 'danger',
+                                       'cancelled' => 'danger',
+                                   ];
                                @endphp
 
                                 @forelse($attendanceDetail->groupBy('user_id') as $userId => $userAttendances)
@@ -247,9 +254,26 @@
                                         </td>
                                     @else
                                         <td class="text-center">
-                                           <span class="btn btn-light btn-xs disabled">
-                                                {{ __('index.pending') }}
-                                            </span>
+                                            @if($firstAttendance->leave_request_id)
+                                                <div class="d-flex justify-content-center align-items-center gap-2">
+                                                    <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
+                                                          title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
+                                                        {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
+                                                        ({{ ucfirst($firstAttendance->leave_request_status) }})
+                                                    </span>
+                                                    @canany(['show_leave_request_detail','access_admin_leave'])
+                                                        <a href="{{ route('admin.leave-request.show', $firstAttendance->leave_request_id) }}"
+                                                           class="showAttendanceLeaveReason"
+                                                           title="{{ __('index.show_leave_reason') }}">
+                                                            <i class="link-icon" data-feather="eye"></i>
+                                                        </a>
+                                                    @endcanany
+                                                </div>
+                                            @else
+                                                <span class="btn btn-light btn-xs disabled">
+                                                    {{ __('index.pending') }}
+                                                </span>
+                                            @endif
                                         </td>
                                     @endif
 
@@ -489,6 +513,31 @@
         @include('admin.attendance.common.edit-attendance-form')
         @include('admin.attendance.common.edit-night-attendance-form')
 
+        <div class="modal fade" id="attendanceLeaveRequestModal" tabindex="-1" aria-labelledby="attendanceLeaveRequestModal" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-body">
+                        <div class="container">
+                            <div class="row">
+                                <div class="col-lg-12 mb-2 pb-2 border-bottom">
+                                    <label class="form-label fw-bold">{{ __('index.referred_by') }}</label>
+                                    <p class="form-control border-0 p-0 fst-italic" style="height:inherit" id="attendanceLeaveReferredBy"></p>
+                                </div>
+                                <div class="col-lg-12 mb-2 pb-2 border-bottom">
+                                    <label class="form-label fw-bold">{{ __('index.leave_reason') }}</label>
+                                    <p class="form-control border-0 p-0 fst-italic" style="height:inherit" id="attendanceLeaveDescription"></p>
+                                </div>
+                                <div class="col-lg-12">
+                                    <label class="form-label fw-bold">{{ __('index.admin_remark') }}</label>
+                                    <p class="form-control border-0 p-0 fst-italic" style="height:inherit" id="attendanceLeaveAdminRemark"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- note for checkin and checkout -->
         <div id="noteModal" class="modal" tabindex="-1">
             <div class="modal-dialog">
@@ -595,6 +644,31 @@
             };
 
             document.querySelectorAll('a#checkIn, a#checkOut').forEach(attachGeoRedirect);
+
+            document.querySelectorAll('.showAttendanceLeaveReason').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    const url = this.getAttribute('href');
+
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data && data.data) {
+                                const leaveRequest = data.data;
+                                document.getElementById('attendanceLeaveReferredBy').innerText = leaveRequest.name || 'Admin';
+                                document.getElementById('attendanceLeaveDescription').innerText = leaveRequest.reasons || 'N/A';
+                                document.getElementById('attendanceLeaveAdminRemark').innerText = leaveRequest.admin_remark || 'N/A';
+
+                                const modalElement = document.getElementById('attendanceLeaveRequestModal');
+                                if (modalElement) {
+                                    const modal = new bootstrap.Modal(modalElement);
+                                    modal.show();
+                                }
+                            }
+                        })
+                        .catch(error => console.error('Error:', error));
+                });
+            });
         });
     </script>
 @endsection

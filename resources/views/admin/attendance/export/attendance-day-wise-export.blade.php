@@ -61,6 +61,11 @@
                 $attendanceStatus = $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED
                     ? __('index.approved')
                     : __('index.rejected');
+            } elseif ($firstAttendance->leave_request_id) {
+                $leaveRequestType = $firstAttendance->leave_request_type
+                    ? ucfirst($firstAttendance->leave_request_type)
+                    : __('index.leave_request');
+                $attendanceStatus = $leaveRequestType . ' (' . ucfirst($firstAttendance->leave_request_status) . ')';
             } else {
                 $attendanceStatus = \App\Helpers\AttendanceHelper::getHolidayOrLeaveDetail($selectedAttendanceDate, $userId) ?? __('index.pending');
             }
