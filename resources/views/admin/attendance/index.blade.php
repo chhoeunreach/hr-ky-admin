@@ -95,7 +95,9 @@
                                     @if($multipleAttendance > 1)
                                         <th class="text-center">{{ __('index.total_worked_hours') }}</th>
                                     @else
+                                        <th class="text-center">Time In</th>
                                         <th class="text-center">{{ __('index.check_in_at') }}</th>
+                                        <th class="text-center">Time Out</th>
                                         <th class="text-center">{{ __('index.check_out_at') }}</th>
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
@@ -194,6 +196,9 @@
 
                                     @if($nightShift)
                                         @if($multipleAttendance <= 1)
+                                            <td class="text-center">
+                                                {{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}
+                                            </td>
                                             @if(isset($firstAttendance->night_checkin))
                                                 <td class="text-center">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
@@ -208,6 +213,9 @@
                                             @else
                                                 <td class="text-center"></td>
                                             @endif
+                                            <td class="text-center">
+                                                {{ $firstAttendance->office_closing_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_closing_time) : 'N/A' }}
+                                            </td>
 
                                             @if( isset($firstAttendance->night_checkout))
                                                 <td class="text-center">
@@ -233,6 +241,9 @@
                                             {{ $workedHours }}
                                         </td>
                                     @else
+                                        <td class="text-center">
+                                            {{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}
+                                        </td>
                                         @if(isset($firstAttendance->check_in_at))
                                             <td class="text-center">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
@@ -247,6 +258,9 @@
                                         @else
                                             <td class="text-center"></td>
                                         @endif
+                                        <td class="text-center">
+                                            {{ $firstAttendance->office_closing_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_closing_time) : 'N/A' }}
+                                        </td>
 
                                         @if(isset($firstAttendance->check_out_at) )
                                             <td class="text-center">
