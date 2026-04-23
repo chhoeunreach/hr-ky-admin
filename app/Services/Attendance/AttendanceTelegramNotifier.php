@@ -64,7 +64,7 @@ class AttendanceTelegramNotifier
             $message .= "📝 ចំណាំ: " . trim($note) . "\n";
         }
 
-        $message .= "📍 ទីតាំងពិត: " . ($address ?? 'មិនអាចរកអាសយដ្ឋានបាន') . "\n";
+       
         $message .= "🗺️ ផែនទី: " . ($mapLink ?? 'មិនមាន');
 
         $timeout = (int) config('attendance_telegram.timeout_seconds', 3);
