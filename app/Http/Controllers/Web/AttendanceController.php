@@ -10,6 +10,7 @@ use App\Helpers\AttendanceHelper;
 use App\Helpers\NepaliDate;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Models\LeaveRequestMaster;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\RouterRepository;
@@ -281,6 +282,7 @@ class AttendanceController extends Controller
             $userDetail = $this->userRepository->findUserDetailById($employeeId, ['id', 'name']);
 
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
+            $leaveRequestsByDate = $this->getEmployeeLeaveRequestsByDate($employeeId, $filterParameter);
 
             $attendanceSummary = AttendanceHelper::getMonthlyDetail($employeeId, $filterParameter['date_in_bs'], $filterParameter['year'], $filterParameter['month']);
 
@@ -303,6 +305,7 @@ class AttendanceController extends Controller
                     'isBsEnabled',
                     'monthName',
                     'multipleAttendance',
+                    'leaveRequestsByDate',
                 )
             );
 
@@ -506,6 +509,47 @@ class AttendanceController extends Controller
     private function sendTelegramAttendanceNotification(string $type, $userDetail, $attendance): void
     {
         $this->attendanceTelegramNotificationService->notify($type, $userDetail, $attendance);
+    }
+
+    private function getEmployeeLeaveRequestsByDate(int $employeeId, array $filterParameter): array
+    {
+        if ($filterParameter['date_in_bs']) {
+            $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($filterParameter['year'], $filterParameter['month']);
+            $startDate = date('Y-m-d', strtotime($dateInAD['start_date']));
+            $endDate = date('Y-m-d', strtotime($dateInAD['end_date']));
+        } else {
+            $firstDay = $filterParameter['year'] . '-' . $filterParameter['month'] . '-01';
+            $startDate = date('Y-m-d', strtotime($firstDay));
+            $endDate = date('Y-m-t', strtotime($firstDay));
+        }
+
+        $today = date('Y-m-d');
+        if ($endDate > $today) {
+            $endDate = $today;
+        }
+
+        $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
+            ->where('requested_by', $employeeId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereDate('leave_from', '<=', $endDate)
+            ->whereDate('leave_to', '>=', $startDate)
+            ->get();
+
+        $leaveRequestsByDate = [];
+        foreach ($leaveRequests as $leaveRequest) {
+            $leaveStart = Carbon::parse($leaveRequest->leave_from)->greaterThan(Carbon::parse($startDate))
+                ? Carbon::parse($leaveRequest->leave_from)
+                : Carbon::parse($startDate);
+            $leaveEnd = Carbon::parse($leaveRequest->leave_to)->lessThan(Carbon::parse($endDate))
+                ? Carbon::parse($leaveRequest->leave_to)
+                : Carbon::parse($endDate);
+
+            for ($date = $leaveStart->copy(); $date->lte($leaveEnd); $date->addDay()) {
+                $leaveRequestsByDate[$date->format('Y-m-d')] = $leaveRequest;
+            }
+        }
+
+        return $leaveRequestsByDate;
     }
 
     public function store(AttendanceTimeAddRequest $request)
