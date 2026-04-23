@@ -16,7 +16,8 @@ class TelegramService
         string $departmentName,
         string $messageText,
         ?float $latitude = null,
-        ?float $longitude = null
+        ?float $longitude = null,
+        ?string $parseMode = null
     ): bool {
         $branchName = trim($branchName);
         $departmentName = trim($departmentName);
@@ -40,7 +41,7 @@ class TelegramService
 
         $allOk = true;
         foreach ($chatIds as $chatId) {
-            $messageOk = $this->sendMessage($chatId, $messageText);
+            $messageOk = $this->sendMessage($chatId, $messageText, $parseMode);
             $allOk = $allOk && $messageOk;
 
             if ($latitude !== null && $longitude !== null) {

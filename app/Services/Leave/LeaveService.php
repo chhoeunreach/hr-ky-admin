@@ -127,7 +127,7 @@ class LeaveService
 
 
         $leaveRequest = $this->leaveRepo->store($validatedData);
-        $this->sendTelegramLeaveRequestSubmitted($leaveRequest);
+        $this->sendTelegramAfterCommit(fn () => $this->sendTelegramLeaveRequestSubmitted($leaveRequest));
 
         return $leaveRequest;
 
@@ -247,7 +247,7 @@ class LeaveService
             if(auth('admin')->user() ) {
                 $this->leaveRepo->update($leaveRequestDetail,$validatedData);
                 self::sendNotification($leaveRequestDetail,$validatedData['status']);
-                $this->sendTelegramLeaveStatusUpdated($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null);
+                $this->sendTelegramAfterCommit(fn () => $this->sendTelegramLeaveApproved($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null));
             }else{
 
                 $approvalProcess = LeaveApproval::with(['approvalProcess'])->where('leave_type_id', $leaveRequestDetail->leave_type_id)->exists();
@@ -283,7 +283,7 @@ class LeaveService
                     if (($lastApprover == auth()->user()->id)) {
 
                         self::sendNotification($leaveRequestDetail,$validatedData['status']);
-                        $this->sendTelegramLeaveStatusUpdated($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null);
+                        $this->sendTelegramAfterCommit(fn () => $this->sendTelegramLeaveApproved($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null));
 
                     }else{
                         $approver = AppHelper::getNextApprover($leaveRequestId, $leaveRequestDetail->leave_type_id, $leaveRequestDetail->requested_by);
@@ -293,12 +293,11 @@ class LeaveService
                         $description = ucfirst(auth()->user()->name) .' has '. ucfirst($validatedData['status']) . ' leave requested by '. ucfirst($employee->name).'. reason: '. $approvalData['reason'];
 
                         SMPushHelper::sendLeaveNotification($title, $description,$approver);
-                        $this->sendTelegramLeaveApprovalStep($leaveRequestDetail, $validatedData['status'], $approvalData['reason'] ?? null);
                     }
                 }else{
                     $this->leaveRepo->update($leaveRequestDetail,$validatedData);
                     self::sendNotification($leaveRequestDetail,$validatedData['status']);
-                    $this->sendTelegramLeaveStatusUpdated($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null);
+                    $this->sendTelegramAfterCommit(fn () => $this->sendTelegramLeaveApproved($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null));
                 }
 
             }
@@ -470,61 +469,37 @@ class LeaveService
             return;
         }
 
-        $leaveType = $this->resolveTelegramLeaveTypeName($leaveRequest);
-        $message = "Leave Request Submitted\n"
-            . "Employee: {$employee->name}\n"
-            . "Type: {$leaveType}\n"
-            . "From: " . AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) . "\n"
-            . "To: " . AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) . "\n"
-            . "Days: {$leaveRequest->no_of_days}\n"
-            . "Status: " . ucfirst($leaveRequest->status) . "\n"
-            . "Reason: " . strip_tags((string) $leaveRequest->reasons);
+        $message = $this->buildTelegramLeaveRequestMessage($leaveRequest, $employee);
 
         $this->sendTelegramLeaveMessage($employee, $message);
     }
 
-    private function sendTelegramLeaveStatusUpdated(LeaveRequestMaster $leaveRequest, string $status, ?string $remark = null): void
+    private function sendTelegramAfterCommit(callable $callback): void
     {
+        $connection = DB::connection();
+
+        if (method_exists($connection, 'transactionLevel') && $connection->transactionLevel() > 0 && method_exists($connection, 'afterCommit')) {
+            $connection->afterCommit($callback);
+            return;
+        }
+
+        $callback();
+    }
+
+    private function sendTelegramLeaveApproved(LeaveRequestMaster $leaveRequest, string $status, ?string $remark = null): void
+    {
+        if ($status !== 'approved') {
+            return;
+        }
+
         $employee = $this->getTelegramLeaveEmployee($leaveRequest);
 
         if (!$employee) {
             return;
         }
 
-        $leaveType = $this->resolveTelegramLeaveTypeName($leaveRequest);
         $updatedBy = auth('admin')->user()?->name ?? auth()->user()?->name ?? 'Admin';
-        $message = "Leave Request " . ucfirst($status) . "\n"
-            . "Employee: {$employee->name}\n"
-            . "Type: {$leaveType}\n"
-            . "From: " . AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) . "\n"
-            . "To: " . AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) . "\n"
-            . "Days: {$leaveRequest->no_of_days}\n"
-            . "Updated By: {$updatedBy}";
-
-        if (is_string($remark) && trim($remark) !== '') {
-            $message .= "\nRemark: " . strip_tags($remark);
-        }
-
-        $this->sendTelegramLeaveMessage($employee, $message);
-    }
-
-    private function sendTelegramLeaveApprovalStep(LeaveRequestMaster $leaveRequest, string $status, ?string $remark = null): void
-    {
-        $employee = $this->getTelegramLeaveEmployee($leaveRequest);
-
-        if (!$employee) {
-            return;
-        }
-
-        $updatedBy = auth()->user()?->name ?? 'Approver';
-        $message = "Leave Approval Updated\n"
-            . "Employee: {$employee->name}\n"
-            . "Action: " . ucfirst($status) . " by {$updatedBy}\n"
-            . "Current Status: Waiting for next approver";
-
-        if (is_string($remark) && trim($remark) !== '') {
-            $message .= "\nRemark: " . strip_tags($remark);
-        }
+        $message = $this->buildTelegramLeaveMessage($leaveRequest, $employee, ucfirst($status), $updatedBy, $remark);
 
         $this->sendTelegramLeaveMessage($employee, $message);
     }
@@ -547,13 +522,72 @@ class LeaveService
         return (string) ($this->leaveTypeRepo->findLeaveTypeDetail($leaveRequest->leave_type_id, $leaveRequest->requested_by)?->name ?? 'Leave');
     }
 
+    private function buildTelegramLeaveRequestMessage(LeaveRequestMaster $leaveRequest, $employee): string
+    {
+        $branchName = $this->escapeTelegramHtml((string) optional($employee->branch)->name);
+        $departmentName = $this->escapeTelegramHtml((string) optional($employee->department)->dept_name);
+        $leaveFrom = AppHelper::convertLeaveDateFormat($leaveRequest->leave_from);
+        $leaveTo = AppHelper::convertLeaveDateFormat($leaveRequest->leave_to);
+        $days = $this->escapeTelegramHtml((string) $leaveRequest->no_of_days);
+        $requestDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_requested_date);
+        $reason = $this->escapeTelegramHtml(strip_tags((string) $leaveRequest->reasons));
+        $requester = $this->escapeTelegramHtml((string) (auth('admin')->user()?->name ?? auth()->user()?->name ?? $employee->name));
+        $employeeName = $this->escapeTelegramHtml((string) $employee->name);
+
+        return "📢 <b>សំណើរសុំច្បាប់</b>\n"
+            . "👤 បុគ្គលិក: {$employeeName}\n"
+            . "🏢 សាខា: {$branchName}\n"
+            . "🏬 ផ្នែក: {$departmentName}\n"
+            . "📅 ពីថ្ងៃ: {$leaveFrom} ➡ {$leaveTo}\n"
+            . "📊 ចំនួនថ្ងៃ: {$days}\n"
+            . "📆 ថ្ងៃស្នើរសុំ: {$requestDate}\n"
+            . "🗒 មូលហេតុ: {$reason}\n"
+            . "🧑‍💼 ដាក់ស្នើដោយ: {$requester}";
+    }
+
+    private function buildTelegramLeaveMessage(LeaveRequestMaster $leaveRequest, $employee, string $status, ?string $adminName = null, ?string $remark = null): string
+    {
+        $leaveTypeName = $this->escapeTelegramHtml($this->resolveTelegramLeaveTypeName($leaveRequest));
+        $employeeName = $this->escapeTelegramHtml((string) $employee->name);
+        $branchName = $this->escapeTelegramHtml((string) optional($employee->branch)->name);
+        $departmentName = $this->escapeTelegramHtml((string) optional($employee->department)->dept_name);
+        $fromDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_from);
+        $toDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_to);
+        $requestedDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_requested_date);
+        $totalDays = $leaveRequest->no_of_days;
+        $description = $this->escapeTelegramHtml(strip_tags((string) $leaveRequest->reasons));
+        $approver = $this->escapeTelegramHtml((string) ($adminName ?? 'N/A'));
+        $comment = $this->escapeTelegramHtml((string) ($remark ?: 'N/A'));
+
+        return "📢 <b>សំណើរសុំ</b>" . $leaveTypeName . "\n"
+            . "👤 បុគ្គលិក: " . $employeeName . "\n"
+            . "🏢 សាខា: " . $branchName . "\n"
+            . "🏬 ផ្នែក: " . $departmentName . "\n"
+            . "🟢 ចាប់ពីថ្ងៃទី: " . $fromDate . "\n"
+            . "🔴 ដល់ថ្ងៃទី: " . $toDate . "\n"
+            . "📊 ស្ថានភាព: " . $status . "\n"
+            . "📆 ថ្ងៃស្នើរសុំ: " . $requestedDate . "\n"
+            . "📊 ចំនួន: " . $totalDays . "ថ្ងៃ" . "\n"
+            . "🗒 ការពិពណ៌នា: " . $description . "\n"
+            . "🧑‍💼 អ្នកអនុម័ត: " . $approver . "\n"
+            . "💬 មតិយោបល់: " . $comment . "\n";
+    }
+
+    private function escapeTelegramHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     private function sendTelegramLeaveMessage($employee, string $message): void
     {
         try {
             $this->telegramService->sendNotification(
                 (string) optional($employee->branch)->name,
                 (string) optional($employee->department)->dept_name,
-                $message
+                $message,
+                null,
+                null,
+                'HTML'
             );
         } catch (\Throwable $exception) {
             Log::warning('Leave Telegram notification failed.', [
