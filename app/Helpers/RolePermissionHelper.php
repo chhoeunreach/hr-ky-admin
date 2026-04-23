@@ -480,6 +480,11 @@ class RolePermissionHelper
                 "permission_key" => "attendance_delete",
                 "permission_groups_id" => 7
             ],
+            [
+                "name" => "Allow Attendance Without Checkout",
+                "permission_key" => "allow_attendance_without_checkout",
+                "permission_groups_id" => 7
+            ],
 
             /** Leave Permissions */
             [

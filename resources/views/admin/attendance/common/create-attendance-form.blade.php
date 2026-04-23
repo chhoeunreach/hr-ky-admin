@@ -25,7 +25,8 @@
 
                             <label for="exampleFormControlSelect1" class="form-label">{{ __('index.check_out_at') }}</label>
                             <div class="col-lg-12 mb-3">
-                                <input type="time" class="form-select" required id="checkAddOut" name="check_out_at"  value="" />
+                                <input type="time" class="form-select" id="checkAddOut" name="check_out_at" value=""
+                                       @if(!auth('admin')->check() && !\Illuminate\Support\Facades\Gate::check('allow_attendance_without_checkout')) required @endif />
                             </div>
 
                             <label for="exampleFormControlSelect1" class="form-label">{{ __('index.admin_remark') }}</label>

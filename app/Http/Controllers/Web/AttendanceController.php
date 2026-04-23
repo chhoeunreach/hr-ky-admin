@@ -170,7 +170,7 @@ class AttendanceController extends Controller
 
             $validatedData['worked_hour'] = 0;
 
-            if ($validatedData['check_out_at']){
+            if (!empty($validatedData['check_out_at'])){
 
 
                 if(!isset($attendanceDetail->check_out_at)){
@@ -525,7 +525,7 @@ class AttendanceController extends Controller
 
             $validatedData['check_in_latitude'] = $routerDetail->branch->branch_location_latitude;
             $validatedData['check_in_longitude'] = $routerDetail->branch->branch_location_longitude;
-            if ($validatedData['check_out_at']){
+            if (!empty($validatedData['check_out_at'])){
 
                 $validatedData['check_out_latitude'] = $routerDetail->branch->branch_location_latitude;
                 $validatedData['check_out_longitude'] = $routerDetail->branch->branch_location_longitude;

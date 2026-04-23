@@ -144,6 +144,9 @@
                                         $multipleEntries = $userAttendances->count();
 
                                         $nightShift = \App\Helpers\AppHelper::isOnNightShift($userId);
+                                        $canAddAttendanceForSelectedDate = $filterParameter['attendance_date'] != $currentDate
+                                            && !$firstAttendance->attendance_id
+                                            && !$firstAttendance->leave_request_id;
 
                                     @endphp
 
@@ -410,6 +413,22 @@
                                                         @endif
 
                                                     @endif
+                                                    @if($canAddAttendanceForSelectedDate)
+                                                        @can('attendance_create')
+                                                            <li class="me-2">
+                                                                <a href=""
+                                                                   class="addEmployeeAttendance"
+                                                                   data-href="{{ route('admin.attendances.store') }}"
+                                                                   data-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                                   data-date="{{ $filterParameter['attendance_date'] }}"
+                                                                   data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $filterParameter['attendance_date']) }}"
+                                                                   data-user_id="{{ $firstAttendance->user_id }}"
+                                                                   title="{{ __('index.add_attendance_time') }}">
+                                                                    <i class="link-icon" data-feather="plus-circle"></i>
+                                                                </a>
+                                                            </li>
+                                                        @endcan
+                                                    @endif
                                                     @if($attendanceNote)
                                                         <li class="me-2">
                                                             <a href="#"
@@ -453,7 +472,7 @@
                                                                     </li>
                                                                 @endcan
                                                             @endif
-                                                        @endif
+                                                    @endif
 
                                                     @if($firstAttendance->attendance_id)
                                                         @can('attendance_update')
@@ -493,6 +512,23 @@
                                                             @endif
                                                     @endif
 
+                                                    @if($canAddAttendanceForSelectedDate)
+                                                        @can('attendance_create')
+                                                            <li class="me-2">
+                                                                <a href=""
+                                                                   class="addEmployeeAttendance"
+                                                                   data-href="{{ route('admin.attendances.store') }}"
+                                                                   data-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                                   data-date="{{ $filterParameter['attendance_date'] }}"
+                                                                   data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $filterParameter['attendance_date']) }}"
+                                                                   data-user_id="{{ $firstAttendance->user_id }}"
+                                                                   title="{{ __('index.add_attendance_time') }}">
+                                                                    <i class="link-icon" data-feather="plus-circle"></i>
+                                                                </a>
+                                                            </li>
+                                                        @endcan
+                                                    @endif
+
                                                 </ul>
                                             </td>
                                         @endif
@@ -526,6 +562,7 @@
         </div>
 
         @include('admin.attendance.common.edit-attendance-form')
+        @include('admin.attendance.common.create-attendance-form')
         @include('admin.attendance.common.edit-night-attendance-form')
 
         <div class="modal fade" id="attendanceLeaveRequestModal" tabindex="-1" aria-labelledby="attendanceLeaveRequestModal" aria-hidden="true">
