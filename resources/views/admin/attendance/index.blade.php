@@ -169,7 +169,27 @@
                                     </td>
 
                                     <td>
-                                        {{ ucfirst($firstAttendance->user_name) }}
+                                        @php
+                                            $profileImage = $firstAttendance->avatar
+                                                ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $firstAttendance->avatar)
+                                                : asset('assets/images/img.png');
+                                        @endphp
+                                        <div class="d-flex align-items-center gap-2">
+                                            <a href="#"
+                                               class="showProfilePhoto"
+                                               data-src="{{ $profileImage }}"
+                                               data-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                               title="{{ ucfirst($firstAttendance->user_name) }}">
+                                                <img src="{{ $profileImage }}"
+                                                 alt="{{ ucfirst($firstAttendance->user_name) }}"
+                                                 class="rounded-circle"
+                                                 style="width: 42px; height: 42px; object-fit: cover;">
+                                            </a>
+                                            <div>
+                                                <div class="fw-semibold">{{ ucfirst($firstAttendance->user_name) }}</div>
+                                                <small class="text-muted">{{ $firstAttendance->employee_code ?: 'N/A' }}</small>
+                                            </div>
+                                        </div>
                                     </td>
 
                                     @if($nightShift)
@@ -565,6 +585,20 @@
         @include('admin.attendance.common.create-attendance-form')
         @include('admin.attendance.common.edit-night-attendance-form')
 
+        <div class="modal fade" id="profilePhotoModal" tabindex="-1" aria-labelledby="profilePhotoModal" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="profilePhotoModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="profilePhotoPreview" src="" alt="profile" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="modal fade" id="attendanceLeaveRequestModal" tabindex="-1" aria-labelledby="attendanceLeaveRequestModal" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
@@ -734,6 +768,18 @@
             };
 
             document.querySelectorAll('a#checkIn, a#checkOut').forEach(attachGeoRedirect);
+
+            document.querySelectorAll('.showProfilePhoto').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    document.getElementById('profilePhotoPreview').setAttribute('src', this.getAttribute('data-src'));
+                    document.getElementById('profilePhotoModalTitle').innerText = this.getAttribute('data-name') || '';
+
+                    const modal = new bootstrap.Modal(document.getElementById('profilePhotoModal'));
+                    modal.show();
+                });
+            });
 
             document.querySelectorAll('.showAttendanceLeaveReason').forEach(function (element) {
                 element.addEventListener('click', function (event) {
