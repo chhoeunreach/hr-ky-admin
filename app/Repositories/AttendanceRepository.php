@@ -87,6 +87,7 @@ class AttendanceRepository
             'leave_requests_master.leave_from AS leave_request_from',
             'leave_requests_master.leave_to AS leave_request_to',
             'leave_requests_master.status AS leave_request_status',
+            'leave_requests_master.admin_remark AS leave_request_admin_remark',
             'leave_types.name AS leave_request_type',
         )->leftJoin('attendances', function ($join) use ($filterParameter) {
             $join->on('users.id','=', 'attendances.user_id')

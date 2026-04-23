@@ -256,11 +256,26 @@
                                         <td class="text-center">
                                             @if($firstAttendance->leave_request_id)
                                                 <div class="d-flex justify-content-center align-items-center gap-2">
-                                                    <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
-                                                          title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
-                                                        {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
-                                                        ({{ ucfirst($firstAttendance->leave_request_status) }})
-                                                    </span>
+                                                    @canany(['update_leave_request','access_admin_leave'])
+                                                        <a href="#"
+                                                           class="attendanceLeaveRequestUpdate"
+                                                           data-href="{{ route('admin.leave-request.update-status', $firstAttendance->leave_request_id) }}"
+                                                           data-status="{{ $firstAttendance->leave_request_status }}"
+                                                           data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
+                                                           data-id="{{ $firstAttendance->leave_request_id }}">
+                                                            <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
+                                                                  title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
+                                                                {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
+                                                                ({{ ucfirst($firstAttendance->leave_request_status) }})
+                                                            </span>
+                                                        </a>
+                                                    @else
+                                                        <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
+                                                              title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
+                                                            {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
+                                                            ({{ ucfirst($firstAttendance->leave_request_status) }})
+                                                        </span>
+                                                    @endcanany
                                                     @canany(['show_leave_request_detail','access_admin_leave'])
                                                         <a href="{{ route('admin.leave-request.show', $firstAttendance->leave_request_id) }}"
                                                            class="showAttendanceLeaveReason"
@@ -538,6 +553,44 @@
             </div>
         </div>
 
+        <div class="modal fade" id="attendanceLeaveStatusUpdate" tabindex="-1" aria-labelledby="attendanceLeaveStatusUpdate" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header text-center">
+                        <h5 class="modal-title">{{ __('index.leave_request_section') }}</h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="container">
+                            <form class="forms-sample" id="attendanceUpdateLeaveStatus" action="" method="post">
+                                @csrf
+                                @method('put')
+                                <div class="row">
+                                    <label for="attendanceLeaveStatus" class="form-label">{{ __('index.status') }} </label>
+                                    <div class="col-lg-12 mb-3">
+                                        <select class="form-select" id="attendanceLeaveStatus" name="status">
+                                            <option value="{{ \App\Enum\LeaveStatusEnum::approved->value }}">{{ __('index.approve') }}</option>
+                                            <option value="{{ \App\Enum\LeaveStatusEnum::rejected->value }}">{{ __('index.reject') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <label for="attendanceLeaveRemark" class="form-label">{{ __('index.admin_remark') }}</label>
+                                    <div class="col-lg-12 mb-3">
+                                        <textarea class="form-select" id="attendanceLeaveRemark" minlength="10" name="admin_remark" rows="3"></textarea>
+                                    </div>
+                                </div>
+
+                                <div id="attendancePreviousApprovers" class="mb-3"></div>
+
+                                <div class="text-start">
+                                    <button type="submit" class="btn btn-primary btn-xs">{{ __('index.submit') }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- note for checkin and checkout -->
         <div id="noteModal" class="modal" tabindex="-1">
             <div class="modal-dialog">
@@ -667,6 +720,56 @@
                             }
                         })
                         .catch(error => console.error('Error:', error));
+                });
+            });
+
+            document.querySelectorAll('.attendanceLeaveRequestUpdate').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    const url = this.getAttribute('data-href');
+                    const status = this.getAttribute('data-status');
+                    const remark = this.getAttribute('data-remark');
+                    const leaveRequestId = this.getAttribute('data-id');
+
+                    document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                    document.getElementById('attendanceLeaveStatus').value = status;
+                    document.getElementById('attendanceLeaveRemark').value = remark || '';
+                    document.getElementById('attendancePreviousApprovers').innerHTML = '';
+
+                    fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
+                        .then(response => response.json())
+                        .then(response => {
+                            if (!response.success) {
+                                return;
+                            }
+
+                            let approversData = '';
+                            response.data.approval_data.forEach(function (approver) {
+                                approversData += `
+                                    <div class="approver-details">
+                                        <p><b>Approver:</b> ${approver.approved_by_name}</p>
+                                        <p><b>Status:</b> ${approver.status}</p>
+                                        <p><b>Remark:</b> ${approver.reason}</p>
+                                    </div>
+                                    <hr>`;
+                            });
+
+                            if (response.data.admin_data.status !== 'pending' && response.data.admin_data.remark !== '') {
+                                approversData += `
+                                    <div class="approver-details">
+                                        <p><b>Status:</b> ${response.data.admin_data.status}</p>
+                                        <p><b>Admin Remark:</b> ${response.data.admin_data.remark}</p>
+                                    </div>`;
+                            }
+
+                            document.getElementById('attendancePreviousApprovers').innerHTML = approversData;
+                        })
+                        .catch(error => console.error('Error:', error));
+
+                    const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
+                    const modal = new bootstrap.Modal(modalElement);
+                    modal.show();
                 });
             });
         });
