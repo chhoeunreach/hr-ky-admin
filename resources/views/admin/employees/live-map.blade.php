@@ -96,36 +96,19 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h6 class="card-title mb-0">Live Map Filter</h6>
+                <h6 class="card-title mb-0">Live Map Date</h6>
             </div>
             <div class="card-body pb-0">
                 <div class="row align-items-center">
-                    @if(!isset(auth()->user()->branch_id))
-                        <div class="col-lg-3 col-md-6 mb-4">
-                            <select class="form-select" id="branch_id" name="branch_id">
-                                <option value="">All Branches</option>
-                                @if(isset($companyDetail))
-                                    @foreach($companyDetail->branches()->get() as $branch)
-                                        <option value="{{$branch->id}}"
-                                            {{ (isset($filterData['branch_id']) && $filterData['branch_id'] == $branch->id) ? 'selected': '' }}>
-                                            {{ucfirst($branch->name)}}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                    @endif
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <select class="form-select" name="department_id" id="department_id">
-                            <option value="">All Departments</option>
-                        </select>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <input type="text"
+                               class="form-control"
+                               id="date"
+                               name="date"
+                               value="{{ $filterData['date'] }}"
+                               placeholder="YYYY-MM-DD">
                     </div>
-                    <div class="col-lg-3 col-md-6 mb-4">
-                        <select class="form-select" name="employee_id" id="employee_id">
-                            <option value="">All Staff</option>
-                        </select>
-                    </div>
-                    <div class="col-lg-3 col-md-6 d-md-flex">
+                    <div class="col-lg-4 col-md-6 d-md-flex">
                         <button type="button" class="btn btn-block btn-success me-md-2 me-0 mb-md-4 mb-2" id="applyLiveMapFilter">
                             {{ __('index.filter') }}
                         </button>
@@ -141,8 +124,8 @@
             <div class="card mb-0">
                 <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
                     <div>
-                        <h6 class="card-title mb-1">All Staff Realtime Location</h6>
-                        <small class="text-muted">Shows active users from their latest saved GPS location and moves markers as updates arrive.</small>
+                        <h6 class="card-title mb-1">Staff Scan-In Map</h6>
+                        <small class="text-muted">Shows one pin for each staff check-in on the selected date and refreshes automatically.</small>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" id="refreshLiveMap">
                         <i class="link-icon" data-feather="refresh-cw"></i>
@@ -157,19 +140,19 @@
             <div class="card live-map-panel mb-0">
                 <div class="card-header">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="card-title mb-0">Staff Online Map</h6>
+                        <h6 class="card-title mb-0">Staff Scan-In List</h6>
                         <span class="badge bg-primary" id="staffLocationCount">0</span>
                     </div>
                     <input type="search" class="form-control" id="staffLocationSearch" placeholder="Search staff, branch, department">
-                    <small class="text-muted d-block mt-2" id="liveMapUpdatedAt">Loading latest locations...</small>
+                    <small class="text-muted d-block mt-2" id="liveMapUpdatedAt">Loading scan-in pins...</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="live-map-list" id="staffLocationList"></div>
                     <div class="live-map-empty d-none align-items-center justify-content-center text-center p-4" id="staffLocationEmpty">
                         <div>
                             <i class="link-icon text-muted mb-2" data-feather="map-pin"></i>
-                            <p class="mb-0 fw-bold">No live locations found</p>
-                            <small class="text-muted">Users will appear after their app or browser sends GPS location data.</small>
+                            <p class="mb-0 fw-bold">No scan-ins found</p>
+                            <small class="text-muted">Pins appear when staff check in with location data on the selected date.</small>
                         </div>
                     </div>
                 </div>
@@ -196,11 +179,7 @@
     <script>
         const locationsUrl = @json(route('admin.live-map.locations'));
         const broadcastConfig = @json($broadcastConfig);
-        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-        const initialBranchId = @json($filterData['branch_id'] ?? null);
-        const initialDepartmentId = @json($filterData['department_id'] ?? null);
-        const initialEmployeeId = @json($filterData['employee_id'] ?? null);
+        const initialDate = @json($filterData['date'] ?? date('Y-m-d'));
         const fallbackCenter = [11.5564, 104.9282];
         const hasLeaflet = typeof L !== 'undefined';
         const map = hasLeaflet ? L.map('staffLiveMap', {zoomControl: true}).setView(fallbackCenter, 12) : null;
@@ -225,68 +204,9 @@
             `;
         }
 
-        $('#department_id').select2();
-        $('#employee_id').select2();
-        $('#branch_id').select2();
-
-        async function loadDepartments(branchId, selectedDepartmentId = null) {
-            $('#department_id').empty().append('<option value="">All Departments</option>');
-
-            if (!branchId) {
-                return;
-            }
-
-            try {
-                const response = await $.ajax({
-                    type: 'GET',
-                    url: `{{ url('admin/departments/get-All-Departments') }}/${branchId}`,
-                });
-
-                (response.data || []).forEach(department => {
-                    const selected = String(department.id) === String(selectedDepartmentId) ? 'selected' : '';
-                    $('#department_id').append(`<option value="${department.id}" ${selected}>${escapeHtml(department.dept_name)}</option>`);
-                });
-            } catch (error) {
-                $('#department_id').append('<option disabled>Error loading departments</option>');
-            }
-        }
-
-        async function loadEmployees({branchId = null, departmentId = null, selectedEmployeeId = null} = {}) {
-            $('#employee_id').empty().append('<option value="">All Staff</option>');
-
-            if (!branchId && !departmentId) {
-                return;
-            }
-
-            const url = departmentId
-                ? `{{ url('admin/employees/get-all-employees') }}/${departmentId}`
-                : `{{ url('admin/employees/get-branch-employee') }}/${branchId}`;
-
-            try {
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    }
-                });
-                const data = await response.json();
-                const users = data.data || data.employee || [];
-
-                users.forEach(user => {
-                    const selected = String(user.id) === String(selectedEmployeeId) ? 'selected' : '';
-                    $('#employee_id').append(`<option value="${user.id}" ${selected}>${escapeHtml(user.name)}</option>`);
-                });
-            } catch (error) {
-                $('#employee_id').append('<option disabled>Error loading staff</option>');
-            }
-        }
-
         function selectedFilters() {
             return {
-                branch_id: isAdmin ? ($('#branch_id').val() || '') : (defaultBranchId || ''),
-                department_id: $('#department_id').val() || '',
-                employee_id: $('#employee_id').val() || ''
+                date: $('#date').val() || initialDate
             };
         }
 
@@ -345,7 +265,7 @@
                         <div class="text-muted small">${escapeHtml(meta || 'No department')}</div>
                     </div>
                 </div>
-                <div class="small mt-2">Last seen ${escapeHtml(location.last_seen_human || '-')}</div>
+                <div class="small mt-2">Check-in ${escapeHtml(location.last_seen_human || '-')}</div>
                 <a class="small" target="_blank" rel="noopener" href="${location.map_url}">Open in Google Maps</a>
             `;
         }
@@ -356,22 +276,23 @@
             }
 
             const mappableLocations = locations.filter(location => location.has_location);
-            const visibleIds = new Set(mappableLocations.map(location => String(location.employee_id)));
+            const visibleIds = new Set(mappableLocations.map(location => String(location.attendance_id || `${location.employee_id}-${location.check_in_at}`)));
 
-            markers.forEach((marker, employeeId) => {
-                if (!visibleIds.has(String(employeeId))) {
+            markers.forEach((marker, markerId) => {
+                if (!visibleIds.has(String(markerId))) {
                     map.removeLayer(marker);
-                    markers.delete(employeeId);
+                    markers.delete(markerId);
                 }
             });
 
             const bounds = [];
             mappableLocations.forEach(location => {
                 const position = [location.latitude, location.longitude];
+                const markerId = String(location.attendance_id || `${location.employee_id}-${location.check_in_at}`);
                 bounds.push(position);
 
-                if (markers.has(location.employee_id)) {
-                    markers.get(location.employee_id)
+                if (markers.has(markerId)) {
+                    markers.get(markerId)
                         .setLatLng(position)
                         .setIcon(markerIcon(location))
                         .setPopupContent(popupHtml(location));
@@ -381,7 +302,7 @@
                 const marker = L.marker(position, {icon: markerIcon(location)})
                     .addTo(map)
                     .bindPopup(popupHtml(location));
-                markers.set(location.employee_id, marker);
+                markers.set(markerId, marker);
             });
 
             if (bounds.length === 1) {
@@ -393,14 +314,15 @@
 
         function staffItem(location) {
             const meta = [location.department, location.branch].filter(Boolean).join(' / ');
-            const activeClass = String(activeEmployeeId) === String(location.employee_id) ? ' active' : '';
+            const itemId = String(location.attendance_id || `${location.employee_id}-${location.check_in_at}`);
+            const activeClass = String(activeEmployeeId) === itemId ? ' active' : '';
             const locationText = location.has_location
                 ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
                 : 'Waiting for GPS location from app';
             const badgeClass = location.has_location ? 'bg-light text-dark' : 'bg-warning text-dark';
 
             return `
-                <div class="staff-location-item p-3${activeClass}" data-employee-id="${location.employee_id}">
+                <div class="staff-location-item p-3${activeClass}" data-attendance-id="${itemId}">
                     <div class="d-flex gap-3">
                         <img src="${location.avatar}" class="rounded-circle staff-location-avatar" alt="">
                         <div class="min-w-0 flex-grow-1">
@@ -409,6 +331,7 @@
                                 <span class="badge ${badgeClass}">${escapeHtml(location.last_seen_human || '-')}</span>
                             </div>
                             <div class="text-muted small text-truncate">${escapeHtml(meta || 'No department')}</div>
+                            <div class="text-muted small">Date: ${escapeHtml(location.attendance_date || '-')}</div>
                             <div class="text-muted small">${escapeHtml(locationText)}</div>
                         </div>
                     </div>
@@ -434,7 +357,8 @@
         }
 
         function mergeLocation(location) {
-            const index = allLocations.findIndex(item => String(item.user_id || item.employee_id) === String(location.user_id || location.employee_id));
+            const incomingKey = String(location.attendance_id || `${location.employee_id || location.user_id}-${location.check_in_at || location.last_seen_at}`);
+            const index = allLocations.findIndex(item => String(item.attendance_id || `${item.employee_id || item.user_id}-${item.check_in_at || item.last_seen_at}`) === incomingKey);
             const normalized = {
                 ...location,
                 employee_id: location.employee_id || location.user_id,
@@ -467,7 +391,7 @@
                 }
 
                 allLocations = payload.locations || [];
-                document.getElementById('liveMapUpdatedAt').textContent = `Updated ${new Date(payload.updated_at).toLocaleString()}`;
+                document.getElementById('liveMapUpdatedAt').textContent = `Updated ${new Date(payload.updated_at).toLocaleString()} for ${selectedFilters().date}`;
                 renderList();
             } catch (error) {
                 document.getElementById('liveMapUpdatedAt').textContent = error.message;
@@ -480,8 +404,8 @@
                 return;
             }
 
-            activeEmployeeId = item.dataset.employeeId;
-            const marker = markers.get(Number(activeEmployeeId)) || markers.get(activeEmployeeId);
+            activeEmployeeId = item.dataset.attendanceId;
+            const marker = markers.get(activeEmployeeId);
             if (marker && map) {
                 map.setView(marker.getLatLng(), 16);
                 marker.openPopup();
@@ -492,63 +416,18 @@
             }
 
             document.querySelectorAll('.staff-location-item').forEach(listItem => {
-                listItem.classList.toggle('active', listItem.dataset.employeeId === activeEmployeeId);
+                listItem.classList.toggle('active', listItem.dataset.attendanceId === activeEmployeeId);
             });
         });
 
         document.getElementById('staffLocationSearch').addEventListener('input', renderList);
         document.getElementById('refreshLiveMap').addEventListener('click', loadLocations);
         document.getElementById('applyLiveMapFilter').addEventListener('click', loadLocations);
-        document.getElementById('resetLiveMapFilter').addEventListener('click', async function () {
-            if (isAdmin) {
-                $('#branch_id').val('').trigger('change.select2');
-            }
-
-            $('#department_id').empty().append('<option value="">All Departments</option>').trigger('change.select2');
-            $('#employee_id').empty().append('<option value="">All Staff</option>').trigger('change.select2');
-
-            if (!isAdmin && defaultBranchId) {
-                await loadDepartments(defaultBranchId);
-                await loadEmployees({branchId: defaultBranchId});
-            }
-
+        document.getElementById('resetLiveMapFilter').addEventListener('click', function () {
+            $('#date').val(initialDate);
             loadLocations();
         });
-
-        $('#branch_id').on('change', async function () {
-            const branchId = $(this).val();
-            await loadDepartments(branchId);
-            await loadEmployees({branchId});
-            loadLocations();
-        });
-
-        $('#department_id').on('change', async function () {
-            const branchId = selectedFilters().branch_id;
-            const departmentId = $(this).val();
-            await loadEmployees({branchId, departmentId});
-            loadLocations();
-        });
-
-        $('#employee_id').on('change', loadLocations);
-
-        async function initializeFilters() {
-            const branchId = initialBranchId || defaultBranchId || $('#branch_id').val();
-
-            if (branchId) {
-                if (isAdmin) {
-                    $('#branch_id').val(branchId).trigger('change.select2');
-                }
-
-                await loadDepartments(branchId, initialDepartmentId);
-                await loadEmployees({
-                    branchId,
-                    departmentId: initialDepartmentId,
-                    selectedEmployeeId: initialEmployeeId
-                });
-            }
-
-            loadLocations();
-        }
+        $('#date').on('change', loadLocations);
 
         function initializeRealtime() {
             if (!window.Pusher || !broadcastConfig.key || broadcastConfig.driver === 'null') {
@@ -582,7 +461,7 @@
                 });
         }
 
-        initializeFilters();
+        loadLocations();
         initializeRealtime();
         setInterval(loadLocations, 15000);
     </script>

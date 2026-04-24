@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
-use App\Models\EmployeeLocation;
+use App\Models\Attendance;
 use App\Models\User;
 use App\Repositories\CompanyRepository;
 use App\Traits\CustomAuthorizesRequests;
@@ -25,14 +26,8 @@ class LiveMapController extends Controller
         $this->authorize('list_employee');
 
         $filterData = [
-            'branch_id' => $request->branch_id ?? null,
-            'department_id' => $request->department_id ?? null,
-            'employee_id' => $request->employee_id ?? null,
+            'date' => $request->date ?? (AppHelper::ifDateInBsEnabled() ? AppHelper::getCurrentDateInBS() : date('Y-m-d')),
         ];
-
-        if (!auth('admin')->check() && auth()->check()) {
-            $filterData['branch_id'] = auth()->user()->branch_id;
-        }
 
         $companyDetail = $this->companyRepo->getCompanyDetail(['id', 'name'], ['branches:id,name']);
 
@@ -44,46 +39,25 @@ class LiveMapController extends Controller
         $this->authorize('list_employee');
 
         $filterData = [
-            'branch_id' => $request->branch_id ?? null,
-            'department_id' => $request->department_id ?? null,
-            'employee_id' => $request->employee_id ?? null,
+            'date' => $request->date ?? (AppHelper::ifDateInBsEnabled() ? AppHelper::getCurrentDateInBS() : date('Y-m-d')),
         ];
 
-        if (!auth('admin')->check() && auth()->check()) {
-            $filterData['branch_id'] = auth()->user()->branch_id;
+        if (AppHelper::ifDateInBsEnabled()) {
+            $filterData['date'] = AppHelper::dateInYmdFormatNepToEng($filterData['date']);
         }
 
-        $staff = User::with(['branch:id,name', 'department:id,dept_name'])
-            ->select(['id', 'name', 'email', 'phone', 'avatar', 'branch_id', 'department_id'])
-            ->where('is_active', 1)
-            ->where('status', 'verified')
-            ->when(!empty($filterData['branch_id']), function ($query) use ($filterData) {
-                $query->where('branch_id', $filterData['branch_id']);
-            })
-            ->when(!empty($filterData['department_id']), function ($query) use ($filterData) {
-                $query->where('department_id', $filterData['department_id']);
-            })
-            ->when(!empty($filterData['employee_id']), function ($query) use ($filterData) {
-                $query->where('id', $filterData['employee_id']);
-            })
-            ->orderBy('name')
+        $locations = Attendance::with([
+                'employee:id,name,email,phone,avatar,branch_id,department_id',
+                'employee.branch:id,name',
+                'employee.department:id,dept_name',
+            ])
+            ->whereNotNull('check_in_latitude')
+            ->whereNotNull('check_in_longitude')
+            ->whereDate('attendance_date', $filterData['date'])
+            ->orderByDesc('attendance_date')
+            ->orderByDesc('check_in_at')
             ->get()
-            ->values();
-
-        $latestLocationIds = EmployeeLocation::query()
-            ->selectRaw('MAX(id)')
-            ->whereNotNull('latitude')
-            ->whereNotNull('longitude')
-            ->whereIn('employee_id', $staff->pluck('id'))
-            ->groupBy('employee_id');
-
-        $latestLocations = EmployeeLocation::query()
-            ->whereIn('id', $latestLocationIds)
-            ->get()
-            ->keyBy('employee_id');
-
-        $locations = $staff
-            ->map(fn (User $employee) => $this->formatLocation($employee, $latestLocations->get($employee->id)))
+            ->map(fn (Attendance $attendance) => $this->formatLocation($attendance))
             ->values();
 
         return response()->json([
@@ -102,11 +76,13 @@ class LiveMapController extends Controller
         ]);
     }
 
-    private function formatLocation(User $user, ?EmployeeLocation $location): array
+    private function formatLocation(Attendance $attendance): array
     {
-        $lastSeenAt = $location?->updated_at ?? $location?->created_at;
+        $user = $attendance->employee;
+        $attendanceDateTime = $attendance->attendance_date . ' ' . ($attendance->check_in_at ?? '00:00:00');
 
         return [
+            'attendance_id' => $attendance->id,
             'user_id' => $user->id,
             'employee_id' => $user->id,
             'name' => ucfirst($user?->name ?? 'User'),
@@ -117,19 +93,20 @@ class LiveMapController extends Controller
                 : asset('assets/images/img.png'),
             'branch' => $user?->branch?->name,
             'department' => $user?->department?->dept_name,
-            'latitude' => $location ? (float) $location->latitude : null,
-            'longitude' => $location ? (float) $location->longitude : null,
+            'attendance_date' => $attendance->attendance_date,
+            'check_in_at' => $attendance->check_in_at,
+            'check_in_datetime' => $attendanceDateTime,
+            'latitude' => (float) $attendance->check_in_latitude,
+            'longitude' => (float) $attendance->check_in_longitude,
             'accuracy' => null,
             'battery_level' => null,
             'device_name' => null,
-            'last_seen_at' => $lastSeenAt?->toIso8601String(),
-            'last_seen_human' => $lastSeenAt?->diffForHumans() ?? 'Waiting for GPS',
-            'last_updated_at' => $location?->updated_at?->toIso8601String(),
-            'last_updated_human' => $location?->updated_at?->diffForHumans() ?? 'Waiting for GPS',
-            'has_location' => (bool) $location,
-            'map_url' => $location
-                ? 'https://www.google.com/maps?q=' . $location->latitude . ',' . $location->longitude
-                : null,
+            'last_seen_at' => $attendance->updated_at?->toIso8601String(),
+            'last_seen_human' => $attendance->check_in_at ? date('h:i A', strtotime($attendance->check_in_at)) : '-',
+            'last_updated_at' => $attendance->updated_at?->toIso8601String(),
+            'last_updated_human' => $attendance->updated_at?->diffForHumans() ?? '-',
+            'has_location' => true,
+            'map_url' => 'https://www.google.com/maps?q=' . $attendance->check_in_latitude . ',' . $attendance->check_in_longitude,
         ];
     }
 }
