@@ -141,9 +141,23 @@
                                 @endcan
                                 <td class="text-center">{{ $value->employee_code ?: 'N/A' }}</td>
                                 <td>
-                                    <p>{{ ucfirst($value->name) }}</p>
-                                    <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }}
-                                        )</small>
+                                    @php
+                                        $profileImage = $value->avatar
+                                            ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $value->avatar)
+                                            : asset('assets/images/img.png');
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img
+                                            src="{{ $profileImage }}"
+                                            alt="{{ ucfirst($value->name) }}"
+                                            class="rounded-circle"
+                                            style="width: 42px; height: 42px; object-fit: cover;"
+                                        >
+                                        <div>
+                                            <p class="mb-0">{{ ucfirst($value->name) }}</p>
+                                            <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>{{ ucfirst($value->address) }}</td>
                                 <td class="text-center">{{ $value->email }}</td>
