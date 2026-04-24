@@ -16,3 +16,11 @@ use Illuminate\Support\Facades\Broadcast;
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
 });
+
+Broadcast::channel('admin.locations', function ($user = null) {
+    if (auth('admin')->check()) {
+        return true;
+    }
+
+    return auth()->check() && auth()->user()?->can('list_employee');
+});

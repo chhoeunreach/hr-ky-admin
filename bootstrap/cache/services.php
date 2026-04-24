@@ -42,10 +42,11 @@
     38 => 'MilanTarami\\NumberToWordsConverter\\NumberToWordsServiceProvider',
     39 => 'App\\Providers\\AppServiceProvider',
     40 => 'App\\Providers\\AuthServiceProvider',
-    41 => 'App\\Providers\\EventServiceProvider',
-    42 => 'App\\Providers\\RouteServiceProvider',
-    43 => 'Maatwebsite\\Excel\\ExcelServiceProvider',
-    44 => 'Intervention\\Image\\ImageServiceProvider',
+    41 => 'App\\Providers\\BroadcastServiceProvider',
+    42 => 'App\\Providers\\EventServiceProvider',
+    43 => 'App\\Providers\\RouteServiceProvider',
+    44 => 'Maatwebsite\\Excel\\ExcelServiceProvider',
+    45 => 'Intervention\\Image\\ImageServiceProvider',
   ),
   'eager' => 
   array (
@@ -76,10 +77,11 @@
     24 => 'MilanTarami\\NumberToWordsConverter\\NumberToWordsServiceProvider',
     25 => 'App\\Providers\\AppServiceProvider',
     26 => 'App\\Providers\\AuthServiceProvider',
-    27 => 'App\\Providers\\EventServiceProvider',
-    28 => 'App\\Providers\\RouteServiceProvider',
-    29 => 'Maatwebsite\\Excel\\ExcelServiceProvider',
-    30 => 'Intervention\\Image\\ImageServiceProvider',
+    27 => 'App\\Providers\\BroadcastServiceProvider',
+    28 => 'App\\Providers\\EventServiceProvider',
+    29 => 'App\\Providers\\RouteServiceProvider',
+    30 => 'Maatwebsite\\Excel\\ExcelServiceProvider',
+    31 => 'Intervention\\Image\\ImageServiceProvider',
   ),
   'deferred' => 
   array (

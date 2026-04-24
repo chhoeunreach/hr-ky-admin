@@ -33,6 +33,7 @@ use App\Http\Controllers\Web\iclockController;
 use App\Http\Controllers\Web\LeaveApprovalController;
 use App\Http\Controllers\Web\LeaveController;
 use App\Http\Controllers\Web\LeaveTypeController;
+use App\Http\Controllers\Web\LiveMapController;
 use App\Http\Controllers\Web\NFCController;
 use App\Http\Controllers\Web\NoticeController;
 use App\Http\Controllers\Web\NotificationController;
@@ -69,6 +70,7 @@ use App\Http\Controllers\Web\TerminationTypeController;
 use App\Http\Controllers\Web\ThemeController;
 use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
+use App\Http\Controllers\Web\TrackLocationController;
 use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TrainerController;
 use App\Http\Controllers\Web\TrainingController;
@@ -91,6 +93,10 @@ Route::get('/', function () {
 });
 Route::get('/add-user', [iclockController::class, 'addUsers']);
 Route::get('/remove-user/{id}', [iclockController::class, 'removeUser']);
+Route::middleware('auth')->group(function () {
+    Route::get('track-location', [TrackLocationController::class, 'index'])->name('track-location');
+    Route::post('track-location/update', [TrackLocationController::class, 'update'])->name('track-location.update');
+});
 
 // routes/web.php
 Route::any('/iclock/cdata', [BioAttendanceController::class, 'handleDevice']);
@@ -164,8 +170,8 @@ Route::group([
 
         /** Employee Location Logs */
         Route::get('employee/location-logs', [UserController::class, 'logs'])->name('employee.log');
-        Route::get('live-map', [UserController::class, 'liveMap'])->name('live-map');
-        Route::get('live-map/locations', [UserController::class, 'liveMapLocations'])->name('live-map.locations');
+        Route::get('live-map', [LiveMapController::class, 'index'])->name('live-map');
+        Route::get('live-map/locations', [LiveMapController::class, 'locations'])->name('live-map.locations');
         /** Employees route */
         Route::resource('employees', UserController::class);
         Route::get('employees/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('employees.toggle-status');
@@ -692,4 +698,3 @@ Route::group([
 Route::fallback(function() {
     return view('errors.404');
 });
-

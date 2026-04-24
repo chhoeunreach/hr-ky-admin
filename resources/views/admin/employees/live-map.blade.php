@@ -142,7 +142,7 @@
                 <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
                     <div>
                         <h6 class="card-title mb-1">All Staff Realtime Location</h6>
-                        <small class="text-muted">Shows staff currently logged into the app and refreshes every 15 seconds from their latest location records.</small>
+                        <small class="text-muted">Shows active users from their latest saved GPS location and moves markers as updates arrive.</small>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" id="refreshLiveMap">
                         <i class="link-icon" data-feather="refresh-cw"></i>
@@ -169,7 +169,7 @@
                         <div>
                             <i class="link-icon text-muted mb-2" data-feather="map-pin"></i>
                             <p class="mb-0 fw-bold">No live locations found</p>
-                            <small class="text-muted">Logged-in staff will appear after the app sends their location data.</small>
+                            <small class="text-muted">Users will appear after their app or browser sends GPS location data.</small>
                         </div>
                     </div>
                 </div>
@@ -178,10 +178,24 @@
     </section>
 @endsection
 
+@php
+    $broadcastConfig = [
+        'driver' => config('broadcasting.default'),
+        'key' => config('broadcasting.connections.pusher.key'),
+        'cluster' => env('PUSHER_APP_CLUSTER', 'mt1'),
+        'custom_host' => env('PUSHER_HOST'),
+        'host' => config('broadcasting.connections.pusher.options.host'),
+        'port' => config('broadcasting.connections.pusher.options.port'),
+        'scheme' => config('broadcasting.connections.pusher.options.scheme'),
+    ];
+@endphp
+
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script>
         const locationsUrl = @json(route('admin.live-map.locations'));
+        const broadcastConfig = @json($broadcastConfig);
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
         const initialBranchId = @json($filterData['branch_id'] ?? null);
@@ -419,6 +433,27 @@
             renderMap(filtered);
         }
 
+        function mergeLocation(location) {
+            const index = allLocations.findIndex(item => String(item.user_id || item.employee_id) === String(location.user_id || location.employee_id));
+            const normalized = {
+                ...location,
+                employee_id: location.employee_id || location.user_id,
+                user_id: location.user_id || location.employee_id,
+                last_seen_at: location.last_seen_at || location.last_updated_at,
+                last_seen_human: location.last_seen_human || location.last_updated_human,
+                has_location: true,
+                map_url: location.map_url || `https://www.google.com/maps?q=${location.latitude},${location.longitude}`
+            };
+
+            if (index >= 0) {
+                allLocations[index] = {...allLocations[index], ...normalized};
+            } else {
+                allLocations.unshift(normalized);
+            }
+
+            renderList();
+        }
+
         async function loadLocations() {
             try {
                 const response = await fetch(buildLocationsUrl(), {
@@ -515,7 +550,40 @@
             loadLocations();
         }
 
+        function initializeRealtime() {
+            if (!window.Pusher || !broadcastConfig.key || broadcastConfig.driver === 'null') {
+                document.getElementById('liveMapUpdatedAt').textContent = 'Realtime WebSocket is not configured. Polling is active.';
+                return;
+            }
+
+            const options = {
+                cluster: broadcastConfig.cluster || 'mt1',
+                forceTLS: broadcastConfig.scheme === 'https',
+                authEndpoint: '{{ url('/broadcasting/auth') }}',
+                auth: {
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                }
+            };
+
+            if (broadcastConfig.custom_host) {
+                options.wsHost = broadcastConfig.custom_host;
+                options.wsPort = Number(broadcastConfig.port || 80);
+                options.wssPort = Number(broadcastConfig.port || 443);
+                options.enabledTransports = ['ws', 'wss'];
+            }
+
+            const pusher = new Pusher(broadcastConfig.key, options);
+
+            pusher.subscribe('private-admin.locations')
+                .bind('LocationUpdated', function (location) {
+                    mergeLocation(location);
+                });
+        }
+
         initializeFilters();
+        initializeRealtime();
         setInterval(loadLocations, 15000);
     </script>
 @endsection

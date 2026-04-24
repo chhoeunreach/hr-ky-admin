@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\HolidayApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
+use App\Http\Controllers\Api\LocationController;
 use App\Http\Controllers\Api\NfcApiController;
 use App\Http\Controllers\Api\NoticeApiController;
 use App\Http\Controllers\Api\NotificationApiController;
@@ -49,6 +50,7 @@ Route::group([
     Route::get('users/profile-detail/{userId}', [UserProfileApiController::class, 'findEmployeeDetailById']);
     Route::get('users/company/team-sheet', [UserProfileApiController::class, 'getTeamSheetOfCompany']);
     Route::post('users/location',[UserProfileApiController::class, 'storeLocation']);
+    Route::post('location/update', [LocationController::class, 'update']);
     /** content management Routes **/
     Route::get('static-page-content/{contentType}', [StaticPageContentApiController::class, 'getStaticPageContentByContentType']);
     Route::get('company-rules', [StaticPageContentApiController::class, 'getCompanyRulesDetail']);
@@ -183,4 +185,3 @@ Route::group([
     /** SSF History */
     Route::get('payroll/ssf-history', [EmployeePayrollApiController::class, 'ssfHistory']);
 });
-
