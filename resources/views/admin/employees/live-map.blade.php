@@ -96,17 +96,18 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h6 class="card-title mb-0">Live Map Date</h6>
+                <h6 class="card-title mb-0">Select Live Map Date</h6>
             </div>
             <div class="card-body pb-0">
                 <div class="row align-items-center">
                     <div class="col-lg-4 col-md-6 mb-4">
                         <input type="text"
-                               class="form-control"
-                               id="date"
-                               name="date"
-                               value="{{ $filterData['date'] }}"
-                               placeholder="YYYY-MM-DD">
+                                class="form-control"
+                                id="date"
+                                name="date"
+                                value="{{ $filterData['date'] }}"
+                               placeholder="YYYY-MM-DD"
+                               autocomplete="off">
                     </div>
                     <div class="col-lg-4 col-md-6 d-md-flex">
                         <button type="button" class="btn btn-block btn-success me-md-2 me-0 mb-md-4 mb-2" id="applyLiveMapFilter">
@@ -180,6 +181,7 @@
         const locationsUrl = @json(route('admin.live-map.locations'));
         const broadcastConfig = @json($broadcastConfig);
         const initialDate = @json($filterData['date'] ?? date('Y-m-d'));
+        const isBsEnabled = {{ \App\Helpers\AppHelper::ifDateInBsEnabled() ? 'true' : 'false' }};
         const fallbackCenter = [11.5564, 104.9282];
         const hasLeaflet = typeof L !== 'undefined';
         const map = hasLeaflet ? L.map('staffLiveMap', {zoomControl: true}).setView(fallbackCenter, 12) : null;
@@ -320,6 +322,7 @@
                 ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
                 : 'Waiting for GPS location from app';
             const badgeClass = location.has_location ? 'bg-light text-dark' : 'bg-warning text-dark';
+            const statusClass = location.is_online ? 'bg-success text-white' : 'bg-secondary text-white';
 
             return `
                 <div class="staff-location-item p-3${activeClass}" data-attendance-id="${itemId}">
@@ -327,7 +330,10 @@
                         <img src="${location.avatar}" class="rounded-circle staff-location-avatar" alt="">
                         <div class="min-w-0 flex-grow-1">
                             <div class="d-flex align-items-start justify-content-between gap-2">
-                                <strong class="text-truncate">${escapeHtml(location.name)}</strong>
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong class="text-truncate">${escapeHtml(location.name)}</strong>
+                                    <span class="badge ${statusClass}">${escapeHtml(location.status_label || 'Offline')}</span>
+                                </div>
                                 <span class="badge ${badgeClass}">${escapeHtml(location.last_seen_human || '-')}</span>
                             </div>
                             <div class="text-muted small text-truncate">${escapeHtml(meta || 'No department')}</div>
@@ -428,6 +434,29 @@
             loadLocations();
         });
         $('#date').on('change', loadLocations);
+
+        if (isBsEnabled) {
+            $('#date').nepaliDatePicker({
+                dateFormat: '%y-%m-%d',
+                closeOnDateSelect: true
+            });
+        } else {
+            $('#date').attr('type', 'date');
+            $('#date').datepicker({
+                format: 'yyyy-mm-dd',
+                autoclose: true,
+                todayHighlight: true
+            });
+
+            const dateInput = document.getElementById('date');
+            ['focus', 'click'].forEach(eventName => {
+                dateInput.addEventListener(eventName, function () {
+                    if (typeof dateInput.showPicker === 'function') {
+                        dateInput.showPicker();
+                    }
+                });
+            });
+        }
 
         function initializeRealtime() {
             if (!window.Pusher || !broadcastConfig.key || broadcastConfig.driver === 'null') {

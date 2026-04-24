@@ -93,6 +93,14 @@ class LiveMapController extends Controller
                 : asset('assets/images/img.png'),
             'branch' => $user?->branch?->name,
             'department' => $user?->department?->dept_name,
+            'is_online' => (bool) (
+                $user?->online_status == User::ONLINE ||
+                (!empty($user?->uuid) && (int) $user?->logout_status === (int) User::LOGOUT_STATUS['approve'])
+            ),
+            'status_label' => (
+                $user?->online_status == User::ONLINE ||
+                (!empty($user?->uuid) && (int) $user?->logout_status === (int) User::LOGOUT_STATUS['approve'])
+            ) ? 'Online' : 'Offline',
             'attendance_date' => $attendance->attendance_date,
             'check_in_at' => $attendance->check_in_at,
             'check_in_datetime' => $attendanceDateTime,
