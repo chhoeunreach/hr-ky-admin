@@ -623,7 +623,10 @@ class UserController extends Controller
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
                 ->whereHas('employee', function ($query) use ($filterData) {
-                    $query->where('is_active', 1);
+                    $query->where('is_active', 1)
+                        ->where('status', 'verified')
+                        ->whereNotNull('uuid')
+                        ->where('logout_status', User::LOGOUT_STATUS['approve']);
 
                     if (!empty($filterData['branch_id'])) {
                         $query->where('branch_id', $filterData['branch_id']);

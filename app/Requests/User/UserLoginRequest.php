@@ -31,12 +31,13 @@ class UserLoginRequest extends FormRequest
             'fcm_token' => 'required|string',
             'device_type' => ['required', 'string', Rule::in(User::DEVICE_TYPE)],
             'uuid' => ['required', 'string'],
+            'latitude' => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
         ];
 
     }
 
 }
-
 
 
 

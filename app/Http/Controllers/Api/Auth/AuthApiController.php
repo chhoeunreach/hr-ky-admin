@@ -52,6 +52,15 @@ class AuthApiController
             $tokens = $user->createToken('MyToken' . $user->id)->accessToken;
             $validatedData['id'] = $user->id;
             $this->authService->updateUserLoginDetail($validatedData);
+
+            if (isset($validatedData['latitude'], $validatedData['longitude'])) {
+                $this->userRepo->setEmployeeLocation([
+                    'employee_id' => $user->id,
+                    'latitude' => $validatedData['latitude'],
+                    'longitude' => $validatedData['longitude'],
+                ]);
+            }
+
             DB::commit();
             return AppHelper::sendSuccessResponse(
                 __('index.authenticated'),
@@ -118,6 +127,5 @@ class AuthApiController
 
 
 }
-
 
 

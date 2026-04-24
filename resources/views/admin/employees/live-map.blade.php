@@ -143,7 +143,7 @@
                 <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
                     <div>
                         <h6 class="card-title mb-1">All Staff Realtime Location</h6>
-                        <small class="text-muted">Refreshes every 15 seconds from the latest staff location records.</small>
+                        <small class="text-muted">Shows staff currently logged into the app and refreshes every 15 seconds from their latest location records.</small>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" id="refreshLiveMap">
                         <i class="link-icon" data-feather="refresh-cw"></i>
@@ -170,7 +170,7 @@
                         <div>
                             <i class="link-icon text-muted mb-2" data-feather="map-pin"></i>
                             <p class="mb-0 fw-bold">No live locations found</p>
-                            <small class="text-muted">Staff locations will appear after employees send location data.</small>
+                            <small class="text-muted">Logged-in staff will appear after the app sends their location data.</small>
                         </div>
                     </div>
                 </div>
