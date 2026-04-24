@@ -30,7 +30,24 @@
                                     <div class="col-md-8 ps-md-0">
 
                                         <div class="auth-form-wrapper px-4 py-5">
-                                            <a href="#" class="noble-ui-logo d-block mb-2">{{ $companyDetail  ? ucfirst($companyDetail->name) : ''}}</a>
+                                            <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+                                                <a href="#" class="noble-ui-logo d-block mb-0">{{ $companyDetail  ? ucfirst($companyDetail->name) : ''}}</a>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <a href="{{ asset('downloads/ky-checking-24-04-2026.apk') }}"
+                                                       class="btn btn-outline-primary btn-sm"
+                                                       download>
+                                                        <i class="link-icon" data-feather="download"></i>
+                                                        Download Android
+                                                    </a>
+                                                    <a href="https://testflight.apple.com/join/hPG4ZA38"
+                                                       class="btn btn-outline-secondary btn-sm"
+                                                       target="_blank"
+                                                       rel="noopener noreferrer">
+                                                        <i class="link-icon" data-feather="smartphone"></i>
+                                                        Download iOS
+                                                    </a>
+                                                </div>
+                                            </div>
                                             <h5 class="text-muted fw-normal mb-4">{{ __('auth.welcome_back') }}</h5>
 
                                             <form class="forms-sample" method="POST" action="{{ route('admin.login.process') }}">
@@ -112,5 +129,3 @@
         </section>
 
 @endsection
-
-
