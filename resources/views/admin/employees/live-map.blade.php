@@ -7,8 +7,7 @@
 @section('action', 'Live Map')
 
 @section('styles')
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoJBhIINfQh8hlPFxRJyW+HMg8H1pcVdQxHPBCc=" crossorigin="">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
     <style>
         .live-map-shell {
             display: grid;
@@ -180,8 +179,7 @@
 @endsection
 
 @section('scripts')
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const locationsUrl = @json(route('admin.live-map.locations'));
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
@@ -190,15 +188,28 @@
         const initialDepartmentId = @json($filterData['department_id'] ?? null);
         const initialEmployeeId = @json($filterData['employee_id'] ?? null);
         const fallbackCenter = [11.5564, 104.9282];
-        const map = L.map('staffLiveMap', {zoomControl: true}).setView(fallbackCenter, 12);
+        const hasLeaflet = typeof L !== 'undefined';
+        const map = hasLeaflet ? L.map('staffLiveMap', {zoomControl: true}).setView(fallbackCenter, 12) : null;
         const markers = new Map();
         let allLocations = [];
         let activeEmployeeId = null;
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
+        if (hasLeaflet) {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+        } else {
+            document.getElementById('staffLiveMap').innerHTML = `
+                <div class="live-map-empty d-flex align-items-center justify-content-center text-center p-4 h-100">
+                    <div>
+                        <i class="link-icon text-muted mb-2" data-feather="map"></i>
+                        <p class="mb-1 fw-bold">Map library did not load</p>
+                        <small class="text-muted">Staff GPS data will still show in the list. Check internet/CDN access for Leaflet.</small>
+                    </div>
+                </div>
+            `;
+        }
 
         $('#department_id').select2();
         $('#employee_id').select2();
@@ -297,6 +308,10 @@
         }
 
         function markerIcon(location) {
+            if (!hasLeaflet) {
+                return null;
+            }
+
             return L.divIcon({
                 className: '',
                 html: `<div class="live-map-marker">${initials(location.name)}</div>`,
@@ -322,7 +337,12 @@
         }
 
         function renderMap(locations) {
-            const visibleIds = new Set(locations.map(location => String(location.employee_id)));
+            if (!map) {
+                return;
+            }
+
+            const mappableLocations = locations.filter(location => location.has_location);
+            const visibleIds = new Set(mappableLocations.map(location => String(location.employee_id)));
 
             markers.forEach((marker, employeeId) => {
                 if (!visibleIds.has(String(employeeId))) {
@@ -332,7 +352,7 @@
             });
 
             const bounds = [];
-            locations.forEach(location => {
+            mappableLocations.forEach(location => {
                 const position = [location.latitude, location.longitude];
                 bounds.push(position);
 
@@ -360,6 +380,10 @@
         function staffItem(location) {
             const meta = [location.department, location.branch].filter(Boolean).join(' / ');
             const activeClass = String(activeEmployeeId) === String(location.employee_id) ? ' active' : '';
+            const locationText = location.has_location
+                ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
+                : 'Waiting for GPS location from app';
+            const badgeClass = location.has_location ? 'bg-light text-dark' : 'bg-warning text-dark';
 
             return `
                 <div class="staff-location-item p-3${activeClass}" data-employee-id="${location.employee_id}">
@@ -368,10 +392,10 @@
                         <div class="min-w-0 flex-grow-1">
                             <div class="d-flex align-items-start justify-content-between gap-2">
                                 <strong class="text-truncate">${escapeHtml(location.name)}</strong>
-                                <span class="badge bg-light text-dark">${escapeHtml(location.last_seen_human || '-')}</span>
+                                <span class="badge ${badgeClass}">${escapeHtml(location.last_seen_human || '-')}</span>
                             </div>
                             <div class="text-muted small text-truncate">${escapeHtml(meta || 'No department')}</div>
-                            <div class="text-muted small">${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}</div>
+                            <div class="text-muted small">${escapeHtml(locationText)}</div>
                         </div>
                     </div>
                 </div>
@@ -423,9 +447,13 @@
 
             activeEmployeeId = item.dataset.employeeId;
             const marker = markers.get(Number(activeEmployeeId)) || markers.get(activeEmployeeId);
-            if (marker) {
+            if (marker && map) {
                 map.setView(marker.getLatLng(), 16);
                 marker.openPopup();
+            } else {
+                document.getElementById('liveMapUpdatedAt').textContent = hasLeaflet
+                    ? 'Selected staff is online, but the app has not sent GPS yet.'
+                    : 'Map library did not load, but staff GPS data is listed here.';
             }
 
             document.querySelectorAll('.staff-location-item').forEach(listItem => {

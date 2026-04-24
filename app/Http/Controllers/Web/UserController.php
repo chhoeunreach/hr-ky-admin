@@ -618,56 +618,63 @@ class UserController extends Controller
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
 
+            $staff = User::with(['branch:id,name', 'department:id,dept_name'])
+                ->select(['id', 'name', 'email', 'phone', 'avatar', 'branch_id', 'department_id', 'uuid', 'logout_status', 'online_status'])
+                ->where('is_active', 1)
+                ->where('status', 'verified')
+                ->where(function ($query) {
+                    $query->where(function ($loginQuery) {
+                        $loginQuery->whereNotNull('uuid')
+                            ->where('logout_status', User::LOGOUT_STATUS['approve']);
+                    })->orWhere('online_status', User::ONLINE);
+                })
+                ->when(!empty($filterData['branch_id']), function ($query) use ($filterData) {
+                    $query->where('branch_id', $filterData['branch_id']);
+                })
+                ->when(!empty($filterData['department_id']), function ($query) use ($filterData) {
+                    $query->where('department_id', $filterData['department_id']);
+                })
+                ->when(!empty($filterData['employee_id']), function ($query) use ($filterData) {
+                    $query->where('id', $filterData['employee_id']);
+                })
+                ->orderBy('name')
+                ->get();
+
             $latestLocationIds = EmployeeLocation::query()
                 ->selectRaw('MAX(id)')
                 ->whereNotNull('latitude')
                 ->whereNotNull('longitude')
-                ->whereHas('employee', function ($query) use ($filterData) {
-                    $query->where('is_active', 1)
-                        ->where('status', 'verified')
-                        ->whereNotNull('uuid')
-                        ->where('logout_status', User::LOGOUT_STATUS['approve']);
-
-                    if (!empty($filterData['branch_id'])) {
-                        $query->where('branch_id', $filterData['branch_id']);
-                    }
-
-                    if (!empty($filterData['department_id'])) {
-                        $query->where('department_id', $filterData['department_id']);
-                    }
-                })
-                ->when(!empty($filterData['employee_id']), function ($query) use ($filterData) {
-                    $query->where('employee_id', $filterData['employee_id']);
-                })
+                ->whereIn('employee_id', $staff->pluck('id'))
                 ->groupBy('employee_id');
 
-            $locations = EmployeeLocation::with([
-                    'employee:id,name,email,phone,avatar,branch_id,department_id',
-                    'employee.branch:id,name',
-                    'employee.department:id,dept_name',
-                ])
+            $latestLocations = EmployeeLocation::query()
                 ->whereIn('id', $latestLocationIds)
-                ->orderByDesc('created_at')
                 ->get()
-                ->filter(fn ($location) => $location->employee)
-                ->map(function ($location) {
-                    $lastSeenAt = $location->created_at;
+                ->keyBy('employee_id');
+
+            $locations = $staff
+                ->map(function ($employee) use ($latestLocations) {
+                    $location = $latestLocations->get($employee->id);
+                    $lastSeenAt = $location?->created_at;
 
                     return [
-                        'employee_id' => $location->employee_id,
-                        'name' => ucfirst($location->employee->name),
-                        'email' => $location->employee->email,
-                        'phone' => $location->employee->phone,
-                        'avatar' => $location->employee->avatar
-                            ? asset(User::AVATAR_UPLOAD_PATH . $location->employee->avatar)
+                        'employee_id' => $employee->id,
+                        'name' => ucfirst($employee->name),
+                        'email' => $employee->email,
+                        'phone' => $employee->phone,
+                        'avatar' => $employee->avatar
+                            ? asset(User::AVATAR_UPLOAD_PATH . $employee->avatar)
                             : asset('assets/images/img.png'),
-                        'branch' => $location->employee->branch?->name,
-                        'department' => $location->employee->department?->dept_name,
-                        'latitude' => (float) $location->latitude,
-                        'longitude' => (float) $location->longitude,
+                        'branch' => $employee->branch?->name,
+                        'department' => $employee->department?->dept_name,
+                        'latitude' => $location ? (float) $location->latitude : null,
+                        'longitude' => $location ? (float) $location->longitude : null,
                         'last_seen_at' => $lastSeenAt?->toIso8601String(),
-                        'last_seen_human' => $lastSeenAt?->diffForHumans(),
-                        'map_url' => 'https://www.google.com/maps?q=' . $location->latitude . ',' . $location->longitude,
+                        'last_seen_human' => $lastSeenAt?->diffForHumans() ?? 'Waiting for GPS',
+                        'has_location' => (bool) $location,
+                        'map_url' => $location
+                            ? 'https://www.google.com/maps?q=' . $location->latitude . ',' . $location->longitude
+                            : null,
                     ];
                 })
                 ->values();
