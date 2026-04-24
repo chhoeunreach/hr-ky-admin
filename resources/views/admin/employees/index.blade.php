@@ -154,17 +154,45 @@
                                             ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $value->avatar)
                                             : asset('assets/images/img.png');
                                     @endphp
-                                    <div class="d-flex align-items-center gap-2">
-                                        <img
-                                            src="{{ $profileImage }}"
-                                            alt="{{ ucfirst($value->name) }}"
-                                            class="rounded-circle"
-                                            style="width: 42px; height: 42px; object-fit: cover;"
-                                        >
-                                        <div>
-                                            <p class="mb-0">{{ ucfirst($value->name) }}</p>
-                                            <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
-                                        </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        @can('show_detail_employee')
+                                            <a href="{{ route('admin.employees.show', $value->id) }}"
+                                               class="d-flex align-items-center gap-2 text-decoration-none text-reset">
+                                                <img
+                                                    src="{{ $profileImage }}"
+                                                    alt="{{ ucfirst($value->name) }}"
+                                                    class="rounded-circle"
+                                                    style="width: 42px; height: 42px; object-fit: cover;"
+                                                >
+                                                <div>
+                                                    <p class="mb-0">{{ ucfirst($value->name) }}</p>
+                                                    <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
+                                                </div>
+                                            </a>
+                                        @else
+                                            <div class="d-flex align-items-center gap-2">
+                                                <img
+                                                    src="{{ $profileImage }}"
+                                                    alt="{{ ucfirst($value->name) }}"
+                                                    class="rounded-circle"
+                                                    style="width: 42px; height: 42px; object-fit: cover;"
+                                                >
+                                                <div>
+                                                    <p class="mb-0">{{ ucfirst($value->name) }}</p>
+                                                    <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
+                                                </div>
+                                            </div>
+                                        @endcan
+
+                                        @can('edit_employee')
+                                            <a href="{{ route('admin.employees.edit', $value->id) }}"
+                                               class="btn btn-outline-primary btn-xs"
+                                               title="{{ __('index.edit_detail') }}"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                <i class="link-icon" data-feather="edit"></i>
+                                            </a>
+                                        @endcan
                                     </div>
                                 </td>
                                 <td>{{ ucfirst($value->address) }}</td>
@@ -212,7 +240,9 @@
                                             <ul class="list-unstyled p-1 mb-0">
                                                 @can('edit_employee')
                                                     <li class="dropdown-item py-2">
-                                                        <a href="{{ route('admin.employees.edit', $value->id) }}">
+                                                        <a href="{{ route('admin.employees.edit', $value->id) }}"
+                                                           target="_blank"
+                                                           rel="noopener noreferrer">
                                                             <button
                                                                 class="btn btn-primary btn-xs">{{ __('index.edit_detail') }}</button>
                                                         </a>
