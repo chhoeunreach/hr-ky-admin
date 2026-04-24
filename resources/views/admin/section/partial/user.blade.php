@@ -3,6 +3,7 @@
     <li class="nav-item  {{
                            request()->routeIs('admin.employees.*') ||
                            request()->routeIs('admin.employee.log') ||
+                           request()->routeIs('admin.live-map*') ||
                            request()->routeIs('admin.logout-requests.*')
                         ? 'active' : ''
                         }}   ">
@@ -21,6 +22,7 @@
         <div class="{{
                          request()->routeIs('admin.employees.*') ||
                          request()->routeIs('admin.employee.log') ||
+                         request()->routeIs('admin.live-map*') ||
                             request()->routeIs('admin.logout-requests.*')?'' : 'collapse'  }}"  id="employee_management">
             <ul class="nav sub-menu">
                 @can('list_employee')
@@ -33,6 +35,11 @@
                         <a href="{{route('admin.employee.log')}}"
                            data-href="{{route('admin.employee.log')}}"
                            class="nav-link {{request()->routeIs('admin.employee.log') ? 'active' : ''}}"> Location Logs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{route('admin.live-map')}}"
+                           data-href="{{route('admin.live-map')}}"
+                           class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}"> Live Map</a>
                     </li>
                 @endcan
 
@@ -48,6 +55,5 @@
         </div>
     </li>
 @endcanany
-
 
 

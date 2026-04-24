@@ -164,6 +164,8 @@ Route::group([
 
         /** Employee Location Logs */
         Route::get('employee/location-logs', [UserController::class, 'logs'])->name('employee.log');
+        Route::get('live-map', [UserController::class, 'liveMap'])->name('live-map');
+        Route::get('live-map/locations', [UserController::class, 'liveMapLocations'])->name('live-map.locations');
         /** Employees route */
         Route::resource('employees', UserController::class);
         Route::get('employees/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('employees.toggle-status');
@@ -690,5 +692,4 @@ Route::group([
 Route::fallback(function() {
     return view('errors.404');
 });
-
 

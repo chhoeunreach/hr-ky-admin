@@ -6,6 +6,7 @@ use App\Exports\AttendanceDayWiseExport;
 use App\Exports\UserExport;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeLocation;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -572,6 +573,117 @@ class UserController extends Controller
             return view($this->view . 'log', compact('logData', 'companyDetail', 'filterData','bsEnabled'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function liveMap(Request $request)
+    {
+        $this->authorize('list_employee');
+
+        $filterData = [
+            'branch_id' => $request->branch_id ?? null,
+            'department_id' => $request->department_id ?? null,
+            'employee_id' => $request->employee_id ?? null,
+        ];
+
+        if (!auth('admin')->check() && auth()->check()) {
+            $filterData['branch_id'] = auth()->user()->branch_id;
+        }
+
+        $with = ['branches:id,name'];
+        $select = ['id', 'name'];
+        $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
+
+        return view($this->view . 'live-map', compact('companyDetail', 'filterData'));
+    }
+
+    /**
+     * @throws AuthorizationException
+     */
+    public function liveMapLocations(Request $request): JsonResponse
+    {
+        $this->authorize('list_employee');
+
+        try {
+            $filterData = [
+                'branch_id' => $request->branch_id ?? null,
+                'department_id' => $request->department_id ?? null,
+                'employee_id' => $request->employee_id ?? null,
+            ];
+
+            if (!auth('admin')->check() && auth()->check()) {
+                $filterData['branch_id'] = auth()->user()->branch_id;
+            }
+
+            $latestLocationIds = EmployeeLocation::query()
+                ->selectRaw('MAX(id)')
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->whereHas('employee', function ($query) use ($filterData) {
+                    $query->where('is_active', 1);
+
+                    if (!empty($filterData['branch_id'])) {
+                        $query->where('branch_id', $filterData['branch_id']);
+                    }
+
+                    if (!empty($filterData['department_id'])) {
+                        $query->where('department_id', $filterData['department_id']);
+                    }
+                })
+                ->when(!empty($filterData['employee_id']), function ($query) use ($filterData) {
+                    $query->where('employee_id', $filterData['employee_id']);
+                })
+                ->groupBy('employee_id');
+
+            $locations = EmployeeLocation::with([
+                    'employee:id,name,email,phone,avatar,branch_id,department_id',
+                    'employee.branch:id,name',
+                    'employee.department:id,dept_name',
+                ])
+                ->whereIn('id', $latestLocationIds)
+                ->orderByDesc('created_at')
+                ->get()
+                ->filter(fn ($location) => $location->employee)
+                ->map(function ($location) {
+                    $lastSeenAt = $location->created_at;
+
+                    return [
+                        'employee_id' => $location->employee_id,
+                        'name' => ucfirst($location->employee->name),
+                        'email' => $location->employee->email,
+                        'phone' => $location->employee->phone,
+                        'avatar' => $location->employee->avatar
+                            ? asset(User::AVATAR_UPLOAD_PATH . $location->employee->avatar)
+                            : asset('assets/images/img.png'),
+                        'branch' => $location->employee->branch?->name,
+                        'department' => $location->employee->department?->dept_name,
+                        'latitude' => (float) $location->latitude,
+                        'longitude' => (float) $location->longitude,
+                        'last_seen_at' => $lastSeenAt?->toIso8601String(),
+                        'last_seen_human' => $lastSeenAt?->diffForHumans(),
+                        'map_url' => 'https://www.google.com/maps?q=' . $location->latitude . ',' . $location->longitude,
+                    ];
+                })
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'updated_at' => now()->toIso8601String(),
+                'total' => $locations->count(),
+                'locations' => $locations,
+            ]);
+        } catch (Exception $exception) {
+            Log::error('Unable to load live employee locations', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Unable to load live employee locations.',
+            ], 500);
         }
     }
 
