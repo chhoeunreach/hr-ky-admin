@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title','Digital HR Dashboard')
+@section('title','KNEAYRNG HR Dashboard')
 
 <?php
     $attendanceDetail = (\App\Helpers\AppHelper::employeeTodayAttendanceDetail());
@@ -571,7 +571,6 @@
     </script>
     @include('admin.dashboard_scripts')
 @endsection
-
 
 
 
