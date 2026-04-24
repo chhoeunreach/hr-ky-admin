@@ -292,13 +292,13 @@ class LeaveController extends Controller
     private function buildLeaveRequestFilters(Request $request): array
     {
         $filterParameters = [
-            'branch_id' => $request->branch_id ?? null,
-            'department_id' => $request->department_id ?? null,
-            'leave_type' => $request->leave_type ?? null,
-            'requested_by' => $request->requested_by ?? null,
-            'month' => $request->month ?? null,
-            'year' => $request->year ?? Carbon::now()->format('Y'),
-            'status' => $request->status ?? null,
+            'branch_id' => $request->filled('branch_id') ? $request->branch_id : null,
+            'department_id' => $request->filled('department_id') ? $request->department_id : null,
+            'leave_type' => $request->filled('leave_type') ? $request->leave_type : null,
+            'requested_by' => $request->filled('requested_by') ? $request->requested_by : null,
+            'month' => $request->filled('month') ? $request->month : null,
+            'year' => $request->filled('year') ? $request->year : Carbon::now()->format('Y'),
+            'status' => $request->filled('status') ? $request->status : null,
         ];
 
         if (!auth('admin')->check() && auth()->check()) {
@@ -307,7 +307,7 @@ class LeaveController extends Controller
 
         if (AppHelper::ifDateInBsEnabled()) {
             $nepaliDate = AppHelper::getCurrentNepaliYearMonth();
-            $filterParameters['year'] = $request->year ?? $nepaliDate['year'];
+            $filterParameters['year'] = $request->filled('year') ? $request->year : $nepaliDate['year'];
         }
 
         return $filterParameters;

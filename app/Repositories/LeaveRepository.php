@@ -30,7 +30,7 @@ class LeaveRepository
 
     private function buildLeaveRequestListQuery($filterParameters, $select = ['*'], $with = [])
     {
-        return LeaveRequestMaster::with($with)
+        $leaveDetailList = LeaveRequestMaster::with($with)
             ->select($select)
             ->when(isset($filterParameters['requested_by']), function ($query) use ($filterParameters) {
                 $query->where('requested_by', $filterParameters['requested_by']);
@@ -66,6 +66,8 @@ class LeaveRepository
                     $query->whereYear('leave_from', '=', $filterParameters['year']);
                 });
         }
+
+        return $leaveDetailList;
     }
 
 //    public function getAllLeaveRequestDetailOfEmployee($filterParameters, $select = ['*'], $with = [])
