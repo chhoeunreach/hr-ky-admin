@@ -69,6 +69,7 @@ class UserController extends Controller
                 'employee_name' => $request->employee_name ?? null,
                 'email' => $request->email ?? null,
                 'phone' => $request->phone ?? null,
+                'is_active' => $request->is_active ?? null,
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
                 'per_page' => $request->per_page ?? getRecordPerPage(),

@@ -66,6 +66,14 @@
                     </div>
 
                     <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
+                        <select class="form-control" id="is_active" name="is_active">
+                            <option value="">All Status</option>
+                            <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>Active</option>
+                            <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
                         <select class="form-control" id="per_page" name="per_page">
                             <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
                             <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>

@@ -44,6 +44,9 @@ class UserRepository
             ->when(isset($filterParameters['phone']), function ($query) use ($filterParameters) {
                 $query->where('phone', $filterParameters['phone']);
             })
+            ->when($filterParameters['is_active'] !== null && $filterParameters['is_active'] !== '', function ($query) use ($filterParameters) {
+                $query->where('is_active', (int) $filterParameters['is_active']);
+            })
             ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->where('branch_id', $filterParameters['branch_id']);
             })
