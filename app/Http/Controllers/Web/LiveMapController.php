@@ -26,12 +26,20 @@ class LiveMapController extends Controller
         $this->authorize('list_employee');
 
         $filterData = [
+            'branch_id' => $request->branch_id ?? null,
+            'department_id' => $request->department_id ?? null,
+            'employee_id' => $request->employee_id ?? null,
             'date' => $request->date ?? (AppHelper::ifDateInBsEnabled() ? AppHelper::getCurrentDateInBS() : date('Y-m-d')),
         ];
 
-        $companyDetail = $this->companyRepo->getCompanyDetail(['id', 'name'], ['branches:id,name']);
+        if (!auth('admin')->check() && auth()->check()) {
+            $filterData['branch_id'] = auth()->user()->branch_id;
+        }
 
-        return view($this->view . 'live-map', compact('companyDetail', 'filterData'));
+        $companyDetail = $this->companyRepo->getCompanyDetail(['id', 'name'], ['branches:id,name']);
+        $bsEnabled = AppHelper::ifDateInBsEnabled();
+
+        return view($this->view . 'live-map', compact('companyDetail', 'filterData', 'bsEnabled'));
     }
 
     public function locations(Request $request): JsonResponse
@@ -39,8 +47,15 @@ class LiveMapController extends Controller
         $this->authorize('list_employee');
 
         $filterData = [
+            'branch_id' => $request->branch_id ?? null,
+            'department_id' => $request->department_id ?? null,
+            'employee_id' => $request->employee_id ?? null,
             'date' => $request->date ?? (AppHelper::ifDateInBsEnabled() ? AppHelper::getCurrentDateInBS() : date('Y-m-d')),
         ];
+
+        if (!auth('admin')->check() && auth()->check()) {
+            $filterData['branch_id'] = auth()->user()->branch_id;
+        }
 
         if (AppHelper::ifDateInBsEnabled()) {
             $filterData['date'] = AppHelper::dateInYmdFormatNepToEng($filterData['date']);
@@ -54,6 +69,19 @@ class LiveMapController extends Controller
             ->whereNotNull('check_in_latitude')
             ->whereNotNull('check_in_longitude')
             ->whereDate('attendance_date', $filterData['date'])
+            ->when(!empty($filterData['branch_id']), function ($query) use ($filterData) {
+                $query->whereHas('employee', function ($employeeQuery) use ($filterData) {
+                    $employeeQuery->where('branch_id', $filterData['branch_id']);
+                });
+            })
+            ->when(!empty($filterData['department_id']), function ($query) use ($filterData) {
+                $query->whereHas('employee', function ($employeeQuery) use ($filterData) {
+                    $employeeQuery->where('department_id', $filterData['department_id']);
+                });
+            })
+            ->when(!empty($filterData['employee_id']), function ($query) use ($filterData) {
+                $query->where('employee_id', $filterData['employee_id']);
+            })
             ->orderByDesc('attendance_date')
             ->orderByDesc('check_in_at')
             ->get()

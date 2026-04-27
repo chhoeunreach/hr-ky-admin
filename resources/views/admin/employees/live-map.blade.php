@@ -56,6 +56,11 @@
             min-height: 220px;
         }
 
+        .live-map-filter-actions .btn {
+            width: auto;
+            white-space: nowrap;
+        }
+
         .live-map-marker {
             width: 34px;
             height: 34px;
@@ -98,27 +103,60 @@
             <div class="card-header">
                 <h6 class="card-title mb-0">Select Live Map Date</h6>
             </div>
-            <div class="card-body pb-0">
+            <form class="forms-sample card-body pb-0" action="{{ route('admin.live-map') }}" method="get">
                 <div class="row align-items-center">
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <input type="text"
-                                class="form-control"
-                                id="date"
-                                name="date"
-                                value="{{ $filterData['date'] }}"
-                               placeholder="YYYY-MM-DD"
-                               autocomplete="off">
+                    @if(!isset(auth()->user()->branch_id))
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <select class="form-select" id="branch_id" name="branch_id">
+                                <option selected disabled>{{ __('index.select_branch') }}</option>
+                                @if(isset($companyDetail))
+                                    @foreach($companyDetail->branches()->get() as $branch)
+                                        <option value="{{ $branch->id }}"
+                                            {{ (isset($filterData['branch_id']) && (string) $filterData['branch_id'] === (string) $branch->id) ? 'selected' : '' }}>
+                                            {{ ucfirst($branch->name) }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    @endif
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <select class="form-select" name="department_id" id="department_id">
+                            <option selected disabled>{{ __('index.select_department') }}</option>
+                        </select>
                     </div>
-                    <div class="col-lg-4 col-md-6 d-md-flex">
-                        <button type="button" class="btn btn-block btn-success me-md-2 me-0 mb-md-4 mb-2" id="applyLiveMapFilter">
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        <select class="form-select" name="employee_id" id="employee_id">
+                            <option selected disabled>{{ __('index.select_employee') }}</option>
+                        </select>
+                    </div>
+                    @if($bsEnabled)
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <input type="text"
+                                   id="date"
+                                   class="form-control nepaliDate"
+                                   name="date"
+                                   value="{{ $filterData['date'] ?? \App\Helpers\AppHelper::getCurrentDateInBS() }}">
+                        </div>
+                    @else
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <input type="date"
+                                   class="form-control"
+                                   id="date"
+                                   name="date"
+                                   value="{{ $filterData['date'] ?? now()->format('Y-m-d') }}">
+                        </div>
+                    @endif
+                    <div class="col-lg-auto col-md-6 d-flex flex-wrap gap-2 live-map-filter-actions mb-4">
+                        <button type="submit" class="btn btn-success">
                             {{ __('index.filter') }}
                         </button>
-                        <button type="button" class="btn btn-block btn-primary me-md-2 me-0 mb-4" id="resetLiveMapFilter">
+                        <a class="btn btn-primary" href="{{ route('admin.live-map') }}">
                             {{ __('index.reset') }}
-                        </button>
+                        </a>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
 
         <div class="live-map-shell">
@@ -177,10 +215,16 @@
 @section('scripts')
     <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    @include('admin.attendance.common.filter_scripts')
     <script>
         const locationsUrl = @json(route('admin.live-map.locations'));
         const broadcastConfig = @json($broadcastConfig);
         const initialDate = @json($filterData['date'] ?? date('Y-m-d'));
+        const initialBranchId = @json($filterData['branch_id'] ?? null);
+        const initialDepartmentId = @json($filterData['department_id'] ?? null);
+        const initialEmployeeId = @json($filterData['employee_id'] ?? null);
+        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
+        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
         const isBsEnabled = {{ \App\Helpers\AppHelper::ifDateInBsEnabled() ? 'true' : 'false' }};
         const fallbackCenter = [11.5564, 104.9282];
         const hasLeaflet = typeof L !== 'undefined';
@@ -188,6 +232,7 @@
         const markers = new Map();
         let allLocations = [];
         let activeEmployeeId = null;
+        let employeeFilterFallback = initialEmployeeId;
 
         if (hasLeaflet) {
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -208,6 +253,9 @@
 
         function selectedFilters() {
             return {
+                branch_id: isAdmin ? $('#branch_id').val() : defaultBranchId,
+                department_id: $('#department_id').val(),
+                employee_id: $('#employee_id').val() || employeeFilterFallback,
                 date: $('#date').val() || initialDate
             };
         }
@@ -428,33 +476,27 @@
 
         document.getElementById('staffLocationSearch').addEventListener('input', renderList);
         document.getElementById('refreshLiveMap').addEventListener('click', loadLocations);
-        document.getElementById('applyLiveMapFilter').addEventListener('click', loadLocations);
-        document.getElementById('resetLiveMapFilter').addEventListener('click', function () {
-            $('#date').val(initialDate);
+        $('#branch_id').on('change', function () {
+            employeeFilterFallback = null;
+        });
+        $('#department_id').on('change', function () {
+            employeeFilterFallback = null;
+            loadLocations();
+        });
+        $('#employee_id').on('change', function () {
+            employeeFilterFallback = null;
             loadLocations();
         });
         $('#date').on('change', loadLocations);
 
         if (isBsEnabled) {
-            $('#date').nepaliDatePicker({
-                dateFormat: '%y-%m-%d',
-                closeOnDateSelect: true
-            });
-        } else {
-            $('#date').attr('type', 'date');
-            $('#date').datepicker({
-                format: 'yyyy-mm-dd',
-                autoclose: true,
-                todayHighlight: true
-            });
-
-            const dateInput = document.getElementById('date');
-            ['focus', 'click'].forEach(eventName => {
-                dateInput.addEventListener(eventName, function () {
-                    if (typeof dateInput.showPicker === 'function') {
-                        dateInput.showPicker();
-                    }
-                });
+            $('.nepaliDate').nepaliDatePicker({
+                language: "english",
+                dateFormat: "YYYY-MM-DD",
+                ndpYear: true,
+                ndpMonth: true,
+                ndpYearCount: 20,
+                disableAfter: "2089-12-30",
             });
         }
 
@@ -490,7 +532,7 @@
                 });
         }
 
-        loadLocations();
+        setTimeout(loadLocations, 300);
         initializeRealtime();
         setInterval(loadLocations, 15000);
     </script>
