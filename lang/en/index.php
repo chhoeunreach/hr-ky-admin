@@ -1097,7 +1097,7 @@ return [
     /** Dashboard Controller */
     'data_found'=>'Data Found',
     /** AdvanceSalary Controller */
-    'advance_salary_pending_error'=>'Another advance salary cannot be requested until the previous advance request is settled.',
+    'advance_salary_pending_error'=>'Another advance salary cannot be requested while the previous request is still pending approval.',
     'data_updated_successfully'=>'Data updated successfully',
     'user_updated_advance_salary_request' => ':name has updated an advance salary request detail',
     'data_created_successfully'=>'Data created successfully',

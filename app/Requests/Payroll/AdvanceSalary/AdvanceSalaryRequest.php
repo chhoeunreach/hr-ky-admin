@@ -2,8 +2,6 @@
 
 namespace App\Requests\Payroll\AdvanceSalary;
 
-use App\Repositories\UserRepository;
-use App\Rules\AdvanceSalaryAmountRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +25,7 @@ class AdvanceSalaryRequest extends FormRequest
     public function rules()
     {
         $rules = [
-            'requested_amount' => ['required','numeric','gt:100', new AdvanceSalaryAmountRule()],
+            'requested_amount' => ['required', 'numeric', 'gte:10'],
             'description' => ['required','string'],
             'documents' => ['nullable', 'array', 'min:1'],
             'documents.*' => ['nullable', 'file', 'mimes:jpeg,png,jpg,docx,doc,xls,pdf', 'max:5048'],

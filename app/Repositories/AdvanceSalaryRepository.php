@@ -84,8 +84,8 @@ class AdvanceSalaryRepository
     public function checkIfEmployeeUnsettledAdvanceSalaryRequestExists($employeeId)
     {
         return AdvanceSalary::where('employee_id', $employeeId)
-            ->where('is_settled', false)
-            ->exists();;
+            ->whereIn('status', ['pending', 'processing'])
+            ->exists();
     }
 
     public function update($advanceSalaryDetail, $validatedData)
