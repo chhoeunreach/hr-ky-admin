@@ -147,7 +147,7 @@
                                         </a>
                                     </td>
                                 @endcan
-                                <td class="text-center">{{ $value->employee_code ?: 'N/A' }}</td>
+                                <td class="text-center">{{ $value->username ?: 'N/A' }}</td>
                                 <td>
                                     @php
                                         $profileImage = $value->avatar

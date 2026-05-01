@@ -34,4 +34,3 @@ class AttendanceReportExport  implements WithMultipleSheets
     }
 
 }
-

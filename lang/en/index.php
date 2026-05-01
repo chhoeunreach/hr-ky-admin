@@ -543,6 +543,8 @@ return [
     'event_name' => 'Event name',
     'leave_requested_year' => 'Leave Requested year',
     'holiday_detail' => 'Holiday Detail',
+    'employee_salary_csv' => 'Employee Salary CSV',
+    'salary_csv_example' => 'Salary CSV Example',
 
     /** notice */
     'notices_section' => 'Notice Section',

@@ -1,0 +1,4 @@
+username,payroll_type,payment_type,annual_salary,basic_salary_type,basic_salary_value,monthly_hours,monthly_basic_salary,annual_basic_salary,monthly_fixed_allowance,annual_fixed_allowance,salary_group_id,hour_rate,weekly_hours,weekly_basic_salary,weekly_fixed_allowance
+employee01,monthly,bank,120000,fixed,10000,160,10000,120000,2000,24000,1,62.5,40,2500,10000
+employee02,monthly,bank,180000,fixed,15000,160,15000,180000,3000,36000,2,93.75,40,3750,15000
+employee03,weekly,bank,100000,percent,8000,40,1538.46,100000,1000,52000,1,200,40,8000,4000

@@ -54,8 +54,13 @@
 
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="card-title mb-0">{{ __('index.employee_salaries') }}</h6>
+                @can('create_salary')
+                    <a href="{{ route('admin.employee-salaries.import-csv.show') }}" class="btn btn-primary btn-sm">
+                        <i class="link-icon" data-feather="upload"></i> {{ __('index.csv_import') }}
+                    </a>
+                @endcan
             </div>
             <div class="card-body">
                 <div class="table-responsive">

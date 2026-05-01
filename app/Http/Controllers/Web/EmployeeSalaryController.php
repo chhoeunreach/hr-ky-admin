@@ -11,6 +11,7 @@ use App\Helpers\NepaliDate;
 use App\Helpers\PayrollHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Imports\EmployeeSalaryImport;
 use App\Models\Company;
 use App\Models\EmployeeAccount;
 use App\Models\EmployeePayslipDetail;
@@ -46,7 +47,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Facades\Excel;
 use MilanTarami\NumberToWordsConverter\Services\NumberToWords;
 
 class EmployeeSalaryController extends Controller
@@ -708,6 +711,38 @@ class EmployeeSalaryController extends Controller
             return response()->json([
                 'error' => $exception->getMessage(),
             ], $exception->getCode() ?: 500);
+        }
+    }
+
+    public function salaryImport(): Factory|View|Application
+    {
+        $this->authorize('create_salary');
+
+        return view($this->view.'importSalaries');
+    }
+
+    public function importSalaries(Request $request): RedirectResponse
+    {
+        $this->authorize('create_salary');
+
+        try {
+            $request->validate([
+                'file' => ['required', 'file', 'mimes:xlsx,csv,txt'],
+            ]);
+
+            Excel::import(new EmployeeSalaryImport(), $request->file('file'));
+
+            return redirect()
+                ->route('admin.employee-salaries.index')
+                ->with('success', __('message.salaries_imported'));
+        } catch (Exception $exception) {
+            Log::error('Employee salary import failed', [
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('danger', $exception->getMessage());
         }
     }
 

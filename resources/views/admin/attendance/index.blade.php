@@ -90,7 +90,7 @@
                                 @can('attendance_show')
                                     <th></th>
                                 @endcan
-                                <th class="text-center">{{ __('index.employee_code') }}</th>
+                                <th class="text-center">{{ __('index.username') }}</th>
                                 <th>{{ __('index.employee_name') }}</th>
                                     @if($multipleAttendance > 1)
                                         <th class="text-center">{{ __('index.total_worked_hours') }}</th>
@@ -167,7 +167,7 @@
                                     @endcan
 
                                     <td class="text-center">
-                                        {{ $firstAttendance->employee_code ?: 'N/A' }}
+                                        {{ $firstAttendance->username ?: 'N/A' }}
                                     </td>
 
                                     <td>
@@ -189,7 +189,7 @@
                                             </a>
                                             <div>
                                                 <div class="fw-semibold">{{ ucfirst($firstAttendance->user_name) }}</div>
-                                                <small class="text-muted">{{ $firstAttendance->employee_code ?: 'N/A' }}</small>
+                                                <small class="text-muted">{{ $firstAttendance->phone ?: 'N/A' }}</small>
                                             </div>
                                         </div>
                                     </td>

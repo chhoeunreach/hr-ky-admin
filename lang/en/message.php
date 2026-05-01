@@ -124,6 +124,7 @@ return [
     'holidays_removed' => 'Holiday Removed Successfully',
     'holidays_imported' => 'Holidays Detail Imported Successfully',
     'holidays_import_error' => 'Your CSV files have unmatched Columns to our database. Your columns must be in this sequence: event, event_date, note and is_public_holiday only',
+    'salaries_imported' => 'Employee Salaries Imported Successfully',
 
     /** Leave */
     'leave_status_updated' => 'Status Updated Successfully',

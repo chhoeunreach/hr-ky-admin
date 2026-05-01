@@ -398,6 +398,8 @@ Route::group([
         Route::resource('employee-salaries', EmployeeSalaryController::class,[
             'except' =>['destroy','create','edit','update','store','show']
         ]);
+        Route::get('employee-salaries/import-csv', [EmployeeSalaryController::class, 'salaryImport'])->name('employee-salaries.import-csv.show');
+        Route::post('employee-salaries/import-csv', [EmployeeSalaryController::class, 'importSalaries'])->name('employee-salaries.import-csv.store');
         Route::get('employee-salaries/update-cycle/{employeeId}/{cycle}', [EmployeeSalaryController::class, 'changeSalaryCycle'])->name('employee-salaries.update-salary-cycle');
         Route::post('employee-salaries/payroll-create', [EmployeeSalaryController::class, 'payrollCreate'])->name('employee-salaries.payroll-create');
         Route::get('employee-salaries/payroll', [EmployeeSalaryController::class, 'payroll'])->name('employee-salary.payroll');
