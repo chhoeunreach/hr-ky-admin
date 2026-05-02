@@ -34,7 +34,7 @@ class AdvanceSalaryExport implements FromCollection, WithHeadings, ShouldAutoSiz
                 'reason' => trim(strip_tags((string) ($advanceSalary->description ?? ''))),
                 'branch' => $requestedBy?->branch?->name ?? '',
                 'phone_number' => $requestedBy->phone ?? '',
-                'type' => 'Advance Salary',
+                'type' => 'ខ្ចី',
                 'loan_amount' => $advanceSalary->requested_amount ?? 0,
                 'payment' => $advanceSalary->released_amount ?? 0,
                 'approved_by' => $verifiedBy->name ?? 'Admin',
@@ -70,4 +70,3 @@ class AdvanceSalaryExport implements FromCollection, WithHeadings, ShouldAutoSiz
         ];
     }
 }
-
