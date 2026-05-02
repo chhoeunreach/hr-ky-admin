@@ -78,3 +78,6 @@ Thumbs.db
 *.tar
 *.gz
 public/downloads/ky-checking-24-04-2026.apk
+.env
+.env.*
+!.env.example
