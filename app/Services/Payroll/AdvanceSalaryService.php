@@ -203,5 +203,64 @@ class AdvanceSalaryService
         return $this->advanceSalaryRepo->getEmployeeApprovedAdvanceSalaryList($employeeId,$firstDay,$days);
     }
 
+    /**
+     * @throws Exception
+     */
+    public function approveByApprover(int $id, float $releasedAmount, ?string $remark, int $approverId)
+    {
+        $advanceSalaryDetail = $this->findAdvanceSalaryDetailById($id);
+        if ($advanceSalaryDetail->status !== 'pending') {
+            throw new Exception('Advance salary request is not pending.', 409);
+        }
+
+        $update = [
+            'status' => 'approved',
+            'released_amount' => $releasedAmount,
+            'amount_granted_date' => Carbon::now()->format('Y-m-d h:i:s'),
+            'remark' => $remark,
+            'verified_by' => $approverId,
+            'is_settled' => false,
+        ];
+
+        DB::beginTransaction();
+        try {
+            $updated = $this->advanceSalaryRepo->update($advanceSalaryDetail, $update);
+            DB::commit();
+            return $updated;
+        } catch (Exception $exception) {
+            DB::rollBack();
+            throw $exception;
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function rejectByApprover(int $id, ?string $remark, int $approverId)
+    {
+        $advanceSalaryDetail = $this->findAdvanceSalaryDetailById($id);
+        if ($advanceSalaryDetail->status !== 'pending') {
+            throw new Exception('Advance salary request is not pending.', 409);
+        }
+
+        $update = [
+            'status' => 'rejected',
+            'remark' => $remark,
+            'verified_by' => $approverId,
+            'is_settled' => true,
+            'released_amount' => null,
+            'amount_granted_date' => null,
+        ];
+
+        DB::beginTransaction();
+        try {
+            $updated = $this->advanceSalaryRepo->update($advanceSalaryDetail, $update);
+            DB::commit();
+            return $updated;
+        } catch (Exception $exception) {
+            DB::rollBack();
+            throw $exception;
+        }
+    }
 
 }

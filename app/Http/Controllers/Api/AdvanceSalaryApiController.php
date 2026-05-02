@@ -16,7 +16,10 @@ use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class AdvanceSalaryApiController extends Controller
 {
@@ -135,6 +138,72 @@ class AdvanceSalaryApiController extends Controller
             return AppHelper::sendSuccessResponse(
                 __('message.status_changed'),
                 new AdvanceSalaryResource($updatedDetail)
+            );
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
+
+    public function approve(Request $request, $id)
+    {
+        try {
+            if (!Gate::allows('advance-salary-approve')) {
+                return AppHelper::sendErrorResponse('Forbidden', 403);
+            }
+
+            $validated = $request->validate([
+                'released_amount' => ['required', 'numeric', 'min:0'],
+                'remark' => ['nullable', 'string'],
+            ]);
+
+            $detail = $this->advanceSalaryService->approveByApprover(
+                (int) $id,
+                (float) $validated['released_amount'],
+                $validated['remark'] ?? null,
+                getAuthUserCode()
+            );
+
+            return AppHelper::sendSuccessResponse(
+                __('message.status_changed'),
+                new AdvanceSalaryResource($detail)
+            );
+        } catch (ValidationException $validationException) {
+            return AppHelper::sendErrorResponse(
+                $validationException->getMessage(),
+                422,
+                $validationException->errors()
+            );
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
+
+    public function reject(Request $request, $id)
+    {
+        try {
+            if (!Gate::allows('advance-salary-approve')) {
+                return AppHelper::sendErrorResponse('Forbidden', 403);
+            }
+
+            $validated = $request->validate([
+                'remark' => ['nullable', 'string'],
+            ]);
+
+            $detail = $this->advanceSalaryService->rejectByApprover(
+                (int) $id,
+                $validated['remark'] ?? null,
+                getAuthUserCode()
+            );
+
+            return AppHelper::sendSuccessResponse(
+                __('message.status_changed'),
+                new AdvanceSalaryResource($detail)
+            );
+        } catch (ValidationException $validationException) {
+            return AppHelper::sendErrorResponse(
+                $validationException->getMessage(),
+                422,
+                $validationException->errors()
             );
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());

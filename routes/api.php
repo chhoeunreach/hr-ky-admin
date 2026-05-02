@@ -140,6 +140,8 @@ Route::group([
     Route::get('employee/advance-salaries-detail/{id}',[AdvanceSalaryApiController::class,'getEmployeeAdvanceSalaryDetailById']);
     Route::post('employee/advance-salaries-detail/update',[AdvanceSalaryApiController::class,'updateDetail']);
     Route::post('advance-salaries/{id}/update-status',[AdvanceSalaryApiController::class,'updateStatus']);
+    Route::post('employee/advance-salaries/{id}/approve', [AdvanceSalaryApiController::class, 'approve']);
+    Route::post('employee/advance-salaries/{id}/reject', [AdvanceSalaryApiController::class, 'reject']);
 
     /** Nfc  */
     Route::post('nfc/store', [NfcApiController::class, 'save']);

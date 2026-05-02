@@ -79,6 +79,16 @@ class DashboardApiController extends Controller
             $overview->upcoming_training = $trainingOverView->upcoming_training;
             $shiftDates = $this->getAllDatesForShiftNotification($userDetail);
             $features = $this->featureRepository->getAllFeatures();
+            $advanceSalaryApproveKey = 'advance-salary-approve';
+            $canApproveAdvanceSalary = AppHelper::checkRoleIdWithGivenPermission(
+                $userDetail->role_id,
+                $advanceSalaryApproveKey
+            );
+            $features->push((object) [
+                'name' => 'Advance Salary Approval Permission',
+                'key' => $advanceSalaryApproveKey,
+                'status' => $canApproveAdvanceSalary ? '1' : '0',
+            ]);
 
 
             $isAwardFeatured = $features->where('key', 'award')->where('status', 1)->first() !== null;
@@ -175,6 +185,5 @@ class DashboardApiController extends Controller
     }
 
 }
-
 
 
