@@ -216,7 +216,7 @@ class AdvanceSalaryService
         $update = [
             'status' => 'approved',
             'released_amount' => $releasedAmount,
-            'amount_granted_date' => Carbon::now()->format('Y-m-d h:i:s'),
+            'amount_granted_date' => Carbon::now()->format('Y-m-d H:i:s'),
             'remark' => $remark,
             'verified_by' => $approverId,
             'is_settled' => false,
