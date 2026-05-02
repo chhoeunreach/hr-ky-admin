@@ -23,7 +23,7 @@
 
                     <div class="col-lg-6 mb-3 releaseAmount">
                         <label for="released_amount" class="form-label"> {{ __('index.released_amount') }} <span style="color: red">*</span></label>
-                        <input type="number" min="100" class="form-control amountReleased"  name="released_amount"
+                        <input type="number" min="10" step="0.01" class="form-control amountReleased"  name="released_amount"
                                value="{{ old('released_amount') }}"
                                autocomplete="off" placeholder="Enter Total Released Amount">
                     </div>

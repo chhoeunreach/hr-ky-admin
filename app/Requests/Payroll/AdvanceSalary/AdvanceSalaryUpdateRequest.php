@@ -27,7 +27,7 @@ class AdvanceSalaryUpdateRequest extends FormRequest
     {
         return [
             'status' => ['required',Rule::in(AdvanceSalary::STATUS)],
-            'released_amount' => ['nullable','numeric','gt:99'],
+            'released_amount' => ['nullable', 'required_if:status,approved', 'numeric', 'gte:10'],
             'documents' => ['sometimes','array','min:1'],
             'documents.*.' => ['sometimes','file','mimes:jpeg,png,jpg,docx,doc,xls,pdf','max:5048'],
             'remark' => ['nullable','required_if:status,rejected,approved','string'],

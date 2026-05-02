@@ -111,7 +111,10 @@ class AdvanceSalaryService
             throw new Exception(__('message.advance_salary_update_error'), 400);
         }
 
-        if ($advanceSalaryDetail->requested_amount < $validatedData['released_amount']) {
+        if (
+            ($validatedData['status'] ?? null) === 'approved' &&
+            $advanceSalaryDetail->requested_amount < $validatedData['released_amount']
+        ) {
             throw new Exception(__('message.advance_salary_limit',['amount'=>$advanceSalaryDetail->requested_amount])  , 400);
         }
 
