@@ -24,13 +24,13 @@
                     <div class="col-lg-6 mb-3 releaseAmount">
                         <label for="released_amount" class="form-label"> {{ __('index.released_amount') }} <span style="color: red">*</span></label>
                         <input type="number" min="10" step="0.01" class="form-control amountReleased"  name="released_amount"
-                               value="{{ old('released_amount') }}"
+                               value="{{ old('released_amount', $advanceSalaryDetail->released_amount) }}"
                                autocomplete="off" placeholder="Enter Total Released Amount">
                     </div>
 
                     <div class="col-lg-6 mb-3 reason">
                         <label for="remark" class="form-label">{{ __('index.remark') }}  <span style="color: red">*</span></label>
-                        <textarea class="form-control remark"  name="remark" id="remark"  rows="4">{{old('remark')}}</textarea>
+                        <textarea class="form-control remark"  name="remark" id="remark"  rows="4">{{ old('remark', $advanceSalaryDetail->remark) }}</textarea>
                     </div>
 
                     <div class="mb-3 col-12 document">

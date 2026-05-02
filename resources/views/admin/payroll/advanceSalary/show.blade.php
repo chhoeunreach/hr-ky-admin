@@ -160,7 +160,7 @@
                 </div>
             </div>
 
-            @if(!in_array($advanceSalaryDetail->status, ['approved','rejected']))
+            @if($advanceSalaryDetail->status !== 'rejected')
                 @include('admin.payroll.advanceSalary.edit_form')
             @endif
         </div>
@@ -170,4 +170,3 @@
 @section('scripts')
     @include('admin.payroll.advanceSalary.common.scripts')
 @endsection
-

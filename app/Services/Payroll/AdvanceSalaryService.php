@@ -107,7 +107,7 @@ class AdvanceSalaryService
      */
     public function advanceSalaryUpdateByAdmin($advanceSalaryDetail, $validatedData)
     {
-        if (in_array($advanceSalaryDetail->status, ['approved', 'rejected'])) {
+        if ($advanceSalaryDetail->status === 'rejected') {
             throw new Exception(__('message.advance_salary_update_error'), 400);
         }
 
@@ -118,12 +118,21 @@ class AdvanceSalaryService
             throw new Exception(__('message.advance_salary_limit',['amount'=>$advanceSalaryDetail->requested_amount])  , 400);
         }
 
-        if ($validatedData['status'] == 'approved') {
+        if (
+            $validatedData['status'] == 'approved' &&
+            empty($advanceSalaryDetail->amount_granted_date)
+        ) {
             $validatedData['amount_granted_date'] = Carbon::now()->format('Y-m-d h:i:s');
         }
 
         if ($validatedData['status'] == 'rejected') {
             $validatedData['is_settled'] = true;
+        } else {
+            $validatedData['is_settled'] = false;
+        }
+
+        if ($validatedData['status'] !== 'approved') {
+            $validatedData['amount_granted_date'] = null;
         }
         DB::beginTransaction();
         $advanceSalary = $this->advanceSalaryRepo->update($advanceSalaryDetail,$validatedData);
@@ -147,13 +156,10 @@ class AdvanceSalaryService
             if(!$advanceSalaryDetail){
                 throw new Exception(__('message.advance_salary_not_found'),404);
             }
-            if($advanceSalaryDetail->status == 'approved'){
-                throw new Exception(__('message.approve_salary_delete_error'),400);
-            }
             DB::beginTransaction();
             $status = $this->advanceSalaryRepo->delete($advanceSalaryDetail);
-            if($status && !is_null($advanceSalaryDetail->attachment)){
-                $this->removeAdvanceSalaryOldAttachment($advanceSalaryDetail['attachment']);
+            if ($status && $advanceSalaryDetail->attachments->isNotEmpty()) {
+                $this->removeAdvanceSalaryOldAttachment($advanceSalaryDetail->attachments);
             }
             DB::commit();
             return $status;
