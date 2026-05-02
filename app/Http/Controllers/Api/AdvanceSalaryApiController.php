@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class AdvanceSalaryApiController extends Controller
 {
@@ -75,6 +76,9 @@ class AdvanceSalaryApiController extends Controller
                 $advanceDetail = $this->advanceSalaryService->store($validatedData);
                 $data = new AdvanceSalaryResource($advanceDetail);
             DB::commit();
+
+            $this->sendAdvanceSalaryRequestTelegramNotification($advanceDetail);
+
             AppHelper::sendNotificationToAuthorizedUser(
                 __('index.advance_salary_request_alert'),
                 __('index.user_submitted_advance_salary_request', [
@@ -260,6 +264,45 @@ class AdvanceSalaryApiController extends Controller
             . "Requested Date: {$requestedDate}\n"
             . "Approved By: {$approvedBy}\n"
             . "Remark: {$remark}";
+
+        $this->telegramService->sendMessage($chatId, $message, 'HTML');
+    }
+
+    private function sendAdvanceSalaryRequestTelegramNotification($advanceSalaryRequestDetail): void
+    {
+        $chatId = (string) config('services.telegram.advance_salary_request_chat_id', '');
+        $botToken = (string) config('services.telegram.bot_token', '');
+
+        if ($chatId === '' || $botToken === '') {
+            Log::warning('Advance salary request Telegram notification skipped due to missing Telegram configuration.', [
+                'chat_id_configured' => $chatId !== '',
+                'bot_token_configured' => $botToken !== '',
+                'advance_salary_id' => $advanceSalaryRequestDetail->id ?? null,
+            ]);
+            return;
+        }
+
+        $advanceSalaryRequestDetail->loadMissing('requestedBy:id,name,username,phone');
+
+        $employee = $advanceSalaryRequestDetail->requestedBy;
+        $employeeName = htmlspecialchars((string) ($employee->name ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $username = htmlspecialchars((string) ($employee->username ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $phone = htmlspecialchars((string) ($employee->phone ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $requestedAmount = number_format((float) ($advanceSalaryRequestDetail->requested_amount ?? 0), 2);
+        $requestedDate = isset($advanceSalaryRequestDetail->advance_requested_date)
+            ? date('M d, Y', strtotime($advanceSalaryRequestDetail->advance_requested_date))
+            : 'N/A';
+
+        $plainDescription = trim((string) Str::of((string) ($advanceSalaryRequestDetail->description ?? ''))->stripTags());
+        $description = htmlspecialchars($plainDescription !== '' ? $plainDescription : 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+        $message = "<b>Advance Salary Request</b>\n"
+            . "Employee: {$employeeName}\n"
+            . "Username: {$username}\n"
+            . "Phone: {$phone}\n"
+            . "Requested Amount: {$requestedAmount}\n"
+            . "Requested Date: {$requestedDate}\n"
+            . "Reason: {$description}";
 
         $this->telegramService->sendMessage($chatId, $message, 'HTML');
     }

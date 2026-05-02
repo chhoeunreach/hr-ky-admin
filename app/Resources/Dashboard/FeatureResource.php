@@ -12,11 +12,10 @@ class FeatureResource extends JsonResource
         return [
             'name' => $this->name ,
             'key' => $this->key ,
-            'status' => $this->status,
+            'status' => (string) ((int) $this->status),
         ];
     }
 }
-
 
 
 
