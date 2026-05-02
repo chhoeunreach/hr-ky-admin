@@ -21,6 +21,11 @@ class AdvanceSalaryService
         return $this->advanceSalaryRepo->getAllAdvanceSalaryRequestLists($filterParameters,$select,$with);
     }
 
+    public function getAllAdvanceSalaryDetailForExport($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->advanceSalaryRepo->getAllAdvanceSalaryRequestListsForExport($filterParameters, $select, $with);
+    }
+
     public function getAllEmployeeAdvanceSalaryListDetail($employeeId,$select=['*'],$with=[])
     {
         return $this->advanceSalaryRepo->getAllEmployeeAdvanceSalaryRequestLists($employeeId,$select,$with);

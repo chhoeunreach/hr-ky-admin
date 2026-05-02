@@ -78,6 +78,10 @@
                                     class="btn btn-block btn-secondary me-2">{{  __('index.filter') }}</button>
                             <a href="{{route('admin.advance-salaries.index')}}"
                                class="btn btn-block btn-primary">{{  __('index.reset') }}</a>
+                            <a href="{{ route('admin.advance-salaries.export', request()->query()) }}"
+                               class="btn btn-block btn-success ms-2">
+                                Export
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -176,8 +180,6 @@
 @section('scripts')
     @include('admin.payroll.advanceSalary.common.scripts')
 @endsection
-
-
 
 
 

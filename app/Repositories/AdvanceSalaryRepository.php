@@ -51,6 +51,49 @@ class AdvanceSalaryRepository
             ->paginate( getRecordPerPage());
     }
 
+    public function getAllAdvanceSalaryRequestListsForExport($filterParameters, $select = ['*'], $with = [])
+    {
+        $startDate = null;
+        $endDate = null;
+        if (isset($filterParameters['month'])) {
+            if (AppHelper::ifDateInBsEnabled()) {
+                $currentNepaliYearMonth = AppHelper::getCurrentYearMonth();
+                $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($currentNepaliYearMonth['year'], $filterParameters['month']);
+
+                $startDate = date('Y-m-d', strtotime($dateInAD['start_date'])) ?? null;
+                $endDate = date('Y-m-d', strtotime($dateInAD['end_date'])) ?? null;
+            } else {
+                $firstDayOfMonth = Carbon::create(date('Y'), $filterParameters['month'], 1)->startOfDay();
+                $startDate = date('Y-m-d', strtotime($firstDayOfMonth));
+                $endDate = date('Y-m-d', strtotime($firstDayOfMonth->endOfMonth()));
+            }
+        }
+
+        return AdvanceSalary::query()->select($select)->with($with)
+            ->when(isset($filterParameters['status']), function ($query) use ($filterParameters) {
+                $query->where('status', $filterParameters['status']);
+            })
+            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+                $query->whereHas('requestedBy', function ($subQuery) use ($filterParameters) {
+                    $subQuery->where('branch_id', $filterParameters['branch_id']);
+                });
+            })
+            ->when(isset($filterParameters['department_id']), function ($query) use ($filterParameters) {
+                $query->whereHas('requestedBy', function ($subQuery) use ($filterParameters) {
+                    $subQuery->where('department_id', $filterParameters['department_id']);
+                });
+            })
+            ->when(isset($filterParameters['employee_id']), function ($query) use ($filterParameters) {
+                $query->where('employee_id', $filterParameters['employee_id']);
+            })
+            ->when(isset($filterParameters['month']) && $startDate && $endDate, function ($query) use ($startDate, $endDate) {
+                $query->whereDate('advance_requested_date', '>=', $startDate)
+                    ->whereDate('advance_requested_date', '<=', $endDate);
+            })
+            ->latest()
+            ->get();
+    }
+
     public function getAllEmployeeAdvanceSalaryRequestLists($employeeId,$select,$with)
     {
         return AdvanceSalary::select($select)->with($with)

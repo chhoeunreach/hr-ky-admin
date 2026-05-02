@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Exports\AdvanceSalaryExport;
 use App\Repositories\CompanyRepository;
 use App\Repositories\GeneralSettingRepository;
 use App\Requests\GeneralSetting\GeneralSettingRequest;
@@ -17,6 +18,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AdvanceSalaryController extends Controller
 {
@@ -160,6 +162,33 @@ class AdvanceSalaryController extends Controller
             DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('view_advance_salary_list');
+
+        $filterParameters = [
+            'branch_id' => $request->branch_id ?? null,
+            'department_id' => $request->department_id ?? null,
+            'employee_id' => $request->employee_id ?? null,
+            'status' => $request->status ?? null,
+            'month' => $request->month ?? null,
+        ];
+
+        $filterParameters = array_filter($filterParameters, fn ($value) => $value !== null && $value !== '');
+
+        $with = [
+            'requestedBy:id,name,username,phone,branch_id',
+            'requestedBy.branch:id,name',
+            'verifiedBy:id,name',
+        ];
+
+        $advanceSalaries = $this->advanceSalaryService->getAllAdvanceSalaryDetailForExport($filterParameters, ['*'], $with);
+
+        $fileName = 'advance-salary-export-' . date('Y-m-d') . '.xlsx';
+
+        return Excel::download(new AdvanceSalaryExport($advanceSalaries), $fileName);
     }
 
     /**

@@ -430,6 +430,7 @@ Route::group([
         Route::post('advance-salaries/setting/{id}', [AdvanceSalaryController::class, 'updateSetting'])->name('advance-salaries.setting.store');
 
         /** Advance Salary route */
+        Route::get('advance-salaries/export', [AdvanceSalaryController::class, 'export'])->name('advance-salaries.export');
         Route::resource('advance-salaries', AdvanceSalaryController::class,[
             'except' => ['destroy','store','edit']
         ]);
