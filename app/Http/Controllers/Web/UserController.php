@@ -23,6 +23,7 @@ use App\Requests\User\UserAccountRequest;
 use App\Requests\User\UserCreateRequest;
 use App\Requests\User\UserLeaveTypeRequest;
 use App\Requests\User\UserUpdateRequest;
+use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +51,8 @@ class UserController extends Controller
                                 protected BranchRepository            $branchRepository,
                                 protected LeaveTypeRepository         $leaveTypeRepository,
                                 protected EmployeeLeaveTypeRepository $employeeLeaveTypeRepository,
-                                protected PostRepository $postRepository,
+                                protected PostRepository              $postRepository,
+                                protected TelegramService             $telegramService,
 
     )
     {
@@ -159,6 +161,7 @@ class UserController extends Controller
             }
 
             DB::commit();
+            $this->sendNewEmployeeWelcomeTelegramNotification($user->id);
             return redirect()
                 ->route('admin.employees.index')
                 ->with('success', __('message.add_user'));
@@ -188,6 +191,44 @@ class UserController extends Controller
             return view($this->view . 'show2', compact('userDetail'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getFile());
+        }
+    }
+
+    private function sendNewEmployeeWelcomeTelegramNotification(int $userId): void
+    {
+        try {
+            $user = $this->userRepo->findUserDetailById($userId, ['*'], [
+                'branch:id,name',
+                'department:id,dept_name',
+                'post:id,post_name',
+            ]);
+
+            if (!$user) {
+                return;
+            }
+
+            $employeeName = htmlspecialchars((string) $user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $employeeCode = htmlspecialchars((string) ($user->employee_code ?: 'មិនទាន់មាន'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $branchName = htmlspecialchars((string) (optional($user->branch)->name ?: 'មិនមាន'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $departmentName = htmlspecialchars((string) (optional($user->department)->dept_name ?: 'មិនមាន'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $positionName = htmlspecialchars((string) (optional($user->post)->post_name ?: 'មិនមាន'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $joiningDate = $user->joining_date ? date('d-m-Y', strtotime($user->joining_date)) : 'មិនមាន';
+
+            $message = "<b>សូមស្វាគមន៍បុគ្គលិកថ្មី</b>\n"
+                . "ឈ្មោះ: {$employeeName}\n"
+                . "លេខសម្គាល់: {$employeeCode}\n"
+                . "សាខា: {$branchName}\n"
+                . "ផ្នែក: {$departmentName}\n"
+                . "តួនាទី: {$positionName}\n"
+                . "ថ្ងៃចូលបម្រើការងារ: {$joiningDate}\n\n"
+                . "សូមស្វាគមន៍មកកាន់ក្រុមការងាររបស់យើង។";
+
+            $this->telegramService->sendToAllKnownChats($message, 'HTML');
+        } catch (Exception $exception) {
+            Log::warning('New employee welcome Telegram notification failed.', [
+                'user_id' => $userId,
+                'error' => $exception->getMessage(),
+            ]);
         }
     }
 

@@ -22,17 +22,7 @@ class TelegramService
         $branchName = trim($branchName);
         $departmentName = trim($departmentName);
 
-        $defaultChatId = (string) config('services.telegram.default_chat_id', '');
-        $resolvedChatId = $this->resolveChatId($branchName, $departmentName);
-
-        if ($resolvedChatId === null) {
-            Log::error('Telegram routing failed (missing or unknown branch/department).', [
-                'branchName' => $branchName,
-                'departmentName' => $departmentName,
-            ]);
-        }
-
-        $chatIds = array_values(array_unique(array_filter([$defaultChatId, $resolvedChatId])));
+        $chatIds = $this->getNotificationChatIds($branchName, $departmentName);
 
         if ($chatIds === []) {
             Log::error('Telegram notification skipped: no chat_id available (check services.telegram.default_chat_id).');
@@ -48,6 +38,23 @@ class TelegramService
                 $locationOk = $this->sendLocation($chatId, $latitude, $longitude);
                 $allOk = $allOk && $locationOk;
             }
+        }
+
+        return $allOk;
+    }
+
+    public function sendToAllKnownChats(string $messageText, ?string $parseMode = null): bool
+    {
+        $chatIds = $this->getAllKnownChatIds();
+
+        if ($chatIds === []) {
+            Log::error('Telegram broadcast skipped: no chat IDs available.');
+            return false;
+        }
+
+        $allOk = true;
+        foreach ($chatIds as $chatId) {
+            $allOk = $this->sendMessage($chatId, $messageText, $parseMode) && $allOk;
         }
 
         return $allOk;
@@ -121,6 +128,38 @@ class TelegramService
         $response = $this->post('sendLocation', $payload, ['chatId' => $chatId]);
 
         return $response?->successful() ?? false;
+    }
+
+    private function getNotificationChatIds(string $branchName, string $departmentName): array
+    {
+        $defaultChatId = (string) config('services.telegram.default_chat_id', '');
+        $resolvedChatId = $this->resolveChatId($branchName, $departmentName);
+
+        if ($resolvedChatId === null) {
+            Log::error('Telegram routing failed (missing or unknown branch/department).', [
+                'branchName' => $branchName,
+                'departmentName' => $departmentName,
+            ]);
+        }
+
+        return array_values(array_unique(array_filter([$defaultChatId, $resolvedChatId])));
+    }
+
+    private function getAllKnownChatIds(): array
+    {
+        return array_values(array_unique(array_filter([
+            (string) config('services.telegram.default_chat_id', ''),
+            (string) config('services.telegram.advance_salary_chat_id', ''),
+            (string) config('services.telegram.advance_salary_request_chat_id', ''),
+            '-1002799577548',
+            '-1002842364173',
+            '-1002705869028',
+            '-1002351902820',
+            '-1002509454514',
+            '-1002806714995',
+            '-1002727901053',
+            '-1002617998738',
+        ])));
     }
 
     private function post(string $method, array $payload, array $context = []): ?Response
