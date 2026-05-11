@@ -175,13 +175,16 @@
                                             $profileImage = $firstAttendance->avatar
                                                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $firstAttendance->avatar)
                                                 : asset('assets/images/img.png');
+                                            $profileTitle = ucfirst($firstAttendance->user_name)
+                                                . ' | ' . __('index.branch_name') . ': ' . ($firstAttendance->branch_name ? ucfirst($firstAttendance->branch_name) : 'N/A')
+                                                . ' | ' . __('index.department') . ': ' . ($firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : 'N/A');
                                         @endphp
                                         <div class="d-flex align-items-center gap-2">
                                             <a href="#"
                                                class="showProfilePhoto"
                                                data-src="{{ $profileImage }}"
                                                data-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                               title="{{ ucfirst($firstAttendance->user_name) }}">
+                                               title="{{ $profileTitle }}">
                                                 <img src="{{ $profileImage }}"
                                                  alt="{{ ucfirst($firstAttendance->user_name) }}"
                                                  class="rounded-circle"

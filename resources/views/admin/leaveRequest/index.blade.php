@@ -137,6 +137,8 @@
                                 <th>{{ __('index.to') }}</th>
                                 <th>{{ __('index.requested_date') }}</th>
                                 <th>{{ __('index.requested_by') }}</th>
+                                <th>{{ __('index.branch_name') }}</th>
+                                <th>{{ __('index.department') }}</th>
                                 <th class="text-center">{{ __('index.requested_days') }}</th>
                                 @canany(['show_leave_request_detail','access_admin_leave'])
                                     <th class="text-center">{{ __('index.reason') }}</th>
@@ -167,6 +169,8 @@
                                         <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
                                         <td>{{\App\Helpers\AppHelper::formatDateForView($value->leave_requested_date)}}</td>
                                         <td>{{$value->leaveRequestedBy ? ucfirst($value->leaveRequestedBy->name) : 'N/A'}} </td>
+                                        <td>{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
+                                        <td>{{ $value->department ? ucfirst($value->department->dept_name) : 'N/A' }}</td>
                                         <td class="text-center">{{($value->no_of_days )}}</td>
 
                                             <td class="text-center">
@@ -215,6 +219,8 @@
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
                                             <td>{{\App\Helpers\AppHelper::formatDateForView($value->leave_requested_date)}}</td>
                                             <td>{{$value->leaveRequestedBy ? ucfirst($value->leaveRequestedBy->name) : 'N/A'}} </td>
+                                            <td>{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
+                                            <td>{{ $value->department ? ucfirst($value->department->dept_name) : 'N/A' }}</td>
                                             <td class="text-center">{{($value->no_of_days )}}</td>
 
                                             @canany(['show_leave_request_detail','access_admin_leave'])
@@ -253,6 +259,8 @@
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
                                             <td>{{\App\Helpers\AppHelper::formatDateForView($value->leave_requested_date)}}</td>
                                             <td>{{$value->leaveRequestedBy ? ucfirst($value->leaveRequestedBy->name) : 'N/A'}} </td>
+                                            <td>{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
+                                            <td>{{ $value->department ? ucfirst($value->department->dept_name) : 'N/A' }}</td>
                                             <td class="text-center">{{($value->no_of_days )}}</td>
 
                                             @canany(['show_leave_request_detail','access_admin_leave'])
@@ -365,8 +373,5 @@
 
     </script>
 @endsection
-
-
-
 
 

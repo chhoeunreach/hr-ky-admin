@@ -44,7 +44,7 @@ class LeaveController extends Controller
             try {
                 $filterParameters = $this->buildLeaveRequestFilters($request);
                 $months = AppHelper::MONTHS;
-                $with = ['leaveType:id,name', 'leaveRequestedBy:id,name','requestApproval'];
+                $with = ['leaveType:id,name', 'leaveRequestedBy:id,name', 'branch:id,name', 'department:id,dept_name', 'requestApproval'];
                 $select = ['leave_requests_master.*'];
                 $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequests($filterParameters,$select, $with);
 
