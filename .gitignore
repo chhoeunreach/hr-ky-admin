@@ -1,4 +1,4 @@
-# ===============================
+\# ===============================
 # Laravel
 # ===============================
 /vendor
@@ -81,3 +81,4 @@ public/downloads/ky-checking-24-04-2026.apk
 .env
 .env.*
 !.env.example
+public/uploads/
