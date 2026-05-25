@@ -15,7 +15,10 @@ Trait ImageService
         }
         $fileNameToStore = uniqid().'_'.trim($file->getClientOriginalName()) ;
         $success = $file->move($path, $fileNameToStore);
-        if($success && !in_array($file->getClientOriginalExtension(),['pdf','doc','docx','ppt','txt','xls','zip'])){
+        if($success && !in_array(strtolower($file->getClientOriginalExtension()),[
+            'pdf','doc','docx','ppt','txt','xls','zip',
+            'mp3','wav','ogg','m4a','aac','webm'
+        ])){
             Image::make($path."/". $fileNameToStore)->resize($width, $height, function ($constraint) {
                 $constraint->aspectRatio();
             })->save($path.'/Thumb-'.$fileNameToStore);

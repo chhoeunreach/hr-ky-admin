@@ -14,9 +14,12 @@ class Support extends Model
 
     protected $table = 'supports';
 
+    public const UPLOAD_PATH = 'uploads/support/';
+
     protected $fillable = [
         'title',
         'description',
+        'voice_message',
         'is_seen',
         'status',
         'department_id',

@@ -51,7 +51,7 @@ class SupportApiController extends Controller
             }
 
             return AppHelper::sendSuccessResponse(
-                __('index.query_submitted_successfully'),
+                '',
                 new SupportResource($detail)
             );
         } catch (Exception $e) {

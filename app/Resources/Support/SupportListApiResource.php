@@ -11,6 +11,7 @@ class SupportListApiResource extends JsonResource
         return [
             'title' => ucfirst($this->title),
             'description' => ($this->description),
+            'voice_message' => $this->voice_message ? asset(\App\Models\Support::UPLOAD_PATH.$this->voice_message) : null,
             'query_date' => date('M d Y',strtotime($this->query_date)),
             'status' => ucwords(removeSpecialChar($this->status)),
             'requested_department' => ucfirst($this->requested_department).' '. __('index.department'),

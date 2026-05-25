@@ -15,6 +15,7 @@ class SupportResource extends JsonResource
             'id' => $this->id,
             'title' => ucfirst($this->title),
             'description' => ($this->description),
+            'voice_message' => $this->voice_message ? asset(\App\Models\Support::UPLOAD_PATH.$this->voice_message) : null,
             'created_at' => date('M d Y',strtotime($this->created_at)),
             'created_by' => ($this->createdBy) ? ucfirst($this->createdBy->name) : '',
             'requested_department' => isset($this->departmentQuery)

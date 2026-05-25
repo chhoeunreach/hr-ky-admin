@@ -5,11 +5,14 @@ namespace App\Repositories;
 use App\Helpers\AppHelper;
 use App\Models\Department;
 use App\Models\Support;
+use App\Traits\ImageService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class SupportRepository
 {
+    use ImageService;
+
     public function getAllQueryDetail($filterParameters,$select=['*'],$with=[])
     {
 
@@ -47,6 +50,10 @@ class SupportRepository
 
     public function store($validatedData)
     {
+        if (isset($validatedData['voice_message'])) {
+            $validatedData['voice_message'] = $this->storeImage($validatedData['voice_message'], Support::UPLOAD_PATH);
+        }
+
         return Support::create($validatedData)->fresh();
     }
 
@@ -83,6 +90,7 @@ class SupportRepository
             ->select([
                 'supports.title as title',
                 'supports.description as description',
+                'supports.voice_message as voice_message',
                 'supports.status as status',
                 'supports.created_at as query_date',
                 'supports.updated_at as updated_date',

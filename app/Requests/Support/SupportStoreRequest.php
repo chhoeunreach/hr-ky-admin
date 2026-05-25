@@ -38,6 +38,7 @@ class SupportStoreRequest extends FormRequest
         return [
             'title' => 'required|string|max:200',
             'description' => 'required|string',
+            'voice_message' => 'nullable|file|mimes:mp3,wav,ogg,m4a,aac,webm|max:10240',
             'branch_id' => ['required', Rule::exists('branches','id')],
             'department_id' => ['required', Rule::exists('departments','id')
                 ->where('is_active',Department::IS_ACTIVE)
