@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+    Options -MultiViews -Indexes
+
+    RewriteEngine On
+
+    # Serve public storage files directly and never route them through Laravel.
+    RewriteRule ^storage/ - [L]
+
+    # If the requested file or directory exists, let Apache serve it as-is.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^ index.php [L]
+</IfModule>
