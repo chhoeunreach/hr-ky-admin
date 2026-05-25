@@ -306,15 +306,23 @@ class EmployeeChatApiController extends Controller
     private function resolveAdminConversation(int $userId, Request $request): ChatConversation
     {
         if ($request->filled('conversation_id')) {
-            return ChatConversation::query()
+            $conversation = ChatConversation::query()
                 ->where('id', (int) $request->input('conversation_id'))
                 ->where('user_id', $userId)
                 ->whereNotNull('admin_id')
-                ->firstOrFail();
+                ->first();
+
+            if ($conversation) {
+                return $conversation;
+            }
         }
 
         if ($request->filled('admin_id')) {
             return $this->getOrCreateAdminConversation($userId, (int) $request->input('admin_id'));
+        }
+
+        if ($request->filled('source_id')) {
+            return $this->getOrCreateAdminConversation($userId, (int) $request->input('source_id'));
         }
 
         $defaultAdmin = Admin::query()

@@ -6,26 +6,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('chat_conversations', function (Blueprint $table) {
-            $table->foreignId('admin_id')
-                ->nullable()
-                ->after('user_id')
-                ->constrained('admins')
-                ->nullOnDelete();
 
-            $table->dropUnique('chat_conversations_user_id_unique');
-            $table->unique(['user_id', 'admin_id'], 'chat_conversations_user_admin_unique');
+            if (!Schema::hasColumn('chat_conversations', 'admin_id')) {
+                $table->unsignedBigInteger('admin_id')
+                    ->nullable()
+                    ->after('user_id');
+            }
+
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('chat_conversations', function (Blueprint $table) {
-            $table->dropUnique('chat_conversations_user_admin_unique');
-            $table->unique('user_id');
-            $table->dropConstrainedForeignId('admin_id');
+
+            if (Schema::hasColumn('chat_conversations', 'admin_id')) {
+                $table->dropColumn('admin_id');
+            }
+
         });
     }
 };
