@@ -24,10 +24,11 @@ class EmployeeChatController extends Controller
     public function index(Request $request)
     {
         $this->authorize('view_employee_chat');
+        $admin = auth('admin')->user();
 
         $staffList = $this->getStaffList();
         $selectedStaff = $this->resolveSelectedStaff($staffList, $request->integer('employee_id'));
-        $conversation = $selectedStaff ? $this->getOrCreateConversation($selectedStaff->id) : null;
+        $conversation = $selectedStaff ? $this->getOrCreateConversation($selectedStaff->id, $admin->id) : null;
         $messages = collect();
 
         if ($conversation) {
@@ -52,6 +53,7 @@ class EmployeeChatController extends Controller
 
         $staffList = $this->getStaffList();
         $selectedStaff = $this->resolveSelectedStaff($staffList, $request->integer('employee_id'));
+        $admin = auth('admin')->user();
 
         if (!$selectedStaff) {
             return response()->json([
@@ -60,7 +62,7 @@ class EmployeeChatController extends Controller
             ], 404);
         }
 
-        $conversation = $this->getOrCreateConversation($selectedStaff->id);
+        $conversation = $this->getOrCreateConversation($selectedStaff->id, $admin->id);
         $this->markMessagesAsReadByAdmin($conversation);
         $messages = $conversation->messages()
             ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
@@ -117,7 +119,7 @@ class EmployeeChatController extends Controller
             ->findOrFail((int) $request->input('employee_id'));
 
         $admin = auth('admin')->user();
-        $conversation = $this->getOrCreateConversation($employee->id);
+        $conversation = $this->getOrCreateConversation($employee->id, $admin->id);
 
         DB::transaction(function () use ($request, $conversation, $admin, $employee) {
             $messageType = $request->input('message_type', ChatMessage::TYPE_TEXT);
@@ -186,12 +188,17 @@ class EmployeeChatController extends Controller
 
     private function getStaffList()
     {
+        $adminId = auth('admin')->id();
+
         return User::query()
             ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status'])
             ->with([
                 'department:id,dept_name',
                 'branch:id,name',
-                'chatConversation.latestMessage',
+                'chatConversations' => function ($query) use ($adminId) {
+                    $query->where('admin_id', $adminId)
+                        ->with('latestMessage');
+                },
             ])
             ->where('status', 'verified')
             ->where('is_active', 1)
@@ -208,9 +215,12 @@ class EmployeeChatController extends Controller
         return $staffList->firstWhere('id', $employeeId) ?? $staffList->first();
     }
 
-    private function getOrCreateConversation(int $employeeId): ChatConversation
+    private function getOrCreateConversation(int $employeeId, int $adminId): ChatConversation
     {
-        return ChatConversation::firstOrCreate(['user_id' => $employeeId]);
+        return ChatConversation::firstOrCreate([
+            'user_id' => $employeeId,
+            'admin_id' => $adminId,
+        ]);
     }
 
     private function markMessagesAsReadByAdmin(ChatConversation $conversation): void

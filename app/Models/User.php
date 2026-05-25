@@ -196,7 +196,13 @@ class User extends Authenticatable
 
     public function chatConversation(): HasOne
     {
-        return $this->hasOne(ChatConversation::class, 'user_id', 'id');
+        return $this->hasOne(ChatConversation::class, 'user_id', 'id')
+            ->whereNull('admin_id');
+    }
+
+    public function chatConversations(): HasMany
+    {
+        return $this->hasMany(ChatConversation::class, 'user_id', 'id');
     }
 
     public function sendPasswordResetNotification($token)

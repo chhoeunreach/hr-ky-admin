@@ -439,10 +439,11 @@
                 </div>
 
                 <div class="chat-staff-list" id="chat-staff-list">
-                    @forelse($staffList as $staff)
-                        @php
-                            $latestMessage = $staff->chatConversation?->latestMessage;
-                            $preview = $latestMessage?->message
+                        @forelse($staffList as $staff)
+                            @php
+                                $latestConversation = $staff->chatConversations->first();
+                                $latestMessage = $latestConversation?->latestMessage;
+                                $preview = $latestMessage?->message
                                 ?: ($latestMessage?->message_type === \App\Models\ChatMessage::TYPE_IMAGE
                                     ? 'Sent a photo'
                                     : ($latestMessage?->message_type === \App\Models\ChatMessage::TYPE_VOICE

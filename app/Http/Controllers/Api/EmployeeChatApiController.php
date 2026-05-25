@@ -23,12 +23,15 @@ class EmployeeChatApiController extends Controller
     {
         $user = auth()->user();
         $scope = MobileChatHelper::getScope();
-        $conversation = ChatConversation::firstOrCreate(['user_id' => $user->id]);
         $adminList = Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'avatar']);
-        $adminContact = $this->buildAdminContact($conversation, $adminList->first());
+        $primaryAdmin = $adminList->first();
+        $conversation = $primaryAdmin
+            ? $this->getOrCreateAdminConversation($user->id, $primaryAdmin->id)
+            : null;
+        $adminContact = $this->buildAdminContact($conversation, $primaryAdmin);
 
         return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
             'scope' => $scope,
@@ -36,20 +39,27 @@ class EmployeeChatApiController extends Controller
             'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
             'admin_chat_enabled' => true,
             'admin_contact' => $adminContact,
-            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin, $conversation))->values(),
+            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
+                $admin,
+                $this->getOrCreateAdminConversation($user->id, $admin->id)
+            ))->values(),
         ]);
     }
 
     public function contacts(): JsonResponse
     {
         $scope = MobileChatHelper::getScope();
-        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
+        $authUserId = auth()->id();
+        $primaryAdmin = Admin::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->first(['id', 'name', 'username', 'avatar']);
+        $conversation = $primaryAdmin
+            ? $this->getOrCreateAdminConversation($authUserId, $primaryAdmin->id)
+            : null;
         $adminContact = $this->buildAdminContact(
             $conversation,
-            Admin::query()
-                ->where('is_active', 1)
-                ->orderBy('name')
-                ->first(['id', 'name', 'username', 'avatar'])
+            $primaryAdmin
         );
 
         if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
@@ -57,7 +67,7 @@ class EmployeeChatApiController extends Controller
                 'scope' => $scope,
                 'admin_contact' => $adminContact,
                 'pinned_contacts' => [$adminContact],
-                'contacts' => $this->getAdminDirectoryEntries($conversation),
+                'contacts' => $this->getAdminDirectoryEntries($authUserId),
             ]);
         }
 
@@ -74,7 +84,7 @@ class EmployeeChatApiController extends Controller
             ->values();
 
         $contacts = $employeeContacts
-            ->concat($this->getAdminDirectoryEntries($conversation))
+            ->concat($this->getAdminDirectoryEntries($authUserId))
             ->values();
 
         return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
@@ -87,7 +97,7 @@ class EmployeeChatApiController extends Controller
 
     public function messages(): JsonResponse
     {
-        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
+        $conversation = $this->resolveAdminConversation(auth()->id(), request());
         $conversation->messages()
             ->where('sender_type', ChatMessage::SENDER_ADMIN)
             ->where('is_read_by_user', false)
@@ -131,7 +141,7 @@ class EmployeeChatApiController extends Controller
             return AppHelper::sendErrorResponse($validator->errors()->first(), 422, $validator->errors()->toArray());
         }
 
-        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
+        $conversation = $this->resolveAdminConversation(auth()->id(), $request);
 
         DB::transaction(function () use ($request, $conversation) {
             $messageType = $request->input('message_type', ChatMessage::TYPE_TEXT);
@@ -226,13 +236,16 @@ class EmployeeChatApiController extends Controller
         ];
     }
 
-    private function getAdminDirectoryEntries(?ChatConversation $conversation = null)
+    private function getAdminDirectoryEntries(int $userId)
     {
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin, $conversation))
+            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
+                $admin,
+                $this->getOrCreateAdminConversation($userId, $admin->id)
+            ))
             ->values();
     }
 
@@ -265,7 +278,7 @@ class EmployeeChatApiController extends Controller
         ];
     }
 
-    private function buildAdminContact(ChatConversation $conversation, ?Admin $admin): array
+    private function buildAdminContact(?ChatConversation $conversation, ?Admin $admin): array
     {
         return [
             'id' => 'admin-thread',
@@ -277,8 +290,39 @@ class EmployeeChatApiController extends Controller
             'avatar' => $admin?->avatar
                 ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
                 : asset('assets/images/img.png'),
-            'conversation_id' => (string) $conversation->id,
+            'conversation_id' => $conversation ? (string) $conversation->id : null,
+            'admin_id' => $admin?->id,
         ];
+    }
+
+    private function getOrCreateAdminConversation(int $userId, int $adminId): ChatConversation
+    {
+        return ChatConversation::firstOrCreate([
+            'user_id' => $userId,
+            'admin_id' => $adminId,
+        ]);
+    }
+
+    private function resolveAdminConversation(int $userId, Request $request): ChatConversation
+    {
+        if ($request->filled('conversation_id')) {
+            return ChatConversation::query()
+                ->where('id', (int) $request->input('conversation_id'))
+                ->where('user_id', $userId)
+                ->whereNotNull('admin_id')
+                ->firstOrFail();
+        }
+
+        if ($request->filled('admin_id')) {
+            return $this->getOrCreateAdminConversation($userId, (int) $request->input('admin_id'));
+        }
+
+        $defaultAdmin = Admin::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->firstOrFail(['id']);
+
+        return $this->getOrCreateAdminConversation($userId, $defaultAdmin->id);
     }
 
     private function storeAttachment(UploadedFile $file): array

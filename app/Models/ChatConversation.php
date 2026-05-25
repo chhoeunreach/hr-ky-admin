@@ -11,6 +11,7 @@ class ChatConversation extends Model
 {
     protected $fillable = [
         'user_id',
+        'admin_id',
         'last_message_at',
     ];
 
@@ -21,6 +22,11 @@ class ChatConversation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function admin(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 
     public function messages(): HasMany

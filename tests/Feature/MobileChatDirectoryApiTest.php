@@ -144,6 +144,7 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('admin', $adminEntry['user_type']);
         $this->assertSame('Administration', $adminEntry['department']);
         $this->assertSame('Admin', $adminEntry['post']);
+        $this->assertNotEmpty($adminEntry['conversation_id']);
     }
 
     public function test_chat_contacts_returns_all_employees_plus_admins(): void
@@ -220,6 +221,17 @@ class MobileChatDirectoryApiTest extends TestCase
             'updated_at' => now(),
         ]);
 
+        DB::table('admins')->insert([
+            'name' => 'Admin User 2',
+            'username' => 'admin.user2',
+            'email' => 'admin2@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         Passport::actingAs($requester);
 
         $response = $this->getJson('/api/employee/chat/contacts');
@@ -228,10 +240,11 @@ class MobileChatDirectoryApiTest extends TestCase
         $contacts = $response->json('data.contacts');
 
         $this->assertIsArray($contacts);
-        $this->assertCount(2, $contacts);
+        $this->assertCount(3, $contacts);
 
         $employeeEntry = collect($contacts)->firstWhere('username', 'online.user');
         $adminEntry = collect($contacts)->firstWhere('username', 'admin.user');
+        $secondAdminEntry = collect($contacts)->firstWhere('username', 'admin.user2');
 
         $this->assertNotNull($employeeEntry);
         $this->assertSame('0', $employeeEntry['is_admin']);
@@ -244,6 +257,11 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('admin', $adminEntry['user_type']);
         $this->assertSame('admin', $adminEntry['directory_type']);
         $this->assertFalse($adminEntry['is_online']);
+        $this->assertNotEmpty($adminEntry['conversation_id']);
+
+        $this->assertNotNull($secondAdminEntry);
+        $this->assertNotEmpty($secondAdminEntry['conversation_id']);
+        $this->assertNotSame($adminEntry['conversation_id'], $secondAdminEntry['conversation_id']);
     }
 
     private function makeRole(string $slug): Role
@@ -347,6 +365,7 @@ class MobileChatDirectoryApiTest extends TestCase
             Schema::create('chat_conversations', function (Blueprint $table) {
                 $table->id();
                 $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('admin_id')->nullable();
                 $table->timestamp('last_message_at')->nullable();
                 $table->timestamps();
             });

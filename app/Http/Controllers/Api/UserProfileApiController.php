@@ -148,18 +148,10 @@ class UserProfileApiController extends Controller
 //            if($updateOnline){
                 $companyWithEmployee = $this->companyRepo
                     ->findOrFailCompanyDetailById(AppHelper::getAuthUserCompanyId(), $select, $with);
-                $conversation = null;
-                if (auth()->check() && auth()->id()) {
-                    try {
-                        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
-                    } catch (\Throwable $throwable) {
-                        $conversation = null;
-                    }
-                }
                 $companyDetail = (new CompanyResource($companyWithEmployee))->toArray(request());
                 $companyDetail['employee'] = array_values(array_merge(
                     $companyDetail['employee'],
-                    $this->getAdminDirectoryEntries($conversation)
+                    $this->getAdminDirectoryEntries(auth()->id())
                 ));
 
                 $branches = $this->branchRepository->getBranchesWithDepartments();
@@ -176,14 +168,26 @@ class UserProfileApiController extends Controller
         }
     }
 
-    private function getAdminDirectoryEntries(?ChatConversation $conversation = null): array
+    private function getAdminDirectoryEntries(?int $userId = null): array
     {
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) use ($conversation) {
+            ->map(function (Admin $admin) use ($userId) {
                 $directoryId = 1000000 + (int) $admin->id;
+                $conversation = null;
+
+                if ($userId) {
+                    try {
+                        $conversation = ChatConversation::firstOrCreate([
+                            'user_id' => $userId,
+                            'admin_id' => $admin->id,
+                        ]);
+                    } catch (\Throwable $throwable) {
+                        $conversation = null;
+                    }
+                }
 
                 return [
                     'id' => $directoryId,
