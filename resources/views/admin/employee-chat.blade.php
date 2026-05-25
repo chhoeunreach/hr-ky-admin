@@ -207,6 +207,7 @@
 
         .chat-bubble-row {
             display: flex;
+            width: 100%;
             margin-bottom: 18px;
         }
 
@@ -215,11 +216,16 @@
         }
 
         .chat-bubble {
+            display: inline-block;
+            width: fit-content;
             max-width: 68%;
+            min-width: 0;
             padding: 14px 16px;
             border-radius: 22px;
             background: #f3f6fb;
             box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .chat-bubble.outgoing {
@@ -235,6 +241,13 @@
 
         .chat-bubble audio {
             width: 260px;
+            max-width: 100%;
+        }
+
+        .chat-bubble > div,
+        .chat-bubble > a,
+        .chat-bubble > audio,
+        .chat-bubble > img {
             max-width: 100%;
         }
 

@@ -121,9 +121,18 @@
             }
 
             .attendance-chat-thread .chat-bubble {
+                display: inline-block;
+                width: fit-content;
                 max-width: min(74%, 440px);
+                min-width: 0;
                 border-radius: 24px;
                 box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .attendance-chat-thread .chat-bubble-row {
+                width: 100%;
             }
 
             .attendance-chat-thread .chat-bubble.outgoing {
@@ -142,6 +151,13 @@
 
             .attendance-chat-thread .chat-bubble-image {
                 border-radius: 20px;
+            }
+
+            .attendance-chat-thread .chat-bubble > div,
+            .attendance-chat-thread .chat-bubble > a,
+            .attendance-chat-thread .chat-bubble > audio,
+            .attendance-chat-thread .chat-bubble > img {
+                max-width: 100%;
             }
 
             .attendance-chat-footer {
