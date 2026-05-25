@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Repositories\DashboardRepository;
 use App\Services\Client\ClientService;
 use App\Services\Project\ProjectService;
@@ -88,8 +89,18 @@ class DashboardController extends Controller
     public function employeeChat()
     {
         $chatUrl = config('app.mobile_app_url');
+        $staffList = User::query()
+            ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status'])
+            ->with([
+                'department:id,dept_name',
+                'branch:id,name',
+            ])
+            ->where('status', 'verified')
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get();
 
-        return view('admin.employee-chat', compact('chatUrl'));
+        return view('admin.employee-chat', compact('chatUrl', 'staffList'));
     }
 
     private function generateUrl(): string

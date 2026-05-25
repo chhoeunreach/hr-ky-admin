@@ -3,6 +3,7 @@
 namespace App\Helpers\SMPush;
 
 use App\Helpers\AppHelper;
+use App\Models\Admin;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -250,14 +251,24 @@ class SMPushHelper
                                                 string $map_url = '',
     ): void
     {
+        $authEmployee = auth()->user();
+        $authAdmin = auth('admin')->user();
+        $senderName = $authEmployee?->name ?? $authAdmin?->name ?? $title;
+        $senderImage = $authEmployee?->avatar
+            ? asset(User::AVATAR_UPLOAD_PATH . $authEmployee->avatar)
+            : ($authAdmin?->avatar
+                ? asset(Admin::AVATAR_UPLOAD_PATH . $authAdmin->avatar)
+                : asset('assets/images/img.png'));
+        $senderUsername = $authEmployee?->username ?? $authAdmin?->username ?? $title;
+
         SMPushNotification::smSend(
             title: $title,
             message: Str::limit($message, 100, '...'),
             data: [
                 'title' => $title,
                 'conversation_id' => $conversation_id,
-                'sender_name' => auth()->user()->name,
-                'sender_image' => auth()->user()->image ? asset(User::AVATAR_UPLOAD_PATH . auth()->user()->image) : asset('assets/images/img.png'),
+                'sender_name' => $senderName,
+                'sender_image' => $senderImage,
                 'message' => $message,
                 'type' => $type,
                 'chat_message_type' => $chatMessageType,
@@ -266,7 +277,7 @@ class SMPushHelper
                 'longitude' => $longitude,
                 'map_url' => $map_url,
                 'project_id' => $project_id,
-                'sender_username' => auth()->user()->username,
+                'sender_username' => $senderUsername,
             ],
             recipients: $type == 'group_chat' ? self::getEmployeeFCMTokensForSending($usernames) : self::getEmployeeByUsernameFCMTokensForSending($usernames)
         );

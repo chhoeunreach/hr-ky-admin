@@ -22,6 +22,7 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DataExportController;
 use App\Http\Controllers\Web\DepartmentController;
 use App\Http\Controllers\Web\DeviceController;
+use App\Http\Controllers\Web\EmployeeChatController;
 use App\Http\Controllers\Web\EmployeeLogOutRequestController;
 use App\Http\Controllers\Web\EmployeeSalaryController;
 use App\Http\Controllers\Web\EventController;
@@ -128,7 +129,9 @@ Route::group([
         Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('showQR', [DashboardController::class, 'showQR'])->name('showQR');
-        Route::get('employee-chat', [DashboardController::class, 'employeeChat'])->name('employee-chat');
+        Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
+        Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');
+        Route::post('employee-chat/messages', [EmployeeChatController::class, 'store'])->name('employee-chat.store');
 
         Route::group(['middleware' => 'superAdmin'], function () {
 

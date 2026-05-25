@@ -45,7 +45,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.employee-chat') }}"
                            data-href="{{ route('admin.employee-chat') }}"
-                           class="nav-link {{request()->routeIs('admin.employee-chat') ? 'active' : ''}}">Employee Chat</a>
+                           class="nav-link {{request()->routeIs('admin.employee-chat') ? 'active' : ''}}">Live Chat</a>
                     </li>
                 @endcan
 

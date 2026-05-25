@@ -193,6 +193,11 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeAccount::class, 'user_id', 'id');
     }
 
+    public function chatConversation(): HasOne
+    {
+        return $this->hasOne(ChatConversation::class, 'user_id', 'id');
+    }
+
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotification($token));
