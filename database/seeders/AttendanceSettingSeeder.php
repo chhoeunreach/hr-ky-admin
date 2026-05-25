@@ -38,7 +38,7 @@ class AttendanceSettingSeeder extends Seeder
             [
                 'name' => 'Attendance Method',
                 'slug' => 'attendance_method',
-                'value'=>null,
+                'value'=>1,
                 'values' => json_encode(['default', 'qr']),
                 'status' => 1,
 //                'description' => 'Note: for wifi=> This setting will not affect field type users. Those type of users will still be able to perform check in checkout via mobile app.'

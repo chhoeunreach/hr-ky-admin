@@ -3,6 +3,7 @@
 namespace App\Helpers\SMPush;
 
 use App\Helpers\AppHelper;
+use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -16,6 +17,16 @@ use Kreait\Firebase\Messaging\CloudMessage;
 
 class SMPushNotification
 {
+    private static function resolveBadgeCountForUser(int $userId): int
+    {
+        $unseenCount = UserNotification::query()
+            ->where('user_id', $userId)
+            ->where('is_seen', 0)
+            ->count();
+
+        return max(1, $unseenCount + 1);
+    }
+
     /**
      * @throws MessagingException
      * @throws FirebaseException
@@ -43,10 +54,6 @@ class SMPushNotification
         $message = CloudMessage
             ::fromArray($fromArray)
             ->withData($data)
-            ->withApnsConfig(
-                ApnsConfig::new()
-                    ->withSound('default')
-            )
             ->withAndroidConfig(
                 AndroidConfig::new()
                     ->withSound('default')
@@ -54,8 +61,32 @@ class SMPushNotification
         ;
 
         $messaging = $firebase->createMessaging();
-        $status = $messaging->sendMulticast(message: $message, registrationTokens: $recipients);
-        Log::info('firebase response '.json_encode($status));
+        $responses = [];
+
+        foreach ($recipients as $userId => $token) {
+            if (empty($token)) {
+                continue;
+            }
+
+            $badgeCount = self::resolveBadgeCountForUser((int) $userId);
+            $messageForRecipient = $message
+                ->toToken((string) $token)
+                ->withApnsConfig(
+                    ApnsConfig::new()
+                        ->withSound('default')
+                        ->withBadge($badgeCount)
+                );
+
+            try {
+                $responses[$userId] = $messaging->send($messageForRecipient);
+            } catch (Exception $exception) {
+                $responses[$userId] = [
+                    'error' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        Log::info('firebase response '.json_encode($responses));
 
     }
 }

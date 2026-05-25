@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdvanceSalaryApiController;
 use App\Http\Controllers\Api\AssetAssignmentApiController;
 use App\Http\Controllers\Api\AttendanceApiController;
 use App\Http\Controllers\Api\AwardApiController;
+use App\Http\Controllers\Api\ChatMediaController;
 use App\Http\Controllers\Api\ComplaintApiController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\EmployeePayrollApiController;
@@ -148,6 +149,7 @@ Route::group([
 
     /** Push Notification */
     Route::post('employee/push',[PushNotificationController::class,'sendPushNotification']);
+    Route::post('employee/chat/media-upload', [ChatMediaController::class, 'upload']);
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
