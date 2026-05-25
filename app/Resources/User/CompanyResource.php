@@ -12,11 +12,10 @@ class CompanyResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'employee' => TeamSheetResource::collection($this->employee)
+            'employee' => TeamSheetResource::collection($this->employee)->resolve($request)
         ];
     }
 }
-
 
 
 
