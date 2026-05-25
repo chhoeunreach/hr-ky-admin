@@ -120,9 +120,11 @@ class EmployeeChatController extends Controller
         DB::transaction(function () use ($request, $conversation, $admin, $employee) {
             $messageType = $request->input('message_type', ChatMessage::TYPE_TEXT);
             $mediaUrl = $request->input('media_url');
+            $storedMediaPath = null;
+            $storedFileName = null;
 
             if ($request->hasFile('attachment')) {
-                [$messageType, $mediaUrl] = $this->storeAttachment($request->file('attachment'));
+                [$messageType, $mediaUrl, $storedMediaPath, $storedFileName] = $this->storeAttachment($request->file('attachment'));
             } elseif ($request->filled('latitude') && $request->filled('longitude')) {
                 $messageType = ChatMessage::TYPE_LOCATION;
             }
@@ -146,6 +148,8 @@ class EmployeeChatController extends Controller
                     'admin_id' => $admin->id,
                     'admin_username' => $admin->username,
                     'external_conversation_id' => $externalConversationId,
+                    'media_path' => $storedMediaPath,
+                    'file_name' => $storedFileName,
                 ],
                 'is_read_by_admin' => true,
                 'is_read_by_user' => false,
@@ -283,6 +287,7 @@ class EmployeeChatController extends Controller
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $mimeType = strtolower((string) $file->getMimeType());
+        $originalName = $file->getClientOriginalName();
 
         $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
         $imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -301,12 +306,12 @@ class EmployeeChatController extends Controller
 
             Storage::disk('public')->put($path, (string) $image->encode($extension, 82));
 
-            return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path)];
+            return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path), $path, $originalName];
         }
 
         $path = $file->store('chat/voice', 'public');
 
-        return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path)];
+        return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path), $path, $originalName];
     }
 
     private function loadThreadMessages(ChatConversation $conversation, int $adminId)

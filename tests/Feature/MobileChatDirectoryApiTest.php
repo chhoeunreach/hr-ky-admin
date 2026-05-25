@@ -249,6 +249,7 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertNotNull($employeeEntry);
         $this->assertSame('0', $employeeEntry['is_admin']);
         $this->assertSame('1', $employeeEntry['online_status']);
+        $this->assertSame('1', $employeeEntry['online']);
         $this->assertTrue($employeeEntry['is_online']);
 
         $this->assertNotNull($adminEntry);
@@ -256,12 +257,18 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('admin', $adminEntry['role']);
         $this->assertSame('admin', $adminEntry['user_type']);
         $this->assertSame('admin', $adminEntry['directory_type']);
+        $this->assertSame('0', $adminEntry['online']);
         $this->assertFalse($adminEntry['is_online']);
         $this->assertNotEmpty($adminEntry['conversation_id']);
 
         $this->assertNotNull($secondAdminEntry);
         $this->assertNotEmpty($secondAdminEntry['conversation_id']);
         $this->assertNotSame($adminEntry['conversation_id'], $secondAdminEntry['conversation_id']);
+
+        $onlineContacts = $response->json('data.online_contacts');
+        $this->assertIsArray($onlineContacts);
+        $this->assertCount(1, $onlineContacts);
+        $this->assertSame('online.user', $onlineContacts[0]['username']);
     }
 
     public function test_admin_messages_are_filtered_by_external_conversation_id(): void
@@ -416,6 +423,50 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertNotNull($storedMessage);
         $this->assertSame('hello from mobile', $storedMessage->message);
         $this->assertSame('text', $storedMessage->message_type);
+    }
+
+    public function test_admin_media_message_returns_resolved_media_fields(): void
+    {
+        $role = $this->makeRole('employee');
+
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => 'employee.media',
+        ]);
+
+        $adminId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer KY',
+            'username' => 'admin.media',
+            'email' => 'admin.media@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->postJson('/api/employee/chat/admin/messages', [
+            'conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            'admin_id' => $adminId,
+            'admin_username' => 'admin.media',
+            'message_type' => 'voice',
+            'media_type' => 'voice',
+            'media_path' => 'chat/voice/test-message.m4a',
+            'duration_seconds' => 12,
+            'file_name' => 'test-message.m4a',
+        ]);
+
+        $response->assertOk();
+        $message = $response->json('data.messages.0');
+
+        $this->assertSame('voice', $message['message_type']);
+        $this->assertSame('chat/voice/test-message.m4a', $message['media_path']);
+        $this->assertStringContainsString('/storage/chat/voice/test-message.m4a', $message['media_url']);
+        $this->assertSame(12, $message['duration_seconds']);
+        $this->assertSame('test-message.m4a', $message['file_name']);
     }
 
     public function test_admin_messages_stay_separate_even_when_messages_share_one_internal_conversation(): void

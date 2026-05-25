@@ -78,6 +78,7 @@ class EmployeeChatApiController extends Controller
                     'scope' => $scope,
                     'admin_contact' => $adminContact,
                     'pinned_contacts' => [$adminContact],
+                    'online_contacts' => [],
                     'contacts' => $this->getAdminDirectoryEntries($authUserId),
                 ]);
             }
@@ -103,6 +104,7 @@ class EmployeeChatApiController extends Controller
                 'per_admin_conversation_enabled' => $this->supportsPerAdminConversation(),
                 'admin_contact' => $adminContact,
                 'pinned_contacts' => [$adminContact],
+                'online_contacts' => $employeeContacts->where('is_online', true)->values(),
                 'contacts' => $contacts,
             ]);
         } catch (Throwable $throwable) {
@@ -146,7 +148,16 @@ class EmployeeChatApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $hasInlineMedia = $request->filled('media_url')
+            || $request->filled('media_path')
+            || $request->filled('file_name')
+            || $request->filled('duration_seconds')
+            || in_array(strtolower((string) $request->input('message_type')), ['image', 'voice', 'file', 'location'], true)
+            || in_array(strtolower((string) $request->input('chat_message_type')), ['image', 'voice', 'file', 'location'], true)
+            || in_array(strtolower((string) $request->input('media_type')), ['image', 'audio', 'voice', 'document', 'file'], true);
+
         if (!$request->hasFile('attachment')
+            && !$hasInlineMedia
             && trim((string) $request->input('message')) === ''
             && !($request->filled('latitude') && $request->filled('longitude'))) {
             try {
@@ -212,19 +223,25 @@ class EmployeeChatApiController extends Controller
             DB::transaction(function () use ($request, $conversation, $adminId, $adminUsername) {
                 $messageType = $this->normalizeIncomingMessageType($request);
                 $mediaUrl = $request->input('media_url');
+                $storedMediaPath = null;
+                $storedFileName = null;
 
                 if ($request->hasFile('attachment')) {
-                    [$messageType, $mediaUrl] = $this->storeAttachment($request->file('attachment'));
+                    [$messageType, $mediaUrl, $storedMediaPath, $storedFileName] = $this->storeAttachment($request->file('attachment'));
                 } elseif ($request->filled('latitude') && $request->filled('longitude')) {
                     $messageType = ChatMessage::TYPE_LOCATION;
                 }
 
+                if (!$mediaUrl && $request->filled('media_path')) {
+                    $mediaUrl = Storage::disk('public')->url(ltrim((string) $request->input('media_path'), '/'));
+                }
+
                 $meta = array_filter([
-                    'media_path' => $request->input('media_path'),
+                    'media_path' => $request->input('media_path') ?: $storedMediaPath,
                     'media_width' => $request->input('media_width'),
                     'media_height' => $request->input('media_height'),
                     'duration_seconds' => $request->input('duration_seconds'),
-                    'file_name' => $request->input('file_name'),
+                    'file_name' => $request->input('file_name') ?: $storedFileName,
                     'admin_id' => $adminId,
                     'admin_username' => $adminUsername,
                     'external_conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
@@ -300,7 +317,7 @@ class EmployeeChatApiController extends Controller
             'type' => $normalizedType,
             'message' => $message->message,
             'body' => $message->message,
-            'media_url' => $message->media_url,
+            'media_url' => $message->resolvedMediaUrl(),
             'media_path' => $message->meta['media_path'] ?? null,
             'media_width' => $message->meta['media_width'] ?? null,
             'media_height' => $message->meta['media_height'] ?? null,
@@ -333,6 +350,7 @@ class EmployeeChatApiController extends Controller
             'branch' => $user->branch?->name,
             'post' => $user->post?->post_name,
             'online_status' => (string) ((int) $user->online_status),
+            'online' => (string) ((int) $user->online_status),
             'role' => $user->mobileDirectoryRole(),
             'user_type' => $user->mobileDirectoryUserType(),
             'is_admin' => $isAdmin ? '1' : '0',
@@ -379,6 +397,7 @@ class EmployeeChatApiController extends Controller
                 ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
                 : asset('assets/images/img.png'),
             'online_status' => '0',
+            'online' => '0',
             'role' => 'admin',
             'user_type' => 'admin',
             'is_admin' => '1',
@@ -705,6 +724,7 @@ class EmployeeChatApiController extends Controller
     {
         $extension = strtolower($file->getClientOriginalExtension());
         $mimeType = strtolower((string) $file->getMimeType());
+        $originalName = $file->getClientOriginalName();
 
         $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
         $imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -725,14 +745,14 @@ class EmployeeChatApiController extends Controller
 
             Storage::disk('public')->put($path, (string) $image->encode($safeExtension, 82));
 
-            return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path)];
+            return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path), $path, $originalName];
         }
 
         $directory = in_array($extension, $documentExtensions, true) ? 'chat/files' : 'chat/voice';
         $messageType = in_array($extension, $documentExtensions, true) ? 'file' : ChatMessage::TYPE_VOICE;
         $path = $file->store($directory, 'public');
 
-        return [$messageType, Storage::disk('public')->url($path)];
+        return [$messageType, Storage::disk('public')->url($path), $path, $originalName];
     }
 
     private function normalizeIncomingMessageType(Request $request): string
