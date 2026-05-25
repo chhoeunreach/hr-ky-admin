@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -146,7 +147,11 @@ class UserProfileApiController extends Controller
 //            if($updateOnline){
                 $companyWithEmployee = $this->companyRepo
                     ->findOrFailCompanyDetailById(AppHelper::getAuthUserCompanyId(), $select, $with);
-                $companyDetail = new CompanyResource($companyWithEmployee);
+                $companyDetail = (new CompanyResource($companyWithEmployee))->toArray(request());
+                $companyDetail['employee'] = array_values(array_merge(
+                    $companyDetail['employee'],
+                    $this->getAdminDirectoryEntries()
+                ));
 
                 $branches = $this->branchRepository->getBranchesWithDepartments();
                 $data = [
@@ -160,6 +165,36 @@ class UserProfileApiController extends Controller
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getFile(), 400);
         }
+    }
+
+    private function getAdminDirectoryEntries(): array
+    {
+        return Admin::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'username', 'email', 'avatar'])
+            ->map(function (Admin $admin) {
+                return [
+                    'id' => $admin->id,
+                    'name' => $admin->name ?? 'Admin',
+                    'username' => $admin->username ?? 'admin',
+                    'email' => $admin->email ?? '',
+                    'phone' => '',
+                    'department' => 'Administration',
+                    'branch' => '',
+                    'post' => 'Admin',
+                    'avatar' => $admin->avatar
+                        ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
+                        : asset('assets/images/img.png'),
+                    'online_status' => '0',
+                    'role' => 'admin',
+                    'user_type' => 'admin',
+                    'is_admin' => '1',
+                    'admin' => '1',
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function updateOnlineStatusBasedOnTodayAttendance()
@@ -244,4 +279,3 @@ class UserProfileApiController extends Controller
     }
 
 }
-
