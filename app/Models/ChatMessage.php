@@ -105,6 +105,19 @@ class ChatMessage extends Model
         return $meta;
     }
 
+    public function resolvedMapUrl(): ?string
+    {
+        if ($this->latitude !== null && $this->longitude !== null) {
+            return sprintf(
+                'https://www.google.com/maps?q=%s,%s',
+                rtrim(rtrim(number_format((float) $this->latitude, 7, '.', ''), '0'), '.'),
+                rtrim(rtrim(number_format((float) $this->longitude, 7, '.', ''), '0'), '.')
+            );
+        }
+
+        return $this->map_url;
+    }
+
     public static function normalizeMediaUrl(?string $mediaPath = null, ?string $mediaUrl = null, ?string $messageType = null): ?string
     {
         $normalizedPath = static::normalizeMediaPath($mediaPath, $mediaUrl, $messageType);

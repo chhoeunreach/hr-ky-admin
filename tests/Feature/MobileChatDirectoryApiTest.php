@@ -673,6 +673,47 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('/storage/' . $imagePath, $imageUrl);
     }
 
+    public function test_location_messages_return_standardized_map_fields(): void
+    {
+        [$requester, $adminId, $conversationId] = $this->createAdminConversationFixture('employee.location.standard', 'admin.location.standard');
+
+        DB::table('chat_messages')->insert([
+            'conversation_id' => $conversationId,
+            'sender_type' => 'user',
+            'sender_id' => $requester->id,
+            'message_type' => 'location',
+            'message' => null,
+            'media_url' => null,
+            'latitude' => 11.55231,
+            'longitude' => 104.82299,
+            'map_url' => null,
+            'meta' => json_encode([
+                'admin_id' => $adminId,
+                'admin_username' => 'admin.location.standard',
+                'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminId . '&admin_id=' . $adminId);
+
+        $response->assertOk();
+        $message = $response->json('data.messages.0');
+
+        $this->assertSame('location', $message['message_type']);
+        $this->assertSame(11.55231, $message['latitude']);
+        $this->assertSame(104.82299, $message['longitude']);
+        $this->assertSame('https://www.google.com/maps?q=11.55231,104.82299', $message['map_url']);
+        $this->assertSame([
+            'latitude' => 11.55231,
+            'longitude' => 104.82299,
+            'map_url' => 'https://www.google.com/maps?q=11.55231,104.82299',
+        ], $message['location']);
+    }
+
     public function test_chat_voice_upload_repairs_mp4_extension_to_m4a(): void
     {
         Storage::fake('public');

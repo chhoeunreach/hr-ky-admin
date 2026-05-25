@@ -327,7 +327,12 @@ class EmployeeChatApiController extends Controller
             'file_name' => $message->meta['file_name'] ?? null,
             'latitude' => $message->latitude,
             'longitude' => $message->longitude,
-            'map_url' => $message->map_url,
+            'map_url' => $message->resolvedMapUrl(),
+            'location' => $message->latitude !== null && $message->longitude !== null ? [
+                'latitude' => (float) $message->latitude,
+                'longitude' => (float) $message->longitude,
+                'map_url' => $message->resolvedMapUrl(),
+            ] : null,
             'is_read_by_admin' => (bool) $message->is_read_by_admin,
             'is_read_by_user' => (bool) $message->is_read_by_user,
             'created_at' => $message->created_at?->toIso8601String(),
