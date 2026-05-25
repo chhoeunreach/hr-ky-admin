@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -189,14 +190,20 @@ class EmployeeChatController extends Controller
     private function getStaffList()
     {
         $adminId = auth('admin')->id();
+        $supportsPerAdminConversation = $this->supportsPerAdminConversation();
 
         return User::query()
             ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status'])
             ->with([
                 'department:id,dept_name',
                 'branch:id,name',
-                'chatConversations' => function ($query) use ($adminId) {
-                    $query->where('admin_id', $adminId)
+                'chatConversations' => function ($query) use ($adminId, $supportsPerAdminConversation) {
+                    if ($supportsPerAdminConversation) {
+                        $query->where('admin_id', $adminId);
+                    } else {
+                        $query->whereNull('admin_id');
+                    }
+                    $query
                         ->with('latestMessage');
                 },
             ])
@@ -217,10 +224,29 @@ class EmployeeChatController extends Controller
 
     private function getOrCreateConversation(int $employeeId, int $adminId): ChatConversation
     {
+        if (!$this->supportsPerAdminConversation()) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+            ]);
+        }
+
         return ChatConversation::firstOrCreate([
             'user_id' => $employeeId,
             'admin_id' => $adminId,
         ]);
+    }
+
+    private function supportsPerAdminConversation(): bool
+    {
+        static $supportsPerAdminConversation = null;
+
+        if ($supportsPerAdminConversation !== null) {
+            return $supportsPerAdminConversation;
+        }
+
+        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+
+        return $supportsPerAdminConversation;
     }
 
     private function markMessagesAsReadByAdmin(ChatConversation $conversation): void

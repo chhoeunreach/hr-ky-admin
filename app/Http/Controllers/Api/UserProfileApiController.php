@@ -23,6 +23,7 @@ use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -170,20 +171,26 @@ class UserProfileApiController extends Controller
 
     private function getAdminDirectoryEntries(?int $userId = null): array
     {
+        $supportsPerAdminConversation = $this->supportsPerAdminConversation();
+
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) use ($userId) {
+            ->map(function (Admin $admin) use ($userId, $supportsPerAdminConversation) {
                 $directoryId = 1000000 + (int) $admin->id;
                 $conversation = null;
 
                 if ($userId) {
                     try {
-                        $conversation = ChatConversation::firstOrCreate([
-                            'user_id' => $userId,
-                            'admin_id' => $admin->id,
-                        ]);
+                        $conversation = $supportsPerAdminConversation
+                            ? ChatConversation::firstOrCreate([
+                                'user_id' => $userId,
+                                'admin_id' => $admin->id,
+                            ])
+                            : ChatConversation::firstOrCreate([
+                                'user_id' => $userId,
+                            ]);
                     } catch (\Throwable $throwable) {
                         $conversation = null;
                     }
@@ -214,6 +221,19 @@ class UserProfileApiController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    private function supportsPerAdminConversation(): bool
+    {
+        static $supportsPerAdminConversation = null;
+
+        if ($supportsPerAdminConversation !== null) {
+            return $supportsPerAdminConversation;
+        }
+
+        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+
+        return $supportsPerAdminConversation;
     }
 
     private function updateOnlineStatusBasedOnTodayAttendance()

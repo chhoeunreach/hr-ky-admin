@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Intervention\Image\Facades\Image;
@@ -23,6 +24,7 @@ class EmployeeChatApiController extends Controller
     {
         $user = auth()->user();
         $scope = MobileChatHelper::getScope();
+        $supportsPerAdminConversation = $this->supportsPerAdminConversation();
         $adminList = Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
@@ -38,6 +40,7 @@ class EmployeeChatApiController extends Controller
             'scope_label' => MobileChatHelper::scopeOptions()[$scope] ?? $scope,
             'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
             'admin_chat_enabled' => true,
+            'per_admin_conversation_enabled' => $supportsPerAdminConversation,
             'admin_contact' => $adminContact,
             'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
                 $admin,
@@ -89,6 +92,7 @@ class EmployeeChatApiController extends Controller
 
         return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
             'scope' => $scope,
+            'per_admin_conversation_enabled' => $this->supportsPerAdminConversation(),
             'admin_contact' => $adminContact,
             'pinned_contacts' => [$adminContact],
             'contacts' => $contacts,
@@ -297,6 +301,12 @@ class EmployeeChatApiController extends Controller
 
     private function getOrCreateAdminConversation(int $userId, int $adminId): ChatConversation
     {
+        if (!$this->supportsPerAdminConversation()) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
+
         return ChatConversation::firstOrCreate([
             'user_id' => $userId,
             'admin_id' => $adminId,
@@ -305,6 +315,12 @@ class EmployeeChatApiController extends Controller
 
     private function resolveAdminConversation(int $userId, Request $request): ChatConversation
     {
+        if (!$this->supportsPerAdminConversation()) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
+
         if ($request->filled('conversation_id')) {
             $conversation = ChatConversation::query()
                 ->where('id', (int) $request->input('conversation_id'))
@@ -331,6 +347,19 @@ class EmployeeChatApiController extends Controller
             ->firstOrFail(['id']);
 
         return $this->getOrCreateAdminConversation($userId, $defaultAdmin->id);
+    }
+
+    private function supportsPerAdminConversation(): bool
+    {
+        static $supportsPerAdminConversation = null;
+
+        if ($supportsPerAdminConversation !== null) {
+            return $supportsPerAdminConversation;
+        }
+
+        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+
+        return $supportsPerAdminConversation;
     }
 
     private function storeAttachment(UploadedFile $file): array
