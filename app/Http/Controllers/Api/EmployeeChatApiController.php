@@ -95,6 +95,7 @@ class EmployeeChatApiController extends Controller
 
         $messages = $conversation->messages()
             ->orderBy('created_at')
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
             ->get()
             ->map(fn (ChatMessage $message) => $this->transformMessage($message));
 
@@ -167,6 +168,7 @@ class EmployeeChatApiController extends Controller
 
         $messages = $conversation->messages()
             ->orderBy('created_at')
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
             ->get()
             ->map(fn (ChatMessage $message) => $this->transformMessage($message));
 
@@ -182,6 +184,8 @@ class EmployeeChatApiController extends Controller
             'id' => $message->id,
             'sender_type' => $message->sender_type,
             'sender_id' => $message->sender_id,
+            'sender_name' => $message->senderName(),
+            'sender_avatar' => $message->senderAvatar(),
             'message_type' => $message->message_type,
             'message' => $message->message,
             'media_url' => $message->media_url,

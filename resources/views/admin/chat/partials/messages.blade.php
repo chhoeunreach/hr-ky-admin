@@ -29,7 +29,7 @@
             @endif
 
             <div class="chat-bubble-meta">
-                {{ ucfirst($message->sender_type) }} &bull; {{ $message->created_at->format('M d, h:i A') }}
+                {{ $message->senderName() }} &bull; {{ $message->created_at->format('M d, h:i A') }}
             </div>
         </div>
     </div>

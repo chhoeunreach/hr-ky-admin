@@ -42,4 +42,36 @@ class ChatMessage extends Model
     {
         return $this->belongsTo(ChatConversation::class, 'conversation_id');
     }
+
+    public function adminSender(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'sender_id');
+    }
+
+    public function userSender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function senderName(): string
+    {
+        if ($this->sender_type === self::SENDER_ADMIN) {
+            return $this->adminSender?->name ?? 'Admin';
+        }
+
+        return $this->userSender?->name ?? 'Employee';
+    }
+
+    public function senderAvatar(): string
+    {
+        if ($this->sender_type === self::SENDER_ADMIN) {
+            return $this->adminSender?->avatar
+                ? asset(Admin::AVATAR_UPLOAD_PATH . $this->adminSender->avatar)
+                : asset('assets/images/img.png');
+        }
+
+        return $this->userSender?->avatar
+            ? asset(User::AVATAR_UPLOAD_PATH . $this->userSender->avatar)
+            : asset('assets/images/img.png');
+    }
 }

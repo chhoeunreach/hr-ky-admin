@@ -32,7 +32,10 @@ class EmployeeChatController extends Controller
 
         if ($conversation) {
             $this->markMessagesAsReadByAdmin($conversation);
-            $messages = $conversation->messages()->orderBy('created_at')->get();
+            $messages = $conversation->messages()
+                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
+                ->orderBy('created_at')
+                ->get();
         }
 
         return view('admin.employee-chat', compact(
@@ -59,7 +62,10 @@ class EmployeeChatController extends Controller
 
         $conversation = $this->getOrCreateConversation($selectedStaff->id);
         $this->markMessagesAsReadByAdmin($conversation);
-        $messages = $conversation->messages()->orderBy('created_at')->get();
+        $messages = $conversation->messages()
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
+            ->orderBy('created_at')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -167,7 +173,10 @@ class EmployeeChatController extends Controller
             );
         });
 
-        $messages = $conversation->messages()->orderBy('created_at')->get();
+        $messages = $conversation->messages()
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
+            ->orderBy('created_at')
+            ->get();
 
         return response()->json([
             'success' => true,
