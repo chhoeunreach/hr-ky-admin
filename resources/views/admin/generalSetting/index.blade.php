@@ -53,6 +53,14 @@
                                                     </select>
 
                                                 </td>
+                                                @elseif($datum->key == 'mobile_chat_scope')
+                                                    <td>
+                                                        <select class="form-select" id="value" name="value">
+                                                            @foreach(\App\Helpers\MobileChatHelper::scopeOptions() as $scopeValue => $scopeLabel)
+                                                                <option value="{{ $scopeValue }}" {{ $datum->value == $scopeValue ? 'selected' : '' }}>{{ $scopeLabel }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </td>
                                                 @else
 
                                                     <td>
@@ -87,7 +95,6 @@
         </div>
     </section>
 @endsection
-
 
 
 

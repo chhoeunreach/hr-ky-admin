@@ -2,6 +2,7 @@
 
 namespace App\Requests\GeneralSetting;
 
+use App\Helpers\MobileChatHelper;
 use App\Models\GeneralSetting;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enum\GeneralSettingEnum;
@@ -29,11 +30,19 @@ class GeneralSettingRequest extends FormRequest
      */
     public function rules()
     {
+        $valueRules = ['required', 'string'];
+
+        if ($this->route('id')) {
+            $generalSetting = GeneralSetting::query()->find($this->route('id'));
+            if ($generalSetting?->key === 'mobile_chat_scope') {
+                $valueRules[] = Rule::in(array_keys(MobileChatHelper::scopeOptions()));
+            }
+        }
+
         return [
-            'value' => 'required|string',
+            'value' => $valueRules,
         ];
     }
 
 }
-
 

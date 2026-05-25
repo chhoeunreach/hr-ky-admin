@@ -19,7 +19,6 @@ class GeneralSetting extends Model
         'value',
     ];
 
-    const GENERAL_SETTING_KEY = ['firebase_key'];
+    const GENERAL_SETTING_KEY = ['firebase_key', 'mobile_chat_scope'];
 
 }
-

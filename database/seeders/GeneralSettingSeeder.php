@@ -26,6 +26,13 @@ class GeneralSettingSeeder extends Seeder
                 'description' => 'Firebase key is needed to send notification in mobile.'
             ],
             [
+                'name' => 'Mobile Chat Scope',
+                'type' => 'configuration',
+                'key' => 'mobile_chat_scope',
+                'value' => 'all_employees',
+                'description' => 'Choose whether mobile chat is limited to admin only or available between employees.'
+            ],
+            [
                 'name' => 'Set Number Of Days for local Push Notification',
                 'type' => 'configuration',
                 'key' => 'attendance_notify',

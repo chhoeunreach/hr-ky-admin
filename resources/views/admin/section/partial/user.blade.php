@@ -1,9 +1,9 @@
-@canany(['list_employee','list_logout_request'])
+@canany(['list_employee','view_employee_chat','list_logout_request'])
     <li class="nav-item  {{
                            request()->routeIs('admin.employees.*') ||
                            request()->routeIs('admin.employee.log') ||
                            request()->routeIs('admin.live-map*') ||
-                           request()->routeIs('admin.employee-chat') ||
+                           request()->routeIs('admin.employee-chat*') ||
                            request()->routeIs('admin.logout-requests.*')
                         ? 'active' : ''
                         }}   ">
@@ -23,8 +23,8 @@
                          request()->routeIs('admin.employees.*') ||
                          request()->routeIs('admin.employee.log') ||
                          request()->routeIs('admin.live-map*') ||
-                         request()->routeIs('admin.employee-chat') ||
-                            request()->routeIs('admin.logout-requests.*')?'' : 'collapse'  }}"  id="employee_management">
+                         request()->routeIs('admin.employee-chat*') ||
+                         request()->routeIs('admin.logout-requests.*') ? '' : 'collapse'  }}"  id="employee_management">
             <ul class="nav sub-menu">
                 @can('list_employee')
                     <li class="nav-item">
@@ -42,10 +42,12 @@
                            data-href="{{route('admin.live-map')}}"
                            class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}"> Live Map</a>
                     </li>
+                @endcan
+                @can('view_employee_chat')
                     <li class="nav-item">
                         <a href="{{ route('admin.employee-chat') }}"
                            data-href="{{ route('admin.employee-chat') }}"
-                           class="nav-link {{request()->routeIs('admin.employee-chat') ? 'active' : ''}}">Live Chat</a>
+                           class="nav-link {{request()->routeIs('admin.employee-chat*') ? 'active' : ''}}">Live Chat</a>
                     </li>
                 @endcan
 

@@ -361,6 +361,16 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "View Employee Chat",
+                "permission_key" => "view_employee_chat",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Send Employee Chat",
+                "permission_key" => "send_employee_chat",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Create Employee",
                 "permission_key" => "create_employee",
                 "permission_groups_id" => 5

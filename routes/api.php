@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\ChatMediaController;
 use App\Http\Controllers\Api\ComplaintApiController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\EmployeePayrollApiController;
+use App\Http\Controllers\Api\EmployeeChatApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\HolidayApiController;
 use App\Http\Controllers\Api\LeaveApiController;
@@ -150,6 +151,10 @@ Route::group([
     /** Push Notification */
     Route::post('employee/push',[PushNotificationController::class,'sendPushNotification']);
     Route::post('employee/chat/media-upload', [ChatMediaController::class, 'upload']);
+    Route::get('employee/chat/access', [EmployeeChatApiController::class, 'access']);
+    Route::get('employee/chat/contacts', [EmployeeChatApiController::class, 'contacts']);
+    Route::get('employee/chat/admin/messages', [EmployeeChatApiController::class, 'messages']);
+    Route::post('employee/chat/admin/messages', [EmployeeChatApiController::class, 'store']);
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);

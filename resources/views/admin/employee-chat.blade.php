@@ -250,6 +250,45 @@
             background: #fff;
         }
 
+        .chat-paste-preview {
+            display: none;
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin-bottom: 14px;
+            border-radius: 26px;
+            background: #f4f7fb;
+            box-shadow: inset 0 0 0 1px #e5edf7;
+            overflow: hidden;
+        }
+
+        .chat-paste-preview.is-visible {
+            display: block;
+        }
+
+        .chat-paste-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .chat-paste-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(255, 255, 255, 0.96);
+            color: #111827;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .chat-composer-form {
             display: flex;
             align-items: center;
@@ -453,21 +492,31 @@
                     </div>
 
                     <div class="chat-composer">
-                        <form id="chat-send-form"
-                              class="chat-composer-form"
-                              action="{{ route('admin.employee-chat.store') }}"
-                              method="post"
-                              enctype="multipart/form-data">
-                            @csrf
-                            <input type="hidden" name="employee_id" value="{{ $selectedStaff->id }}">
-                            <label class="chat-composer-file">
-                                <i data-feather="paperclip"></i>
-                                <input type="file" name="attachment" id="chat-attachment">
-                            </label>
-                            <input class="chat-composer-input" type="text" name="message" placeholder="Type your message">
-                            <button class="chat-send-btn" type="submit">Send</button>
-                        </form>
-                        <div class="chat-helper-text" id="chat-status-text">You can send text, image, or voice files here.</div>
+                        @can('send_employee_chat')
+                            <div class="chat-paste-preview" id="chat-paste-preview">
+                                <img id="chat-paste-preview-image" src="" alt="Attachment preview">
+                                <button type="button" class="chat-paste-remove" id="chat-paste-preview-remove" aria-label="Remove attachment">
+                                    <i data-feather="x"></i>
+                                </button>
+                            </div>
+                            <form id="chat-send-form"
+                                  class="chat-composer-form"
+                                  action="{{ route('admin.employee-chat.store') }}"
+                                  method="post"
+                                  enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="employee_id" value="{{ $selectedStaff->id }}">
+                                <label class="chat-composer-file">
+                                    <i data-feather="paperclip"></i>
+                                    <input type="file" name="attachment" id="chat-attachment">
+                                </label>
+                                <input class="chat-composer-input" type="text" name="message" placeholder="Type your message">
+                                <button class="chat-send-btn" type="submit">Send</button>
+                            </form>
+                            <div class="chat-helper-text" id="chat-status-text">You can send text, image, or voice files here. You can also paste a screenshot.</div>
+                        @else
+                            <div class="chat-helper-text" id="chat-status-text">You have view access only. Chat sending is disabled for your role.</div>
+                        @endcan
                     </div>
                 @else
                     <div class="chat-empty">Select a staff member to start chatting.</div>
@@ -501,6 +550,10 @@
             const form = document.getElementById('chat-send-form');
             const statusText = document.getElementById('chat-status-text');
             const searchInput = document.getElementById('chat-staff-search');
+            const attachmentInput = document.getElementById('chat-attachment');
+            const pastePreview = document.getElementById('chat-paste-preview');
+            const pastePreviewImage = document.getElementById('chat-paste-preview-image');
+            const pastePreviewRemove = document.getElementById('chat-paste-preview-remove');
 
             if (searchInput) {
                 searchInput.addEventListener('input', function () {
@@ -542,7 +595,91 @@
                 }
             };
 
+            const bindClipboardImagePaste = (target, fileInput, setStatus) => {
+                if (!target || !fileInput) {
+                    return;
+                }
+
+                target.addEventListener('paste', function (event) {
+                    const items = event.clipboardData?.items || [];
+
+                    for (const item of items) {
+                        if (!item.type || !item.type.startsWith('image/')) {
+                            continue;
+                        }
+
+                        const blob = item.getAsFile();
+                        if (!blob) {
+                            continue;
+                        }
+
+                        const extension = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                        const file = new File([blob], `pasted-screenshot-${Date.now()}.${extension}`, { type: blob.type });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+
+                        if (typeof setStatus === 'function') {
+                            setStatus(`Screenshot pasted: ${file.name}`);
+                        }
+                        event.preventDefault();
+                        break;
+                    }
+                });
+            };
+
+            const showAttachmentPreview = (file) => {
+                if (!pastePreview || !pastePreviewImage || !file || !file.type.startsWith('image/')) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    pastePreviewImage.src = event.target?.result || '';
+                    pastePreview.classList.add('is-visible');
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const clearAttachmentPreview = () => {
+                if (attachmentInput) {
+                    attachmentInput.value = '';
+                }
+                if (pastePreviewImage) {
+                    pastePreviewImage.src = '';
+                }
+                if (pastePreview) {
+                    pastePreview.classList.remove('is-visible');
+                }
+            };
+
             if (form) {
+                bindClipboardImagePaste(form, attachmentInput, (message) => {
+                    statusText.textContent = message;
+                    const file = attachmentInput.files?.[0];
+                    if (file) {
+                        showAttachmentPreview(file);
+                    }
+                });
+
+                attachmentInput?.addEventListener('change', function () {
+                    const file = this.files?.[0];
+                    if (file && file.type.startsWith('image/')) {
+                        showAttachmentPreview(file);
+                        statusText.textContent = `Image ready: ${file.name}`;
+                    } else {
+                        clearAttachmentPreview();
+                    }
+                });
+
+                pastePreviewRemove?.addEventListener('click', function () {
+                    clearAttachmentPreview();
+                    statusText.textContent = 'Attachment removed.';
+                });
+
                 form.addEventListener('submit', async function (event) {
                     event.preventDefault();
                     statusText.textContent = 'Sending message...';
@@ -565,6 +702,7 @@
 
                         thread.innerHTML = data.html;
                         form.reset();
+                        clearAttachmentPreview();
                         statusText.textContent = 'Message sent successfully.';
                         scrollThreadToBottom();
                         if (window.feather) {

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -18,8 +19,12 @@ use Intervention\Image\Facades\Image;
 
 class EmployeeChatController extends Controller
 {
+    use CustomAuthorizesRequests;
+
     public function index(Request $request)
     {
+        $this->authorize('view_employee_chat');
+
         $staffList = $this->getStaffList();
         $selectedStaff = $this->resolveSelectedStaff($staffList, $request->integer('employee_id'));
         $conversation = $selectedStaff ? $this->getOrCreateConversation($selectedStaff->id) : null;
@@ -40,6 +45,8 @@ class EmployeeChatController extends Controller
 
     public function messages(Request $request): JsonResponse
     {
+        $this->authorize('view_employee_chat');
+
         $staffList = $this->getStaffList();
         $selectedStaff = $this->resolveSelectedStaff($staffList, $request->integer('employee_id'));
 
@@ -62,6 +69,8 @@ class EmployeeChatController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->authorize('send_employee_chat');
+
         $validator = Validator::make($request->all(), [
             'employee_id' => ['required', Rule::exists('users', 'id')],
             'message' => ['nullable', 'string'],

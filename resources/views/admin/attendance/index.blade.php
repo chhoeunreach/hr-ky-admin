@@ -8,6 +8,263 @@
 @section('main-content')
 
     <section class="content">
+        <style>
+            .attendance-chat-modal .modal-dialog {
+                max-width: 760px;
+            }
+
+            .attendance-chat-modal .modal-content {
+                border: 0;
+                border-radius: 26px;
+                overflow: hidden;
+                box-shadow: 0 28px 70px rgba(15, 23, 42, 0.24);
+            }
+
+            .attendance-chat-shell {
+                background: linear-gradient(180deg, #f9fbff 0%, #ffffff 28%);
+            }
+
+            .attendance-chat-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+                padding: 18px 22px;
+                background: #ffffff;
+                border-bottom: 1px solid #edf1f7;
+            }
+
+            .attendance-chat-person {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                min-width: 0;
+            }
+
+            .attendance-chat-avatar-wrap {
+                position: relative;
+                flex-shrink: 0;
+            }
+
+            .attendance-chat-avatar {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 3px solid #ffffff;
+                box-shadow: 0 10px 26px rgba(59, 130, 246, 0.16);
+            }
+
+            .attendance-chat-status {
+                position: absolute;
+                right: 2px;
+                bottom: 2px;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                background: #cbd5e1;
+                border: 2px solid #ffffff;
+            }
+
+            .attendance-chat-status.online {
+                background: #22c55e;
+            }
+
+            .attendance-chat-person h5 {
+                margin: 0;
+                color: #111827;
+                font-size: 1.35rem;
+                font-weight: 700;
+            }
+
+            .attendance-chat-person p {
+                margin: 2px 0 0;
+                color: #64748b;
+                font-size: 0.94rem;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .attendance-chat-actions {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #a855f7;
+                font-size: 1.1rem;
+            }
+
+            .attendance-chat-actions button,
+            .attendance-chat-actions span {
+                width: 42px;
+                height: 42px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                background: #faf5ff;
+                border: 0;
+                color: #a855f7;
+            }
+
+            .attendance-chat-body {
+                padding: 0;
+                background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            }
+
+            .attendance-chat-thread {
+                height: 56vh;
+                min-height: 420px;
+                max-height: 680px;
+                overflow-y: auto;
+                padding: 22px 22px 14px;
+            }
+
+            .attendance-chat-thread .chat-bubble {
+                max-width: min(74%, 440px);
+                border-radius: 24px;
+                box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+            }
+
+            .attendance-chat-thread .chat-bubble.outgoing {
+                background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                color: #ffffff;
+            }
+
+            .attendance-chat-thread .chat-bubble-meta {
+                font-size: 0.74rem;
+                opacity: 0.72;
+            }
+
+            .attendance-chat-thread .chat-bubble.outgoing .chat-bubble-meta {
+                color: rgba(255, 255, 255, 0.84);
+            }
+
+            .attendance-chat-thread .chat-bubble-image {
+                border-radius: 20px;
+            }
+
+            .attendance-chat-footer {
+                border-top: 1px solid #edf1f7;
+                background: #ffffff;
+                padding: 14px 18px 18px;
+            }
+
+            .attendance-chat-preview {
+                display: none;
+                position: relative;
+                width: 142px;
+                height: 142px;
+                margin-bottom: 14px;
+                border-radius: 28px;
+                background: #f4f7fb;
+                box-shadow: inset 0 0 0 1px #e5edf7;
+                overflow: hidden;
+            }
+
+            .attendance-chat-preview.is-visible {
+                display: block;
+            }
+
+            .attendance-chat-preview img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+
+            .attendance-chat-preview-remove {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                border: 0;
+                background: rgba(255, 255, 255, 0.96);
+                color: #111827;
+                box-shadow: 0 10px 25px rgba(15, 23, 42, 0.14);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .attendance-chat-form {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .attendance-chat-attach {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                background: #eff6ff;
+                color: #2563eb;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                flex-shrink: 0;
+                margin-bottom: 0;
+            }
+
+            .attendance-chat-attach input {
+                display: none;
+            }
+
+            .attendance-chat-input {
+                flex: 1;
+                border: 0;
+                background: #f1f5f9;
+                border-radius: 999px;
+                min-height: 48px;
+                padding: 0 18px;
+            }
+
+            .attendance-chat-input:focus {
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.14);
+                background: #ffffff;
+            }
+
+            .attendance-chat-send {
+                border: 0;
+                min-width: 104px;
+                height: 46px;
+                border-radius: 999px;
+                background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
+                color: #ffffff;
+                font-weight: 600;
+                box-shadow: 0 14px 24px rgba(37, 99, 235, 0.25);
+            }
+
+            .attendance-chat-status-text {
+                margin-top: 10px;
+                color: #64748b;
+                font-size: 0.88rem;
+            }
+
+            @media (max-width: 767.98px) {
+                .attendance-chat-modal .modal-dialog {
+                    max-width: 100%;
+                    margin: 0;
+                }
+
+                .attendance-chat-modal .modal-content {
+                    min-height: 100vh;
+                    border-radius: 0;
+                }
+
+                .attendance-chat-thread .chat-bubble {
+                    max-width: 88%;
+                }
+
+                .attendance-chat-actions {
+                    display: none;
+                }
+            }
+        </style>
         <?php
         if($isBsEnabled){
             $currentDate = \App\Helpers\AppHelper::getCurrentDateInBS();
@@ -103,7 +360,7 @@
                                     @endif
                                 <th class="text-center">{{ __('index.attendance_status') }}</th>
                                 <th class="text-center">{{ __('index.shift') }}</th>
-                                @canany(['attendance_create', 'attendance_update', 'attendance_delete'])
+                                @canany(['attendance_create', 'attendance_update', 'attendance_delete', 'view_employee_chat'])
                                     <th class="text-center">{{ __('index.action') }}</th>
                                 @endcanany
                             </tr>
@@ -149,6 +406,7 @@
                                         $canAddAttendanceForSelectedDate = $filterParameter['attendance_date'] != $currentDate
                                             && !$firstAttendance->attendance_id
                                             && !$firstAttendance->leave_request_id;
+                                        $quickChatTitle = 'Quick chat with ' . ucfirst($firstAttendance->user_name);
 
                                     @endphp
 
@@ -343,11 +601,25 @@
                                         </td>
                                     @endif
 
-                                    @canany(['attendance_create','attendance_update'])
+                                    @canany(['attendance_create','attendance_update','attendance_delete','view_employee_chat'])
                                         @if($nightShift && $filterParameter['attendance_date'] ==  $currentDate)
 
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
+                                                    @can('view_employee_chat')
+                                                        <li class="me-2">
+                                                            <a href="#"
+                                                               class="openAttendanceChat"
+                                                               data-employee-id="{{ $firstAttendance->user_id }}"
+                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                               data-employee-avatar="{{ $profileImage }}"
+                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                               title="{{ $quickChatTitle }}">
+                                                                <i class="link-icon" data-feather="message-circle"></i>
+                                                            </a>
+                                                        </li>
+                                                    @endcan
                                                     @php
                                                         $nightAttendance = \App\Helpers\AttendanceHelper::checkNightShiftCheckOut($userId);
 
@@ -420,6 +692,20 @@
                                         @elseif($multipleAttendance > 1)
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
+                                                    @can('view_employee_chat')
+                                                        <li class="me-2">
+                                                            <a href="#"
+                                                               class="openAttendanceChat"
+                                                               data-employee-id="{{ $firstAttendance->user_id }}"
+                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                               data-employee-avatar="{{ $profileImage }}"
+                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                               title="{{ $quickChatTitle }}">
+                                                                <i class="link-icon" data-feather="message-circle"></i>
+                                                            </a>
+                                                        </li>
+                                                    @endcan
 
                                                     @if($filterParameter['attendance_date'] == $currentDate && ($multipleEntries < $multipleAttendance || ($lastAttendance->check_in_at && !$lastAttendance->check_out_at)))
 
@@ -481,6 +767,20 @@
                                         @else
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
+                                                    @can('view_employee_chat')
+                                                        <li class="me-2">
+                                                            <a href="#"
+                                                               class="openAttendanceChat"
+                                                               data-employee-id="{{ $firstAttendance->user_id }}"
+                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                               data-employee-avatar="{{ $profileImage }}"
+                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                               title="{{ $quickChatTitle }}">
+                                                                <i class="link-icon" data-feather="message-circle"></i>
+                                                            </a>
+                                                        </li>
+                                                    @endcan
 
                                                     @if($filterParameter['attendance_date'] ==  $currentDate)
                                                             @if(!$firstAttendance->check_in_at)
@@ -696,6 +996,62 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade attendance-chat-modal" id="attendanceChatModal" tabindex="-1" aria-labelledby="attendanceChatModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content attendance-chat-shell">
+                    <div class="attendance-chat-header">
+                        <div class="attendance-chat-person">
+                            <div class="attendance-chat-avatar-wrap">
+                                <img id="attendanceChatAvatar" src="{{ asset('assets/images/img.png') }}" alt="Employee avatar" class="attendance-chat-avatar">
+                                <span id="attendanceChatStatus" class="attendance-chat-status"></span>
+                            </div>
+                            <div class="min-w-0">
+                                <h5 id="attendanceChatModalLabel">Employee Chat</h5>
+                                <p id="attendanceChatSubtitle">Open a conversation from attendance.</p>
+                            </div>
+                        </div>
+                        <div class="attendance-chat-actions">
+                            <span><i data-feather="phone"></i></span>
+                            <span><i data-feather="video"></i></span>
+                            <button type="button" data-bs-dismiss="modal" aria-label="Close">
+                                <i data-feather="x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="attendance-chat-body">
+                        <div id="attendanceChatThread"
+                             class="attendance-chat-thread"
+                             data-base-url="{{ route('admin.employee-chat.messages') }}">
+                            <div class="chat-empty">Select an employee to start chatting.</div>
+                        </div>
+                    </div>
+                    <div class="attendance-chat-footer">
+                        @can('send_employee_chat')
+                            <div class="attendance-chat-preview" id="attendanceChatPreview">
+                                <img id="attendanceChatPreviewImage" src="" alt="Attachment preview">
+                                <button type="button" class="attendance-chat-preview-remove" id="attendanceChatPreviewRemove" aria-label="Remove attachment">
+                                    <i data-feather="x"></i>
+                                </button>
+                            </div>
+                            <form id="attendanceChatForm" class="attendance-chat-form" action="{{ route('admin.employee-chat.store') }}" method="post" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="employee_id" id="attendanceChatEmployeeId">
+                                <label class="attendance-chat-attach">
+                                    <i data-feather="paperclip"></i>
+                                    <input type="file" name="attachment" id="attendanceChatAttachment">
+                                </label>
+                                <input type="text" class="attendance-chat-input" name="message" id="attendanceChatMessage" placeholder="Type your message">
+                                <button type="submit" class="attendance-chat-send">Send</button>
+                            </form>
+                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">You can send text, image, or voice files here. You can also paste a screenshot.</div>
+                        @else
+                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">You have view access only. Chat sending is disabled for your role.</div>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
 @endsection
@@ -872,6 +1228,277 @@
                     modal.show();
                 });
             });
+
+            const attendanceChatModalElement = document.getElementById('attendanceChatModal');
+            const attendanceChatModal = attendanceChatModalElement ? new bootstrap.Modal(attendanceChatModalElement) : null;
+            const attendanceChatThread = document.getElementById('attendanceChatThread');
+            const attendanceChatForm = document.getElementById('attendanceChatForm');
+            const attendanceChatEmployeeId = document.getElementById('attendanceChatEmployeeId');
+            const attendanceChatAttachment = document.getElementById('attendanceChatAttachment');
+            const attendanceChatPreview = document.getElementById('attendanceChatPreview');
+            const attendanceChatPreviewImage = document.getElementById('attendanceChatPreviewImage');
+            const attendanceChatPreviewRemove = document.getElementById('attendanceChatPreviewRemove');
+            const attendanceChatAvatar = document.getElementById('attendanceChatAvatar');
+            const attendanceChatTitle = document.getElementById('attendanceChatModalLabel');
+            const attendanceChatSubtitle = document.getElementById('attendanceChatSubtitle');
+            const attendanceChatStatus = document.getElementById('attendanceChatStatus');
+            const attendanceChatStatusText = document.getElementById('attendanceChatStatusText');
+            let attendanceChatPoller = null;
+            let activeAttendanceChatEmployeeId = null;
+
+            const attendanceChatScrollToBottom = () => {
+                if (attendanceChatThread) {
+                    attendanceChatThread.scrollTop = attendanceChatThread.scrollHeight;
+                }
+            };
+
+            const attendanceChatMessagesUrl = (employeeId) => {
+                const url = new URL(attendanceChatThread.dataset.baseUrl, window.location.origin);
+                url.searchParams.set('employee_id', employeeId);
+                return url.toString();
+            };
+
+            const renderAttendanceChatMessages = async (employeeId, keepStatus = true) => {
+                if (!attendanceChatThread || !employeeId) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(attendanceChatMessagesUrl(employeeId), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Unable to load chat messages.');
+                    }
+
+                    attendanceChatThread.innerHTML = data.html;
+                    attendanceChatScrollToBottom();
+                    if (!keepStatus && attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = 'Conversation loaded.';
+                    }
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                } catch (error) {
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = error.message || 'Unable to load chat messages.';
+                    }
+                }
+            };
+
+            const stopAttendanceChatPolling = () => {
+                if (attendanceChatPoller) {
+                    clearInterval(attendanceChatPoller);
+                    attendanceChatPoller = null;
+                }
+            };
+
+            const startAttendanceChatPolling = (employeeId) => {
+                stopAttendanceChatPolling();
+                attendanceChatPoller = setInterval(() => {
+                    if (activeAttendanceChatEmployeeId === employeeId) {
+                        renderAttendanceChatMessages(employeeId);
+                    }
+                }, 5000);
+            };
+
+            const bindClipboardImagePaste = (target, fileInput, setStatus) => {
+                if (!target || !fileInput) {
+                    return;
+                }
+
+                target.addEventListener('paste', function (event) {
+                    const items = event.clipboardData?.items || [];
+
+                    for (const item of items) {
+                        if (!item.type || !item.type.startsWith('image/')) {
+                            continue;
+                        }
+
+                        const blob = item.getAsFile();
+                        if (!blob) {
+                            continue;
+                        }
+
+                        const extension = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+                        const file = new File([blob], `pasted-screenshot-${Date.now()}.${extension}`, { type: blob.type });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        fileInput.files = dataTransfer.files;
+
+                        if (typeof setStatus === 'function') {
+                            setStatus(`Screenshot pasted: ${file.name}`);
+                        }
+                        event.preventDefault();
+                        break;
+                    }
+                });
+            };
+
+            const showAttendanceChatPreview = (file) => {
+                if (!attendanceChatPreview || !attendanceChatPreviewImage || !file || !file.type.startsWith('image/')) {
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    attendanceChatPreviewImage.src = event.target?.result || '';
+                    attendanceChatPreview.classList.add('is-visible');
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+
+            const clearAttendanceChatPreview = () => {
+                if (attendanceChatAttachment) {
+                    attendanceChatAttachment.value = '';
+                }
+                if (attendanceChatPreviewImage) {
+                    attendanceChatPreviewImage.src = '';
+                }
+                if (attendanceChatPreview) {
+                    attendanceChatPreview.classList.remove('is-visible');
+                }
+            };
+
+            document.querySelectorAll('.openAttendanceChat').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    const employeeId = this.getAttribute('data-employee-id');
+                    if (!employeeId || !attendanceChatModal) {
+                        return;
+                    }
+
+                    activeAttendanceChatEmployeeId = employeeId;
+                    if (attendanceChatEmployeeId) {
+                        attendanceChatEmployeeId.value = employeeId;
+                    }
+                    if (attendanceChatAvatar) {
+                        attendanceChatAvatar.setAttribute('src', this.getAttribute('data-employee-avatar') || '{{ asset('assets/images/img.png') }}');
+                    }
+                    if (attendanceChatTitle) {
+                        attendanceChatTitle.textContent = this.getAttribute('data-employee-name') || 'Employee Chat';
+                    }
+                    if (attendanceChatSubtitle) {
+                        attendanceChatSubtitle.textContent = this.getAttribute('data-employee-subtitle') || 'Employee';
+                    }
+                    if (attendanceChatStatus) {
+                        attendanceChatStatus.classList.toggle('online', this.getAttribute('data-employee-online') === '1');
+                    }
+                    if (attendanceChatThread) {
+                        attendanceChatThread.innerHTML = '<div class="chat-empty">Loading conversation...</div>';
+                    }
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = 'Loading messages...';
+                    }
+
+                    attendanceChatModal.show();
+                    renderAttendanceChatMessages(employeeId, false);
+                    startAttendanceChatPolling(employeeId);
+                });
+            });
+
+            if (attendanceChatForm) {
+                bindClipboardImagePaste(attendanceChatForm, attendanceChatAttachment, (message) => {
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = message;
+                    }
+                    const file = attendanceChatAttachment.files?.[0];
+                    if (file) {
+                        showAttendanceChatPreview(file);
+                    }
+                });
+
+                attendanceChatAttachment?.addEventListener('change', function () {
+                    const file = this.files?.[0];
+                    if (file && file.type.startsWith('image/')) {
+                        showAttendanceChatPreview(file);
+                        if (attendanceChatStatusText) {
+                            attendanceChatStatusText.textContent = `Image ready: ${file.name}`;
+                        }
+                    } else {
+                        clearAttendanceChatPreview();
+                    }
+                });
+
+                attendanceChatPreviewRemove?.addEventListener('click', function () {
+                    clearAttendanceChatPreview();
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = 'Attachment removed.';
+                    }
+                });
+
+                attendanceChatForm.addEventListener('submit', async function (event) {
+                    event.preventDefault();
+
+                    if (!activeAttendanceChatEmployeeId) {
+                        return;
+                    }
+
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = 'Sending message...';
+                    }
+
+                    try {
+                        const response = await fetch(attendanceChatForm.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: new FormData(attendanceChatForm)
+                        });
+                        const data = await response.json();
+
+                        if (!response.ok || !data.success) {
+                            throw new Error(data.message || 'Unable to send message.');
+                        }
+
+                        attendanceChatThread.innerHTML = data.html;
+                        attendanceChatForm.reset();
+                        clearAttendanceChatPreview();
+                        attendanceChatScrollToBottom();
+                        if (attendanceChatStatusText) {
+                            attendanceChatStatusText.textContent = 'Message sent successfully.';
+                        }
+                        if (window.feather) {
+                            feather.replace();
+                        }
+                    } catch (error) {
+                        if (attendanceChatStatusText) {
+                            attendanceChatStatusText.textContent = error.message || 'Unable to send message right now.';
+                        }
+                    }
+                });
+            }
+
+            if (attendanceChatModalElement) {
+                attendanceChatModalElement.addEventListener('hidden.bs.modal', function () {
+                    stopAttendanceChatPolling();
+                    activeAttendanceChatEmployeeId = null;
+                    if (attendanceChatThread) {
+                        attendanceChatThread.innerHTML = '<div class="chat-empty">Select an employee to start chatting.</div>';
+                    }
+                    if (attendanceChatForm) {
+                        attendanceChatForm.reset();
+                    }
+                    clearAttendanceChatPreview();
+                    if (attendanceChatStatusText) {
+                        attendanceChatStatusText.textContent = @can('send_employee_chat')
+                            'You can send text, image, or voice files here. You can also paste a screenshot.'
+                        @else
+                            'You have view access only. Chat sending is disabled for your role.'
+                        @endcan;
+                    }
+                });
+            }
         });
     </script>
 @endsection

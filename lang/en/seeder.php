@@ -18,6 +18,8 @@ return [
 
     'firebase_key'=> 'Firebase Key',
     'firebase_key_description' => 'Firebase key is needed to send notification in mobile.',
+    'mobile_chat_scope' => 'Mobile Chat Scope',
+    'mobile_chat_scope_description' => 'Choose whether the mobile app can chat only with admin or with each employee.',
     'attendance_notify' => 'Set Number Of Days for local Push Notification',
     'attendance_notify_description' => 'Setting no of days will automatically send the data of those days to the mobile application.Receiving this data on the mobile end will allow the mobile application to set local push notification for those dates. The local push notification will help employees remember to check in on time as well as to check out when the shift is about to end.',
     'advance_salary_limit' => 'Advance Salary Limit(%)',
