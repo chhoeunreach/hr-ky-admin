@@ -118,23 +118,17 @@ class EmployeeChatApiController extends Controller
 
         try {
             $conversation = $this->resolveAdminConversation(auth()->id(), $request);
-            $conversation->messages()
-                ->where('sender_type', ChatMessage::SENDER_ADMIN)
-                ->where('is_read_by_user', false)
-                ->update(['is_read_by_user' => true]);
-
-            $messages = $conversation->messages()
-                ->orderBy('created_at')
-                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
-                ->get()
-                ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+            $adminId = $this->threadAdminId($conversation, $request);
+            $messages = $this->loadConversationThreadMessages($conversation, $adminId);
+            $this->markThreadMessagesAsReadByUser($messages);
+            $adminUsername = $this->threadAdminUsername($conversation, $adminId, $request);
 
             return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
-                'conversation_id' => $this->conversationIdentifier($conversation),
+                'conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
                 'internal_conversation_id' => (string) $conversation->id,
-                'admin_id' => $conversation->admin_id,
-                'admin_username' => $conversation->admin?->username,
-                'messages' => $messages,
+                'admin_id' => $adminId,
+                'admin_username' => $adminUsername,
+                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $adminId, $adminUsername))->values(),
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
@@ -157,20 +151,16 @@ class EmployeeChatApiController extends Controller
             && !($request->filled('latitude') && $request->filled('longitude'))) {
             try {
                 $conversation = $this->resolveAdminConversation(auth()->id(), $request);
-                $conversation->loadMissing('admin:id,username');
-
-                $messages = $conversation->messages()
-                    ->orderBy('created_at')
-                    ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
-                    ->get()
-                    ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+                $adminId = $this->threadAdminId($conversation, $request);
+                $adminUsername = $this->threadAdminUsername($conversation, $adminId, $request);
+                $messages = $this->loadConversationThreadMessages($conversation, $adminId);
 
                 return AppHelper::sendSuccessResponse('No new message was sent.', [
-                    'conversation_id' => $this->conversationIdentifier($conversation),
+                    'conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
                     'internal_conversation_id' => (string) $conversation->id,
-                    'admin_id' => $conversation->admin_id,
-                    'admin_username' => $conversation->admin?->username,
-                    'messages' => $messages,
+                    'admin_id' => $adminId,
+                    'admin_username' => $adminUsername,
+                    'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $adminId, $adminUsername))->values(),
                     'noop' => true,
                 ]);
             } catch (Throwable $throwable) {
@@ -216,8 +206,10 @@ class EmployeeChatApiController extends Controller
 
         try {
             $conversation = $this->resolveAdminConversation(auth()->id(), $request);
+            $adminId = $this->threadAdminId($conversation, $request);
+            $adminUsername = $this->threadAdminUsername($conversation, $adminId, $request);
 
-            DB::transaction(function () use ($request, $conversation) {
+            DB::transaction(function () use ($request, $conversation, $adminId, $adminUsername) {
                 $messageType = $this->normalizeIncomingMessageType($request);
                 $mediaUrl = $request->input('media_url');
 
@@ -233,9 +225,9 @@ class EmployeeChatApiController extends Controller
                     'media_height' => $request->input('media_height'),
                     'duration_seconds' => $request->input('duration_seconds'),
                     'file_name' => $request->input('file_name'),
-                    'admin_id' => $conversation->admin_id,
-                    'admin_username' => $conversation->admin?->username,
-                    'external_conversation_id' => $this->conversationIdentifier($conversation),
+                    'admin_id' => $adminId,
+                    'admin_username' => $adminUsername,
+                    'external_conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
                 ], fn ($value) => $value !== null && $value !== '');
 
                 $mapUrl = $request->input('map_url');
@@ -262,20 +254,14 @@ class EmployeeChatApiController extends Controller
                 ]);
             });
 
-            $conversation->loadMissing('admin:id,username');
-
-            $messages = $conversation->messages()
-                ->orderBy('created_at')
-                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
-                ->get()
-                ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+            $messages = $this->loadConversationThreadMessages($conversation, $adminId);
 
             return AppHelper::sendSuccessResponse('Message sent successfully.', [
-                'conversation_id' => $this->conversationIdentifier($conversation),
+                'conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
                 'internal_conversation_id' => (string) $conversation->id,
-                'admin_id' => $conversation->admin_id,
-                'admin_username' => $conversation->admin?->username,
-                'messages' => $messages,
+                'admin_id' => $adminId,
+                'admin_username' => $adminUsername,
+                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $adminId, $adminUsername))->values(),
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
@@ -284,10 +270,18 @@ class EmployeeChatApiController extends Controller
         }
     }
 
-    private function transformMessage(ChatMessage $message): array
+    private function transformMessage(ChatMessage $message, ?int $threadAdminId = null, ?string $threadAdminUsername = null): array
     {
         $conversation = $message->conversation;
         $normalizedType = $this->normalizeStoredMessageType($message->message_type, $message->meta ?? []);
+        $resolvedAdminId = $threadAdminId
+            ?? $conversation?->admin_id
+            ?? ($message->meta['admin_id'] ?? null)
+            ?? ($message->sender_type === ChatMessage::SENDER_ADMIN ? $message->sender_id : null);
+        $resolvedAdminUsername = $threadAdminUsername
+            ?? $conversation?->admin?->username
+            ?? ($message->meta['admin_username'] ?? null)
+            ?? $message->adminSender?->username;
 
         return [
             'id' => $message->id,
@@ -296,10 +290,12 @@ class EmployeeChatApiController extends Controller
             'sender_id' => $message->sender_id,
             'sender_name' => $message->senderName(),
             'sender_avatar' => $message->senderAvatar(),
-            'conversation_id' => $conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id,
+            'conversation_id' => $resolvedAdminId
+                ? $this->externalConversationId($conversation?->user_id ?? auth()->id(), (int) $resolvedAdminId)
+                : ($conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id),
             'internal_conversation_id' => (string) $message->conversation_id,
-            'admin_id' => $conversation?->admin_id,
-            'admin_username' => $conversation?->admin?->username,
+            'admin_id' => $resolvedAdminId ? (int) $resolvedAdminId : null,
+            'admin_username' => $resolvedAdminUsername,
             'message_type' => $normalizedType,
             'type' => $normalizedType,
             'message' => $message->message,
@@ -451,14 +447,6 @@ class EmployeeChatApiController extends Controller
             : null;
         $requestedAdminId = $this->requestedAdminId($request, $userId);
 
-        if ($requestedConversationId) {
-            $adminIdFromConversation = $this->adminIdFromExternalConversationId($requestedConversationId, $userId);
-
-            if ($adminIdFromConversation !== null) {
-                return $this->getOrCreateAdminConversation($userId, $adminIdFromConversation);
-            }
-        }
-
         $internalConversation = $this->conversationFromInternalIdentifier(
             $request->input('internal_conversation_id'),
             $userId
@@ -467,8 +455,16 @@ class EmployeeChatApiController extends Controller
             $userId
         );
 
-        if ($internalConversation && ($requestedAdminId === null || (int) $internalConversation->admin_id === $requestedAdminId)) {
+        if ($internalConversation && ($internalConversation->admin_id === null || $requestedAdminId === null || (int) $internalConversation->admin_id === $requestedAdminId)) {
             return $internalConversation;
+        }
+
+        if ($requestedConversationId) {
+            $adminIdFromConversation = $this->adminIdFromExternalConversationId($requestedConversationId, $userId);
+
+            if ($adminIdFromConversation !== null) {
+                return $this->getOrCreateAdminConversation($userId, $adminIdFromConversation);
+            }
         }
 
         if ($requestedAdminId !== null) {
@@ -598,7 +594,6 @@ class EmployeeChatApiController extends Controller
         return ChatConversation::query()
             ->where('id', (int) $identifier)
             ->where('user_id', $userId)
-            ->whereNotNull('admin_id')
             ->first();
     }
 
@@ -617,6 +612,93 @@ class EmployeeChatApiController extends Controller
         return Admin::query()
             ->where('id', $adminId)
             ->value('username');
+    }
+
+    private function loadConversationThreadMessages(ChatConversation $conversation, ?int $adminId)
+    {
+        $externalConversationId = $adminId
+            ? $this->externalConversationId($conversation->user_id, $adminId)
+            : null;
+
+        return $conversation->messages()
+            ->with(['adminSender:id,name,avatar,username', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
+            ->orderBy('created_at')
+            ->get()
+            ->filter(function (ChatMessage $message) use ($adminId, $externalConversationId) {
+                return $this->messageBelongsToThread($message, $adminId, $externalConversationId);
+            })
+            ->values();
+    }
+
+    private function messageBelongsToThread(ChatMessage $message, ?int $adminId, ?string $externalConversationId): bool
+    {
+        if ($adminId === null) {
+            return true;
+        }
+
+        if ((int) $message->conversation?->admin_id === $adminId) {
+            return true;
+        }
+
+        if ($externalConversationId !== null && ($message->meta['external_conversation_id'] ?? null) === $externalConversationId) {
+            return true;
+        }
+
+        if ((int) ($message->meta['admin_id'] ?? 0) === $adminId) {
+            return true;
+        }
+
+        return $message->sender_type === ChatMessage::SENDER_ADMIN && (int) $message->sender_id === $adminId;
+    }
+
+    private function markThreadMessagesAsReadByUser($messages): void
+    {
+        $messageIds = collect($messages)
+            ->filter(fn (ChatMessage $message) => $message->sender_type === ChatMessage::SENDER_ADMIN && !$message->is_read_by_user)
+            ->pluck('id')
+            ->all();
+
+        if ($messageIds === []) {
+            return;
+        }
+
+        ChatMessage::query()
+            ->whereIn('id', $messageIds)
+            ->update(['is_read_by_user' => true]);
+    }
+
+    private function threadAdminId(ChatConversation $conversation, Request $request): ?int
+    {
+        return $this->requestedAdminId($request, $conversation->user_id)
+            ?? ($conversation->admin_id ? (int) $conversation->admin_id : null);
+    }
+
+    private function threadAdminUsername(ChatConversation $conversation, ?int $adminId, Request $request): ?string
+    {
+        if ($request->filled('admin_username')) {
+            return (string) $request->input('admin_username');
+        }
+
+        if ($conversation->admin?->username && ((int) $conversation->admin_id === (int) $adminId || $adminId === null)) {
+            return $conversation->admin->username;
+        }
+
+        if (!$adminId) {
+            return null;
+        }
+
+        return Admin::query()
+            ->where('id', $adminId)
+            ->value('username');
+    }
+
+    private function threadConversationIdentifier(ChatConversation $conversation, ?int $adminId): string
+    {
+        if ($adminId) {
+            return $this->externalConversationId($conversation->user_id, $adminId);
+        }
+
+        return $this->conversationIdentifier($conversation);
     }
 
     private function storeAttachment(UploadedFile $file): array

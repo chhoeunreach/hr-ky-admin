@@ -34,11 +34,8 @@ class EmployeeChatController extends Controller
         $messages = collect();
 
         if ($conversation) {
-            $this->markMessagesAsReadByAdmin($conversation);
-            $messages = $conversation->messages()
-                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
-                ->orderBy('created_at')
-                ->get();
+            $messages = $this->loadThreadMessages($conversation, $admin->id);
+            $this->markMessagesAsReadByAdmin($messages);
         }
 
         return view('admin.employee-chat', compact(
@@ -65,11 +62,8 @@ class EmployeeChatController extends Controller
         }
 
         $conversation = $this->getOrCreateConversation($selectedStaff->id, $admin->id);
-        $this->markMessagesAsReadByAdmin($conversation);
-        $messages = $conversation->messages()
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
-            ->orderBy('created_at')
-            ->get();
+        $messages = $this->loadThreadMessages($conversation, $admin->id);
+        $this->markMessagesAsReadByAdmin($messages);
 
         return response()->json([
             'success' => true,
@@ -138,6 +132,7 @@ class EmployeeChatController extends Controller
                 $mapUrl = 'https://www.google.com/maps?q=' . $request->input('latitude') . ',' . $request->input('longitude');
             }
 
+            $externalConversationId = $this->externalConversationId($employee->id, $admin->id);
             $message = $conversation->messages()->create([
                 'sender_type' => ChatMessage::SENDER_ADMIN,
                 'sender_id' => $admin->id,
@@ -147,6 +142,11 @@ class EmployeeChatController extends Controller
                 'latitude' => $request->input('latitude'),
                 'longitude' => $request->input('longitude'),
                 'map_url' => $mapUrl,
+                'meta' => [
+                    'admin_id' => $admin->id,
+                    'admin_username' => $admin->username,
+                    'external_conversation_id' => $externalConversationId,
+                ],
                 'is_read_by_admin' => true,
                 'is_read_by_user' => false,
             ]);
@@ -164,7 +164,7 @@ class EmployeeChatController extends Controller
 
             SMPushHelper::sendPushNotification(
                 $admin->name,
-                $this->externalConversationId($employee->id, $admin->id),
+                $externalConversationId,
                 $notificationBody,
                 'chat',
                 [$employee->username],
@@ -181,10 +181,7 @@ class EmployeeChatController extends Controller
             );
         });
 
-        $messages = $conversation->messages()
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
-            ->orderBy('created_at')
-            ->get();
+        $messages = $this->loadThreadMessages($conversation, $admin->id);
 
         return response()->json([
             'success' => true,
@@ -266,11 +263,19 @@ class EmployeeChatController extends Controller
         return 'employee_admin_' . $employeeId . '_' . $adminId;
     }
 
-    private function markMessagesAsReadByAdmin(ChatConversation $conversation): void
+    private function markMessagesAsReadByAdmin($messages): void
     {
-        $conversation->messages()
-            ->where('sender_type', ChatMessage::SENDER_USER)
-            ->where('is_read_by_admin', false)
+        $messageIds = collect($messages)
+            ->filter(fn (ChatMessage $message) => $message->sender_type === ChatMessage::SENDER_USER && !$message->is_read_by_admin)
+            ->pluck('id')
+            ->all();
+
+        if ($messageIds === []) {
+            return;
+        }
+
+        ChatMessage::query()
+            ->whereIn('id', $messageIds)
             ->update(['is_read_by_admin' => true]);
     }
 
@@ -302,5 +307,36 @@ class EmployeeChatController extends Controller
         $path = $file->store('chat/voice', 'public');
 
         return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path)];
+    }
+
+    private function loadThreadMessages(ChatConversation $conversation, int $adminId)
+    {
+        $externalConversationId = $this->externalConversationId($conversation->user_id, $adminId);
+
+        return $conversation->messages()
+            ->with(['adminSender:id,name,avatar,username', 'userSender:id,name,avatar'])
+            ->orderBy('created_at')
+            ->get()
+            ->filter(function (ChatMessage $message) use ($adminId, $externalConversationId) {
+                return $this->messageBelongsToThread($message, $adminId, $externalConversationId);
+            })
+            ->values();
+    }
+
+    private function messageBelongsToThread(ChatMessage $message, int $adminId, string $externalConversationId): bool
+    {
+        if ((int) $message->conversation?->admin_id === $adminId) {
+            return true;
+        }
+
+        if (($message->meta['external_conversation_id'] ?? null) === $externalConversationId) {
+            return true;
+        }
+
+        if ((int) ($message->meta['admin_id'] ?? 0) === $adminId) {
+            return true;
+        }
+
+        return $message->sender_type === ChatMessage::SENDER_ADMIN && (int) $message->sender_id === $adminId;
     }
 }

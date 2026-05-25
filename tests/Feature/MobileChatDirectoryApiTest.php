@@ -418,6 +418,108 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('text', $storedMessage->message_type);
     }
 
+    public function test_admin_messages_stay_separate_even_when_messages_share_one_internal_conversation(): void
+    {
+        $role = $this->makeRole('employee');
+
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'online_status' => 1,
+            'username' => 'employee.shared',
+        ]);
+
+        $adminOneId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer KY',
+            'username' => 'admin.ky',
+            'email' => 'admin.ky.shared@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $adminTwoId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer VIP',
+            'username' => 'admin.vip',
+            'email' => 'admin.vip.shared@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $sharedConversationId = DB::table('chat_conversations')->insertGetId([
+            'user_id' => $requester->id,
+            'admin_id' => null,
+            'last_message_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('chat_messages')->insert([
+            [
+                'conversation_id' => $sharedConversationId,
+                'sender_type' => 'admin',
+                'sender_id' => $adminOneId,
+                'message_type' => 'text',
+                'message' => 'hello from ky',
+                'meta' => json_encode([
+                    'admin_id' => $adminOneId,
+                    'admin_username' => 'admin.ky',
+                    'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminOneId,
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'conversation_id' => $sharedConversationId,
+                'sender_type' => 'user',
+                'sender_id' => $requester->id,
+                'message_type' => 'text',
+                'message' => 'reply to ky',
+                'meta' => json_encode([
+                    'admin_id' => $adminOneId,
+                    'admin_username' => 'admin.ky',
+                    'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminOneId,
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'conversation_id' => $sharedConversationId,
+                'sender_type' => 'admin',
+                'sender_id' => $adminTwoId,
+                'message_type' => 'text',
+                'message' => 'hello from vip',
+                'meta' => json_encode([
+                    'admin_id' => $adminTwoId,
+                    'admin_username' => 'admin.vip',
+                    'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminTwoId,
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminOneId . '&admin_id=' . $adminOneId . '&internal_conversation_id=' . $sharedConversationId);
+
+        $response->assertOk();
+        $messages = $response->json('data.messages');
+
+        $this->assertCount(2, $messages);
+        $this->assertSame('employee_admin_' . $requester->id . '_' . $adminOneId, $messages[0]['conversation_id']);
+        $this->assertSame((string) $sharedConversationId, $messages[0]['internal_conversation_id']);
+        $this->assertSame($adminOneId, $messages[0]['admin_id']);
+        $this->assertSame('admin.ky', $messages[0]['admin_username']);
+        $this->assertSame('hello from ky', $messages[0]['message']);
+        $this->assertSame('reply to ky', $messages[1]['message']);
+    }
+
     private function makeRole(string $slug): Role
     {
         return Role::create([
