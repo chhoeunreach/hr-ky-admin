@@ -28,23 +28,14 @@ class EmployeeChatApiController extends Controller
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'avatar']);
-
-        $representativeAdmin = $adminList->first();
+        $adminContact = $this->buildAdminContact($conversation, $adminList->first());
 
         return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
             'scope' => $scope,
             'scope_label' => MobileChatHelper::scopeOptions()[$scope] ?? $scope,
             'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
-            'admin_chat_enabled' => $scope === MobileChatHelper::MODE_ADMIN_ONLY,
-            'admin_contact' => [
-                'id' => 'admin-thread',
-                'name' => $representativeAdmin?->name ?? 'Admin Team',
-                'username' => $representativeAdmin?->username ?? 'admin',
-                'avatar' => $representativeAdmin?->avatar
-                    ? asset(Admin::AVATAR_UPLOAD_PATH . $representativeAdmin->avatar)
-                    : asset('assets/images/img.png'),
-                'conversation_id' => (string) $conversation->id,
-            ],
+            'admin_chat_enabled' => true,
+            'admin_contact' => $adminContact,
             'admins' => $adminList->map(function (Admin $admin) {
                 return [
                     'id' => $admin->id,
@@ -61,10 +52,20 @@ class EmployeeChatApiController extends Controller
     public function contacts(): JsonResponse
     {
         $scope = MobileChatHelper::getScope();
+        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
+        $adminContact = $this->buildAdminContact(
+            $conversation,
+            Admin::query()
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->first(['id', 'name', 'username', 'avatar'])
+        );
 
         if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
             return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
                 'scope' => $scope,
+                'admin_contact' => $adminContact,
+                'pinned_contacts' => [$adminContact],
                 'contacts' => [],
             ]);
         }
@@ -96,16 +97,14 @@ class EmployeeChatApiController extends Controller
 
         return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
             'scope' => $scope,
+            'admin_contact' => $adminContact,
+            'pinned_contacts' => [$adminContact],
             'contacts' => $contacts,
         ]);
     }
 
     public function messages(): JsonResponse
     {
-        if (!MobileChatHelper::isAdminOnlyMode()) {
-            return AppHelper::sendErrorResponse('Admin-only mobile chat is disabled. Use employee chat mode instead.', 422);
-        }
-
         $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
         $conversation->messages()
             ->where('sender_type', ChatMessage::SENDER_ADMIN)
@@ -125,10 +124,6 @@ class EmployeeChatApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (!MobileChatHelper::isAdminOnlyMode()) {
-            return AppHelper::sendErrorResponse('Admin-only mobile chat is disabled. Use employee chat mode instead.', 422);
-        }
-
         $validator = Validator::make($request->all(), [
             'message' => ['nullable', 'string'],
             'message_type' => ['nullable', 'string', 'in:text,image,voice,location'],
@@ -215,6 +210,22 @@ class EmployeeChatApiController extends Controller
             'is_read_by_user' => (bool) $message->is_read_by_user,
             'created_at' => $message->created_at?->toIso8601String(),
             'created_at_human' => $message->created_at?->diffForHumans(),
+        ];
+    }
+
+    private function buildAdminContact(ChatConversation $conversation, ?Admin $admin): array
+    {
+        return [
+            'id' => 'admin-thread',
+            'type' => 'admin',
+            'is_pinned' => true,
+            'sort_order' => 0,
+            'name' => $admin?->name ?? 'Admin Team',
+            'username' => $admin?->username ?? 'admin',
+            'avatar' => $admin?->avatar
+                ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
+                : asset('assets/images/img.png'),
+            'conversation_id' => (string) $conversation->id,
         ];
     }
 

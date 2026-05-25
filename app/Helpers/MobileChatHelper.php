@@ -27,7 +27,7 @@ class MobileChatHelper
     {
         return [
             self::MODE_ADMIN_ONLY => 'Chat only with admin',
-            self::MODE_ALL_EMPLOYEES => 'Chat with each employee',
+            self::MODE_ALL_EMPLOYEES => 'Chat with employees and admin',
         ];
     }
 }
