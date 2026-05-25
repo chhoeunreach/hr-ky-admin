@@ -594,5 +594,3 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
 
 
 
-
-

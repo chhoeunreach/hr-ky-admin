@@ -85,6 +85,13 @@ class DashboardController extends Controller
         return view('admin.print_qr',compact('url'));
     }
 
+    public function employeeChat()
+    {
+        $chatUrl = config('app.mobile_app_url');
+
+        return view('admin.employee-chat', compact('chatUrl'));
+    }
+
     private function generateUrl(): string
     {
         $url = config('app.mobile_app_url') ?: config('app.url');

@@ -128,6 +128,7 @@ Route::group([
         Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('showQR', [DashboardController::class, 'showQR'])->name('showQR');
+        Route::get('employee-chat', [DashboardController::class, 'employeeChat'])->name('employee-chat');
 
         Route::group(['middleware' => 'superAdmin'], function () {
 
