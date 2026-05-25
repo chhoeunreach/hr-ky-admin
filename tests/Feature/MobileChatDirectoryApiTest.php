@@ -264,6 +264,93 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertNotSame($adminEntry['conversation_id'], $secondAdminEntry['conversation_id']);
     }
 
+    public function test_admin_messages_are_filtered_by_external_conversation_id(): void
+    {
+        $role = $this->makeRole('employee');
+
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => 'employee.15',
+        ]);
+
+        $adminOneId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer KY',
+            'username' => 'admin.ky',
+            'email' => 'admin.ky@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $adminTwoId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer VIP',
+            'username' => 'admin.vip',
+            'email' => 'admin.vip@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $conversationOneId = DB::table('chat_conversations')->insertGetId([
+            'user_id' => $requester->id,
+            'admin_id' => $adminOneId,
+            'last_message_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $conversationTwoId = DB::table('chat_conversations')->insertGetId([
+            'user_id' => $requester->id,
+            'admin_id' => $adminTwoId,
+            'last_message_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('chat_messages')->insert([
+            [
+                'conversation_id' => $conversationOneId,
+                'sender_type' => 'admin',
+                'sender_id' => $adminOneId,
+                'message_type' => 'text',
+                'message' => 'hello from ky',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'conversation_id' => $conversationTwoId,
+                'sender_type' => 'admin',
+                'sender_id' => $adminTwoId,
+                'message_type' => 'text',
+                'message' => 'hello from vip',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminOneId . '&admin_id=' . $adminOneId);
+
+        $response->assertOk();
+        $messages = $response->json('data.messages');
+
+        $this->assertCount(1, $messages);
+        $this->assertSame('employee_admin_' . $requester->id . '_' . $adminOneId, $messages[0]['conversation_id']);
+        $this->assertSame((string) $conversationOneId, $messages[0]['internal_conversation_id']);
+        $this->assertSame($adminOneId, $messages[0]['admin_id']);
+        $this->assertSame('admin.ky', $messages[0]['admin_username']);
+        $this->assertSame('admin', $messages[0]['sender']);
+        $this->assertSame('hello from ky', $messages[0]['message']);
+        $this->assertSame('text', $messages[0]['message_type']);
+        $this->assertNotEmpty($messages[0]['created_at']);
+    }
+
     private function makeRole(string $slug): Role
     {
         return Role::create([
@@ -367,6 +454,26 @@ class MobileChatDirectoryApiTest extends TestCase
                 $table->unsignedBigInteger('user_id');
                 $table->unsignedBigInteger('admin_id')->nullable();
                 $table->timestamp('last_message_at')->nullable();
+                $table->timestamps();
+                $table->unique(['user_id', 'admin_id'], 'chat_conversations_user_admin_unique');
+            });
+        }
+
+        if (!Schema::hasTable('chat_messages')) {
+            Schema::create('chat_messages', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('conversation_id');
+                $table->string('sender_type', 20);
+                $table->unsignedBigInteger('sender_id');
+                $table->string('message_type', 20)->default('text');
+                $table->text('message')->nullable();
+                $table->string('media_url')->nullable();
+                $table->decimal('latitude', 10, 7)->nullable();
+                $table->decimal('longitude', 10, 7)->nullable();
+                $table->string('map_url')->nullable();
+                $table->json('meta')->nullable();
+                $table->boolean('is_read_by_admin')->default(false);
+                $table->boolean('is_read_by_user')->default(false);
                 $table->timestamps();
             });
         }

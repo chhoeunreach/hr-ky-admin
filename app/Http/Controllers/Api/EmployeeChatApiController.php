@@ -131,6 +131,7 @@ class EmployeeChatApiController extends Controller
 
             return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
                 'conversation_id' => $this->conversationIdentifier($conversation),
+                'internal_conversation_id' => (string) $conversation->id,
                 'admin_id' => $conversation->admin_id,
                 'admin_username' => $conversation->admin?->username,
                 'messages' => $messages,
@@ -138,13 +139,14 @@ class EmployeeChatApiController extends Controller
         } catch (Throwable $throwable) {
             report($throwable);
 
-            return AppHelper::sendSuccessResponse('Mobile admin chat loaded with fallback state.', [
-                'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
-                'admin_id' => $this->requestedAdminId($request),
-                'admin_username' => $this->requestedAdminUsername($request),
-                'messages' => [],
-                'fallback' => true,
-            ]);
+                return AppHelper::sendSuccessResponse('Mobile admin chat loaded with fallback state.', [
+                    'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
+                    'internal_conversation_id' => null,
+                    'admin_id' => $this->requestedAdminId($request),
+                    'admin_username' => $this->requestedAdminUsername($request),
+                    'messages' => [],
+                    'fallback' => true,
+                ]);
         }
     }
 
@@ -165,6 +167,7 @@ class EmployeeChatApiController extends Controller
 
                 return AppHelper::sendSuccessResponse('No new message was sent.', [
                     'conversation_id' => $this->conversationIdentifier($conversation),
+                    'internal_conversation_id' => (string) $conversation->id,
                     'admin_id' => $conversation->admin_id,
                     'admin_username' => $conversation->admin?->username,
                     'messages' => $messages,
@@ -175,6 +178,7 @@ class EmployeeChatApiController extends Controller
 
                 return AppHelper::sendSuccessResponse('No new message was sent.', [
                     'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
+                    'internal_conversation_id' => null,
                     'admin_id' => $this->requestedAdminId($request),
                     'admin_username' => $this->requestedAdminUsername($request),
                     'messages' => [],
@@ -267,6 +271,7 @@ class EmployeeChatApiController extends Controller
 
             return AppHelper::sendSuccessResponse('Message sent successfully.', [
                 'conversation_id' => $this->conversationIdentifier($conversation),
+                'internal_conversation_id' => (string) $conversation->id,
                 'admin_id' => $conversation->admin_id,
                 'admin_username' => $conversation->admin?->username,
                 'messages' => $messages,
@@ -291,6 +296,7 @@ class EmployeeChatApiController extends Controller
             'sender_name' => $message->senderName(),
             'sender_avatar' => $message->senderAvatar(),
             'conversation_id' => $conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id,
+            'internal_conversation_id' => (string) $message->conversation_id,
             'admin_id' => $conversation?->admin_id,
             'admin_username' => $conversation?->admin?->username,
             'message_type' => $normalizedType,
@@ -416,37 +422,10 @@ class EmployeeChatApiController extends Controller
             ]);
         }
 
-        $conversation = ChatConversation::query()
-            ->where('user_id', $userId)
-            ->where('admin_id', $adminId)
-            ->first();
-
-        if ($conversation) {
-            return $conversation;
-        }
-
-        // Legacy databases may still enforce unique(user_id), so fall back to the
-        // existing single thread instead of throwing a duplicate-key error.
-        $legacyConversation = ChatConversation::query()
-            ->where('user_id', $userId)
-            ->first();
-
-        if ($legacyConversation) {
-            return $legacyConversation;
-        }
-
-        try {
-            return ChatConversation::create([
-                'user_id' => $userId,
-                'admin_id' => $adminId,
-            ]);
-        } catch (Throwable $throwable) {
-            report($throwable);
-
-            return ChatConversation::firstOrCreate([
-                'user_id' => $userId,
-            ]);
-        }
+        return ChatConversation::firstOrCreate([
+            'user_id' => $userId,
+            'admin_id' => $adminId,
+        ]);
     }
 
     private function resolveAdminConversation(int $userId, Request $request): ChatConversation

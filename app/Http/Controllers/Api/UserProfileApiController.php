@@ -226,35 +226,10 @@ class UserProfileApiController extends Controller
             ]);
         }
 
-        $conversation = ChatConversation::query()
-            ->where('user_id', $userId)
-            ->where('admin_id', $adminId)
-            ->first();
-
-        if ($conversation) {
-            return $conversation;
-        }
-
-        $legacyConversation = ChatConversation::query()
-            ->where('user_id', $userId)
-            ->first();
-
-        if ($legacyConversation) {
-            return $legacyConversation;
-        }
-
-        try {
-            return ChatConversation::create([
-                'user_id' => $userId,
-                'admin_id' => $adminId,
-            ]);
-        } catch (\Throwable $throwable) {
-            report($throwable);
-
-            return ChatConversation::firstOrCreate([
-                'user_id' => $userId,
-            ]);
-        }
+        return ChatConversation::firstOrCreate([
+            'user_id' => $userId,
+            'admin_id' => $adminId,
+        ]);
     }
 
     private function supportsPerAdminConversation(): bool
