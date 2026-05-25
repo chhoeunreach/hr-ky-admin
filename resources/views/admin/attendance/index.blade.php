@@ -245,6 +245,29 @@
                 font-size: 0.88rem;
             }
 
+            .attendance-table-toolbar {
+                display: flex;
+                justify-content: flex-end;
+                margin-bottom: 18px;
+            }
+
+            .attendance-table-search {
+                width: min(100%, 260px);
+                border: 1px solid #d7dfeb;
+                border-radius: 0;
+                min-height: 48px;
+                padding: 0 16px;
+                color: #111827;
+                background: #ffffff;
+                box-shadow: none;
+            }
+
+            .attendance-table-search:focus {
+                outline: none;
+                border-color: #93c5fd;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+            }
+
             @media (max-width: 767.98px) {
                 .attendance-chat-modal .modal-dialog {
                     max-width: 100%;
@@ -339,6 +362,12 @@
                 <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
             </div>
             <div class="card-body">
+                <div class="attendance-table-toolbar">
+                    <input type="text"
+                           id="attendanceDaySearch"
+                           class="attendance-table-search"
+                           placeholder="Search ...">
+                </div>
                 <div class="table-responsive">
 
                         <table id="dataTableExample" class="table">
@@ -1097,6 +1126,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const noteModal = new bootstrap.Modal(document.getElementById('noteModal'));
+            const attendanceDaySearch = document.getElementById('attendanceDaySearch');
+            const attendanceDayTable = document.getElementById('dataTableExample');
 
             document.querySelectorAll('.noteLink').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1228,6 +1259,16 @@
                     modal.show();
                 });
             });
+
+            if (attendanceDaySearch && attendanceDayTable) {
+                attendanceDaySearch.addEventListener('input', function () {
+                    const query = this.value.trim().toLowerCase();
+                    attendanceDayTable.querySelectorAll('tbody tr').forEach((row) => {
+                        const text = row.textContent.toLowerCase();
+                        row.style.display = text.includes(query) ? '' : 'none';
+                    });
+                });
+            }
 
             const attendanceChatModalElement = document.getElementById('attendanceChatModal');
             const attendanceChatModal = attendanceChatModalElement ? new bootstrap.Modal(attendanceChatModalElement) : null;
