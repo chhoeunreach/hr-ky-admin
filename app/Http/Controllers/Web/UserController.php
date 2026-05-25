@@ -246,7 +246,16 @@ class UserController extends Controller
             $roles = $this->roleRepo->getAllActiveRoles();
 
             $userSelect = ['*'];
-            $userWith = ['accountDetail'];
+            $userWith = [
+                'accountDetail',
+                'company:id,name',
+                'branch:id,name',
+                'department:id,dept_name',
+                'post:id,post_name',
+                'role:id,name,slug',
+                'supervisor:id,name',
+                'officeTime:id,opening_time,closing_time,shift',
+            ];
             $userDetail = $this->userRepo->findUserDetailById($id, $userSelect, $userWith);
             $leaveTypes = $this->leaveTypeRepository->getGenderSpecificPaidLeaveTypes($userDetail->branch_id,$userDetail->gender);
             $employeeLeaveTypes = $this->employeeLeaveTypeRepository->getAll(['id', 'leave_type_id', 'days', 'is_active'], $id);

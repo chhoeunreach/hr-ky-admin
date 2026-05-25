@@ -1,15 +1,27 @@
 @forelse($messages as $message)
     @php
         $isOutgoing = $message->sender_type === \App\Models\ChatMessage::SENDER_ADMIN;
+        $mediaUrl = $message->resolvedMediaUrl();
     @endphp
     <div class="chat-bubble-row {{ $isOutgoing ? 'outgoing' : '' }}">
         <div class="chat-bubble {{ $isOutgoing ? 'outgoing' : '' }}">
-            @if($message->message_type === \App\Models\ChatMessage::TYPE_IMAGE && $message->media_url)
-                <img src="{{ $message->media_url }}" alt="Chat image" class="chat-bubble-image">
-            @elseif($message->message_type === \App\Models\ChatMessage::TYPE_VOICE && $message->media_url)
+            @if($message->message_type === \App\Models\ChatMessage::TYPE_IMAGE && $mediaUrl)
+                <a href="{{ $mediaUrl }}" target="_blank" rel="noopener noreferrer">
+                    <img src="{{ $mediaUrl }}" alt="Chat image" class="chat-bubble-image">
+                </a>
+            @elseif($message->message_type === \App\Models\ChatMessage::TYPE_VOICE && $mediaUrl)
                 <audio controls preload="none">
-                    <source src="{{ $message->media_url }}">
+                    <source src="{{ $mediaUrl }}">
                 </audio>
+            @elseif($message->message_type === \App\Models\ChatMessage::TYPE_FILE && $mediaUrl)
+                <div>
+                    <strong>Attachment</strong>
+                    <div>
+                        <a href="{{ $mediaUrl }}" target="_blank" rel="noopener noreferrer">
+                            {{ $message->meta['file_name'] ?? 'Open file' }}
+                        </a>
+                    </div>
+                </div>
             @elseif($message->message_type === \App\Models\ChatMessage::TYPE_LOCATION)
                 <div>
                     <strong>Location</strong>

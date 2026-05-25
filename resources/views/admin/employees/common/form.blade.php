@@ -15,7 +15,130 @@
         display: none;
         color: red !important;
     }
+
+    .employee-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+    }
+
+    .employee-info-item {
+        background: #f8fbff;
+        border: 1px solid #e4edf7;
+        border-radius: 14px;
+        padding: .85rem 1rem;
+    }
+
+    .employee-info-label {
+        display: block;
+        margin-bottom: .35rem;
+        font-size: .78rem;
+        font-weight: 700;
+        color: #6b7a90;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+
+    .employee-info-value {
+        color: #1d2a3b;
+        font-weight: 600;
+        word-break: break-word;
+    }
 </style>
+@if(isset($userDetail))
+    <div class="card mb-4">
+        <div class="card-body pb-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                    <h5 class="mb-1">Employee Information</h5>
+                    <p class="text-muted mb-0">Review the full employee profile before making changes.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge bg-primary">ID: {{ $userDetail->id }}</span>
+                    <span class="badge {{ $userDetail->is_active ? 'bg-success' : 'bg-secondary' }}">
+                        {{ $userDetail->is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                    <span class="badge bg-light text-dark">Status: {{ ucfirst($userDetail->status ?? 'n/a') }}</span>
+                </div>
+            </div>
+
+            <div class="employee-info-grid">
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Employee Code</span>
+                    <div class="employee-info-value">{{ $userDetail->employee_code ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Username</span>
+                    <div class="employee-info-value">{{ $userDetail->username ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Email</span>
+                    <div class="employee-info-value">{{ $userDetail->email ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Phone</span>
+                    <div class="employee-info-value">{{ $userDetail->phone ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Company</span>
+                    <div class="employee-info-value">{{ $userDetail->company?->name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Branch</span>
+                    <div class="employee-info-value">{{ $userDetail->branch?->name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Department</span>
+                    <div class="employee-info-value">{{ $userDetail->department?->dept_name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Post</span>
+                    <div class="employee-info-value">{{ $userDetail->post?->post_name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Role</span>
+                    <div class="employee-info-value">{{ $userDetail->role?->name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Supervisor</span>
+                    <div class="employee-info-value">{{ $userDetail->supervisor?->name ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Employment Type</span>
+                    <div class="employee-info-value">{{ $userDetail->employment_type ? ucfirst($userDetail->employment_type) : 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Workspace</span>
+                    <div class="employee-info-value">
+                        @if($userDetail->workspace_type === \App\Models\User::FIELD)
+                            {{ __('index.field') }}
+                        @elseif($userDetail->workspace_type === \App\Models\User::OFFICE)
+                            {{ __('index.office') }}
+                        @else
+                            N/A
+                        @endif
+                    </div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Joining Date</span>
+                    <div class="employee-info-value">{{ $userDetail->joining_date ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Date of Birth</span>
+                    <div class="employee-info-value">{{ $userDetail->dob ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Created At</span>
+                    <div class="employee-info-value">{{ $userDetail->created_at?->format('M d, Y h:i A') ?: 'N/A' }}</div>
+                </div>
+                <div class="employee-info-item">
+                    <span class="employee-info-label">Updated At</span>
+                    <div class="employee-info-value">{{ $userDetail->updated_at?->format('M d, Y h:i A') ?: 'N/A' }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 <div class="card mb-4">
     <div class="card-body pb-2">
         <div class="profile-detail">

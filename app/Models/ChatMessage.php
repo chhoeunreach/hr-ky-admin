@@ -4,11 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class ChatMessage extends Model
 {
     public const TYPE_TEXT = 'text';
     public const TYPE_IMAGE = 'image';
+    public const TYPE_FILE = 'file';
     public const TYPE_VOICE = 'voice';
     public const TYPE_LOCATION = 'location';
 
@@ -73,5 +75,38 @@ class ChatMessage extends Model
         return $this->userSender?->avatar
             ? asset(User::AVATAR_UPLOAD_PATH . $this->userSender->avatar)
             : asset('assets/images/img.png');
+    }
+
+    public function resolvedMediaUrl(): ?string
+    {
+        $mediaPath = $this->meta['media_path'] ?? null;
+
+        if ($mediaPath) {
+            return Storage::disk('public')->url(ltrim((string) $mediaPath, '/'));
+        }
+
+        $mediaUrl = $this->media_url;
+
+        if (!$mediaUrl) {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $mediaUrl) === 1) {
+            return $mediaUrl;
+        }
+
+        if (str_starts_with($mediaUrl, '/storage/')) {
+            return asset(ltrim($mediaUrl, '/'));
+        }
+
+        if (str_starts_with($mediaUrl, 'storage/')) {
+            return asset($mediaUrl);
+        }
+
+        if (preg_match('/^chat\//i', $mediaUrl) === 1) {
+            return Storage::disk('public')->url($mediaUrl);
+        }
+
+        return $mediaUrl;
     }
 }
