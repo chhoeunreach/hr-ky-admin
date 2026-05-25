@@ -21,7 +21,10 @@
             }
 
             .attendance-chat-shell {
-                background: linear-gradient(180deg, #f9fbff 0%, #ffffff 28%);
+                background:
+                    radial-gradient(circle at top left, rgba(96, 165, 250, 0.14), transparent 28%),
+                    radial-gradient(circle at top right, rgba(168, 85, 247, 0.10), transparent 24%),
+                    linear-gradient(180deg, #f8fbff 0%, #ffffff 32%);
             }
 
             .attendance-chat-header {
@@ -29,9 +32,10 @@
                 align-items: center;
                 justify-content: space-between;
                 gap: 16px;
-                padding: 18px 22px;
-                background: #ffffff;
-                border-bottom: 1px solid #edf1f7;
+                padding: 22px 24px 20px;
+                background: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(16px);
+                border-bottom: 1px solid rgba(226, 232, 240, 0.9);
             }
 
             .attendance-chat-person {
@@ -75,6 +79,7 @@
                 color: #111827;
                 font-size: 1.35rem;
                 font-weight: 700;
+                letter-spacing: -0.02em;
             }
 
             .attendance-chat-person p {
@@ -102,14 +107,27 @@
                 align-items: center;
                 justify-content: center;
                 border-radius: 50%;
-                background: #faf5ff;
-                border: 0;
+                background: rgba(250, 245, 255, 0.92);
+                border: 1px solid rgba(233, 213, 255, 0.75);
                 color: #a855f7;
+                box-shadow: 0 12px 22px rgba(168, 85, 247, 0.10);
+                transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+            }
+
+            .attendance-chat-actions button:hover,
+            .attendance-chat-actions span:hover {
+                transform: translateY(-1px);
+                background: #ffffff;
+                box-shadow: 0 16px 28px rgba(168, 85, 247, 0.16);
             }
 
             .attendance-chat-body {
                 padding: 0;
-                background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+                background:
+                    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 251, 255, 0.96) 100%),
+                    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 0, rgba(59, 130, 246, 0.03) 1px, transparent 1px, transparent 32px),
+                    linear-gradient(rgba(148, 163, 184, 0.03) 0, rgba(148, 163, 184, 0.03) 1px, transparent 1px, transparent 32px);
+                background-size: auto, 32px 32px, 32px 32px;
             }
 
             .attendance-chat-thread {
@@ -117,32 +135,50 @@
                 min-height: 420px;
                 max-height: 680px;
                 overflow-y: auto;
-                padding: 22px 22px 14px;
+                padding: 26px 26px 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .attendance-chat-thread .chat-bubble-row {
+                display: flex;
+                width: 100%;
+                margin-bottom: 0;
+            }
+
+            .attendance-chat-thread .chat-bubble-row.outgoing {
+                justify-content: flex-end;
             }
 
             .attendance-chat-thread .chat-bubble {
                 display: inline-block;
                 width: fit-content;
-                max-width: min(74%, 440px);
+                max-width: min(72%, 460px);
                 min-width: 0;
-                border-radius: 24px;
-                box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+                padding: 14px 16px 12px;
+                border-radius: 24px 24px 24px 10px;
+                background: rgba(255, 255, 255, 0.96);
+                border: 1px solid rgba(226, 232, 240, 0.95);
+                box-shadow: 0 18px 34px rgba(15, 23, 42, 0.07);
                 overflow-wrap: anywhere;
                 word-break: break-word;
-            }
-
-            .attendance-chat-thread .chat-bubble-row {
-                width: 100%;
+                color: #0f172a;
             }
 
             .attendance-chat-thread .chat-bubble.outgoing {
                 background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                border-color: rgba(37, 99, 235, 0.85);
                 color: #ffffff;
+                border-radius: 24px 24px 10px 24px;
+                box-shadow: 0 20px 34px rgba(37, 99, 235, 0.22);
             }
 
             .attendance-chat-thread .chat-bubble-meta {
+                margin-top: 8px;
                 font-size: 0.74rem;
-                opacity: 0.72;
+                font-weight: 500;
+                color: #64748b;
             }
 
             .attendance-chat-thread .chat-bubble.outgoing .chat-bubble-meta {
@@ -160,10 +196,23 @@
                 max-width: 100%;
             }
 
+            .attendance-chat-thread .chat-empty {
+                margin: auto;
+                max-width: 320px;
+                padding: 22px 20px;
+                text-align: center;
+                border-radius: 22px;
+                background: rgba(255, 255, 255, 0.88);
+                border: 1px solid rgba(226, 232, 240, 0.95);
+                color: #64748b;
+                box-shadow: 0 18px 34px rgba(15, 23, 42, 0.06);
+            }
+
             .attendance-chat-footer {
                 border-top: 1px solid #edf1f7;
-                background: #ffffff;
-                padding: 14px 18px 18px;
+                background: rgba(255, 255, 255, 0.94);
+                padding: 16px 18px 18px;
+                backdrop-filter: blur(16px);
             }
 
             .attendance-chat-preview {
@@ -231,11 +280,13 @@
 
             .attendance-chat-input {
                 flex: 1;
-                border: 0;
-                background: #f1f5f9;
+                border: 1px solid rgba(226, 232, 240, 0.95);
+                background: linear-gradient(180deg, #f8fbff 0%, #f1f5f9 100%);
                 border-radius: 999px;
                 min-height: 48px;
                 padding: 0 18px;
+                color: #0f172a;
+                box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
             }
 
             .attendance-chat-input:focus {
@@ -256,9 +307,10 @@
             }
 
             .attendance-chat-status-text {
-                margin-top: 10px;
+                margin-top: 12px;
                 color: #64748b;
                 font-size: 0.88rem;
+                padding-left: 6px;
             }
 
             .attendance-filter-card .card-header,
