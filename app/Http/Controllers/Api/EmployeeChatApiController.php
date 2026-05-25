@@ -36,7 +36,7 @@ class EmployeeChatApiController extends Controller
             'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
             'admin_chat_enabled' => true,
             'admin_contact' => $adminContact,
-            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin))->values(),
+            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin, $conversation))->values(),
         ]);
     }
 
@@ -57,7 +57,7 @@ class EmployeeChatApiController extends Controller
                 'scope' => $scope,
                 'admin_contact' => $adminContact,
                 'pinned_contacts' => [$adminContact],
-                'contacts' => $this->getAdminDirectoryEntries(),
+                'contacts' => $this->getAdminDirectoryEntries($conversation),
             ]);
         }
 
@@ -74,7 +74,7 @@ class EmployeeChatApiController extends Controller
             ->values();
 
         $contacts = $employeeContacts
-            ->concat($this->getAdminDirectoryEntries())
+            ->concat($this->getAdminDirectoryEntries($conversation))
             ->values();
 
         return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
@@ -222,17 +222,17 @@ class EmployeeChatApiController extends Controller
         ];
     }
 
-    private function getAdminDirectoryEntries()
+    private function getAdminDirectoryEntries(?ChatConversation $conversation = null)
     {
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin))
+            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin, $conversation))
             ->values();
     }
 
-    private function transformAdminDirectoryEntry(Admin $admin): array
+    private function transformAdminDirectoryEntry(Admin $admin, ?ChatConversation $conversation = null): array
     {
         $directoryId = 1000000 + (int) $admin->id;
 
@@ -256,6 +256,8 @@ class EmployeeChatApiController extends Controller
             'is_online' => false,
             'directory_type' => 'admin',
             'source_id' => $admin->id,
+            'conversation_id' => $conversation ? (string) $conversation->id : null,
+            'chat_mode' => 'admin_thread',
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\ChatConversation;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -147,10 +148,18 @@ class UserProfileApiController extends Controller
 //            if($updateOnline){
                 $companyWithEmployee = $this->companyRepo
                     ->findOrFailCompanyDetailById(AppHelper::getAuthUserCompanyId(), $select, $with);
+                $conversation = null;
+                if (auth()->check() && auth()->id()) {
+                    try {
+                        $conversation = ChatConversation::firstOrCreate(['user_id' => auth()->id()]);
+                    } catch (\Throwable $throwable) {
+                        $conversation = null;
+                    }
+                }
                 $companyDetail = (new CompanyResource($companyWithEmployee))->toArray(request());
                 $companyDetail['employee'] = array_values(array_merge(
                     $companyDetail['employee'],
-                    $this->getAdminDirectoryEntries()
+                    $this->getAdminDirectoryEntries($conversation)
                 ));
 
                 $branches = $this->branchRepository->getBranchesWithDepartments();
@@ -163,17 +172,17 @@ class UserProfileApiController extends Controller
             return AppHelper::sendSuccessResponse(__('index.data_found'), $data);
 
         } catch (Exception $exception) {
-            return AppHelper::sendErrorResponse($exception->getFile(), 400);
+            return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
     }
 
-    private function getAdminDirectoryEntries(): array
+    private function getAdminDirectoryEntries(?ChatConversation $conversation = null): array
     {
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) {
+            ->map(function (Admin $admin) use ($conversation) {
                 $directoryId = 1000000 + (int) $admin->id;
 
                 return [
@@ -195,6 +204,8 @@ class UserProfileApiController extends Controller
                     'admin' => '1',
                     'directory_type' => 'admin',
                     'source_id' => $admin->id,
+                    'conversation_id' => $conversation ? (string) $conversation->id : null,
+                    'chat_mode' => 'admin_thread',
                 ];
             })
             ->values()
