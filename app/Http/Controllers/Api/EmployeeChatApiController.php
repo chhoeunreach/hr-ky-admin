@@ -195,6 +195,7 @@ class EmployeeChatApiController extends Controller
             'type' => ['nullable', 'string'],
             'media_type' => ['nullable', 'string', 'in:image,audio,voice,document,file'],
             'conversation_id' => ['nullable', 'string'],
+            'internal_conversation_id' => ['nullable', 'string'],
             'admin_id' => ['nullable', 'integer'],
             'admin_username' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string'],
@@ -390,6 +391,7 @@ class EmployeeChatApiController extends Controller
             'directory_type' => 'admin',
             'source_id' => $admin->id,
             'conversation_id' => $conversation ? $this->externalConversationId($conversation->user_id, (int) $admin->id) : null,
+            'internal_conversation_id' => $conversation ? (string) $conversation->id : null,
             'admin_id' => $admin->id,
             'admin_username' => $admin->username,
             'chat_mode' => 'admin_thread',
@@ -409,6 +411,7 @@ class EmployeeChatApiController extends Controller
                 ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
                 : asset('assets/images/img.png'),
             'conversation_id' => ($conversation && $admin) ? $this->externalConversationId($conversation->user_id, $admin->id) : null,
+            'internal_conversation_id' => $conversation ? (string) $conversation->id : null,
             'admin_id' => $admin?->id,
             'admin_username' => $admin?->username,
         ];
@@ -443,45 +446,33 @@ class EmployeeChatApiController extends Controller
             ]);
         }
 
-        if ($request->filled('conversation_id')) {
-            $adminIdFromConversation = $this->adminIdFromExternalConversationId(
-                (string) $request->input('conversation_id'),
-                $userId
-            );
+        $requestedConversationId = $request->filled('conversation_id')
+            ? (string) $request->input('conversation_id')
+            : null;
+        $requestedAdminId = $this->requestedAdminId($request, $userId);
+
+        if ($requestedConversationId) {
+            $adminIdFromConversation = $this->adminIdFromExternalConversationId($requestedConversationId, $userId);
 
             if ($adminIdFromConversation !== null) {
                 return $this->getOrCreateAdminConversation($userId, $adminIdFromConversation);
             }
-
-            if (is_numeric($request->input('conversation_id'))) {
-                $conversation = ChatConversation::query()
-                    ->where('id', (int) $request->input('conversation_id'))
-                    ->where('user_id', $userId)
-                    ->whereNotNull('admin_id')
-                    ->first();
-
-                if ($conversation) {
-                    return $conversation;
-                }
-            }
         }
 
-        if ($request->filled('admin_id')) {
-            return $this->getOrCreateAdminConversation($userId, (int) $request->input('admin_id'));
+        $internalConversation = $this->conversationFromInternalIdentifier(
+            $request->input('internal_conversation_id'),
+            $userId
+        ) ?? $this->conversationFromInternalIdentifier(
+            $requestedConversationId,
+            $userId
+        );
+
+        if ($internalConversation && ($requestedAdminId === null || (int) $internalConversation->admin_id === $requestedAdminId)) {
+            return $internalConversation;
         }
 
-        if ($request->filled('admin_username')) {
-            $adminId = Admin::query()
-                ->where('username', (string) $request->input('admin_username'))
-                ->value('id');
-
-            if ($adminId) {
-                return $this->getOrCreateAdminConversation($userId, (int) $adminId);
-            }
-        }
-
-        if ($request->filled('source_id')) {
-            return $this->getOrCreateAdminConversation($userId, (int) $request->input('source_id'));
+        if ($requestedAdminId !== null) {
+            return $this->getOrCreateAdminConversation($userId, $requestedAdminId);
         }
 
         $defaultAdmin = Admin::query()
@@ -561,7 +552,7 @@ class EmployeeChatApiController extends Controller
         return null;
     }
 
-    private function requestedAdminId(Request $request): ?int
+    private function requestedAdminId(Request $request, ?int $userId = null): ?int
     {
         if ($request->filled('admin_id')) {
             return (int) $request->input('admin_id');
@@ -574,8 +565,17 @@ class EmployeeChatApiController extends Controller
         if ($request->filled('conversation_id')) {
             return $this->adminIdFromExternalConversationId(
                 (string) $request->input('conversation_id'),
-                auth()->id()
+                $userId ?? auth()->id()
             );
+        }
+
+        $internalConversation = $this->conversationFromInternalIdentifier(
+            $request->input('internal_conversation_id'),
+            $userId ?? auth()->id()
+        );
+
+        if ($internalConversation?->admin_id) {
+            return (int) $internalConversation->admin_id;
         }
 
         if ($request->filled('admin_username')) {
@@ -587,6 +587,19 @@ class EmployeeChatApiController extends Controller
         }
 
         return null;
+    }
+
+    private function conversationFromInternalIdentifier(mixed $identifier, int $userId): ?ChatConversation
+    {
+        if (!is_numeric($identifier)) {
+            return null;
+        }
+
+        return ChatConversation::query()
+            ->where('id', (int) $identifier)
+            ->where('user_id', $userId)
+            ->whereNotNull('admin_id')
+            ->first();
     }
 
     private function requestedAdminUsername(Request $request): ?string

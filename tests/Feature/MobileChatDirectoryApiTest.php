@@ -351,6 +351,73 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertNotEmpty($messages[0]['created_at']);
     }
 
+    public function test_admin_message_post_accepts_public_and_internal_conversation_identifiers(): void
+    {
+        $role = $this->makeRole('employee');
+
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => 'employee.15',
+        ]);
+
+        $adminId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer KY',
+            'username' => 'admin.ky',
+            'email' => 'admin.ky@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $conversationId = DB::table('chat_conversations')->insertGetId([
+            'user_id' => $requester->id,
+            'admin_id' => $adminId,
+            'last_message_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->postJson('/api/employee/chat/admin/messages', [
+            'message' => 'hello from mobile',
+            'conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            'internal_conversation_id' => (string) $conversationId,
+            'admin_id' => $adminId,
+            'admin_username' => 'admin.ky',
+            'message_type' => 'text',
+        ]);
+
+        $response->assertOk();
+        $response->assertJsonPath('data.conversation_id', 'employee_admin_' . $requester->id . '_' . $adminId);
+        $response->assertJsonPath('data.internal_conversation_id', (string) $conversationId);
+        $response->assertJsonPath('data.admin_id', $adminId);
+        $response->assertJsonPath('data.admin_username', 'admin.ky');
+
+        $messages = $response->json('data.messages');
+        $this->assertNotEmpty($messages);
+        $this->assertSame('employee_admin_' . $requester->id . '_' . $adminId, $messages[0]['conversation_id']);
+        $this->assertSame((string) $conversationId, $messages[0]['internal_conversation_id']);
+        $this->assertSame($adminId, $messages[0]['admin_id']);
+        $this->assertSame('admin.ky', $messages[0]['admin_username']);
+        $this->assertSame('user', $messages[0]['sender']);
+        $this->assertSame('hello from mobile', $messages[0]['message']);
+        $this->assertSame('text', $messages[0]['message_type']);
+        $this->assertNotEmpty($messages[0]['created_at']);
+
+        $storedMessage = DB::table('chat_messages')
+            ->where('conversation_id', $conversationId)
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($storedMessage);
+        $this->assertSame('hello from mobile', $storedMessage->message);
+        $this->assertSame('text', $storedMessage->message_type);
+    }
+
     private function makeRole(string $slug): Role
     {
         return Role::create([
