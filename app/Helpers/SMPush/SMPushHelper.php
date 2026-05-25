@@ -243,7 +243,7 @@ class SMPushHelper
                                                 string $type,
                                                 array  $usernames,
                                                 string $project_id,
-                                                string $message_type = 'text',
+                                                string $chatMessageType = 'text',
                                                 string $media_url = '',
     ): void
     {
@@ -257,7 +257,8 @@ class SMPushHelper
                 'sender_image' => auth()->user()->image ? asset(User::AVATAR_UPLOAD_PATH . auth()->user()->image) : asset('assets/images/img.png'),
                 'message' => $message,
                 'type' => $type,
-                'message_type' => $message_type,
+                'chat_message_type' => $chatMessageType,
+                'message_type' => $chatMessageType,
                 'media_url' => $media_url,
                 'project_id' => $project_id,
                 'sender_username' => auth()->user()->username,
