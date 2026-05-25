@@ -215,7 +215,11 @@ class UserProfileApiController extends Controller
                     'admin' => '1',
                     'directory_type' => 'admin',
                     'source_id' => $admin->id,
-                    'conversation_id' => $conversation ? (string) $conversation->id : null,
+                    'conversation_id' => ($conversation && $userId)
+                        ? 'employee_admin_' . $userId . '_' . $admin->id
+                        : null,
+                    'admin_id' => $admin->id,
+                    'admin_username' => $admin->username,
                     'chat_mode' => 'admin_thread',
                 ];
             })

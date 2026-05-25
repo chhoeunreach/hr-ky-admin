@@ -109,12 +109,14 @@ class EmployeeChatApiController extends Controller
 
         $messages = $conversation->messages()
             ->orderBy('created_at')
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
             ->get()
             ->map(fn (ChatMessage $message) => $this->transformMessage($message));
 
         return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
-            'conversation_id' => (string) $conversation->id,
+            'conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
+            'admin_id' => $conversation->admin_id,
+            'admin_username' => $conversation->admin?->username,
             'messages' => $messages,
         ]);
     }
@@ -124,7 +126,16 @@ class EmployeeChatApiController extends Controller
         $validator = Validator::make($request->all(), [
             'message' => ['nullable', 'string'],
             'message_type' => ['nullable', 'string', 'in:text,image,voice,location'],
+            'type' => ['nullable', 'string', 'in:text,image,file,voice,location'],
+            'conversation_id' => ['nullable', 'string'],
+            'admin_id' => ['nullable', 'integer'],
+            'admin_username' => ['nullable', 'string'],
             'media_url' => ['nullable', 'string'],
+            'media_path' => ['nullable', 'string'],
+            'media_width' => ['nullable', 'numeric'],
+            'media_height' => ['nullable', 'numeric'],
+            'duration_seconds' => ['nullable', 'numeric'],
+            'file_name' => ['nullable', 'string'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'map_url' => ['nullable', 'string'],
@@ -148,7 +159,10 @@ class EmployeeChatApiController extends Controller
         $conversation = $this->resolveAdminConversation(auth()->id(), $request);
 
         DB::transaction(function () use ($request, $conversation) {
-            $messageType = $request->input('message_type', ChatMessage::TYPE_TEXT);
+            $messageType = $request->input('message_type', $request->input('type', ChatMessage::TYPE_TEXT));
+            if ($messageType === 'file') {
+                $messageType = ChatMessage::TYPE_VOICE;
+            }
             $mediaUrl = $request->input('media_url');
 
             if ($request->hasFile('attachment')) {
@@ -156,6 +170,17 @@ class EmployeeChatApiController extends Controller
             } elseif ($request->filled('latitude') && $request->filled('longitude')) {
                 $messageType = ChatMessage::TYPE_LOCATION;
             }
+
+            $meta = array_filter([
+                'media_path' => $request->input('media_path'),
+                'media_width' => $request->input('media_width'),
+                'media_height' => $request->input('media_height'),
+                'duration_seconds' => $request->input('duration_seconds'),
+                'file_name' => $request->input('file_name'),
+                'admin_id' => $conversation->admin_id,
+                'admin_username' => $conversation->admin?->username,
+                'external_conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
+            ], fn ($value) => $value !== null && $value !== '');
 
             $mapUrl = $request->input('map_url');
             if ($messageType === ChatMessage::TYPE_LOCATION && $mapUrl === null) {
@@ -171,6 +196,7 @@ class EmployeeChatApiController extends Controller
                 'latitude' => $request->input('latitude'),
                 'longitude' => $request->input('longitude'),
                 'map_url' => $mapUrl,
+                'meta' => $meta === [] ? null : $meta,
                 'is_read_by_admin' => false,
                 'is_read_by_user' => true,
             ]);
@@ -182,12 +208,14 @@ class EmployeeChatApiController extends Controller
 
         $messages = $conversation->messages()
             ->orderBy('created_at')
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar'])
+            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
             ->get()
             ->map(fn (ChatMessage $message) => $this->transformMessage($message));
 
         return AppHelper::sendSuccessResponse('Message sent successfully.', [
-            'conversation_id' => (string) $conversation->id,
+            'conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
+            'admin_id' => $conversation->admin_id,
+            'admin_username' => $conversation->admin?->username,
             'messages' => $messages,
         ]);
     }
@@ -197,12 +225,24 @@ class EmployeeChatApiController extends Controller
         return [
             'id' => $message->id,
             'sender_type' => $message->sender_type,
+            'sender' => $message->sender_type,
             'sender_id' => $message->sender_id,
             'sender_name' => $message->senderName(),
             'sender_avatar' => $message->senderAvatar(),
+            'conversation_id' => $message->conversation?->admin_id
+                ? $this->externalConversationId($message->conversation->user_id, (int) $message->conversation->admin_id)
+                : (string) $message->conversation_id,
+            'admin_id' => $message->conversation->admin_id,
+            'admin_username' => $message->conversation->admin?->username,
             'message_type' => $message->message_type,
+            'type' => $message->message_type,
             'message' => $message->message,
             'media_url' => $message->media_url,
+            'media_path' => $message->meta['media_path'] ?? null,
+            'media_width' => $message->meta['media_width'] ?? null,
+            'media_height' => $message->meta['media_height'] ?? null,
+            'duration_seconds' => $message->meta['duration_seconds'] ?? null,
+            'file_name' => $message->meta['file_name'] ?? null,
             'latitude' => $message->latitude,
             'longitude' => $message->longitude,
             'map_url' => $message->map_url,
@@ -277,7 +317,9 @@ class EmployeeChatApiController extends Controller
             'is_online' => false,
             'directory_type' => 'admin',
             'source_id' => $admin->id,
-            'conversation_id' => $conversation ? (string) $conversation->id : null,
+            'conversation_id' => $conversation ? $this->externalConversationId($conversation->user_id, (int) $admin->id) : null,
+            'admin_id' => $admin->id,
+            'admin_username' => $admin->username,
             'chat_mode' => 'admin_thread',
         ];
     }
@@ -294,8 +336,9 @@ class EmployeeChatApiController extends Controller
             'avatar' => $admin?->avatar
                 ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
                 : asset('assets/images/img.png'),
-            'conversation_id' => $conversation ? (string) $conversation->id : null,
+            'conversation_id' => ($conversation && $admin) ? $this->externalConversationId($conversation->user_id, $admin->id) : null,
             'admin_id' => $admin?->id,
+            'admin_username' => $admin?->username,
         ];
     }
 
@@ -322,19 +365,40 @@ class EmployeeChatApiController extends Controller
         }
 
         if ($request->filled('conversation_id')) {
-            $conversation = ChatConversation::query()
-                ->where('id', (int) $request->input('conversation_id'))
-                ->where('user_id', $userId)
-                ->whereNotNull('admin_id')
-                ->first();
+            $adminIdFromConversation = $this->adminIdFromExternalConversationId(
+                (string) $request->input('conversation_id'),
+                $userId
+            );
 
-            if ($conversation) {
-                return $conversation;
+            if ($adminIdFromConversation !== null) {
+                return $this->getOrCreateAdminConversation($userId, $adminIdFromConversation);
+            }
+
+            if (is_numeric($request->input('conversation_id'))) {
+                $conversation = ChatConversation::query()
+                    ->where('id', (int) $request->input('conversation_id'))
+                    ->where('user_id', $userId)
+                    ->whereNotNull('admin_id')
+                    ->first();
+
+                if ($conversation) {
+                    return $conversation;
+                }
             }
         }
 
         if ($request->filled('admin_id')) {
             return $this->getOrCreateAdminConversation($userId, (int) $request->input('admin_id'));
+        }
+
+        if ($request->filled('admin_username')) {
+            $adminId = Admin::query()
+                ->where('username', (string) $request->input('admin_username'))
+                ->value('id');
+
+            if ($adminId) {
+                return $this->getOrCreateAdminConversation($userId, (int) $adminId);
+            }
         }
 
         if ($request->filled('source_id')) {
@@ -360,6 +424,27 @@ class EmployeeChatApiController extends Controller
         $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
 
         return $supportsPerAdminConversation;
+    }
+
+    private function externalConversationId(int $userId, int $adminId): string
+    {
+        return 'employee_admin_' . $userId . '_' . $adminId;
+    }
+
+    private function adminIdFromExternalConversationId(string $conversationId, int $expectedUserId): ?int
+    {
+        if (!preg_match('/^employee_admin_(\d+)_(\d+)$/', $conversationId, $matches)) {
+            return null;
+        }
+
+        $userId = (int) $matches[1];
+        $adminId = (int) $matches[2];
+
+        if ($userId !== $expectedUserId) {
+            return null;
+        }
+
+        return $adminId;
     }
 
     private function storeAttachment(UploadedFile $file): array
