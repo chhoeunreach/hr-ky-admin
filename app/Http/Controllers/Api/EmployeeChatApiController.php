@@ -752,9 +752,16 @@ class EmployeeChatApiController extends Controller
 
         $directory = in_array($extension, $documentExtensions, true) ? 'chat/files' : 'chat/voice';
         $messageType = in_array($extension, $documentExtensions, true) ? 'file' : ChatMessage::TYPE_VOICE;
-        $path = $file->store($directory, 'public');
+        $path = $messageType === ChatMessage::TYPE_VOICE
+            ? ChatMessage::storeVoiceUpload($file, $directory)
+            : $file->store($directory, 'public');
 
-        return [$messageType, Storage::disk('public')->url($path), $path, $originalName];
+        return [
+            $messageType,
+            ChatMessage::normalizeMediaUrl($path, null, $messageType),
+            ChatMessage::normalizeMediaPath($path, null, $messageType),
+            $originalName,
+        ];
     }
 
     private function normalizeIncomingMessageType(Request $request): string

@@ -149,15 +149,17 @@ class ChatMediaController extends Controller
                 $width = $image->width();
                 $height = $image->height();
             } else {
-                $path = $file->store($directory, 'public');
+                $path = in_array($type, ['audio', 'voice'], true)
+                    ? ChatMessage::storeVoiceUpload($file, $directory)
+                    : $file->store($directory, 'public');
                 $width = null;
                 $height = null;
             }
 
             return $this->mediaSuccessResponse('Media uploaded successfully', [
-                'url' => ChatMessage::normalizeMediaUrl($path),
+                'url' => ChatMessage::normalizeMediaUrl($path, null, $type === 'image' ? ChatMessage::TYPE_IMAGE : ($type === 'audio' || $type === 'voice' ? ChatMessage::TYPE_VOICE : ChatMessage::TYPE_FILE)),
                 'type' => $responseType,
-                'path' => ChatMessage::normalizeMediaPath($path),
+                'path' => ChatMessage::normalizeMediaPath($path, null, $type === 'image' ? ChatMessage::TYPE_IMAGE : ($type === 'audio' || $type === 'voice' ? ChatMessage::TYPE_VOICE : ChatMessage::TYPE_FILE)),
                 'width' => $width,
                 'height' => $height,
             ]);

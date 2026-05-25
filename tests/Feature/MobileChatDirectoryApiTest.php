@@ -597,6 +597,43 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('legacy-doc.pdf', $messages['file']['file_name']);
     }
 
+    public function test_admin_voice_message_repairs_legacy_mp4_path_to_m4a_url(): void
+    {
+        Storage::fake('public');
+        [$requester, $adminId, $conversationId] = $this->createAdminConversationFixture('employee.voice.mp4', 'admin.voice.mp4');
+
+        Storage::disk('public')->put('chat/voice/legacy-voice.mp4', 'fake audio payload');
+
+        DB::table('chat_messages')->insert([
+            'conversation_id' => $conversationId,
+            'sender_type' => 'admin',
+            'sender_id' => $adminId,
+            'message_type' => 'voice',
+            'message' => null,
+            'media_url' => '/storage/chat/voice/legacy-voice.mp4',
+            'meta' => json_encode([
+                'media_path' => 'chat/voice/legacy-voice.mp4',
+                'file_name' => 'legacy-voice.mp4',
+                'admin_id' => $adminId,
+                'admin_username' => 'admin.voice.mp4',
+                'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminId . '&admin_id=' . $adminId);
+
+        $response->assertOk();
+        $message = $response->json('data.messages.0');
+
+        $this->assertSame('chat/voice/legacy-voice.m4a', $message['media_path']);
+        $this->assertSame('/storage/chat/voice/legacy-voice.m4a', $message['media_url']);
+        Storage::disk('public')->assertExists('chat/voice/legacy-voice.m4a');
+    }
+
     public function test_chat_media_upload_returns_canonical_storage_path_and_url(): void
     {
         Storage::fake('public');
@@ -634,6 +671,34 @@ class MobileChatDirectoryApiTest extends TestCase
 
         $this->assertStringStartsWith('chat/images/', $imagePath);
         $this->assertSame('/storage/' . $imagePath, $imageUrl);
+    }
+
+    public function test_chat_voice_upload_repairs_mp4_extension_to_m4a(): void
+    {
+        Storage::fake('public');
+
+        $role = $this->makeRole('employee');
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => 'employee.upload.mp4',
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->postJson('/api/employee/chat/media-upload', [
+            'type' => 'voice',
+            'file' => UploadedFile::fake()->create('voice-note.mp4', 64, 'audio/mp4'),
+        ]);
+
+        $response->assertOk();
+        $voicePath = $response->json('data.path');
+        $voiceUrl = $response->json('data.url');
+
+        $this->assertStringStartsWith('chat/voice/', $voicePath);
+        $this->assertStringEndsWith('.m4a', $voicePath);
+        $this->assertSame('/storage/' . $voicePath, $voiceUrl);
+        Storage::disk('public')->assertExists($voicePath);
     }
 
     public function test_admin_messages_stay_separate_even_when_messages_share_one_internal_conversation(): void

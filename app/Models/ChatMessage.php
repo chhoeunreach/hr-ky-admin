@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -82,7 +83,8 @@ class ChatMessage extends Model
     {
         return static::normalizeMediaUrl(
             $this->meta['media_path'] ?? null,
-            $this->media_url
+            $this->media_url,
+            $this->message_type
         );
     }
 
@@ -90,7 +92,8 @@ class ChatMessage extends Model
     {
         return static::normalizeMediaPath(
             $this->meta['media_path'] ?? null,
-            $this->media_url
+            $this->media_url,
+            $this->message_type
         );
     }
 
@@ -102,9 +105,9 @@ class ChatMessage extends Model
         return $meta;
     }
 
-    public static function normalizeMediaUrl(?string $mediaPath = null, ?string $mediaUrl = null): ?string
+    public static function normalizeMediaUrl(?string $mediaPath = null, ?string $mediaUrl = null, ?string $messageType = null): ?string
     {
-        $normalizedPath = static::normalizeMediaPath($mediaPath, $mediaUrl);
+        $normalizedPath = static::normalizeMediaPath($mediaPath, $mediaUrl, $messageType);
 
         if ($normalizedPath !== null) {
             return Storage::disk('public')->url($normalizedPath);
@@ -135,15 +138,62 @@ class ChatMessage extends Model
         return $mediaUrl;
     }
 
-    public static function normalizeMediaPath(?string $mediaPath = null, ?string $mediaUrl = null): ?string
+    public static function normalizeMediaPath(?string $mediaPath = null, ?string $mediaUrl = null, ?string $messageType = null): ?string
     {
         $mediaPath = static::extractChatStoragePath($mediaPath);
 
         if ($mediaPath !== null) {
+            return static::normalizeStoragePathForMessageType($mediaPath, $messageType);
+        }
+
+        $mediaPath = static::extractChatStoragePath($mediaUrl);
+
+        return $mediaPath === null
+            ? null
+            : static::normalizeStoragePathForMessageType($mediaPath, $messageType);
+    }
+
+    public static function storeVoiceUpload(UploadedFile|\Illuminate\Http\File $file, string $directory = 'chat/voice'): string
+    {
+        $extension = strtolower($file instanceof UploadedFile
+            ? $file->getClientOriginalExtension()
+            : $file->getExtension());
+        $targetExtension = $extension === 'mp4' ? 'm4a' : ($extension ?: 'm4a');
+        $path = $directory . '/' . uniqid('chat_', true) . '.' . $targetExtension;
+
+        Storage::disk('public')->put($path, file_get_contents($file->getRealPath()));
+
+        return $path;
+    }
+
+    private static function normalizeStoragePathForMessageType(string $mediaPath, ?string $messageType = null): string
+    {
+        if (strtolower((string) $messageType) !== self::TYPE_VOICE) {
             return $mediaPath;
         }
 
-        return static::extractChatStoragePath($mediaUrl);
+        return static::repairVoiceStoragePath($mediaPath);
+    }
+
+    private static function repairVoiceStoragePath(string $mediaPath): string
+    {
+        if (!Str::startsWith($mediaPath, 'chat/voice/') || !Str::endsWith(strtolower($mediaPath), '.mp4')) {
+            return $mediaPath;
+        }
+
+        $repairedPath = preg_replace('/\.mp4$/i', '.m4a', $mediaPath) ?? $mediaPath;
+        $disk = Storage::disk('public');
+
+        if ($disk->exists($repairedPath)) {
+            return $repairedPath;
+        }
+
+        if ($disk->exists($mediaPath)) {
+            $disk->copy($mediaPath, $repairedPath);
+            return $repairedPath;
+        }
+
+        return $repairedPath;
     }
 
     private static function extractChatStoragePath(?string $value): ?string
