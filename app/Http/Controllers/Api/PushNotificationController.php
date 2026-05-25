@@ -15,6 +15,7 @@ class PushNotificationController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'message_type' => ['nullable', 'string', 'in:text,image,voice'],
+                'chat_message_type' => ['nullable', 'string', 'in:text,image,voice'],
                 'media_url' => ['nullable', 'string'],
             ]);
 
@@ -27,7 +28,7 @@ class PushNotificationController extends Controller
             }
 
             $data = $request->all();
-            $messageType = $data['message_type'] ?? 'text';
+            $messageType = $data['chat_message_type'] ?? $data['message_type'] ?? 'text';
             $notificationBody = match ($messageType) {
                 'image' => 'Sent a photo',
                 'voice' => 'Sent a voice message',

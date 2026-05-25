@@ -258,7 +258,6 @@ class SMPushHelper
                 'message' => $message,
                 'type' => $type,
                 'chat_message_type' => $chatMessageType,
-                'message_type' => $chatMessageType,
                 'media_url' => $media_url,
                 'project_id' => $project_id,
                 'sender_username' => auth()->user()->username,
