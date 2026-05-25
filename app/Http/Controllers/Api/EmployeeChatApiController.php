@@ -36,16 +36,7 @@ class EmployeeChatApiController extends Controller
             'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
             'admin_chat_enabled' => true,
             'admin_contact' => $adminContact,
-            'admins' => $adminList->map(function (Admin $admin) {
-                return [
-                    'id' => $admin->id,
-                    'name' => $admin->name,
-                    'username' => $admin->username,
-                    'avatar' => $admin->avatar
-                        ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
-                        : asset('assets/images/img.png'),
-                ];
-            })->values(),
+            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin))->values(),
         ]);
     }
 
@@ -66,12 +57,12 @@ class EmployeeChatApiController extends Controller
                 'scope' => $scope,
                 'admin_contact' => $adminContact,
                 'pinned_contacts' => [$adminContact],
-                'contacts' => [],
+                'contacts' => $this->getAdminDirectoryEntries(),
             ]);
         }
 
         $authUser = auth()->user();
-        $contacts = User::query()
+        $employeeContacts = User::query()
             ->select(['id', 'name', 'username', 'email', 'avatar', 'phone', 'department_id', 'branch_id', 'post_id', 'role_id', 'user_type', 'online_status'])
             ->with(['department:id,dept_name', 'branch:id,name', 'post:id,post_name', 'role:id,name,slug'])
             ->where('status', 'verified')
@@ -79,29 +70,11 @@ class EmployeeChatApiController extends Controller
             ->where('id', '!=', $authUser->id)
             ->orderBy('name')
             ->get()
-            ->map(function (User $user) {
-                $isAdmin = $user->hasAdminIdentity();
+            ->map(fn (User $user) => $this->transformEmployeeDirectoryEntry($user))
+            ->values();
 
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'username' => $user->username,
-                    'email' => $user->email,
-                    'avatar' => $user->avatar
-                        ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
-                        : asset('assets/images/img.png'),
-                    'phone' => $user->phone,
-                    'department' => $user->department?->dept_name,
-                    'branch' => $user->branch?->name,
-                    'post' => $user->post?->post_name,
-                    'online_status' => (string) ((int) $user->online_status),
-                    'role' => $user->mobileDirectoryRole(),
-                    'user_type' => $user->mobileDirectoryUserType(),
-                    'is_admin' => $isAdmin ? '1' : '0',
-                    'admin' => $isAdmin ? '1' : '0',
-                    'is_online' => (int) $user->online_status === User::ONLINE,
-                ];
-            })
+        $contacts = $employeeContacts
+            ->concat($this->getAdminDirectoryEntries())
             ->values();
 
         return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
@@ -219,6 +192,70 @@ class EmployeeChatApiController extends Controller
             'is_read_by_user' => (bool) $message->is_read_by_user,
             'created_at' => $message->created_at?->toIso8601String(),
             'created_at_human' => $message->created_at?->diffForHumans(),
+        ];
+    }
+
+    private function transformEmployeeDirectoryEntry(User $user): array
+    {
+        $isAdmin = $user->hasAdminIdentity();
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'avatar' => $user->avatar
+                ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
+                : asset('assets/images/img.png'),
+            'phone' => $user->phone,
+            'department' => $user->department?->dept_name,
+            'branch' => $user->branch?->name,
+            'post' => $user->post?->post_name,
+            'online_status' => (string) ((int) $user->online_status),
+            'role' => $user->mobileDirectoryRole(),
+            'user_type' => $user->mobileDirectoryUserType(),
+            'is_admin' => $isAdmin ? '1' : '0',
+            'admin' => $isAdmin ? '1' : '0',
+            'is_online' => (int) $user->online_status === User::ONLINE,
+            'directory_type' => 'employee',
+            'source_id' => $user->id,
+        ];
+    }
+
+    private function getAdminDirectoryEntries()
+    {
+        return Admin::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'username', 'email', 'avatar'])
+            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry($admin))
+            ->values();
+    }
+
+    private function transformAdminDirectoryEntry(Admin $admin): array
+    {
+        $directoryId = 1000000 + (int) $admin->id;
+
+        return [
+            'id' => $directoryId,
+            'name' => $admin->name ?? 'Admin',
+            'username' => $admin->username ?? 'admin',
+            'email' => $admin->email ?? '',
+            'phone' => '',
+            'department' => 'Administration',
+            'branch' => '',
+            'post' => 'Admin',
+            'avatar' => $admin->avatar
+                ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
+                : asset('assets/images/img.png'),
+            'online_status' => '0',
+            'role' => 'admin',
+            'user_type' => 'admin',
+            'is_admin' => '1',
+            'admin' => '1',
+            'is_online' => false,
+            'directory_type' => 'admin',
+            'source_id' => $admin->id,
         ];
     }
 

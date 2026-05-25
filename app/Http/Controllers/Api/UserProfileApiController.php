@@ -174,8 +174,10 @@ class UserProfileApiController extends Controller
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
             ->map(function (Admin $admin) {
+                $directoryId = 1000000 + (int) $admin->id;
+
                 return [
-                    'id' => $admin->id,
+                    'id' => $directoryId,
                     'name' => $admin->name ?? 'Admin',
                     'username' => $admin->username ?? 'admin',
                     'email' => $admin->email ?? '',
@@ -191,6 +193,8 @@ class UserProfileApiController extends Controller
                     'user_type' => 'admin',
                     'is_admin' => '1',
                     'admin' => '1',
+                    'directory_type' => 'admin',
+                    'source_id' => $admin->id,
                 ];
             })
             ->values()
