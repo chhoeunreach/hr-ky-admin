@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Throwable;
 use Intervention\Image\Facades\Image;
 
 class EmployeeChatController extends Controller
@@ -233,11 +234,18 @@ class EmployeeChatController extends Controller
                 'user_id' => $employeeId,
             ]);
         }
+        try {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+                'admin_id' => $adminId,
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
 
-        return ChatConversation::firstOrCreate([
-            'user_id' => $employeeId,
-            'admin_id' => $adminId,
-        ]);
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+            ]);
+        }
     }
 
     private function supportsPerAdminConversation(): bool

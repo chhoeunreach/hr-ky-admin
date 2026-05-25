@@ -421,11 +421,18 @@ class EmployeeChatApiController extends Controller
                 'user_id' => $userId,
             ]);
         }
+        try {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+                'admin_id' => $adminId,
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
 
-        return ChatConversation::firstOrCreate([
-            'user_id' => $userId,
-            'admin_id' => $adminId,
-        ]);
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
     }
 
     private function resolveAdminConversation(int $userId, Request $request): ChatConversation
