@@ -249,6 +249,10 @@ class SMPushHelper
                                                 ?float $latitude = null,
                                                 ?float $longitude = null,
                                                 string $map_url = '',
+                                                ?int $adminId = null,
+                                                ?string $adminUsername = null,
+                                                ?string $chatMode = null,
+                                                ?string $internalConversationId = null,
     ): void
     {
         $authEmployee = auth()->user();
@@ -278,6 +282,10 @@ class SMPushHelper
                 'map_url' => $map_url,
                 'project_id' => $project_id,
                 'sender_username' => $senderUsername,
+                'admin_id' => $adminId,
+                'admin_username' => $adminUsername,
+                'chat_mode' => $chatMode,
+                'internal_conversation_id' => $internalConversationId,
             ],
             recipients: $type == 'group_chat' ? self::getEmployeeFCMTokensForSending($usernames) : self::getEmployeeByUsernameFCMTokensForSending($usernames)
         );

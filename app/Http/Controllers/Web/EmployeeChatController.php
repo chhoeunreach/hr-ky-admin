@@ -164,7 +164,7 @@ class EmployeeChatController extends Controller
 
             SMPushHelper::sendPushNotification(
                 $admin->name,
-                (string) $conversation->id,
+                $this->externalConversationId($employee->id, $admin->id),
                 $notificationBody,
                 'chat',
                 [$employee->username],
@@ -173,7 +173,11 @@ class EmployeeChatController extends Controller
                 $mediaUrl ?? '',
                 $message->latitude,
                 $message->longitude,
-                $message->map_url ?? ''
+                $message->map_url ?? '',
+                $admin->id,
+                $admin->username,
+                'admin_thread',
+                (string) $conversation->id
             );
         });
 
@@ -273,6 +277,11 @@ class EmployeeChatController extends Controller
         $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
 
         return $supportsPerAdminConversation;
+    }
+
+    private function externalConversationId(int $employeeId, int $adminId): string
+    {
+        return 'employee_admin_' . $employeeId . '_' . $adminId;
     }
 
     private function markMessagesAsReadByAdmin(ChatConversation $conversation): void
