@@ -150,6 +150,40 @@ class EmployeeChatApiController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        if (!$request->hasFile('attachment')
+            && trim((string) $request->input('message')) === ''
+            && !($request->filled('latitude') && $request->filled('longitude'))) {
+            try {
+                $conversation = $this->resolveAdminConversation(auth()->id(), $request);
+                $conversation->loadMissing('admin:id,username');
+
+                $messages = $conversation->messages()
+                    ->orderBy('created_at')
+                    ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
+                    ->get()
+                    ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+
+                return AppHelper::sendSuccessResponse('No new message was sent.', [
+                    'conversation_id' => $this->conversationIdentifier($conversation),
+                    'admin_id' => $conversation->admin_id,
+                    'admin_username' => $conversation->admin?->username,
+                    'messages' => $messages,
+                    'noop' => true,
+                ]);
+            } catch (Throwable $throwable) {
+                report($throwable);
+
+                return AppHelper::sendSuccessResponse('No new message was sent.', [
+                    'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
+                    'admin_id' => $this->requestedAdminId($request),
+                    'admin_username' => $this->requestedAdminUsername($request),
+                    'messages' => [],
+                    'noop' => true,
+                    'fallback' => true,
+                ]);
+            }
+        }
+
         $validator = Validator::make($request->all(), [
             'message' => ['nullable', 'string'],
             'message_type' => ['nullable', 'string', 'in:text,image,voice,location'],
@@ -168,16 +202,6 @@ class EmployeeChatApiController extends Controller
             'map_url' => ['nullable', 'string'],
             'attachment' => ['nullable', 'file', 'max:20480'],
         ]);
-
-        $validator->after(function ($validator) use ($request) {
-            $hasAttachment = $request->hasFile('attachment');
-            $hasMessage = trim((string) $request->input('message')) !== '';
-            $hasLocation = $request->filled('latitude') && $request->filled('longitude');
-
-            if (!$hasAttachment && !$hasMessage && !$hasLocation) {
-                $validator->errors()->add('message', 'Please enter a message, upload a file, or send a location.');
-            }
-        });
 
         if ($validator->fails()) {
             return AppHelper::sendErrorResponse($validator->errors()->first(), 422, $validator->errors()->toArray());
