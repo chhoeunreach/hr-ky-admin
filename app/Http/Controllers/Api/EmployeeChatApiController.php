@@ -114,8 +114,10 @@ class EmployeeChatApiController extends Controller
 
     public function messages(): JsonResponse
     {
+        $request = request();
+
         try {
-            $conversation = $this->resolveAdminConversation(auth()->id(), request());
+            $conversation = $this->resolveAdminConversation(auth()->id(), $request);
             $conversation->messages()
                 ->where('sender_type', ChatMessage::SENDER_ADMIN)
                 ->where('is_read_by_user', false)
@@ -136,7 +138,13 @@ class EmployeeChatApiController extends Controller
         } catch (Throwable $throwable) {
             report($throwable);
 
-            return AppHelper::sendErrorResponse('Unable to load this admin conversation right now.', 500);
+            return AppHelper::sendSuccessResponse('Mobile admin chat loaded with fallback state.', [
+                'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
+                'admin_id' => $this->requestedAdminId($request),
+                'admin_username' => $this->requestedAdminUsername($request),
+                'messages' => [],
+                'fallback' => true,
+            ]);
         }
     }
 
@@ -498,6 +506,66 @@ class EmployeeChatApiController extends Controller
         }
 
         return $adminId;
+    }
+
+    private function requestedConversationIdentifier(int $userId, Request $request): ?string
+    {
+        if ($request->filled('conversation_id')) {
+            return (string) $request->input('conversation_id');
+        }
+
+        $adminId = $this->requestedAdminId($request);
+
+        if ($adminId) {
+            return $this->externalConversationId($userId, $adminId);
+        }
+
+        return null;
+    }
+
+    private function requestedAdminId(Request $request): ?int
+    {
+        if ($request->filled('admin_id')) {
+            return (int) $request->input('admin_id');
+        }
+
+        if ($request->filled('source_id')) {
+            return (int) $request->input('source_id');
+        }
+
+        if ($request->filled('conversation_id')) {
+            return $this->adminIdFromExternalConversationId(
+                (string) $request->input('conversation_id'),
+                auth()->id()
+            );
+        }
+
+        if ($request->filled('admin_username')) {
+            $adminId = Admin::query()
+                ->where('username', (string) $request->input('admin_username'))
+                ->value('id');
+
+            return $adminId ? (int) $adminId : null;
+        }
+
+        return null;
+    }
+
+    private function requestedAdminUsername(Request $request): ?string
+    {
+        if ($request->filled('admin_username')) {
+            return (string) $request->input('admin_username');
+        }
+
+        $adminId = $this->requestedAdminId($request);
+
+        if (!$adminId) {
+            return null;
+        }
+
+        return Admin::query()
+            ->where('id', $adminId)
+            ->value('username');
     }
 
     private function storeAttachment(UploadedFile $file): array
