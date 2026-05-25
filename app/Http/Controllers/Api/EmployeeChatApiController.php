@@ -186,8 +186,10 @@ class EmployeeChatApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'message' => ['nullable', 'string'],
-            'message_type' => ['nullable', 'string', 'in:text,image,voice,location'],
-            'type' => ['nullable', 'string', 'in:text,image,file,voice,location'],
+            'message_type' => ['nullable', 'string', 'in:text,image,voice,file,location'],
+            'chat_message_type' => ['nullable', 'string', 'in:text,image,voice,file,location'],
+            'type' => ['nullable', 'string'],
+            'media_type' => ['nullable', 'string', 'in:image,audio,voice,document,file'],
             'conversation_id' => ['nullable', 'string'],
             'admin_id' => ['nullable', 'integer'],
             'admin_username' => ['nullable', 'string'],
@@ -211,10 +213,7 @@ class EmployeeChatApiController extends Controller
             $conversation = $this->resolveAdminConversation(auth()->id(), $request);
 
             DB::transaction(function () use ($request, $conversation) {
-                $messageType = $request->input('message_type', $request->input('type', ChatMessage::TYPE_TEXT));
-                if ($messageType === 'file') {
-                    $messageType = ChatMessage::TYPE_VOICE;
-                }
+                $messageType = $this->normalizeIncomingMessageType($request);
                 $mediaUrl = $request->input('media_url');
 
                 if ($request->hasFile('attachment')) {
@@ -282,6 +281,7 @@ class EmployeeChatApiController extends Controller
     private function transformMessage(ChatMessage $message): array
     {
         $conversation = $message->conversation;
+        $normalizedType = $this->normalizeStoredMessageType($message->message_type, $message->meta ?? []);
 
         return [
             'id' => $message->id,
@@ -293,9 +293,10 @@ class EmployeeChatApiController extends Controller
             'conversation_id' => $conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id,
             'admin_id' => $conversation?->admin_id,
             'admin_username' => $conversation?->admin?->username,
-            'message_type' => $message->message_type,
-            'type' => $message->message_type,
+            'message_type' => $normalizedType,
+            'type' => $normalizedType,
             'message' => $message->message,
+            'body' => $message->message,
             'media_url' => $message->media_url,
             'media_path' => $message->meta['media_path'] ?? null,
             'media_width' => $message->meta['media_width'] ?? null,
@@ -626,6 +627,7 @@ class EmployeeChatApiController extends Controller
 
         $imageExtensions = ['jpg', 'jpeg', 'png', 'webp'];
         $imageMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'rar'];
 
         if (in_array($extension, $imageExtensions, true) || in_array($mimeType, $imageMimeTypes, true)) {
             $directory = 'chat/images';
@@ -645,8 +647,41 @@ class EmployeeChatApiController extends Controller
             return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path)];
         }
 
-        $path = $file->store('chat/voice', 'public');
+        $directory = in_array($extension, $documentExtensions, true) ? 'chat/files' : 'chat/voice';
+        $messageType = in_array($extension, $documentExtensions, true) ? 'file' : ChatMessage::TYPE_VOICE;
+        $path = $file->store($directory, 'public');
 
-        return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path)];
+        return [$messageType, Storage::disk('public')->url($path)];
+    }
+
+    private function normalizeIncomingMessageType(Request $request): string
+    {
+        $messageType = strtolower((string) (
+            $request->input('chat_message_type')
+            ?? $request->input('message_type')
+            ?? $request->input('type')
+            ?? ''
+        ));
+
+        if ($messageType === '' && $request->filled('media_type')) {
+            $messageType = strtolower((string) $request->input('media_type'));
+        }
+
+        return match ($messageType) {
+            'image' => ChatMessage::TYPE_IMAGE,
+            'audio', 'voice' => ChatMessage::TYPE_VOICE,
+            'document', 'file' => 'file',
+            'location' => ChatMessage::TYPE_LOCATION,
+            default => ChatMessage::TYPE_TEXT,
+        };
+    }
+
+    private function normalizeStoredMessageType(?string $messageType, array $meta = []): string
+    {
+        return match (strtolower((string) $messageType)) {
+            'file', 'document' => 'file',
+            'audio' => 'voice',
+            default => strtolower((string) $messageType) ?: (isset($meta['duration_seconds']) ? 'voice' : 'text'),
+        };
     }
 }

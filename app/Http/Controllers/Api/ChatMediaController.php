@@ -43,7 +43,7 @@ class ChatMediaController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'type' => ['required', 'string', Rule::in(['image', 'voice'])],
+                'type' => ['required', 'string', Rule::in(['image', 'audio', 'voice', 'document', 'file'])],
                 'file' => ['required', 'file'],
             ]);
 
@@ -95,7 +95,20 @@ class ChatMediaController extends Controller
                     $fail('The file must be a file of type: m4a, mp3, wav, aac, webm, ogg.');
                 }
             }, 'max:20480'], function ($input) {
-                return $input->type === 'voice';
+                return in_array($input->type, ['audio', 'voice'], true);
+            });
+
+            $validator->sometimes('file', [function (string $attribute, mixed $value, \Closure $fail) {
+                if (!$value instanceof UploadedFile) {
+                    $fail('The file must be a valid document upload.');
+                    return;
+                }
+
+                if ($value->getSize() > (20 * 1024 * 1024)) {
+                    $fail('The file may not be greater than 20480 kilobytes.');
+                }
+            }], function ($input) {
+                return in_array($input->type, ['document', 'file'], true);
             });
 
             if ($validator->fails()) {
@@ -108,7 +121,16 @@ class ChatMediaController extends Controller
 
             $type = $request->input('type');
             $file = $request->file('file');
-            $directory = $type === 'image' ? 'chat/images' : 'chat/voice';
+            $directory = match ($type) {
+                'image' => 'chat/images',
+                'audio', 'voice' => 'chat/voice',
+                default => 'chat/files',
+            };
+            $responseType = match ($type) {
+                'audio', 'voice' => 'audio',
+                'document', 'file' => 'document',
+                default => 'image',
+            };
 
             if ($type === 'image') {
                 $extension = strtolower($file->getClientOriginalExtension());
@@ -133,7 +155,7 @@ class ChatMediaController extends Controller
 
             return $this->mediaSuccessResponse('Media uploaded successfully', [
                 'url' => Storage::disk('public')->url($path),
-                'type' => $type,
+                'type' => $responseType,
                 'path' => $path,
                 'width' => $width,
                 'height' => $height,
