@@ -16,109 +16,128 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
 use Intervention\Image\Facades\Image;
 
 class EmployeeChatApiController extends Controller
 {
     public function access(): JsonResponse
     {
-        $user = auth()->user();
-        $scope = MobileChatHelper::getScope();
-        $supportsPerAdminConversation = $this->supportsPerAdminConversation();
-        $adminList = Admin::query()
-            ->where('is_active', 1)
-            ->orderBy('name')
-            ->get(['id', 'name', 'username', 'avatar']);
-        $primaryAdmin = $adminList->first();
-        $conversation = $primaryAdmin
-            ? $this->getOrCreateAdminConversation($user->id, $primaryAdmin->id)
-            : null;
-        $adminContact = $this->buildAdminContact($conversation, $primaryAdmin);
+        try {
+            $user = auth()->user();
+            $scope = MobileChatHelper::getScope();
+            $supportsPerAdminConversation = $this->supportsPerAdminConversation();
+            $adminList = Admin::query()
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->get(['id', 'name', 'username', 'avatar']);
+            $primaryAdmin = $adminList->first();
+            $conversation = $primaryAdmin
+                ? $this->getOrCreateAdminConversation($user->id, $primaryAdmin->id)
+                : null;
+            $adminContact = $this->buildAdminContact($conversation, $primaryAdmin);
 
-        return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
-            'scope' => $scope,
-            'scope_label' => MobileChatHelper::scopeOptions()[$scope] ?? $scope,
-            'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
-            'admin_chat_enabled' => true,
-            'per_admin_conversation_enabled' => $supportsPerAdminConversation,
-            'admin_contact' => $adminContact,
-            'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
-                $admin,
-                $this->getOrCreateAdminConversation($user->id, $admin->id)
-            ))->values(),
-        ]);
+            return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
+                'scope' => $scope,
+                'scope_label' => MobileChatHelper::scopeOptions()[$scope] ?? $scope,
+                'employee_directory_enabled' => $scope === MobileChatHelper::MODE_ALL_EMPLOYEES,
+                'admin_chat_enabled' => true,
+                'per_admin_conversation_enabled' => $supportsPerAdminConversation,
+                'admin_contact' => $adminContact,
+                'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
+                    $admin,
+                    $this->getOrCreateAdminConversation($user->id, $admin->id)
+                ))->values(),
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return AppHelper::sendErrorResponse('Unable to load admin chat access right now.', 500);
+        }
     }
 
     public function contacts(): JsonResponse
     {
-        $scope = MobileChatHelper::getScope();
-        $authUserId = auth()->id();
-        $primaryAdmin = Admin::query()
-            ->where('is_active', 1)
-            ->orderBy('name')
-            ->first(['id', 'name', 'username', 'avatar']);
-        $conversation = $primaryAdmin
-            ? $this->getOrCreateAdminConversation($authUserId, $primaryAdmin->id)
-            : null;
-        $adminContact = $this->buildAdminContact(
-            $conversation,
-            $primaryAdmin
-        );
+        try {
+            $scope = MobileChatHelper::getScope();
+            $authUserId = auth()->id();
+            $primaryAdmin = Admin::query()
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->first(['id', 'name', 'username', 'avatar']);
+            $conversation = $primaryAdmin
+                ? $this->getOrCreateAdminConversation($authUserId, $primaryAdmin->id)
+                : null;
+            $adminContact = $this->buildAdminContact(
+                $conversation,
+                $primaryAdmin
+            );
 
-        if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
+            if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
+                return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
+                    'scope' => $scope,
+                    'admin_contact' => $adminContact,
+                    'pinned_contacts' => [$adminContact],
+                    'contacts' => $this->getAdminDirectoryEntries($authUserId),
+                ]);
+            }
+
+            $authUser = auth()->user();
+            $employeeContacts = User::query()
+                ->select(['id', 'name', 'username', 'email', 'avatar', 'phone', 'department_id', 'branch_id', 'post_id', 'role_id', 'user_type', 'online_status'])
+                ->with(['department:id,dept_name', 'branch:id,name', 'post:id,post_name', 'role:id,name,slug'])
+                ->where('status', 'verified')
+                ->where('is_active', 1)
+                ->where('id', '!=', $authUser->id)
+                ->orderBy('name')
+                ->get()
+                ->map(fn (User $user) => $this->transformEmployeeDirectoryEntry($user))
+                ->values();
+
+            $contacts = $employeeContacts
+                ->concat($this->getAdminDirectoryEntries($authUserId))
+                ->values();
+
             return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
                 'scope' => $scope,
+                'per_admin_conversation_enabled' => $this->supportsPerAdminConversation(),
                 'admin_contact' => $adminContact,
                 'pinned_contacts' => [$adminContact],
-                'contacts' => $this->getAdminDirectoryEntries($authUserId),
+                'contacts' => $contacts,
             ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return AppHelper::sendErrorResponse('Unable to load chat contacts right now.', 500);
         }
-
-        $authUser = auth()->user();
-        $employeeContacts = User::query()
-            ->select(['id', 'name', 'username', 'email', 'avatar', 'phone', 'department_id', 'branch_id', 'post_id', 'role_id', 'user_type', 'online_status'])
-            ->with(['department:id,dept_name', 'branch:id,name', 'post:id,post_name', 'role:id,name,slug'])
-            ->where('status', 'verified')
-            ->where('is_active', 1)
-            ->where('id', '!=', $authUser->id)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $user) => $this->transformEmployeeDirectoryEntry($user))
-            ->values();
-
-        $contacts = $employeeContacts
-            ->concat($this->getAdminDirectoryEntries($authUserId))
-            ->values();
-
-        return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
-            'scope' => $scope,
-            'per_admin_conversation_enabled' => $this->supportsPerAdminConversation(),
-            'admin_contact' => $adminContact,
-            'pinned_contacts' => [$adminContact],
-            'contacts' => $contacts,
-        ]);
     }
 
     public function messages(): JsonResponse
     {
-        $conversation = $this->resolveAdminConversation(auth()->id(), request());
-        $conversation->messages()
-            ->where('sender_type', ChatMessage::SENDER_ADMIN)
-            ->where('is_read_by_user', false)
-            ->update(['is_read_by_user' => true]);
+        try {
+            $conversation = $this->resolveAdminConversation(auth()->id(), request());
+            $conversation->messages()
+                ->where('sender_type', ChatMessage::SENDER_ADMIN)
+                ->where('is_read_by_user', false)
+                ->update(['is_read_by_user' => true]);
 
-        $messages = $conversation->messages()
-            ->orderBy('created_at')
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
-            ->get()
-            ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+            $messages = $conversation->messages()
+                ->orderBy('created_at')
+                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
+                ->get()
+                ->map(fn (ChatMessage $message) => $this->transformMessage($message));
 
-        return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
-            'conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
-            'admin_id' => $conversation->admin_id,
-            'admin_username' => $conversation->admin?->username,
-            'messages' => $messages,
-        ]);
+            return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
+                'conversation_id' => $this->conversationIdentifier($conversation),
+                'admin_id' => $conversation->admin_id,
+                'admin_username' => $conversation->admin?->username,
+                'messages' => $messages,
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return AppHelper::sendErrorResponse('Unable to load this admin conversation right now.', 500);
+        }
     }
 
     public function store(Request $request): JsonResponse
@@ -156,72 +175,82 @@ class EmployeeChatApiController extends Controller
             return AppHelper::sendErrorResponse($validator->errors()->first(), 422, $validator->errors()->toArray());
         }
 
-        $conversation = $this->resolveAdminConversation(auth()->id(), $request);
+        try {
+            $conversation = $this->resolveAdminConversation(auth()->id(), $request);
 
-        DB::transaction(function () use ($request, $conversation) {
-            $messageType = $request->input('message_type', $request->input('type', ChatMessage::TYPE_TEXT));
-            if ($messageType === 'file') {
-                $messageType = ChatMessage::TYPE_VOICE;
-            }
-            $mediaUrl = $request->input('media_url');
+            DB::transaction(function () use ($request, $conversation) {
+                $messageType = $request->input('message_type', $request->input('type', ChatMessage::TYPE_TEXT));
+                if ($messageType === 'file') {
+                    $messageType = ChatMessage::TYPE_VOICE;
+                }
+                $mediaUrl = $request->input('media_url');
 
-            if ($request->hasFile('attachment')) {
-                [$messageType, $mediaUrl] = $this->storeAttachment($request->file('attachment'));
-            } elseif ($request->filled('latitude') && $request->filled('longitude')) {
-                $messageType = ChatMessage::TYPE_LOCATION;
-            }
+                if ($request->hasFile('attachment')) {
+                    [$messageType, $mediaUrl] = $this->storeAttachment($request->file('attachment'));
+                } elseif ($request->filled('latitude') && $request->filled('longitude')) {
+                    $messageType = ChatMessage::TYPE_LOCATION;
+                }
 
-            $meta = array_filter([
-                'media_path' => $request->input('media_path'),
-                'media_width' => $request->input('media_width'),
-                'media_height' => $request->input('media_height'),
-                'duration_seconds' => $request->input('duration_seconds'),
-                'file_name' => $request->input('file_name'),
+                $meta = array_filter([
+                    'media_path' => $request->input('media_path'),
+                    'media_width' => $request->input('media_width'),
+                    'media_height' => $request->input('media_height'),
+                    'duration_seconds' => $request->input('duration_seconds'),
+                    'file_name' => $request->input('file_name'),
+                    'admin_id' => $conversation->admin_id,
+                    'admin_username' => $conversation->admin?->username,
+                    'external_conversation_id' => $this->conversationIdentifier($conversation),
+                ], fn ($value) => $value !== null && $value !== '');
+
+                $mapUrl = $request->input('map_url');
+                if ($messageType === ChatMessage::TYPE_LOCATION && $mapUrl === null) {
+                    $mapUrl = 'https://www.google.com/maps?q=' . $request->input('latitude') . ',' . $request->input('longitude');
+                }
+
+                $message = $conversation->messages()->create([
+                    'sender_type' => ChatMessage::SENDER_USER,
+                    'sender_id' => auth()->id(),
+                    'message_type' => $messageType,
+                    'message' => $request->input('message'),
+                    'media_url' => $mediaUrl,
+                    'latitude' => $request->input('latitude'),
+                    'longitude' => $request->input('longitude'),
+                    'map_url' => $mapUrl,
+                    'meta' => $meta === [] ? null : $meta,
+                    'is_read_by_admin' => false,
+                    'is_read_by_user' => true,
+                ]);
+
+                $conversation->update([
+                    'last_message_at' => $message->created_at,
+                ]);
+            });
+
+            $conversation->loadMissing('admin:id,username');
+
+            $messages = $conversation->messages()
+                ->orderBy('created_at')
+                ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
+                ->get()
+                ->map(fn (ChatMessage $message) => $this->transformMessage($message));
+
+            return AppHelper::sendSuccessResponse('Message sent successfully.', [
+                'conversation_id' => $this->conversationIdentifier($conversation),
                 'admin_id' => $conversation->admin_id,
                 'admin_username' => $conversation->admin?->username,
-                'external_conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
-            ], fn ($value) => $value !== null && $value !== '');
-
-            $mapUrl = $request->input('map_url');
-            if ($messageType === ChatMessage::TYPE_LOCATION && $mapUrl === null) {
-                $mapUrl = 'https://www.google.com/maps?q=' . $request->input('latitude') . ',' . $request->input('longitude');
-            }
-
-            $message = $conversation->messages()->create([
-                'sender_type' => ChatMessage::SENDER_USER,
-                'sender_id' => auth()->id(),
-                'message_type' => $messageType,
-                'message' => $request->input('message'),
-                'media_url' => $mediaUrl,
-                'latitude' => $request->input('latitude'),
-                'longitude' => $request->input('longitude'),
-                'map_url' => $mapUrl,
-                'meta' => $meta === [] ? null : $meta,
-                'is_read_by_admin' => false,
-                'is_read_by_user' => true,
+                'messages' => $messages,
             ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
 
-            $conversation->update([
-                'last_message_at' => $message->created_at,
-            ]);
-        });
-
-        $messages = $conversation->messages()
-            ->orderBy('created_at')
-            ->with(['adminSender:id,name,avatar', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
-            ->get()
-            ->map(fn (ChatMessage $message) => $this->transformMessage($message));
-
-        return AppHelper::sendSuccessResponse('Message sent successfully.', [
-            'conversation_id' => $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id),
-            'admin_id' => $conversation->admin_id,
-            'admin_username' => $conversation->admin?->username,
-            'messages' => $messages,
-        ]);
+            return AppHelper::sendErrorResponse('Unable to send this message right now.', 500);
+        }
     }
 
     private function transformMessage(ChatMessage $message): array
     {
+        $conversation = $message->conversation;
+
         return [
             'id' => $message->id,
             'sender_type' => $message->sender_type,
@@ -229,11 +258,9 @@ class EmployeeChatApiController extends Controller
             'sender_id' => $message->sender_id,
             'sender_name' => $message->senderName(),
             'sender_avatar' => $message->senderAvatar(),
-            'conversation_id' => $message->conversation?->admin_id
-                ? $this->externalConversationId($message->conversation->user_id, (int) $message->conversation->admin_id)
-                : (string) $message->conversation_id,
-            'admin_id' => $message->conversation->admin_id,
-            'admin_username' => $message->conversation->admin?->username,
+            'conversation_id' => $conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id,
+            'admin_id' => $conversation?->admin_id,
+            'admin_username' => $conversation?->admin?->username,
             'message_type' => $message->message_type,
             'type' => $message->message_type,
             'message' => $message->message,
@@ -286,10 +313,16 @@ class EmployeeChatApiController extends Controller
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
-                $admin,
-                $this->getOrCreateAdminConversation($userId, $admin->id)
-            ))
+            ->map(function (Admin $admin) use ($userId) {
+                try {
+                    $conversation = $this->getOrCreateAdminConversation($userId, $admin->id);
+                } catch (Throwable $throwable) {
+                    report($throwable);
+                    $conversation = null;
+                }
+
+                return $this->transformAdminDirectoryEntry($admin, $conversation);
+            })
             ->values();
     }
 
@@ -408,7 +441,13 @@ class EmployeeChatApiController extends Controller
         $defaultAdmin = Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
-            ->firstOrFail(['id']);
+            ->first(['id']);
+
+        if (!$defaultAdmin) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
 
         return $this->getOrCreateAdminConversation($userId, $defaultAdmin->id);
     }
@@ -421,9 +460,23 @@ class EmployeeChatApiController extends Controller
             return $supportsPerAdminConversation;
         }
 
-        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+        try {
+            $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+        } catch (Throwable $throwable) {
+            report($throwable);
+            $supportsPerAdminConversation = false;
+        }
 
         return $supportsPerAdminConversation;
+    }
+
+    private function conversationIdentifier(ChatConversation $conversation): string
+    {
+        if ($conversation->admin_id) {
+            return $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id);
+        }
+
+        return (string) $conversation->id;
     }
 
     private function externalConversationId(int $userId, int $adminId): string
