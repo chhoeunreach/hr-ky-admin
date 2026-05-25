@@ -171,26 +171,17 @@ class UserProfileApiController extends Controller
 
     private function getAdminDirectoryEntries(?int $userId = null): array
     {
-        $supportsPerAdminConversation = $this->supportsPerAdminConversation();
-
         return Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) use ($userId, $supportsPerAdminConversation) {
+            ->map(function (Admin $admin) use ($userId) {
                 $directoryId = 1000000 + (int) $admin->id;
                 $conversation = null;
 
                 if ($userId) {
                     try {
-                        $conversation = $supportsPerAdminConversation
-                            ? ChatConversation::firstOrCreate([
-                                'user_id' => $userId,
-                                'admin_id' => $admin->id,
-                            ])
-                            : ChatConversation::firstOrCreate([
-                                'user_id' => $userId,
-                            ]);
+                        $conversation = $this->getOrCreateAdminConversation($userId, $admin->id);
                     } catch (\Throwable $throwable) {
                         $conversation = null;
                     }
@@ -225,6 +216,45 @@ class UserProfileApiController extends Controller
             })
             ->values()
             ->all();
+    }
+
+    private function getOrCreateAdminConversation(int $userId, int $adminId): ChatConversation
+    {
+        if (!$this->supportsPerAdminConversation()) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
+
+        $conversation = ChatConversation::query()
+            ->where('user_id', $userId)
+            ->where('admin_id', $adminId)
+            ->first();
+
+        if ($conversation) {
+            return $conversation;
+        }
+
+        $legacyConversation = ChatConversation::query()
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($legacyConversation) {
+            return $legacyConversation;
+        }
+
+        try {
+            return ChatConversation::create([
+                'user_id' => $userId,
+                'admin_id' => $adminId,
+            ]);
+        } catch (\Throwable $throwable) {
+            report($throwable);
+
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
     }
 
     private function supportsPerAdminConversation(): bool

@@ -415,10 +415,37 @@ class EmployeeChatApiController extends Controller
             ]);
         }
 
-        return ChatConversation::firstOrCreate([
-            'user_id' => $userId,
-            'admin_id' => $adminId,
-        ]);
+        $conversation = ChatConversation::query()
+            ->where('user_id', $userId)
+            ->where('admin_id', $adminId)
+            ->first();
+
+        if ($conversation) {
+            return $conversation;
+        }
+
+        // Legacy databases may still enforce unique(user_id), so fall back to the
+        // existing single thread instead of throwing a duplicate-key error.
+        $legacyConversation = ChatConversation::query()
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($legacyConversation) {
+            return $legacyConversation;
+        }
+
+        try {
+            return ChatConversation::create([
+                'user_id' => $userId,
+                'admin_id' => $adminId,
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+
+            return ChatConversation::firstOrCreate([
+                'user_id' => $userId,
+            ]);
+        }
     }
 
     private function resolveAdminConversation(int $userId, Request $request): ChatConversation
