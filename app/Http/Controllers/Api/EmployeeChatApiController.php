@@ -232,12 +232,14 @@ class EmployeeChatApiController extends Controller
                     $messageType = ChatMessage::TYPE_LOCATION;
                 }
 
-                if (!$mediaUrl && $request->filled('media_path')) {
-                    $mediaUrl = Storage::disk('public')->url(ltrim((string) $request->input('media_path'), '/'));
-                }
+                $normalizedMediaPath = ChatMessage::normalizeMediaPath(
+                    $request->input('media_path'),
+                    $mediaUrl
+                );
+                $mediaUrl = ChatMessage::normalizeMediaUrl($normalizedMediaPath, $mediaUrl);
 
                 $meta = array_filter([
-                    'media_path' => $request->input('media_path') ?: $storedMediaPath,
+                    'media_path' => $normalizedMediaPath ?? $storedMediaPath,
                     'media_width' => $request->input('media_width'),
                     'media_height' => $request->input('media_height'),
                     'duration_seconds' => $request->input('duration_seconds'),
@@ -318,7 +320,7 @@ class EmployeeChatApiController extends Controller
             'message' => $message->message,
             'body' => $message->message,
             'media_url' => $message->resolvedMediaUrl(),
-            'media_path' => $message->meta['media_path'] ?? null,
+            'media_path' => $message->resolvedMediaPath(),
             'media_width' => $message->meta['media_width'] ?? null,
             'media_height' => $message->meta['media_height'] ?? null,
             'duration_seconds' => $message->meta['duration_seconds'] ?? null,

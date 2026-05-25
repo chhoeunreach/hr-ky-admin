@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Models\ChatMessage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -154,9 +155,9 @@ class ChatMediaController extends Controller
             }
 
             return $this->mediaSuccessResponse('Media uploaded successfully', [
-                'url' => Storage::disk('public')->url($path),
+                'url' => ChatMessage::normalizeMediaUrl($path),
                 'type' => $responseType,
-                'path' => $path,
+                'path' => ChatMessage::normalizeMediaPath($path),
                 'width' => $width,
                 'height' => $height,
             ]);

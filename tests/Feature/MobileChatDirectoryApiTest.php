@@ -7,10 +7,12 @@ use App\Models\Permission;
 use App\Models\PermissionRole;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
@@ -469,6 +471,171 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('test-message.m4a', $message['file_name']);
     }
 
+    public function test_admin_voice_message_repairs_missing_media_url_from_media_path(): void
+    {
+        [$requester, $adminId, $conversationId] = $this->createAdminConversationFixture('employee.voice.path', 'admin.voice.path');
+
+        DB::table('chat_messages')->insert([
+            'conversation_id' => $conversationId,
+            'sender_type' => 'user',
+            'sender_id' => $requester->id,
+            'message_type' => 'voice',
+            'message' => null,
+            'media_url' => null,
+            'meta' => json_encode([
+                'media_path' => 'chat/voice/legacy-path-only.m4a',
+                'duration_seconds' => 8,
+                'file_name' => 'legacy-path-only.m4a',
+                'admin_id' => $adminId,
+                'admin_username' => 'admin.voice.path',
+                'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminId . '&admin_id=' . $adminId);
+
+        $response->assertOk();
+        $message = $response->json('data.messages.0');
+
+        $this->assertSame('voice', $message['message_type']);
+        $this->assertSame('chat/voice/legacy-path-only.m4a', $message['media_path']);
+        $this->assertSame('/storage/chat/voice/legacy-path-only.m4a', $message['media_url']);
+        $this->assertSame(8, $message['duration_seconds']);
+        $this->assertSame('legacy-path-only.m4a', $message['file_name']);
+    }
+
+    public function test_admin_voice_message_repairs_broken_media_url_using_media_path(): void
+    {
+        [$requester, $adminId, $conversationId] = $this->createAdminConversationFixture('employee.voice.broken', 'admin.voice.broken');
+
+        DB::table('chat_messages')->insert([
+            'conversation_id' => $conversationId,
+            'sender_type' => 'admin',
+            'sender_id' => $adminId,
+            'message_type' => 'voice',
+            'message' => null,
+            'media_url' => '/chat/voice/bad-root-url.m4a',
+            'meta' => json_encode([
+                'media_path' => 'chat/voice/bad-root-url.m4a',
+                'duration_seconds' => 15,
+                'file_name' => 'bad-root-url.m4a',
+                'admin_id' => $adminId,
+                'admin_username' => 'admin.voice.broken',
+                'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminId . '&admin_id=' . $adminId);
+
+        $response->assertOk();
+        $message = $response->json('data.messages.0');
+
+        $this->assertSame('voice', $message['message_type']);
+        $this->assertSame('chat/voice/bad-root-url.m4a', $message['media_path']);
+        $this->assertSame('/storage/chat/voice/bad-root-url.m4a', $message['media_url']);
+    }
+
+    public function test_admin_image_and_file_messages_normalize_legacy_media_urls(): void
+    {
+        [$requester, $adminId, $conversationId] = $this->createAdminConversationFixture('employee.media.legacy', 'admin.media.legacy');
+
+        DB::table('chat_messages')->insert([
+            [
+                'conversation_id' => $conversationId,
+                'sender_type' => 'admin',
+                'sender_id' => $adminId,
+                'message_type' => 'image',
+                'message' => null,
+                'media_url' => 'https://example.test/chat/images/legacy-image.png',
+                'meta' => json_encode([
+                    'media_path' => 'chat/images/legacy-image.png',
+                    'admin_id' => $adminId,
+                    'admin_username' => 'admin.media.legacy',
+                    'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+                ]),
+                'created_at' => now()->subMinute(),
+                'updated_at' => now()->subMinute(),
+            ],
+            [
+                'conversation_id' => $conversationId,
+                'sender_type' => 'user',
+                'sender_id' => $requester->id,
+                'message_type' => 'file',
+                'message' => null,
+                'media_url' => '/chat/files/legacy-doc.pdf',
+                'meta' => json_encode([
+                    'media_path' => 'chat/files/legacy-doc.pdf',
+                    'file_name' => 'legacy-doc.pdf',
+                    'admin_id' => $adminId,
+                    'admin_username' => 'admin.media.legacy',
+                    'external_conversation_id' => 'employee_admin_' . $requester->id . '_' . $adminId,
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        Passport::actingAs($requester);
+
+        $response = $this->getJson('/api/employee/chat/admin/messages?conversation_id=employee_admin_' . $requester->id . '_' . $adminId . '&admin_id=' . $adminId);
+
+        $response->assertOk();
+        $messages = collect($response->json('data.messages'))->keyBy('message_type');
+
+        $this->assertSame('chat/images/legacy-image.png', $messages['image']['media_path']);
+        $this->assertSame('/storage/chat/images/legacy-image.png', $messages['image']['media_url']);
+        $this->assertSame('chat/files/legacy-doc.pdf', $messages['file']['media_path']);
+        $this->assertSame('/storage/chat/files/legacy-doc.pdf', $messages['file']['media_url']);
+        $this->assertSame('legacy-doc.pdf', $messages['file']['file_name']);
+    }
+
+    public function test_chat_media_upload_returns_canonical_storage_path_and_url(): void
+    {
+        Storage::fake('public');
+
+        $role = $this->makeRole('employee');
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => 'employee.upload.media',
+        ]);
+
+        Passport::actingAs($requester);
+
+        $voiceResponse = $this->postJson('/api/employee/chat/media-upload', [
+            'type' => 'voice',
+            'file' => UploadedFile::fake()->create('voice-note.m4a', 64, 'audio/mp4'),
+        ]);
+
+        $voiceResponse->assertOk();
+        $voicePath = $voiceResponse->json('data.path');
+        $voiceUrl = $voiceResponse->json('data.url');
+
+        $this->assertStringStartsWith('chat/voice/', $voicePath);
+        $this->assertStringEndsWith('.m4a', $voicePath);
+        $this->assertSame('/storage/' . $voicePath, $voiceUrl);
+
+        $imageResponse = $this->postJson('/api/employee/chat/media-upload', [
+            'type' => 'image',
+            'file' => UploadedFile::fake()->image('chat-image.png', 120, 90),
+        ]);
+
+        $imageResponse->assertOk();
+        $imagePath = $imageResponse->json('data.path');
+        $imageUrl = $imageResponse->json('data.url');
+
+        $this->assertStringStartsWith('chat/images/', $imagePath);
+        $this->assertSame('/storage/' . $imagePath, $imageUrl);
+    }
+
     public function test_admin_messages_stay_separate_even_when_messages_share_one_internal_conversation(): void
     {
         $role = $this->makeRole('employee');
@@ -605,6 +772,37 @@ class MobileChatDirectoryApiTest extends TestCase
             'user_type' => 'employee',
             'online_status' => 0,
         ], $overrides));
+    }
+
+    private function createAdminConversationFixture(string $employeeUsername, string $adminUsername): array
+    {
+        $role = $this->makeRole('employee');
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'username' => $employeeUsername,
+        ]);
+
+        $adminId = DB::table('admins')->insertGetId([
+            'name' => 'Administration Officer',
+            'username' => $adminUsername,
+            'email' => $adminUsername . '@example.com',
+            'password' => bcrypt('password'),
+            'avatar' => null,
+            'is_active' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $conversationId = DB::table('chat_conversations')->insertGetId([
+            'user_id' => $requester->id,
+            'admin_id' => $adminId,
+            'last_message_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return [$requester, $adminId, $conversationId];
     }
 
     private function createMobileChatSupportTables(): void

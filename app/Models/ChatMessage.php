@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ChatMessage extends Model
 {
@@ -79,15 +80,39 @@ class ChatMessage extends Model
 
     public function resolvedMediaUrl(): ?string
     {
-        $mediaPath = $this->meta['media_path'] ?? null;
+        return static::normalizeMediaUrl(
+            $this->meta['media_path'] ?? null,
+            $this->media_url
+        );
+    }
 
-        if ($mediaPath) {
-            return Storage::disk('public')->url(ltrim((string) $mediaPath, '/'));
+    public function resolvedMediaPath(): ?string
+    {
+        return static::normalizeMediaPath(
+            $this->meta['media_path'] ?? null,
+            $this->media_url
+        );
+    }
+
+    public function repairedMediaMeta(): array
+    {
+        $meta = $this->meta ?? [];
+        $meta['media_path'] = $this->resolvedMediaPath();
+
+        return $meta;
+    }
+
+    public static function normalizeMediaUrl(?string $mediaPath = null, ?string $mediaUrl = null): ?string
+    {
+        $normalizedPath = static::normalizeMediaPath($mediaPath, $mediaUrl);
+
+        if ($normalizedPath !== null) {
+            return Storage::disk('public')->url($normalizedPath);
         }
 
-        $mediaUrl = $this->media_url;
+        $mediaUrl = static::sanitizeMediaValue($mediaUrl);
 
-        if (!$mediaUrl) {
+        if ($mediaUrl === null) {
             return null;
         }
 
@@ -96,17 +121,73 @@ class ChatMessage extends Model
         }
 
         if (str_starts_with($mediaUrl, '/storage/')) {
-            return asset(ltrim($mediaUrl, '/'));
+            return $mediaUrl;
         }
 
         if (str_starts_with($mediaUrl, 'storage/')) {
-            return asset($mediaUrl);
+            return '/' . ltrim($mediaUrl, '/');
         }
 
-        if (preg_match('/^chat\//i', $mediaUrl) === 1) {
-            return Storage::disk('public')->url($mediaUrl);
+        if (str_starts_with($mediaUrl, '/')) {
+            return $mediaUrl;
         }
 
         return $mediaUrl;
+    }
+
+    public static function normalizeMediaPath(?string $mediaPath = null, ?string $mediaUrl = null): ?string
+    {
+        $mediaPath = static::extractChatStoragePath($mediaPath);
+
+        if ($mediaPath !== null) {
+            return $mediaPath;
+        }
+
+        return static::extractChatStoragePath($mediaUrl);
+    }
+
+    private static function extractChatStoragePath(?string $value): ?string
+    {
+        $value = static::sanitizeMediaValue($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $value) === 1) {
+            $parsedPath = parse_url($value, PHP_URL_PATH);
+            $value = is_string($parsedPath) ? $parsedPath : null;
+        }
+
+        if ($value === null) {
+            return null;
+        }
+
+        $value = '/' . ltrim($value, '/');
+
+        if (Str::startsWith($value, '/storage/chat/')) {
+            return ltrim(Str::after($value, '/storage/'), '/');
+        }
+
+        if (Str::startsWith($value, '/chat/')) {
+            return ltrim($value, '/');
+        }
+
+        if (Str::startsWith($value, '/public/chat/')) {
+            return ltrim(Str::after($value, '/public/'), '/');
+        }
+
+        return null;
+    }
+
+    private static function sanitizeMediaValue(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
     }
 }
