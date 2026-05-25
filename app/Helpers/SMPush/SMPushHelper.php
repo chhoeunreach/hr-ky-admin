@@ -245,6 +245,9 @@ class SMPushHelper
                                                 string $project_id,
                                                 string $chatMessageType = 'text',
                                                 string $media_url = '',
+                                                ?float $latitude = null,
+                                                ?float $longitude = null,
+                                                string $map_url = '',
     ): void
     {
         SMPushNotification::smSend(
@@ -259,6 +262,9 @@ class SMPushHelper
                 'type' => $type,
                 'chat_message_type' => $chatMessageType,
                 'media_url' => $media_url,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'map_url' => $map_url,
                 'project_id' => $project_id,
                 'sender_username' => auth()->user()->username,
             ],
