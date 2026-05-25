@@ -245,20 +245,82 @@
                 font-size: 0.88rem;
             }
 
+            .attendance-filter-card .card-header,
+            .attendance-day-card .card-header {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #edf2f7;
+            }
+
+            .attendance-filter-card .card-title,
+            .attendance-day-card .card-title {
+                font-size: 1.1rem;
+                font-weight: 700;
+                letter-spacing: 0.01em;
+            }
+
+            .attendance-filter-form {
+                padding: 1.25rem 1.5rem 1.5rem;
+            }
+
+            .attendance-filter-grid {
+                display: grid;
+                grid-template-columns: minmax(180px, 240px) minmax(180px, 220px) minmax(220px, 1fr) auto;
+                gap: 16px;
+                align-items: end;
+            }
+
+            .attendance-filter-field {
+                margin-bottom: 0;
+            }
+
+            .attendance-filter-field .form-control,
+            .attendance-filter-field .form-select,
+            .attendance-filter-actions .btn {
+                min-height: 48px;
+                border-radius: 14px;
+            }
+
+            .attendance-filter-field .form-control,
+            .attendance-filter-field .form-select {
+                border-color: #d9e2ef;
+                box-shadow: none;
+            }
+
+            .attendance-filter-field .form-control:focus,
+            .attendance-filter-field .form-select:focus {
+                border-color: #93c5fd;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+            }
+
+            .attendance-filter-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                justify-content: flex-end;
+            }
+
+            .attendance-filter-actions .btn {
+                min-width: 108px;
+                padding-inline: 18px;
+                margin: 0;
+            }
+
             .attendance-table-toolbar {
                 display: flex;
-                justify-content: flex-end;
-                margin-bottom: 18px;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
             }
 
             .attendance-table-search {
-                width: min(100%, 260px);
+                width: min(100%, 220px);
                 border: 1px solid #d7dfeb;
-                border-radius: 0;
-                min-height: 48px;
-                padding: 0 16px;
+                border-radius: 14px;
+                min-height: 44px;
+                padding: 0 14px;
                 color: #111827;
-                background: #ffffff;
+                background: #f8fbff;
                 box-shadow: none;
             }
 
@@ -286,6 +348,31 @@
                 .attendance-chat-actions {
                     display: none;
                 }
+
+                .attendance-filter-form {
+                    padding: 1rem;
+                }
+
+                .attendance-filter-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .attendance-filter-actions {
+                    justify-content: stretch;
+                }
+
+                .attendance-filter-actions .btn {
+                    width: 100%;
+                }
+
+                .attendance-table-toolbar {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+
+                .attendance-table-search {
+                    width: 100%;
+                }
             }
         </style>
         <?php
@@ -300,15 +387,15 @@
         @include('admin.section.flash_message')
 
         @include('admin.attendance.common.breadcrumb')
-        <div class="card mb-4">
+        <div class="card mb-4 attendance-filter-card">
             <div class="card-header">
                 <h6 class="card-title mb-0">{{ __('index.attendance_filter')  }}</h6>
             </div>
-            <form class="forms-sample card-body pb-0" action="{{ route('admin.attendances.index') }}" method="get">
+            <form class="forms-sample attendance-filter-form" action="{{ route('admin.attendances.index') }}" method="get">
 
-                <div class="row align-items-center">
+                <div class="attendance-filter-grid">
 
-                    <div class="col-lg col-md-6 mb-4">
+                    <div class="attendance-filter-field">
                         <input id="attendance_date"
                                name="attendance_date"
                                value="{{ $filterParameter['attendance_date'] }}"
@@ -323,7 +410,7 @@
                         />
                     </div>
                     @if(!isset(auth()->user()->branch_id))
-                    <div class="col-lg col-md-6 mb-4">
+                    <div class="attendance-filter-field">
                         <select class="form-select form-select-lg" name="branch_id" id="branch_id">
                             <option value="" {{ !isset($filterParameter['branch_id']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
                             @foreach($branch as $key =>  $value)
@@ -335,34 +422,33 @@
                     </div>
 
                     @endif
-                    <div class="col-lg col-md-6 mb-4">
+                    <div class="attendance-filter-field">
                         <select class="form-select " name="department_id" id="department_id">
                             <option selected disabled>{{ __('index.select_department') }}</option>
                         </select>
                     </div>
-                    <div class="col-lg-4 col-md-6">
-                        <div class="d-md-flex align-items-center gap-2">
-                            <button type="submit" class="btn btn-block btn-success mb-4">{{ __('index.filter') }}</button>
+                    <div class="attendance-filter-actions">
+                            <button type="submit" class="btn btn-success">{{ __('index.filter') }}</button>
                             @can('attendance_csv_export')
                             <button type="button" id="download-daywise-attendance-excel"
                                     data-href="{{ route('admin.attendances.index') }}"
-                                    class="btn btn-block btn-secondary mb-4">{{ __('index.csv_export') }}
+                                    class="btn btn-secondary">{{ __('index.csv_export') }}
                             </button>
                             @endcan
-                            <a class="btn btn-block btn-primary me-0 mb-4" href="{{ route('admin.attendances.index') }}">{{ __('index.reset') }}</a>
-                        </div>
+                            <a class="btn btn-primary me-0" href="{{ route('admin.attendances.index') }}">{{ __('index.reset') }}</a>
                     </div>
 
                 </div>
             </form>
         </div>
 
-        <div class="card">
+        <div class="card attendance-day-card">
             <div class="card-header">
                 <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
             </div>
             <div class="card-body">
                 <div class="attendance-table-toolbar">
+                    <div class="text-muted small">Quick search in today&apos;s attendance list</div>
                     <input type="text"
                            id="attendanceDaySearch"
                            class="attendance-table-search"
