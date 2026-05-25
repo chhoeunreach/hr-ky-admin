@@ -72,24 +72,33 @@ class EmployeeChatApiController extends Controller
 
         $authUser = auth()->user();
         $contacts = User::query()
-            ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status'])
-            ->with(['department:id,dept_name', 'branch:id,name'])
+            ->select(['id', 'name', 'username', 'email', 'avatar', 'phone', 'department_id', 'branch_id', 'post_id', 'role_id', 'user_type', 'online_status'])
+            ->with(['department:id,dept_name', 'branch:id,name', 'post:id,post_name', 'role:id,name,slug'])
             ->where('status', 'verified')
             ->where('is_active', 1)
             ->where('id', '!=', $authUser->id)
             ->orderBy('name')
             ->get()
             ->map(function (User $user) {
+                $isAdmin = $user->hasAdminIdentity();
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'username' => $user->username,
+                    'email' => $user->email,
                     'avatar' => $user->avatar
                         ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
                         : asset('assets/images/img.png'),
                     'phone' => $user->phone,
                     'department' => $user->department?->dept_name,
                     'branch' => $user->branch?->name,
+                    'post' => $user->post?->post_name,
+                    'online_status' => (string) ((int) $user->online_status),
+                    'role' => $user->mobileDirectoryRole(),
+                    'user_type' => $user->mobileDirectoryUserType(),
+                    'is_admin' => $isAdmin ? '1' : '0',
+                    'admin' => $isAdmin ? '1' : '0',
                     'is_online' => (int) $user->online_status === User::ONLINE,
                 ];
             })

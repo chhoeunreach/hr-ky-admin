@@ -136,7 +136,12 @@ class UserProfileApiController extends Controller
             $data = [];
 
             $select = ['id', 'name'];
-            $with = ['employee'];
+            $with = [
+                'employee.branch:id,name',
+                'employee.department:id,dept_name',
+                'employee.post:id,post_name',
+                'employee.role:id,name,slug',
+            ];
 //            $updateOnline = $this->updateOnlineStatusBasedOnTodayAttendance();
 //            if($updateOnline){
                 $companyWithEmployee = $this->companyRepo
@@ -239,5 +244,4 @@ class UserProfileApiController extends Controller
     }
 
 }
-
 

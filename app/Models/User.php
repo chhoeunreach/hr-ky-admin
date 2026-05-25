@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
@@ -226,6 +227,45 @@ class User extends Authenticatable
     public function employeeSalary()
     {
         return $this->hasOne(EmployeeSalary::class, 'employee_id', 'id');
+    }
+
+    public function hasAdminIdentity(): bool
+    {
+        $roleName = Str::lower((string) $this->role?->name);
+        $roleSlug = Str::lower((string) $this->role?->slug);
+        $postName = Str::lower((string) $this->post?->post_name);
+        $departmentName = Str::lower((string) $this->department?->dept_name);
+        $userType = Str::lower((string) $this->user_type);
+
+        return in_array($roleSlug, ['admin', 'administrator', 'super-admin', 'super_admin'], true)
+            || in_array($roleName, ['admin', 'administrator', 'super admin'], true)
+            || $userType === 'admin'
+            || $postName === 'admin'
+            || $postName === 'administrator'
+            || $departmentName === 'admin'
+            || $departmentName === 'administration';
+    }
+
+    public function mobileDirectoryRole(): string
+    {
+        if ($this->hasAdminIdentity()) {
+            return 'admin';
+        }
+
+        $role = Str::lower(trim((string) ($this->role?->slug ?: $this->role?->name)));
+
+        return $role !== '' && !Str::contains($role, 'admin') ? $role : 'employee';
+    }
+
+    public function mobileDirectoryUserType(): string
+    {
+        if ($this->hasAdminIdentity()) {
+            return 'admin';
+        }
+
+        $userType = Str::lower(trim((string) $this->user_type));
+
+        return $userType !== '' && !Str::contains($userType, 'admin') ? $userType : 'employee';
     }
 
 
