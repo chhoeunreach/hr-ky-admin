@@ -273,6 +273,36 @@ class MobileChatDirectoryApiTest extends TestCase
         $this->assertSame('online.user', $onlineContacts[0]['username']);
     }
 
+    public function test_mobile_login_marks_user_online_and_logout_marks_user_offline(): void
+    {
+        $role = $this->makeRole('employee');
+
+        $requester = $this->makeUser($role, [
+            'status' => 'verified',
+            'is_active' => 1,
+            'online_status' => 0,
+            'username' => 'mobile.online.user',
+            'password' => bcrypt('password123'),
+        ]);
+
+        $loginResponse = $this->postJson('/api/login', [
+            'username' => 'mobile.online.user',
+            'password' => 'password123',
+            'uuid' => 'device-uuid-001',
+            'fcm_token' => 'fcm-token-001',
+            'device_type' => 'android',
+        ]);
+
+        $loginResponse->assertOk();
+        $this->assertSame(1, (int) DB::table('users')->where('id', $requester->id)->value('online_status'));
+
+        Passport::actingAs(User::findOrFail($requester->id));
+        $logoutResponse = $this->postJson('/api/logout');
+
+        $logoutResponse->assertOk();
+        $this->assertSame(0, (int) DB::table('users')->where('id', $requester->id)->value('online_status'));
+    }
+
     public function test_admin_messages_are_filtered_by_external_conversation_id(): void
     {
         $role = $this->makeRole('employee');

@@ -67,7 +67,8 @@ class AuthService
             'uuid' => $validatedData['uuid'],
             'fcm_token' => $validatedData['fcm_token'],
             'device_type' => $validatedData['device_type'],
-            'logout_status' => User::LOGOUT_STATUS['approve']
+            'logout_status' => User::LOGOUT_STATUS['approve'],
+            'online_status' => User::ONLINE,
         ];
         $userDetail = $this->userRepo->findUserDetailById($validatedData['id']);
         if(!$userDetail){

@@ -110,6 +110,7 @@ class AuthApiController
                 $update['logout_status'] = User::LOGOUT_STATUS[ $isAuthorizeLogin ? 'pending' : 'approve'];
                 $update['uuid'] = null;
                 $update['fcm_token'] = null;
+                $update['online_status'] = User::OFFLINE;
                 $this->userRepo->update($userDetail,$update);
                 $userToken->revoke();
             DB::commit();
@@ -127,5 +128,4 @@ class AuthApiController
 
 
 }
-
 
