@@ -479,6 +479,7 @@ class LeaveService
         $message = $this->buildTelegramLeaveRequestMessage($leaveRequest, $employee);
 
         $this->sendTelegramLeaveMessage($employee, $message);
+        $this->sendSubmittedLeaveChatMessage($leaveRequest, $employee, $message);
     }
 
     private function sendTelegramAfterCommit(callable $callback): void
@@ -506,10 +507,10 @@ class LeaveService
         }
 
         $updatedBy = auth('admin')->user()?->name ?? auth()->user()?->name ?? 'Admin';
-        $message = $this->buildTelegramLeaveMessage($leaveRequest, $employee, ucfirst($status), $updatedBy, $remark);
+        $telegramMessage = $this->buildTelegramLeaveMessage($leaveRequest, $employee, ucfirst($status), $updatedBy, $remark);
 
-        $this->sendTelegramLeaveMessage($employee, $message);
-        $this->sendApprovedLeaveChatMessage($leaveRequest, $employee, $updatedBy, $remark);
+        $this->sendTelegramLeaveMessage($employee, $telegramMessage);
+        $this->sendApprovedLeaveChatMessage($leaveRequest, $employee, $telegramMessage);
     }
 
     private function getTelegramLeaveEmployee(LeaveRequestMaster $leaveRequest): ?Model
@@ -605,7 +606,7 @@ class LeaveService
         }
     }
 
-    private function sendApprovedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $updatedBy, ?string $remark = null): void
+    private function sendApprovedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $telegramMessage): void
     {
         $admin = auth('admin')->user();
 
@@ -616,7 +617,7 @@ class LeaveService
         try {
             $conversation = $this->getOrCreateAdminEmployeeConversation((int) $employee->id, (int) $admin->id);
             $externalConversationId = $this->externalConversationId((int) $employee->id, (int) $admin->id);
-            $messageBody = $this->buildApprovedLeaveChatMessage($leaveRequest, $employee, $updatedBy, $remark);
+            $messageBody = $this->convertTelegramMessageToChatText($telegramMessage);
 
             $message = $conversation->messages()->create([
                 'sender_type' => ChatMessage::SENDER_ADMIN,
@@ -665,30 +666,73 @@ class LeaveService
         }
     }
 
-    private function buildApprovedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $updatedBy, ?string $remark = null): string
+    private function sendSubmittedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $telegramMessage): void
     {
-        $leaveTypeName = $this->resolveTelegramLeaveTypeName($leaveRequest);
-        $fromDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_from);
-        $toDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_to);
-        $days = (string) $leaveRequest->no_of_days;
-        $reason = trim(strip_tags((string) $leaveRequest->reasons));
-        $comment = trim((string) ($remark ?: ''));
+        $admin = auth('admin')->user();
 
-        $message = "Your {$leaveTypeName} leave has been approved.\n"
-            . "Date: {$fromDate} - {$toDate}\n"
-            . "Days: {$days}\n";
-
-        if ($reason !== '') {
-            $message .= "Reason: {$reason}\n";
+        if (!$admin || !$employee || empty($employee->username)) {
+            return;
         }
 
-        $message .= "Approved by: {$updatedBy}";
+        try {
+            $conversation = $this->getOrCreateAdminEmployeeConversation((int) $employee->id, (int) $admin->id);
+            $externalConversationId = $this->externalConversationId((int) $employee->id, (int) $admin->id);
+            $messageBody = $this->convertTelegramMessageToChatText($telegramMessage);
 
-        if ($comment !== '') {
-            $message .= "\nRemark: {$comment}";
+            $message = $conversation->messages()->create([
+                'sender_type' => ChatMessage::SENDER_ADMIN,
+                'sender_id' => $admin->id,
+                'message_type' => ChatMessage::TYPE_TEXT,
+                'message' => $messageBody,
+                'meta' => [
+                    'admin_id' => $admin->id,
+                    'admin_username' => $admin->username,
+                    'external_conversation_id' => $externalConversationId,
+                    'auto_generated' => true,
+                    'source' => 'leave_request_submitted',
+                    'leave_request_id' => $leaveRequest->id,
+                ],
+                'is_read_by_admin' => true,
+                'is_read_by_user' => false,
+            ]);
+
+            $conversation->update([
+                'last_message_at' => $message->created_at,
+            ]);
+
+            SMPushHelper::sendPushNotification(
+                $admin->name,
+                $externalConversationId,
+                $messageBody,
+                'chat',
+                [$employee->username],
+                '',
+                ChatMessage::TYPE_TEXT,
+                '',
+                null,
+                null,
+                '',
+                $admin->id,
+                $admin->username,
+                'admin_thread',
+                (string) $conversation->id
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Submitted leave chat message failed.', [
+                'leave_request_id' => $leaveRequest->id ?? null,
+                'employee_id' => $employee->id ?? null,
+                'error' => $exception->getMessage(),
+            ]);
         }
+    }
 
-        return $message;
+    private function convertTelegramMessageToChatText(string $telegramMessage): string
+    {
+        $message = html_entity_decode(strip_tags($telegramMessage), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $message = preg_replace("/[ \t]+\n/", "\n", $message) ?? $message;
+        $message = preg_replace("/\n{3,}/", "\n\n", $message) ?? $message;
+
+        return trim($message);
     }
 
     private function getOrCreateAdminEmployeeConversation(int $employeeId, int $adminId): ChatConversation
