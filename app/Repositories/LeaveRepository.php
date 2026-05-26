@@ -152,9 +152,9 @@ class LeaveRepository
             ->first();
     }
 
-    public function employeeTotalApprovedLeavesForGivenLeaveType($leaveType, $date)
+    public function employeeTotalApprovedLeavesForGivenLeaveType($leaveType, $date, $employeeId = null)
     {
-        return LeaveRequestMaster::where('requested_by', getAuthUserCode())
+        return LeaveRequestMaster::where('requested_by', $employeeId ?? getAuthUserCode())
             ->where('status', 'approved')
             ->where('leave_type_id', $leaveType)
             ->whereBetween('leave_from', [$date['start_date'], $date['end_date']])

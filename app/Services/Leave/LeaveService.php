@@ -220,7 +220,11 @@ class LeaveService
 
             $dates = AppHelper::getStartEndDate($data['from_date']) ;
 
-            $totalLeaveTakenTillNow = $this->leaveRepo->employeeTotalApprovedLeavesForGivenLeaveType($validatedData['leave_type_id'], $dates);
+            $totalLeaveTakenTillNow = $this->leaveRepo->employeeTotalApprovedLeavesForGivenLeaveType(
+                $validatedData['leave_type_id'],
+                $dates,
+                $data['requested_by']
+            );
 
             if( (int)$validatedData['no_of_days'] + (int)$totalLeaveTakenTillNow > $totalLeaveAllocated  ){
                 throw new Exception(__('message.leave_exceed_error',['day'=>((int)$validatedData['no_of_days'] + (int)$totalLeaveTakenTillNow - $totalLeaveAllocated),'name'=>$leaveType->name]),400);

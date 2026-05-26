@@ -10,9 +10,11 @@ use App\Helpers\AttendanceHelper;
 use App\Helpers\NepaliDate;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\LeaveRequestMaster;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
+use App\Repositories\LeaveTypeRepository;
 use App\Repositories\RouterRepository;
 use App\Repositories\UserRepository;
 use App\Requests\Attendance\AttendanceNightTimeEditRequest;
@@ -31,6 +33,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Exception\MessagingException;
@@ -46,6 +49,7 @@ class AttendanceController extends Controller
                                 protected RouterRepository  $routerRepo,
                                 protected UserRepository $userRepository,
                                 protected BranchRepository $branchRepo,
+                                protected LeaveTypeRepository $leaveTypeRepo,
                                 protected AttendanceLogService $attendanceLogService,
                                 protected TelegramService $telegramService,
                                 protected AttendanceTelegramNotificationService $attendanceTelegramNotificationService,
@@ -147,6 +151,73 @@ class AttendanceController extends Controller
             DB::commit();
             return redirect()->back()->with('success', __('message.attendance_status_change'));
         } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function quickApproveLeave(Request $request): RedirectResponse
+    {
+        $this->authorize('attendance_update');
+
+        if (!auth('admin')->check() && !Gate::allows('update_leave_request') && !Gate::allows('access_admin_leave')) {
+            abort(403);
+        }
+
+        $validatedData = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'attendance_date' => ['required', 'date'],
+            'leave_type_id' => ['required', 'integer', 'exists:leave_types,id'],
+            'reasons' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        try {
+            $employee = $this->userRepository->findUserDetailById(
+                $validatedData['user_id'],
+                ['id', 'name', 'branch_id', 'department_id', 'company_id']
+            );
+
+            if (!$employee) {
+                throw new Exception('Employee not found.');
+            }
+
+            if (!$employee->branch_id || !$employee->department_id) {
+                throw new Exception('Employee must have branch and department before adding quick leave.');
+            }
+
+            $attendanceExists = Attendance::query()
+                ->where('user_id', $employee->id)
+                ->whereDate('attendance_date', $validatedData['attendance_date'])
+                ->exists();
+
+            if ($attendanceExists) {
+                throw new Exception('Attendance already exists for this day.');
+            }
+
+            $leaveType = $this->leaveTypeRepo->findLeaveTypeDetailById($validatedData['leave_type_id'], ['id', 'name']);
+            $requestedDate = $validatedData['attendance_date'];
+
+            $leaveRequestData = [
+                'leave_type_id' => $validatedData['leave_type_id'],
+                'leave_from' => $requestedDate,
+                'leave_to' => $requestedDate,
+                'reasons' => trim((string) ($validatedData['reasons'] ?? '')) ?: 'Quick approved from attendance list.',
+                'status' => LeaveRequestMaster::STATUS[1],
+                'admin_remark' => 'Approved from attendance list as ' . $leaveType->name . '.',
+                'requested_by' => $employee->id,
+                'referred_by' => auth()->id(),
+                'branch_id' => $employee->branch_id,
+                'department_id' => $employee->department_id,
+                'early_exit' => 0,
+            ];
+
+            DB::beginTransaction();
+            app(\App\Services\Leave\LeaveService::class)->storeLeaveRequest($leaveRequestData);
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Approved leave added from attendance list successfully.');
+        } catch (Exception $exception) {
+            DB::rollBack();
+
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }

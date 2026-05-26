@@ -555,14 +555,17 @@
                                     1 => 'success',
                                 ]
                                @endphp
-                               @php
-                                   $leaveRequestColor = [
-                                       'approved' => 'success',
-                                       'pending' => 'secondary',
-                                       'rejected' => 'danger',
-                                       'cancelled' => 'danger',
-                                   ];
-                               @endphp
+                                @php
+                                    $leaveRequestColor = [
+                                        'approved' => 'success',
+                                        'pending' => 'secondary',
+                                        'rejected' => 'danger',
+                                        'cancelled' => 'danger',
+                                    ];
+                                    $selectedAttendanceDate = $isBsEnabled
+                                        ? \App\Helpers\AppHelper::dateInYmdFormatNepToEng($filterParameter['attendance_date'])
+                                        : $filterParameter['attendance_date'];
+                                @endphp
 
                                 @forelse($attendanceDetail->groupBy('user_id') as $userId => $userAttendances)
 
@@ -766,9 +769,22 @@
                                                     @endcanany
                                                 </div>
                                             @else
-                                                <span class="btn btn-light btn-xs disabled">
-                                                    {{ __('index.pending') }}
-                                                </span>
+                                                <div class="d-inline-flex flex-column align-items-center gap-2">
+                                                    <span class="btn btn-light btn-xs disabled">
+                                                        {{ __('index.pending') }}
+                                                    </span>
+                                                    @canany(['update_leave_request','access_admin_leave'])
+                                                        <a href="#"
+                                                           class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
+                                                           data-user-id="{{ $firstAttendance->user_id }}"
+                                                           data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                           data-attendance-date="{{ $selectedAttendanceDate }}"
+                                                           data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}"
+                                                           data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
+                                                            Quick Leave
+                                                        </a>
+                                                    @endcanany
+                                                </div>
                                             @endif
                                         </td>
                                     @endif
@@ -1162,6 +1178,45 @@
             </div>
         </div>
 
+        <div class="modal fade" id="attendanceQuickLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickLeaveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="attendanceQuickLeaveModalLabel">Quick Leave</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ route('admin.attendances.quick-approved-leave') }}" method="post" id="attendanceQuickLeaveForm">
+                            @csrf
+                            <input type="hidden" name="user_id" id="attendanceQuickLeaveUserId">
+                            <input type="hidden" name="attendance_date" id="attendanceQuickLeaveDate">
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickLeaveType" class="form-label">Leave Type</label>
+                                <select class="form-select" name="leave_type_id" id="attendanceQuickLeaveType" required>
+                                    <option value="">Select leave type</option>
+                                </select>
+                                <small class="text-muted d-block mt-2" id="attendanceQuickLeaveHelpText">
+                                    This will create an already approved leave for the selected attendance day.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
+                                <textarea class="form-control" name="reasons" id="attendanceQuickLeaveReason" rows="3" placeholder="Optional note"></textarea>
+                            </div>
+
+                            <div class="text-start">
+                                <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickLeaveSubmit">
+                                    Save as Approved Leave
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- note for checkin and checkout -->
         <div id="noteModal" class="modal" tabindex="-1">
             <div class="modal-dialog">
@@ -1438,8 +1493,90 @@
             const attendanceChatSubtitle = document.getElementById('attendanceChatSubtitle');
             const attendanceChatStatus = document.getElementById('attendanceChatStatus');
             const attendanceChatStatusText = document.getElementById('attendanceChatStatusText');
+            const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
+            const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
+            const attendanceQuickLeaveUserId = document.getElementById('attendanceQuickLeaveUserId');
+            const attendanceQuickLeaveDate = document.getElementById('attendanceQuickLeaveDate');
+            const attendanceQuickLeaveType = document.getElementById('attendanceQuickLeaveType');
+            const attendanceQuickLeaveReason = document.getElementById('attendanceQuickLeaveReason');
+            const attendanceQuickLeaveSubmit = document.getElementById('attendanceQuickLeaveSubmit');
+            const attendanceQuickLeaveLabel = document.getElementById('attendanceQuickLeaveModalLabel');
+            const attendanceQuickLeaveHelpText = document.getElementById('attendanceQuickLeaveHelpText');
             let attendanceChatPoller = null;
             let activeAttendanceChatEmployeeId = null;
+
+            const resetQuickLeaveOptions = (message = 'Loading leave types...') => {
+                if (!attendanceQuickLeaveType) {
+                    return;
+                }
+
+                attendanceQuickLeaveType.innerHTML = `<option value="">${message}</option>`;
+                attendanceQuickLeaveType.disabled = true;
+                if (attendanceQuickLeaveSubmit) {
+                    attendanceQuickLeaveSubmit.disabled = true;
+                }
+            };
+
+            document.querySelectorAll('.quickApproveLeaveTrigger').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    if (!attendanceQuickLeaveModal) {
+                        return;
+                    }
+
+                    const userId = this.getAttribute('data-user-id');
+                    const userName = this.getAttribute('data-user-name');
+                    const attendanceDate = this.getAttribute('data-attendance-date');
+                    const displayDate = this.getAttribute('data-display-date');
+                    const fetchUrl = this.getAttribute('data-fetch-url');
+
+                    attendanceQuickLeaveUserId.value = userId;
+                    attendanceQuickLeaveDate.value = attendanceDate;
+                    attendanceQuickLeaveReason.value = '';
+                    attendanceQuickLeaveLabel.textContent = `Quick Leave: ${userName}`;
+                    attendanceQuickLeaveHelpText.textContent = `Create an already approved leave for ${displayDate}.`;
+
+                    resetQuickLeaveOptions();
+                    attendanceQuickLeaveModal.show();
+
+                    fetch(fetchUrl)
+                        .then(response => response.json())
+                        .then(data => {
+                            const leaveTypes = data.leaveTypes || data.leveTypes || [];
+
+                            if (!leaveTypes.length) {
+                                resetQuickLeaveOptions('No leave types available');
+                                attendanceQuickLeaveHelpText.textContent = 'No leave types are available for this employee.';
+                                return;
+                            }
+
+                            attendanceQuickLeaveType.disabled = false;
+                            attendanceQuickLeaveType.innerHTML = '<option value="">Select leave type</option>';
+
+                            leaveTypes.forEach((leaveType) => {
+                                const option = document.createElement('option');
+                                option.value = leaveType.id;
+                                option.textContent = leaveType.name;
+                                attendanceQuickLeaveType.appendChild(option);
+                            });
+
+                            const preferredType = leaveTypes.find((leaveType) => {
+                                const typeName = String(leaveType.name || '').toLowerCase();
+                                return typeName.includes('day off') || typeName.includes('ច្បាប់') || typeName.includes('leave');
+                            });
+
+                            attendanceQuickLeaveType.value = String(preferredType?.id || leaveTypes[0].id);
+                            if (attendanceQuickLeaveSubmit) {
+                                attendanceQuickLeaveSubmit.disabled = false;
+                            }
+                        })
+                        .catch(() => {
+                            resetQuickLeaveOptions('Unable to load leave types');
+                            attendanceQuickLeaveHelpText.textContent = 'Unable to load leave types right now. Please try again.';
+                        });
+                });
+            });
 
             const attendanceChatScrollToBottom = () => {
                 if (attendanceChatThread) {
