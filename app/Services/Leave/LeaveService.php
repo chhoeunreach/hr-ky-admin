@@ -517,7 +517,7 @@ class LeaveService
     {
         return $this->userRepository->findUserDetailById(
             $leaveRequest->requested_by,
-            ['id', 'name', 'branch_id', 'department_id'],
+            ['id', 'name', 'username', 'branch_id', 'department_id'],
             ['branch:id,name', 'department:id,dept_name']
         );
     }
