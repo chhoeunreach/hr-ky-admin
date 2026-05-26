@@ -611,7 +611,20 @@
                                     @endcan
 
                                     <td class="text-center">
-                                        {{ $firstAttendance->username ?: 'N/A' }}
+                                        @php
+                                            $userHoverSummary = 'Day Off: ' . (int) ($firstAttendance->approved_day_off_days ?? 0)
+                                                . "\nច្បាប់: " . (int) ($firstAttendance->approved_leave_days ?? 0)
+                                                . "\nRequest Pending: " . (int) ($firstAttendance->pending_leave_days ?? 0);
+                                        @endphp
+                                        <span
+                                            data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
+                                            data-bs-custom-class="attendance-user-tooltip"
+                                            title="{{ $userHoverSummary }}"
+                                            style="cursor: help;"
+                                        >
+                                            {{ $firstAttendance->username ?: 'N/A' }}
+                                        </span>
                                     </td>
 
                                     <td>
@@ -1335,6 +1348,10 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                new bootstrap.Tooltip(element);
+            });
+
             const noteModal = new bootstrap.Modal(document.getElementById('noteModal'));
             const attendanceDaySearch = document.getElementById('attendanceDaySearch');
             const attendanceDayTable = document.getElementById('dataTableExample');

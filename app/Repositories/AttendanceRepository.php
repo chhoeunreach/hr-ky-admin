@@ -13,6 +13,32 @@ class AttendanceRepository
 
     public function getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter)
     {
+        $selectedDate = Carbon::parse($filterParameter['attendance_date']);
+        $leaveSummarySubQuery = DB::table('leave_requests_master')
+            ->leftJoin('leave_types', 'leave_requests_master.leave_type_id', '=', 'leave_types.id')
+            ->selectRaw('
+                leave_requests_master.requested_by,
+                SUM(CASE
+                    WHEN leave_requests_master.status = "approved"
+                        AND LOWER(COALESCE(leave_types.name, "")) LIKE "%day off%"
+                    THEN leave_requests_master.no_of_days
+                    ELSE 0
+                END) as approved_day_off_days,
+                SUM(CASE
+                    WHEN leave_requests_master.status = "approved"
+                        AND LOWER(COALESCE(leave_types.name, "")) NOT LIKE "%day off%"
+                    THEN leave_requests_master.no_of_days
+                    ELSE 0
+                END) as approved_leave_days,
+                SUM(CASE
+                    WHEN leave_requests_master.status = "pending"
+                    THEN leave_requests_master.no_of_days
+                    ELSE 0
+                END) as pending_leave_days
+            ')
+            ->whereMonth('leave_requests_master.leave_from', $selectedDate->month)
+            ->whereYear('leave_requests_master.leave_from', $selectedDate->year)
+            ->groupBy('leave_requests_master.requested_by');
 
 
         return User::select(
@@ -89,6 +115,9 @@ class AttendanceRepository
             'leave_requests_master.status AS leave_request_status',
             'leave_requests_master.admin_remark AS leave_request_admin_remark',
             'leave_types.name AS leave_request_type',
+            DB::raw('COALESCE(leave_summary.approved_day_off_days, 0) AS approved_day_off_days'),
+            DB::raw('COALESCE(leave_summary.approved_leave_days, 0) AS approved_leave_days'),
+            DB::raw('COALESCE(leave_summary.pending_leave_days, 0) AS pending_leave_days'),
         )->leftJoin('attendances', function ($join) use ($filterParameter) {
             $join->on('users.id','=', 'attendances.user_id')
                 ->where('attendances.attendance_date','=',$filterParameter['attendance_date']);
@@ -106,6 +135,9 @@ class AttendanceRepository
             ->leftJoin('posts', 'users.post_id', '=', 'posts.id')
             ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
             ->leftJoin('users as supervisors', 'users.supervisor_id', '=', 'supervisors.id')
+            ->leftJoinSub($leaveSummarySubQuery, 'leave_summary', function ($join) {
+                $join->on('users.id', '=', 'leave_summary.requested_by');
+            })
             ->leftJoin('office_times as user_office_times', 'users.office_time_id', '=', 'user_office_times.id')
             ->leftJoin('office_times','attendances.office_time_id','office_times.id')
             ->when(isset($filterParameter['branch_id']), function($query) use ($filterParameter){
