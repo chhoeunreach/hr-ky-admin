@@ -119,27 +119,27 @@ class EmployeeChatApiController extends Controller
         $request = request();
 
         try {
-            $conversation = $this->resolveAdminConversation(auth()->id(), $request);
-            $adminId = $this->threadAdminId($conversation, $request);
-            $messages = $this->loadConversationThreadMessages($conversation, $adminId);
-            $this->markThreadMessagesAsReadByUser($messages);
-            $adminUsername = $this->threadAdminUsername($conversation, $adminId, $request);
+            [$conversation, $threadMeta] = $this->resolveConversation(auth()->id(), $request);
+            $messages = $this->loadConversationThreadMessages($conversation, $threadMeta);
+            $this->markThreadMessagesAsReadByUser($messages, $threadMeta);
 
-            return AppHelper::sendSuccessResponse('Mobile admin chat messages loaded successfully.', [
-                'conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
+            return AppHelper::sendSuccessResponse('Mobile chat messages loaded successfully.', [
+                'conversation_id' => $this->threadConversationIdentifier($conversation, $threadMeta),
                 'internal_conversation_id' => (string) $conversation->id,
-                'admin_id' => $adminId,
-                'admin_username' => $adminUsername,
-                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $adminId, $adminUsername))->values(),
+                'admin_id' => $threadMeta['admin_id'],
+                'admin_username' => $threadMeta['admin_username'],
+                'peer_user_id' => $threadMeta['peer_user_id'],
+                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $threadMeta))->values(),
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
 
-                return AppHelper::sendSuccessResponse('Mobile admin chat loaded with fallback state.', [
+                return AppHelper::sendSuccessResponse('Mobile chat loaded with fallback state.', [
                     'conversation_id' => $this->requestedConversationIdentifier(auth()->id(), $request),
                     'internal_conversation_id' => null,
                     'admin_id' => $this->requestedAdminId($request),
                     'admin_username' => $this->requestedAdminUsername($request),
+                    'peer_user_id' => $this->requestedPeerUserId($request, auth()->id()),
                     'messages' => [],
                     'fallback' => true,
                 ]);
@@ -216,11 +216,9 @@ class EmployeeChatApiController extends Controller
         }
 
         try {
-            $conversation = $this->resolveAdminConversation(auth()->id(), $request);
-            $adminId = $this->threadAdminId($conversation, $request);
-            $adminUsername = $this->threadAdminUsername($conversation, $adminId, $request);
+            [$conversation, $threadMeta] = $this->resolveConversation(auth()->id(), $request);
 
-            DB::transaction(function () use ($request, $conversation, $adminId, $adminUsername) {
+            DB::transaction(function () use ($request, $conversation, $threadMeta) {
                 $messageType = $this->normalizeIncomingMessageType($request);
                 $mediaUrl = $request->input('media_url');
                 $storedMediaPath = null;
@@ -244,9 +242,10 @@ class EmployeeChatApiController extends Controller
                     'media_height' => $request->input('media_height'),
                     'duration_seconds' => $request->input('duration_seconds'),
                     'file_name' => $request->input('file_name') ?: $storedFileName,
-                    'admin_id' => $adminId,
-                    'admin_username' => $adminUsername,
-                    'external_conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
+                    'admin_id' => $threadMeta['admin_id'],
+                    'admin_username' => $threadMeta['admin_username'],
+                    'peer_user_id' => $threadMeta['peer_user_id'],
+                    'external_conversation_id' => $this->threadConversationIdentifier($conversation, $threadMeta),
                 ], fn ($value) => $value !== null && $value !== '');
 
                 $mapUrl = $request->input('map_url');
@@ -264,8 +263,8 @@ class EmployeeChatApiController extends Controller
                     'longitude' => $request->input('longitude'),
                     'map_url' => $mapUrl,
                     'meta' => $meta === [] ? null : $meta,
-                    'is_read_by_admin' => false,
-                    'is_read_by_user' => true,
+                    'is_read_by_admin' => $threadMeta['type'] === 'admin',
+                    'is_read_by_user' => $threadMeta['type'] === 'employee' ? false : true,
                 ]);
 
                 $conversation->update([
@@ -273,14 +272,15 @@ class EmployeeChatApiController extends Controller
                 ]);
             });
 
-            $messages = $this->loadConversationThreadMessages($conversation, $adminId);
+            $messages = $this->loadConversationThreadMessages($conversation, $threadMeta);
 
             return AppHelper::sendSuccessResponse('Message sent successfully.', [
-                'conversation_id' => $this->threadConversationIdentifier($conversation, $adminId),
+                'conversation_id' => $this->threadConversationIdentifier($conversation, $threadMeta),
                 'internal_conversation_id' => (string) $conversation->id,
-                'admin_id' => $adminId,
-                'admin_username' => $adminUsername,
-                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $adminId, $adminUsername))->values(),
+                'admin_id' => $threadMeta['admin_id'],
+                'admin_username' => $threadMeta['admin_username'],
+                'peer_user_id' => $threadMeta['peer_user_id'],
+                'messages' => $messages->map(fn (ChatMessage $message) => $this->transformMessage($message, $threadMeta))->values(),
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
@@ -289,18 +289,24 @@ class EmployeeChatApiController extends Controller
         }
     }
 
-    private function transformMessage(ChatMessage $message, ?int $threadAdminId = null, ?string $threadAdminUsername = null): array
+    private function transformMessage(ChatMessage $message, array $threadMeta = []): array
     {
         $conversation = $message->conversation;
         $normalizedType = $this->normalizeStoredMessageType($message->message_type, $message->meta ?? []);
-        $resolvedAdminId = $threadAdminId
+        $resolvedAdminId = ($threadMeta['admin_id'] ?? null)
             ?? $conversation?->admin_id
             ?? ($message->meta['admin_id'] ?? null)
             ?? ($message->sender_type === ChatMessage::SENDER_ADMIN ? $message->sender_id : null);
-        $resolvedAdminUsername = $threadAdminUsername
+        $resolvedAdminUsername = ($threadMeta['admin_username'] ?? null)
             ?? $conversation?->admin?->username
             ?? ($message->meta['admin_username'] ?? null)
             ?? $message->adminSender?->username;
+        $resolvedPeerUserId = ($threadMeta['peer_user_id'] ?? null)
+            ?? $conversation?->peer_user_id
+            ?? ($message->meta['peer_user_id'] ?? null);
+        $conversationId = $conversation
+            ? $this->conversationIdentifierForThread($conversation, $threadMeta)
+            : (string) $message->conversation_id;
 
         return [
             'id' => $message->id,
@@ -309,12 +315,11 @@ class EmployeeChatApiController extends Controller
             'sender_id' => $message->sender_id,
             'sender_name' => $message->senderName(),
             'sender_avatar' => $message->senderAvatar(),
-            'conversation_id' => $resolvedAdminId
-                ? $this->externalConversationId($conversation?->user_id ?? auth()->id(), (int) $resolvedAdminId)
-                : ($conversation ? $this->conversationIdentifier($conversation) : (string) $message->conversation_id),
+            'conversation_id' => $conversationId,
             'internal_conversation_id' => (string) $message->conversation_id,
             'admin_id' => $resolvedAdminId ? (int) $resolvedAdminId : null,
             'admin_username' => $resolvedAdminUsername,
+            'peer_user_id' => $resolvedPeerUserId ? (int) $resolvedPeerUserId : null,
             'message_type' => $normalizedType,
             'type' => $normalizedType,
             'message' => $message->message,
@@ -365,6 +370,11 @@ class EmployeeChatApiController extends Controller
             'is_online' => (int) $user->online_status === User::ONLINE,
             'directory_type' => 'employee',
             'source_id' => $user->id,
+            'conversation_id' => $this->supportsEmployeeConversations()
+                ? $this->employeeConversationExternalId(auth()->id(), $user->id)
+                : null,
+            'peer_user_id' => $user->id,
+            'chat_mode' => 'employee_thread',
         ];
     }
 
@@ -511,6 +521,71 @@ class EmployeeChatApiController extends Controller
         return $this->getOrCreateAdminConversation($userId, $defaultAdmin->id);
     }
 
+    private function resolveConversation(int $userId, Request $request): array
+    {
+        $peerUserId = $this->requestedPeerUserId($request, $userId);
+
+        if ($peerUserId !== null && $this->supportsEmployeeConversations()) {
+            $conversation = $this->resolveEmployeeConversation($userId, $peerUserId, $request);
+
+            return [$conversation, [
+                'type' => 'employee',
+                'admin_id' => null,
+                'admin_username' => null,
+                'peer_user_id' => $peerUserId,
+            ]];
+        }
+
+        $conversation = $this->resolveAdminConversation($userId, $request);
+        $adminId = $this->threadAdminId($conversation, $request);
+
+        return [$conversation, [
+            'type' => 'admin',
+            'admin_id' => $adminId,
+            'admin_username' => $this->threadAdminUsername($conversation, $adminId, $request),
+            'peer_user_id' => null,
+        ]];
+    }
+
+    private function resolveEmployeeConversation(int $userId, int $peerUserId, Request $request): ChatConversation
+    {
+        $internalConversation = $this->conversationFromInternalIdentifier(
+            $request->input('internal_conversation_id'),
+            $userId
+        ) ?? $this->conversationFromInternalIdentifier(
+            $request->input('conversation_id'),
+            $userId
+        );
+
+        if ($internalConversation && $this->conversationHasPeerUser($internalConversation, $peerUserId)) {
+            return $internalConversation;
+        }
+
+        if ($request->filled('conversation_id')) {
+            $peerIdFromConversation = $this->peerUserIdFromExternalConversationId(
+                (string) $request->input('conversation_id'),
+                $userId
+            );
+
+            if ($peerIdFromConversation !== null) {
+                $peerUserId = $peerIdFromConversation;
+            }
+        }
+
+        return $this->getOrCreateEmployeeConversation($userId, $peerUserId);
+    }
+
+    private function getOrCreateEmployeeConversation(int $userId, int $peerUserId): ChatConversation
+    {
+        [$primaryUserId, $secondaryUserId] = $this->normalizeEmployeeConversationUsers($userId, $peerUserId);
+
+        return ChatConversation::firstOrCreate([
+            'user_id' => $primaryUserId,
+            'peer_user_id' => $secondaryUserId,
+            'admin_id' => null,
+        ]);
+    }
+
     private function supportsPerAdminConversation(): bool
     {
         static $supportsPerAdminConversation = null;
@@ -529,8 +604,30 @@ class EmployeeChatApiController extends Controller
         return $supportsPerAdminConversation;
     }
 
+    private function supportsEmployeeConversations(): bool
+    {
+        static $supportsEmployeeConversations = null;
+
+        if ($supportsEmployeeConversations !== null) {
+            return $supportsEmployeeConversations;
+        }
+
+        try {
+            $supportsEmployeeConversations = Schema::hasColumn('chat_conversations', 'peer_user_id');
+        } catch (Throwable $throwable) {
+            report($throwable);
+            $supportsEmployeeConversations = false;
+        }
+
+        return $supportsEmployeeConversations;
+    }
+
     private function conversationIdentifier(ChatConversation $conversation): string
     {
+        if ($conversation->peer_user_id) {
+            return $this->employeeConversationExternalId($conversation->user_id, (int) $conversation->peer_user_id);
+        }
+
         if ($conversation->admin_id) {
             return $this->externalConversationId($conversation->user_id, (int) $conversation->admin_id);
         }
@@ -541,6 +638,13 @@ class EmployeeChatApiController extends Controller
     private function externalConversationId(int $userId, int $adminId): string
     {
         return 'employee_admin_' . $userId . '_' . $adminId;
+    }
+
+    private function employeeConversationExternalId(int $userId, int $peerUserId): string
+    {
+        [$primaryUserId, $secondaryUserId] = $this->normalizeEmployeeConversationUsers($userId, $peerUserId);
+
+        return 'employee_dm_' . $primaryUserId . '_' . $secondaryUserId;
     }
 
     private function adminIdFromExternalConversationId(string $conversationId, int $expectedUserId): ?int
@@ -559,10 +663,32 @@ class EmployeeChatApiController extends Controller
         return $adminId;
     }
 
+    private function peerUserIdFromExternalConversationId(string $conversationId, int $expectedUserId): ?int
+    {
+        if (!preg_match('/^employee_dm_(\d+)_(\d+)$/', $conversationId, $matches)) {
+            return null;
+        }
+
+        $firstUserId = (int) $matches[1];
+        $secondUserId = (int) $matches[2];
+
+        if ($expectedUserId !== $firstUserId && $expectedUserId !== $secondUserId) {
+            return null;
+        }
+
+        return $expectedUserId === $firstUserId ? $secondUserId : $firstUserId;
+    }
+
     private function requestedConversationIdentifier(int $userId, Request $request): ?string
     {
         if ($request->filled('conversation_id')) {
             return (string) $request->input('conversation_id');
+        }
+
+        $peerUserId = $this->requestedPeerUserId($request, $userId);
+
+        if ($peerUserId) {
+            return $this->employeeConversationExternalId($userId, $peerUserId);
         }
 
         $adminId = $this->requestedAdminId($request);
@@ -580,7 +706,7 @@ class EmployeeChatApiController extends Controller
             return (int) $request->input('admin_id');
         }
 
-        if ($request->filled('source_id')) {
+        if ($request->filled('source_id') && $this->requestTargetsAdmin($request)) {
             return (int) $request->input('source_id');
         }
 
@@ -611,6 +737,43 @@ class EmployeeChatApiController extends Controller
         return null;
     }
 
+    private function requestedPeerUserId(Request $request, int $userId): ?int
+    {
+        if (!$this->supportsEmployeeConversations()) {
+            return null;
+        }
+
+        if ($request->filled('peer_user_id')) {
+            $peerUserId = (int) $request->input('peer_user_id');
+
+            return $peerUserId !== $userId ? $peerUserId : null;
+        }
+
+        if ($request->filled('source_id') && $this->requestTargetsEmployee($request)) {
+            $peerUserId = (int) $request->input('source_id');
+
+            return $peerUserId !== $userId ? $peerUserId : null;
+        }
+
+        if ($request->filled('conversation_id')) {
+            return $this->peerUserIdFromExternalConversationId(
+                (string) $request->input('conversation_id'),
+                $userId
+            );
+        }
+
+        $internalConversation = $this->conversationFromInternalIdentifier(
+            $request->input('internal_conversation_id'),
+            $userId
+        );
+
+        if ($internalConversation) {
+            return $this->otherUserIdForConversation($internalConversation, $userId);
+        }
+
+        return null;
+    }
+
     private function conversationFromInternalIdentifier(mixed $identifier, int $userId): ?ChatConversation
     {
         if (!is_numeric($identifier)) {
@@ -619,7 +782,13 @@ class EmployeeChatApiController extends Controller
 
         return ChatConversation::query()
             ->where('id', (int) $identifier)
-            ->where('user_id', $userId)
+            ->where(function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+
+                if ($this->supportsEmployeeConversations()) {
+                    $query->orWhere('peer_user_id', $userId);
+                }
+            })
             ->first();
     }
 
@@ -640,24 +809,38 @@ class EmployeeChatApiController extends Controller
             ->value('username');
     }
 
-    private function loadConversationThreadMessages(ChatConversation $conversation, ?int $adminId)
+    private function loadConversationThreadMessages(ChatConversation $conversation, array $threadMeta)
     {
-        $externalConversationId = $adminId
-            ? $this->externalConversationId($conversation->user_id, $adminId)
-            : null;
+        $externalConversationId = $this->conversationIdentifierForThread($conversation, $threadMeta);
 
         return $conversation->messages()
-            ->with(['adminSender:id,name,avatar,username', 'userSender:id,name,avatar', 'conversation.admin:id,username'])
+            ->with(['adminSender:id,name,avatar,username', 'userSender:id,name,avatar', 'conversation.admin:id,username', 'conversation.peerUser:id,name,username,avatar'])
             ->orderBy('created_at')
             ->get()
-            ->filter(function (ChatMessage $message) use ($adminId, $externalConversationId) {
-                return $this->messageBelongsToThread($message, $adminId, $externalConversationId);
+            ->filter(function (ChatMessage $message) use ($threadMeta, $externalConversationId) {
+                return $this->messageBelongsToThread($message, $threadMeta, $externalConversationId);
             })
             ->values();
     }
 
-    private function messageBelongsToThread(ChatMessage $message, ?int $adminId, ?string $externalConversationId): bool
+    private function messageBelongsToThread(ChatMessage $message, array $threadMeta, ?string $externalConversationId): bool
     {
+        if (($threadMeta['type'] ?? 'admin') === 'employee') {
+            $peerUserId = (int) ($threadMeta['peer_user_id'] ?? 0);
+
+            if ($peerUserId === 0) {
+                return true;
+            }
+
+            if ((int) $message->conversation?->peer_user_id === $peerUserId || (int) $message->conversation?->user_id === $peerUserId) {
+                return true;
+            }
+
+            return (int) ($message->meta['peer_user_id'] ?? 0) === $peerUserId;
+        }
+
+        $adminId = $threadMeta['admin_id'] ?? null;
+
         if ($adminId === null) {
             return true;
         }
@@ -677,10 +860,18 @@ class EmployeeChatApiController extends Controller
         return $message->sender_type === ChatMessage::SENDER_ADMIN && (int) $message->sender_id === $adminId;
     }
 
-    private function markThreadMessagesAsReadByUser($messages): void
+    private function markThreadMessagesAsReadByUser($messages, array $threadMeta): void
     {
         $messageIds = collect($messages)
-            ->filter(fn (ChatMessage $message) => $message->sender_type === ChatMessage::SENDER_ADMIN && !$message->is_read_by_user)
+            ->filter(function (ChatMessage $message) use ($threadMeta) {
+                if (($threadMeta['type'] ?? 'admin') === 'employee') {
+                    return $message->sender_type === ChatMessage::SENDER_USER
+                        && (int) $message->sender_id !== auth()->id()
+                        && !$message->is_read_by_user;
+                }
+
+                return $message->sender_type === ChatMessage::SENDER_ADMIN && !$message->is_read_by_user;
+            })
             ->pluck('id')
             ->all();
 
@@ -718,13 +909,68 @@ class EmployeeChatApiController extends Controller
             ->value('username');
     }
 
-    private function threadConversationIdentifier(ChatConversation $conversation, ?int $adminId): string
+    private function threadConversationIdentifier(ChatConversation $conversation, array $threadMeta): string
     {
-        if ($adminId) {
-            return $this->externalConversationId($conversation->user_id, $adminId);
+        if (($threadMeta['type'] ?? 'admin') === 'employee' && !empty($threadMeta['peer_user_id'])) {
+            return $this->employeeConversationExternalId($conversation->user_id, (int) $threadMeta['peer_user_id']);
+        }
+
+        if (!empty($threadMeta['admin_id'])) {
+            return $this->externalConversationId($conversation->user_id, (int) $threadMeta['admin_id']);
         }
 
         return $this->conversationIdentifier($conversation);
+    }
+
+    private function conversationIdentifierForThread(ChatConversation $conversation, array $threadMeta): string
+    {
+        return $this->threadConversationIdentifier($conversation, $threadMeta);
+    }
+
+    private function requestTargetsAdmin(Request $request): bool
+    {
+        $directoryType = strtolower((string) $request->input('directory_type', ''));
+
+        return in_array($directoryType, ['admin', 'administrator'], true)
+            || $request->filled('admin_id')
+            || $request->filled('admin_username')
+            || ($request->filled('conversation_id')
+                && str_starts_with((string) $request->input('conversation_id'), 'employee_admin_'));
+    }
+
+    private function requestTargetsEmployee(Request $request): bool
+    {
+        $directoryType = strtolower((string) $request->input('directory_type', ''));
+
+        return $directoryType === 'employee'
+            || ($request->filled('conversation_id')
+                && str_starts_with((string) $request->input('conversation_id'), 'employee_dm_'));
+    }
+
+    private function normalizeEmployeeConversationUsers(int $userId, int $peerUserId): array
+    {
+        return $userId < $peerUserId
+            ? [$userId, $peerUserId]
+            : [$peerUserId, $userId];
+    }
+
+    private function conversationHasPeerUser(ChatConversation $conversation, int $peerUserId): bool
+    {
+        return (int) $conversation->user_id === $peerUserId
+            || (int) $conversation->peer_user_id === $peerUserId;
+    }
+
+    private function otherUserIdForConversation(ChatConversation $conversation, int $userId): ?int
+    {
+        if ((int) $conversation->user_id === $userId) {
+            return $conversation->peer_user_id ? (int) $conversation->peer_user_id : null;
+        }
+
+        if ((int) $conversation->peer_user_id === $userId) {
+            return (int) $conversation->user_id;
+        }
+
+        return null;
     }
 
     private function storeAttachment(UploadedFile $file): array
