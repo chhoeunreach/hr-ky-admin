@@ -610,7 +610,7 @@ class LeaveService
     {
         $admin = auth('admin')->user();
 
-        if (!$admin || !$employee || empty($employee->username)) {
+        if (!$admin || !$employee) {
             return;
         }
 
@@ -640,23 +640,25 @@ class LeaveService
                 'last_message_at' => $message->created_at,
             ]);
 
-            SMPushHelper::sendPushNotification(
-                $admin->name,
-                $externalConversationId,
-                $messageBody,
-                'chat',
-                [$employee->username],
-                '',
-                ChatMessage::TYPE_TEXT,
-                '',
-                null,
-                null,
-                '',
-                $admin->id,
-                $admin->username,
-                'admin_thread',
-                (string) $conversation->id
-            );
+            if (!empty($employee->username)) {
+                SMPushHelper::sendPushNotification(
+                    $admin->name,
+                    $externalConversationId,
+                    $messageBody,
+                    'chat',
+                    [$employee->username],
+                    '',
+                    ChatMessage::TYPE_TEXT,
+                    '',
+                    null,
+                    null,
+                    '',
+                    $admin->id,
+                    $admin->username,
+                    'admin_thread',
+                    (string) $conversation->id
+                );
+            }
         } catch (\Throwable $exception) {
             Log::warning('Approved leave chat message failed.', [
                 'leave_request_id' => $leaveRequest->id ?? null,
@@ -670,7 +672,7 @@ class LeaveService
     {
         $admin = auth('admin')->user();
 
-        if (!$admin || !$employee || empty($employee->username)) {
+        if (!$admin || !$employee) {
             return;
         }
 
@@ -700,23 +702,25 @@ class LeaveService
                 'last_message_at' => $message->created_at,
             ]);
 
-            SMPushHelper::sendPushNotification(
-                $admin->name,
-                $externalConversationId,
-                $messageBody,
-                'chat',
-                [$employee->username],
-                '',
-                ChatMessage::TYPE_TEXT,
-                '',
-                null,
-                null,
-                '',
-                $admin->id,
-                $admin->username,
-                'admin_thread',
-                (string) $conversation->id
-            );
+            if (!empty($employee->username)) {
+                SMPushHelper::sendPushNotification(
+                    $admin->name,
+                    $externalConversationId,
+                    $messageBody,
+                    'chat',
+                    [$employee->username],
+                    '',
+                    ChatMessage::TYPE_TEXT,
+                    '',
+                    null,
+                    null,
+                    '',
+                    $admin->id,
+                    $admin->username,
+                    'admin_thread',
+                    (string) $conversation->id
+                );
+            }
         } catch (\Throwable $exception) {
             Log::warning('Submitted leave chat message failed.', [
                 'leave_request_id' => $leaveRequest->id ?? null,
