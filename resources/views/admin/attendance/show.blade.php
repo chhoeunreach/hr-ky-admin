@@ -475,9 +475,24 @@
                                                 @endcanany
                                             </div>
                                         @elseif($reason)
-                                            <span class="btn btn-outline-secondary btn-xs">
-                                                {{ $reason }}
-                                            </span>
+                                            <div class="d-inline-flex flex-column align-items-center gap-2">
+                                                <span class="btn btn-outline-secondary btn-xs">
+                                                    {{ $reason }}
+                                                </span>
+                                                @if($reason === 'Absent')
+                                                    @can('quick_leave')
+                                                        <a href="#"
+                                                           class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
+                                                           data-user-id="{{ $userDetail->id }}"
+                                                           data-user-name="{{ ucfirst($userDetail->name) }}"
+                                                           data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                           data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
+                                                           data-fetch-url="{{ route('admin.leaves.employee-data', $userDetail->id) }}">
+                                                            Quick Leave
+                                                        </a>
+                                                    @endcan
+                                                @endif
+                                            </div>
                                         @else
                                             <div class="d-inline-flex flex-column align-items-center gap-2">
                                                 <span class="btn btn-light btn-xs disabled">
