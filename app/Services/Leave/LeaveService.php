@@ -5,6 +5,8 @@ namespace App\Services\Leave;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Helpers\SMPush\SMPushHelper;
+use App\Models\ChatConversation;
+use App\Models\ChatMessage;
 use App\Models\LeaveApproval;
 use App\Models\LeaveRequestMaster;
 use App\Models\OfficeTime;
@@ -25,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\HigherOrderWhenProxy;
 use function PHPUnit\Framework\isNull;
 
@@ -506,6 +509,7 @@ class LeaveService
         $message = $this->buildTelegramLeaveMessage($leaveRequest, $employee, ucfirst($status), $updatedBy, $remark);
 
         $this->sendTelegramLeaveMessage($employee, $message);
+        $this->sendApprovedLeaveChatMessage($leaveRequest, $employee, $updatedBy, $remark);
     }
 
     private function getTelegramLeaveEmployee(LeaveRequestMaster $leaveRequest): ?Model
@@ -599,6 +603,132 @@ class LeaveService
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function sendApprovedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $updatedBy, ?string $remark = null): void
+    {
+        $admin = auth('admin')->user();
+
+        if (!$admin || !$employee || empty($employee->username)) {
+            return;
+        }
+
+        try {
+            $conversation = $this->getOrCreateAdminEmployeeConversation((int) $employee->id, (int) $admin->id);
+            $externalConversationId = $this->externalConversationId((int) $employee->id, (int) $admin->id);
+            $messageBody = $this->buildApprovedLeaveChatMessage($leaveRequest, $employee, $updatedBy, $remark);
+
+            $message = $conversation->messages()->create([
+                'sender_type' => ChatMessage::SENDER_ADMIN,
+                'sender_id' => $admin->id,
+                'message_type' => ChatMessage::TYPE_TEXT,
+                'message' => $messageBody,
+                'meta' => [
+                    'admin_id' => $admin->id,
+                    'admin_username' => $admin->username,
+                    'external_conversation_id' => $externalConversationId,
+                    'auto_generated' => true,
+                    'source' => 'leave_approval',
+                    'leave_request_id' => $leaveRequest->id,
+                ],
+                'is_read_by_admin' => true,
+                'is_read_by_user' => false,
+            ]);
+
+            $conversation->update([
+                'last_message_at' => $message->created_at,
+            ]);
+
+            SMPushHelper::sendPushNotification(
+                $admin->name,
+                $externalConversationId,
+                $messageBody,
+                'chat',
+                [$employee->username],
+                '',
+                ChatMessage::TYPE_TEXT,
+                '',
+                null,
+                null,
+                '',
+                $admin->id,
+                $admin->username,
+                'admin_thread',
+                (string) $conversation->id
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Approved leave chat message failed.', [
+                'leave_request_id' => $leaveRequest->id ?? null,
+                'employee_id' => $employee->id ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function buildApprovedLeaveChatMessage(LeaveRequestMaster $leaveRequest, $employee, string $updatedBy, ?string $remark = null): string
+    {
+        $leaveTypeName = $this->resolveTelegramLeaveTypeName($leaveRequest);
+        $fromDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_from);
+        $toDate = AppHelper::convertLeaveDateFormat($leaveRequest->leave_to);
+        $days = (string) $leaveRequest->no_of_days;
+        $reason = trim(strip_tags((string) $leaveRequest->reasons));
+        $comment = trim((string) ($remark ?: ''));
+
+        $message = "Your {$leaveTypeName} leave has been approved.\n"
+            . "Date: {$fromDate} - {$toDate}\n"
+            . "Days: {$days}\n";
+
+        if ($reason !== '') {
+            $message .= "Reason: {$reason}\n";
+        }
+
+        $message .= "Approved by: {$updatedBy}";
+
+        if ($comment !== '') {
+            $message .= "\nRemark: {$comment}";
+        }
+
+        return $message;
+    }
+
+    private function getOrCreateAdminEmployeeConversation(int $employeeId, int $adminId): ChatConversation
+    {
+        if (!$this->supportsPerAdminConversation()) {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+            ]);
+        }
+
+        try {
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+                'admin_id' => $adminId,
+            ]);
+        } catch (\Throwable $throwable) {
+            report($throwable);
+
+            return ChatConversation::firstOrCreate([
+                'user_id' => $employeeId,
+            ]);
+        }
+    }
+
+    private function supportsPerAdminConversation(): bool
+    {
+        static $supportsPerAdminConversation = null;
+
+        if ($supportsPerAdminConversation !== null) {
+            return $supportsPerAdminConversation;
+        }
+
+        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+
+        return $supportsPerAdminConversation;
+    }
+
+    private function externalConversationId(int $employeeId, int $adminId): string
+    {
+        return 'employee_admin_' . $employeeId . '_' . $adminId;
     }
 
 }
