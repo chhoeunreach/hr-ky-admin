@@ -773,7 +773,7 @@
                                                     <span class="btn btn-light btn-xs disabled">
                                                         {{ __('index.pending') }}
                                                     </span>
-                                                    @canany(['update_leave_request','access_admin_leave'])
+                                                    @can('quick_leave')
                                                         <a href="#"
                                                            class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
                                                            data-user-id="{{ $firstAttendance->user_id }}"
@@ -783,7 +783,7 @@
                                                            data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
                                                             Quick Leave
                                                         </a>
-                                                    @endcanany
+                                                    @endcan
                                                 </div>
                                             @endif
                                         </td>

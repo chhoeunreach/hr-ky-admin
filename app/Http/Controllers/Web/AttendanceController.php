@@ -33,7 +33,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Exception\MessagingException;
@@ -157,11 +156,7 @@ class AttendanceController extends Controller
 
     public function quickApproveLeave(Request $request): RedirectResponse
     {
-        $this->authorize('attendance_update');
-
-        if (!auth('admin')->check() && !Gate::allows('update_leave_request') && !Gate::allows('access_admin_leave')) {
-            abort(403);
-        }
+        $this->authorize('quick_leave');
 
         $validatedData = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
