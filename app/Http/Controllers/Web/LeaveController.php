@@ -110,6 +110,13 @@ class LeaveController extends Controller
                 DB::beginTransaction();
                 $this->leaveService->updateLeaveRequestStatus($validatedData, $leaveRequestId);
                 DB::commit();
+
+                if ($request->boolean('redirect_back')) {
+                    return redirect()
+                        ->back()
+                        ->with('success', __('message.leave_status_updated'));
+                }
+
                 return redirect()
                     ->route('admin.leave-request.index')
                     ->with('success', __('message.leave_status_updated'));

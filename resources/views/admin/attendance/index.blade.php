@@ -1151,6 +1151,7 @@
                             <form class="forms-sample" id="attendanceUpdateLeaveStatus" action="" method="post">
                                 @csrf
                                 @method('put')
+                                <input type="hidden" name="redirect_back" value="1">
                                 <div class="row">
                                     <label for="attendanceLeaveStatus" class="form-label">{{ __('index.status') }} </label>
                                     <div class="col-lg-12 mb-3">
