@@ -780,7 +780,8 @@
                 'total_check_in' => $groupedAttendance->filter($hasCheckIn)->count(),
                 'total_check_out' => $groupedAttendance->filter($hasCheckOut)->count(),
                 'total_not_yet_check_in' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn) {
-                    return !$hasCheckIn($rows);
+                    $first = $rows->first();
+                    return !$hasCheckIn($rows) && !$first?->leave_request_id;
                 })->count(),
                 'total_not_yet_check_out' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn, $hasCheckOut) {
                     return $hasCheckIn($rows) && !$hasCheckOut($rows);
@@ -925,12 +926,13 @@
                                         $rowIsPendingLeaveRequest = $firstAttendance?->leave_request_id && $firstAttendance?->leave_request_status === 'pending';
                                         $rowIsDayOff = $rowIsApprovedLeave && $isDayOffType($firstAttendance?->leave_request_type);
                                         $rowIsLeave = $rowIsApprovedLeave && !$isDayOffType($firstAttendance?->leave_request_type);
+                                        $rowIsNotYetCheckIn = !$rowHasCheckIn && !$firstAttendance?->leave_request_id;
                                     @endphp
 
                                     <tr class="attendance-day-row"
                                         data-summary-total_employee="1"
                                         data-summary-total_check_in="{{ $rowHasCheckIn ? '1' : '0' }}"
-                                        data-summary-total_not_yet_check_in="{{ !$rowHasCheckIn ? '1' : '0' }}"
+                                        data-summary-total_not_yet_check_in="{{ $rowIsNotYetCheckIn ? '1' : '0' }}"
                                         data-summary-total_check_out="{{ $rowHasCheckOut ? '1' : '0' }}"
                                         data-summary-total_not_yet_check_out="{{ ($rowHasCheckIn && !$rowHasCheckOut) ? '1' : '0' }}"
                                         data-summary-total_day_off="{{ $rowIsDayOff ? '1' : '0' }}"
