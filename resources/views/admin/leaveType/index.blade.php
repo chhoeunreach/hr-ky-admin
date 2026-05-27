@@ -13,10 +13,6 @@
 
     @endcan
 @endsection
-@section('styles')
-    <link rel="stylesheet" href="{{ asset('assets/css/dataTables.dataTables.min.css') }}">
-@endsection
-
 @section('main-content')
 
     <section class="content">
@@ -73,6 +69,7 @@
                         <tr>
                             <th class="text-center">#</th>
                             <th>{{ __('index.type') }}</th>
+                            <th>{{ __('index.branch') }}</th>
                             <th class="text-center">{{ __('index.is_paid') }}</th>
                             <th class="text-center">{{ __('index.allocated_days') }}</th>
                             <th class="text-center">{{ __('index.status') }}</th>
@@ -88,6 +85,7 @@
                             <tr>
                                 <td class="text-center">{{++$key}}</td>
                                 <td>{{ucfirst($value->name)}}</td>
+                                <td>{{ ucfirst($value->branch?->name ?? '-') }}</td>
                                 <td class="text-center">{{($value->leave_allocated) ? __('index.yes'):__('index.no')}}</td>
                                 <td class="text-center">{{($value->leave_allocated) ?? '-'}}</td>
                                 <td class="text-center">
@@ -212,23 +210,30 @@
 @endsection
 
 @section('scripts')
-
-    <script src="{{ asset('assets/js/dataTables.min.js') }}"></script>
     <script>
         @if($leaveTypes->isNotEmpty())
-        let table = new DataTable('#dataTableExample', {
-            pageLength: @json(getRecordPerPage()),
-            searching: false,
-            paging: true,
+        $(function () {
+            $('#dataTableExample').DataTable({
+                aLengthMenu: [
+                    [10, 30, 50, -1],
+                    [10, 30, 50, 'All']
+                ],
+                iDisplayLength: @json(getRecordPerPage()),
+                searching: false,
+                paging: true,
+                ordering: true,
+                order: [[2, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: [0] },
+                    { orderable: false, targets: @json((auth('admin')->user() || Gate::allows('leave_type_edit') || Gate::allows('leave_type_delete') || Gate::allows('access_admin_leave')) ? [6] : []) }
+                ],
+                language: {
+                    search: ''
+                }
+            });
         });
         @endif
 
     </script>
   @include('admin.leaveType.common.scripts')
 @endsection
-
-
-
-
-
-

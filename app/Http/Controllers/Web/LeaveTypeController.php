@@ -41,7 +41,7 @@ class LeaveTypeController extends Controller
                     $filterParameters['branch_id'] = auth()->user()->branch_id;
                 }
 
-                $leaveTypes = $this->leaveTypeRepo->getAllLeaveTypes($filterParameters);
+                $leaveTypes = $this->leaveTypeRepo->getAllLeaveTypes($filterParameters, ['*'], ['branch:id,name']);
                 $with = ['branches:id,name'];
                 $select = ['id', 'name'];
                 $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);

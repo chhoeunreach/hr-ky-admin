@@ -69,14 +69,19 @@ class LeaveTypeRepository
 
     public function getAllLeaveTypes($filterParameters,$select = ['*'], $with = [])
     {
+        $selectedColumns = $select === ['*'] ? ['leave_types.*'] : $select;
+
         return LeaveType::with($with)
-            ->select($select)
+            ->leftJoin('branches', 'branches.id', '=', 'leave_types.branch_id')
+            ->select($selectedColumns)
             ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
-                $query->where('branch_id', $filterParameters['branch_id']);
+                $query->where('leave_types.branch_id', $filterParameters['branch_id']);
             })
             ->when(isset($filterParameters['type']), function($query) use ($filterParameters){
-                $query->where('name', 'like', '%' . $filterParameters['type'] . '%');
+                $query->where('leave_types.name', 'like', '%' . $filterParameters['type'] . '%');
             })
+            ->orderBy('branches.name')
+            ->orderBy('leave_types.name')
             ->get();
     }
 
