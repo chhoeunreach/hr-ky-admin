@@ -136,7 +136,7 @@
                                     data-href="{{ route('admin.employees.index') }}"
                                     value="export"
                                     class="btn btn-outline-secondary btn-sm">
-                                Export XLSX
+                                Export
                             </button>
                         @endcan
                     </div>

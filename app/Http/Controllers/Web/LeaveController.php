@@ -69,6 +69,17 @@ class LeaveController extends Controller
         if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave')) {
             try {
                 $filterParameters = $this->buildLeaveRequestFilters($request);
+
+                if (!$request->filled('month')) {
+                    if (AppHelper::ifDateInBsEnabled()) {
+                        $nepaliDate = AppHelper::getCurrentNepaliYearMonth();
+                        $filterParameters['month'] = $nepaliDate['month'];
+                        $filterParameters['year'] = $request->filled('year') ? $request->year : $nepaliDate['year'];
+                    } else {
+                        $filterParameters['month'] = Carbon::now()->format('m');
+                    }
+                }
+
                 $with = ['leaveType:id,name,leave_allocated', 'leaveRequestedBy:id,name,employee_code,username', 'leaveRequestUpdatedBy:id,name'];
                 $select = ['leave_requests_master.*'];
                 $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequestsForExport($filterParameters, $select, $with);
@@ -303,6 +314,8 @@ class LeaveController extends Controller
             'department_id' => $request->filled('department_id') ? $request->department_id : null,
             'leave_type' => $request->filled('leave_type') ? $request->leave_type : null,
             'requested_by' => $request->filled('requested_by') ? $request->requested_by : null,
+            'search' => $request->filled('search') ? trim($request->search) : null,
+            'per_page' => $request->filled('per_page') ? $request->per_page : '25',
             'month' => $request->filled('month') ? $request->month : null,
             'year' => $request->filled('year') ? $request->year : Carbon::now()->format('Y'),
             'status' => $request->filled('status') ? $request->status : null,

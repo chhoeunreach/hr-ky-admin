@@ -374,15 +374,46 @@
             }
 
             .attendance-table-toolbar {
-                display: flex;
-                justify-content: space-between;
+                display: grid;
+                grid-template-columns: auto 1fr auto;
                 align-items: center;
-                gap: 12px;
+                gap: 16px;
                 margin-bottom: 16px;
             }
 
+            .attendance-toolbar-left {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+
+            .attendance-entry-control {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                color: #111827;
+                font-weight: 500;
+            }
+
+            .attendance-entry-select {
+                min-width: 120px;
+            }
+
+            .attendance-toolbar-actions {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .attendance-table-search-wrap {
+                display: flex;
+                justify-content: flex-end;
+            }
+
             .attendance-table-search {
-                width: min(100%, 220px);
+                width: min(100%, 250px);
                 border: 1px solid #d7dfeb;
                 border-radius: 14px;
                 min-height: 44px;
@@ -434,8 +465,23 @@
                 }
 
                 .attendance-table-toolbar {
-                    flex-direction: column;
+                    grid-template-columns: 1fr;
                     align-items: stretch;
+                }
+
+                .attendance-entry-control {
+                    width: 100%;
+                    justify-content: space-between;
+                }
+
+                .attendance-entry-select {
+                    min-width: 0;
+                    flex: 1;
+                }
+
+                .attendance-toolbar-actions,
+                .attendance-table-search-wrap {
+                    justify-content: flex-start;
                 }
 
                 .attendance-table-search {
@@ -450,15 +496,31 @@
         }else{
             $currentDate = \App\Helpers\AppHelper::getCurrentDateInYmdFormat();
         }
+
+        $hasAttendanceFilters = filled($filterParameter['branch_id'] ?? null)
+            || filled($filterParameter['department_id'] ?? null)
+            || (($filterParameter['attendance_date'] ?? null) !== $currentDate);
         ?>
 
         @include('admin.section.flash_message')
 
         @include('admin.attendance.common.breadcrumb')
         <div class="card mb-4 attendance-filter-card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.attendance_filter')  }}</h6>
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#attendanceFilterCollapse"
+                            aria-expanded="{{ $hasAttendanceFilters ? 'true' : 'false' }}"
+                            aria-controls="attendanceFilterCollapse">
+                        <i class="link-icon" data-feather="filter"></i>
+                        {{ __('index.filter') }}
+                    </button>
+                    <h6 class="card-title mb-0">{{ __('index.attendance_filter') }}</h6>
+                </div>
             </div>
+            <div id="attendanceFilterCollapse" class="collapse{{ $hasAttendanceFilters ? ' show' : '' }}">
             <form class="forms-sample attendance-filter-form" action="{{ route('admin.attendances.index') }}" method="get">
 
                 <div class="attendance-filter-grid">
@@ -497,27 +559,48 @@
                     </div>
                     <div class="attendance-filter-actions">
                             <button type="submit" class="btn btn-success">{{ __('index.filter') }}</button>
-                            @can('attendance_csv_export')
-                            <button type="button" id="download-daywise-attendance-excel"
-                                    data-href="{{ route('admin.attendances.index') }}"
-                                    class="btn btn-secondary">{{ __('index.csv_export') }}
-                            </button>
-                            @endcan
                             <a class="btn btn-primary me-0" href="{{ route('admin.attendances.index') }}">{{ __('index.reset') }}</a>
                     </div>
 
                 </div>
             </form>
+            </div>
         </div>
 
         <div class="card attendance-day-card">
             <div class="card-header">
                 <div class="attendance-table-toolbar mb-0">
-                    <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
-                    <input type="text"
-                           id="attendanceDaySearch"
-                           class="attendance-table-search"
-                           placeholder="Search ...">
+                    <div class="attendance-toolbar-left">
+                        <div class="attendance-entry-control">
+                            <span>Show</span>
+                            <select id="attendanceEntries" class="form-control attendance-entry-select">
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                                <option value="1000">1,000</option>
+                                <option value="all">All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                        <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
+                    </div>
+                    <div class="attendance-toolbar-actions">
+                        @can('attendance_csv_export')
+                            <button type="button"
+                                    id="download-daywise-attendance-excel"
+                                    data-href="{{ route('admin.attendances.index') }}"
+                                    class="btn btn-outline-secondary btn-sm">Export
+                            </button>
+                        @endcan
+                    </div>
+                    <div class="attendance-table-search-wrap">
+                        <input type="text"
+                               id="attendanceDaySearch"
+                               class="attendance-table-search"
+                               placeholder="Search ...">
+                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -595,7 +678,7 @@
 
                                     @endphp
 
-                                    <tr>
+                                    <tr class="attendance-day-row">
                                     @can('attendance_show')
                                         <td>
                                             <ul class="text-center list-unstyled mb-0">
@@ -1353,7 +1436,14 @@
 
             const noteModal = new bootstrap.Modal(document.getElementById('noteModal'));
             const attendanceDaySearch = document.getElementById('attendanceDaySearch');
+            const attendanceEntries = document.getElementById('attendanceEntries');
             const attendanceDayTable = document.getElementById('dataTableExample');
+            const attendanceDayRows = attendanceDayTable
+                ? Array.from(attendanceDayTable.querySelectorAll('tbody .attendance-day-row'))
+                : [];
+            const attendanceEmptyRow = attendanceDayTable
+                ? attendanceDayTable.querySelector('tbody tr td[colspan]')
+                : null;
 
             document.querySelectorAll('.noteLink').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1486,15 +1576,47 @@
                 });
             });
 
-            if (attendanceDaySearch && attendanceDayTable) {
-                attendanceDaySearch.addEventListener('input', function () {
-                    const query = this.value.trim().toLowerCase();
-                    attendanceDayTable.querySelectorAll('tbody tr').forEach((row) => {
-                        const text = row.textContent.toLowerCase();
-                        row.style.display = text.includes(query) ? '' : 'none';
-                    });
+            const applyAttendanceTableFilters = () => {
+                if (!attendanceDayTable) {
+                    return;
+                }
+
+                const query = attendanceDaySearch ? attendanceDaySearch.value.trim().toLowerCase() : '';
+                const limitValue = attendanceEntries ? attendanceEntries.value : '25';
+                const limit = limitValue === 'all' ? Number.POSITIVE_INFINITY : parseInt(limitValue, 10);
+                let shownCount = 0;
+                let matchedCount = 0;
+
+                attendanceDayRows.forEach((row) => {
+                    const text = row.textContent.toLowerCase();
+                    const matches = text.includes(query);
+
+                    if (matches) {
+                        matchedCount++;
+                    }
+
+                    const shouldShow = matches && shownCount < limit;
+                    row.style.display = shouldShow ? '' : 'none';
+
+                    if (shouldShow) {
+                        shownCount++;
+                    }
                 });
+
+                if (attendanceEmptyRow) {
+                    attendanceEmptyRow.parentElement.style.display = matchedCount === 0 ? '' : 'none';
+                }
+            };
+
+            if (attendanceDaySearch && attendanceDayTable) {
+                attendanceDaySearch.addEventListener('input', applyAttendanceTableFilters);
             }
+
+            if (attendanceEntries && attendanceDayTable) {
+                attendanceEntries.addEventListener('change', applyAttendanceTableFilters);
+            }
+
+            applyAttendanceTableFilters();
 
             const attendanceChatModalElement = document.getElementById('attendanceChatModal');
             const attendanceChatModal = attendanceChatModalElement ? new bootstrap.Modal(attendanceChatModalElement) : null;

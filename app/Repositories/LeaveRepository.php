@@ -16,7 +16,7 @@ class LeaveRepository
 
         return $leaveDetailList
             ->orderBy('id', 'DESC')
-            ->paginate( getRecordPerPage());
+            ->paginate($this->resolvePerPage($filterParameters['per_page'] ?? null));
 
     }
 
@@ -34,6 +34,16 @@ class LeaveRepository
             ->select($select)
             ->when(isset($filterParameters['requested_by']), function ($query) use ($filterParameters) {
                 $query->where('requested_by', $filterParameters['requested_by']);
+            })
+            ->when(isset($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = $filterParameters['search'];
+
+                $query->whereHas('leaveRequestedBy', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%')
+                        ->orWhere('username', 'like', '%' . $search . '%')
+                        ->orWhere('employee_code', 'like', '%' . $search . '%');
+                });
             })
             ->when(isset($filterParameters['leave_type']), function ($query) use ($filterParameters) {
                 $query->where('leave_type_id', $filterParameters['leave_type']);
@@ -68,6 +78,17 @@ class LeaveRepository
         }
 
         return $leaveDetailList;
+    }
+
+    private function resolvePerPage($perPage): int
+    {
+        $allowedValues = [10, 25, 50, 100];
+
+        if (in_array((int) $perPage, $allowedValues, true)) {
+            return (int) $perPage;
+        }
+
+        return (int) getRecordPerPage();
     }
 
 //    public function getAllLeaveRequestDetailOfEmployee($filterParameters, $select = ['*'], $with = [])
