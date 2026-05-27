@@ -12,6 +12,7 @@ use App\Services\Task\TaskService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class DashboardController extends Controller
 {
@@ -111,6 +112,11 @@ class DashboardController extends Controller
                 'requested_by' => $row['id'],
                 'status' => 'pending',
             ]);
+            $row['leave_types_url'] = route('admin.leaves.employee-data', $row['id']);
+
+            if (!empty($row['pending_leave_request_id'])) {
+                $row['leave_update_url'] = route('admin.leave-request.update-status', $row['pending_leave_request_id']);
+            }
 
             return $row;
         })->values();
@@ -118,6 +124,10 @@ class DashboardController extends Controller
         return response()->json([
             'title' => trim(($validated['entity_name'] ?? ucfirst($validated['scope'])) . ' - ' . $this->getSummaryMetricLabel($validated['metric'])),
             'metric' => $validated['metric'],
+            'current_date' => AppHelper::getCurrentDateInYmdFormat(),
+            'current_date_display' => AppHelper::convertLeaveDateFormat(AppHelper::getCurrentDateInYmdFormat()),
+            'can_quick_leave' => Gate::allows('quick_leave'),
+            'can_update_leave_request' => Gate::allows('update_leave_request') || Gate::allows('access_admin_leave') || auth('admin')->check(),
             'rows' => $rows,
         ]);
     }

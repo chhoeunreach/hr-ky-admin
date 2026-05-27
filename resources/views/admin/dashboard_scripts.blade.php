@@ -2,6 +2,31 @@
     $('document').ready(function(){
         const summaryDetailModalElement = document.getElementById('summaryDetailModal');
         const summaryDetailModal = summaryDetailModalElement ? new bootstrap.Modal(summaryDetailModalElement) : null;
+        const dashboardQuickLeaveModalElement = document.getElementById('dashboardQuickLeaveModal');
+        const dashboardQuickLeaveModal = dashboardQuickLeaveModalElement ? new bootstrap.Modal(dashboardQuickLeaveModalElement) : null;
+        const dashboardQuickLeaveUserId = document.getElementById('dashboardQuickLeaveUserId');
+        const dashboardQuickLeaveDate = document.getElementById('dashboardQuickLeaveDate');
+        const dashboardQuickLeaveType = document.getElementById('dashboardQuickLeaveType');
+        const dashboardQuickLeaveReason = document.getElementById('dashboardQuickLeaveReason');
+        const dashboardQuickLeaveSubmit = document.getElementById('dashboardQuickLeaveSubmit');
+        const dashboardQuickLeaveLabel = document.getElementById('dashboardQuickLeaveModalLabel');
+        const dashboardQuickLeaveHelpText = document.getElementById('dashboardQuickLeaveHelpText');
+        const dashboardLeaveStatusModalElement = document.getElementById('dashboardLeaveStatusUpdate');
+        const dashboardLeaveStatusModal = dashboardLeaveStatusModalElement ? new bootstrap.Modal(dashboardLeaveStatusModalElement) : null;
+        let dashboardSummaryCurrentDate = '';
+        let dashboardSummaryCurrentDateDisplay = '';
+
+        const resetDashboardQuickLeaveOptions = (message = 'Loading leave types...') => {
+            if (!dashboardQuickLeaveType) {
+                return;
+            }
+
+            dashboardQuickLeaveType.innerHTML = `<option value="">${message}</option>`;
+            dashboardQuickLeaveType.disabled = true;
+            if (dashboardQuickLeaveSubmit) {
+                dashboardQuickLeaveSubmit.disabled = true;
+            }
+        };
 
         $(document).on('click', '.summary-trigger', function () {
             if (!summaryDetailModal) {
@@ -36,6 +61,10 @@
                 success: function (response) {
                     $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
                     const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
+                    const canQuickLeave = Boolean(response.can_quick_leave);
+                    const canUpdateLeaveRequest = Boolean(response.can_update_leave_request);
+                    dashboardSummaryCurrentDate = response.current_date || '';
+                    dashboardSummaryCurrentDateDisplay = response.current_date_display || response.current_date || '';
 
                     if (!response.rows || !response.rows.length) {
                         $('#summaryDetailEmpty').removeClass('d-none');
@@ -52,7 +81,29 @@
                             <td>${row.status ?? 'N/A'}</td>
                             <td>
                                 <div class="summary-quick-actions">
-                                    <a href="${isPendingLeaveMetric ? (row.pending_leave_url ?? '#') : (row.leave_url ?? '#')}" class="btn btn-outline-warning btn-sm" target="_blank" rel="noopener noreferrer">${isPendingLeaveMetric ? 'View Pending Leave' : 'Quick Leave'}</a>
+                                    ${row.pending_leave_request_id
+                                        ? `
+                                            ${canUpdateLeaveRequest
+                                                ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-leave-request-update"
+                                                        data-href="${row.leave_update_url ?? '#'}"
+                                                        data-status="approved"
+                                                        data-remark=""
+                                                        data-id="${row.pending_leave_request_id}">
+                                                        Approve / Reject
+                                                   </a>`
+                                                : ''}
+                                            <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>
+                                          `
+                                        : `${canQuickLeave
+                                                ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
+                                                        data-user-id="${row.id}"
+                                                        data-user-name="${row.name ?? 'Employee'}"
+                                                        data-fetch-url="${row.leave_types_url ?? '#'}">
+                                                        Quick Leave
+                                                   </a>`
+                                                : (isPendingLeaveMetric ? `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>` : '')
+                                            }`
+                                    }
                                     <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
                                 </div>
                             </td>
@@ -68,6 +119,116 @@
                     $('#summaryDetailLoading').addClass('d-none');
                 }
             });
+        });
+
+        $(document).on('click', '.dashboard-quick-leave-trigger', function (event) {
+            event.preventDefault();
+
+            if (!dashboardQuickLeaveModal) {
+                return;
+            }
+
+            const userId = $(this).data('user-id');
+            const userName = $(this).data('user-name');
+            const fetchUrl = $(this).data('fetch-url');
+
+            dashboardQuickLeaveUserId.value = userId;
+            dashboardQuickLeaveDate.value = dashboardSummaryCurrentDate;
+            dashboardQuickLeaveReason.value = '';
+            dashboardQuickLeaveLabel.textContent = `Quick Leave: ${userName}`;
+            dashboardQuickLeaveHelpText.textContent = `Create an already approved leave for ${dashboardSummaryCurrentDateDisplay || 'today'}.`;
+
+            resetDashboardQuickLeaveOptions();
+            dashboardQuickLeaveModal.show();
+
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const leaveTypes = data.leaveTypes || data.leveTypes || [];
+
+                    if (!leaveTypes.length) {
+                        resetDashboardQuickLeaveOptions('No leave types available');
+                        dashboardQuickLeaveHelpText.textContent = 'No leave types are available for this employee.';
+                        return;
+                    }
+
+                    dashboardQuickLeaveType.disabled = false;
+                    dashboardQuickLeaveType.innerHTML = '<option value="">Select leave type</option>';
+
+                    leaveTypes.forEach((leaveType) => {
+                        const option = document.createElement('option');
+                        option.value = leaveType.id;
+                        option.textContent = leaveType.name;
+                        dashboardQuickLeaveType.appendChild(option);
+                    });
+
+                    const preferredType = leaveTypes.find((leaveType) => {
+                        const typeName = String(leaveType.name || '').toLowerCase();
+                        return typeName.includes('day off') || typeName.includes('leave');
+                    });
+
+                    dashboardQuickLeaveType.value = String(preferredType?.id || leaveTypes[0].id);
+                    if (dashboardQuickLeaveSubmit) {
+                        dashboardQuickLeaveSubmit.disabled = false;
+                    }
+                })
+                .catch(() => {
+                    resetDashboardQuickLeaveOptions('Unable to load leave types');
+                    dashboardQuickLeaveHelpText.textContent = 'Unable to load leave types right now. Please try again.';
+                });
+        });
+
+        $(document).on('click', '.dashboard-leave-request-update', function (event) {
+            event.preventDefault();
+
+            if (!dashboardLeaveStatusModal) {
+                return;
+            }
+
+            const url = $(this).data('href');
+            const status = $(this).data('status');
+            const remark = $(this).data('remark');
+            const leaveRequestId = $(this).data('id');
+
+            $('#dashboardUpdateLeaveStatus').attr('action', url);
+            $('#dashboardLeaveStatus').val(status || 'approved');
+            $('#dashboardLeaveRemark').val(remark || '');
+            $('#dashboardPreviousApprovers').html('');
+
+            $.ajax({
+                url: `/admin/leave-request/get-approvers/${leaveRequestId}`,
+                method: 'GET',
+                success: function (response) {
+                    if (!response.success) {
+                        return;
+                    }
+
+                    let approversData = '';
+
+                    response.data.approval_data.forEach(function (approver) {
+                        approversData += `
+                            <div class="approver-details">
+                                <p><b>Approver:</b> ${approver.approved_by_name}</p>
+                                <p><b>Status:</b> ${approver.status}</p>
+                                <p><b>Remark:</b> ${approver.reason}</p>
+                            </div>
+                            <hr>`;
+                    });
+
+                    if (response.data.admin_data.status !== 'pending' && response.data.admin_data.remark !== '') {
+                        approversData += `
+                            <div class="approver-details">
+                                <p><b>Status:</b> ${response.data.admin_data.status}</p>
+                                <p><b>Admin Remark:</b> ${response.data.admin_data.remark}</p>
+                                ${response.data.admin_data.message !== '' ? `<p>(${response.data.admin_data.message})</p>` : ''}
+                            </div>`;
+                    }
+
+                    $('#dashboardPreviousApprovers').html(approversData);
+                }
+            });
+
+            dashboardLeaveStatusModal.show();
         });
 
         $('.errorStartWorking').hide();

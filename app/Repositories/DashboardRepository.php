@@ -462,16 +462,27 @@ class DashboardRepository
     {
         $currentDate = AppHelper::getCurrentDateInYmdFormat();
         $scopeColumn = $scope === 'branch' ? 'users.branch_id' : 'users.department_id';
+        $latestPendingLeaveRequests = DB::table('leave_requests_master')
+            ->select(
+                'requested_by',
+                DB::raw('MAX(id) as pending_leave_request_id')
+            )
+            ->where('status', 'pending')
+            ->groupBy('requested_by');
 
         $baseQuery = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
+            ->leftJoinSub($latestPendingLeaveRequests, 'pending_leave_requests', function ($join) {
+                $join->on('users.id', '=', 'pending_leave_requests.requested_by');
+            })
             ->select(
                 'users.id',
                 'users.name',
                 'users.username',
                 'users.email',
                 'users.is_active',
+                'pending_leave_requests.pending_leave_request_id',
                 'branches.name as branch_name',
                 'departments.dept_name as department_name'
             )
@@ -613,6 +624,7 @@ class DashboardRepository
                     'branch' => $row->branch_name ?: 'N/A',
                     'department' => $row->department_name ?: 'N/A',
                     'status' => (int) $row->is_active === 1 ? 'Active' : 'Inactive',
+                    'pending_leave_request_id' => $row->pending_leave_request_id ? (int) $row->pending_leave_request_id : null,
                 ];
             })
             ->values();

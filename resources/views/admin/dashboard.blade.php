@@ -725,6 +725,71 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     </div>
                 </div>
             </div>
+            <div class="modal fade" id="dashboardQuickLeaveModal" tabindex="-1" aria-labelledby="dashboardQuickLeaveModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="dashboardQuickLeaveModalLabel">Quick Leave</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form action="{{ route('admin.attendances.quick-approved-leave') }}" method="post" id="dashboardQuickLeaveForm">
+                                @csrf
+                                <input type="hidden" name="user_id" id="dashboardQuickLeaveUserId">
+                                <input type="hidden" name="attendance_date" id="dashboardQuickLeaveDate">
+                                <div class="mb-3">
+                                    <label for="dashboardQuickLeaveType" class="form-label">Leave Type</label>
+                                    <select class="form-select" name="leave_type_id" id="dashboardQuickLeaveType" required>
+                                        <option value="">Loading leave types...</option>
+                                    </select>
+                                    <small class="text-muted d-block mt-2" id="dashboardQuickLeaveHelpText">
+                                        Create an already approved leave for today.
+                                    </small>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="dashboardQuickLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
+                                    <textarea class="form-control" name="reasons" id="dashboardQuickLeaveReason" rows="3" placeholder="Optional note"></textarea>
+                                </div>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary btn-sm" id="dashboardQuickLeaveSubmit">Save Quick Leave</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="dashboardLeaveStatusUpdate" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header text-center">
+                            <h5 class="modal-title">Leave Status Update</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form class="forms-sample" id="dashboardUpdateLeaveStatus" action="" method="post">
+                                @csrf
+                                @method('put')
+                                <input type="hidden" name="redirect_back" value="1">
+                                <div class="mb-3">
+                                    <label for="dashboardLeaveStatus" class="form-label">{{ __('index.status') }}</label>
+                                    <select class="form-select" id="dashboardLeaveStatus" name="status">
+                                        <option value="{{ \App\Enum\LeaveStatusEnum::approved->value }}">{{ __('index.approve') }}</option>
+                                        <option value="{{ \App\Enum\LeaveStatusEnum::rejected->value }}">{{ __('index.reject') }}</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="dashboardLeaveRemark" class="form-label">{{ __('index.admin_remark') }}</label>
+                                    <textarea class="form-select" id="dashboardLeaveRemark" minlength="10" name="admin_remark" rows="3"></textarea>
+                                </div>
+                                <div id="dashboardPreviousApprovers" class="mb-3"></div>
+                                <div class="text-start">
+                                    <button type="submit" class="btn btn-primary btn-xs">{{ __('index.submit') }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endcan
         @canany(['project_detail','client_detail'])
             @can('project_detail')
