@@ -49,6 +49,18 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                 transform: translateX(-100%);
             }
         }
+
+        .branch-summary-table th,
+        .branch-summary-table td {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .branch-summary-table tfoot th,
+        .branch-summary-table tfoot td {
+            font-weight: 700;
+            background: #f8f9fb;
+        }
     </style>
 @endsection
 
@@ -307,6 +319,84 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             @endif
 
         </div>
+        @can('attendance_summary')
+            @php
+                $branchSummaryTotals = [
+                    'total_all_employee' => $branchDashboardSummaries->sum('total_all_employee'),
+                    'inactive_employee' => $branchDashboardSummaries->sum('inactive_employee'),
+                    'active_employee' => $branchDashboardSummaries->sum('active_employee'),
+                    'active_employee_checkin' => $branchDashboardSummaries->sum('active_employee_checkin'),
+                    'active_employee_not_yet_checkin' => $branchDashboardSummaries->sum('active_employee_not_yet_checkin'),
+                    'active_employee_checkout' => $branchDashboardSummaries->sum('active_employee_checkout'),
+                    'active_employee_not_yet_checkout' => $branchDashboardSummaries->sum('active_employee_not_yet_checkout'),
+                    'active_employee_dayoff' => $branchDashboardSummaries->sum('active_employee_dayoff'),
+                    'active_employee_leave' => $branchDashboardSummaries->sum('active_employee_leave'),
+                    'active_employee_pending_request' => $branchDashboardSummaries->sum('active_employee_pending_request'),
+                ];
+            @endphp
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4 class="mb-0">Branch Summary</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered branch-summary-table mb-0">
+                            <thead>
+                            <tr>
+                                <th>Branch</th>
+                                <th class="text-center">Total All Employee</th>
+                                <th class="text-center">Inactive Employee</th>
+                                <th class="text-center">Active Employee</th>
+                                <th class="text-center">Active Employee Check In</th>
+                                <th class="text-center">Active Employee Not Yet Check In</th>
+                                <th class="text-center">Active Employee Check Out</th>
+                                <th class="text-center">Active Employee Not Yet Check Out</th>
+                                <th class="text-center">Active Employee Day Off</th>
+                                <th class="text-center">Active Employee ច្បាប់</th>
+                                <th class="text-center">Active Employee Pending Request</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @forelse($branchDashboardSummaries as $branchSummary)
+                                <tr>
+                                    <td>{{ ucfirst($branchSummary->name) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->total_all_employee) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->inactive_employee) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_checkin) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_not_yet_checkin) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_checkout) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_not_yet_checkout) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_dayoff) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_leave) }}</td>
+                                    <td class="text-center">{{ number_format($branchSummary->active_employee_pending_request) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="11" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                            <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['total_all_employee']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['inactive_employee']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_checkin']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_not_yet_checkin']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_checkout']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_not_yet_checkout']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_dayoff']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_leave']) }}</td>
+                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_pending_request']) }}</td>
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @endcan
         @canany(['project_detail','client_detail'])
             @can('project_detail')
                 <div class="projectManagement">
@@ -587,7 +677,6 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
     </script>
     @include('admin.dashboard_scripts')
 @endsection
-
 
 
 

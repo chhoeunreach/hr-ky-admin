@@ -55,6 +55,7 @@ class DashboardController extends Controller
 
             $date = AppHelper::yearDetailToFilterData();
             $dashboardDetail = $this->dashboardRepo->getCompanyDashboardDetail($companyId, $date);
+            $branchDashboardSummaries = $this->dashboardRepo->getBranchDashboardSummaries($companyId);
 
             $topClients = $this->clientService->getTopClientsOfCompany();
             $taskPieChartData = $this->taskService->getTaskDataForPieChart();
@@ -64,6 +65,7 @@ class DashboardController extends Controller
 
             return view('admin.dashboard', compact(
                 'dashboardDetail',
+                'branchDashboardSummaries',
                 'topClients',
                 'taskPieChartData',
                 'projectCardDetail',
