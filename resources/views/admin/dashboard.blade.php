@@ -234,6 +234,19 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             background: #fff7e6;
         }
 
+        .summary-quick-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .summary-quick-actions .btn {
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 0.32rem 0.82rem;
+        }
+
         @media (max-width: 991.98px) {
             .summary-panel .card-body {
                 padding: 1rem;
@@ -702,6 +715,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                         <th>Branch</th>
                                         <th>Department</th>
                                         <th>Status</th>
+                                        <th>Quick Action</th>
                                     </tr>
                                     </thead>
                                     <tbody id="summaryDetailTableBody"></tbody>
@@ -992,4 +1006,3 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
     </script>
     @include('admin.dashboard_scripts')
 @endsection
-

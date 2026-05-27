@@ -49,6 +49,12 @@
                             <td>${row.branch ?? 'N/A'}</td>
                             <td>${row.department ?? 'N/A'}</td>
                             <td>${row.status ?? 'N/A'}</td>
+                            <td>
+                                <div class="summary-quick-actions">
+                                    <a href="${row.leave_url ?? '#'}" class="btn btn-outline-warning btn-sm" target="_blank" rel="noopener noreferrer">Quick Leave</a>
+                                    <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
+                                </div>
+                            </td>
                         </tr>
                     `).join('');
 

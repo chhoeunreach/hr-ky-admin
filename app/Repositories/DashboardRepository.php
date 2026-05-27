@@ -606,6 +606,7 @@ class DashboardRepository
             ->get()
             ->map(function ($row) {
                 return [
+                    'id' => $row->id,
                     'name' => $row->name,
                     'employee_code' => $row->username ?: 'N/A',
                     'email' => $row->email ?: 'N/A',

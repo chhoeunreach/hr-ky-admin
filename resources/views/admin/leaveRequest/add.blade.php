@@ -181,6 +181,9 @@
             }
         });
         $(document).ready(function () {
+            const preselectedEmployeeId = "{{ $preselectedEmployee->id ?? '' }}";
+            const preselectedBranchId = "{{ $preselectedEmployee->branch_id ?? (auth()->user()->branch_id ?? '') }}";
+            const preselectedDepartmentId = "{{ $preselectedEmployee->department_id ?? '' }}";
 
             $("#department_id").select2();
             $("#branch_id").select2();
@@ -208,14 +211,14 @@
                     if (response.data && response.data.length > 0) {
                         response.data.forEach(department => {
                             $('#department_id').append(
-                                `<option value="${department.id}">${department.dept_name}</option>`
+                                `<option value="${department.id}" ${String(department.id) === String(preselectedDepartmentId) ? 'selected' : ''}>${department.dept_name}</option>`
                             );
                         });
                     } else {
                         $('#department_id').append('<option disabled>{{ __("index.no_department_found") }}</option>');
                     }
 
-                    loadEmployees();
+                    $('#department_id').trigger('change');
 
                 } catch (error) {
                     $('#department_id').append('<option disabled>{{ __("index.error_loading_department") }}</option>');
@@ -244,10 +247,14 @@
                     if (data.data && data.data.length > 0) {
                         // Populate dropdown with employee options
                         data.data.forEach(user => {
-                            $('#requestedBy').append(`<option value="${user.id}">${user.name}</option>`);
+                            $('#requestedBy').append(`<option value="${user.id}" ${String(user.id) === String(preselectedEmployeeId) ? 'selected' : ''}>${user.name}</option>`);
                         });
                     } else {
                         $('#requestedBy').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
+                    }
+
+                    if (preselectedEmployeeId) {
+                        $('#requestedBy').trigger('change');
                     }
 
                 } catch (error) {
@@ -289,6 +296,9 @@
             // Load data when branch is selected
             const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
             if (isAdmin) {
+                if (preselectedBranchId) {
+                    $('#branch_id').val(preselectedBranchId).trigger('change');
+                }
                 $('#branch_id').change(loadDepartments).trigger('change');
                 $('#requestedBy').empty();
                 $('#leaveType').empty();
@@ -306,4 +316,3 @@
 
 
 @endsection
-

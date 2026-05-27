@@ -104,6 +104,13 @@ class DashboardController extends Controller
             $validated['metric']
         );
 
+        $rows = $rows->map(function ($row) {
+            $row['chat_url'] = route('admin.employee-chat', ['employee_id' => $row['id']]);
+            $row['leave_url'] = route('admin.leave-request.add', ['requested_by' => $row['id']]);
+
+            return $row;
+        })->values();
+
         return response()->json([
             'title' => trim(($validated['entity_name'] ?? ucfirst($validated['scope'])) . ' - ' . $this->getSummaryMetricLabel($validated['metric'])),
             'rows' => $rows,

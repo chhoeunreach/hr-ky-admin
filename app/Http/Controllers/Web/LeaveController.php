@@ -204,7 +204,7 @@ class LeaveController extends Controller
 
     }
 
-    public function addLeaveRequest()
+    public function addLeaveRequest(Request $request)
     {
 
         if (auth('admin')->user() || Gate::allows('request_leave') || Gate::allows('access_admin_leave')) {
@@ -214,7 +214,16 @@ class LeaveController extends Controller
                 $with = ['branches:id,name'];
                 $select = ['id', 'name'];
                 $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-                return view($this->view . 'add', compact('companyDetail','bsEnabled'));
+                $preselectedEmployee = null;
+
+                if ($request->filled('requested_by')) {
+                    $preselectedEmployee = $this->userRepository->findUserDetailById(
+                        $request->integer('requested_by'),
+                        ['id', 'name', 'branch_id', 'department_id']
+                    );
+                }
+
+                return view($this->view . 'add', compact('companyDetail', 'bsEnabled', 'preselectedEmployee'));
             } catch (Exception $exception) {
                 return redirect()->back()->with('danger', $exception->getMessage());
             }
