@@ -128,6 +128,7 @@ Route::group([
 
         Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('dashboard/summary-detail', [DashboardController::class, 'summaryDetail'])->name('dashboard.summary-detail');
         Route::get('showQR', [DashboardController::class, 'showQR'])->name('showQR');
         Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
         Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');

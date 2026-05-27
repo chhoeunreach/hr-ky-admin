@@ -1,5 +1,67 @@
 <script>
     $('document').ready(function(){
+        const summaryDetailModalElement = document.getElementById('summaryDetailModal');
+        const summaryDetailModal = summaryDetailModalElement ? new bootstrap.Modal(summaryDetailModalElement) : null;
+
+        $(document).on('click', '.summary-trigger', function () {
+            if (!summaryDetailModal) {
+                return;
+            }
+
+            const entityIds = String($(this).data('entity-ids') || '')
+                .split(',')
+                .map((value) => Number(value.trim()))
+                .filter((value) => !Number.isNaN(value) && value > 0);
+
+            if (!entityIds.length) {
+                return;
+            }
+
+            $('#summaryDetailModalLabel').text('Summary Detail');
+            $('#summaryDetailTableBody').empty();
+            $('#summaryDetailEmpty').addClass('d-none').text('No records found.');
+            $('#summaryDetailLoading').removeClass('d-none');
+            summaryDetailModal.show();
+
+            $.ajax({
+                type: 'POST',
+                url: '{{ route('admin.dashboard.summary-detail') }}',
+                data: {
+                    _token: $('meta[name="csrf-token"]').attr('content'),
+                    scope: $(this).data('summary-scope'),
+                    metric: $(this).data('summary-metric'),
+                    entity_name: $(this).data('entity-name'),
+                    entity_ids: entityIds
+                },
+                success: function (response) {
+                    $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
+
+                    if (!response.rows || !response.rows.length) {
+                        $('#summaryDetailEmpty').removeClass('d-none');
+                        return;
+                    }
+
+                    const rowsHtml = response.rows.map((row) => `
+                        <tr>
+                            <td>${row.name ?? 'N/A'}</td>
+                            <td>${row.employee_code ?? 'N/A'}</td>
+                            <td>${row.email ?? 'N/A'}</td>
+                            <td>${row.branch ?? 'N/A'}</td>
+                            <td>${row.department ?? 'N/A'}</td>
+                            <td>${row.status ?? 'N/A'}</td>
+                        </tr>
+                    `).join('');
+
+                    $('#summaryDetailTableBody').html(rowsHtml);
+                },
+                error: function () {
+                    $('#summaryDetailEmpty').removeClass('d-none').text('Unable to load detail right now.');
+                },
+                complete: function () {
+                    $('#summaryDetailLoading').addClass('d-none');
+                }
+            });
+        });
 
         $('.errorStartWorking').hide();
 

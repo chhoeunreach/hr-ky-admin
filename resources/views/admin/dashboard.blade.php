@@ -24,6 +24,19 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
 
 @section('styles')
     <style>
+        :root {
+            --summary-ink: #172033;
+            --summary-muted: #6b7280;
+            --summary-line: #d9e2ef;
+            --summary-card-top: #fdfefe;
+            --summary-card-bottom: #f3f8ff;
+            --summary-head-top: #163a5f;
+            --summary-head-bottom: #285f93;
+            --summary-accent: #ef4444;
+            --summary-total-top: #fff4d8;
+            --summary-total-bottom: #ffe7ad;
+        }
+
         #clockContainer {
             background: url({{asset('assets/images/clock.png') }}) no-repeat;
             background-size: 100%;
@@ -50,16 +63,185 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             }
         }
 
+        .summary-panel {
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            border-radius: 24px;
+            overflow: hidden;
+            background: linear-gradient(180deg, var(--summary-card-top) 0%, var(--summary-card-bottom) 100%);
+            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+        }
+
+        .summary-panel .card-header {
+            border-bottom: 1px solid rgba(217, 226, 239, 0.95);
+            background:
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 32%),
+                linear-gradient(135deg, var(--summary-head-top) 0%, var(--summary-head-bottom) 100%);
+            padding: 1.35rem 1.7rem;
+        }
+
+        .summary-panel .card-body {
+            padding: 1.5rem;
+        }
+
+        .summary-panel-title {
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin: 0;
+        }
+
+        .summary-panel-subtitle {
+            margin-top: 0.35rem;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 0.92rem;
+        }
+
+        .summary-table-shell {
+            border: 1px solid rgba(217, 226, 239, 0.95);
+            border-radius: 20px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        .branch-summary-table {
+            margin-bottom: 0;
+            min-width: 1180px;
+        }
+
         .branch-summary-table th,
         .branch-summary-table td {
             white-space: nowrap;
             vertical-align: middle;
+            border-color: rgba(217, 226, 239, 0.95);
+            padding: 1rem 1.05rem;
+        }
+
+        .branch-summary-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: #eef5ff;
+            color: var(--summary-ink);
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .branch-summary-table tbody tr:nth-child(even) td {
+            background: rgba(245, 249, 255, 0.78);
+        }
+
+        .branch-summary-table tbody tr:hover td {
+            background: #fff3d9;
+            transition: background-color 0.2s ease;
+        }
+
+        .branch-summary-table th:first-child,
+        .branch-summary-table td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background-clip: padding-box;
+        }
+
+        .branch-summary-table thead th:first-child {
+            z-index: 4;
+        }
+
+        .branch-summary-table tbody td:first-child {
+            background: #ffffff;
+        }
+
+        .branch-summary-table tbody tr:nth-child(even) td:first-child {
+            background: #f8fbff;
+        }
+
+        .branch-summary-table tbody tr:hover td:first-child {
+            background: #fff3d9;
+        }
+
+        .summary-name-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            color: var(--summary-ink);
+        }
+
+        .summary-name-trigger::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        }
+
+        .summary-value-trigger {
+            min-width: 44px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0.28rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(22, 58, 95, 0.08);
+            color: var(--summary-ink);
+            font-weight: 800;
+            line-height: 1.1;
+            box-shadow: inset 0 0 0 1px rgba(22, 58, 95, 0.08);
+        }
+
+        .summary-value-trigger:hover {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
         }
 
         .branch-summary-table tfoot th,
         .branch-summary-table tfoot td {
             font-weight: 700;
-            background: #f8f9fb;
+            background: linear-gradient(180deg, var(--summary-total-top) 0%, var(--summary-total-bottom) 100%);
+            color: var(--summary-ink);
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+        }
+
+        .summary-trigger {
+            background: none;
+            border: 0;
+            padding: 0;
+            color: inherit;
+            font: inherit;
+            text-decoration: none;
+        }
+
+        .summary-trigger:hover {
+            color: inherit;
+        }
+
+        .summary-modal-table thead th {
+            background: #eef5ff;
+            color: var(--summary-ink);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 800;
+        }
+
+        .summary-modal-table tbody tr:hover td {
+            background: #fff7e6;
+        }
+
+        @media (max-width: 991.98px) {
+            .summary-panel .card-body {
+                padding: 1rem;
+            }
+
+            .summary-panel-title {
+                font-size: 1.3rem;
+            }
         }
     </style>
 @endsection
@@ -321,6 +503,18 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
         </div>
         @can('attendance_summary')
             @php
+                $summaryMetrics = [
+                    'total_all_employee' => 'All Staff',
+                    'inactive_employee' => 'Inactive Employee',
+                    'active_employee' => 'Active',
+                    'active_employee_checkin' => 'Checked In',
+                    'active_employee_not_yet_checkin' => 'No Check-In',
+                    'active_employee_checkout' => 'Checked Out',
+                    'active_employee_not_yet_checkout' => 'No Check-Out',
+                    'active_employee_dayoff' => 'Day Off',
+                    'active_employee_leave' => 'Leave',
+                    'active_employee_pending_request' => 'Pending',
+                ];
                 $branchSummaryTotals = [
                     'total_all_employee' => $branchDashboardSummaries->sum('total_all_employee'),
                     'inactive_employee' => $branchDashboardSummaries->sum('inactive_employee'),
@@ -333,43 +527,49 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     'active_employee_leave' => $branchDashboardSummaries->sum('active_employee_leave'),
                     'active_employee_pending_request' => $branchDashboardSummaries->sum('active_employee_pending_request'),
                 ];
+                $branchSummaryAllIds = $branchDashboardSummaries->pluck('id')->filter()->implode(',');
             @endphp
-            <div class="card mb-4">
+            <div class="card mb-4 summary-panel">
                 <div class="card-header">
-                    <h4 class="mb-0">Branch Summary</h4>
+                    <h4 class="summary-panel-title">Branch Summary</h4>
+                    <p class="summary-panel-subtitle">Quick branch-by-branch staffing and attendance snapshot.</p>
                 </div>
                 <div class="card-body">
-                    <div class="table-responsive">
+                    <div class="summary-table-shell">
                         <table class="table table-striped table-bordered branch-summary-table mb-0">
                             <thead>
                             <tr>
                                 <th>Branch</th>
-                                <th class="text-center">Total All Employee</th>
-                                <th class="text-center">Inactive Employee</th>
-                                <th class="text-center">Active Employee</th>
-                                <th class="text-center">Active Employee Check In</th>
-                                <th class="text-center">Active Employee Not Yet Check In</th>
-                                <th class="text-center">Active Employee Check Out</th>
-                                <th class="text-center">Active Employee Not Yet Check Out</th>
-                                <th class="text-center">Active Employee Day Off</th>
-                                <th class="text-center">Active Employee ច្បាប់</th>
-                                <th class="text-center">Active Employee Pending Request</th>
+                                @foreach($summaryMetrics as $metricLabel)
+                                    <th class="text-center">{{ $metricLabel }}</th>
+                                @endforeach
                             </tr>
                             </thead>
                             <tbody>
                             @forelse($branchDashboardSummaries as $branchSummary)
                                 <tr>
-                                    <td>{{ ucfirst($branchSummary->name) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->total_all_employee) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->inactive_employee) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_checkin) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_not_yet_checkin) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_checkout) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_not_yet_checkout) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_dayoff) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_leave) }}</td>
-                                    <td class="text-center">{{ number_format($branchSummary->active_employee_pending_request) }}</td>
+                                    <td>
+                                        <button type="button"
+                                                class="summary-trigger summary-name-trigger"
+                                                data-summary-scope="branch"
+                                                data-summary-metric="total_all_employee"
+                                                data-entity-name="{{ ucfirst($branchSummary->name) }}"
+                                                data-entity-ids="{{ $branchSummary->id }}">
+                                            {{ ucfirst($branchSummary->name) }}
+                                        </button>
+                                    </td>
+                                    @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                        <td class="text-center">
+                                            <button type="button"
+                                                    class="summary-trigger summary-value-trigger"
+                                                    data-summary-scope="branch"
+                                                    data-summary-metric="{{ $metricKey }}"
+                                                    data-entity-name="{{ ucfirst($branchSummary->name) }}"
+                                                    data-entity-ids="{{ $branchSummary->id }}">
+                                                {{ number_format($branchSummary->{$metricKey}) }}
+                                            </button>
+                                        </td>
+                                    @endforeach
                                 </tr>
                             @empty
                                 <tr>
@@ -380,19 +580,134 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                             <tfoot>
                             <tr>
                                 <th>Total</th>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['total_all_employee']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['inactive_employee']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_checkin']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_not_yet_checkin']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_checkout']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_not_yet_checkout']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_dayoff']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_leave']) }}</td>
-                                <td class="text-center">{{ number_format($branchSummaryTotals['active_employee_pending_request']) }}</td>
+                                @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="summary-trigger summary-value-trigger"
+                                                data-summary-scope="branch"
+                                                data-summary-metric="{{ $metricKey }}"
+                                                data-entity-name="All Branches"
+                                                data-entity-ids="{{ $branchSummaryAllIds }}">
+                                            {{ number_format($branchSummaryTotals[$metricKey]) }}
+                                        </button>
+                                    </td>
+                                @endforeach
                             </tr>
                             </tfoot>
                         </table>
+                    </div>
+                </div>
+            </div>
+            @php
+                $departmentSummaryTotals = [
+                    'total_all_employee' => $departmentDashboardSummaries->sum('total_all_employee'),
+                    'inactive_employee' => $departmentDashboardSummaries->sum('inactive_employee'),
+                    'active_employee' => $departmentDashboardSummaries->sum('active_employee'),
+                    'active_employee_checkin' => $departmentDashboardSummaries->sum('active_employee_checkin'),
+                    'active_employee_not_yet_checkin' => $departmentDashboardSummaries->sum('active_employee_not_yet_checkin'),
+                    'active_employee_checkout' => $departmentDashboardSummaries->sum('active_employee_checkout'),
+                    'active_employee_not_yet_checkout' => $departmentDashboardSummaries->sum('active_employee_not_yet_checkout'),
+                    'active_employee_dayoff' => $departmentDashboardSummaries->sum('active_employee_dayoff'),
+                    'active_employee_leave' => $departmentDashboardSummaries->sum('active_employee_leave'),
+                    'active_employee_pending_request' => $departmentDashboardSummaries->sum('active_employee_pending_request'),
+                ];
+                $departmentSummaryAllIds = $departmentDashboardSummaries->pluck('department_ids')->flatten()->filter()->unique()->implode(',');
+            @endphp
+            <div class="card mb-4 summary-panel">
+                <div class="card-header">
+                    <h4 class="summary-panel-title">Department Summary</h4>
+                    <p class="summary-panel-subtitle">Merged department groups with live detail drill-down.</p>
+                </div>
+                <div class="card-body">
+                    <div class="summary-table-shell">
+                        <table class="table table-striped table-bordered branch-summary-table mb-0">
+                            <thead>
+                            <tr>
+                                <th>Department</th>
+                                @foreach($summaryMetrics as $metricLabel)
+                                    <th class="text-center">{{ $metricLabel }}</th>
+                                @endforeach
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @forelse($departmentDashboardSummaries as $departmentSummary)
+                                <tr>
+                                    <td>
+                                        <button type="button"
+                                                class="summary-trigger summary-name-trigger"
+                                                data-summary-scope="department"
+                                                data-summary-metric="total_all_employee"
+                                                data-entity-name="{{ ucfirst($departmentSummary->dept_name) }}"
+                                                data-entity-ids="{{ implode(',', $departmentSummary->department_ids ?? []) }}">
+                                            {{ ucfirst($departmentSummary->dept_name) }}
+                                        </button>
+                                    </td>
+                                    @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                        <td class="text-center">
+                                            <button type="button"
+                                                    class="summary-trigger summary-value-trigger"
+                                                    data-summary-scope="department"
+                                                    data-summary-metric="{{ $metricKey }}"
+                                                    data-entity-name="{{ ucfirst($departmentSummary->dept_name) }}"
+                                                    data-entity-ids="{{ implode(',', $departmentSummary->department_ids ?? []) }}">
+                                                {{ number_format($departmentSummary->{$metricKey}) }}
+                                            </button>
+                                        </td>
+                                    @endforeach
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="11" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                            <tfoot>
+                            <tr>
+                                <th>Total</th>
+                                @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                    <td class="text-center">
+                                        <button type="button"
+                                                class="summary-trigger summary-value-trigger"
+                                                data-summary-scope="department"
+                                                data-summary-metric="{{ $metricKey }}"
+                                                data-entity-name="All Departments"
+                                                data-entity-ids="{{ $departmentSummaryAllIds }}">
+                                            {{ number_format($departmentSummaryTotals[$metricKey]) }}
+                                        </button>
+                                    </td>
+                                @endforeach
+                            </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal fade" id="summaryDetailModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="summaryDetailModalLabel">Summary Detail</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="summaryDetailLoading" class="text-center py-4 d-none">Loading...</div>
+                            <div id="summaryDetailEmpty" class="text-center py-4 d-none">No records found.</div>
+                            <div class="table-responsive">
+                                <table class="table table-striped summary-modal-table mb-0">
+                                    <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Employee Code</th>
+                                        <th>Email</th>
+                                        <th>Branch</th>
+                                        <th>Department</th>
+                                        <th>Status</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody id="summaryDetailTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -677,9 +992,4 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
     </script>
     @include('admin.dashboard_scripts')
 @endsection
-
-
-
-
-
 
