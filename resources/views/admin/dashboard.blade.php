@@ -526,7 +526,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     'active_employee_not_yet_checkout' => 'No Check-Out',
                     'active_employee_dayoff' => 'Day Off',
                     'active_employee_leave' => 'Leave',
-                    'active_employee_pending_request' => 'Pending',
+                    'active_employee_pending_request' => 'Pending Leave Requests',
                 ];
                 $branchSummaryTotals = [
                     'total_all_employee' => $branchDashboardSummaries->sum('total_all_employee'),

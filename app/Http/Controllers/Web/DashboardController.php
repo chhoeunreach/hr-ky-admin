@@ -107,12 +107,17 @@ class DashboardController extends Controller
         $rows = $rows->map(function ($row) {
             $row['chat_url'] = route('admin.employee-chat', ['employee_id' => $row['id']]);
             $row['leave_url'] = route('admin.leave-request.add', ['requested_by' => $row['id']]);
+            $row['pending_leave_url'] = route('admin.leave-request.index', [
+                'requested_by' => $row['id'],
+                'status' => 'pending',
+            ]);
 
             return $row;
         })->values();
 
         return response()->json([
             'title' => trim(($validated['entity_name'] ?? ucfirst($validated['scope'])) . ' - ' . $this->getSummaryMetricLabel($validated['metric'])),
+            'metric' => $validated['metric'],
             'rows' => $rows,
         ]);
     }
@@ -268,7 +273,7 @@ class DashboardController extends Controller
             'active_employee_not_yet_checkout' => 'No Check-Out',
             'active_employee_dayoff' => 'Day Off',
             'active_employee_leave' => 'Leave',
-            'active_employee_pending_request' => 'Pending',
+            'active_employee_pending_request' => 'Pending Leave Requests',
             default => ucfirst(str_replace('_', ' ', $metric)),
         };
     }

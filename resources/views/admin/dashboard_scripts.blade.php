@@ -35,6 +35,7 @@
                 },
                 success: function (response) {
                     $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
+                    const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
 
                     if (!response.rows || !response.rows.length) {
                         $('#summaryDetailEmpty').removeClass('d-none');
@@ -51,7 +52,7 @@
                             <td>${row.status ?? 'N/A'}</td>
                             <td>
                                 <div class="summary-quick-actions">
-                                    <a href="${row.leave_url ?? '#'}" class="btn btn-outline-warning btn-sm" target="_blank" rel="noopener noreferrer">Quick Leave</a>
+                                    <a href="${isPendingLeaveMetric ? (row.pending_leave_url ?? '#') : (row.leave_url ?? '#')}" class="btn btn-outline-warning btn-sm" target="_blank" rel="noopener noreferrer">${isPendingLeaveMetric ? 'View Pending Leave' : 'Quick Leave'}</a>
                                     <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
                                 </div>
                             </td>
