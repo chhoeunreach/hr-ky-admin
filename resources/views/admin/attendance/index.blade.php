@@ -518,7 +518,7 @@
 
             .attendance-summary-footer {
                 display: grid;
-                grid-template-columns: repeat(6, minmax(0, 1fr));
+                grid-template-columns: repeat(8, minmax(0, 1fr));
                 gap: 10px;
                 margin-top: 12px;
             }
@@ -529,6 +529,21 @@
                 border-radius: 14px;
                 background: #f8fbff;
                 text-align: center;
+                cursor: pointer;
+                transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+            }
+
+            .attendance-summary-item:hover {
+                border-color: #bfd0eb;
+                background: #f2f7ff;
+                box-shadow: 0 8px 18px rgba(148, 163, 184, 0.12);
+                transform: translateY(-1px);
+            }
+
+            .attendance-summary-item.is-active {
+                border-color: #93c5fd;
+                background: #eaf4ff;
+                box-shadow: 0 10px 22px rgba(59, 130, 246, 0.14);
             }
 
             .attendance-summary-item strong {
@@ -725,6 +740,12 @@
                 'total_employee' => $groupedAttendance->count(),
                 'total_check_in' => $groupedAttendance->filter($hasCheckIn)->count(),
                 'total_check_out' => $groupedAttendance->filter($hasCheckOut)->count(),
+                'total_not_yet_check_in' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn) {
+                    return !$hasCheckIn($rows);
+                })->count(),
+                'total_not_yet_check_out' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn, $hasCheckOut) {
+                    return $hasCheckIn($rows) && !$hasCheckOut($rows);
+                })->count(),
                 'total_day_off' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
                     $first = $rows->first();
                     return $first?->leave_request_id
@@ -858,7 +879,24 @@
 
                                     @endphp
 
-                                    <tr class="attendance-day-row">
+                                    @php
+                                        $rowHasCheckIn = $hasCheckIn($userAttendances);
+                                        $rowHasCheckOut = $hasCheckOut($userAttendances);
+                                        $rowIsApprovedLeave = $firstAttendance?->leave_request_id && $firstAttendance?->leave_request_status === 'approved';
+                                        $rowIsPendingLeaveRequest = $firstAttendance?->leave_request_id && $firstAttendance?->leave_request_status === 'pending';
+                                        $rowIsDayOff = $rowIsApprovedLeave && $isDayOffType($firstAttendance?->leave_request_type);
+                                        $rowIsLeave = $rowIsApprovedLeave && !$isDayOffType($firstAttendance?->leave_request_type);
+                                    @endphp
+
+                                    <tr class="attendance-day-row"
+                                        data-summary-total_employee="1"
+                                        data-summary-total_check_in="{{ $rowHasCheckIn ? '1' : '0' }}"
+                                        data-summary-total_not_yet_check_in="{{ !$rowHasCheckIn ? '1' : '0' }}"
+                                        data-summary-total_check_out="{{ $rowHasCheckOut ? '1' : '0' }}"
+                                        data-summary-total_not_yet_check_out="{{ ($rowHasCheckIn && !$rowHasCheckOut) ? '1' : '0' }}"
+                                        data-summary-total_day_off="{{ $rowIsDayOff ? '1' : '0' }}"
+                                        data-summary-total_leave="{{ $rowIsLeave ? '1' : '0' }}"
+                                        data-summary-total_leave_request="{{ $rowIsPendingLeaveRequest ? '1' : '0' }}">
                                     @can('attendance_show')
                                         <td>
                                             <ul class="text-center list-unstyled mb-0">
@@ -1347,27 +1385,35 @@
                             </tbody>
                         </table>
                         <div class="attendance-summary-footer">
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_employee" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_employee']) }}</strong>
                                 <span>Total Employee</span>
                             </div>
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_check_in" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_check_in']) }}</strong>
                                 <span>Total Check In</span>
                             </div>
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_not_yet_check_in" role="button" tabindex="0">
+                                <strong>{{ number_format($attendanceSummary['total_not_yet_check_in']) }}</strong>
+                                <span>Not Yet Check In</span>
+                            </div>
+                            <div class="attendance-summary-item" data-summary-filter="total_check_out" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_check_out']) }}</strong>
                                 <span>Total Check Out</span>
                             </div>
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_not_yet_check_out" role="button" tabindex="0">
+                                <strong>{{ number_format($attendanceSummary['total_not_yet_check_out']) }}</strong>
+                                <span>Not Yet Check Out</span>
+                            </div>
+                            <div class="attendance-summary-item" data-summary-filter="total_day_off" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_day_off']) }}</strong>
                                 <span>Total Day Off</span>
                             </div>
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_leave" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_leave']) }}</strong>
                                 <span>ច្បាប់</span>
                             </div>
-                            <div class="attendance-summary-item">
+                            <div class="attendance-summary-item" data-summary-filter="total_leave_request" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_leave_request']) }}</strong>
                                 <span>Leave Request</span>
                             </div>
@@ -1640,6 +1686,8 @@
             const attendanceEmptyRow = attendanceDayTable
                 ? attendanceDayTable.querySelector('tbody tr td[colspan]')
                 : null;
+            const attendanceSummaryItems = Array.from(document.querySelectorAll('.attendance-summary-item[data-summary-filter]'));
+            let activeAttendanceSummaryFilter = null;
 
             document.querySelectorAll('.noteLink').forEach(link => {
                 link.addEventListener('click', function(e) {
@@ -1785,7 +1833,10 @@
 
                 attendanceDayRows.forEach((row) => {
                     const text = row.textContent.toLowerCase();
-                    const matches = text.includes(query);
+                    const matchesSearch = text.includes(query);
+                    const matchesSummary = !activeAttendanceSummaryFilter
+                        || row.dataset[`summary${activeAttendanceSummaryFilter.replace(/(^|_)(\w)/g, (_, __, char) => char.toUpperCase())}`] === '1';
+                    const matches = matchesSearch && matchesSummary;
 
                     if (matches) {
                         matchedCount++;
@@ -1811,6 +1862,27 @@
             if (attendanceEntries && attendanceDayTable) {
                 attendanceEntries.addEventListener('change', applyAttendanceTableFilters);
             }
+
+            attendanceSummaryItems.forEach((item) => {
+                const toggleSummaryFilter = () => {
+                    const nextFilter = item.dataset.summaryFilter || null;
+                    activeAttendanceSummaryFilter = activeAttendanceSummaryFilter === nextFilter ? null : nextFilter;
+
+                    attendanceSummaryItems.forEach((summaryItem) => {
+                        summaryItem.classList.toggle('is-active', summaryItem.dataset.summaryFilter === activeAttendanceSummaryFilter);
+                    });
+
+                    applyAttendanceTableFilters();
+                };
+
+                item.addEventListener('click', toggleSummaryFilter);
+                item.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        toggleSummaryFilter();
+                    }
+                });
+            });
 
             applyAttendanceTableFilters();
 
