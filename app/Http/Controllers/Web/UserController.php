@@ -69,6 +69,7 @@ class UserController extends Controller
 
             $filterParameters = [
                 'employee_name' => $request->employee_name ?? null,
+                'search' => $request->search ?? null,
                 'email' => $request->email ?? null,
                 'phone' => $request->phone ?? null,
                 'is_active' => $request->is_active ?? null,

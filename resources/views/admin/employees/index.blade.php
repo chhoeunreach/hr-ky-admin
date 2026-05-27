@@ -29,6 +29,7 @@
             $hasEmployeeFilters = filled($filterParameters['branch_id'] ?? null)
                 || filled($filterParameters['department_id'] ?? null)
                 || filled($filterParameters['employee_name'] ?? null)
+                || filled($filterParameters['search'] ?? null)
                 || filled($filterParameters['email'] ?? null)
                 || filled($filterParameters['phone'] ?? null)
                 || (($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null)
@@ -52,6 +53,7 @@
             </div>
             <div id="employeeFilterCollapse" class="collapse{{ $hasEmployeeFilters ? ' show' : '' }}">
             <form class="forms-sample card-body pb-0" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
+                <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                 <div class="row align-items-center">
                     @if(!isset(auth()->user()->branch_id))
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
@@ -144,7 +146,7 @@
                         <input type="text"
                                id="employeeListSearch"
                                class="employee-list-search"
-                               value="{{ $filterParameters['employee_name'] }}"
+                               value="{{ $filterParameters['search'] ?? '' }}"
                                placeholder="Search ...">
                     </div>
                 </div>

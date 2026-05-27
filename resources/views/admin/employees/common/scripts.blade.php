@@ -184,9 +184,9 @@
         });
 
         $(document).on('input', '#employeeListSearch', function () {
-            const employeeNameInput = document.getElementById('employeeName');
-            if (employeeNameInput) {
-                employeeNameInput.value = this.value;
+            const searchInput = document.getElementById('search');
+            if (searchInput) {
+                searchInput.value = this.value;
             }
 
             clearTimeout(employeeSearchTimer);
@@ -204,6 +204,7 @@
         // Create a form data object with all current filter values
         let filtered_params = {
             employee_name: $('#employeeName').val(),
+            search: $('#search').val(),
             email: $('#email').val(),
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),
@@ -219,6 +220,7 @@
     function getEmployeeFilterParam() {
         return {
             employee_name: $('#employeeName').val(),
+            search: $('#search').val(),
             email: $('#email').val(),
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),

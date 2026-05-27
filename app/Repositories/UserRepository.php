@@ -38,6 +38,17 @@ class UserRepository
             ->when(isset($filterParameters['employee_name']), function ($query) use ($filterParameters) {
                 $query->where('name', 'like', '%' . $filterParameters['employee_name'] . '%');
             })
+            ->when(isset($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = $filterParameters['search'];
+
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%')
+                        ->orWhere('username', 'like', '%' . $search . '%')
+                        ->orWhere('employee_code', 'like', '%' . $search . '%')
+                        ->orWhere('phone', 'like', '%' . $search . '%');
+                });
+            })
             ->when(isset($filterParameters['email']), function ($query) use ($filterParameters) {
                 $query->where('email', 'like', '%' . $filterParameters['email'] . '%');
             })
