@@ -93,7 +93,7 @@ class UserController extends Controller
 
 
             if ($request->input('action') == 'export') {
-                $fileName = 'users.csv';
+                $fileName = 'users.xlsx';
                 return \Maatwebsite\Excel\Facades\Excel::download(new UserExport($users), $fileName);
             }
 

@@ -30,7 +30,7 @@ class UserRepository
 
     public function getAllUsers($filterParameters, $select = ['*'], $with = [])
     {
-        $allowedPerPage = [25, 50, 100];
+        $allowedPerPage = [25, 50, 100, 200, 500, 1000];
         $requestedPerPage = $filterParameters['per_page'] ?? getRecordPerPage();
 
         $userList =  User::with($with)

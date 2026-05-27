@@ -512,16 +512,15 @@
 
         <div class="card attendance-day-card">
             <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
-            </div>
-            <div class="card-body">
-                <div class="attendance-table-toolbar">
-                    <div class="text-muted small">Quick search in today&apos;s attendance list</div>
+                <div class="attendance-table-toolbar mb-0">
+                    <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
                     <input type="text"
                            id="attendanceDaySearch"
                            class="attendance-table-search"
                            placeholder="Search ...">
                 </div>
+            </div>
+            <div class="card-body">
                 <div class="table-responsive">
 
                         <table id="dataTableExample" class="table">

@@ -25,10 +25,32 @@
 
         @include('admin.employees.common.breadcrumb')
 
+        @php
+            $hasEmployeeFilters = filled($filterParameters['branch_id'] ?? null)
+                || filled($filterParameters['department_id'] ?? null)
+                || filled($filterParameters['employee_name'] ?? null)
+                || filled($filterParameters['email'] ?? null)
+                || filled($filterParameters['phone'] ?? null)
+                || (($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null)
+                || (($filterParameters['per_page'] ?? '25') !== '25');
+        @endphp
+
         <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.employee_lists') }}</h6>
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#employeeFilterCollapse"
+                            aria-expanded="{{ $hasEmployeeFilters ? 'true' : 'false' }}"
+                            aria-controls="employeeFilterCollapse">
+                        <i class="link-icon" data-feather="filter"></i>
+                        {{ __('index.filter') }}
+                    </button>
+                    <h6 class="card-title mb-0">{{ __('index.employee_lists') }}</h6>
+                </div>
             </div>
+            <div id="employeeFilterCollapse" class="collapse{{ $hasEmployeeFilters ? ' show' : '' }}">
             <form class="forms-sample card-body pb-0" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
                 <div class="row align-items-center">
                     @if(!isset(auth()->user()->branch_id))
@@ -73,24 +95,9 @@
                         </select>
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
-                        <select class="form-control" id="per_page" name="per_page">
-                            <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
-                            <option value="100" {{ (string)($filterParameters['per_page'] ?? '') === '100' ? 'selected' : '' }}>100</option>
-                            <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>All</option>
-                        </select>
-                    </div>
-
                     <div class="col-xxl-4 col-xl-4 col-md-6">
                         <div class="d-md-flex align-items-center gap-2">
                             <button type="submit" value="filter" class="btn btn-block btn-success mb-4">{{ __('index.filter') }}</button>
-
-                            @can('create_employee')
-                            <button type="button" id="export_employee" data-href="{{ route('admin.employees.index') }}" value="export"
-                                            class="btn btn-block btn-secondary mb-4">{{ __('index.export_csv') }}</button>
-
-                            @endcan
                             <a class="btn btn-block btn-primary mb-4" href="{{ route('admin.employees.index') }}">{{ __('index.reset') }}</a>
                         </div>
                     </div>
@@ -99,33 +106,241 @@
 
 
             </form>
+            </div>
         </div>
 
+        <div id="employeeListSection">
         <div class="card">
             <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.employee_lists') }}</h6>
+                <div class="employee-toolbar">
+                    <div class="employee-toolbar-left">
+                        <h6 class="card-title mb-0">{{ __('index.employee_lists') }}</h6>
+                        <div class="employee-entry-control">
+                            <span>Show</span>
+                            <select class="form-control employee-entry-select" id="per_page" name="per_page" form="employeeFilterForm">
+                                <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ (string)($filterParameters['per_page'] ?? '') === '100' ? 'selected' : '' }}>100</option>
+                                <option value="200" {{ (string)($filterParameters['per_page'] ?? '') === '200' ? 'selected' : '' }}>200</option>
+                                <option value="500" {{ (string)($filterParameters['per_page'] ?? '') === '500' ? 'selected' : '' }}>500</option>
+                                <option value="1000" {{ (string)($filterParameters['per_page'] ?? '') === '1000' ? 'selected' : '' }}>1,000</option>
+                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>All</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                    </div>
+                    <div class="employee-toolbar-actions">
+                        @can('create_employee')
+                            <button type="button"
+                                    id="export_employee"
+                                    data-href="{{ route('admin.employees.index') }}"
+                                    value="export"
+                                    class="btn btn-outline-secondary btn-sm">
+                                Export XLSX
+                            </button>
+                        @endcan
+                    </div>
+                    <div class="employee-toolbar-search">
+                        <input type="text"
+                               id="employeeListSearch"
+                               class="employee-list-search"
+                               value="{{ $filterParameters['employee_name'] }}"
+                               placeholder="Search ...">
+                    </div>
+                </div>
             </div>
             <div class="card-body">
+                <style>
+                    .employee-toolbar {
+                        display: grid;
+                        grid-template-columns: auto 1fr auto;
+                        align-items: center;
+                        gap: 16px;
+                    }
+
+                    .employee-toolbar-left {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        flex-wrap: wrap;
+                    }
+
+                    .employee-toolbar-actions {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                    }
+
+                    .employee-toolbar-search {
+                        display: flex;
+                        justify-content: flex-end;
+                    }
+
+                    .employee-entry-control {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        color: #111827;
+                        font-weight: 500;
+                    }
+
+                    .employee-entry-select {
+                        min-width: 120px;
+                    }
+
+                    .employee-list-search {
+                        width: min(100%, 250px);
+                        border: 1px solid #d7dfeb;
+                        border-radius: 14px;
+                        min-height: 44px;
+                        padding: 0 14px;
+                        color: #111827;
+                        background: #f8fbff;
+                        box-shadow: none;
+                    }
+
+                    .employee-list-search:focus {
+                        outline: none;
+                        border-color: #93c5fd;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+                    }
+
+                    .employee-table {
+                        width: 100%;
+                        table-layout: auto;
+                    }
+
+                    .employee-table th,
+                    .employee-table td {
+                        vertical-align: middle;
+                    }
+
+                    .employee-table .col-icon,
+                    .employee-table .col-code,
+                    .employee-table .col-branch,
+                    .employee-table .col-designation,
+                    .employee-table .col-department,
+                    .employee-table .col-role,
+                    .employee-table .col-shift,
+                    .employee-table .col-boolean,
+                    .employee-table .col-workplace,
+                    .employee-table .col-action {
+                        white-space: nowrap;
+                    }
+
+                    .employee-table .col-icon {
+                        min-width: 56px;
+                    }
+
+                    .employee-table .col-code {
+                        min-width: 110px;
+                    }
+
+                    .employee-table .col-name {
+                        min-width: 260px;
+                    }
+
+                    .employee-table .col-address {
+                        min-width: 180px;
+                        white-space: nowrap;
+                    }
+
+                    .employee-table .col-email {
+                        min-width: 220px;
+                        white-space: normal;
+                        word-break: break-word;
+                    }
+
+                    .employee-table .col-branch,
+                    .employee-table .col-designation,
+                    .employee-table .col-department,
+                    .employee-table .col-role {
+                        min-width: 130px;
+                    }
+
+                    .employee-table .col-shift {
+                        min-width: 120px;
+                    }
+
+                    .employee-table .col-boolean,
+                    .employee-table .col-workplace,
+                    .employee-table .col-action {
+                        min-width: 110px;
+                    }
+
+                    .employee-name-cell {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    .employee-name-main {
+                        min-width: 0;
+                        flex: 1;
+                    }
+
+                    .employee-name-main p,
+                    .employee-name-main small {
+                        word-break: break-word;
+                    }
+
+                    @media (max-width: 767.98px) {
+                        .employee-toolbar {
+                            grid-template-columns: 1fr;
+                            align-items: stretch;
+                        }
+
+                        .employee-toolbar-actions,
+                        .employee-toolbar-search {
+                            justify-content: flex-start;
+                        }
+
+                        .employee-entry-control {
+                            width: 100%;
+                            justify-content: space-between;
+                        }
+
+                        .employee-entry-select {
+                            min-width: 0;
+                            flex: 1;
+                        }
+
+                        .employee-list-search {
+                            width: 100%;
+                        }
+
+                        .employee-table .col-name {
+                            min-width: 220px;
+                        }
+
+                        .employee-table .col-address,
+                        .employee-table .col-email {
+                            min-width: 160px;
+                        }
+                    }
+                </style>
                 <div class="table-responsive">
-                    <table id="employeeTable" class="table">
+                    <table id="employeeTable" class="table employee-table">
                         <thead>
                         <tr>
                             @can('show_detail_employee')
-                                <th>#</th>
+                                <th class="col-icon">#</th>
                             @endcan
-                            <th class="text-center">{{ __('index.employee_code') }}</th>
-                            <th>{{ __('index.full_name') }}</th>
-                            <th>{{ __('index.address') }}</th>
-                            <th class="text-center">{{ __('index.email') }}</th>
-                            <th class="text-center">{{ __('index.designation') }}</th>
-                            <th class="text-center">{{ __('index.department') }}</th>
-                            <th class="text-center">{{ __('index.role') }}</th>
-                            <th class="text-center">{{ __('index.shift') }}</th>
-                            <th class="text-center">{{ __('index.holiday_check_in') }}</th>
-                            <th class="text-center">{{ __('index.workplace') }}</th>
-                            <th class="text-center">{{ __('index.is_active') }}</th>
+                            <th class="text-center col-code">{{ __('index.employee_code') }}</th>
+                            <th class="col-name">{{ __('index.full_name') }}</th>
+                            <th class="col-address">{{ __('index.address') }}</th>
+                            <th class="text-center col-email">{{ __('index.email') }}</th>
+                            <th class="text-center col-branch">{{ __('index.branch') }}</th>
+                            <th class="text-center col-designation">{{ __('index.designation') }}</th>
+                            <th class="text-center col-department">{{ __('index.department') }}</th>
+                            <th class="text-center col-role">{{ __('index.role') }}</th>
+                            <th class="text-center col-shift">{{ __('index.shift') }}</th>
+                            <th class="text-center col-boolean">{{ __('index.holiday_check_in') }}</th>
+                            <th class="text-center col-workplace">{{ __('index.workplace') }}</th>
+                            <th class="text-center col-boolean">{{ __('index.is_active') }}</th>
                             @canany(['edit_employee','delete_employee','change_password','force_logout'])
-                                <th class="text-center">{{ __('index.action') }}</th>
+                                <th class="text-center col-action">{{ __('index.action') }}</th>
                             @endcanany
                         </tr>
                         </thead>
@@ -140,44 +355,44 @@
                         @forelse($users as $key => $value)
                             <tr>
                                 @can('show_detail_employee')
-                                    <td>
+                                    <td class="col-icon">
                                         <a href="{{ route('admin.employees.show', $value->id) }}"
                                            id="showOfficeTimeDetail">
                                             <i class="link-icon" data-feather="eye"></i>
                                         </a>
                                     </td>
                                 @endcan
-                                <td class="text-center">{{ $value->username ?: 'N/A' }}</td>
-                                <td>
+                                <td class="text-center col-code">{{ $value->username ?: 'N/A' }}</td>
+                                <td class="col-name">
                                     @php
                                         $profileImage = $value->avatar
                                             ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $value->avatar)
                                             : asset('assets/images/img.png');
                                     @endphp
-                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <div class="employee-name-cell">
                                         @can('show_detail_employee')
                                             <a href="{{ route('admin.employees.show', $value->id) }}"
-                                               class="d-flex align-items-center gap-2 text-decoration-none text-reset">
+                                               class="d-flex align-items-center gap-2 text-decoration-none text-reset employee-name-main">
                                                 <img
                                                     src="{{ $profileImage }}"
                                                     alt="{{ ucfirst($value->name) }}"
                                                     class="rounded-circle"
                                                     style="width: 42px; height: 42px; object-fit: cover;"
                                                 >
-                                                <div>
+                                                <div class="employee-name-main">
                                                     <p class="mb-0">{{ ucfirst($value->name) }}</p>
                                                     <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
                                                 </div>
                                             </a>
                                         @else
-                                            <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2 employee-name-main">
                                                 <img
                                                     src="{{ $profileImage }}"
                                                     alt="{{ ucfirst($value->name) }}"
                                                     class="rounded-circle"
                                                     style="width: 42px; height: 42px; object-fit: cover;"
                                                 >
-                                                <div>
+                                                <div class="employee-name-main">
                                                     <p class="mb-0">{{ ucfirst($value->name) }}</p>
                                                     <small class="text-muted">({{ ucfirst($value->role ? $value->role->name : 'N/A') }})</small>
                                                 </div>
@@ -187,21 +402,26 @@
                                         @can('edit_employee')
                                             <a href="{{ route('admin.employees.edit', $value->id) }}"
                                                class="btn btn-outline-primary btn-xs"
-                                               title="{{ __('index.edit_detail') }}"
-                                               target="_blank"
-                                               rel="noopener noreferrer">
+                                                title="{{ __('index.edit_detail') }}"
+                                                target="_blank"
+                                                rel="noopener noreferrer">
                                                 <i class="link-icon" data-feather="edit"></i>
                                             </a>
                                         @endcan
                                     </div>
                                 </td>
-                                <td>{{ ucfirst($value->address) }}</td>
-                                <td class="text-center">{{ $value->email }}</td>
-                                <td class="text-center">{{ $value->post ? ucfirst($value->post->post_name) : 'N/A' }}</td>
-                                <td class="text-center">{{ $value->department ? ucfirst($value->department->dept_name) : 'N/A' }}</td>
-                                <td class="text-center">{{ $value->role ? ucfirst($value->role->name) : 'N/A' }}</td>
-                                <td class="text-center">{{ $value->officeTime ? ucfirst($value->officeTime->shift) : 'N/A' }}</td>
-                                <td class="text-center">
+                                @php
+                                    $fullAddress = $value->address ? ucfirst($value->address) : 'N/A';
+                                    $addressPreview = \Illuminate\Support\Str::limit($fullAddress, 20);
+                                @endphp
+                                <td class="col-address" title="{{ $fullAddress }}">{{ $addressPreview }}</td>
+                                <td class="text-center col-email">{{ $value->email }}</td>
+                                <td class="text-center col-branch">{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
+                                <td class="text-center col-designation">{{ $value->post ? ucfirst($value->post->post_name) : 'N/A' }}</td>
+                                <td class="text-center col-department">{{ $value->department ? ucfirst($value->department->dept_name) : 'N/A' }}</td>
+                                <td class="text-center col-role">{{ $value->role ? ucfirst($value->role->name) : 'N/A' }}</td>
+                                <td class="text-center col-shift">{{ $value->officeTime ? ucfirst($value->officeTime->shift) : 'N/A' }}</td>
+                                <td class="text-center col-boolean">
                                     <label class="switch">
                                         <input class="toggleHolidayCheckIn"
                                                href="{{ route('admin.employees.toggle-holiday-checkin', $value->id) }}"
@@ -209,14 +429,14 @@
                                         <span class="slider round"></span>
                                     </label>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center col-workplace">
                                     <a class="changeWorkPlace btn btn-{{ $changeColor[$value->workspace_type] }} btn-xs"
                                        data-href="{{ route('admin.employees.change-workspace', $value->id) }}"
                                        title="Change workspace">
                                         {{ $value->workspace_type == User::FIELD ? 'Field' : 'Office' }}
                                     </a>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center col-boolean">
                                     <label class="switch">
                                         <input class="toggleStatus"
                                                href="{{ route('admin.employees.toggle-status', $value->id) }}"
@@ -226,7 +446,7 @@
                                 </td>
 
                                 @canany(['edit_employee','delete_employee','change_password','force_logout'])
-                                    <td class="text-center">
+                                    <td class="text-center col-action">
                                         <a class="nav-link dropdown-toggle" href="#" id="profileDropdown"
                                            role="button"
                                            data-bs-toggle="dropdown"
@@ -301,6 +521,7 @@
 
         <div class="dataTables_paginate mt-3">
             {{ $users->appends($_GET)->links() }}
+        </div>
         </div>
 
     </section>

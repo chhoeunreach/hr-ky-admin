@@ -120,14 +120,84 @@
             })
         });
 
-        $('#per_page').on('change', function () {
-            $('#employeeFilterForm').submit();
+        let employeeSearchTimer = null;
+
+        const refreshEmployeeList = (options = {}) => {
+            const form = document.getElementById('employeeFilterForm');
+            const listSection = document.getElementById('employeeListSection');
+
+            if (!form || !listSection) {
+                form?.submit();
+                return;
+            }
+
+            const params = new URLSearchParams(new FormData(form));
+            const requestUrl = `${form.action}?${params.toString()}`;
+
+            listSection.style.opacity = '0.6';
+
+            fetch(requestUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then((response) => response.text())
+                .then((html) => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const nextSection = doc.getElementById('employeeListSection');
+
+                    if (!nextSection) {
+                        window.location.href = requestUrl;
+                        return;
+                    }
+
+                    listSection.innerHTML = nextSection.innerHTML;
+
+                    if (window.feather) {
+                        feather.replace();
+                    }
+
+                    const currentSearch = document.getElementById('employeeListSearch');
+                    if (currentSearch && options.focusSearch) {
+                        currentSearch.focus();
+                        currentSearch.setSelectionRange(currentSearch.value.length, currentSearch.value.length);
+                    }
+
+                    window.history.replaceState({}, '', requestUrl);
+                })
+                .catch(() => {
+                    form.submit();
+                })
+                .finally(() => {
+                    listSection.style.opacity = '1';
+                });
+        };
+
+        $(document).on('submit', '#employeeFilterForm', function (event) {
+            event.preventDefault();
+            refreshEmployeeList();
+        });
+
+        $(document).on('change', '#per_page', function () {
+            refreshEmployeeList();
+        });
+
+        $(document).on('input', '#employeeListSearch', function () {
+            const employeeNameInput = document.getElementById('employeeName');
+            if (employeeNameInput) {
+                employeeNameInput.value = this.value;
+            }
+
+            clearTimeout(employeeSearchTimer);
+            employeeSearchTimer = setTimeout(() => {
+                refreshEmployeeList({focusSearch: true});
+            }, 500);
         });
 
 
-
     });
-    $('#export_employee').on('click', function (e) {
+    $(document).on('click', '#export_employee', function (e) {
         e.preventDefault();
         let route = $(this).data('href');
 
