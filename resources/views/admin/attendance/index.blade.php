@@ -563,6 +563,40 @@
                 letter-spacing: 0.03em;
             }
 
+            .attendance-scroll-shortcuts {
+                position: fixed;
+                right: 22px;
+                bottom: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                z-index: 1040;
+            }
+
+            .attendance-scroll-shortcut {
+                width: 44px;
+                height: 44px;
+                border: 1px solid #d6e1f0;
+                border-radius: 14px;
+                background: rgba(255, 255, 255, 0.94);
+                color: #3b4d73;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            }
+
+            .attendance-scroll-shortcut:hover {
+                transform: translateY(-1px);
+                border-color: #9db4da;
+                box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+            }
+
+            .attendance-scroll-shortcut.is-hidden {
+                display: none;
+            }
+
             @media (max-width: 767.98px) {
                 .attendance-chat-modal .modal-dialog {
                     max-width: 100%;
@@ -642,6 +676,11 @@
 
                 .attendance-summary-footer {
                     grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+
+                .attendance-scroll-shortcuts {
+                    right: 14px;
+                    bottom: 14px;
                 }
             }
         </style>
@@ -1628,6 +1667,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="attendance-scroll-shortcuts" id="attendanceScrollShortcuts">
+            <button type="button"
+                    class="attendance-scroll-shortcut"
+                    id="attendanceScrollTop"
+                    title="Go to top"
+                    aria-label="Go to top">
+                <i data-feather="arrow-up"></i>
+            </button>
+            <button type="button"
+                    class="attendance-scroll-shortcut"
+                    id="attendanceScrollBottom"
+                    title="Go to bottom"
+                    aria-label="Go to bottom">
+                <i data-feather="arrow-down"></i>
+            </button>
+        </div>
     </section>
 
 @endsection
@@ -1686,6 +1742,9 @@
             const attendanceEmptyRow = attendanceDayTable
                 ? attendanceDayTable.querySelector('tbody tr td[colspan]')
                 : null;
+            const attendanceScrollShortcuts = document.getElementById('attendanceScrollShortcuts');
+            const attendanceScrollTopButton = document.getElementById('attendanceScrollTop');
+            const attendanceScrollBottomButton = document.getElementById('attendanceScrollBottom');
             const attendanceSummaryItems = Array.from(document.querySelectorAll('.attendance-summary-item[data-summary-filter]'));
             let activeAttendanceSummaryFilter = null;
 
@@ -1884,7 +1943,31 @@
                 });
             });
 
+            const updateAttendanceScrollShortcuts = () => {
+                if (!attendanceScrollShortcuts) {
+                    return;
+                }
+
+                const scrollable = document.documentElement.scrollHeight > (window.innerHeight + 120);
+                attendanceScrollShortcuts.classList.toggle('is-hidden', !scrollable);
+            };
+
+            if (attendanceScrollTopButton) {
+                attendanceScrollTopButton.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
+            }
+
+            if (attendanceScrollBottomButton) {
+                attendanceScrollBottomButton.addEventListener('click', () => {
+                    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+                });
+            }
+
+            window.addEventListener('resize', updateAttendanceScrollShortcuts);
+
             applyAttendanceTableFilters();
+            updateAttendanceScrollShortcuts();
 
             const attendanceChatModalElement = document.getElementById('attendanceChatModal');
             const attendanceChatModal = attendanceChatModalElement ? new bootstrap.Modal(attendanceChatModalElement) : null;
