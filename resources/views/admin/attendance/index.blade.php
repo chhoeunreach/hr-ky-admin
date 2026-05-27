@@ -1835,7 +1835,7 @@
                     const text = row.textContent.toLowerCase();
                     const matchesSearch = text.includes(query);
                     const matchesSummary = !activeAttendanceSummaryFilter
-                        || row.dataset[`summary${activeAttendanceSummaryFilter.replace(/(^|_)(\w)/g, (_, __, char) => char.toUpperCase())}`] === '1';
+                        || row.getAttribute(`data-summary-${activeAttendanceSummaryFilter}`) === '1';
                     const matches = matchesSearch && matchesSummary;
 
                     if (matches) {
