@@ -9,6 +9,14 @@
 
     <section class="content">
         <style>
+            .page-content {
+                padding-top: 0.4rem !important;
+            }
+
+            .content {
+                margin-top: 0 !important;
+            }
+
             .attendance-chat-modal .modal-dialog {
                 max-width: 760px;
             }
@@ -315,19 +323,20 @@
 
             .attendance-filter-card .card-header,
             .attendance-day-card .card-header {
-                padding: 1rem 1.5rem;
+                padding: 0.72rem 1.25rem;
                 border-bottom: 1px solid #edf2f7;
             }
 
             .attendance-filter-card .card-title,
             .attendance-day-card .card-title {
-                font-size: 1.1rem;
+                font-size: 0.92rem;
                 font-weight: 700;
                 letter-spacing: 0.01em;
+                line-height: 1.1;
             }
 
             .attendance-filter-form {
-                padding: 1.25rem 1.5rem 1.5rem;
+                padding: 0.9rem 1.25rem 1rem;
             }
 
             .attendance-filter-grid {
@@ -344,7 +353,7 @@
             .attendance-filter-field .form-control,
             .attendance-filter-field .form-select,
             .attendance-filter-actions .btn {
-                min-height: 48px;
+                min-height: 40px;
                 border-radius: 14px;
             }
 
@@ -369,7 +378,7 @@
 
             .attendance-filter-actions .btn {
                 min-width: 108px;
-                padding-inline: 18px;
+                padding-inline: 16px;
                 margin: 0;
             }
 
@@ -377,27 +386,31 @@
                 display: grid;
                 grid-template-columns: auto 1fr auto;
                 align-items: center;
-                gap: 16px;
-                margin-bottom: 16px;
+                gap: 12px;
+                margin-bottom: 8px;
             }
 
             .attendance-toolbar-left {
                 display: flex;
                 align-items: center;
-                gap: 16px;
+                gap: 12px;
                 flex-wrap: wrap;
             }
 
             .attendance-entry-control {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
                 color: #111827;
                 font-weight: 500;
             }
 
             .attendance-entry-select {
-                min-width: 120px;
+                min-width: 104px;
+                min-height: 38px;
+                padding-top: 0.45rem;
+                padding-bottom: 0.45rem;
+                border-radius: 14px;
             }
 
             .attendance-toolbar-actions {
@@ -405,6 +418,13 @@
                 align-items: center;
                 justify-content: center;
                 gap: 10px;
+            }
+
+            .attendance-toolbar-actions .btn,
+            .attendance-filter-card .card-header .btn {
+                min-height: 38px;
+                padding: 0.5rem 0.9rem;
+                border-radius: 14px;
             }
 
             .attendance-table-search-wrap {
@@ -416,8 +436,8 @@
                 width: min(100%, 250px);
                 border: 1px solid #d7dfeb;
                 border-radius: 14px;
-                min-height: 44px;
-                padding: 0 14px;
+                min-height: 38px;
+                padding: 0 12px;
                 color: #111827;
                 background: #f8fbff;
                 box-shadow: none;
@@ -427,6 +447,105 @@
                 outline: none;
                 border-color: #93c5fd;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+            }
+
+            .attendance-username-cell {
+                position: relative;
+            }
+
+            .attendance-username-wrap {
+                position: relative;
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .attendance-username-summary {
+                display: none;
+                position: absolute;
+                top: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                min-width: 170px;
+                padding: 8px 10px;
+                border-radius: 12px;
+                background: #1f2937;
+                color: #fff;
+                font-size: 0.76rem;
+                line-height: 1.35;
+                text-align: left;
+                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
+                z-index: 6;
+                white-space: pre-line;
+            }
+
+            .attendance-day-row:hover .attendance-username-summary {
+                display: block;
+            }
+
+            .attendance-status-actions {
+                position: relative;
+            }
+
+            .attendance-status-actions .quickApproveLeaveTrigger {
+                position: absolute;
+                top: calc(100% + 4px);
+                left: 50%;
+                z-index: 5;
+                opacity: 0;
+                visibility: hidden;
+                white-space: nowrap;
+                transform: translate(-50%, 4px);
+                transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+            }
+
+            .attendance-day-row:hover .attendance-status-actions .quickApproveLeaveTrigger,
+            .attendance-status-actions .quickApproveLeaveTrigger:focus {
+                opacity: 1;
+                visibility: visible;
+                transform: translate(-50%, 0);
+            }
+
+            .attendance-row-chat-action {
+                display: none;
+            }
+
+            .attendance-day-row:hover .attendance-row-chat-action,
+            .attendance-row-chat-action:focus-within {
+                display: list-item;
+            }
+
+            .attendance-summary-footer {
+                display: grid;
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+                gap: 10px;
+                margin-top: 12px;
+            }
+
+            .attendance-summary-item {
+                padding: 10px 12px;
+                border: 1px solid #e5ecf6;
+                border-radius: 14px;
+                background: #f8fbff;
+                text-align: center;
+            }
+
+            .attendance-summary-item strong {
+                display: block;
+                color: #0f172a;
+                font-size: 1rem;
+                line-height: 1.1;
+            }
+
+            .attendance-summary-item span {
+                display: block;
+                margin-top: 4px;
+                color: #64748b;
+                font-size: 0.78rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.03em;
             }
 
             @media (max-width: 767.98px) {
@@ -486,6 +605,28 @@
 
                 .attendance-table-search {
                     width: 100%;
+                }
+
+                .attendance-status-actions .quickApproveLeaveTrigger {
+                    position: static;
+                    opacity: 1;
+                    visibility: visible;
+                    transform: none;
+                }
+
+                .attendance-row-chat-action {
+                    display: list-item;
+                }
+
+                .attendance-username-summary {
+                    position: static;
+                    display: block;
+                    transform: none;
+                    margin-top: 6px;
+                }
+
+                .attendance-summary-footer {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
                 }
             }
         </style>
@@ -567,6 +708,42 @@
             </div>
         </div>
 
+        @php
+            $groupedAttendance = $attendanceDetail->groupBy('user_id');
+            $isDayOffType = static function ($type) {
+                $typeName = strtolower(trim((string) $type));
+                return str_contains($typeName, 'day off');
+            };
+            $hasCheckIn = static function ($attendanceRows) {
+                return $attendanceRows->contains(fn ($row) => !empty($row->check_in_at) || !empty($row->night_checkin));
+            };
+            $hasCheckOut = static function ($attendanceRows) {
+                return $attendanceRows->contains(fn ($row) => !empty($row->check_out_at) || !empty($row->night_checkout));
+            };
+
+            $attendanceSummary = [
+                'total_employee' => $groupedAttendance->count(),
+                'total_check_in' => $groupedAttendance->filter($hasCheckIn)->count(),
+                'total_check_out' => $groupedAttendance->filter($hasCheckOut)->count(),
+                'total_day_off' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
+                    $first = $rows->first();
+                    return $first?->leave_request_id
+                        && $first?->leave_request_status === 'approved'
+                        && $isDayOffType($first?->leave_request_type);
+                })->count(),
+                'total_leave' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
+                    $first = $rows->first();
+                    return $first?->leave_request_id
+                        && $first?->leave_request_status === 'approved'
+                        && !$isDayOffType($first?->leave_request_type);
+                })->count(),
+                'total_leave_request' => $groupedAttendance->filter(function ($rows) {
+                    $first = $rows->first();
+                    return $first?->leave_request_id && $first?->leave_request_status === 'pending';
+                })->count(),
+            ];
+        @endphp
+
         <div class="card attendance-day-card">
             <div class="card-header">
                 <div class="attendance-table-toolbar mb-0">
@@ -574,13 +751,13 @@
                         <div class="attendance-entry-control">
                             <span>Show</span>
                             <select id="attendanceEntries" class="form-control attendance-entry-select">
+                                <option value="all" selected>All</option>
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
                                 <option value="200">200</option>
                                 <option value="500">500</option>
                                 <option value="1000">1,000</option>
-                                <option value="all">All</option>
                             </select>
                             <span>entries</span>
                         </div>
@@ -649,7 +826,7 @@
                                         : $filterParameter['attendance_date'];
                                 @endphp
 
-                                @forelse($attendanceDetail->groupBy('user_id') as $userId => $userAttendances)
+                                @forelse($groupedAttendance as $userId => $userAttendances)
 
                                     @php
                                         $firstAttendance = $userAttendances->first();
@@ -675,6 +852,9 @@
                                             && !$firstAttendance->attendance_id
                                             && !$firstAttendance->leave_request_id;
                                         $quickChatTitle = 'Quick chat with ' . ucfirst($firstAttendance->user_name);
+                                        $userHoverSummary = 'Day Off: ' . (int) ($firstAttendance->approved_day_off_days ?? 0)
+                                            . "\nច្បាប់: " . (int) ($firstAttendance->approved_leave_days ?? 0)
+                                            . "\nRequest Pending: " . (int) ($firstAttendance->pending_leave_days ?? 0);
 
                                     @endphp
 
@@ -692,21 +872,11 @@
                                         </td>
                                     @endcan
 
-                                    <td class="text-center">
-                                        @php
-                                            $userHoverSummary = 'Day Off: ' . (int) ($firstAttendance->approved_day_off_days ?? 0)
-                                                . "\nច្បាប់: " . (int) ($firstAttendance->approved_leave_days ?? 0)
-                                                . "\nRequest Pending: " . (int) ($firstAttendance->pending_leave_days ?? 0);
-                                        @endphp
-                                        <span
-                                            data-bs-toggle="tooltip"
-                                            data-bs-placement="top"
-                                            data-bs-custom-class="attendance-user-tooltip"
-                                            title="{{ $userHoverSummary }}"
-                                            style="cursor: help;"
-                                        >
-                                            {{ $firstAttendance->username ?: 'N/A' }}
-                                        </span>
+                                    <td class="text-center attendance-username-cell">
+                                        <div class="attendance-username-wrap">
+                                            <span>{{ $firstAttendance->username ?: 'N/A' }}</span>
+                                            <div class="attendance-username-summary">{{ $userHoverSummary }}</div>
+                                        </div>
                                     </td>
 
                                     <td>
@@ -864,7 +1034,7 @@
                                                     @endcanany
                                                 </div>
                                             @else
-                                                <div class="d-inline-flex flex-column align-items-center gap-2">
+                                                <div class="d-inline-flex flex-column align-items-center gap-2 attendance-status-actions">
                                                     <span class="btn btn-light btn-xs disabled">
                                                         {{ __('index.pending') }}
                                                     </span>
@@ -901,7 +1071,7 @@
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
                                                     @can('view_employee_chat')
-                                                        <li class="me-2">
+                                                        <li class="me-2 attendance-row-chat-action">
                                                             <a href="#"
                                                                class="openAttendanceChat"
                                                                data-employee-id="{{ $firstAttendance->user_id }}"
@@ -987,7 +1157,7 @@
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
                                                     @can('view_employee_chat')
-                                                        <li class="me-2">
+                                                        <li class="me-2 attendance-row-chat-action">
                                                             <a href="#"
                                                                class="openAttendanceChat"
                                                                data-employee-id="{{ $firstAttendance->user_id }}"
@@ -1062,7 +1232,7 @@
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
                                                     @can('view_employee_chat')
-                                                        <li class="me-2">
+                                                        <li class="me-2 attendance-row-chat-action">
                                                             <a href="#"
                                                                class="openAttendanceChat"
                                                                data-employee-id="{{ $firstAttendance->user_id }}"
@@ -1176,6 +1346,32 @@
                                 @endforelse
                             </tbody>
                         </table>
+                        <div class="attendance-summary-footer">
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_employee']) }}</strong>
+                                <span>Total Employee</span>
+                            </div>
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_check_in']) }}</strong>
+                                <span>Total Check In</span>
+                            </div>
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_check_out']) }}</strong>
+                                <span>Total Check Out</span>
+                            </div>
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_day_off']) }}</strong>
+                                <span>Total Day Off</span>
+                            </div>
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_leave']) }}</strong>
+                                <span>ច្បាប់</span>
+                            </div>
+                            <div class="attendance-summary-item">
+                                <strong>{{ number_format($attendanceSummary['total_leave_request']) }}</strong>
+                                <span>Leave Request</span>
+                            </div>
+                        </div>
 
                 </div>
             </div>
