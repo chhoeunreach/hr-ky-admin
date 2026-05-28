@@ -13,6 +13,7 @@
         <th style="text-align: center;"><b>{{ __('index.check_out_at') }}</b></th>
         <th style="text-align: center;"><b>{{ __('index.total_worked_hours') }}</b></th>
         <th style="text-align: center;"><b>{{ __('index.attendance_status') }}</b></th>
+        <th style="text-align: center;"><b>{{ __('index.leave') }}</b></th>
         <th style="text-align: center;"><b>Month-Year</b></th>
         <th style="text-align: center;"><b>Create By</b></th>
         <th style="text-align: center;"><b>Create At</b></th>
@@ -27,7 +28,7 @@
             $lastAttendance = $userAttendances->last();
             $selectedAttendanceDate = $firstAttendance->attendance_date ?? $dayDetail['attendance_date'];
             $displayDate = $selectedAttendanceDate ? date('Y-m-d', strtotime($selectedAttendanceDate)) : '';
-            $nightShift = \App\Helpers\AppHelper::isOnNightShift($userId);
+            $nightShift = ($firstAttendance->user_shift_type ?? $firstAttendance->shift) === \App\Enum\ShiftTypeEnum::night->value;
 
             $timeIn = isset($firstAttendance->office_opening_time)
                 ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time)
@@ -57,18 +58,29 @@
                 ? \App\Helpers\AttendanceHelper::getWorkedTimeInHourAndMinute($totalWorkedMinutes)
                 : \App\Helpers\AttendanceHelper::getWorkedTimeInHourAndMinute($firstAttendance->worked_hour ?? 0);
 
-            if (!is_null($firstAttendance->attendance_status)) {
-                $attendanceStatus = $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED
+            $attendanceStatus = !is_null($firstAttendance->attendance_status)
+                ? ($firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED
                     ? __('index.approved')
-                    : __('index.rejected');
-            } elseif ($firstAttendance->leave_request_id) {
+                    : __('index.rejected'))
+                : __('index.pending');
+
+            $leaveLabels = [];
+            if ($firstAttendance->leave_request_id) {
                 $leaveRequestType = $firstAttendance->leave_request_type
                     ? ucfirst($firstAttendance->leave_request_type)
                     : __('index.leave_request');
-                $attendanceStatus = $leaveRequestType . ' (' . ucfirst($firstAttendance->leave_request_status) . ')';
-            } else {
-                $attendanceStatus = \App\Helpers\AttendanceHelper::getHolidayOrLeaveDetail($selectedAttendanceDate, $userId) ?? __('index.pending');
+                $leaveLabels[] = $leaveRequestType . ' (' . ucfirst($firstAttendance->leave_request_status) . ')';
             }
+
+            if ($firstAttendance->time_leave_id) {
+                $leaveLabels[] = __('index.time_leave_request') . ' (' .
+                    \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) .
+                    ' - ' .
+                    \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) .
+                    ', ' . ucfirst($firstAttendance->time_leave_status) . ')';
+            }
+
+            $leaveStatus = implode(' | ', $leaveLabels);
 
             $employeeCode = $firstAttendance->employee_code ?? '';
             $recordId = $firstAttendance->uuid ?? '';
@@ -89,6 +101,7 @@
             <td style="text-align: center;">{{ $checkOutAt }}</td>
             <td style="text-align: center;">{{ $workedHourDisplay }}</td>
             <td style="text-align: center;">{{ $attendanceStatus }}</td>
+            <td style="text-align: center;">{{ $leaveStatus }}</td>
             <td style="text-align: center;">{{ $monthYear }}</td>
             <td style="text-align: center;">{{ $createdBy }}</td>
             <td style="text-align: center;">{{ $createdAt }}</td>
@@ -97,7 +110,7 @@
         </tr>
     @empty
         <tr>
-            <td colspan="15" style="text-align: center;">
+            <td colspan="16" style="text-align: center;">
                 <p><b>{{ __('index.no_records_found') }}</b></p>
             </td>
         </tr>

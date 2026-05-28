@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Enum\EmployeeAttendanceTypeEnum;
+use App\Enum\LeaveStatusEnum;
 use App\Exports\AttendanceDayWiseExport;
 use App\Exports\AttendanceExport;
 use App\Exports\AttendanceReportExport;
@@ -12,6 +14,8 @@ use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\LeaveRequestMaster;
+use App\Models\OfficeTime;
+use App\Models\TimeLeave;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\LeaveTypeRepository;
@@ -23,6 +27,7 @@ use App\Requests\Attendance\AttendanceTimeEditRequest;
 use App\Services\Attendance\AttendanceLogService;
 use App\Services\Attendance\AttendanceService;
 use App\Services\Attendance\AttendanceTelegramNotificationService;
+use App\Services\Leave\TimeLeaveService;
 use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Carbon\Carbon;
@@ -52,6 +57,7 @@ class AttendanceController extends Controller
                                 protected AttendanceLogService $attendanceLogService,
                                 protected TelegramService $telegramService,
                                 protected AttendanceTelegramNotificationService $attendanceTelegramNotificationService,
+                                protected TimeLeaveService $timeLeaveService,
     )
     {}
 
@@ -72,6 +78,8 @@ class AttendanceController extends Controller
                 'company_id' => $companyId,
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
+                'search' => trim((string) $request->query('search', '')),
+                'status_filter' => $request->query('status_filter'),
                 'download_excel' => $request->download_excel,
                 'date_in_bs' => false,
             ];
@@ -84,22 +92,88 @@ class AttendanceController extends Controller
                 $filterParameter['branch_id'] = auth()->user()->branch_id;
             }
 
-            $attendanceDetail = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter);
-
             $branch = $this->branchRepo->getLoggedInUserCompanyBranches($companyId,$selectBranch);
             $multipleAttendance = AppHelper::getAttendanceLimit();
             $attendanceNote = AppHelper::ifAttendanceNoteEnabled();
 
 
             if($filterParameter['download_excel']){
+                $attendanceDetail = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter);
                 return \Maatwebsite\Excel\Facades\Excel::download( new AttendanceDayWiseExport($attendanceDetail,$filterParameter, $multipleAttendance, $isBsEnabled),'attendance-'.$filterParameter['attendance_date'].'-report.xlsx');
             }
 
+            $allowedPerPage = [25, 50, 100, 200];
+            $requestedPerPage = $request->query('per_page', 25);
+            $perPage = $requestedPerPage === 'all' ? 'all' : (int) $requestedPerPage;
 
-            return view($this->view . 'index', compact('attendanceDetail', 'filterParameter','branch' ,'isBsEnabled', 'appTimeSetting','multipleAttendance','attendanceNote'));
+            if ($perPage !== 'all' && !in_array($perPage, $allowedPerPage, true)) {
+                $perPage = 25;
+            }
+
+            $attendancePaginator = $this->attendanceService->getCompanyEmployeeAttendancePaginatorOfTheDay($filterParameter, $perPage);
+            $employeeIds = $attendancePaginator->getCollection()->pluck('id')->all();
+            $attendanceDetail = empty($employeeIds)
+                ? collect()
+                : $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, $employeeIds);
+            $attendanceSummaryRows = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, [], true);
+            $attendanceSummary = $this->buildDailyAttendanceSummary($attendanceSummaryRows);
+
+            return view($this->view . 'index', compact('attendanceDetail', 'attendancePaginator', 'attendanceSummary', 'perPage', 'filterParameter','branch' ,'isBsEnabled', 'appTimeSetting','multipleAttendance','attendanceNote'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    private function buildDailyAttendanceSummary($attendanceRows): array
+    {
+        $groupedAttendance = $attendanceRows->groupBy('user_id');
+        $isDayOffType = static function ($type) {
+            $typeName = strtolower(trim((string) $type));
+            return str_contains($typeName, 'day off');
+        };
+        $hasCheckIn = static function ($attendanceRows) {
+            return $attendanceRows->contains(fn ($row) => !empty($row->check_in_at) || !empty($row->night_checkin));
+        };
+        $hasCheckOut = static function ($attendanceRows) {
+            return $attendanceRows->contains(fn ($row) => !empty($row->check_out_at) || !empty($row->night_checkout));
+        };
+
+        return [
+            'total_employee' => $groupedAttendance->count(),
+            'total_check_in' => $groupedAttendance->filter($hasCheckIn)->count(),
+            'total_check_out' => $groupedAttendance->filter($hasCheckOut)->count(),
+            'total_not_yet_check_in' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn) {
+                $first = $rows->first();
+                return !$hasCheckIn($rows) && !$first?->leave_request_id;
+            })->count(),
+            'total_not_yet_check_out' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn, $hasCheckOut) {
+                return $hasCheckIn($rows) && !$hasCheckOut($rows);
+            })->count(),
+            'total_day_off' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
+                $first = $rows->first();
+                return $first?->leave_request_id
+                    && $first?->leave_request_status === 'approved'
+                    && $isDayOffType($first?->leave_request_type);
+            })->count(),
+            'total_leave' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
+                $first = $rows->first();
+                return $first?->leave_request_id
+                    && $first?->leave_request_status === 'approved'
+                    && !$isDayOffType($first?->leave_request_type);
+            })->count(),
+            'total_time_leave' => $groupedAttendance->filter(function ($rows) {
+                $first = $rows->first();
+                return $first?->time_leave_id && $first?->time_leave_status === 'approved';
+            })->count(),
+            'total_leave_request' => $groupedAttendance->filter(function ($rows) {
+                $first = $rows->first();
+                return $first?->leave_request_id && $first?->leave_request_status === 'pending';
+            })->count(),
+            'total_time_leave_request' => $groupedAttendance->filter(function ($rows) {
+                $first = $rows->first();
+                return $first?->time_leave_id && $first?->time_leave_status === 'pending';
+            })->count(),
+        ];
     }
 
     /**
@@ -210,6 +284,69 @@ class AttendanceController extends Controller
             DB::commit();
 
             return redirect()->back()->with('success', 'Approved leave added from attendance list successfully.');
+        } catch (Exception $exception) {
+            DB::rollBack();
+
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function quickApproveTimeLeave(Request $request): RedirectResponse
+    {
+        $this->authorize('create_time_leave_request');
+
+        $validatedData = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'attendance_date' => ['required', 'date'],
+            'leave_from' => ['required', 'date_format:H:i'],
+            'leave_to' => ['required', 'date_format:H:i', 'after:leave_from'],
+            'reasons' => ['required', 'string', 'min:10', 'max:500'],
+        ]);
+
+        try {
+            $employee = $this->userRepository->findUserDetailById(
+                $validatedData['user_id'],
+                ['id', 'name', 'branch_id', 'department_id', 'office_time_id']
+            );
+
+            if (!$employee) {
+                throw new Exception('Employee not found.');
+            }
+
+            if (!$employee->branch_id || !$employee->department_id) {
+                throw new Exception('Employee must have branch and department before adding quick time leave.');
+            }
+
+            $existingTimeLeave = TimeLeave::query()
+                ->where('requested_by', $employee->id)
+                ->whereDate('issue_date', $validatedData['attendance_date'])
+                ->whereIn('status', [LeaveStatusEnum::pending->value, LeaveStatusEnum::approved->value])
+                ->first();
+
+            if ($existingTimeLeave) {
+                throw new Exception(__('message.leave_pending_error', ['status' => $existingTimeLeave->status]), 400);
+            }
+
+            $timeLeaveData = [
+                'branch_id' => $employee->branch_id,
+                'department_id' => $employee->department_id,
+                'issue_date' => $validatedData['attendance_date'],
+                'reasons' => trim((string) $validatedData['reasons']),
+                'leave_from' => $validatedData['leave_from'],
+                'leave_to' => $validatedData['leave_to'],
+                'requested_by' => $employee->id,
+                'referred_by' => auth()->id(),
+                'status' => LeaveStatusEnum::approved->value,
+                'admin_remark' => 'Approved from attendance list as quick time leave.',
+                'request_updated_by' => auth()->id(),
+            ];
+
+            DB::beginTransaction();
+            $timeLeave = $this->timeLeaveService->storeTimeLeaveRequest($timeLeaveData);
+            $this->applyApprovedTimeLeaveToAttendance($employee->id, $timeLeaveData['issue_date'], $timeLeave['start_time'], $timeLeave['end_time']);
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Approved time leave added from attendance list successfully.');
         } catch (Exception $exception) {
             DB::rollBack();
 
@@ -575,6 +712,49 @@ class AttendanceController extends Controller
     private function sendTelegramAttendanceNotification(string $type, $userDetail, $attendance): void
     {
         $this->attendanceTelegramNotificationService->notify($type, $userDetail, $attendance);
+    }
+
+    private function applyApprovedTimeLeaveToAttendance(int $userId, string $issueDate, string $startTime, string $endTime): void
+    {
+        $attendanceData = Attendance::query()
+            ->where('user_id', $userId)
+            ->whereDate('attendance_date', $issueDate)
+            ->first();
+
+        if (!$attendanceData || !$attendanceData->check_in_at) {
+            return;
+        }
+
+        $user = $this->userRepository->findUserDetailById($userId, ['id', 'office_time_id']);
+        if (!$user) {
+            return;
+        }
+
+        $multipleAttendance = AppHelper::getAttendanceLimit();
+        if ($multipleAttendance > 1) {
+            return;
+        }
+
+        $shift = OfficeTime::query()->find($user->office_time_id);
+        if (!$shift || strtotime($endTime) !== strtotime($shift->closing_time)) {
+            return;
+        }
+
+        $updateData = [
+            'check_out_at' => $startTime,
+            'check_out_type' => EmployeeAttendanceTypeEnum::wifi->value,
+        ];
+
+        $workedData = AttendanceHelper::calculateWorkedHour($startTime, $attendanceData->check_in_at, $attendanceData->user_id);
+        $updateData['worked_hour'] = $workedData['workedHours'];
+        $updateData['overtime'] = $workedData['overtime'];
+        $updateData['undertime'] = $workedData['undertime'];
+
+        $attendanceStatus = $this->attendanceService->update($attendanceData, $updateData);
+
+        if ($attendanceStatus) {
+            $this->userRepository->updateUserOnlineStatus($user, 0);
+        }
     }
 
     private function getEmployeeLeaveRequestsByDate(int $employeeId, array $filterParameter): array

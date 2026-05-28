@@ -166,6 +166,11 @@ class TimeLeaveController extends Controller
 
             }
             DB::commit();
+
+            if ($request->boolean('redirect_back')) {
+                return redirect()->back()->with('success', __('message.status_update'));
+            }
+
             return redirect()
                 ->route('admin.time-leave-request.index')
                 ->with('success', __('message.status_update'));

@@ -11,7 +11,7 @@
             }
         });
 
-        $('#checkIn').click(function (event) {
+        $(document).off('click.attendanceCheckIn', 'a#checkIn').on('click.attendanceCheckIn', 'a#checkIn', function (event) {
             event.preventDefault();
             let href = $(this).attr('href');
             Swal.fire({
@@ -28,7 +28,7 @@
             });
         });
 
-        $('#checkOut').click(function (event) {
+        $(document).off('click.attendanceCheckOut', 'a#checkOut').on('click.attendanceCheckOut', 'a#checkOut', function (event) {
             event.preventDefault();
             let href = $(this).attr('href');
             Swal.fire({
@@ -46,14 +46,14 @@
         });
 
 
-        $('.checkLocation').click(function (event) {
+        $(document).off('click.attendanceLocation', '.checkLocation').on('click.attendanceLocation', '.checkLocation', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             $('.attendancelocation').attr("src", href);
         })
 
 
-        $('.editAttendance').click(function (event) {
+        $(document).off('click.attendanceEdit', '.editAttendance').on('click.attendanceEdit', '.editAttendance', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
             let attendanceIn = $(this).data('in');
@@ -86,7 +86,7 @@
         {{--    $('#nightEditRemark').val(editRemark);--}}
         {{--    $('#nightAttendanceForm').modal('show');--}}
         {{--});--}}
-        $('.editNightAttendance').click(function (event) {
+        $(document).off('click.attendanceNightEdit', '.editNightAttendance').on('click.attendanceNightEdit', '.editNightAttendance', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
             let attendanceIn = $(this).data('in');
@@ -117,7 +117,7 @@
             $('#nightAttendanceForm').modal('show');
         });
 
-        $('.addEmployeeAttendance').click(function (event) {
+        $(document).off('click.attendanceAddEmployee', '.addEmployeeAttendance').on('click.attendanceAddEmployee', '.addEmployeeAttendance', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
             let name = $(this).data('name');
@@ -142,7 +142,10 @@
 
         function getDayWiseAttendanceFilterParam() {
             let params = {
-                attendance_date: $('#attendance_date').val()
+                attendance_date: $('#attendance_date').val(),
+                branch_id: $('#branch_id').val(),
+                department_id: $('#department_id').val(),
+                search: $('#attendanceDaySearch').val()
             };
             return params;
         }
@@ -157,7 +160,7 @@
             window.open(url, '_blank');
         });
 
-        $('#download-daywise-attendance-excel').on('click', function (e) {
+        $(document).off('click.attendanceDaywiseExport', '#download-daywise-attendance-excel').on('click.attendanceDaywiseExport', '#download-daywise-attendance-excel', function (e) {
             e.preventDefault();
             let route = $(this).data('href');
             let filtered_params = getDayWiseAttendanceFilterParam();

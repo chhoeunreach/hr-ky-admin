@@ -17,6 +17,59 @@
                 margin-top: 0 !important;
             }
 
+            .attendance-page-loader {
+                position: fixed;
+                inset: 0;
+                z-index: 2050;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                background: rgba(248, 250, 252, 0.82);
+                backdrop-filter: blur(8px);
+            }
+
+            .attendance-page-loader.is-visible {
+                display: flex;
+            }
+
+            .attendance-loader-panel {
+                min-width: 220px;
+                padding: 22px 24px;
+                border-radius: 8px;
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+                text-align: center;
+            }
+
+            .attendance-loader-spinner {
+                width: 34px;
+                height: 34px;
+                margin: 0 auto 12px;
+                border-radius: 50%;
+                border: 3px solid #dbeafe;
+                border-top-color: #2563eb;
+                animation: attendanceLoaderSpin 0.8s linear infinite;
+            }
+
+            .attendance-loader-title {
+                color: #0f172a;
+                font-weight: 700;
+                line-height: 1.2;
+            }
+
+            .attendance-loader-text {
+                margin-top: 5px;
+                color: #64748b;
+                font-size: 0.86rem;
+            }
+
+            @keyframes attendanceLoaderSpin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
             .attendance-chat-modal .modal-dialog {
                 max-width: 760px;
             }
@@ -429,7 +482,18 @@
 
             .attendance-table-search-wrap {
                 display: flex;
+                align-items: center;
                 justify-content: flex-end;
+                gap: 8px;
+            }
+
+            .attendance-table-reset {
+                min-height: 38px;
+                border-radius: 14px;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                white-space: nowrap;
             }
 
             .attendance-table-search {
@@ -467,17 +531,70 @@
                 top: calc(100% + 6px);
                 left: 50%;
                 transform: translateX(-50%);
-                min-width: 170px;
-                padding: 8px 10px;
-                border-radius: 12px;
-                background: #1f2937;
-                color: #fff;
+                min-width: 220px;
+                padding: 10px;
+                border: 1px solid rgba(226, 232, 240, 0.95);
+                border-radius: 8px;
+                background: #ffffff;
+                color: #111827;
                 font-size: 0.76rem;
                 line-height: 1.35;
                 text-align: left;
-                box-shadow: 0 10px 24px rgba(15, 23, 42, 0.2);
-                z-index: 6;
-                white-space: pre-line;
+                box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+                z-index: 8;
+            }
+
+            .attendance-summary-popover-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 7px 8px;
+                border-radius: 6px;
+                font-weight: 600;
+            }
+
+            .attendance-summary-popover-row + .attendance-summary-popover-row {
+                margin-top: 6px;
+            }
+
+            .attendance-summary-popover-row span:first-child {
+                color: #334155;
+            }
+
+            .attendance-summary-popover-row strong {
+                min-width: 30px;
+                padding: 3px 8px;
+                border-radius: 999px;
+                text-align: center;
+                font-size: 0.78rem;
+            }
+
+            .attendance-summary-popover-row.is-day-off {
+                background: #f0fdf4;
+            }
+
+            .attendance-summary-popover-row.is-day-off strong {
+                background: #bbf7d0;
+                color: #166534;
+            }
+
+            .attendance-summary-popover-row.is-leave {
+                background: #eff6ff;
+            }
+
+            .attendance-summary-popover-row.is-leave strong {
+                background: #bfdbfe;
+                color: #1d4ed8;
+            }
+
+            .attendance-summary-popover-row.is-pending {
+                background: #fff7ed;
+            }
+
+            .attendance-summary-popover-row.is-pending strong {
+                background: #fed7aa;
+                color: #c2410c;
             }
 
             .attendance-day-row:hover .attendance-username-summary {
@@ -486,39 +603,185 @@
 
             .attendance-status-actions {
                 position: relative;
+                min-width: 118px;
+                min-height: 30px;
             }
 
-            .attendance-status-actions .quickApproveLeaveTrigger {
+            .attendance-status-actions .quickApproveLeaveTrigger,
+            .attendance-status-actions .quickApproveTimeLeaveTrigger {
                 position: absolute;
-                top: calc(100% + 4px);
                 left: 50%;
-                z-index: 5;
+                z-index: 7;
                 opacity: 0;
                 visibility: hidden;
                 white-space: nowrap;
-                transform: translate(-50%, 4px);
-                transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+                transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease, box-shadow 0.18s ease;
+            }
+
+            .attendance-status-actions .quickApproveLeaveTrigger {
+                top: 50%;
+                transform: translate(-50%, 8px) scale(0.98);
+            }
+
+            .attendance-status-actions .quickApproveTimeLeaveTrigger {
+                top: 50%;
+                transform: translate(-50%, -118%) scale(0.98);
+            }
+
+            .attendance-day-row:hover .attendance-status-actions .quickApproveLeaveTrigger,
+            .attendance-day-row:hover .attendance-status-actions .quickApproveTimeLeaveTrigger,
+            .attendance-status-actions .quickApproveLeaveTrigger:focus,
+            .attendance-status-actions .quickApproveTimeLeaveTrigger:focus {
+                opacity: 1;
+                visibility: visible;
             }
 
             .attendance-day-row:hover .attendance-status-actions .quickApproveLeaveTrigger,
             .attendance-status-actions .quickApproveLeaveTrigger:focus {
+                transform: translate(-50%, 8px) scale(1);
+            }
+
+            .attendance-day-row:hover .attendance-status-actions .quickApproveTimeLeaveTrigger,
+            .attendance-status-actions .quickApproveTimeLeaveTrigger:focus {
+                transform: translate(-50%, -118%) scale(1);
+            }
+
+            .attendance-profile-wrap {
+                position: relative;
+                min-height: 42px;
+            }
+
+            .attendance-profile-chat-badge {
+                position: absolute;
+                top: 50%;
+                right: 0;
+                z-index: 7;
+                opacity: 0;
+                visibility: hidden;
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                white-space: nowrap;
+                box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+                transform: translate(8px, -50%) scale(0.98);
+                transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+            }
+
+            .attendance-employee-cell:hover .attendance-profile-chat-badge,
+            .attendance-employee-cell:focus-within .attendance-profile-chat-badge,
+            .attendance-profile-chat-badge:focus {
                 opacity: 1;
                 visibility: visible;
-                transform: translate(-50%, 0);
+                transform: translate(0, -50%) scale(1);
             }
 
-            .attendance-row-chat-action {
-                display: none;
+            .attendance-leave-pill {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
+                max-width: 100%;
+                min-height: 28px;
+                padding: 5px 7px;
+                border-radius: 999px;
+                border: 1px solid transparent;
+                font-weight: 700;
+                font-size: 0.74rem;
+                line-height: 1.2;
+                white-space: nowrap;
+                box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08);
             }
 
-            .attendance-day-row:hover .attendance-row-chat-action,
-            .attendance-row-chat-action:focus-within {
-                display: list-item;
+            .attendance-leave-pill-label {
+                max-width: 130px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .attendance-leave-pill-status {
+                padding: 2px 5px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.72);
+                font-size: 0.67rem;
+                text-transform: uppercase;
+            }
+
+            .attendance-leave-pill.is-day-off {
+                border-color: #86efac;
+                background: #dcfce7;
+                color: #166534;
+            }
+
+            .attendance-leave-pill.is-leave,
+            .attendance-leave-pill.is-approved {
+                border-color: #93c5fd;
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+
+            .attendance-leave-pill.is-pending {
+                border-color: #fdba74;
+                background: #ffedd5;
+                color: #c2410c;
+            }
+
+            .attendance-leave-pill.is-rejected,
+            .attendance-leave-pill.is-cancelled {
+                border-color: #fecaca;
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+
+            .attendance-leave-pill.is-time-leave {
+                border-color: #a5b4fc;
+                background: #eef2ff;
+                color: #4338ca;
+            }
+
+            .attendance-leave-pill.is-time-leave.is-pending {
+                border-color: #fdba74;
+                background: #ffedd5;
+                color: #c2410c;
+            }
+
+            .attendance-leave-column {
+                width: 190px;
+                min-width: 170px;
+                max-width: 200px;
+            }
+
+            .attendance-leave-cell {
+                width: 190px;
+                min-width: 170px;
+                max-width: 200px;
+            }
+
+            .attendance-leave-content {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                max-width: 100%;
+            }
+
+            .attendance-leave-content .attendanceLeaveRequestUpdate,
+            .attendance-leave-content .attendanceTimeLeaveRequestUpdate {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            .attendance-leave-content .attendance-leave-pill {
+                max-width: 100%;
+            }
+
+            .attendance-leave-content .attendance-leave-pill-label {
+                max-width: 74px;
             }
 
             .attendance-summary-footer {
                 display: grid;
-                grid-template-columns: repeat(8, minmax(0, 1fr));
+                grid-template-columns: repeat(10, minmax(0, 1fr));
                 gap: 10px;
                 margin-top: 12px;
             }
@@ -656,15 +919,25 @@
                     width: 100%;
                 }
 
-                .attendance-status-actions .quickApproveLeaveTrigger {
+                .attendance-table-reset {
+                    flex: 0 0 auto;
+                }
+
+                .attendance-status-actions .quickApproveLeaveTrigger,
+                .attendance-status-actions .quickApproveTimeLeaveTrigger {
                     position: static;
                     opacity: 1;
                     visibility: visible;
                     transform: none;
+                    margin-top: 0.35rem;
                 }
 
-                .attendance-row-chat-action {
-                    display: list-item;
+                .attendance-profile-chat-badge {
+                    position: static;
+                    opacity: 1;
+                    visibility: visible;
+                    transform: none;
+                    margin-top: 0.35rem;
                 }
 
                 .attendance-username-summary {
@@ -698,6 +971,14 @@
         ?>
 
         @include('admin.section.flash_message')
+
+        <div class="attendance-page-loader" id="attendancePageLoader" aria-hidden="true">
+            <div class="attendance-loader-panel" role="status" aria-live="polite">
+                <div class="attendance-loader-spinner"></div>
+                <div class="attendance-loader-title">Loading attendance</div>
+                <div class="attendance-loader-text" id="attendancePageLoaderText">Please wait...</div>
+            </div>
+        </div>
 
         @include('admin.attendance.common.breadcrumb')
         <div class="card mb-4 attendance-filter-card">
@@ -775,50 +1056,20 @@
                 return $attendanceRows->contains(fn ($row) => !empty($row->check_out_at) || !empty($row->night_checkout));
             };
 
-            $attendanceSummary = [
-                'total_employee' => $groupedAttendance->count(),
-                'total_check_in' => $groupedAttendance->filter($hasCheckIn)->count(),
-                'total_check_out' => $groupedAttendance->filter($hasCheckOut)->count(),
-                'total_not_yet_check_in' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn) {
-                    $first = $rows->first();
-                    return !$hasCheckIn($rows) && !$first?->leave_request_id;
-                })->count(),
-                'total_not_yet_check_out' => $groupedAttendance->filter(function ($rows) use ($hasCheckIn, $hasCheckOut) {
-                    return $hasCheckIn($rows) && !$hasCheckOut($rows);
-                })->count(),
-                'total_day_off' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
-                    $first = $rows->first();
-                    return $first?->leave_request_id
-                        && $first?->leave_request_status === 'approved'
-                        && $isDayOffType($first?->leave_request_type);
-                })->count(),
-                'total_leave' => $groupedAttendance->filter(function ($rows) use ($isDayOffType) {
-                    $first = $rows->first();
-                    return $first?->leave_request_id
-                        && $first?->leave_request_status === 'approved'
-                        && !$isDayOffType($first?->leave_request_type);
-                })->count(),
-                'total_leave_request' => $groupedAttendance->filter(function ($rows) {
-                    $first = $rows->first();
-                    return $first?->leave_request_id && $first?->leave_request_status === 'pending';
-                })->count(),
-            ];
         @endphp
 
-        <div class="card attendance-day-card">
+        <div id="attendanceResultsBlock" class="card attendance-day-card">
             <div class="card-header">
                 <div class="attendance-table-toolbar mb-0">
                     <div class="attendance-toolbar-left">
                         <div class="attendance-entry-control">
                             <span>Show</span>
                             <select id="attendanceEntries" class="form-control attendance-entry-select">
-                                <option value="all" selected>All</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                                <option value="200">200</option>
-                                <option value="500">500</option>
-                                <option value="1000">1,000</option>
+                                <option value="25" {{ (string) $perPage === '25' ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ (string) $perPage === '50' ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ (string) $perPage === '100' ? 'selected' : '' }}>100</option>
+                                <option value="200" {{ (string) $perPage === '200' ? 'selected' : '' }}>200</option>
+                                <option value="all" {{ $perPage === 'all' ? 'selected' : '' }}>All</option>
                             </select>
                             <span>entries</span>
                         </div>
@@ -834,9 +1085,17 @@
                         @endcan
                     </div>
                     <div class="attendance-table-search-wrap">
+                        <button type="button"
+                                id="attendanceResetFilters"
+                                class="btn btn-outline-secondary btn-sm attendance-table-reset"
+                                title="{{ __('index.reset') }}">
+                            <i class="link-icon" data-feather="rotate-ccw"></i>
+                            {{ __('index.reset') }}
+                        </button>
                         <input type="text"
                                id="attendanceDaySearch"
                                class="attendance-table-search"
+                               value="{{ $filterParameter['search'] ?? '' }}"
                                placeholder="Search ...">
                     </div>
                 </div>
@@ -862,8 +1121,8 @@
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
                                 <th class="text-center">{{ __('index.attendance_status') }}</th>
-                                <th class="text-center">{{ __('index.shift') }}</th>
-                                @canany(['attendance_create', 'attendance_update', 'attendance_delete', 'view_employee_chat'])
+                                <th class="text-center attendance-leave-column">{{ __('index.leave') }}</th>
+                                @canany(['attendance_create', 'attendance_update', 'attendance_delete'])
                                     <th class="text-center">{{ __('index.action') }}</th>
                                 @endcanany
                             </tr>
@@ -876,12 +1135,6 @@
                                 ]
                                @endphp
                                 @php
-                                    $leaveRequestColor = [
-                                        'approved' => 'success',
-                                        'pending' => 'secondary',
-                                        'rejected' => 'danger',
-                                        'cancelled' => 'danger',
-                                    ];
                                     $selectedAttendanceDate = $isBsEnabled
                                         ? \App\Helpers\AppHelper::dateInYmdFormatNepToEng($filterParameter['attendance_date'])
                                         : $filterParameter['attendance_date'];
@@ -908,14 +1161,14 @@
 
                                         $multipleEntries = $userAttendances->count();
 
-                                        $nightShift = \App\Helpers\AppHelper::isOnNightShift($userId);
+                                        $nightShift = ($firstAttendance->user_shift_type ?? $firstAttendance->shift) === \App\Enum\ShiftTypeEnum::night->value;
                                         $canAddAttendanceForSelectedDate = $filterParameter['attendance_date'] != $currentDate
                                             && !$firstAttendance->attendance_id
                                             && !$firstAttendance->leave_request_id;
                                         $quickChatTitle = 'Quick chat with ' . ucfirst($firstAttendance->user_name);
-                                        $userHoverSummary = 'Day Off: ' . (int) ($firstAttendance->approved_day_off_days ?? 0)
-                                            . "\nច្បាប់: " . (int) ($firstAttendance->approved_leave_days ?? 0)
-                                            . "\nRequest Pending: " . (int) ($firstAttendance->pending_leave_days ?? 0);
+                                        $approvedDayOffDays = (int) ($firstAttendance->approved_day_off_days ?? 0);
+                                        $approvedLeaveDays = (int) ($firstAttendance->approved_leave_days ?? 0);
+                                        $pendingLeaveDays = (int) ($firstAttendance->pending_leave_days ?? 0);
 
                                     @endphp
 
@@ -924,6 +1177,7 @@
                                         $rowHasCheckOut = $hasCheckOut($userAttendances);
                                         $rowIsApprovedLeave = $firstAttendance?->leave_request_id && $firstAttendance?->leave_request_status === 'approved';
                                         $rowIsPendingLeaveRequest = $firstAttendance?->leave_request_id && $firstAttendance?->leave_request_status === 'pending';
+                                        $rowIsPendingTimeLeaveRequest = $firstAttendance?->time_leave_id && $firstAttendance?->time_leave_status === 'pending';
                                         $rowIsDayOff = $rowIsApprovedLeave && $isDayOffType($firstAttendance?->leave_request_type);
                                         $rowIsLeave = $rowIsApprovedLeave && !$isDayOffType($firstAttendance?->leave_request_type);
                                         $rowIsNotYetCheckIn = !$rowHasCheckIn && !$firstAttendance?->leave_request_id;
@@ -937,7 +1191,9 @@
                                         data-summary-total_not_yet_check_out="{{ ($rowHasCheckIn && !$rowHasCheckOut) ? '1' : '0' }}"
                                         data-summary-total_day_off="{{ $rowIsDayOff ? '1' : '0' }}"
                                         data-summary-total_leave="{{ $rowIsLeave ? '1' : '0' }}"
-                                        data-summary-total_leave_request="{{ $rowIsPendingLeaveRequest ? '1' : '0' }}">
+                                        data-summary-total_time_leave="{{ ($firstAttendance?->time_leave_id && $firstAttendance?->time_leave_status === 'approved') ? '1' : '0' }}"
+                                        data-summary-total_leave_request="{{ $rowIsPendingLeaveRequest ? '1' : '0' }}"
+                                        data-summary-total_time_leave_request="{{ $rowIsPendingTimeLeaveRequest ? '1' : '0' }}">
                                     @can('attendance_show')
                                         <td>
                                             <ul class="text-center list-unstyled mb-0">
@@ -954,11 +1210,24 @@
                                     <td class="text-center attendance-username-cell">
                                         <div class="attendance-username-wrap">
                                             <span>{{ $firstAttendance->username ?: 'N/A' }}</span>
-                                            <div class="attendance-username-summary">{{ $userHoverSummary }}</div>
+                                            <div class="attendance-username-summary">
+                                                <div class="attendance-summary-popover-row is-day-off">
+                                                    <span>{{ __('index.total_day_off') }}</span>
+                                                    <strong>{{ number_format($approvedDayOffDays) }}</strong>
+                                                </div>
+                                                <div class="attendance-summary-popover-row is-leave">
+                                                    <span>{{ __('index.leave') }}</span>
+                                                    <strong>{{ number_format($approvedLeaveDays) }}</strong>
+                                                </div>
+                                                <div class="attendance-summary-popover-row is-pending">
+                                                    <span>{{ __('index.pending_leave_requests') }}</span>
+                                                    <strong>{{ number_format($pendingLeaveDays) }}</strong>
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
 
-                                    <td>
+                                    <td class="attendance-employee-cell">
                                         @php
                                             $profileImage = $firstAttendance->avatar
                                                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $firstAttendance->avatar)
@@ -967,7 +1236,7 @@
                                                 . ' | ' . __('index.branch_name') . ': ' . ($firstAttendance->branch_name ? ucfirst($firstAttendance->branch_name) : 'N/A')
                                                 . ' | ' . __('index.department') . ': ' . ($firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : 'N/A');
                                         @endphp
-                                        <div class="d-flex align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-2 attendance-profile-wrap">
                                             <a href="#"
                                                class="showProfilePhoto"
                                                data-src="{{ $profileImage }}"
@@ -982,6 +1251,19 @@
                                                 <div class="fw-semibold">{{ ucfirst($firstAttendance->user_name) }}</div>
                                                 <small class="text-muted">{{ $firstAttendance->phone ?: 'N/A' }}</small>
                                             </div>
+                                            @can('view_employee_chat')
+                                                <a href="#"
+                                                   class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
+                                                   data-employee-id="{{ $firstAttendance->user_id }}"
+                                                   data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                   data-employee-avatar="{{ $profileImage }}"
+                                                   data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                   data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                   title="{{ $quickChatTitle }}">
+                                                    <i class="link-icon" data-feather="message-circle"></i>
+                                                    Quick Chat
+                                                </a>
+                                            @endcan
                                         </div>
                                     </td>
 
@@ -1073,96 +1355,119 @@
                                         </td>
                                     @endif
 
-                                    @if(!is_null($firstAttendance->attendance_status))
-                                        <td class="text-center">
+                                    <td class="text-center">
+                                        @if(!is_null($firstAttendance->attendance_status))
                                             <a class="btn btn-{{ $changeColor[$firstAttendance->attendance_status] }} btn-xs"
                                                title="{{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}">
                                                 {{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}
                                             </a>
-                                        </td>
-                                    @else
-                                        <td class="text-center">
-                                            @if($firstAttendance->leave_request_id)
-                                                <div class="d-flex justify-content-center align-items-center gap-2">
-                                                    @canany(['update_leave_request','access_admin_leave'])
-                                                        <a href="#"
-                                                           class="attendanceLeaveRequestUpdate"
-                                                           data-href="{{ route('admin.leave-request.update-status', $firstAttendance->leave_request_id) }}"
-                                                           data-status="{{ $firstAttendance->leave_request_status }}"
-                                                           data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
-                                                           data-id="{{ $firstAttendance->leave_request_id }}">
-                                                            <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
-                                                                  title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
-                                                                {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
-                                                                ({{ ucfirst($firstAttendance->leave_request_status) }})
-                                                            </span>
-                                                        </a>
-                                                    @else
-                                                        <span class="btn btn-{{ $leaveRequestColor[$firstAttendance->leave_request_status] ?? 'secondary' }} btn-xs"
-                                                              title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
-                                                            {{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}
-                                                            ({{ ucfirst($firstAttendance->leave_request_status) }})
-                                                        </span>
-                                                    @endcanany
-                                                    @canany(['show_leave_request_detail','access_admin_leave'])
-                                                        <a href="{{ route('admin.leave-request.show', $firstAttendance->leave_request_id) }}"
-                                                           class="showAttendanceLeaveReason"
-                                                           title="{{ __('index.show_leave_reason') }}">
-                                                            <i class="link-icon" data-feather="eye"></i>
-                                                        </a>
-                                                    @endcanany
-                                                </div>
-                                            @else
-                                                <div class="d-inline-flex flex-column align-items-center gap-2 attendance-status-actions">
-                                                    <span class="btn btn-light btn-xs disabled">
-                                                        {{ __('index.pending') }}
-                                                    </span>
-                                                    @can('quick_leave')
-                                                        <a href="#"
-                                                           class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
-                                                           data-user-id="{{ $firstAttendance->user_id }}"
-                                                           data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                                           data-attendance-date="{{ $selectedAttendanceDate }}"
-                                                           data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}"
-                                                           data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
-                                                            Quick Leave
-                                                        </a>
-                                                    @endcan
-                                                </div>
-                                            @endif
-                                        </td>
-                                    @endif
-
-                                    @if($firstAttendance->shift)
-                                        <td class="text-center">
-                                            <span class="btn btn-warning btn-xs">
-                                                {{ ucfirst($firstAttendance->shift)  }}
+                                        @else
+                                            <span class="btn btn-light btn-xs disabled">
+                                                {{ __('index.pending') }}
                                             </span>
-                                        </td>
-                                    @else
-                                        <td class="text-center">
-                                        </td>
-                                    @endif
+                                        @endif
+                                    </td>
 
-                                    @canany(['attendance_create','attendance_update','attendance_delete','view_employee_chat'])
+                                    <td class="text-center attendance-leave-cell">
+                                        <div class="d-inline-flex flex-column align-items-center gap-2 attendance-status-actions">
+                                            @if(!$firstAttendance->leave_request_id && !$firstAttendance->time_leave_id)
+                                                @can('create_time_leave_request')
+                                                    <a href="#"
+                                                       class="btn btn-outline-info btn-xs quickApproveTimeLeaveTrigger"
+                                                       data-user-id="{{ $firstAttendance->user_id }}"
+                                                       data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                       data-attendance-date="{{ $selectedAttendanceDate }}"
+                                                       data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}">
+                                                        Quick Time Leave
+                                                    </a>
+                                                @endcan
+                                            @endif
+
+                                            @if($firstAttendance->leave_request_id || $firstAttendance->time_leave_id)
+                                                @if($firstAttendance->leave_request_id)
+                                                    <div class="attendance-leave-content">
+                                                        @canany(['update_leave_request','access_admin_leave'])
+                                                            <a href="#"
+                                                               class="attendanceLeaveRequestUpdate"
+                                                               data-href="{{ route('admin.leave-request.update-status', $firstAttendance->leave_request_id) }}"
+                                                               data-status="{{ $firstAttendance->leave_request_status }}"
+                                                               data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
+                                                               data-id="{{ $firstAttendance->leave_request_id }}">
+                                                                <span class="attendance-leave-pill {{ $rowIsDayOff ? 'is-day-off' : ($rowIsLeave ? 'is-leave' : 'is-' . $firstAttendance->leave_request_status) }}"
+                                                                      title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
+                                                                    <span class="attendance-leave-pill-label">{{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}</span>
+                                                                    <span class="attendance-leave-pill-status">{{ ucfirst($firstAttendance->leave_request_status) }}</span>
+                                                                </span>
+                                                            </a>
+                                                        @else
+                                                            <span class="attendance-leave-pill {{ $rowIsDayOff ? 'is-day-off' : ($rowIsLeave ? 'is-leave' : 'is-' . $firstAttendance->leave_request_status) }}"
+                                                                  title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
+                                                                <span class="attendance-leave-pill-label">{{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}</span>
+                                                                <span class="attendance-leave-pill-status">{{ ucfirst($firstAttendance->leave_request_status) }}</span>
+                                                            </span>
+                                                        @endcanany
+                                                    </div>
+                                                @endif
+
+                                                @if(!$firstAttendance->leave_request_id && $firstAttendance->time_leave_id)
+                                                    <div class="attendance-leave-content">
+                                                        @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
+                                                            <a href="#"
+                                                               class="attendanceTimeLeaveRequestUpdate"
+                                                               data-href="{{ route('admin.time-leave-request.update-status', $firstAttendance->time_leave_id) }}"
+                                                               data-status="{{ $firstAttendance->time_leave_status }}"
+                                                               data-remark="{{ $firstAttendance->time_leave_admin_remark }}"
+                                                               data-id="{{ $firstAttendance->time_leave_id }}"
+                                                               data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
+                                                                <span class="attendance-leave-pill is-time-leave {{ $firstAttendance->time_leave_status === 'pending' ? 'is-pending' : '' }}"
+                                                                      title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($firstAttendance->time_leave_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
+                                                                    <span class="attendance-leave-pill-label">{{ __('index.time_leave_request') }}</span>
+                                                                    <span class="attendance-leave-pill-status">
+                                                                        {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }}
+                                                                        -
+                                                                        {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}
+                                                                    </span>
+                                                                </span>
+                                                            </a>
+                                                        @else
+                                                            <span class="attendance-leave-pill is-time-leave {{ $firstAttendance->time_leave_status === 'pending' ? 'is-pending' : '' }}"
+                                                                  title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($firstAttendance->time_leave_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
+                                                                <span class="attendance-leave-pill-label">{{ __('index.time_leave_request') }}</span>
+                                                                <span class="attendance-leave-pill-status">
+                                                                    {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }}
+                                                                    -
+                                                                    {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}
+                                                                </span>
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                @endif
+
+                                                @if(!$firstAttendance->leave_request_id && !$firstAttendance->time_leave_id)
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            @else
+                                                <span class="text-muted">-</span>
+                                                @can('quick_leave')
+                                                    <a href="#"
+                                                       class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
+                                                       data-user-id="{{ $firstAttendance->user_id }}"
+                                                       data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                       data-attendance-date="{{ $selectedAttendanceDate }}"
+                                                       data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}"
+                                                       data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
+                                                        Quick Leave
+                                                    </a>
+                                                @endcan
+                                            @endif
+                                        </div>
+                                    </td>
+
+                                    @canany(['attendance_create','attendance_update','attendance_delete'])
                                         @if($nightShift && $filterParameter['attendance_date'] ==  $currentDate)
 
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
-                                                    @can('view_employee_chat')
-                                                        <li class="me-2 attendance-row-chat-action">
-                                                            <a href="#"
-                                                               class="openAttendanceChat"
-                                                               data-employee-id="{{ $firstAttendance->user_id }}"
-                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                                               data-employee-avatar="{{ $profileImage }}"
-                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
-                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
-                                                               title="{{ $quickChatTitle }}">
-                                                                <i class="link-icon" data-feather="message-circle"></i>
-                                                            </a>
-                                                        </li>
-                                                    @endcan
                                                     @php
                                                         $nightAttendance = \App\Helpers\AttendanceHelper::checkNightShiftCheckOut($userId);
 
@@ -1235,21 +1540,6 @@
                                         @elseif($multipleAttendance > 1)
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
-                                                    @can('view_employee_chat')
-                                                        <li class="me-2 attendance-row-chat-action">
-                                                            <a href="#"
-                                                               class="openAttendanceChat"
-                                                               data-employee-id="{{ $firstAttendance->user_id }}"
-                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                                               data-employee-avatar="{{ $profileImage }}"
-                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
-                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
-                                                               title="{{ $quickChatTitle }}">
-                                                                <i class="link-icon" data-feather="message-circle"></i>
-                                                            </a>
-                                                        </li>
-                                                    @endcan
-
                                                     @if($filterParameter['attendance_date'] == $currentDate && ($multipleEntries < $multipleAttendance || ($lastAttendance->check_in_at && !$lastAttendance->check_out_at)))
 
                                                         @if((!$firstAttendance->check_in_at && !$firstAttendance->check_out_at) || ($lastAttendance->check_in_at && $lastAttendance->check_out_at))
@@ -1310,21 +1600,6 @@
                                         @else
                                             <td class="text-center">
                                                 <ul class="d-flex text-center list-unstyled mb-0 justify-content-center align-items-center">
-                                                    @can('view_employee_chat')
-                                                        <li class="me-2 attendance-row-chat-action">
-                                                            <a href="#"
-                                                               class="openAttendanceChat"
-                                                               data-employee-id="{{ $firstAttendance->user_id }}"
-                                                               data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                                               data-employee-avatar="{{ $profileImage }}"
-                                                               data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
-                                                               data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
-                                                               title="{{ $quickChatTitle }}">
-                                                                <i class="link-icon" data-feather="message-circle"></i>
-                                                            </a>
-                                                        </li>
-                                                    @endcan
-
                                                     @if($filterParameter['attendance_date'] ==  $currentDate)
                                                             @if(!$firstAttendance->check_in_at)
                                                                 @can('attendance_create')
@@ -1426,39 +1701,52 @@
                             </tbody>
                         </table>
                         <div class="attendance-summary-footer">
-                            <div class="attendance-summary-item" data-summary-filter="total_employee" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ empty($filterParameter['status_filter']) || $filterParameter['status_filter'] === 'total_employee' ? 'is-active' : '' }}" data-summary-filter="total_employee" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_employee']) }}</strong>
-                                <span>Total Employee</span>
+                                <span>{{ __('index.total_employee') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_check_in" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_check_in' ? 'is-active' : '' }}" data-summary-filter="total_check_in" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_check_in']) }}</strong>
-                                <span>Total Check In</span>
+                                <span>{{ __('index.total_check_in') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_not_yet_check_in" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_in' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_in" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_not_yet_check_in']) }}</strong>
-                                <span>Not Yet Check In</span>
+                                <span>{{ __('index.not_yet_check_in') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_check_out" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_check_out' ? 'is-active' : '' }}" data-summary-filter="total_check_out" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_check_out']) }}</strong>
-                                <span>Total Check Out</span>
+                                <span>{{ __('index.total_check_out') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_not_yet_check_out" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_out' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_out" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_not_yet_check_out']) }}</strong>
-                                <span>Not Yet Check Out</span>
+                                <span>{{ __('index.not_yet_check_out') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_day_off" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_day_off' ? 'is-active' : '' }}" data-summary-filter="total_day_off" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_day_off']) }}</strong>
-                                <span>Total Day Off</span>
+                                <span>{{ __('index.total_day_off') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_leave" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_leave' ? 'is-active' : '' }}" data-summary-filter="total_leave" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_leave']) }}</strong>
-                                <span>ច្បាប់</span>
+                                <span>{{ __('index.leave') }}</span>
                             </div>
-                            <div class="attendance-summary-item" data-summary-filter="total_leave_request" role="button" tabindex="0">
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave' ? 'is-active' : '' }}" data-summary-filter="total_time_leave" role="button" tabindex="0">
+                                <strong>{{ number_format($attendanceSummary['total_time_leave']) }}</strong>
+                                <span>{{ __('index.time_leave') }}</span>
+                            </div>
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_leave_request" role="button" tabindex="0">
                                 <strong>{{ number_format($attendanceSummary['total_leave_request']) }}</strong>
-                                <span>Leave Request</span>
+                                <span>{{ __('index.leave_request') }}</span>
+                            </div>
+                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_time_leave_request" role="button" tabindex="0">
+                                <strong>{{ number_format($attendanceSummary['total_time_leave_request']) }}</strong>
+                                <span>{{ __('index.time_leave_request') }}</span>
                             </div>
                         </div>
+                        @if(isset($attendancePaginator) && $attendancePaginator->hasPages())
+                            <div class="mt-3">
+                                {{ $attendancePaginator->links() }}
+                            </div>
+                        @endif
 
                 </div>
             </div>
@@ -1522,7 +1810,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header text-center">
-                        <h5 class="modal-title">{{ __('index.leave_request_section') }}</h5>
+                        <h5 class="modal-title" id="attendanceLeaveStatusUpdateTitle">{{ __('index.leave_request_section') }}</h5>
                     </div>
                     <div class="modal-body">
                         <div class="container">
@@ -1588,6 +1876,48 @@
                             <div class="text-start">
                                 <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickLeaveSubmit">
                                     Save as Approved Leave
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="attendanceQuickTimeLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickTimeLeaveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">Quick Time Leave</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ route('admin.attendances.quick-approved-time-leave') }}" method="post" id="attendanceQuickTimeLeaveForm">
+                            @csrf
+                            <input type="hidden" name="user_id" id="attendanceQuickTimeLeaveUserId">
+                            <input type="hidden" name="attendance_date" id="attendanceQuickTimeLeaveDate">
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveFrom" class="form-label">{{ __('index.from') }}</label>
+                                <input type="time" class="form-control" name="leave_from" id="attendanceQuickTimeLeaveFrom" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveTo" class="form-label">{{ __('index.to') }}</label>
+                                <input type="time" class="form-control" name="leave_to" id="attendanceQuickTimeLeaveTo" required>
+                                <small class="text-muted d-block mt-2" id="attendanceQuickTimeLeaveHelpText">
+                                    This will create an already approved time leave for the selected attendance day.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
+                                <textarea class="form-control" name="reasons" id="attendanceQuickTimeLeaveReason" rows="3" minlength="10" required placeholder="Required note"></textarea>
+                            </div>
+
+                            <div class="text-start">
+                                <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickTimeLeaveSubmit">
+                                    Save as Approved Time Leave
                                 </button>
                             </div>
                         </form>
@@ -1734,6 +2064,80 @@
                 new bootstrap.Tooltip(element);
             });
 
+            const attendancePageLoader = document.getElementById('attendancePageLoader');
+            const attendancePageLoaderText = document.getElementById('attendancePageLoaderText');
+            const showAttendancePageLoader = (message = 'Please wait...') => {
+                if (!attendancePageLoader) {
+                    return;
+                }
+
+                if (attendancePageLoaderText) {
+                    attendancePageLoaderText.textContent = message;
+                }
+                attendancePageLoader.classList.add('is-visible');
+                attendancePageLoader.setAttribute('aria-hidden', 'false');
+                document.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+                    button.disabled = true;
+                });
+            };
+
+            const hideAttendancePageLoader = () => {
+                if (!attendancePageLoader) {
+                    return;
+                }
+
+                attendancePageLoader.classList.remove('is-visible');
+                attendancePageLoader.setAttribute('aria-hidden', 'true');
+                document.querySelectorAll('button[type="submit"], input[type="submit"]').forEach((button) => {
+                    button.disabled = false;
+                });
+            };
+
+            window.addEventListener('pageshow', hideAttendancePageLoader);
+            window.addEventListener('beforeunload', () => {
+                showAttendancePageLoader('Refreshing attendance...');
+            });
+
+            document.querySelectorAll('form').forEach((form) => {
+                form.addEventListener('submit', () => {
+                    if (form.id === 'attendanceChatForm') {
+                        return;
+                    }
+
+                    showAttendancePageLoader('Saving changes...');
+                });
+            });
+
+            document.querySelectorAll('a[href]').forEach((link) => {
+                link.addEventListener('click', () => {
+                    const href = link.getAttribute('href') || '';
+
+                    if (
+                        href === '#'
+                        || href.startsWith('javascript:')
+                        || link.id === 'checkIn'
+                        || link.id === 'checkOut'
+                        || link.target === '_blank'
+                        || link.hasAttribute('download')
+                        || link.classList.contains('showProfilePhoto')
+                        || link.classList.contains('attendanceLeaveRequestUpdate')
+                        || link.classList.contains('attendanceTimeLeaveRequestUpdate')
+                        || link.classList.contains('quickApproveLeaveTrigger')
+                        || link.classList.contains('quickApproveTimeLeaveTrigger')
+                        || link.classList.contains('openAttendanceChat')
+                        || link.classList.contains('checkLocation')
+                        || link.classList.contains('editAttendance')
+                        || link.classList.contains('editNightAttendance')
+                        || link.classList.contains('addEmployeeAttendance')
+                        || link.closest('#attendanceResultsBlock .pagination')
+                    ) {
+                        return;
+                    }
+
+                    showAttendancePageLoader('Loading...');
+                });
+            });
+
             const noteModal = new bootstrap.Modal(document.getElementById('noteModal'));
             const attendanceDaySearch = document.getElementById('attendanceDaySearch');
             const attendanceEntries = document.getElementById('attendanceEntries');
@@ -1749,19 +2153,24 @@
             const attendanceScrollBottomButton = document.getElementById('attendanceScrollBottom');
             const attendanceSummaryItems = Array.from(document.querySelectorAll('.attendance-summary-item[data-summary-filter]'));
             let activeAttendanceSummaryFilter = null;
+            let attendanceResultsLoading = false;
+            let attendanceSearchTimer = null;
 
-            document.querySelectorAll('.noteLink').forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
+            document.addEventListener('click', function(e) {
+                const noteLink = e.target.closest('.noteLink');
+                if (!noteLink) {
+                    return;
+                }
 
-                    const checkinNote = this.getAttribute('data-checkin_note');
-                    const checkoutNote = this.getAttribute('data-checkout_note');
+                e.preventDefault();
 
-                    document.getElementById('checkinNote').textContent = checkinNote || '';
-                    document.getElementById('checkoutNote').textContent = checkoutNote || '';
+                const checkinNote = noteLink.getAttribute('data-checkin_note');
+                const checkoutNote = noteLink.getAttribute('data-checkout_note');
 
-                    noteModal.show();
-                });
+                document.getElementById('checkinNote').textContent = checkinNote || '';
+                document.getElementById('checkoutNote').textContent = checkoutNote || '';
+
+                noteModal.show();
             });
 
             const attachGeoRedirect = (anchor) => {
@@ -1794,155 +2203,280 @@
 
             document.querySelectorAll('a#checkIn, a#checkOut').forEach(attachGeoRedirect);
 
-            document.querySelectorAll('.showProfilePhoto').forEach(function (element) {
-                element.addEventListener('click', function (event) {
-                    event.preventDefault();
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.showProfilePhoto');
+                if (!element) {
+                    return;
+                }
 
-                    document.getElementById('profilePhotoPreview').setAttribute('src', this.getAttribute('data-src'));
-                    document.getElementById('profilePhotoModalTitle').innerText = this.getAttribute('data-name') || '';
+                event.preventDefault();
 
-                    const modal = new bootstrap.Modal(document.getElementById('profilePhotoModal'));
-                    modal.show();
-                });
+                document.getElementById('profilePhotoPreview').setAttribute('src', element.getAttribute('data-src'));
+                document.getElementById('profilePhotoModalTitle').innerText = element.getAttribute('data-name') || '';
+
+                const modal = new bootstrap.Modal(document.getElementById('profilePhotoModal'));
+                modal.show();
             });
 
-            document.querySelectorAll('.showAttendanceLeaveReason').forEach(function (element) {
-                element.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    const url = this.getAttribute('href');
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.attendanceLeaveRequestUpdate');
+                if (!element) {
+                    return;
+                }
 
-                    fetch(url)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data && data.data) {
-                                const leaveRequest = data.data;
-                                document.getElementById('attendanceLeaveReferredBy').innerText = leaveRequest.name || 'Admin';
-                                document.getElementById('attendanceLeaveDescription').innerText = leaveRequest.reasons || 'N/A';
-                                document.getElementById('attendanceLeaveAdminRemark').innerText = leaveRequest.admin_remark || 'N/A';
+                event.preventDefault();
 
-                                const modalElement = document.getElementById('attendanceLeaveRequestModal');
-                                if (modalElement) {
-                                    const modal = new bootstrap.Modal(modalElement);
-                                    modal.show();
-                                }
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                });
-            });
+                const url = element.getAttribute('data-href');
+                const status = element.getAttribute('data-status');
+                const remark = element.getAttribute('data-remark');
+                const leaveRequestId = element.getAttribute('data-id');
 
-            document.querySelectorAll('.attendanceLeaveRequestUpdate').forEach(function (element) {
-                element.addEventListener('click', function (event) {
-                    event.preventDefault();
+                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = '{{ __('index.leave_request_section') }}';
+                document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                document.getElementById('attendanceLeaveStatus').value = status;
+                document.getElementById('attendanceLeaveRemark').value = remark || '';
+                document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
-                    const url = this.getAttribute('data-href');
-                    const status = this.getAttribute('data-status');
-                    const remark = this.getAttribute('data-remark');
-                    const leaveRequestId = this.getAttribute('data-id');
+                fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
+                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.success) {
+                            return;
+                        }
 
-                    document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
-                    document.getElementById('attendanceLeaveStatus').value = status;
-                    document.getElementById('attendanceLeaveRemark').value = remark || '';
-                    document.getElementById('attendancePreviousApprovers').innerHTML = '';
-
-                    fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
-                        .then(response => response.json())
-                        .then(response => {
-                            if (!response.success) {
-                                return;
-                            }
-
-                            let approversData = '';
-                            response.data.approval_data.forEach(function (approver) {
-                                approversData += `
+                        let approversData = '';
+                        response.data.approval_data.forEach(function (approver) {
+                            approversData += `
                                     <div class="approver-details">
                                         <p><b>Approver:</b> ${approver.approved_by_name}</p>
                                         <p><b>Status:</b> ${approver.status}</p>
                                         <p><b>Remark:</b> ${approver.reason}</p>
                                     </div>
                                     <hr>`;
-                            });
+                        });
 
-                            if (response.data.admin_data.status !== 'pending' && response.data.admin_data.remark !== '') {
-                                approversData += `
+                        if (response.data.admin_data.status !== 'pending' && response.data.admin_data.remark !== '') {
+                            approversData += `
                                     <div class="approver-details">
                                         <p><b>Status:</b> ${response.data.admin_data.status}</p>
                                         <p><b>Admin Remark:</b> ${response.data.admin_data.remark}</p>
                                     </div>`;
-                            }
+                        }
 
-                            document.getElementById('attendancePreviousApprovers').innerHTML = approversData;
-                        })
-                        .catch(error => console.error('Error:', error));
+                        document.getElementById('attendancePreviousApprovers').innerHTML = approversData;
+                    })
+                    .catch(error => console.error('Error:', error));
 
-                    const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
-                    const modal = new bootstrap.Modal(modalElement);
-                    modal.show();
-                });
+                const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
             });
 
-            const applyAttendanceTableFilters = () => {
-                if (!attendanceDayTable) {
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.attendanceTimeLeaveRequestUpdate');
+                if (!element) {
                     return;
                 }
 
-                const query = attendanceDaySearch ? attendanceDaySearch.value.trim().toLowerCase() : '';
-                const limitValue = attendanceEntries ? attendanceEntries.value : '25';
-                const limit = limitValue === 'all' ? Number.POSITIVE_INFINITY : parseInt(limitValue, 10);
-                let shownCount = 0;
-                let matchedCount = 0;
+                event.preventDefault();
 
-                attendanceDayRows.forEach((row) => {
-                    const text = row.textContent.toLowerCase();
-                    const matchesSearch = text.includes(query);
-                    const matchesSummary = !activeAttendanceSummaryFilter
-                        || row.getAttribute(`data-summary-${activeAttendanceSummaryFilter}`) === '1';
-                    const matches = matchesSearch && matchesSummary;
+                const url = element.getAttribute('data-href');
+                const status = element.getAttribute('data-status');
+                const remark = element.getAttribute('data-remark');
+                const label = element.getAttribute('data-label') || '{{ __('index.time_leave_request') }}';
 
-                    if (matches) {
-                        matchedCount++;
-                    }
+                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
+                document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                document.getElementById('attendanceLeaveStatus').value = status;
+                document.getElementById('attendanceLeaveRemark').value = remark || '';
+                document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
-                    const shouldShow = matches && shownCount < limit;
-                    row.style.display = shouldShow ? '' : 'none';
+                const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            });
 
-                    if (shouldShow) {
-                        shownCount++;
-                    }
+            const applyAttendanceTableFilters = () => {
+                const currentAttendanceDayTable = document.getElementById('dataTableExample');
+                const currentAttendanceDayRows = currentAttendanceDayTable
+                    ? Array.from(currentAttendanceDayTable.querySelectorAll('tbody .attendance-day-row'))
+                    : [];
+                const currentAttendanceEmptyRow = currentAttendanceDayTable
+                    ? currentAttendanceDayTable.querySelector('tbody tr td[colspan]')
+                    : null;
+
+                if (!currentAttendanceDayTable) {
+                    return;
+                }
+
+                currentAttendanceDayRows.forEach((row) => {
+                    row.style.display = '';
                 });
 
-                if (attendanceEmptyRow) {
-                    attendanceEmptyRow.parentElement.style.display = matchedCount === 0 ? '' : 'none';
+                if (currentAttendanceEmptyRow) {
+                    currentAttendanceEmptyRow.parentElement.style.display = currentAttendanceDayRows.length === 0 ? '' : 'none';
                 }
             };
 
-            if (attendanceDaySearch && attendanceDayTable) {
-                attendanceDaySearch.addEventListener('input', applyAttendanceTableFilters);
-            }
+            const refreshAttendanceResultsBlock = async (url, pushState = true) => {
+                const currentBlock = document.getElementById('attendanceResultsBlock');
 
-            if (attendanceEntries && attendanceDayTable) {
-                attendanceEntries.addEventListener('change', applyAttendanceTableFilters);
-            }
+                if (!currentBlock || attendanceResultsLoading) {
+                    return;
+                }
 
-            attendanceSummaryItems.forEach((item) => {
-                const toggleSummaryFilter = () => {
-                    const nextFilter = item.dataset.summaryFilter || null;
-                    activeAttendanceSummaryFilter = activeAttendanceSummaryFilter === nextFilter ? null : nextFilter;
+                attendanceResultsLoading = true;
+                currentBlock.classList.add('opacity-50');
 
-                    attendanceSummaryItems.forEach((summaryItem) => {
-                        summaryItem.classList.toggle('is-active', summaryItem.dataset.summaryFilter === activeAttendanceSummaryFilter);
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html',
+                        },
                     });
 
-                    applyAttendanceTableFilters();
-                };
-
-                item.addEventListener('click', toggleSummaryFilter);
-                item.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        toggleSummaryFilter();
+                    if (!response.ok) {
+                        throw new Error('Unable to refresh attendance results.');
                     }
-                });
+
+                    const html = await response.text();
+                    const parsed = new DOMParser().parseFromString(html, 'text/html');
+                    const nextBlock = parsed.getElementById('attendanceResultsBlock');
+
+                    if (!nextBlock) {
+                        window.location.href = url.toString();
+                        return;
+                    }
+
+                    currentBlock.replaceWith(nextBlock);
+
+                    if (pushState) {
+                        window.history.pushState({}, '', url.toString());
+                    }
+
+                    activeAttendanceSummaryFilter = null;
+                    applyAttendanceTableFilters();
+                    updateAttendanceScrollShortcuts();
+
+                    if (window.feather) {
+                        feather.replace();
+                    }
+
+                    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                        bootstrap.Tooltip.getOrCreateInstance(element);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    window.location.href = url.toString();
+                } finally {
+                    attendanceResultsLoading = false;
+                    const refreshedBlock = document.getElementById('attendanceResultsBlock');
+                    if (refreshedBlock) {
+                        refreshedBlock.classList.remove('opacity-50');
+                    }
+                }
+            };
+
+            document.addEventListener('input', (event) => {
+                if (event.target && event.target.id === 'attendanceDaySearch') {
+                    clearTimeout(attendanceSearchTimer);
+                    attendanceSearchTimer = setTimeout(() => {
+                        const url = new URL(window.location.href);
+                        const searchValue = event.target.value.trim();
+
+                        if (searchValue) {
+                            url.searchParams.set('search', searchValue);
+                        } else {
+                            url.searchParams.delete('search');
+                        }
+
+                        url.searchParams.delete('page');
+                        refreshAttendanceResultsBlock(url);
+                    }, 350);
+                }
+            });
+
+            document.addEventListener('change', (event) => {
+                if (!event.target || event.target.id !== 'attendanceEntries') {
+                    return;
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('per_page', event.target.value);
+                url.searchParams.delete('page');
+                refreshAttendanceResultsBlock(url);
+            });
+
+            document.addEventListener('click', (event) => {
+                const resetButton = event.target.closest('#attendanceResetFilters');
+
+                if (!resetButton) {
+                    return;
+                }
+
+                event.preventDefault();
+                clearTimeout(attendanceSearchTimer);
+
+                const searchInput = document.getElementById('attendanceDaySearch');
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.delete('search');
+                url.searchParams.delete('status_filter');
+                url.searchParams.delete('per_page');
+                url.searchParams.delete('page');
+
+                refreshAttendanceResultsBlock(url);
+            });
+
+            document.addEventListener('click', (event) => {
+                const paginationLink = event.target.closest('#attendanceResultsBlock .pagination a');
+
+                if (!paginationLink) {
+                    return;
+                }
+
+                event.preventDefault();
+                refreshAttendanceResultsBlock(new URL(paginationLink.href, window.location.origin));
+            });
+
+            window.addEventListener('popstate', () => {
+                refreshAttendanceResultsBlock(new URL(window.location.href), false);
+            });
+
+            document.addEventListener('click', (event) => {
+                const item = event.target.closest('.attendance-summary-item[data-summary-filter]');
+
+                if (!item) {
+                    return;
+                }
+
+                event.preventDefault();
+                const nextFilter = item.dataset.summaryFilter || null;
+                const url = new URL(window.location.href);
+
+                if (!nextFilter || nextFilter === 'total_employee') {
+                    url.searchParams.delete('status_filter');
+                } else {
+                    url.searchParams.set('status_filter', nextFilter);
+                }
+
+                url.searchParams.delete('page');
+                refreshAttendanceResultsBlock(url);
+            });
+
+            document.addEventListener('keydown', (event) => {
+                const item = event.target.closest('.attendance-summary-item[data-summary-filter]');
+
+                if (!item || (event.key !== 'Enter' && event.key !== ' ')) {
+                    return;
+                }
+
+                event.preventDefault();
+                item.click();
             });
 
             const updateAttendanceScrollShortcuts = () => {
@@ -1994,6 +2528,15 @@
             const attendanceQuickLeaveSubmit = document.getElementById('attendanceQuickLeaveSubmit');
             const attendanceQuickLeaveLabel = document.getElementById('attendanceQuickLeaveModalLabel');
             const attendanceQuickLeaveHelpText = document.getElementById('attendanceQuickLeaveHelpText');
+            const attendanceQuickTimeLeaveModalElement = document.getElementById('attendanceQuickTimeLeaveModal');
+            const attendanceQuickTimeLeaveModal = attendanceQuickTimeLeaveModalElement ? new bootstrap.Modal(attendanceQuickTimeLeaveModalElement) : null;
+            const attendanceQuickTimeLeaveUserId = document.getElementById('attendanceQuickTimeLeaveUserId');
+            const attendanceQuickTimeLeaveDate = document.getElementById('attendanceQuickTimeLeaveDate');
+            const attendanceQuickTimeLeaveFrom = document.getElementById('attendanceQuickTimeLeaveFrom');
+            const attendanceQuickTimeLeaveTo = document.getElementById('attendanceQuickTimeLeaveTo');
+            const attendanceQuickTimeLeaveReason = document.getElementById('attendanceQuickTimeLeaveReason');
+            const attendanceQuickTimeLeaveLabel = document.getElementById('attendanceQuickTimeLeaveModalLabel');
+            const attendanceQuickTimeLeaveHelpText = document.getElementById('attendanceQuickTimeLeaveHelpText');
             let attendanceChatPoller = null;
             let activeAttendanceChatEmployeeId = null;
 
@@ -2009,19 +2552,23 @@
                 }
             };
 
-            document.querySelectorAll('.quickApproveLeaveTrigger').forEach(function (element) {
-                element.addEventListener('click', function (event) {
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.quickApproveLeaveTrigger');
+                if (!element) {
+                    return;
+                }
+
                     event.preventDefault();
 
                     if (!attendanceQuickLeaveModal) {
                         return;
                     }
 
-                    const userId = this.getAttribute('data-user-id');
-                    const userName = this.getAttribute('data-user-name');
-                    const attendanceDate = this.getAttribute('data-attendance-date');
-                    const displayDate = this.getAttribute('data-display-date');
-                    const fetchUrl = this.getAttribute('data-fetch-url');
+                    const userId = element.getAttribute('data-user-id');
+                    const userName = element.getAttribute('data-user-name');
+                    const attendanceDate = element.getAttribute('data-attendance-date');
+                    const displayDate = element.getAttribute('data-display-date');
+                    const fetchUrl = element.getAttribute('data-fetch-url');
 
                     attendanceQuickLeaveUserId.value = userId;
                     attendanceQuickLeaveDate.value = attendanceDate;
@@ -2067,7 +2614,34 @@
                             resetQuickLeaveOptions('Unable to load leave types');
                             attendanceQuickLeaveHelpText.textContent = 'Unable to load leave types right now. Please try again.';
                         });
-                });
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.quickApproveTimeLeaveTrigger');
+                if (!element) {
+                    return;
+                }
+
+                    event.preventDefault();
+
+                    if (!attendanceQuickTimeLeaveModal) {
+                        return;
+                    }
+
+                    const userId = element.getAttribute('data-user-id');
+                    const userName = element.getAttribute('data-user-name');
+                    const attendanceDate = element.getAttribute('data-attendance-date');
+                    const displayDate = element.getAttribute('data-display-date');
+
+                    attendanceQuickTimeLeaveUserId.value = userId;
+                    attendanceQuickTimeLeaveDate.value = attendanceDate;
+                    attendanceQuickTimeLeaveFrom.value = '';
+                    attendanceQuickTimeLeaveTo.value = '';
+                    attendanceQuickTimeLeaveReason.value = '';
+                    attendanceQuickTimeLeaveLabel.textContent = `Quick Time Leave: ${userName}`;
+                    attendanceQuickTimeLeaveHelpText.textContent = `Create an already approved time leave for ${displayDate}.`;
+
+                    attendanceQuickTimeLeaveModal.show();
             });
 
             const attendanceChatScrollToBottom = () => {
@@ -2191,11 +2765,15 @@
                 }
             };
 
-            document.querySelectorAll('.openAttendanceChat').forEach(function (element) {
-                element.addEventListener('click', function (event) {
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.openAttendanceChat');
+                if (!element) {
+                    return;
+                }
+
                     event.preventDefault();
 
-                    const employeeId = this.getAttribute('data-employee-id');
+                    const employeeId = element.getAttribute('data-employee-id');
                     if (!employeeId || !attendanceChatModal) {
                         return;
                     }
@@ -2205,16 +2783,16 @@
                         attendanceChatEmployeeId.value = employeeId;
                     }
                     if (attendanceChatAvatar) {
-                        attendanceChatAvatar.setAttribute('src', this.getAttribute('data-employee-avatar') || '{{ asset('assets/images/img.png') }}');
+                        attendanceChatAvatar.setAttribute('src', element.getAttribute('data-employee-avatar') || '{{ asset('assets/images/img.png') }}');
                     }
                     if (attendanceChatTitle) {
-                        attendanceChatTitle.textContent = this.getAttribute('data-employee-name') || 'Employee Chat';
+                        attendanceChatTitle.textContent = element.getAttribute('data-employee-name') || 'Employee Chat';
                     }
                     if (attendanceChatSubtitle) {
-                        attendanceChatSubtitle.textContent = this.getAttribute('data-employee-subtitle') || 'Employee';
+                        attendanceChatSubtitle.textContent = element.getAttribute('data-employee-subtitle') || 'Employee';
                     }
                     if (attendanceChatStatus) {
-                        attendanceChatStatus.classList.toggle('online', this.getAttribute('data-employee-online') === '1');
+                        attendanceChatStatus.classList.toggle('online', element.getAttribute('data-employee-online') === '1');
                     }
                     if (attendanceChatThread) {
                         attendanceChatThread.innerHTML = '<div class="chat-empty">Loading conversation...</div>';
@@ -2226,7 +2804,6 @@
                     attendanceChatModal.show();
                     renderAttendanceChatMessages(employeeId, false);
                     startAttendanceChatPolling(employeeId);
-                });
             });
 
             if (attendanceChatForm) {

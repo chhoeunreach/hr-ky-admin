@@ -45,15 +45,24 @@ class AttendanceService
      * @return mixed
      * @throws Exception
      */
-    public function getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter): mixed
+    public function getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, array $userIds = [], bool $summaryOnly = false): mixed
     {
 
         if ($filterParameter['date_in_bs']) {
             $filterParameter['attendance_date'] = AppHelper::dateInYmdFormatNepToEng($filterParameter['attendance_date']);
         }
 
-        return $this->attendanceRepo->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter);
+        return $this->attendanceRepo->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, $userIds, $summaryOnly);
 
+    }
+
+    public function getCompanyEmployeeAttendancePaginatorOfTheDay($filterParameter, int|string $perPage): mixed
+    {
+        if ($filterParameter['date_in_bs']) {
+            $filterParameter['attendance_date'] = AppHelper::dateInYmdFormatNepToEng($filterParameter['attendance_date']);
+        }
+
+        return $this->attendanceRepo->getCompanyEmployeeAttendancePaginatorOfTheDay($filterParameter, $perPage);
     }
 
     /**

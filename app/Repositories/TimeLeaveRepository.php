@@ -100,13 +100,19 @@ class TimeLeaveRepository
         return $time;
     }
 
-    public function getEmployeeLatestTimeLeave($date)
+    public function getEmployeeLatestTimeLeave($date, $userId = '')
     {
-        return TimeLeave::query()
+        $timeLeave = TimeLeave::query()
             ->whereDate('issue_date', $date)
-            ->whereIn('status', [LeaveStatusEnum::pending->value, LeaveStatusEnum::approved->value])
-            ->where('requested_by', getAuthUserCode())
-            ->first();
+            ->whereIn('status', [LeaveStatusEnum::pending->value, LeaveStatusEnum::approved->value]);
+
+        if (!empty($userId)) {
+            $timeLeave->where('requested_by', $userId);
+        } else {
+            $timeLeave->where('requested_by', getAuthUserCode());
+        }
+
+        return $timeLeave->first();
     }
 
     public function getEmployeeApprovedTimeLeave($date, $userId='')

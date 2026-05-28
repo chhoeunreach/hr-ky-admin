@@ -30,7 +30,6 @@ class AdminAuthController extends Controller
 
     public function __construct(UserRepository $userRepo,CompanyRepository $companyRepo, AdminService $adminService)
     {
-        $this->middleware('guest')->except('logout');
         $this->middleware('guest:admin')->except('logout');
         $this->userRepo = $userRepo;
         $this->companyRepo = $companyRepo;
@@ -191,4 +190,3 @@ class AdminAuthController extends Controller
     }
 
 }
-

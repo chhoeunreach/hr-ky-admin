@@ -112,7 +112,7 @@ class TimeLeaveService
     {
         $date = date('Y-m-d', strtotime($validatedData['issue_date']));
 
-        $employeeLatestPendingLeaveRequest = $this->timeLeaveRepository->getEmployeeLatestTimeLeave($date);
+        $employeeLatestPendingLeaveRequest = $this->timeLeaveRepository->getEmployeeLatestTimeLeave($date, $validatedData['requested_by']);
         if($employeeLatestPendingLeaveRequest){
             throw new Exception(__('message.leave_pending_error',['status'=>$employeeLatestPendingLeaveRequest->status]),400);
         }

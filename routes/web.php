@@ -254,6 +254,7 @@ Route::group([
         Route::get('employees/attendance/delete/{id}', [AttendanceController::class, 'delete'])->name('attendance.delete');
         Route::get('employees/attendance/change-status/{id}', [AttendanceController::class, 'changeAttendanceStatus'])->name('attendances.change-status');
         Route::post('employees/attendance/quick-approved-leave', [AttendanceController::class, 'quickApproveLeave'])->name('attendances.quick-approved-leave');
+        Route::post('employees/attendance/quick-approved-time-leave', [AttendanceController::class, 'quickApproveTimeLeave'])->name('attendances.quick-approved-time-leave');
         Route::get('employees/attendance/{type}', [AttendanceController::class, 'dashboardAttendance'])->name('dashboard.takeAttendance');
 
         /** Leave route */

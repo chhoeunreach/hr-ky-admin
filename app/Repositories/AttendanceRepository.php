@@ -6,12 +6,124 @@ use App\Helpers\AppHelper;
 use App\Models\Attendance;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class AttendanceRepository
 {
 
-    public function getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter)
+    public function getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, array $userIds = [], bool $summaryOnly = false)
+    {
+        $query = $this->dailyAttendanceQuery($filterParameter, $summaryOnly);
+
+        if (!empty($userIds)) {
+            $query->whereIn('users.id', $userIds);
+        }
+
+        return $query->get();
+    }
+
+    public function getCompanyEmployeeAttendancePaginatorOfTheDay($filterParameter, int|string $perPage): LengthAwarePaginator
+    {
+        $query = User::query()
+            ->select('users.id')
+            ->distinct()
+            ->leftJoin('attendances', function ($join) use ($filterParameter) {
+                $join->on('users.id','=', 'attendances.user_id')
+                    ->where('attendances.attendance_date','=',$filterParameter['attendance_date']);
+            })
+            ->leftJoin('leave_requests_master', function ($join) use ($filterParameter) {
+                $join->on('users.id', '=', 'leave_requests_master.requested_by')
+                    ->whereDate('leave_requests_master.leave_from', '<=', $filterParameter['attendance_date'])
+                    ->whereDate('leave_requests_master.leave_to', '>=', $filterParameter['attendance_date'])
+                    ->whereIn('leave_requests_master.status', ['pending', 'approved']);
+            })
+            ->leftJoin('time_leaves', function ($join) use ($filterParameter) {
+                $join->on('users.id', '=', 'time_leaves.requested_by')
+                    ->whereDate('time_leaves.issue_date', '=', $filterParameter['attendance_date'])
+                    ->whereIn('time_leaves.status', ['pending', 'approved']);
+            })
+            ->leftJoin('leave_types', 'leave_requests_master.leave_type_id', '=', 'leave_types.id')
+            ->join('branches','users.branch_id','=', 'branches.id')
+            ->when(isset($filterParameter['company_id']), function($query) use ($filterParameter){
+                $query->where('users.company_id', $filterParameter['company_id']);
+            })
+            ->when(isset($filterParameter['branch_id']), function($query) use ($filterParameter){
+                $query->where('users.branch_id',$filterParameter['branch_id']);
+            })
+            ->when(isset($filterParameter['department_id']), function($query) use ($filterParameter){
+                $query->where('users.department_id',$filterParameter['department_id']);
+            })
+            ->when(!empty($filterParameter['search']), function($query) use ($filterParameter){
+                $search = '%' . $filterParameter['search'] . '%';
+                $query->where(function ($query) use ($search) {
+                    $query->where('users.name', 'like', $search)
+                        ->orWhere('users.username', 'like', $search)
+                        ->orWhere('users.employee_code', 'like', $search)
+                        ->orWhere('users.phone', 'like', $search);
+                });
+            })
+            ->when(!empty($filterParameter['status_filter']) && $filterParameter['status_filter'] !== 'total_employee', function($query) use ($filterParameter){
+                $this->applyDailyAttendanceStatusFilter($query, $filterParameter['status_filter']);
+            })
+            ->where('users.is_active',1)
+            ->where('users.status','verified')
+            ->orderBy('users.name');
+
+        if ($perPage === 'all') {
+            $items = $query->get();
+
+            return new LengthAwarePaginator(
+                $items,
+                $items->count(),
+                max($items->count(), 1),
+                1,
+                [
+                    'path' => request()->url(),
+                    'query' => request()->query(),
+                ]
+            );
+        }
+
+        return $query->paginate($perPage)->withQueryString();
+    }
+
+    private function applyDailyAttendanceStatusFilter($query, string $statusFilter): void
+    {
+        match ($statusFilter) {
+            'total_check_in' => $query->where(function ($query) {
+                $query->whereNotNull('attendances.check_in_at')
+                    ->orWhereNotNull('attendances.night_checkin');
+            }),
+            'total_check_out' => $query->where(function ($query) {
+                $query->whereNotNull('attendances.check_out_at')
+                    ->orWhereNotNull('attendances.night_checkout');
+            }),
+            'total_not_yet_check_in' => $query
+                ->whereNull('leave_requests_master.id')
+                ->whereNull('attendances.check_in_at')
+                ->whereNull('attendances.night_checkin'),
+            'total_not_yet_check_out' => $query
+                ->where(function ($query) {
+                    $query->whereNotNull('attendances.check_in_at')
+                        ->orWhereNotNull('attendances.night_checkin');
+                })
+                ->whereNull('attendances.check_out_at')
+                ->whereNull('attendances.night_checkout'),
+            'total_day_off' => $query
+                ->where('leave_requests_master.status', 'approved')
+                ->whereRaw('LOWER(COALESCE(leave_types.name, "")) LIKE ?', ['%day off%']),
+            'total_leave' => $query
+                ->where('leave_requests_master.status', 'approved')
+                ->whereRaw('LOWER(COALESCE(leave_types.name, "")) NOT LIKE ?', ['%day off%']),
+            'total_time_leave' => $query->where('time_leaves.status', 'approved'),
+            'total_leave_request' => $query->where('leave_requests_master.status', 'pending'),
+            'total_time_leave_request' => $query->where('time_leaves.status', 'pending'),
+            default => null,
+        };
+    }
+
+    private function dailyAttendanceQuery($filterParameter, bool $summaryOnly = false)
     {
         $selectedDate = Carbon::parse($filterParameter['attendance_date']);
         $leaveSummarySubQuery = DB::table('leave_requests_master')
@@ -40,8 +152,19 @@ class AttendanceRepository
             ->whereYear('leave_requests_master.leave_from', $selectedDate->year)
             ->groupBy('leave_requests_master.requested_by');
 
-
-        return User::select(
+        $select = $summaryOnly ? [
+            'attendances.id AS attendance_id',
+            'users.id AS user_id',
+            'attendances.check_in_at',
+            'attendances.check_out_at',
+            'attendances.night_checkin',
+            'attendances.night_checkout',
+            'leave_requests_master.id AS leave_request_id',
+            'leave_requests_master.status AS leave_request_status',
+            'leave_types.name AS leave_request_type',
+            'time_leaves.id AS time_leave_id',
+            'time_leaves.status AS time_leave_status',
+        ] : [
             'attendances.id AS attendance_id',
             'users.id AS user_id',
             'users.name AS user_name',
@@ -56,6 +179,7 @@ class AttendanceRepository
             'departments.dept_name AS department_name',
             'user_office_times.opening_time AS office_opening_time',
             'user_office_times.closing_time AS office_closing_time',
+            'user_office_times.shift_type AS user_shift_type',
             'attendances.attendance_date',
             'attendances.attendance_status',
             'attendances.check_in_at',
@@ -79,10 +203,18 @@ class AttendanceRepository
             'leave_requests_master.status AS leave_request_status',
             'leave_requests_master.admin_remark AS leave_request_admin_remark',
             'leave_types.name AS leave_request_type',
+            'time_leaves.id AS time_leave_id',
+            'time_leaves.issue_date AS time_leave_date',
+            'time_leaves.start_time AS time_leave_start_time',
+            'time_leaves.end_time AS time_leave_end_time',
+            'time_leaves.status AS time_leave_status',
+            'time_leaves.admin_remark AS time_leave_admin_remark',
             DB::raw('COALESCE(leave_summary.approved_day_off_days, 0) AS approved_day_off_days'),
             DB::raw('COALESCE(leave_summary.approved_leave_days, 0) AS approved_leave_days'),
             DB::raw('COALESCE(leave_summary.pending_leave_days, 0) AS pending_leave_days'),
-        )->leftJoin('attendances', function ($join) use ($filterParameter) {
+        ];
+
+        return User::select($select)->leftJoin('attendances', function ($join) use ($filterParameter) {
             $join->on('users.id','=', 'attendances.user_id')
                 ->where('attendances.attendance_date','=',$filterParameter['attendance_date']);
         })
@@ -91,6 +223,11 @@ class AttendanceRepository
                     ->whereDate('leave_requests_master.leave_from', '<=', $filterParameter['attendance_date'])
                     ->whereDate('leave_requests_master.leave_to', '>=', $filterParameter['attendance_date'])
                     ->whereIn('leave_requests_master.status', ['pending', 'approved']);
+            })
+            ->leftJoin('time_leaves', function ($join) use ($filterParameter) {
+                $join->on('users.id', '=', 'time_leaves.requested_by')
+                    ->whereDate('time_leaves.issue_date', '=', $filterParameter['attendance_date'])
+                    ->whereIn('time_leaves.status', ['pending', 'approved']);
             })
             ->leftJoin('leave_types', 'leave_requests_master.leave_type_id', '=', 'leave_types.id')
             ->join('companies', 'users.company_id', '=', 'companies.id')
@@ -101,17 +238,28 @@ class AttendanceRepository
             })
             ->leftJoin('office_times as user_office_times', 'users.office_time_id', '=', 'user_office_times.id')
             ->leftJoin('office_times','attendances.office_time_id','office_times.id')
+            ->when(isset($filterParameter['company_id']), function($query) use ($filterParameter){
+                $query->where('users.company_id', $filterParameter['company_id']);
+            })
             ->when(isset($filterParameter['branch_id']), function($query) use ($filterParameter){
                 $query->where('users.branch_id',$filterParameter['branch_id']);
             })
             ->when(isset($filterParameter['department_id']), function($query) use ($filterParameter){
                 $query->where('users.department_id',$filterParameter['department_id']);
             })
+            ->when(!empty($filterParameter['search']), function($query) use ($filterParameter){
+                $search = '%' . $filterParameter['search'] . '%';
+                $query->where(function ($query) use ($search) {
+                    $query->where('users.name', 'like', $search)
+                        ->orWhere('users.username', 'like', $search)
+                        ->orWhere('users.employee_code', 'like', $search)
+                        ->orWhere('users.phone', 'like', $search);
+                });
+            })
             ->where('users.is_active',1)
             ->where('users.status','verified')
-            ->orderBy('attendances.created_at','desc')
-            ->get();
-
+            ->orderBy('users.name')
+            ->orderBy('attendances.created_at','desc');
     }
 
     public function getEmployeeAttendanceDetailOfTheMonth($filterParameters,$select=['*'],$with=[])
