@@ -380,6 +380,73 @@
                 border-bottom: 1px solid #edf2f7;
             }
 
+            .attendance-day-card {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .attendance-results-reload {
+                position: absolute;
+                inset: 0;
+                z-index: 20;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
+                background: rgba(248, 250, 252, 0.72);
+                backdrop-filter: blur(3px);
+            }
+
+            .attendance-day-card.is-refreshing .attendance-results-reload {
+                display: flex;
+            }
+
+            .attendance-reload-panel {
+                width: min(360px, 92%);
+                padding: 18px 20px;
+                border: 1px solid #dbe5f3;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.96);
+                box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+            }
+
+            .attendance-reload-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 14px;
+                margin-bottom: 12px;
+                color: #172033;
+                font-weight: 800;
+            }
+
+            .attendance-reload-percent {
+                color: #2563eb;
+                font-variant-numeric: tabular-nums;
+            }
+
+            .attendance-reload-track {
+                height: 9px;
+                overflow: hidden;
+                border-radius: 999px;
+                background: #e8eef7;
+            }
+
+            .attendance-reload-bar {
+                width: 0%;
+                height: 100%;
+                border-radius: inherit;
+                background: linear-gradient(90deg, #38bdf8 0%, #2563eb 100%);
+                box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
+                transition: width 0.2s ease;
+            }
+
+            .attendance-reload-text {
+                margin-top: 9px;
+                color: #64748b;
+                font-size: 0.84rem;
+            }
+
             .attendance-filter-card .card-title,
             .attendance-day-card .card-title {
                 font-size: 0.92rem;
@@ -1071,6 +1138,18 @@
         @endphp
 
         <div id="attendanceResultsBlock" class="card attendance-day-card">
+            <div class="attendance-results-reload" aria-hidden="true">
+                <div class="attendance-reload-panel" role="status" aria-live="polite">
+                    <div class="attendance-reload-header">
+                        <span>Reloading attendance</span>
+                        <span class="attendance-reload-percent">0%</span>
+                    </div>
+                    <div class="attendance-reload-track">
+                        <div class="attendance-reload-bar"></div>
+                    </div>
+                    <div class="attendance-reload-text">Refreshing table data...</div>
+                </div>
+            </div>
             <div class="card-header">
                 <div class="attendance-table-toolbar mb-0">
                     <div class="attendance-toolbar-left">
@@ -2192,6 +2271,7 @@
             let activeAttendanceSummaryFilter = null;
             let attendanceResultsLoading = false;
             let attendanceSearchTimer = null;
+            let attendanceReloadProgressTimer = null;
 
             document.addEventListener('click', function(e) {
                 const noteLink = e.target.closest('.noteLink');
@@ -2360,6 +2440,39 @@
                 }
             };
 
+            const setAttendanceReloadProgress = (block, percent) => {
+                const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+                const bar = block.querySelector('.attendance-reload-bar');
+                const label = block.querySelector('.attendance-reload-percent');
+
+                if (bar) {
+                    bar.style.width = `${safePercent}%`;
+                }
+
+                if (label) {
+                    label.textContent = `${safePercent}%`;
+                }
+            };
+
+            const startAttendanceReloadProgress = (block) => {
+                let progress = 0;
+                block.classList.add('is-refreshing');
+                block.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', 'false');
+                setAttendanceReloadProgress(block, progress);
+                clearInterval(attendanceReloadProgressTimer);
+                attendanceReloadProgressTimer = setInterval(() => {
+                    const remaining = 95 - progress;
+                    progress += Math.max(1, Math.ceil(remaining * 0.16));
+                    setAttendanceReloadProgress(block, Math.min(progress, 95));
+                }, 220);
+            };
+
+            const stopAttendanceReloadProgress = (block) => {
+                clearInterval(attendanceReloadProgressTimer);
+                attendanceReloadProgressTimer = null;
+                setAttendanceReloadProgress(block, 100);
+            };
+
             const refreshAttendanceResultsBlock = async (url, pushState = true) => {
                 const currentBlock = document.getElementById('attendanceResultsBlock');
 
@@ -2368,7 +2481,7 @@
                 }
 
                 attendanceResultsLoading = true;
-                currentBlock.classList.add('opacity-50');
+                startAttendanceReloadProgress(currentBlock);
 
                 try {
                     const response = await fetch(url.toString(), {
@@ -2391,6 +2504,8 @@
                         return;
                     }
 
+                    stopAttendanceReloadProgress(currentBlock);
+                    await new Promise((resolve) => setTimeout(resolve, 160));
                     currentBlock.replaceWith(nextBlock);
 
                     if (pushState) {
@@ -2415,7 +2530,8 @@
                     attendanceResultsLoading = false;
                     const refreshedBlock = document.getElementById('attendanceResultsBlock');
                     if (refreshedBlock) {
-                        refreshedBlock.classList.remove('opacity-50');
+                        refreshedBlock.classList.remove('is-refreshing');
+                        refreshedBlock.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', 'true');
                     }
                 }
             };
