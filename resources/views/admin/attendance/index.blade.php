@@ -659,6 +659,19 @@
                 min-height: 42px;
             }
 
+            .attendance-time-in-cell {
+                position: relative;
+            }
+
+            .attendance-time-in-wrap {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 30px;
+                min-width: 72px;
+            }
+
             .attendance-profile-chat-badge {
                 position: absolute;
                 top: 50%;
@@ -675,8 +688,8 @@
                 transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
             }
 
-            .attendance-employee-cell:hover .attendance-profile-chat-badge,
-            .attendance-employee-cell:focus-within .attendance-profile-chat-badge,
+            .attendance-time-in-cell:hover .attendance-profile-chat-badge,
+            .attendance-time-in-cell:focus-within .attendance-profile-chat-badge,
             .attendance-profile-chat-badge:focus {
                 opacity: 1;
                 visibility: visible;
@@ -1228,7 +1241,7 @@
                                         </div>
                                     </td>
 
-                                    <td class="attendance-employee-cell">
+                                    <td>
                                         @php
                                             $profileImage = $firstAttendance->avatar
                                                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $firstAttendance->avatar)
@@ -1252,26 +1265,28 @@
                                                 <div class="fw-semibold">{{ ucfirst($firstAttendance->user_name) }}</div>
                                                 <small class="text-muted">{{ $firstAttendance->phone ?: 'N/A' }}</small>
                                             </div>
-                                            @can('view_employee_chat')
-                                                <a href="#"
-                                                   class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
-                                                   data-employee-id="{{ $firstAttendance->user_id }}"
-                                                   data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
-                                                   data-employee-avatar="{{ $profileImage }}"
-                                                   data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
-                                                   data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
-                                                   title="{{ $quickChatTitle }}">
-                                                    <i class="link-icon" data-feather="message-circle"></i>
-                                                    Quick Chat
-                                                </a>
-                                            @endcan
                                         </div>
                                     </td>
 
                                     @if($nightShift)
                                         @if($multipleAttendance <= 1)
-                                            <td class="text-center">
-                                                {{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}
+                                            <td class="text-center attendance-time-in-cell">
+                                                <div class="attendance-time-in-wrap">
+                                                    <span>{{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}</span>
+                                                    @can('view_employee_chat')
+                                                        <a href="#"
+                                                           class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
+                                                           data-employee-id="{{ $firstAttendance->user_id }}"
+                                                           data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                           data-employee-avatar="{{ $profileImage }}"
+                                                           data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                           data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                           title="{{ $quickChatTitle }}">
+                                                            <i class="link-icon" data-feather="message-circle"></i>
+                                                            Quick Chat
+                                                        </a>
+                                                    @endcan
+                                                </div>
                                             </td>
                                             @if(isset($firstAttendance->night_checkin))
                                                 <td class="text-center">
@@ -1315,8 +1330,23 @@
                                             {{ $workedHours }}
                                         </td>
                                     @else
-                                        <td class="text-center">
-                                            {{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}
+                                        <td class="text-center attendance-time-in-cell">
+                                            <div class="attendance-time-in-wrap">
+                                                <span>{{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}</span>
+                                                @can('view_employee_chat')
+                                                    <a href="#"
+                                                       class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
+                                                       data-employee-id="{{ $firstAttendance->user_id }}"
+                                                       data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
+                                                       data-employee-avatar="{{ $profileImage }}"
+                                                       data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
+                                                       data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
+                                                       title="{{ $quickChatTitle }}">
+                                                        <i class="link-icon" data-feather="message-circle"></i>
+                                                        Quick Chat
+                                                    </a>
+                                                @endcan
+                                            </div>
                                         </td>
                                         @if(isset($firstAttendance->check_in_at))
                                             <td class="text-center">
