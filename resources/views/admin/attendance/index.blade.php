@@ -601,14 +601,21 @@
                 display: block;
             }
 
-            .attendance-status-actions {
+            .attendance-status-stack {
                 position: relative;
-                min-width: 118px;
-                min-height: 30px;
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0;
+                min-width: 128px;
             }
 
-            .attendance-status-actions .quickApproveLeaveTrigger,
-            .attendance-status-actions .quickApproveTimeLeaveTrigger {
+            .attendance-status-actions {
+                min-width: 0;
+            }
+
+            .attendance-status-stack .quickApproveLeaveTrigger,
+            .attendance-status-stack .quickApproveTimeLeaveTrigger {
                 position: absolute;
                 left: 50%;
                 z-index: 7;
@@ -619,31 +626,31 @@
                 transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease, box-shadow 0.18s ease;
             }
 
-            .attendance-status-actions .quickApproveLeaveTrigger {
-                top: 50%;
-                transform: translate(-50%, 8px) scale(0.98);
+            .attendance-status-stack .quickApproveLeaveTrigger {
+                bottom: 0;
+                transform: translate(-50%, 118%) scale(0.98);
             }
 
-            .attendance-status-actions .quickApproveTimeLeaveTrigger {
-                top: 50%;
+            .attendance-status-stack .quickApproveTimeLeaveTrigger {
+                top: 0;
                 transform: translate(-50%, -118%) scale(0.98);
             }
 
-            .attendance-day-row:hover .attendance-status-actions .quickApproveLeaveTrigger,
-            .attendance-day-row:hover .attendance-status-actions .quickApproveTimeLeaveTrigger,
-            .attendance-status-actions .quickApproveLeaveTrigger:focus,
-            .attendance-status-actions .quickApproveTimeLeaveTrigger:focus {
+            .attendance-day-row:hover .attendance-status-stack .quickApproveLeaveTrigger,
+            .attendance-day-row:hover .attendance-status-stack .quickApproveTimeLeaveTrigger,
+            .attendance-status-stack .quickApproveLeaveTrigger:focus,
+            .attendance-status-stack .quickApproveTimeLeaveTrigger:focus {
                 opacity: 1;
                 visibility: visible;
             }
 
-            .attendance-day-row:hover .attendance-status-actions .quickApproveLeaveTrigger,
-            .attendance-status-actions .quickApproveLeaveTrigger:focus {
-                transform: translate(-50%, 8px) scale(1);
+            .attendance-day-row:hover .attendance-status-stack .quickApproveLeaveTrigger,
+            .attendance-status-stack .quickApproveLeaveTrigger:focus {
+                transform: translate(-50%, 118%) scale(1);
             }
 
-            .attendance-day-row:hover .attendance-status-actions .quickApproveTimeLeaveTrigger,
-            .attendance-status-actions .quickApproveTimeLeaveTrigger:focus {
+            .attendance-day-row:hover .attendance-status-stack .quickApproveTimeLeaveTrigger,
+            .attendance-status-stack .quickApproveTimeLeaveTrigger:focus {
                 transform: translate(-50%, -118%) scale(1);
             }
 
@@ -745,24 +752,16 @@
                 color: #c2410c;
             }
 
-            .attendance-leave-column {
-                width: 190px;
-                min-width: 170px;
-                max-width: 200px;
-            }
-
-            .attendance-leave-cell {
-                width: 190px;
-                min-width: 170px;
-                max-width: 200px;
-            }
-
             .attendance-leave-content {
                 position: relative;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 max-width: 100%;
+            }
+
+            .attendance-status-stack.has-attendance-status .attendance-leave-content {
+                margin-top: 6px;
             }
 
             .attendance-leave-content .attendanceLeaveRequestUpdate,
@@ -923,8 +922,8 @@
                     flex: 0 0 auto;
                 }
 
-                .attendance-status-actions .quickApproveLeaveTrigger,
-                .attendance-status-actions .quickApproveTimeLeaveTrigger {
+                .attendance-status-stack .quickApproveLeaveTrigger,
+                .attendance-status-stack .quickApproveTimeLeaveTrigger {
                     position: static;
                     opacity: 1;
                     visibility: visible;
@@ -1121,7 +1120,6 @@
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
                                 <th class="text-center">{{ __('index.attendance_status') }}</th>
-                                <th class="text-center attendance-leave-column">{{ __('index.leave') }}</th>
                                 @canany(['attendance_create', 'attendance_update', 'attendance_delete'])
                                     <th class="text-center">{{ __('index.action') }}</th>
                                 @endcanany
@@ -1181,6 +1179,9 @@
                                         $rowIsDayOff = $rowIsApprovedLeave && $isDayOffType($firstAttendance?->leave_request_type);
                                         $rowIsLeave = $rowIsApprovedLeave && !$isDayOffType($firstAttendance?->leave_request_type);
                                         $rowIsNotYetCheckIn = !$rowHasCheckIn && !$firstAttendance?->leave_request_id;
+                                        $rowCanQuickLeave = $firstAttendance?->attendance_status !== \App\Models\Attendance::ATTENDANCE_APPROVED;
+                                        $rowHasAnyRequest = (bool) ($firstAttendance?->leave_request_id || $firstAttendance?->time_leave_id);
+                                        $rowShowAttendanceStatus = !is_null($firstAttendance->attendance_status) || !$rowHasAnyRequest;
                                     @endphp
 
                                     <tr class="attendance-day-row"
@@ -1356,19 +1357,21 @@
                                     @endif
 
                                     <td class="text-center">
-                                        @if(!is_null($firstAttendance->attendance_status))
-                                            <a class="btn btn-{{ $changeColor[$firstAttendance->attendance_status] }} btn-xs"
-                                               title="{{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}">
-                                                {{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}
-                                            </a>
-                                        @else
-                                            <span class="btn btn-light btn-xs disabled">
-                                                {{ __('index.pending') }}
-                                            </span>
-                                        @endif
-                                    </td>
-
-                                    <td class="text-center attendance-leave-cell">
+                                        <div class="attendance-status-stack{{ $rowShowAttendanceStatus ? ' has-attendance-status' : '' }}">
+                                            @if($rowShowAttendanceStatus)
+                                            <div>
+                                                @if(!is_null($firstAttendance->attendance_status))
+                                                    <a class="btn btn-{{ $changeColor[$firstAttendance->attendance_status] }} btn-xs"
+                                                       title="{{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}">
+                                                        {{ $firstAttendance->attendance_status == \App\Models\Attendance::ATTENDANCE_APPROVED ? __('index.approved') : __('index.rejected') }}
+                                                    </a>
+                                                @elseif(!$rowHasAnyRequest)
+                                                    <span class="btn btn-light btn-xs disabled">
+                                                        {{ __('index.pending') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            @endif
                                         <div class="d-inline-flex flex-column align-items-center gap-2 attendance-status-actions">
                                             @if(!$firstAttendance->leave_request_id && !$firstAttendance->time_leave_id)
                                                 @can('create_time_leave_request')
@@ -1443,12 +1446,9 @@
                                                     </div>
                                                 @endif
 
-                                                @if(!$firstAttendance->leave_request_id && !$firstAttendance->time_leave_id)
-                                                    <span class="text-muted">-</span>
-                                                @endif
                                             @else
-                                                <span class="text-muted">-</span>
-                                                @can('quick_leave')
+                                                @if($rowCanQuickLeave)
+                                                    @can('quick_leave')
                                                     <a href="#"
                                                        class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
                                                        data-user-id="{{ $firstAttendance->user_id }}"
@@ -1458,8 +1458,10 @@
                                                        data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
                                                         Quick Leave
                                                     </a>
-                                                @endcan
+                                                    @endcan
+                                                @endif
                                             @endif
+                                        </div>
                                         </div>
                                     </td>
 
@@ -2066,6 +2068,7 @@
 
             const attendancePageLoader = document.getElementById('attendancePageLoader');
             const attendancePageLoaderText = document.getElementById('attendancePageLoaderText');
+            let skipAttendanceUnloadLoader = false;
             const showAttendancePageLoader = (message = 'Please wait...') => {
                 if (!attendancePageLoader) {
                     return;
@@ -2095,6 +2098,10 @@
 
             window.addEventListener('pageshow', hideAttendancePageLoader);
             window.addEventListener('beforeunload', () => {
+                if (skipAttendanceUnloadLoader) {
+                    return;
+                }
+
                 showAttendancePageLoader('Refreshing attendance...');
             });
 
@@ -2179,10 +2186,13 @@
                     if (!href || href === '#') return;
 
                     if (!navigator.geolocation) {
+                        skipAttendanceUnloadLoader = true;
                         return; // fallback: normal navigation without coords
                     }
 
                     e.preventDefault();
+                    anchor.classList.add('disabled');
+                    anchor.setAttribute('aria-disabled', 'true');
 
                     navigator.geolocation.getCurrentPosition(
                         function (pos) {
@@ -2191,12 +2201,14 @@
                             const url = new URL(href, window.location.origin);
                             url.searchParams.set('lat', String(lat));
                             url.searchParams.set('long', String(long));
+                            skipAttendanceUnloadLoader = true;
                             window.location.href = url.toString();
                         },
                         function () {
+                            skipAttendanceUnloadLoader = true;
                             window.location.href = href; // fallback if denied/error
                         },
-                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
                     );
                 });
             };

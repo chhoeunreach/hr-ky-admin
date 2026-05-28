@@ -68,6 +68,9 @@ class AttendanceRepository
             })
             ->where('users.is_active',1)
             ->where('users.status','verified')
+            ->groupBy('users.id')
+            ->orderByRaw('MAX(attendances.created_at) IS NULL ASC')
+            ->orderByRaw('MAX(attendances.created_at) DESC')
             ->orderBy('users.name');
 
         if ($perPage === 'all') {
@@ -258,8 +261,9 @@ class AttendanceRepository
             })
             ->where('users.is_active',1)
             ->where('users.status','verified')
-            ->orderBy('users.name')
-            ->orderBy('attendances.created_at','desc');
+            ->orderByRaw('attendances.created_at IS NULL ASC')
+            ->orderBy('attendances.created_at','desc')
+            ->orderBy('users.name');
     }
 
     public function getEmployeeAttendanceDetailOfTheMonth($filterParameters,$select=['*'],$with=[])
