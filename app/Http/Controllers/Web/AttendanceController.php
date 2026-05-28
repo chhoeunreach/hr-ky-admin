@@ -38,6 +38,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Exception\MessagingException;
@@ -174,6 +175,153 @@ class AttendanceController extends Controller
                 return $first?->time_leave_id && $first?->time_leave_status === 'pending';
             })->count(),
         ];
+    }
+
+    public function leaveDetails(Request $request): JsonResponse
+    {
+        $this->authorize('list_attendance');
+
+        $validatedData = $request->validate([
+            'user_id' => ['required', 'integer'],
+            'year' => ['required', 'integer'],
+            'month' => ['required', 'integer', 'between:1,12'],
+            'category' => ['required', 'string', 'in:day_off,leave,pending_leave,time_leave,pending_time_leave'],
+            'date_in_bs' => ['nullable', 'boolean'],
+        ]);
+
+        $dateRange = !empty($validatedData['date_in_bs'])
+            ? AppHelper::findAdDatesFromNepaliMonthAndYear($validatedData['year'], $validatedData['month'])
+            : [
+                'start_date' => Carbon::create($validatedData['year'], $validatedData['month'], 1)->startOfMonth()->toDateString(),
+                'end_date' => Carbon::create($validatedData['year'], $validatedData['month'], 1)->endOfMonth()->toDateString(),
+            ];
+
+        $employee = $this->userRepository->findUserDetailById($validatedData['user_id'], ['id', 'name', 'username', 'company_id']);
+
+        if (!$employee || (int) $employee->company_id !== (int) AppHelper::getAuthUserCompanyId()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Employee not found.',
+            ], 404);
+        }
+
+        $category = $validatedData['category'];
+        $records = collect();
+        $canUpdateLeave = auth('admin')->check()
+            || Gate::allows('update_leave_request')
+            || Gate::allows('access_admin_leave');
+        $canUpdateTimeLeave = auth('admin')->check() || Gate::allows('update_time_leave');
+
+        if (in_array($category, ['day_off', 'leave', 'pending_leave'], true)) {
+            $records = LeaveRequestMaster::query()
+                ->with([
+                    'branch:id,name',
+                    'department:id,dept_name',
+                    'leaveRequestedBy:id,name,username,employee_code',
+                    'leaveType:id,name',
+                    'referredBy:id,name',
+                ])
+                ->where('requested_by', $employee->id)
+                ->where('company_id', AppHelper::getAuthUserCompanyId())
+                ->where(function ($query) use ($dateRange) {
+                    $query->whereBetween('leave_from', [$dateRange['start_date'], $dateRange['end_date']])
+                        ->orWhereBetween('leave_to', [$dateRange['start_date'], $dateRange['end_date']])
+                        ->orWhere(function ($query) use ($dateRange) {
+                            $query->whereDate('leave_from', '<=', $dateRange['start_date'])
+                                ->whereDate('leave_to', '>=', $dateRange['end_date']);
+                        });
+                })
+                ->when($category === 'pending_leave', fn ($query) => $query->where('status', LeaveStatusEnum::pending->value))
+                ->when($category !== 'pending_leave', fn ($query) => $query->where('status', LeaveStatusEnum::approved->value))
+                ->when($category === 'day_off', function ($query) {
+                    $query->whereHas('leaveType', fn ($query) => $query->whereRaw('LOWER(COALESCE(name, "")) LIKE ?', ['%day off%']));
+                })
+                ->when($category === 'leave', function ($query) {
+                    $query->whereHas('leaveType', fn ($query) => $query->whereRaw('LOWER(COALESCE(name, "")) NOT LIKE ?', ['%day off%']));
+                })
+                ->orderBy('leave_from')
+                ->get()
+                ->map(function ($leaveRequest) use ($canUpdateLeave) {
+                    $requestedBy = $leaveRequest->leaveRequestedBy?->name
+                        ?: $leaveRequest->leaveRequestedBy?->username
+                        ?: 'N/A';
+
+                    return [
+                        'id' => $leaveRequest->id,
+                        'type' => 'leave',
+                        'title' => $leaveRequest->leaveType?->name ?? __('index.leave_request'),
+                        'status' => ucfirst((string) $leaveRequest->status),
+                        'requested_by' => $requestedBy,
+                        'employee_code' => $leaveRequest->leaveRequestedBy?->employee_code ?: 'N/A',
+                        'branch' => $leaveRequest->branch?->name ?: 'N/A',
+                        'department' => $leaveRequest->department?->dept_name ?: 'N/A',
+                        'leave_from' => AppHelper::convertLeaveDateFormat($leaveRequest->leave_from),
+                        'leave_to' => AppHelper::convertLeaveDateFormat($leaveRequest->leave_to),
+                        'requested_date' => $leaveRequest->leave_requested_date
+                            ? AppHelper::formatDateForView($leaveRequest->leave_requested_date)
+                            : 'N/A',
+                        'date' => AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) . ' - ' . AppHelper::convertLeaveDateFormat($leaveRequest->leave_to),
+                        'duration' => number_format((float) $leaveRequest->no_of_days, 2) . ' day(s)',
+                        'reason' => strip_tags((string) $leaveRequest->reasons) ?: 'N/A',
+                        'admin_remark' => strip_tags((string) $leaveRequest->admin_remark) ?: 'N/A',
+                        'raw_admin_remark' => strip_tags((string) $leaveRequest->admin_remark),
+                        'referred_by' => $leaveRequest->referredBy?->name ?: 'N/A',
+                        'can_update' => $canUpdateLeave,
+                        'update_url' => route('admin.leave-request.update-status', $leaveRequest->id),
+                        'approvers_url' => url('/admin/leave-request/get-approvers/' . $leaveRequest->id),
+                    ];
+                });
+        } else {
+            $records = TimeLeave::query()
+                ->with([
+                    'branch:id,name',
+                    'department:id,dept_name',
+                    'leaveRequestedBy:id,name,username,employee_code',
+                    'referredBy:id,name',
+                ])
+                ->where('requested_by', $employee->id)
+                ->whereBetween('issue_date', [$dateRange['start_date'], $dateRange['end_date']])
+                ->when($category === 'pending_time_leave', fn ($query) => $query->where('status', LeaveStatusEnum::pending->value))
+                ->when($category === 'time_leave', fn ($query) => $query->where('status', LeaveStatusEnum::approved->value))
+                ->orderBy('issue_date')
+                ->get()
+                ->map(function ($timeLeave) use ($canUpdateTimeLeave) {
+                    $requestedBy = $timeLeave->leaveRequestedBy?->name
+                        ?: $timeLeave->leaveRequestedBy?->username
+                        ?: 'N/A';
+
+                    return [
+                        'id' => $timeLeave->id,
+                        'type' => 'time_leave',
+                        'title' => __('index.time_leave_request'),
+                        'status' => ucfirst((string) $timeLeave->status),
+                        'requested_by' => $requestedBy,
+                        'employee_code' => $timeLeave->leaveRequestedBy?->employee_code ?: 'N/A',
+                        'branch' => $timeLeave->branch?->name ?: 'N/A',
+                        'department' => $timeLeave->department?->dept_name ?: 'N/A',
+                        'leave_from' => AppHelper::convertLeaveTimeFormat($timeLeave->start_time),
+                        'leave_to' => AppHelper::convertLeaveTimeFormat($timeLeave->end_time),
+                        'requested_date' => $timeLeave->created_at
+                            ? AppHelper::formatDateForView($timeLeave->created_at)
+                            : 'N/A',
+                        'date' => AppHelper::timeLeaverequestDate($timeLeave->issue_date),
+                        'duration' => AppHelper::convertLeaveTimeFormat($timeLeave->start_time) . ' - ' . AppHelper::convertLeaveTimeFormat($timeLeave->end_time),
+                        'reason' => strip_tags((string) $timeLeave->reasons) ?: 'N/A',
+                        'admin_remark' => strip_tags((string) $timeLeave->admin_remark) ?: 'N/A',
+                        'raw_admin_remark' => strip_tags((string) $timeLeave->admin_remark),
+                        'referred_by' => $timeLeave->referredBy?->name ?: 'N/A',
+                        'can_update' => $canUpdateTimeLeave,
+                        'update_url' => route('admin.time-leave-request.update-status', $timeLeave->id),
+                        'approvers_url' => null,
+                    ];
+                });
+        }
+
+        return response()->json([
+            'success' => true,
+            'employee' => $employee->name ?: $employee->username,
+            'records' => $records,
+        ]);
     }
 
     /**

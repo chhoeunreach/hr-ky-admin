@@ -626,6 +626,121 @@
                 font-weight: 600;
             }
 
+            .attendance-summary-popover-row.is-clickable {
+                width: 100%;
+                border: 0;
+                color: inherit;
+                font: inherit;
+                text-decoration: none;
+                cursor: pointer;
+                text-align: left;
+                transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+            }
+
+            .attendance-summary-popover-row.is-clickable:hover,
+            .attendance-summary-popover-row.is-clickable:focus {
+                transform: translateY(-1px);
+                box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+                filter: brightness(0.99);
+                outline: none;
+            }
+
+            .attendance-summary-popover-row.is-empty {
+                opacity: 0.62;
+                cursor: default;
+            }
+
+            .attendance-leave-detail-list {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .attendance-leave-detail-card {
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 14px;
+                background: #ffffff;
+            }
+
+            .attendance-leave-detail-head {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 10px;
+            }
+
+            .attendance-leave-detail-title {
+                margin: 0;
+                color: #0f172a;
+                font-size: 0.98rem;
+                font-weight: 700;
+            }
+
+            .attendance-leave-detail-date {
+                margin: 3px 0 0;
+                color: #64748b;
+                font-size: 0.84rem;
+            }
+
+            .attendance-leave-detail-status {
+                flex-shrink: 0;
+                border-radius: 999px;
+                padding: 4px 10px;
+                background: #eff6ff;
+                color: #1d4ed8;
+                font-size: 0.75rem;
+                font-weight: 700;
+            }
+
+            .attendance-leave-detail-meta {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .attendance-leave-detail-meta div {
+                min-width: 0;
+            }
+
+            .attendance-leave-detail-meta span {
+                display: block;
+                color: #64748b;
+                font-size: 0.74rem;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+
+            .attendance-leave-detail-meta p {
+                margin: 3px 0 0;
+                color: #111827;
+                font-size: 0.86rem;
+                overflow-wrap: anywhere;
+            }
+
+            .attendance-leave-detail-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 14px;
+            }
+
+            .attendance-leave-detail-empty {
+                margin: 0;
+                padding: 22px 16px;
+                border: 1px dashed #cbd5e1;
+                border-radius: 8px;
+                color: #64748b;
+                text-align: center;
+            }
+
+            @media (max-width: 575.98px) {
+                .attendance-leave-detail-meta {
+                    grid-template-columns: 1fr;
+                }
+            }
+
             .attendance-summary-popover-row + .attendance-summary-popover-row {
                 margin-top: 6px;
             }
@@ -658,6 +773,15 @@
             .attendance-summary-popover-row.is-leave strong {
                 background: #bfdbfe;
                 color: #1d4ed8;
+            }
+
+            .attendance-summary-popover-row.is-time-leave {
+                background: #f0fdfa;
+            }
+
+            .attendance-summary-popover-row.is-time-leave strong {
+                background: #99f6e4;
+                color: #0f766e;
             }
 
             .attendance-summary-popover-row.is-pending {
@@ -866,48 +990,134 @@
             .attendance-summary-footer {
                 display: grid;
                 grid-template-columns: repeat(10, minmax(0, 1fr));
-                gap: 10px;
-                margin-top: 12px;
+                gap: 8px;
+                margin-top: 14px;
+                padding: 10px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: #f8fafc;
             }
 
             .attendance-summary-item {
-                padding: 10px 12px;
-                border: 1px solid #e5ecf6;
-                border-radius: 14px;
-                background: #f8fbff;
-                text-align: center;
+                position: relative;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                min-height: 66px;
+                padding: 9px 8px 9px 10px;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                background: #ffffff;
+                text-align: left;
                 cursor: pointer;
+                overflow: hidden;
                 transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
             }
 
+            .attendance-summary-item::before {
+                content: "";
+                position: absolute;
+                inset: 0 auto 0 0;
+                width: 4px;
+                background: var(--summary-accent, #2563eb);
+                opacity: 0.85;
+            }
+
             .attendance-summary-item:hover {
-                border-color: #bfd0eb;
-                background: #f2f7ff;
-                box-shadow: 0 8px 18px rgba(148, 163, 184, 0.12);
+                border-color: color-mix(in srgb, var(--summary-accent, #2563eb) 32%, #cbd5e1);
+                background: #ffffff;
+                box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10);
                 transform: translateY(-1px);
             }
 
             .attendance-summary-item.is-active {
-                border-color: #93c5fd;
-                background: #eaf4ff;
-                box-shadow: 0 10px 22px rgba(59, 130, 246, 0.14);
+                border-color: color-mix(in srgb, var(--summary-accent, #2563eb) 45%, #cbd5e1);
+                background: color-mix(in srgb, var(--summary-accent, #2563eb) 9%, #ffffff);
+                box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
+            }
+
+            .attendance-summary-icon {
+                width: 34px;
+                height: 34px;
+                border-radius: 8px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 34px;
+                background: color-mix(in srgb, var(--summary-accent, #2563eb) 12%, #ffffff);
+                color: var(--summary-accent, #2563eb);
+            }
+
+            .attendance-summary-icon i,
+            .attendance-summary-icon svg {
+                width: 17px;
+                height: 17px;
+                stroke-width: 2.2;
+            }
+
+            .attendance-summary-copy {
+                min-width: 0;
             }
 
             .attendance-summary-item strong {
                 display: block;
                 color: #0f172a;
-                font-size: 1rem;
+                font-size: 1.12rem;
                 line-height: 1.1;
+                font-weight: 800;
+                font-variant-numeric: tabular-nums;
             }
 
             .attendance-summary-item span {
                 display: block;
-                margin-top: 4px;
+                margin-top: 5px;
                 color: #64748b;
-                font-size: 0.78rem;
-                font-weight: 600;
+                font-size: 0.64rem;
+                font-weight: 700;
                 text-transform: uppercase;
-                letter-spacing: 0.03em;
+                letter-spacing: 0;
+                line-height: 1.2;
+            }
+
+            .attendance-summary-item.is-total {
+                --summary-accent: #2563eb;
+            }
+
+            .attendance-summary-item.is-check-in,
+            .attendance-summary-item.is-check-out {
+                --summary-accent: #16a34a;
+            }
+
+            .attendance-summary-item.is-missing {
+                --summary-accent: #dc2626;
+            }
+
+            .attendance-summary-item.is-day-off {
+                --summary-accent: #0d9488;
+            }
+
+            .attendance-summary-item.is-leave {
+                --summary-accent: #7c3aed;
+            }
+
+            .attendance-summary-item.is-time-leave {
+                --summary-accent: #0891b2;
+            }
+
+            .attendance-summary-item.is-request {
+                --summary-accent: #ea580c;
+            }
+
+            @media (max-width: 1399.98px) {
+                .attendance-summary-footer {
+                    grid-template-columns: repeat(5, minmax(0, 1fr));
+                }
+            }
+
+            @media (max-width: 991.98px) {
+                .attendance-summary-footer {
+                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                }
             }
 
             .attendance-scroll-shortcuts {
@@ -1264,6 +1474,22 @@
                                         $approvedDayOffDays = (int) ($firstAttendance->approved_day_off_days ?? 0);
                                         $approvedLeaveDays = (int) ($firstAttendance->approved_leave_days ?? 0);
                                         $pendingLeaveDays = (int) ($firstAttendance->pending_leave_days ?? 0);
+                                        $approvedTimeLeaveDays = (int) ($firstAttendance->approved_time_leave_days ?? 0);
+                                        $pendingTimeLeaveDays = (int) ($firstAttendance->pending_time_leave_days ?? 0);
+                                        $attendanceDetailDateParts = \App\Helpers\AppHelper::getDayMonthYearFromDate(
+                                            $filterParameter['date_in_bs'] ? $filterParameter['attendance_date'] : $selectedAttendanceDate
+                                        );
+                                        $attendanceDetailYear = (int) $attendanceDetailDateParts['year'];
+                                        $attendanceDetailMonth = (int) $attendanceDetailDateParts['month'];
+                                        $attendanceLeaveDetailUrl = route('admin.attendances.leave-details');
+                                        $attendanceLeaveDetailBaseData = [
+                                            'data-url' => $attendanceLeaveDetailUrl,
+                                            'data-user-id' => $userId,
+                                            'data-employee-name' => $firstAttendance->user_name ?: $firstAttendance->username,
+                                            'data-year' => $attendanceDetailYear,
+                                            'data-month' => $attendanceDetailMonth,
+                                            'data-date-in-bs' => $filterParameter['date_in_bs'] ? '1' : '0',
+                                        ];
 
                                     @endphp
 
@@ -1309,18 +1535,86 @@
                                         <div class="attendance-username-wrap">
                                             <span>{{ $firstAttendance->username ?: 'N/A' }}</span>
                                             <div class="attendance-username-summary">
-                                                <div class="attendance-summary-popover-row is-day-off">
-                                                    <span>{{ __('index.total_day_off') }}</span>
-                                                    <strong>{{ number_format($approvedDayOffDays) }}</strong>
-                                                </div>
-                                                <div class="attendance-summary-popover-row is-leave">
-                                                    <span>{{ __('index.leave') }}</span>
-                                                    <strong>{{ number_format($approvedLeaveDays) }}</strong>
-                                                </div>
-                                                <div class="attendance-summary-popover-row is-pending">
-                                                    <span>{{ __('index.pending_leave_requests') }}</span>
-                                                    <strong>{{ number_format($pendingLeaveDays) }}</strong>
-                                                </div>
+                                                @if($approvedDayOffDays > 0)
+                                                    <button type="button"
+                                                            class="attendance-summary-popover-row is-day-off is-clickable attendance-leave-detail-trigger"
+                                                            title="{{ __('index.show_detail') }}"
+                                                            data-category="day_off"
+                                                            data-label="{{ __('index.total_day_off') }}"
+                                                            @foreach($attendanceLeaveDetailBaseData as $attribute => $value) {{ $attribute }}="{{ $value }}" @endforeach>
+                                                        <span>{{ __('index.total_day_off') }}</span>
+                                                        <strong>{{ number_format($approvedDayOffDays) }}</strong>
+                                                    </button>
+                                                @else
+                                                    <div class="attendance-summary-popover-row is-day-off is-empty">
+                                                        <span>{{ __('index.total_day_off') }}</span>
+                                                        <strong>{{ number_format($approvedDayOffDays) }}</strong>
+                                                    </div>
+                                                @endif
+                                                @if($approvedLeaveDays > 0)
+                                                    <button type="button"
+                                                            class="attendance-summary-popover-row is-leave is-clickable attendance-leave-detail-trigger"
+                                                            title="{{ __('index.show_detail') }}"
+                                                            data-category="leave"
+                                                            data-label="{{ __('index.leave') }}"
+                                                            @foreach($attendanceLeaveDetailBaseData as $attribute => $value) {{ $attribute }}="{{ $value }}" @endforeach>
+                                                        <span>{{ __('index.leave') }}</span>
+                                                        <strong>{{ number_format($approvedLeaveDays) }}</strong>
+                                                    </button>
+                                                @else
+                                                    <div class="attendance-summary-popover-row is-leave is-empty">
+                                                        <span>{{ __('index.leave') }}</span>
+                                                        <strong>{{ number_format($approvedLeaveDays) }}</strong>
+                                                    </div>
+                                                @endif
+                                                @if($pendingLeaveDays > 0)
+                                                    <button type="button"
+                                                            class="attendance-summary-popover-row is-pending is-clickable attendance-leave-detail-trigger"
+                                                            title="{{ __('index.show_detail') }}"
+                                                            data-category="pending_leave"
+                                                            data-label="{{ __('index.pending_leave_requests') }}"
+                                                            @foreach($attendanceLeaveDetailBaseData as $attribute => $value) {{ $attribute }}="{{ $value }}" @endforeach>
+                                                        <span>{{ __('index.pending_leave_requests') }}</span>
+                                                        <strong>{{ number_format($pendingLeaveDays) }}</strong>
+                                                    </button>
+                                                @else
+                                                    <div class="attendance-summary-popover-row is-pending is-empty">
+                                                        <span>{{ __('index.pending_leave_requests') }}</span>
+                                                        <strong>{{ number_format($pendingLeaveDays) }}</strong>
+                                                    </div>
+                                                @endif
+                                                @if($approvedTimeLeaveDays > 0)
+                                                    <button type="button"
+                                                            class="attendance-summary-popover-row is-time-leave is-clickable attendance-leave-detail-trigger"
+                                                            title="{{ __('index.show_detail') }}"
+                                                            data-category="time_leave"
+                                                            data-label="{{ __('index.time_leave') }}"
+                                                            @foreach($attendanceLeaveDetailBaseData as $attribute => $value) {{ $attribute }}="{{ $value }}" @endforeach>
+                                                        <span>{{ __('index.time_leave') }}</span>
+                                                        <strong>{{ number_format($approvedTimeLeaveDays) }}</strong>
+                                                    </button>
+                                                @else
+                                                    <div class="attendance-summary-popover-row is-time-leave is-empty">
+                                                        <span>{{ __('index.time_leave') }}</span>
+                                                        <strong>{{ number_format($approvedTimeLeaveDays) }}</strong>
+                                                    </div>
+                                                @endif
+                                                @if($pendingTimeLeaveDays > 0)
+                                                    <button type="button"
+                                                            class="attendance-summary-popover-row is-pending is-clickable attendance-leave-detail-trigger"
+                                                            title="{{ __('index.show_detail') }}"
+                                                            data-category="pending_time_leave"
+                                                            data-label="{{ __('index.time_leave_request') }}"
+                                                            @foreach($attendanceLeaveDetailBaseData as $attribute => $value) {{ $attribute }}="{{ $value }}" @endforeach>
+                                                        <span>{{ __('index.time_leave_request') }}</span>
+                                                        <strong>{{ number_format($pendingTimeLeaveDays) }}</strong>
+                                                    </button>
+                                                @else
+                                                    <div class="attendance-summary-popover-row is-pending is-empty">
+                                                        <span>{{ __('index.time_leave_request') }}</span>
+                                                        <strong>{{ number_format($pendingTimeLeaveDays) }}</strong>
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </td>
@@ -1817,45 +2111,75 @@
                             </tbody>
                         </table>
                         <div class="attendance-summary-footer">
-                            <div class="attendance-summary-item {{ empty($filterParameter['status_filter']) || $filterParameter['status_filter'] === 'total_employee' ? 'is-active' : '' }}" data-summary-filter="total_employee" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_employee']) }}</strong>
-                                <span>{{ __('index.total_employee') }}</span>
+                            <div class="attendance-summary-item is-total {{ empty($filterParameter['status_filter']) || $filterParameter['status_filter'] === 'total_employee' ? 'is-active' : '' }}" data-summary-filter="total_employee" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="users"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_employee']) }}</strong>
+                                    <span>{{ __('index.total_employee') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_check_in' ? 'is-active' : '' }}" data-summary-filter="total_check_in" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_check_in']) }}</strong>
-                                <span>{{ __('index.total_check_in') }}</span>
+                            <div class="attendance-summary-item is-check-in {{ ($filterParameter['status_filter'] ?? '') === 'total_check_in' ? 'is-active' : '' }}" data-summary-filter="total_check_in" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="log-in"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_check_in']) }}</strong>
+                                    <span>{{ __('index.total_check_in') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_in' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_in" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_not_yet_check_in']) }}</strong>
-                                <span>{{ __('index.not_yet_check_in') }}</span>
+                            <div class="attendance-summary-item is-missing {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_in' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_in" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="clock"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_not_yet_check_in']) }}</strong>
+                                    <span>{{ __('index.not_yet_check_in') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_check_out' ? 'is-active' : '' }}" data-summary-filter="total_check_out" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_check_out']) }}</strong>
-                                <span>{{ __('index.total_check_out') }}</span>
+                            <div class="attendance-summary-item is-check-out {{ ($filterParameter['status_filter'] ?? '') === 'total_check_out' ? 'is-active' : '' }}" data-summary-filter="total_check_out" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="log-out"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_check_out']) }}</strong>
+                                    <span>{{ __('index.total_check_out') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_out' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_out" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_not_yet_check_out']) }}</strong>
-                                <span>{{ __('index.not_yet_check_out') }}</span>
+                            <div class="attendance-summary-item is-missing {{ ($filterParameter['status_filter'] ?? '') === 'total_not_yet_check_out' ? 'is-active' : '' }}" data-summary-filter="total_not_yet_check_out" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="alert-circle"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_not_yet_check_out']) }}</strong>
+                                    <span>{{ __('index.not_yet_check_out') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_day_off' ? 'is-active' : '' }}" data-summary-filter="total_day_off" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_day_off']) }}</strong>
-                                <span>{{ __('index.total_day_off') }}</span>
+                            <div class="attendance-summary-item is-day-off {{ ($filterParameter['status_filter'] ?? '') === 'total_day_off' ? 'is-active' : '' }}" data-summary-filter="total_day_off" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="coffee"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_day_off']) }}</strong>
+                                    <span>{{ __('index.total_day_off') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_leave' ? 'is-active' : '' }}" data-summary-filter="total_leave" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_leave']) }}</strong>
-                                <span>{{ __('index.leave') }}</span>
+                            <div class="attendance-summary-item is-leave {{ ($filterParameter['status_filter'] ?? '') === 'total_leave' ? 'is-active' : '' }}" data-summary-filter="total_leave" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="calendar"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_leave']) }}</strong>
+                                    <span>{{ __('index.leave') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave' ? 'is-active' : '' }}" data-summary-filter="total_time_leave" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_time_leave']) }}</strong>
-                                <span>{{ __('index.time_leave') }}</span>
+                            <div class="attendance-summary-item is-time-leave {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave' ? 'is-active' : '' }}" data-summary-filter="total_time_leave" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="watch"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_time_leave']) }}</strong>
+                                    <span>{{ __('index.time_leave') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_leave_request" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_leave_request']) }}</strong>
-                                <span>{{ __('index.leave_request') }}</span>
+                            <div class="attendance-summary-item is-request {{ ($filterParameter['status_filter'] ?? '') === 'total_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_leave_request" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="file-text"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_leave_request']) }}</strong>
+                                    <span>{{ __('index.leave_request') }}</span>
+                                </div>
                             </div>
-                            <div class="attendance-summary-item {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_time_leave_request" role="button" tabindex="0">
-                                <strong>{{ number_format($attendanceSummary['total_time_leave_request']) }}</strong>
-                                <span>{{ __('index.time_leave_request') }}</span>
+                            <div class="attendance-summary-item is-request {{ ($filterParameter['status_filter'] ?? '') === 'total_time_leave_request' ? 'is-active' : '' }}" data-summary-filter="total_time_leave_request" role="button" tabindex="0">
+                                <div class="attendance-summary-icon"><i data-feather="clipboard"></i></div>
+                                <div class="attendance-summary-copy">
+                                    <strong>{{ number_format($attendanceSummary['total_time_leave_request']) }}</strong>
+                                    <span>{{ __('index.time_leave_request') }}</span>
+                                </div>
                             </div>
                         </div>
                         @if(isset($attendancePaginator) && $attendancePaginator->hasPages())
@@ -1916,6 +2240,25 @@
                                     <p class="form-control border-0 p-0 fst-italic" style="height:inherit" id="attendanceLeaveAdminRemark"></p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="attendanceLeaveDetailModal" tabindex="-1" aria-labelledby="attendanceLeaveDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title" id="attendanceLeaveDetailModalLabel">{{ __('index.leave_request_section') }}</h5>
+                            <div class="text-muted small" id="attendanceLeaveDetailModalSubtitle"></div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="attendanceLeaveDetailModalBody" class="attendance-leave-detail-list">
+                            <p class="attendance-leave-detail-empty">Loading detail...</p>
                         </div>
                     </div>
                 </div>
@@ -2273,10 +2616,112 @@
             const attendanceScrollTopButton = document.getElementById('attendanceScrollTop');
             const attendanceScrollBottomButton = document.getElementById('attendanceScrollBottom');
             const attendanceSummaryItems = Array.from(document.querySelectorAll('.attendance-summary-item[data-summary-filter]'));
+            const attendanceLeaveDetailModalElement = document.getElementById('attendanceLeaveDetailModal');
+            const attendanceLeaveDetailModal = attendanceLeaveDetailModalElement ? new bootstrap.Modal(attendanceLeaveDetailModalElement) : null;
+            const attendanceLeaveDetailModalLabel = document.getElementById('attendanceLeaveDetailModalLabel');
+            const attendanceLeaveDetailModalSubtitle = document.getElementById('attendanceLeaveDetailModalSubtitle');
+            const attendanceLeaveDetailModalBody = document.getElementById('attendanceLeaveDetailModalBody');
             let activeAttendanceSummaryFilter = null;
             let attendanceResultsLoading = false;
             let attendanceSearchTimer = null;
             let attendanceReloadProgressTimer = null;
+
+            const escapeAttendanceHtml = (value) => {
+                const div = document.createElement('div');
+                div.textContent = value ?? '';
+                return div.innerHTML;
+            };
+
+            const renderAttendanceLeaveDetails = (records) => {
+                if (!attendanceLeaveDetailModalBody) {
+                    return;
+                }
+
+                if (!records.length) {
+                    attendanceLeaveDetailModalBody.innerHTML = '<p class="attendance-leave-detail-empty">No leave detail found.</p>';
+                    return;
+                }
+
+                attendanceLeaveDetailModalBody.innerHTML = records.map((record) => `
+                    <div class="attendance-leave-detail-card">
+                        <div class="attendance-leave-detail-head">
+                            <div>
+                                <h6 class="attendance-leave-detail-title">${escapeAttendanceHtml(record.title)}</h6>
+                                <p class="attendance-leave-detail-date">${escapeAttendanceHtml(record.date)}</p>
+                            </div>
+                            <span class="attendance-leave-detail-status">${escapeAttendanceHtml(record.status)}</span>
+                        </div>
+                        <div class="attendance-leave-detail-meta">
+                            <div>
+                                <span>{{ __('index.requested_by') }}</span>
+                                <p>${escapeAttendanceHtml(record.requested_by)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.employee_code') }}</span>
+                                <p>${escapeAttendanceHtml(record.employee_code)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.branch_name') }}</span>
+                                <p>${escapeAttendanceHtml(record.branch)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.department') }}</span>
+                                <p>${escapeAttendanceHtml(record.department)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.from') }}</span>
+                                <p>${escapeAttendanceHtml(record.leave_from)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.to') }}</span>
+                                <p>${escapeAttendanceHtml(record.leave_to)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.requested_date') }}</span>
+                                <p>${escapeAttendanceHtml(record.requested_date)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.duration') }}</span>
+                                <p>${escapeAttendanceHtml(record.duration)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.referred_by') }}</span>
+                                <p>${escapeAttendanceHtml(record.referred_by)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.leave_reason') }}</span>
+                                <p>${escapeAttendanceHtml(record.reason)}</p>
+                            </div>
+                            <div>
+                                <span>{{ __('index.admin_remark') }}</span>
+                                <p>${escapeAttendanceHtml(record.admin_remark)}</p>
+                            </div>
+                        </div>
+                        ${record.can_update ? `
+                            <div class="attendance-leave-detail-actions">
+                                <button type="button"
+                                        class="btn btn-success btn-xs ${record.type === 'time_leave' ? 'attendanceTimeLeaveRequestUpdate' : 'attendanceLeaveRequestUpdate'}"
+                                        data-href="${escapeAttendanceHtml(record.update_url)}"
+                                        data-status="{{ \App\Enum\LeaveStatusEnum::approved->value }}"
+                                        data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
+                                        data-id="${escapeAttendanceHtml(record.id)}"
+                                        data-label="${escapeAttendanceHtml(record.title)}">
+                                    {{ __('index.approve') }}
+                                </button>
+                                <button type="button"
+                                        class="btn btn-danger btn-xs ${record.type === 'time_leave' ? 'attendanceTimeLeaveRequestUpdate' : 'attendanceLeaveRequestUpdate'}"
+                                        data-href="${escapeAttendanceHtml(record.update_url)}"
+                                        data-status="{{ \App\Enum\LeaveStatusEnum::rejected->value }}"
+                                        data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
+                                        data-id="${escapeAttendanceHtml(record.id)}"
+                                        data-label="${escapeAttendanceHtml(record.title)}">
+                                    {{ __('index.reject') }}
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            };
 
             document.addEventListener('click', function(e) {
                 const noteLink = e.target.closest('.noteLink');
@@ -2357,8 +2802,9 @@
                 const status = element.getAttribute('data-status');
                 const remark = element.getAttribute('data-remark');
                 const leaveRequestId = element.getAttribute('data-id');
+                const label = element.getAttribute('data-label') || '{{ __('index.leave_request_section') }}';
 
-                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = '{{ __('index.leave_request_section') }}';
+                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
@@ -2396,6 +2842,7 @@
 
                 const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
                 const modal = new bootstrap.Modal(modalElement);
+                attendanceLeaveDetailModal?.hide();
                 modal.show();
             });
 
@@ -2420,6 +2867,7 @@
 
                 const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
                 const modal = new bootstrap.Modal(modalElement);
+                attendanceLeaveDetailModal?.hide();
                 modal.show();
             });
 
@@ -2608,6 +3056,57 @@
 
             window.addEventListener('popstate', () => {
                 refreshAttendanceResultsBlock(new URL(window.location.href), false);
+            });
+
+            document.addEventListener('click', async (event) => {
+                const trigger = event.target.closest('.attendance-leave-detail-trigger');
+
+                if (!trigger) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                if (!attendanceLeaveDetailModal || !attendanceLeaveDetailModalBody) {
+                    return;
+                }
+
+                const url = new URL(trigger.dataset.url, window.location.origin);
+                url.searchParams.set('user_id', trigger.dataset.userId || '');
+                url.searchParams.set('year', trigger.dataset.year || '');
+                url.searchParams.set('month', trigger.dataset.month || '');
+                url.searchParams.set('category', trigger.dataset.category || '');
+                url.searchParams.set('date_in_bs', trigger.dataset.dateInBs || '0');
+
+                if (attendanceLeaveDetailModalLabel) {
+                    attendanceLeaveDetailModalLabel.textContent = trigger.dataset.label || '{{ __('index.leave_request_section') }}';
+                }
+                if (attendanceLeaveDetailModalSubtitle) {
+                    attendanceLeaveDetailModalSubtitle.textContent = trigger.dataset.employeeName || '';
+                }
+                attendanceLeaveDetailModalBody.innerHTML = '<p class="attendance-leave-detail-empty">Loading detail...</p>';
+                attendanceLeaveDetailModal.show();
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Unable to load leave detail.');
+                    }
+
+                    if (attendanceLeaveDetailModalSubtitle) {
+                        attendanceLeaveDetailModalSubtitle.textContent = data.employee || trigger.dataset.employeeName || '';
+                    }
+                    renderAttendanceLeaveDetails(data.records || []);
+                } catch (error) {
+                    attendanceLeaveDetailModalBody.innerHTML = `<p class="attendance-leave-detail-empty">${escapeAttendanceHtml(error.message || 'Unable to load leave detail.')}</p>`;
+                }
             });
 
             document.addEventListener('click', (event) => {

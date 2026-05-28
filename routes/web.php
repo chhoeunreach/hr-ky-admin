@@ -248,6 +248,7 @@ Route::group([
         /** Attendance route */
         Route::put('employees/night-attendance/{id}', [AttendanceController::class, 'updateNightAttendance'])->name('night_attendances.update');
 
+        Route::get('attendances/leave-details', [AttendanceController::class, 'leaveDetails'])->name('attendances.leave-details');
         Route::resource('attendances', AttendanceController::class);
         Route::get('employees/attendance/check-in/{companyId}/{userId}', [AttendanceController::class, 'checkInEmployee'])->name('employees.check-in');
         Route::get('employees/attendance/check-out/{companyId}/{userId}', [AttendanceController::class, 'checkOutEmployee'])->name('employees.check-out');
