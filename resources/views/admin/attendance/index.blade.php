@@ -385,24 +385,29 @@
                 overflow: hidden;
             }
 
+            .attendance-day-card .card-body {
+                position: relative;
+            }
+
             .attendance-results-reload {
                 position: absolute;
                 inset: 0;
                 z-index: 20;
                 display: none;
-                align-items: center;
-                justify-content: center;
                 padding: 24px;
                 background: rgba(248, 250, 252, 0.72);
                 backdrop-filter: blur(3px);
             }
 
             .attendance-day-card.is-refreshing .attendance-results-reload {
-                display: flex;
+                display: block;
             }
 
             .attendance-reload-panel {
+                position: sticky;
+                top: calc(50vh - 90px);
                 width: min(360px, 92%);
+                margin: 80px auto;
                 padding: 18px 20px;
                 border: 1px solid #dbe5f3;
                 border-radius: 8px;
@@ -1138,18 +1143,6 @@
         @endphp
 
         <div id="attendanceResultsBlock" class="card attendance-day-card">
-            <div class="attendance-results-reload" aria-hidden="true">
-                <div class="attendance-reload-panel" role="status" aria-live="polite">
-                    <div class="attendance-reload-header">
-                        <span>Reloading attendance</span>
-                        <span class="attendance-reload-percent">0%</span>
-                    </div>
-                    <div class="attendance-reload-track">
-                        <div class="attendance-reload-bar"></div>
-                    </div>
-                    <div class="attendance-reload-text">Refreshing table data...</div>
-                </div>
-            </div>
             <div class="card-header">
                 <div class="attendance-table-toolbar mb-0">
                     <div class="attendance-toolbar-left">
@@ -1192,6 +1185,18 @@
                 </div>
             </div>
             <div class="card-body">
+                <div class="attendance-results-reload" aria-hidden="true">
+                    <div class="attendance-reload-panel" role="status" aria-live="polite">
+                        <div class="attendance-reload-header">
+                            <span>Reloading attendance</span>
+                            <span class="attendance-reload-percent">0%</span>
+                        </div>
+                        <div class="attendance-reload-track">
+                            <div class="attendance-reload-bar"></div>
+                        </div>
+                        <div class="attendance-reload-text">Refreshing table data...</div>
+                    </div>
+                </div>
                 <div class="table-responsive">
 
                         <table id="dataTableExample" class="table">
