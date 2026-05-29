@@ -219,6 +219,7 @@ class AttendanceMonthlyController extends Controller
             40 => 0,
             50 => 0,
             60 => 0,
+            120 => 0,
         ];
     }
 
@@ -253,6 +254,8 @@ class AttendanceMonthlyController extends Controller
             $lateBreakdown[40]++;
         } elseif ($lateMinutes < 60) {
             $lateBreakdown[50]++;
+        } elseif ($lateMinutes > 120) {
+            $lateBreakdown[120]++;
         } else {
             $lateBreakdown[60]++;
         }

@@ -1082,6 +1082,7 @@
         .monthly-late-dot.is-40 { background: #dcfce7; color: #16a34a; }
         .monthly-late-dot.is-50 { background: #cffafe; color: #0891b2; }
         .monthly-late-dot.is-60 { background: #f3e8ff; color: #7c3aed; }
+        .monthly-late-dot.is-120 { background: #fee2e2; color: #b91c1c; }
 
         .monthly-late-count-pill {
             display: inline-flex;
@@ -1396,6 +1397,7 @@
         .late-dashboard-count.is-40 { background: #dcfce7; color: #16a34a; }
         .late-dashboard-count.is-50 { background: #e0f2fe; color: #0284c7; }
         .late-dashboard-count.is-60 { background: #f3e8ff; color: #7c3aed; }
+        .late-dashboard-count.is-120 { background: #fee2e2; color: #b91c1c; }
         .late-dashboard-grand .late-dashboard-count { background: #dbeafe; color: #1d4ed8; }
 
         .late-dashboard-payment {
@@ -2349,7 +2351,8 @@
                     30: [30, 39],
                     40: [40, 49],
                     50: [50, 59],
-                    60: [60, null],
+                    60: [60, 120],
+                    120: [121, null],
                 };
                 const [startOffset, endOffset] = ranges[minutes] || [minutes, null];
                 const openingMinutes = parseDisplayTime(openingTime);
@@ -2380,6 +2383,7 @@
                     [40, '40 Minutes', 'Late more than 40 minutes', 0.40],
                     [50, '50 Minutes', 'Late more than 50 minutes', 0.50],
                     [60, '60 Minutes', 'Late more than 60 minutes', 1.00],
+                    [120, '2 Hours', 'Late more than 2 hours', 5.00],
                 ];
                 const formatPayment = (value) => `$${Number(value).toFixed(2)}`;
                 const paymentTotal = rows.reduce((sum, [minutes, , , rate]) => {
