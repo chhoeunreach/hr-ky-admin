@@ -1,4 +1,10 @@
-@php use App\Models\User; @endphp
+@php
+    use App\Models\User;
+    use Illuminate\Support\Facades\Gate;
+
+    $canViewEmployeeChat = auth('admin')->check() || Gate::allows('view_employee_chat');
+    $canSendEmployeeChat = auth('admin')->check() || Gate::allows('send_employee_chat');
+@endphp
 @extends('layouts.master')
 
 @section('title', 'Monthly Attendance')
@@ -411,6 +417,69 @@
             z-index: 5;
             min-width: 30px;
             width: 30px;
+            overflow: visible;
+        }
+
+        .monthly-attendance-table tbody tr:hover .sticky-number {
+            z-index: 55;
+        }
+
+        .monthly-row-number {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+        }
+
+        .monthly-row-number-value {
+            transition: opacity .15s ease, transform .15s ease;
+        }
+
+        .monthly-attendance-table tbody tr:hover .monthly-row-number-value,
+        .monthly-row-number:focus-within .monthly-row-number-value {
+            opacity: 0;
+            transform: scale(.82);
+        }
+
+        .monthly-row-chat-badge {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 60;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 1px solid #bfdbfe;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-size: 9px;
+            font-weight: 800;
+            line-height: 1;
+            text-decoration: none;
+            white-space: nowrap;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+            opacity: 0;
+            visibility: hidden;
+            transform: translate(-50%, -50%) scale(.88);
+            transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+            cursor: pointer;
+        }
+
+        .monthly-row-chat-badge svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .monthly-attendance-table tbody tr:hover .monthly-row-chat-badge,
+        .monthly-row-chat-badge:focus {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
         }
 
         .monthly-attendance-table .sticky-employee {
@@ -510,10 +579,9 @@
             left: 0;
             top: calc(100% + 6px);
             z-index: 35;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            width: 190px;
+            display: grid;
+            gap: 5px;
+            width: 210px;
             padding: 7px;
             border: 1px solid #dbe4ef;
             border-radius: 8px;
@@ -534,10 +602,12 @@
         }
 
         .monthly-employee-meta span {
-            display: inline-flex;
+            display: flex;
             align-items: center;
-            max-width: 126px;
-            padding: 2px 5px;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+            padding: 3px 6px;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
             background: #f8fafc;
@@ -549,10 +619,26 @@
             white-space: nowrap;
         }
 
+        .monthly-employee-meta span b {
+            color: #64748b;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .monthly-employee-meta span em {
+            min-width: 0;
+            color: inherit;
+            font-style: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .monthly-employee-meta .meta-branch { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .monthly-employee-meta .meta-department { background: #ecfdf3; color: #15803d; border-color: #bbf7d0; }
         .monthly-employee-meta .meta-position { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
         .monthly-employee-meta .meta-shift { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+        .monthly-employee-meta .meta-phone { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
 
         .monthly-status-dot {
             width: 16px;
@@ -1057,7 +1143,24 @@
                             $shiftLabel = $employee->officeTime?->shift ?: trim(($employee->officeTime?->opening_time ?: '') . ' - ' . ($employee->officeTime?->closing_time ?: ''));
                         @endphp
                         <tr>
-                            <td class="sticky-number">{{ $monthlyRows->firstItem() + $loop->index }}</td>
+                            <td class="sticky-number">
+                                <span class="monthly-row-number">
+                                    <span class="monthly-row-number-value">{{ $monthlyRows->firstItem() + $loop->index }}</span>
+                                    @if($canViewEmployeeChat)
+                                        <button type="button"
+                                                class="monthly-row-chat-badge openAttendanceChat"
+                                                title="Quick chat with {{ $employee->name }}"
+                                                aria-label="Quick chat with {{ $employee->name }}"
+                                                data-employee-id="{{ $employee->id }}"
+                                                data-employee-name="{{ $employee->name }}"
+                                                data-employee-avatar="{{ $avatar }}"
+                                                data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: 'No department') . ' - ' . ($employee->branch?->name ?: 'No branch')) }}"
+                                                data-employee-online="{{ (int) ($employee->online_status ?? 0) }}">
+                                            <i data-feather="message-circle"></i>
+                                        </button>
+                                    @endif
+                                </span>
+                            </td>
                             <td class="sticky-employee">
                                 <div class="monthly-employee">
                                     <div class="monthly-avatar-wrap">
@@ -1070,16 +1173,24 @@
                                         </div>
                                         <div class="monthly-employee-meta">
                                             <span class="meta-branch" title="Branch: {{ $employee->branch?->name ?: 'No branch' }}">
-                                                {{ $employee->branch?->name ?: 'No branch' }}
+                                                <b>Branch</b>
+                                                <em>{{ $employee->branch?->name ?: 'No branch' }}</em>
                                             </span>
                                             <span class="meta-department" title="Department: {{ $employee->department?->dept_name ?: 'No department' }}">
-                                                {{ $employee->department?->dept_name ?: 'No department' }}
+                                                <b>Dept</b>
+                                                <em>{{ $employee->department?->dept_name ?: 'No department' }}</em>
                                             </span>
                                             <span class="meta-position" title="Position: {{ $employee->post?->post_name ?: 'No position' }}">
-                                                {{ $employee->post?->post_name ?: 'No position' }}
+                                                <b>Position</b>
+                                                <em>{{ $employee->post?->post_name ?: 'No position' }}</em>
                                             </span>
                                             <span class="meta-shift" title="Shift: {{ $shiftLabel ?: 'No shift' }}">
-                                                {{ $shiftLabel ?: 'No shift' }}
+                                                <b>Shift</b>
+                                                <em>{{ $shiftLabel ?: 'No shift' }}</em>
+                                            </span>
+                                            <span class="meta-phone" title="Phone: {{ $employee->phone ?: 'No phone' }}">
+                                                <b>Phone</b>
+                                                <em>{{ $employee->phone ?: 'No phone' }}</em>
                                             </span>
                                         </div>
                                     </div>
@@ -1241,11 +1352,11 @@
                                 Quick Time Leave
                             </button>
                         @endcan
-                        @can('view_employee_chat')
+                        @if($canViewEmployeeChat)
                             <button type="button" class="btn btn-outline-secondary btn-sm openAttendanceChat" id="monthlyQuickChatButton">
                                 Quick Chat
                             </button>
-                        @endcan
+                        @endif
                         <a href="#" class="btn btn-primary btn-sm" id="monthlyAttendanceDetailLink">Open Day Detail</a>
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                     </div>
@@ -1391,7 +1502,7 @@
             </div>
         @endcan
 
-        @can('view_employee_chat')
+        @if($canViewEmployeeChat)
             <div class="modal fade" id="attendanceChatModal" tabindex="-1" aria-labelledby="attendanceChatModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content">
@@ -1411,7 +1522,7 @@
                             </div>
                         </div>
                         <div class="modal-footer d-block">
-                            @can('send_employee_chat')
+                            @if($canSendEmployeeChat)
                                 <form id="attendanceChatForm" class="attendance-chat-form" action="{{ route('admin.employee-chat.store') }}" method="post" enctype="multipart/form-data">
                                     @csrf
                                     <input type="hidden" name="employee_id" id="attendanceChatEmployeeId">
@@ -1425,12 +1536,12 @@
                                 <div class="attendance-chat-status-text mt-2" id="attendanceChatStatusText">You can send text or attach a file here.</div>
                             @else
                                 <div class="attendance-chat-status-text" id="attendanceChatStatusText">You have view access only. Chat sending is disabled for your role.</div>
-                            @endcan
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
-        @endcan
+        @endif
     </section>
 @endsection
 

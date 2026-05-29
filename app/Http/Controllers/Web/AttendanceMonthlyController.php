@@ -105,7 +105,7 @@ class AttendanceMonthlyController extends Controller
                 'post:id,post_name',
                 'officeTime:id,shift,opening_time,closing_time',
             ])
-            ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
+            ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'phone', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('status', 'verified')
             ->where('is_active', 1)
