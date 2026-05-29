@@ -657,6 +657,13 @@ class AttendanceMonthlyController extends Controller
 
     private function summary(Collection $rows): array
     {
+        $lateBreakdown = $this->lateBreakdownTemplate();
+        foreach ($rows as $row) {
+            foreach (($row['late_breakdown'] ?? []) as $minutes => $count) {
+                $lateBreakdown[(int) $minutes] = ($lateBreakdown[(int) $minutes] ?? 0) + (int) $count;
+            }
+        }
+
         $totals = [
             'employees' => $rows->count(),
             'present' => $rows->sum(fn ($row) => $row['totals']['present']),
@@ -672,6 +679,8 @@ class AttendanceMonthlyController extends Controller
             'late_rate' => round(($totals['late'] / $workable) * 100, 2),
             'absent_rate' => round(($totals['absent'] / $workable) * 100, 2),
             'leave_rate' => round(($totals['leave'] / $workable) * 100, 2),
+            'late_breakdown' => $lateBreakdown,
+            'late_breakdown_total' => array_sum($lateBreakdown),
         ];
     }
 

@@ -324,6 +324,86 @@
             font-size: 11px;
         }
 
+        .monthly-signal-report-dialog {
+            width: 100vw;
+            max-width: 100vw;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .monthly-signal-report-dialog .modal-content {
+            height: 100%;
+            border: 0;
+            border-radius: 0;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.24);
+        }
+
+        .monthly-signal-report-dialog .modal-header {
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #ffffff;
+        }
+
+        .monthly-signal-report-dialog .modal-title {
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .monthly-signal-report-dialog #monthlySignalDetailSubtitle {
+            display: block;
+            margin-top: 4px;
+            color: #64748b !important;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .monthly-signal-report-dialog .btn-close {
+            width: 20px;
+            height: 20px;
+            opacity: 0.62;
+        }
+
+        .monthly-signal-report-dialog .modal-body {
+            min-height: 0;
+            padding: 16px 18px 18px;
+            overflow: auto;
+            background: #ffffff;
+        }
+
+        .monthly-signal-report-dialog .monthly-signal-day-list {
+            gap: 8px;
+        }
+
+        .monthly-signal-report-dialog .monthly-signal-day-item {
+            padding: 8px 10px;
+            border-color: #e2e8f0;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.035);
+        }
+
+        .monthly-signal-report-dialog .monthly-signal-day-item strong {
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .monthly-signal-report-dialog .monthly-signal-day-item span {
+            display: block;
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        .monthly-signal-report-dialog .monthly-signal-day-item .btn-primary {
+            min-width: 82px;
+            border: 0;
+            border-radius: 8px;
+            background: #ef232a;
+            box-shadow: 0 6px 14px rgba(239, 35, 42, 0.18);
+            font-size: 11px;
+            font-weight: 800;
+        }
+
         .monthly-stat-card {
             min-height: 56px;
             border: 1px solid #e5e7eb;
@@ -877,57 +957,64 @@
 
         .monthly-late-breakdown {
             display: block;
-            margin-bottom: 10px;
+            margin: 0 0 10px;
+            padding: 0;
             color: #0f172a;
+            min-width: 0;
         }
 
         .monthly-late-report-head {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
         .monthly-late-report-card {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
+            gap: 8px;
+            min-width: 0;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
             border-radius: 8px;
-            background: #f8fafc;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.045);
         }
 
         .monthly-late-report-card-icon {
-            width: 38px;
-            height: 38px;
+            flex: 0 0 auto;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             background: #fff7ed;
             color: #f97316;
+            font-size: 14px;
             font-weight: 900;
         }
 
         .monthly-late-report-card small {
             display: block;
             color: #64748b;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 800;
         }
 
         .monthly-late-report-card strong {
             display: block;
-            margin-top: 2px;
+            margin-top: 3px;
             color: #0f172a;
-            font-size: 16px;
+            font-size: 19px;
+            line-height: 1.05;
         }
 
         .monthly-late-report-note {
-            margin: 0 0 10px;
+            margin: 0 0 12px;
             color: #334155;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .monthly-late-report-note b {
@@ -938,44 +1025,73 @@
             width: 100%;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
         }
 
         .monthly-late-report-table {
             width: 100%;
-            min-width: 760px;
+            min-width: 780px;
             border-collapse: separate;
             border-spacing: 0;
             overflow: hidden;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
+            border: 0;
             font-size: 13px;
         }
 
         .monthly-late-report-table th,
         .monthly-late-report-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 9px 10px;
+            border-bottom: 1px solid #e2e8f0;
             text-align: left;
         }
 
         .monthly-late-report-table th {
-            background: #f8fafc;
+            background: #f1f5f9;
             color: #334155;
-            font-weight: 800;
+            font-size: 12px;
+            font-weight: 900;
         }
 
         .monthly-late-report-table tr:last-child td {
             border-bottom: 0;
         }
 
+        .monthly-late-minutes-cell {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 900;
+        }
+
+        .monthly-late-dot {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 11px;
+            font-weight: 900;
+        }
+
+        .monthly-late-dot.is-20 { background: #ffedd5; color: #ea580c; }
+        .monthly-late-dot.is-30 { background: #fef3c7; color: #d97706; }
+        .monthly-late-dot.is-40 { background: #dcfce7; color: #16a34a; }
+        .monthly-late-dot.is-50 { background: #cffafe; color: #0891b2; }
+        .monthly-late-dot.is-60 { background: #f3e8ff; color: #7c3aed; }
+
         .monthly-late-count-pill {
             display: inline-flex;
             justify-content: center;
             min-width: 64px;
-            padding: 6px 10px;
+            padding: 7px 10px;
             border-radius: 6px;
             background: #fee2e2;
             color: #dc2626;
+            font-size: 14px;
             font-weight: 900;
         }
 
@@ -983,22 +1099,431 @@
             display: inline-flex;
             justify-content: center;
             min-width: 74px;
-            padding: 6px 10px;
+            padding: 7px 10px;
             border-radius: 6px;
             background: #dcfce7;
             color: #15803d;
+            font-size: 14px;
             font-weight: 900;
         }
 
         .monthly-late-report-total td {
             background: #eff6ff;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 900;
+        }
+
+        #monthlySignalDetailModal.is-late-report .modal-header {
+            display: none;
+        }
+
+        #monthlySignalDetailModal.is-late-report .monthly-signal-report-dialog {
+            height: auto;
+            min-height: 0;
+        }
+
+        #monthlySignalDetailModal.is-late-report .modal-content {
+            height: auto;
+            max-height: 100vh;
+        }
+
+        #monthlySignalDetailModal.is-late-report .modal-body {
+            padding: 18px 22px 22px;
+        }
+
+        .late-dashboard-section {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+            min-height: 0;
+        }
+
+        .late-dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .late-dashboard-header > div:first-child {
+            min-width: 0;
+        }
+
+        .late-dashboard-title {
+            margin: 0;
+            color: #0f172a;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 0;
+        }
+
+        .late-dashboard-subtitle {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .late-dashboard-actions {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: flex-end;
+            flex: 0 0 auto;
+        }
+
+        .late-dashboard-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 32px;
+            padding: 6px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .late-dashboard-action:hover {
+            color: #0f172a;
+            background: #f8fafc;
+            text-decoration: none;
+        }
+
+        .late-dashboard-action.is-close {
+            width: 32px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .late-dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .late-dashboard-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.055);
+        }
+
+        .late-dashboard-card > div {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .late-dashboard-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+
+        .late-dashboard-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .late-dashboard-icon.is-green { background: #dcfce7; color: #16a34a; }
+        .late-dashboard-icon.is-amber { background: #fef3c7; color: #d97706; }
+        .late-dashboard-icon.is-orange { background: #ffedd5; color: #f97316; }
+        .late-dashboard-icon.is-purple { background: #f3e8ff; color: #7c3aed; }
+
+        .late-dashboard-card-label {
+            margin: 0;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.25;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+
+        .late-dashboard-card-value {
+            margin: 2px 0 0;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 900;
+            line-height: 1.18;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+
+        .late-dashboard-card-note {
+            margin: 2px 0 0;
+            color: #94a3b8;
+            font-size: 9px;
+            font-weight: 700;
+            line-height: 1.25;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
+
+        .late-dashboard-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding: 8px 10px;
+            border: 1px solid #dbeafe;
+            border-radius: 8px;
+            background: #f8fbff;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .late-dashboard-info svg {
+            width: 16px;
+            height: 16px;
+            color: #2563eb;
+            flex: 0 0 auto;
+        }
+
+        .late-dashboard-info strong {
+            color: #dc2626;
+        }
+
+        .late-dashboard-table-wrap {
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .late-dashboard-table {
+            width: 100%;
+            min-width: 0;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: #ffffff;
+        }
+
+        .late-dashboard-table th,
+        .late-dashboard-table td {
+            padding: 9px 11px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+            vertical-align: middle;
+            overflow-wrap: anywhere;
+            font-size: 12px;
+        }
+
+        .late-dashboard-table th:nth-child(1),
+        .late-dashboard-table td:nth-child(1) {
+            width: 22%;
+        }
+
+        .late-dashboard-table th:nth-child(2),
+        .late-dashboard-table td:nth-child(2) {
+            width: 24%;
+        }
+
+        .late-dashboard-table th:nth-child(3),
+        .late-dashboard-table td:nth-child(3) {
+            width: 31%;
+        }
+
+        .late-dashboard-table th:nth-child(4),
+        .late-dashboard-table td:nth-child(4) {
+            width: 10%;
+            text-align: center;
+        }
+
+        .late-dashboard-table th:nth-child(5),
+        .late-dashboard-table td:nth-child(5) {
+            width: 13%;
+            text-align: center;
+        }
+
+        .late-dashboard-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: linear-gradient(135deg, #16233b 0%, #233555 100%);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.25;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        .late-dashboard-table tbody tr:nth-child(even) td {
+            background: #f8fafc;
+        }
+
+        .late-dashboard-table tbody tr:hover td {
+            background: #fff7ed;
+        }
+
+        .late-dashboard-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .late-dashboard-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 42px;
+            padding: 5px 7px;
+            border-radius: 7px;
+            background: #fee2e2;
+            color: #dc2626;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .late-dashboard-count.is-20 { background: #ffedd5; color: #ea580c; }
+        .late-dashboard-count.is-30 { background: #fef3c7; color: #d97706; }
+        .late-dashboard-count.is-40 { background: #dcfce7; color: #16a34a; }
+        .late-dashboard-count.is-50 { background: #e0f2fe; color: #0284c7; }
+        .late-dashboard-count.is-60 { background: #f3e8ff; color: #7c3aed; }
+        .late-dashboard-grand .late-dashboard-count { background: #dbeafe; color: #1d4ed8; }
+
+        .late-dashboard-payment {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 64px;
+            padding: 5px 7px;
+            border-radius: 7px;
+            background: #dcfce7;
+            color: #15803d;
+            font-size: 12px;
+            font-weight: 900;
+        }
+
+        .late-dashboard-grand td {
+            background: #eff6ff !important;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .late-dashboard-note {
+            margin: 0;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .late-dashboard-footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         @media (max-width: 767.98px) {
             .monthly-late-report-head {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1199.98px) {
+            .late-dashboard-cards {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .late-dashboard-card-value {
+                font-size: 13px;
+            }
+
+            .late-dashboard-table th,
+            .late-dashboard-table td {
+                padding: 8px 7px;
+            }
+
+            .late-dashboard-table th {
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .late-dashboard-table-wrap {
+                overflow-x: auto;
+            }
+
+            .late-dashboard-table {
+                min-width: 720px;
+            }
+
+            .monthly-signal-report-dialog .modal-body {
+                padding: 12px;
+            }
+
+            #monthlySignalDetailModal.is-late-report .modal-body {
+                padding: 12px;
+            }
+
+            .late-dashboard-section {
+                padding: 0;
+            }
+
+            .late-dashboard-header {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+
+            .late-dashboard-actions {
+                width: auto;
+                justify-content: flex-end;
+            }
+
+            .late-dashboard-action {
+                flex: 0 0 auto;
+                justify-content: center;
+            }
+
+            .late-dashboard-action.is-close {
+                flex: 0 0 42px;
+            }
+
+            .late-dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .late-dashboard-table th,
+            .late-dashboard-table td {
+                padding: 8px 6px;
+            }
+
+            .monthly-late-minutes-cell {
+                gap: 6px;
+            }
+
+            .monthly-late-dot {
+                width: 24px;
+                height: 24px;
+                flex: 0 0 24px;
+            }
+
+            .late-dashboard-count,
+            .late-dashboard-payment {
+                min-width: 0;
+                width: 100%;
+                padding: 5px 4px;
+                font-size: 11px;
             }
         }
 
@@ -1408,6 +1933,10 @@
                                         data-late-breakdown='@json($row['late_breakdown'] ?? [])'
                                         data-late-total="{{ array_sum($row['late_breakdown'] ?? []) }}"
                                         data-opening-time="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->format('h:i A') : 'N/A' }}"
+                                        data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(15)->format('h:i A') : 'opening + 15m' }}"
+                                         data-total-employees="{{ $summary['employees'] }}"
+                                         data-report-subtitle="{{ $employee->department?->dept_name ?: ($employee->branch?->name ?: $employee->name) }}"
+                                         data-export-url="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}"
                                         @disabled(($row['totals']['late'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['late'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['late'] }}</span>
                                 </button>
@@ -1532,7 +2061,7 @@
         </div>
 
         <div class="modal fade" id="monthlySignalDetailModal" tabindex="-1" aria-labelledby="monthlySignalDetailModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered monthly-signal-report-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
                         <div>
@@ -1776,6 +2305,195 @@
                 }
             };
 
+            const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            }[character]));
+
+            const parseDisplayTime = (value) => {
+                const match = String(value || '').trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+                if (!match) {
+                    return null;
+                }
+
+                let hours = Number(match[1]);
+                const minutes = Number(match[2]);
+                const meridiem = match[3].toUpperCase();
+                if (meridiem === 'PM' && hours < 12) {
+                    hours += 12;
+                }
+                if (meridiem === 'AM' && hours === 12) {
+                    hours = 0;
+                }
+
+                return (hours * 60) + minutes;
+            };
+
+            const formatMinutesAsTime = (totalMinutes) => {
+                const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+                const hours24 = Math.floor(normalized / 60);
+                const minutes = normalized % 60;
+                const meridiem = hours24 >= 12 ? 'PM' : 'AM';
+                const hours12 = hours24 % 12 || 12;
+
+                return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${meridiem}`;
+            };
+
+            const buildLateTimeRange = (openingTime, minutes) => {
+                const ranges = {
+                    15: [16, 19],
+                    20: [20, 29],
+                    30: [30, 39],
+                    40: [40, 49],
+                    50: [50, 59],
+                    60: [60, null],
+                };
+                const [startOffset, endOffset] = ranges[minutes] || [minutes, null];
+                const openingMinutes = parseDisplayTime(openingTime);
+                if (openingMinutes === null) {
+                    return endOffset === null
+                        ? `Opening + ${startOffset}m and after`
+                        : `Opening + ${startOffset}m to ${endOffset}m`;
+                }
+
+                const start = openingMinutes + startOffset;
+                return endOffset === null
+                    ? `${formatMinutesAsTime(start)} and after`
+                    : `${formatMinutesAsTime(start)} - ${formatMinutesAsTime(openingMinutes + endOffset)}`;
+            };
+
+            const renderLateDashboardReport = (element, matchedDays, list) => {
+                const breakdown = readJsonData(element, 'data-late-breakdown', {});
+                const openingTime = element.getAttribute('data-opening-time') || 'N/A';
+                const grandTotal = Number(element.getAttribute('data-late-total') || 0);
+                const lateAfter = element.getAttribute('data-late-after') || 'opening + 15m';
+                const totalEmployees = element.getAttribute('data-total-employees') || '0';
+                const exportUrl = element.getAttribute('data-export-url') || '#';
+                const reportSubtitle = element.getAttribute('data-report-subtitle') || matchedDays[0]?.getAttribute('data-employee-subtitle') || matchedDays[0]?.getAttribute('data-employee') || '';
+                const rows = [
+                    [15, '15 Minutes', 'Late more than 15 minutes', 0.10],
+                    [20, '20 Minutes', 'Late more than 20 minutes', 0.20],
+                    [30, '30 Minutes', 'Late more than 30 minutes', 0.30],
+                    [40, '40 Minutes', 'Late more than 40 minutes', 0.40],
+                    [50, '50 Minutes', 'Late more than 50 minutes', 0.50],
+                    [60, '60 Minutes', 'Late more than 60 minutes', 1.00],
+                ];
+                const formatPayment = (value) => `$${Number(value).toFixed(2)}`;
+                const paymentTotal = rows.reduce((sum, [minutes, , , rate]) => {
+                    const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
+                    return sum + (count * rate);
+                }, 0);
+
+                document.getElementById('monthlySignalDetailModalLabel').textContent = 'Office Time / Late Check-in Report';
+                document.getElementById('monthlySignalDetailSubtitle').textContent = reportSubtitle;
+
+                const report = document.createElement('div');
+                report.className = 'late-dashboard-section';
+                report.innerHTML = `
+                    <div class="late-dashboard-header">
+                        <div>
+                            <h2 class="late-dashboard-title">Office Time / Late Check-in Report</h2>
+                            <p class="late-dashboard-subtitle">${escapeHtml(reportSubtitle)}</p>
+                        </div>
+                        <div class="late-dashboard-actions">
+                            <button class="late-dashboard-action is-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+                                <i data-feather="x"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="late-dashboard-cards">
+                        <div class="late-dashboard-card">
+                            <span class="late-dashboard-icon is-green"><i data-feather="clock"></i></span>
+                            <div>
+                                <p class="late-dashboard-card-label">Opening Time</p>
+                                <p class="late-dashboard-card-value">${escapeHtml(openingTime)}</p>
+                            </div>
+                        </div>
+                        <div class="late-dashboard-card">
+                            <span class="late-dashboard-icon is-amber"><i data-feather="watch"></i></span>
+                            <div>
+                                <p class="late-dashboard-card-label">Grace Period</p>
+                                <p class="late-dashboard-card-value">15 Minutes</p>
+                                <p class="late-dashboard-card-note">Until ${escapeHtml(lateAfter)}</p>
+                            </div>
+                        </div>
+                        <div class="late-dashboard-card">
+                            <span class="late-dashboard-icon is-orange"><i data-feather="alert-triangle"></i></span>
+                            <div>
+                                <p class="late-dashboard-card-label">Late Check-in</p>
+                                <p class="late-dashboard-card-value">After ${escapeHtml(lateAfter)}</p>
+                            </div>
+                        </div>
+                        <div class="late-dashboard-card">
+                            <span class="late-dashboard-icon is-purple"><i data-feather="users"></i></span>
+                            <div>
+                                <p class="late-dashboard-card-label">Employees</p>
+                                <p class="late-dashboard-card-value">${escapeHtml(totalEmployees)}</p>
+                                <p class="late-dashboard-card-note">Total Late: ${grandTotal}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="late-dashboard-info">
+                        <i data-feather="info"></i>
+                        Check-in after <strong>opening time + 15 minutes</strong> will be considered as <strong>Late</strong>.
+                    </div>
+                    <div class="late-dashboard-table-wrap">
+                        <table class="late-dashboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Late More Than</th>
+                                    <th>Late Time Range</th>
+                                    <th>Description</th>
+                                    <th>Count</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(([minutes, label, description, rate], index) => {
+                                    const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
+                                    const payment = count * rate;
+
+                                    return `
+                                        <tr>
+                                            <td>
+                                                <span class="monthly-late-minutes-cell">
+                                                    <span class="monthly-late-dot is-${minutes}">L</span>
+                                                    <strong>${label}</strong>
+                                                </span>
+                                            </td>
+                                            <td>${buildLateTimeRange(openingTime, minutes)}</td>
+                                            <td>${description}</td>
+                                            <td><span class="late-dashboard-count is-${minutes}">${count}</span></td>
+                                            <td><span class="late-dashboard-payment">${formatPayment(payment)}</span></td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr class="late-dashboard-grand">
+                                    <td colspan="3">Grand Total</td>
+                                    <td><span class="late-dashboard-count">${grandTotal}</span></td>
+                                    <td><span class="late-dashboard-payment">${formatPayment(paymentTotal)}</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="late-dashboard-footer">
+                        <p class="late-dashboard-note">* Payment is calculated by late time range and shown in USD.</p>
+                        <a class="late-dashboard-action" href="${escapeHtml(exportUrl)}">
+                            <i data-feather="download"></i>
+                            Export Excel
+                        </a>
+                    </div>
+                `;
+
+                list.appendChild(report);
+                if (window.feather) {
+                    feather.replace();
+                }
+            };
+
             const openMonthlyDayDetail = (trigger, showModal = true) => {
                 if (!trigger || !detailModal) {
                     return;
@@ -1916,6 +2634,7 @@
 
                 const list = document.getElementById('monthlySignalDayList');
                 list.innerHTML = '';
+                signalDetailModalElement.classList.remove('is-late-report');
 
                 matchedDays.forEach((dayButton) => {
                     const item = document.createElement('div');
@@ -1969,79 +2688,12 @@
 
                 const list = document.getElementById('monthlySignalDayList');
                 list.innerHTML = '';
+                signalDetailModalElement.classList.toggle('is-late-report', status === 'late');
 
                 if (status === 'late') {
-                    const breakdown = readJsonData(element, 'data-late-breakdown');
-                    const openingTime = element.getAttribute('data-opening-time') || 'N/A';
-                    const grandTotal = element.getAttribute('data-late-total') || '0';
-                    const breakdownBox = document.createElement('div');
-                    breakdownBox.className = 'monthly-late-breakdown';
-                    const rows = [
-                        [15, 'Opening + 16m to 19m', 'Late more than 15 minutes', 0.10],
-                        [20, 'Opening + 20m to 29m', 'Late more than 20 minutes', 0.20],
-                        [30, 'Opening + 30m to 39m', 'Late more than 30 minutes', 0.30],
-                        [40, 'Opening + 40m to 49m', 'Late more than 40 minutes', 0.40],
-                        [50, 'Opening + 50m to 59m', 'Late more than 50 minutes', 0.50],
-                        [60, 'Opening + 60m and after', 'Late more than 60 minutes', 1],
-                    ];
-                    const paymentTotal = rows.reduce((sum, [minutes, , , rate]) => {
-                        const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
-                        return sum + (count * rate);
-                    }, 0);
-                    const formatPayment = (value) => `$${Number(value).toFixed(2).replace(/\.00$/, '')}`;
-
-                    breakdownBox.innerHTML = `
-                        <div class="monthly-late-report-head">
-                            <div class="monthly-late-report-card">
-                                <span class="monthly-late-report-card-icon">OT</span>
-                                <div><small>Opening Time</small><strong>${openingTime}</strong></div>
-                            </div>
-                            <div class="monthly-late-report-card">
-                                <span class="monthly-late-report-card-icon">15</span>
-                                <div><small>Grace Period</small><strong>15 Minutes</strong></div>
-                            </div>
-                            <div class="monthly-late-report-card">
-                                <span class="monthly-late-report-card-icon">L</span>
-                                <div><small>Late Check-in</small><strong>After opening + 15m</strong></div>
-                            </div>
-                        </div>
-                        <p class="monthly-late-report-note">Check-in after <b>opening time + 15 minutes</b> will be considered as <b>Late</b>.</p>
-                        <div class="monthly-late-report-table-wrap">
-                            <table class="monthly-late-report-table">
-                                <thead>
-                                    <tr>
-                                        <th>Late More Than</th>
-                                        <th>Late Time Range</th>
-                                        <th>Description</th>
-                                        <th>Total Count</th>
-                                        <th>Payment</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${rows.map(([minutes, range, description, rate]) => {
-                                        const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
-                                        const payment = count * rate;
-
-                                        return `
-                                        <tr>
-                                            <td><strong>${minutes} Minutes</strong></td>
-                                            <td>${range}</td>
-                                            <td>${description}</td>
-                                            <td><span class="monthly-late-count-pill">${count}</span></td>
-                                            <td><span class="monthly-late-payment-pill">${formatPayment(payment)}</span></td>
-                                        </tr>
-                                    `}).join('')}
-                                    <tr class="monthly-late-report-total">
-                                        <td colspan="3">Grand Total</td>
-                                        <td><span class="monthly-late-count-pill">${grandTotal}</span></td>
-                                        <td><span class="monthly-late-payment-pill">${formatPayment(paymentTotal)}</span></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-
-                    list.appendChild(breakdownBox);
+                    renderLateDashboardReport(element, matchedDays, list);
+                    signalDetailModal.show();
+                    return;
                 }
 
                 matchedDays.forEach((dayButton) => {
