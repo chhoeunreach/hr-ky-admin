@@ -2438,7 +2438,7 @@
                     </div>
                     <div class="late-dashboard-info">
                         <i data-feather="info"></i>
-                        Check-in after <strong>opening time + 15 minutes</strong> will be considered as <strong>Late</strong>.
+                        Check-in from <strong>opening time + 16 minutes</strong> will be considered as <strong>Late</strong>.
                     </div>
                     <div class="late-dashboard-table-wrap">
                         <table class="late-dashboard-table">

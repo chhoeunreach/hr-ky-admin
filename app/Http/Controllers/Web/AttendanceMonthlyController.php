@@ -239,7 +239,7 @@ class AttendanceMonthlyController extends Controller
         $checkInAt = Carbon::parse($checkIn);
         $lateMinutes = $openingTime->diffInMinutes($checkInAt, false);
 
-        if ($lateMinutes <= 15) {
+        if ($lateMinutes < 16) {
             return $lateBreakdown;
         }
 
@@ -560,9 +560,9 @@ class AttendanceMonthlyController extends Controller
             }
 
             $manualLateGraceMinutes = 15;
-            $allowed = $openingTime->copy()->addMinutes($manualLateGraceMinutes);
-            $rules['late_check_in'] = $checkInAt->gt($allowed);
-            $rules['late_check_in_allowed'] = $allowed->format('H:i');
+            $lateStart = $openingTime->copy()->addMinutes($manualLateGraceMinutes + 1);
+            $rules['late_check_in'] = $checkInAt->gte($lateStart);
+            $rules['late_check_in_allowed'] = $lateStart->format('H:i');
         }
 
         if ($checkOut && $shift->closing_time) {

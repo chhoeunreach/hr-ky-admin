@@ -247,9 +247,9 @@ class AttendanceService
 
             if (!($timeLeave) && ($shift->is_late_check_in == 1 && $shift->checkin_after)) {
 
-                $checkInTimeAllowed = $openingTime->copy()->addMinutes($shift->checkin_after);
+                $checkInTimeAllowed = $openingTime->copy()->addMinutes(((int) $shift->checkin_after) + 1);
 
-                if ($checkInAt->greaterThan($checkInTimeAllowed)) {
+                if ($checkInAt->greaterThanOrEqualTo($checkInTimeAllowed)) {
 
                     throw new Exception(__('message.late_checkin'), 400);
                 }
