@@ -466,8 +466,18 @@ class RolePermissionHelper
                 "permission_groups_id" => 7
             ],
             [
+                "name" => "Monthly Attendance",
+                "permission_key" => "list_monthly_attendance",
+                "permission_groups_id" => 7
+            ],
+            [
                 "name" => "Attendance CSV Export",
                 "permission_key" => "attendance_csv_export",
+                "permission_groups_id" => 7
+            ],
+            [
+                "name" => "Monthly Attendance CSV Export",
+                "permission_key" => "monthly_attendance_csv_export",
                 "permission_groups_id" => 7
             ],
             [

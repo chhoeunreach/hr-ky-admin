@@ -1,4 +1,4 @@
-@can(['list_attendance'])
+@canany(['list_attendance', 'list_monthly_attendance'])
     <li class="nav-item  {{ request()->routeIs('admin.attendances.*') || request()->routeIs('admin.attendance.*') || request()->routeIs('admin.attendance-monthly.*')  ? 'active' : '' }}   ">
         <a data-href="#"
            class="nav-link"
@@ -16,15 +16,19 @@
             <ul class="nav sub-menu">
 
                 <li class="nav-item">
+                    @can('list_attendance')
                     <a href="{{route('admin.attendances.index')}}"
                        data-href="{{route('admin.attendances.index')}}"
                        class="nav-link {{ request()->routeIs('admin.attendances.*') ? 'active' : ''}}">{{ __('index.attendance') }}</a>
+                    @endcan
                 </li>
 
                 <li class="nav-item">
+                    @canany(['list_attendance', 'list_monthly_attendance'])
                     <a href="{{route('admin.attendance-monthly.index')}}"
                        data-href="{{route('admin.attendance-monthly.index')}}"
                        class="nav-link {{ request()->routeIs('admin.attendance-monthly.*') ? 'active' : ''}}">Attendance Monthly</a>
+                    @endcanany
                 </li>
 
                 <li class="nav-item">
@@ -42,5 +46,4 @@
         </div>
     </li>
 @endcan
-
 

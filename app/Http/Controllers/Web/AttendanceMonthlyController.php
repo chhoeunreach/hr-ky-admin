@@ -80,7 +80,7 @@ class AttendanceMonthlyController extends Controller
 
     private function authorizeMonthlyAttendance(): void
     {
-        if (auth('admin')->check() || Gate::allows('list_attendance')) {
+        if (auth('admin')->check() || Gate::any(['list_attendance', 'list_monthly_attendance'])) {
             return;
         }
 
@@ -89,7 +89,7 @@ class AttendanceMonthlyController extends Controller
 
     private function authorizeMonthlyAttendanceExport(): void
     {
-        if (auth('admin')->check() || Gate::allows('attendance_csv_export')) {
+        if (auth('admin')->check() || Gate::any(['attendance_csv_export', 'monthly_attendance_csv_export'])) {
             return;
         }
 
@@ -105,7 +105,7 @@ class AttendanceMonthlyController extends Controller
                 'post:id,post_name',
                 'officeTime:id,shift,opening_time,closing_time',
             ])
-            ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id'])
+            ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('status', 'verified')
             ->where('is_active', 1)
@@ -134,21 +134,28 @@ class AttendanceMonthlyController extends Controller
             ->whereIn('user_id', $userIds)
             ->whereBetween('attendance_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->orderBy('check_in_at')
-            ->get(['id', 'user_id', 'attendance_date', 'check_in_at', 'night_checkin', 'attendance_status'])
+            ->get(['id', 'user_id', 'attendance_date', 'check_in_at', 'check_out_at', 'night_checkin', 'night_checkout', 'attendance_status'])
             ->groupBy(fn ($attendance) => $attendance->user_id . '|' . Carbon::parse($attendance->attendance_date)->format('Y-m-d'));
 
         $leaveByUserDate = $this->leaveMap($userIds, $startDate, $endDate);
         $nonAttendanceReasons = $this->nonAttendanceReasonMap($startDate, $endDate);
         $timeLeaveByUserDate = TimeLeave::query()
             ->whereIn('requested_by', $userIds)
-            ->where('status', 'approved')
+            ->whereIn('status', ['pending', 'approved', 'review'])
             ->whereBetween('issue_date', [$startDate->toDateString(), $endDate->toDateString()])
-            ->get(['id', 'requested_by', 'issue_date', 'start_time', 'end_time'])
-            ->keyBy(fn ($leave) => $leave->requested_by . '|' . Carbon::parse($leave->issue_date)->format('Y-m-d'));
+            ->get(['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'admin_remark', 'status'])
+            ->groupBy(fn ($leave) => $leave->requested_by . '|' . Carbon::parse($leave->issue_date)->format('Y-m-d'));
 
         return $employees->map(function (User $employee) use ($month, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $nonAttendanceReasons) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
+            $signalTotals = [
+                'pending_day_off' => 0,
+                'pending_leave' => 0,
+                'time_leave' => 0,
+                'time_leave_request' => 0,
+                'no_checkout' => 0,
+            ];
 
             foreach ($this->calendarDays($month) as $day) {
                 $key = $employee->id . '|' . $day['date'];
@@ -157,7 +164,7 @@ class AttendanceMonthlyController extends Controller
                     $day['date'],
                     $attendanceByUserDate->get($key, collect()),
                     $leaveByUserDate[$key] ?? null,
-                    $timeLeaveByUserDate->get($key),
+                    $timeLeaveByUserDate->get($key, collect()),
                     $nonAttendanceReasons[$day['date']] ?? null
                 );
 
@@ -165,13 +172,30 @@ class AttendanceMonthlyController extends Controller
                     $totals[$cell['status']]++;
                 }
 
-                $days[] = $cell + $day;
+                foreach ($cell['indicators'] ?? [] as $indicator) {
+                    match ($indicator['short'] ?? null) {
+                        'PO' => $signalTotals['pending_day_off']++,
+                        'PL' => $signalTotals['pending_leave']++,
+                        'TL' => $signalTotals['time_leave']++,
+                        'TR' => $signalTotals['time_leave_request']++,
+                        'NC' => $signalTotals['no_checkout']++,
+                        default => null,
+                    };
+                }
+
+                $days[] = $cell + $day + [
+                    'detail_url' => route('admin.attendances.index', [
+                        'attendance_date' => $day['date'],
+                        'search' => $employee->username ?: ($employee->employee_code ?: $employee->name),
+                    ]),
+                ];
             }
 
             return [
                 'employee' => $employee,
                 'days' => $days,
                 'totals' => $totals,
+                'signal_totals' => $signalTotals,
                 'total_days' => count($days),
             ];
         });
@@ -181,22 +205,31 @@ class AttendanceMonthlyController extends Controller
     {
         $leaveMap = [];
         $leaveRequests = LeaveRequestMaster::query()
-            ->with('leaveType:id,name')
+            ->with('leaveType:id,name,slug')
             ->whereIn('requested_by', $userIds)
-            ->where('status', 'approved')
+            ->whereIn('status', ['pending', 'approved', 'review'])
             ->where('early_exit', 0)
             ->whereDate('leave_from', '<=', $endDate->toDateString())
             ->whereDate('leave_to', '>=', $startDate->toDateString())
-            ->get(['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to']);
+            ->get(['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'reasons', 'admin_remark', 'status']);
 
         foreach ($leaveRequests as $leave) {
             $from = Carbon::parse($leave->leave_from)->max($startDate);
             $to = Carbon::parse($leave->leave_to)->min($endDate);
 
             for ($date = $from->copy(); $date->lte($to); $date->addDay()) {
-                $leaveMap[$leave->requested_by . '|' . $date->format('Y-m-d')] = [
+                $leaveMap[$leave->requested_by . '|' . $date->format('Y-m-d')][] = [
+                    'id' => $leave->id,
+                    'status' => $leave->status,
                     'type' => str_contains(strtolower((string) $leave->leaveType?->name), 'day off') ? 'off_day' : 'leave',
                     'label' => $leave->leaveType?->name ?: 'Leave',
+                    'pay_type' => $this->leavePayType($leave->leaveType?->name, $leave->leaveType?->slug),
+                    'from' => Carbon::parse($leave->leave_from)->format('Y-m-d'),
+                    'to' => Carbon::parse($leave->leave_to)->format('Y-m-d'),
+                    'reason' => strip_tags((string) $leave->reasons),
+                    'admin_remark' => (string) $leave->admin_remark,
+                    'update_url' => route('admin.leave-request.update-status', $leave->id),
+                    'approvers_url' => route('admin.leave-request.approval-details', $leave->id),
                 ];
             }
         }
@@ -238,41 +271,226 @@ class AttendanceMonthlyController extends Controller
         return $reasons;
     }
 
-    private function statusCell(User $employee, string $date, Collection $attendances, ?array $leave, ?TimeLeave $timeLeave, ?string $nonAttendanceReason): array
+    private function statusCell(User $employee, string $date, Collection $attendances, ?array $leaveRequests, Collection $timeLeaves, ?string $nonAttendanceReason): array
     {
-        if ($leave) {
-            return ['status' => $leave['type'], 'label' => $leave['label']];
-        }
-
-        if ($timeLeave) {
-            return ['status' => 'leave', 'label' => 'Time Leave'];
-        }
+        $leaveRequests = $leaveRequests ?? [];
+        $indicators = $this->statusIndicators($leaveRequests, $timeLeaves);
+        $approvedLeave = collect($leaveRequests ?? [])->firstWhere('status', 'approved');
+        $approvedTimeLeave = $timeLeaves->firstWhere('status', 'approved');
+        $details = $this->dayDetails($employee, $date, $attendances, $leaveRequests, $timeLeaves, $nonAttendanceReason);
+        $actions = $this->dayActions($leaveRequests, $timeLeaves);
+        $canQuickLeave = empty($leaveRequests);
+        $canQuickTimeLeave = empty($leaveRequests) && $timeLeaves->isEmpty();
 
         if ($attendances->isNotEmpty()) {
             $firstAttendance = $attendances->first();
+            $openCheckout = $this->hasOpenCheckout($attendances);
+            $attendanceIndicators = $openCheckout
+                ? array_merge($indicators, [[
+                    'type' => 'open-checkout',
+                    'short' => 'NC',
+                    'label' => 'Checked in but not checked out',
+                ]])
+                : $indicators;
+
             if (!is_null($firstAttendance->attendance_status) && (int) $firstAttendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
-                return ['status' => 'absent', 'label' => 'Rejected'];
+                return $this->cell('absent', 'Rejected', $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
             }
 
             $checkIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
             $openingTime = $employee->officeTime?->opening_time;
+            $checkInLabel = $checkIn ? ' - In ' . Carbon::parse($checkIn)->format('H:i') : '';
 
             if ($checkIn && $openingTime && Carbon::parse($checkIn)->format('H:i:s') > Carbon::parse($openingTime)->format('H:i:s')) {
-                return ['status' => 'late', 'label' => 'Late'];
+                return $this->cell('late', ($openCheckout ? 'Late - no checkout' : 'Late') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
             }
 
-            return ['status' => 'present', 'label' => 'Present'];
+            return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+        }
+
+        if ($approvedLeave) {
+            $label = $this->leaveDisplayLabel($approvedLeave);
+
+            return $this->cell($approvedLeave['type'], $label, $indicators, $details, $actions, false, false);
+        }
+
+        if ($approvedTimeLeave) {
+            return $this->cell('leave', 'Approved Time Leave', $indicators, $details, $actions, false, false);
         }
 
         if (Carbon::parse($date)->isFuture()) {
-            return ['status' => 'empty', 'label' => 'Upcoming'];
+            return $this->cell('empty', 'Upcoming', $indicators, $details, $actions, false, false);
         }
 
         if ($nonAttendanceReason) {
-            return ['status' => 'off_day', 'label' => $nonAttendanceReason];
+            return $this->cell('off_day', $nonAttendanceReason, $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave);
         }
 
-        return ['status' => 'absent', 'label' => 'Absent'];
+        return $this->cell('absent', 'Absent', $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave);
+    }
+
+    private function cell(string $status, string $label, array $indicators = [], array $details = [], array $actions = [], bool $canQuickLeave = true, bool $canQuickTimeLeave = true): array
+    {
+        $tooltipParts = array_filter(array_merge([$label], array_column($indicators, 'label')));
+
+        return [
+            'status' => $status,
+            'label' => $label,
+            'indicators' => $indicators,
+            'details' => $details ?: [$label],
+            'actions' => $actions,
+            'can_quick_leave' => $canQuickLeave,
+            'can_quick_time_leave' => $canQuickTimeLeave,
+            'tooltip' => implode(' | ', $tooltipParts),
+        ];
+    }
+
+    private function dayDetails(User $employee, string $date, Collection $attendances, array $leaveRequests, Collection $timeLeaves, ?string $nonAttendanceReason): array
+    {
+        $details = [
+            'Date: ' . Carbon::parse($date)->format('M d, Y'),
+            'Employee: ' . $employee->name . ($employee->username ? ' (' . $employee->username . ')' : ''),
+        ];
+
+        foreach ($attendances as $attendance) {
+            $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+            $checkOut = $attendance->check_out_at ?: $attendance->night_checkout;
+            $details[] = 'Attendance: Check in ' . ($checkIn ?: 'N/A') . ', check out ' . ($checkOut ?: 'No checkout');
+        }
+
+        foreach ($leaveRequests as $leave) {
+            $details[] = ucfirst($leave['status']) . ' ' . $this->leaveDisplayLabel($leave)
+                . ' from ' . $leave['from'] . ' to ' . $leave['to']
+                . ($leave['reason'] ? ' - ' . $leave['reason'] : '');
+        }
+
+        foreach ($timeLeaves as $timeLeave) {
+            $details[] = ucfirst((string) $timeLeave->status) . ' time leave '
+                . ($timeLeave->start_time ?: 'N/A') . ' - ' . ($timeLeave->end_time ?: 'N/A')
+                . ($timeLeave->reasons ? ' - ' . strip_tags((string) $timeLeave->reasons) : '');
+        }
+
+        if ($nonAttendanceReason) {
+            $details[] = 'Calendar note: ' . $nonAttendanceReason;
+        }
+
+        return $details;
+    }
+
+    private function dayActions(array $leaveRequests, Collection $timeLeaves): array
+    {
+        $actions = [];
+
+        foreach ($leaveRequests as $leave) {
+            if (!in_array($leave['status'], ['pending', 'review'], true)) {
+                continue;
+            }
+
+            $actions[] = [
+                'type' => 'leave',
+                'id' => $leave['id'],
+                'title' => ($leave['type'] === 'off_day' ? 'Day Off' : $this->leaveDisplayLabel($leave)) . ' Request',
+                'reason' => $leave['reason'] ?: 'N/A',
+                'remark' => $leave['admin_remark'] ?: '',
+                'update_url' => $leave['update_url'],
+                'approvers_url' => $leave['approvers_url'],
+            ];
+        }
+
+        foreach ($timeLeaves as $timeLeave) {
+            if (!in_array($timeLeave->status, ['pending', 'review'], true)) {
+                continue;
+            }
+
+            $actions[] = [
+                'type' => 'time_leave',
+                'id' => $timeLeave->id,
+                'title' => 'Time Leave Request',
+                'reason' => strip_tags((string) $timeLeave->reasons) ?: 'N/A',
+                'remark' => (string) $timeLeave->admin_remark,
+                'update_url' => route('admin.time-leave-request.update-status', $timeLeave->id),
+                'approvers_url' => null,
+            ];
+        }
+
+        return $actions;
+    }
+
+    private function statusIndicators(array $leaveRequests, Collection $timeLeaves): array
+    {
+        $indicators = [];
+
+        foreach ($leaveRequests as $leave) {
+            $isApproved = $leave['status'] === 'approved';
+            $isDayOff = ($leave['type'] ?? null) === 'off_day';
+            $short = match (true) {
+                $isApproved && $isDayOff => 'O',
+                $isApproved => 'LV',
+                $isDayOff => 'PO',
+                default => 'PL',
+            };
+
+            $indicators[] = [
+                'type' => $isApproved ? 'leave-approved' : 'leave-request',
+                'short' => $short,
+                'label' => ($isApproved ? 'Approved ' : 'Pending ') . ($isDayOff ? 'Day Off' : $this->leaveDisplayLabel($leave)),
+            ];
+        }
+
+        foreach ($timeLeaves as $timeLeave) {
+            $isApproved = $timeLeave->status === 'approved';
+            $timeRange = trim(($timeLeave->start_time ?: '') . ' - ' . ($timeLeave->end_time ?: ''));
+            $indicators[] = [
+                'type' => $isApproved ? 'time-leave-approved' : 'time-leave-request',
+                'short' => $isApproved ? 'TL' : 'TR',
+                'label' => ($isApproved ? 'Approved Time Leave' : 'Pending Time Leave Request') . ($timeRange ? ' (' . $timeRange . ')' : ''),
+            ];
+        }
+
+        return $indicators;
+    }
+
+    private function hasOpenCheckout(Collection $attendances): bool
+    {
+        return $attendances->contains(function (Attendance $attendance) {
+            $hasRegularCheckIn = !empty($attendance->check_in_at);
+            $hasNightCheckIn = !empty($attendance->night_checkin);
+
+            return ($hasRegularCheckIn && empty($attendance->check_out_at))
+                || ($hasNightCheckIn && empty($attendance->night_checkout));
+        });
+    }
+
+    private function leaveDisplayLabel(array $leave): string
+    {
+        $label = ucfirst((string) $leave['label']);
+        $labelLower = strtolower($label);
+        if (str_contains($labelLower, 'paid') || str_contains($labelLower, 'unpaid')) {
+            return $label;
+        }
+
+        $payPrefix = match ($leave['pay_type'] ?? null) {
+            'paid' => 'Paid ',
+            'unpaid' => 'Unpaid ',
+            default => '',
+        };
+
+        return $payPrefix . $label;
+    }
+
+    private function leavePayType(?string $name, ?string $slug): ?string
+    {
+        $text = strtolower(trim((string) $name . ' ' . (string) $slug));
+
+        if (str_contains($text, 'unpaid')) {
+            return 'unpaid';
+        }
+
+        if (str_contains($text, 'paid')) {
+            return 'paid';
+        }
+
+        return null;
     }
 
     private function calendarDays(Carbon $month): array
@@ -331,7 +549,19 @@ class AttendanceMonthlyController extends Controller
             foreach ($this->calendarDays($month) as $day) {
                 $headers[] = $day['day'];
             }
-            $headers = array_merge($headers, ['Present', 'Late', 'Absent', 'Leave', 'Off Day', 'Total']);
+            $headers = array_merge($headers, [
+                'Present',
+                'Late',
+                'Absent',
+                'Leave',
+                'Off Day',
+                'Total',
+                'Pending Day Off',
+                'Pending Leave',
+                'Time Leave',
+                'Time Leave Request',
+                'No Checkout',
+            ]);
             fputcsv($handle, $headers);
 
             foreach ($rows as $row) {
@@ -343,7 +573,7 @@ class AttendanceMonthlyController extends Controller
                     $employee->post?->post_name,
                 ];
                 foreach ($row['days'] as $day) {
-                    $line[] = $day['label'];
+                    $line[] = $day['tooltip'] ?? $day['label'];
                 }
                 fputcsv($handle, array_merge($line, [
                     $row['totals']['present'],
@@ -352,6 +582,11 @@ class AttendanceMonthlyController extends Controller
                     $row['totals']['leave'],
                     $row['totals']['off_day'],
                     $row['total_days'],
+                    $row['signal_totals']['pending_day_off'] ?? 0,
+                    $row['signal_totals']['pending_leave'] ?? 0,
+                    $row['signal_totals']['time_leave'] ?? 0,
+                    $row['signal_totals']['time_leave_request'] ?? 0,
+                    $row['signal_totals']['no_checkout'] ?? 0,
                 ]));
             }
 
