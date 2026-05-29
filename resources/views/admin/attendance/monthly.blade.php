@@ -154,6 +154,12 @@
             height: 15px;
         }
 
+        .monthly-filter-toggle-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .monthly-inline-field {
             display: flex;
             align-items: center;
@@ -928,11 +934,18 @@
 
         <div class="monthly-filter-shell mb-3">
             <div class="monthly-filter-toggle">
-                <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceFilters" aria-expanded="true" aria-controls="monthlyAttendanceFilters">
-                    <i data-feather="filter"></i>
-                    <span>Filters</span>
-                    <i data-feather="chevron-down"></i>
-                </button>
+                <div class="monthly-filter-toggle-actions">
+                    <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceFilters" aria-expanded="true" aria-controls="monthlyAttendanceFilters">
+                        <i data-feather="filter"></i>
+                        <span>Filters</span>
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                    <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceSummary" aria-expanded="false" aria-controls="monthlyAttendanceSummary">
+                        <i data-feather="bar-chart-2"></i>
+                        <span>Summary</span>
+                        <i data-feather="chevron-down"></i>
+                    </button>
+                </div>
             </div>
 
             <form action="{{ route('admin.attendance-monthly.index') }}" method="get" class="collapse show p-2" id="monthlyAttendanceFilters">
@@ -982,89 +995,91 @@
                 </div>
             </div>
             </form>
-        </div>
 
-        <div class="monthly-report-strip">
-            <div class="monthly-report-item">
-                <span class="monthly-report-label">Report Month</span>
-                <span class="monthly-report-value">{{ $month->format('F Y') }}</span>
-                <span class="monthly-report-note">{{ $calendarDays[0]['date'] ?? $month->startOfMonth()->toDateString() }} to {{ $calendarDays[count($calendarDays) - 1]['date'] ?? $month->endOfMonth()->toDateString() }}</span>
-            </div>
-            <div class="monthly-report-item">
-                <span class="monthly-report-label">Employees In View</span>
-                <span class="monthly-report-value">{{ number_format($summary['employees']) }}</span>
-                <span class="monthly-report-note">After branch and department filters</span>
-            </div>
-            <div class="monthly-report-item">
-                <span class="monthly-report-label">Calendar Days</span>
-                <span class="monthly-report-value">{{ count($calendarDays) }}</span>
-                <span class="monthly-report-note">{{ collect($calendarDays)->where('is_weekend', true)->count() }} weekend columns highlighted</span>
-            </div>
-            <div class="monthly-report-item">
-                <span class="monthly-report-label">Attendance Signals</span>
-                <span class="monthly-report-value">{{ number_format($summary['present'] + $summary['late'] + $summary['leave'] + $summary['absent']) }}</span>
-                <span class="monthly-report-note">Present, late, leave, and absent cells</span>
-            </div>
-        </div>
+            <div class="collapse p-2 pt-0" id="monthlyAttendanceSummary">
+                <div class="monthly-report-strip">
+                    <div class="monthly-report-item">
+                        <span class="monthly-report-label">Report Month</span>
+                        <span class="monthly-report-value">{{ $month->format('F Y') }}</span>
+                        <span class="monthly-report-note">{{ $calendarDays[0]['date'] ?? $month->startOfMonth()->toDateString() }} to {{ $calendarDays[count($calendarDays) - 1]['date'] ?? $month->endOfMonth()->toDateString() }}</span>
+                    </div>
+                    <div class="monthly-report-item">
+                        <span class="monthly-report-label">Employees In View</span>
+                        <span class="monthly-report-value">{{ number_format($summary['employees']) }}</span>
+                        <span class="monthly-report-note">After branch and department filters</span>
+                    </div>
+                    <div class="monthly-report-item">
+                        <span class="monthly-report-label">Calendar Days</span>
+                        <span class="monthly-report-value">{{ count($calendarDays) }}</span>
+                        <span class="monthly-report-note">{{ collect($calendarDays)->where('is_weekend', true)->count() }} weekend columns highlighted</span>
+                    </div>
+                    <div class="monthly-report-item">
+                        <span class="monthly-report-label">Attendance Signals</span>
+                        <span class="monthly-report-value">{{ number_format($summary['present'] + $summary['late'] + $summary['leave'] + $summary['absent']) }}</span>
+                        <span class="monthly-report-note">Present, late, leave, and absent cells</span>
+                    </div>
+                </div>
 
-        <div class="row g-2 mb-3">
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-employees">
-                    <span class="monthly-stat-icon"><i data-feather="users"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">Total Employees</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['employees']) }}</p>
-                        <p class="monthly-stat-subtitle">All Employees</p>
+                <div class="row g-2">
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-employees">
+                            <span class="monthly-stat-icon"><i data-feather="users"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">Total Employees</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['employees']) }}</p>
+                                <p class="monthly-stat-subtitle">All Employees</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-present">
-                    <span class="monthly-stat-icon"><i data-feather="check"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">Present</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['present']) }}</p>
-                        <p class="monthly-stat-subtitle">{{ number_format($summary['present_rate'], 2) }}%</p>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-present">
+                            <span class="monthly-stat-icon"><i data-feather="check"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">Present</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['present']) }}</p>
+                                <p class="monthly-stat-subtitle">{{ number_format($summary['present_rate'], 2) }}%</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-late">
-                    <span class="monthly-stat-icon"><i data-feather="clock"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">Late</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['late']) }}</p>
-                        <p class="monthly-stat-subtitle">{{ number_format($summary['late_rate'], 2) }}%</p>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-late">
+                            <span class="monthly-stat-icon"><i data-feather="clock"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">Late</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['late']) }}</p>
+                                <p class="monthly-stat-subtitle">{{ number_format($summary['late_rate'], 2) }}%</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-absent">
-                    <span class="monthly-stat-icon"><i data-feather="x"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">Absent</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['absent']) }}</p>
-                        <p class="monthly-stat-subtitle">{{ number_format($summary['absent_rate'], 2) }}%</p>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-absent">
+                            <span class="monthly-stat-icon"><i data-feather="x"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">Absent</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['absent']) }}</p>
+                                <p class="monthly-stat-subtitle">{{ number_format($summary['absent_rate'], 2) }}%</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-leave">
-                    <span class="monthly-stat-icon"><i data-feather="umbrella"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">On Leave</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['leave']) }}</p>
-                        <p class="monthly-stat-subtitle">{{ number_format($summary['leave_rate'], 2) }}%</p>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-leave">
+                            <span class="monthly-stat-icon"><i data-feather="umbrella"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">On Leave</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['leave']) }}</p>
+                                <p class="monthly-stat-subtitle">{{ number_format($summary['leave_rate'], 2) }}%</p>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-xl-2 col-md-4 col-sm-6">
-                <div class="monthly-stat-card stat-off">
-                    <span class="monthly-stat-icon"><i data-feather="calendar"></i></span>
-                    <div>
-                        <p class="monthly-stat-title">Off Day</p>
-                        <p class="monthly-stat-value">{{ number_format($summary['off_day']) }}</p>
-                        <p class="monthly-stat-subtitle">Monthly Off</p>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-off">
+                            <span class="monthly-stat-icon"><i data-feather="calendar"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">Off Day</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['off_day']) }}</p>
+                                <p class="monthly-stat-subtitle">Monthly Off</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
