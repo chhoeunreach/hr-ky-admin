@@ -103,7 +103,7 @@ class AttendanceMonthlyController extends Controller
                 'branch:id,name',
                 'department:id,dept_name',
                 'post:id,post_name',
-                'officeTime:id,shift,opening_time,closing_time',
+                'officeTime:id,shift,opening_time,closing_time,is_early_check_in,checkin_before,is_early_check_out,checkout_before,is_late_check_in,checkin_after,is_late_check_out,checkout_after',
             ])
             ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'phone', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
             ->where('company_id', AppHelper::getAuthUserCompanyId())
@@ -298,11 +298,20 @@ class AttendanceMonthlyController extends Controller
             }
 
             $checkIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
-            $openingTime = $employee->officeTime?->opening_time;
             $checkInLabel = $checkIn ? ' - In ' . Carbon::parse($checkIn)->format('H:i') : '';
+            $timingRules = $this->attendanceTimingRules($employee, $firstAttendance);
+            $timingDetails = $this->attendanceTimingRuleDetails($timingRules);
+            if ($timingDetails !== []) {
+                $details = array_merge($details, $timingDetails);
+            }
 
-            if ($checkIn && $openingTime && Carbon::parse($checkIn)->format('H:i:s') > Carbon::parse($openingTime)->format('H:i:s')) {
-                return $this->cell('late', ($openCheckout ? 'Late - no checkout' : 'Late') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+            if ($timingRules['late_check_in']) {
+                $lateLabel = ($openCheckout ? 'Late - no checkout' : 'Late') . $checkInLabel;
+                if ($timingRules['late_check_in_allowed']) {
+                    $lateLabel .= ' (Allowed ' . $timingRules['late_check_in_allowed'] . ')';
+                }
+
+                return $this->cell('late', $lateLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
             }
 
             return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
@@ -459,6 +468,89 @@ class AttendanceMonthlyController extends Controller
             return ($hasRegularCheckIn && empty($attendance->check_out_at))
                 || ($hasNightCheckIn && empty($attendance->night_checkout));
         });
+    }
+
+    private function attendanceTimingRules(User $employee, Attendance $attendance): array
+    {
+        $shift = $employee->officeTime;
+        $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+        $checkOut = $attendance->check_out_at ?: $attendance->night_checkout;
+        $rules = [
+            'early_check_in' => false,
+            'early_check_in_allowed' => null,
+            'late_check_in' => false,
+            'late_check_in_allowed' => null,
+            'early_check_out' => false,
+            'early_check_out_allowed' => null,
+            'late_check_out' => false,
+            'late_check_out_allowed' => null,
+        ];
+
+        if (!$shift) {
+            return $rules;
+        }
+
+        if ($checkIn && $shift->opening_time) {
+            $checkInAt = Carbon::parse($checkIn);
+            $openingTime = Carbon::parse($shift->opening_time);
+
+            if ((int) $shift->is_early_check_in === 1 && $shift->checkin_before !== null) {
+                $allowed = $openingTime->copy()->subMinutes((int) $shift->checkin_before);
+                $rules['early_check_in'] = $checkInAt->lt($allowed);
+                $rules['early_check_in_allowed'] = $allowed->format('H:i');
+            }
+
+            if ((int) $shift->is_late_check_in === 1 && $shift->checkin_after !== null) {
+                $allowed = $openingTime->copy()->addMinutes((int) $shift->checkin_after);
+                $rules['late_check_in'] = $checkInAt->gt($allowed);
+                $rules['late_check_in_allowed'] = $allowed->format('H:i');
+            } else {
+                $rules['late_check_in'] = $checkInAt->gt($openingTime);
+                $rules['late_check_in_allowed'] = $openingTime->format('H:i');
+            }
+        }
+
+        if ($checkOut && $shift->closing_time) {
+            $checkOutAt = Carbon::parse($checkOut);
+            $closingTime = Carbon::parse($shift->closing_time);
+
+            if ((int) $shift->is_early_check_out === 1 && $shift->checkout_before !== null) {
+                $allowed = $closingTime->copy()->subMinutes((int) $shift->checkout_before);
+                $rules['early_check_out'] = $checkOutAt->lt($allowed);
+                $rules['early_check_out_allowed'] = $allowed->format('H:i');
+            }
+
+            if ((int) $shift->is_late_check_out === 1 && $shift->checkout_after !== null) {
+                $allowed = $closingTime->copy()->addMinutes((int) $shift->checkout_after);
+                $rules['late_check_out'] = $checkOutAt->gt($allowed);
+                $rules['late_check_out_allowed'] = $allowed->format('H:i');
+            }
+        }
+
+        return $rules;
+    }
+
+    private function attendanceTimingRuleDetails(array $rules): array
+    {
+        $details = [];
+
+        if ($rules['early_check_in']) {
+            $details[] = 'Office Time: Early check-in before allowed time ' . $rules['early_check_in_allowed'];
+        }
+
+        if ($rules['late_check_in']) {
+            $details[] = 'Office Time: Late check-in after allowed time ' . $rules['late_check_in_allowed'];
+        }
+
+        if ($rules['early_check_out']) {
+            $details[] = 'Office Time: Early check-out before allowed time ' . $rules['early_check_out_allowed'];
+        }
+
+        if ($rules['late_check_out']) {
+            $details[] = 'Office Time: Late check-out after allowed time ' . $rules['late_check_out_allowed'];
+        }
+
+        return $details;
     }
 
     private function leaveDisplayLabel(array $leave): string
