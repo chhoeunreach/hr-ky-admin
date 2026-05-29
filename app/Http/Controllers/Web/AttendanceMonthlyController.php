@@ -11,7 +11,6 @@ use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\LeaveRequestMaster;
 use App\Models\OfficeTime;
-use App\Models\Post;
 use App\Models\TimeLeave;
 use App\Models\User;
 use Carbon\Carbon;
@@ -32,9 +31,7 @@ class AttendanceMonthlyController extends Controller
             'month' => $month->format('Y-m'),
             'branch_id' => $request->query('branch_id'),
             'department_id' => $request->query('department_id'),
-            'post_id' => $request->query('post_id'),
             'shift_id' => $request->query('shift_id'),
-            'status' => $request->query('status'),
             'search' => trim((string) $request->query('search', '')),
             'per_page' => (int) $request->query('per_page', 25),
         ];
@@ -43,10 +40,6 @@ class AttendanceMonthlyController extends Controller
 
         $employees = $this->filteredEmployees($filter)->get();
         $rows = $this->buildRows($employees, $month);
-
-        if (in_array($filter['status'], ['present', 'late', 'absent', 'leave', 'off_day'], true)) {
-            $rows = $rows->filter(fn ($row) => ($row['totals'][$filter['status']] ?? 0) > 0)->values();
-        }
 
         $summary = $this->summary($rows);
 
@@ -69,12 +62,6 @@ class AttendanceMonthlyController extends Controller
             ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
             ->orderBy('dept_name')
             ->get(['id', 'dept_name', 'branch_id']);
-        $posts = Post::query()
-            ->where('is_active', Post::IS_ACTIVE)
-            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
-            ->when($filter['department_id'], fn ($query) => $query->where('dept_id', $filter['department_id']))
-            ->orderBy('post_name')
-            ->get(['id', 'post_name', 'branch_id', 'dept_id']);
         $shifts = OfficeTime::query()
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('is_active', 1)
@@ -90,7 +77,6 @@ class AttendanceMonthlyController extends Controller
             'month',
             'branches',
             'departments',
-            'posts',
             'shifts'
         ));
     }
@@ -128,7 +114,6 @@ class AttendanceMonthlyController extends Controller
             ->where('is_active', 1)
             ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
             ->when($filter['department_id'], fn ($query) => $query->where('department_id', $filter['department_id']))
-            ->when($filter['post_id'], fn ($query) => $query->where('post_id', $filter['post_id']))
             ->when($filter['shift_id'], fn ($query) => $query->where('office_time_id', $filter['shift_id']))
             ->when($filter['search'], function ($query) use ($filter) {
                 $search = '%' . $filter['search'] . '%';
@@ -166,6 +151,7 @@ class AttendanceMonthlyController extends Controller
         return $employees->map(function (User $employee) use ($month, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $nonAttendanceReasons) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
+            $lateBreakdown = $this->lateBreakdownTemplate();
             $signalTotals = [
                 'pending_day_off' => 0,
                 'pending_leave' => 0,
@@ -176,10 +162,11 @@ class AttendanceMonthlyController extends Controller
 
             foreach ($this->calendarDays($month) as $day) {
                 $key = $employee->id . '|' . $day['date'];
+                $dayAttendances = $attendanceByUserDate->get($key, collect());
                 $cell = $this->statusCell(
                     $employee,
                     $day['date'],
-                    $attendanceByUserDate->get($key, collect()),
+                    $dayAttendances,
                     $leaveByUserDate[$key] ?? null,
                     $timeLeaveByUserDate->get($key, collect()),
                     $nonAttendanceReasons[$day['date']] ?? null
@@ -187,6 +174,10 @@ class AttendanceMonthlyController extends Controller
 
                 if (isset($totals[$cell['status']])) {
                     $totals[$cell['status']]++;
+                }
+
+                if ($dayAttendances->isNotEmpty()) {
+                    $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $dayAttendances->first());
                 }
 
                 foreach ($cell['indicators'] ?? [] as $indicator) {
@@ -212,10 +203,61 @@ class AttendanceMonthlyController extends Controller
                 'employee' => $employee,
                 'days' => $days,
                 'totals' => $totals,
+                'late_breakdown' => $lateBreakdown,
                 'signal_totals' => $signalTotals,
                 'total_days' => count($days),
             ];
         });
+    }
+
+    private function lateBreakdownTemplate(): array
+    {
+        return [
+            15 => 0,
+            20 => 0,
+            30 => 0,
+            40 => 0,
+            50 => 0,
+            60 => 0,
+        ];
+    }
+
+    private function addLateBreakdownCount(array $lateBreakdown, User $employee, Attendance $attendance): array
+    {
+        if (!is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
+            return $lateBreakdown;
+        }
+
+        $shift = $employee->officeTime;
+        $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+
+        if (!$shift?->opening_time || !$checkIn) {
+            return $lateBreakdown;
+        }
+
+        $openingTime = Carbon::parse($shift->opening_time);
+        $checkInAt = Carbon::parse($checkIn);
+        $lateMinutes = $openingTime->diffInMinutes($checkInAt, false);
+
+        if ($lateMinutes <= 15) {
+            return $lateBreakdown;
+        }
+
+        if ($lateMinutes < 20) {
+            $lateBreakdown[15]++;
+        } elseif ($lateMinutes < 30) {
+            $lateBreakdown[20]++;
+        } elseif ($lateMinutes < 40) {
+            $lateBreakdown[30]++;
+        } elseif ($lateMinutes < 50) {
+            $lateBreakdown[40]++;
+        } elseif ($lateMinutes < 60) {
+            $lateBreakdown[50]++;
+        } else {
+            $lateBreakdown[60]++;
+        }
+
+        return $lateBreakdown;
     }
 
     private function leaveMap(array $userIds, Carbon $startDate, Carbon $endDate): array

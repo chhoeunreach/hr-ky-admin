@@ -875,6 +875,126 @@
         .total-absent { color: #dc2626; }
         .total-leave { color: #7c3aed; }
 
+        .monthly-late-breakdown {
+            display: block;
+            margin-bottom: 10px;
+            color: #0f172a;
+        }
+
+        .monthly-late-report-head {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .monthly-late-report-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f8fafc;
+        }
+
+        .monthly-late-report-card-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff7ed;
+            color: #f97316;
+            font-weight: 900;
+        }
+
+        .monthly-late-report-card small {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .monthly-late-report-card strong {
+            display: block;
+            margin-top: 2px;
+            color: #0f172a;
+            font-size: 16px;
+        }
+
+        .monthly-late-report-note {
+            margin: 0 0 10px;
+            color: #334155;
+            font-size: 13px;
+        }
+
+        .monthly-late-report-note b {
+            color: #dc2626;
+        }
+
+        .monthly-late-report-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+
+        .monthly-late-report-table th,
+        .monthly-late-report-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            text-align: left;
+        }
+
+        .monthly-late-report-table th {
+            background: #f8fafc;
+            color: #334155;
+            font-weight: 800;
+        }
+
+        .monthly-late-report-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .monthly-late-count-pill {
+            display: inline-flex;
+            justify-content: center;
+            min-width: 64px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: 900;
+        }
+
+        .monthly-late-payment-pill {
+            display: inline-flex;
+            justify-content: center;
+            min-width: 74px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            background: #dcfce7;
+            color: #15803d;
+            font-weight: 900;
+        }
+
+        .monthly-late-report-total td {
+            background: #eff6ff;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        @media (max-width: 767.98px) {
+            .monthly-late-report-head {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .monthly-legend {
             display: flex;
             flex-wrap: wrap;
@@ -991,18 +1111,6 @@
 
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="post_id">Position</label>
-                        <select class="form-select" id="post_id" name="post_id">
-                            <option value="">All Positions</option>
-                            @foreach($posts as $post)
-                                <option value="{{ $post->id }}" @selected((string) $filter['post_id'] === (string) $post->id)>{{ ucfirst($post->post_name) }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="monthly-filter-select">
-                    <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="shift_id">Shift</label>
                         <select class="form-select" id="shift_id" name="shift_id">
                             <option value="">All Shifts</option>
@@ -1012,20 +1120,6 @@
                                 @endphp
                                 <option value="{{ $shift->id }}" @selected((string) $filter['shift_id'] === (string) $shift->id)>{{ $shiftText ?: 'Shift #' . $shift->id }}</option>
                             @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="monthly-filter-select">
-                    <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="status">Status</label>
-                        <select class="form-select" id="status" name="status">
-                            <option value="">All Statuses</option>
-                            <option value="present" @selected($filter['status'] === 'present')>Present</option>
-                            <option value="late" @selected($filter['status'] === 'late')>Late</option>
-                            <option value="absent" @selected($filter['status'] === 'absent')>Absent</option>
-                            <option value="leave" @selected($filter['status'] === 'leave')>Leave</option>
-                            <option value="off_day" @selected($filter['status'] === 'off_day')>Off Day</option>
                         </select>
                     </div>
                 </div>
@@ -1144,14 +1238,8 @@
                     @if($filter['department_id'])
                         <input type="hidden" name="department_id" value="{{ $filter['department_id'] }}">
                     @endif
-                    @if($filter['post_id'])
-                        <input type="hidden" name="post_id" value="{{ $filter['post_id'] }}">
-                    @endif
                     @if($filter['shift_id'])
                         <input type="hidden" name="shift_id" value="{{ $filter['shift_id'] }}">
-                    @endif
-                    @if($filter['status'])
-                        <input type="hidden" name="status" value="{{ $filter['status'] }}">
                     @endif
 
                     <div class="monthly-inline-field">
@@ -1306,7 +1394,14 @@
                                 </button>
                             </td>
                             <td class="monthly-total total-late">
-                                <button type="button" class="monthly-total-button" data-total-status="late" data-total-title="Late" @disabled(($row['totals']['late'] ?? 0) <= 0)>
+                                <button type="button"
+                                        class="monthly-total-button"
+                                        data-total-status="late"
+                                        data-total-title="Late"
+                                        data-late-breakdown='@json($row['late_breakdown'] ?? [])'
+                                        data-late-total="{{ array_sum($row['late_breakdown'] ?? []) }}"
+                                        data-opening-time="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->format('h:i A') : 'N/A' }}"
+                                        @disabled(($row['totals']['late'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['late'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['late'] }}</span>
                                 </button>
                             </td>
@@ -1867,6 +1962,78 @@
 
                 const list = document.getElementById('monthlySignalDayList');
                 list.innerHTML = '';
+
+                if (status === 'late') {
+                    const breakdown = readJsonData(element, 'data-late-breakdown');
+                    const openingTime = element.getAttribute('data-opening-time') || 'N/A';
+                    const grandTotal = element.getAttribute('data-late-total') || '0';
+                    const breakdownBox = document.createElement('div');
+                    breakdownBox.className = 'monthly-late-breakdown';
+                    const rows = [
+                        [15, 'Opening + 16m to 19m', 'Late more than 15 minutes', 0.10],
+                        [20, 'Opening + 20m to 29m', 'Late more than 20 minutes', 0.20],
+                        [30, 'Opening + 30m to 39m', 'Late more than 30 minutes', 0.30],
+                        [40, 'Opening + 40m to 49m', 'Late more than 40 minutes', 0.40],
+                        [50, 'Opening + 50m to 59m', 'Late more than 50 minutes', 0.50],
+                        [60, 'Opening + 60m and after', 'Late more than 60 minutes', 1],
+                    ];
+                    const paymentTotal = rows.reduce((sum, [minutes, , , rate]) => {
+                        const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
+                        return sum + (count * rate);
+                    }, 0);
+                    const formatPayment = (value) => `$${Number(value).toFixed(2).replace(/\.00$/, '')}`;
+
+                    breakdownBox.innerHTML = `
+                        <div class="monthly-late-report-head">
+                            <div class="monthly-late-report-card">
+                                <span class="monthly-late-report-card-icon">OT</span>
+                                <div><small>Opening Time</small><strong>${openingTime}</strong></div>
+                            </div>
+                            <div class="monthly-late-report-card">
+                                <span class="monthly-late-report-card-icon">15</span>
+                                <div><small>Grace Period</small><strong>15 Minutes</strong></div>
+                            </div>
+                            <div class="monthly-late-report-card">
+                                <span class="monthly-late-report-card-icon">L</span>
+                                <div><small>Late Check-in</small><strong>After opening + 15m</strong></div>
+                            </div>
+                        </div>
+                        <p class="monthly-late-report-note">Check-in after <b>opening time + 15 minutes</b> will be considered as <b>Late</b>.</p>
+                        <table class="monthly-late-report-table">
+                            <thead>
+                                <tr>
+                                    <th>Late More Than</th>
+                                    <th>Late Time Range</th>
+                                    <th>Description</th>
+                                    <th>Total Count</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows.map(([minutes, range, description, rate]) => {
+                                    const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
+                                    const payment = count * rate;
+
+                                    return `
+                                    <tr>
+                                        <td><strong>${minutes} Minutes</strong></td>
+                                        <td>${range}</td>
+                                        <td>${description}</td>
+                                        <td><span class="monthly-late-count-pill">${count}</span></td>
+                                        <td><span class="monthly-late-payment-pill">${formatPayment(payment)}</span></td>
+                                    </tr>
+                                `}).join('')}
+                                <tr class="monthly-late-report-total">
+                                    <td colspan="3">Grand Total</td>
+                                    <td><span class="monthly-late-count-pill">${grandTotal}</span></td>
+                                    <td><span class="monthly-late-payment-pill">${formatPayment(paymentTotal)}</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    `;
+
+                    list.appendChild(breakdownBox);
+                }
 
                 matchedDays.forEach((dayButton) => {
                     const item = document.createElement('div');
