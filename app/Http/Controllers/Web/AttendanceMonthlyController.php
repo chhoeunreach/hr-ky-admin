@@ -152,6 +152,7 @@ class AttendanceMonthlyController extends Controller
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
+            $lateMinutesTotal = 0;
             $signalTotals = [
                 'pending_day_off' => 0,
                 'pending_leave' => 0,
@@ -177,7 +178,9 @@ class AttendanceMonthlyController extends Controller
                 }
 
                 if ($dayAttendances->isNotEmpty()) {
-                    $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $dayAttendances->first());
+                    $firstAttendance = $dayAttendances->first();
+                    $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $firstAttendance);
+                    $lateMinutesTotal += $this->lateMinutesForAttendance($employee, $firstAttendance) ?? 0;
                 }
 
                 foreach ($cell['indicators'] ?? [] as $indicator) {
@@ -204,6 +207,7 @@ class AttendanceMonthlyController extends Controller
                 'days' => $days,
                 'totals' => $totals,
                 'late_breakdown' => $lateBreakdown,
+                'late_minutes_total' => $lateMinutesTotal,
                 'signal_totals' => $signalTotals,
                 'total_days' => count($days),
             ];
@@ -225,22 +229,8 @@ class AttendanceMonthlyController extends Controller
 
     private function addLateBreakdownCount(array $lateBreakdown, User $employee, Attendance $attendance): array
     {
-        if (!is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
-            return $lateBreakdown;
-        }
-
-        $shift = $employee->officeTime;
-        $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
-
-        if (!$shift?->opening_time || !$checkIn) {
-            return $lateBreakdown;
-        }
-
-        $openingTime = Carbon::parse($shift->opening_time);
-        $checkInAt = Carbon::parse($checkIn);
-        $lateMinutes = $openingTime->diffInMinutes($checkInAt, false);
-
-        if ($lateMinutes < 16) {
+        $lateMinutes = $this->lateMinutesForAttendance($employee, $attendance);
+        if ($lateMinutes === null) {
             return $lateBreakdown;
         }
 
@@ -261,6 +251,24 @@ class AttendanceMonthlyController extends Controller
         }
 
         return $lateBreakdown;
+    }
+
+    private function lateMinutesForAttendance(User $employee, Attendance $attendance): ?int
+    {
+        if (!is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
+            return null;
+        }
+
+        $shift = $employee->officeTime;
+        $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+
+        if (!$shift?->opening_time || !$checkIn) {
+            return null;
+        }
+
+        $lateMinutes = Carbon::parse($shift->opening_time)->diffInMinutes(Carbon::parse($checkIn), false);
+
+        return $lateMinutes < 16 ? null : (int) $lateMinutes;
     }
 
     private function leaveMap(array $userIds, Carbon $startDate, Carbon $endDate): array

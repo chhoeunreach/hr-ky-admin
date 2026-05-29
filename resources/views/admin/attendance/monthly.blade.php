@@ -1204,7 +1204,7 @@
 
         .late-dashboard-cards {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 10px;
             margin-bottom: 12px;
         }
@@ -1245,6 +1245,7 @@
         .late-dashboard-icon.is-amber { background: #fef3c7; color: #d97706; }
         .late-dashboard-icon.is-orange { background: #ffedd5; color: #f97316; }
         .late-dashboard-icon.is-purple { background: #f3e8ff; color: #7c3aed; }
+        .late-dashboard-icon.is-blue { background: #dbeafe; color: #2563eb; }
 
         .late-dashboard-card-label {
             margin: 0;
@@ -1934,6 +1935,7 @@
                                         data-total-title="Late"
                                         data-late-breakdown='@json($row['late_breakdown'] ?? [])'
                                         data-late-total="{{ array_sum($row['late_breakdown'] ?? []) }}"
+                                        data-late-minutes-total="{{ $row['late_minutes_total'] ?? 0 }}"
                                         data-opening-time="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->format('h:i A') : 'N/A' }}"
                                         data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(15)->format('h:i A') : 'opening + 15m' }}"
                                          data-total-employees="{{ $summary['employees'] }}"
@@ -2344,6 +2346,18 @@
                 return `${String(hours12).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${meridiem}`;
             };
 
+            const formatLateDuration = (totalMinutes) => {
+                const minutes = Math.max(0, Number(totalMinutes) || 0);
+                const hours = Math.floor(minutes / 60);
+                const remainder = minutes % 60;
+
+                if (hours === 0) {
+                    return `${remainder}m`;
+                }
+
+                return remainder > 0 ? `${hours}h ${remainder}m` : `${hours}h`;
+            };
+
             const buildLateTimeRange = (openingTime, minutes) => {
                 const ranges = {
                     15: [16, 19],
@@ -2372,6 +2386,7 @@
                 const breakdown = readJsonData(element, 'data-late-breakdown', {});
                 const openingTime = element.getAttribute('data-opening-time') || 'N/A';
                 const grandTotal = Number(element.getAttribute('data-late-total') || 0);
+                const lateMinutesTotal = Number(element.getAttribute('data-late-minutes-total') || 0);
                 const lateAfter = element.getAttribute('data-late-after') || 'opening + 15m';
                 const totalEmployees = element.getAttribute('data-total-employees') || '0';
                 const exportUrl = element.getAttribute('data-export-url') || '#';
@@ -2437,6 +2452,14 @@
                                 <p class="late-dashboard-card-label">Employees</p>
                                 <p class="late-dashboard-card-value">${escapeHtml(totalEmployees)}</p>
                                 <p class="late-dashboard-card-note">Total Late: ${grandTotal}</p>
+                            </div>
+                        </div>
+                        <div class="late-dashboard-card">
+                            <span class="late-dashboard-icon is-blue"><i data-feather="bar-chart-2"></i></span>
+                            <div>
+                                <p class="late-dashboard-card-label">Late Hours</p>
+                                <p class="late-dashboard-card-value">${escapeHtml(formatLateDuration(lateMinutesTotal))}</p>
+                                <p class="late-dashboard-card-note">${lateMinutesTotal} minutes total</p>
                             </div>
                         </div>
                     </div>
