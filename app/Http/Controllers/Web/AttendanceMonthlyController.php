@@ -239,12 +239,12 @@ class AttendanceMonthlyController extends Controller
         $checkInAt = Carbon::parse($checkIn);
         $lateMinutes = $openingTime->diffInMinutes($checkInAt, false);
 
-        if ($lateMinutes <= 15) {
+        if ($lateMinutes <= 16) {
             return $lateBreakdown;
         }
 
         if ($lateMinutes < 20) {
-            $lateBreakdown[15]++;
+            $lateBreakdown[16]++;
         } elseif ($lateMinutes < 30) {
             $lateBreakdown[20]++;
         } elseif ($lateMinutes < 40) {

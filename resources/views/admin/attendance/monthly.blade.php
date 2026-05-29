@@ -934,8 +934,15 @@
             color: #dc2626;
         }
 
+        .monthly-late-report-table-wrap {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .monthly-late-report-table {
             width: 100%;
+            min-width: 760px;
             border-collapse: separate;
             border-spacing: 0;
             overflow: hidden;
@@ -1999,37 +2006,39 @@
                             </div>
                         </div>
                         <p class="monthly-late-report-note">Check-in after <b>opening time + 15 minutes</b> will be considered as <b>Late</b>.</p>
-                        <table class="monthly-late-report-table">
-                            <thead>
-                                <tr>
-                                    <th>Late More Than</th>
-                                    <th>Late Time Range</th>
-                                    <th>Description</th>
-                                    <th>Total Count</th>
-                                    <th>Payment</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows.map(([minutes, range, description, rate]) => {
-                                    const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
-                                    const payment = count * rate;
-
-                                    return `
+                        <div class="monthly-late-report-table-wrap">
+                            <table class="monthly-late-report-table">
+                                <thead>
                                     <tr>
-                                        <td><strong>${minutes} Minutes</strong></td>
-                                        <td>${range}</td>
-                                        <td>${description}</td>
-                                        <td><span class="monthly-late-count-pill">${count}</span></td>
-                                        <td><span class="monthly-late-payment-pill">${formatPayment(payment)}</span></td>
+                                        <th>Late More Than</th>
+                                        <th>Late Time Range</th>
+                                        <th>Description</th>
+                                        <th>Total Count</th>
+                                        <th>Payment</th>
                                     </tr>
-                                `}).join('')}
-                                <tr class="monthly-late-report-total">
-                                    <td colspan="3">Grand Total</td>
-                                    <td><span class="monthly-late-count-pill">${grandTotal}</span></td>
-                                    <td><span class="monthly-late-payment-pill">${formatPayment(paymentTotal)}</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    ${rows.map(([minutes, range, description, rate]) => {
+                                        const count = Number(breakdown[String(minutes)] ?? breakdown[minutes] ?? 0);
+                                        const payment = count * rate;
+
+                                        return `
+                                        <tr>
+                                            <td><strong>${minutes} Minutes</strong></td>
+                                            <td>${range}</td>
+                                            <td>${description}</td>
+                                            <td><span class="monthly-late-count-pill">${count}</span></td>
+                                            <td><span class="monthly-late-payment-pill">${formatPayment(payment)}</span></td>
+                                        </tr>
+                                    `}).join('')}
+                                    <tr class="monthly-late-report-total">
+                                        <td colspan="3">Grand Total</td>
+                                        <td><span class="monthly-late-count-pill">${grandTotal}</span></td>
+                                        <td><span class="monthly-late-payment-pill">${formatPayment(paymentTotal)}</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     `;
 
                     list.appendChild(breakdownBox);
