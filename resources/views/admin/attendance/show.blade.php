@@ -68,6 +68,323 @@
         .attendance-status-stack .quickApproveTimeLeaveTrigger:focus {
             transform: translate(-50%, -118%) scale(1);
         }
+
+        .attendance-detail-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 7px 12px;
+            padding: 9px 12px;
+            border: 1px solid #d8e1ee;
+            border-radius: 8px;
+            background: #ffffff;
+            color: #334155;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
+        }
+
+        .attendance-detail-legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .attendance-detail-legend-badge {
+            min-width: 19px;
+            height: 19px;
+            padding: 0 4px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 8px;
+            font-weight: 900;
+            line-height: 1;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.16);
+        }
+
+        .attendance-legend-present { background: #39b54a; }
+        .attendance-legend-late { background: #f97316; }
+        .attendance-legend-absent { background: #ef232a; }
+        .attendance-legend-off { background: #cbd5e1; color: #475569; }
+        .attendance-legend-leave { background: #7c3aed; }
+        .attendance-legend-pending { background: #f59e0b; }
+        .attendance-legend-time { background: #0891b2; }
+        .attendance-legend-danger { background: #dc2626; }
+
+        .attendance-status-badges {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .attendance-status-pill {
+            min-width: 23px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 900;
+            line-height: 1;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+        }
+
+        .attendance-status-pill.is-present { background: #39b54a; }
+        .attendance-status-pill.is-late { background: #f97316; }
+        .attendance-status-pill.is-early { background: #0ea5e9; }
+        .attendance-status-pill.is-absent { background: #ef232a; }
+        .attendance-status-pill.is-off { background: #cbd5e1; color: #475569; }
+        .attendance-status-pill.is-leave { background: #7c3aed; }
+        .attendance-status-pill.is-pending { background: #f59e0b; }
+        .attendance-status-pill.is-time { background: #0891b2; }
+        .attendance-status-pill.is-danger { background: #dc2626; }
+
+        .attendance-time-cell {
+            position: relative;
+            overflow: visible;
+        }
+
+        .attendance-overlay-badge {
+            position: absolute;
+            top: 5px;
+            right: calc(50% - 66px);
+            z-index: 8;
+            pointer-events: auto;
+        }
+
+        .attendance-overlay-badge .attendance-status-pill {
+            min-width: 21px;
+            height: 19px;
+            padding: 0 5px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.22);
+        }
+
+        .employee-attendance-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .employee-attendance-dashboard-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 2px 0 10px;
+        }
+
+        .employee-attendance-dashboard-title h6 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .employee-attendance-dashboard-title p {
+            margin: 2px 0 0;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .employee-attendance-card {
+            min-height: 62px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+            box-shadow: 0 5px 14px rgba(15, 23, 42, 0.04);
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 10px;
+        }
+
+        .employee-attendance-card-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 30px;
+            font-size: 10px;
+            font-weight: 900;
+        }
+
+        .employee-attendance-card-title {
+            margin: 0;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .employee-attendance-card-value {
+            margin: 2px 0 0;
+            color: #0f172a;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1.05;
+        }
+
+        .employee-attendance-card-note {
+            margin: 1px 0 0;
+            color: #64748b;
+            font-size: 9px;
+        }
+
+        .employee-attendance-card.is-highlight {
+            border-color: #bfdbfe;
+            background: linear-gradient(180deg, #eff6ff 0%, #ffffff 100%);
+        }
+
+        .employee-attendance-card.is-present .employee-attendance-card-icon { background: #ecfdf3; color: #16a34a; }
+        .employee-attendance-card.is-late .employee-attendance-card-icon { background: #fff7ed; color: #f97316; }
+        .employee-attendance-card.is-absent .employee-attendance-card-icon { background: #fef2f2; color: #dc2626; }
+        .employee-attendance-card.is-leave .employee-attendance-card-icon { background: #f5f3ff; color: #7c3aed; }
+        .employee-attendance-card.is-off .employee-attendance-card-icon { background: #f1f5f9; color: #64748b; }
+        .employee-attendance-card.is-total .employee-attendance-card-icon { background: #eff6ff; color: #2563eb; }
+        .employee-attendance-card.is-pending .employee-attendance-card-icon { background: #fffbeb; color: #d97706; }
+        .employee-attendance-card.is-time .employee-attendance-card-icon { background: #ecfeff; color: #0891b2; }
+        .employee-attendance-card.is-danger .employee-attendance-card-icon { background: #fef2f2; color: #dc2626; }
+        .employee-attendance-card.is-highlight .employee-attendance-card-icon { background: #dbeafe; color: #2563eb; }
+
+        .attendance-filter-card,
+        .attendance-table-card {
+            border: 1px solid #e6ebf2;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+            overflow: hidden;
+        }
+
+        .attendance-filter-card .card-header,
+        .attendance-table-card .card-header {
+            padding: 12px 16px;
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f7;
+        }
+
+        .attendance-filter-card .card-title,
+        .attendance-table-card .card-title {
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .attendance-filter-card .card-body {
+            padding: 14px 16px 10px;
+        }
+
+        .attendance-filter-card .form-control,
+        .attendance-filter-card .form-select {
+            min-height: 40px;
+            border-color: #dbe3ee;
+            border-radius: 8px;
+            box-shadow: none;
+            font-size: 13px;
+        }
+
+        .attendance-filter-card .btn {
+            min-height: 40px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .attendance-table-card .card-body {
+            padding: 12px 16px 16px;
+        }
+
+        .attendance-detail-table {
+            margin-bottom: 0;
+            border-color: #e6ebf2;
+        }
+
+        .attendance-detail-table thead th {
+            padding: 11px 12px;
+            background: #f8fafc;
+            color: #334155;
+            border-bottom: 1px solid #e6ebf2;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .attendance-detail-table tbody td {
+            padding: 9px 12px;
+            border-color: #e8edf4;
+            color: #1f2937;
+            vertical-align: middle;
+        }
+
+        .attendance-detail-table .btn-xs {
+            min-height: 27px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .attendance-detail-table .checkLocation {
+            min-width: 112px;
+            color: #64748b;
+            border-color: #8fa1bf;
+            background: #ffffff;
+        }
+
+        .attendance-detail-table .checkLocation:hover {
+            color: #334155;
+            border-color: #64748b;
+            background: #f8fafc;
+        }
+
+        .attendance-detail-table .attendance-detail-row:hover td {
+            background: #fbfdff;
+        }
+
+        .attendance-detail-table .btn-success {
+            background: #059b4a;
+            border-color: #059b4a;
+        }
+
+        .attendance-detail-table .btn-info {
+            background: #5ccccc;
+            border-color: #5ccccc;
+            color: #ffffff;
+        }
+
+        @media (max-width: 991.98px) {
+            .employee-attendance-dashboard {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .attendance-filter-card .card-body,
+            .attendance-table-card .card-body {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .employee-attendance-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 @endsection
 
@@ -94,15 +411,15 @@
         @include('admin.section.flash_message')
 
         @include('admin.attendance.common.breadcrumb')
-        <div class="card mb-4">
+        <div class="card attendance-filter-card mb-3">
             <div class="card-header">
                 <h6 class="card-title mb-0">{{ __('index.attendance_of') . ' ' .ucfirst($userDetail->name) }}</h6>
             </div>
-            <div class="card-body pb-0">
+            <div class="card-body">
                 <form class="forms-sample" action="{{ route('admin.attendances.show', $userDetail->id) }}"
                     method="get">
-                    <div class="row align-items-center">
-                        <div class="col-lg-4 col-md-3 mb-4">
+                    <div class="row align-items-center g-2">
+                        <div class="col-lg-4 col-md-3">
                             <input type="number" min="{{ $filterData['min_year'] }}"
                                 max="{{ $filterData['max_year'] }}" step="1"
                                 placeholder="{{ __('index.attendance_year_example', ['year' => $filterData['min_year']]) }}"
@@ -112,8 +429,8 @@
                                 class="form-control">
                         </div>
 
-                        <div class="col-lg-4 col-md-3 mb-4">
-                            <select class="form-select form-select-lg" name="month" id="month">
+                        <div class="col-lg-4 col-md-3">
+                            <select class="form-select" name="month" id="month">
                                 <option
                                     value="" {{ !isset($filterParameter['month']) ? 'selected' : '' }}>{{ __('index.all_month') }}</option>
                                 @foreach($months as $key => $value)
@@ -125,13 +442,13 @@
                             </select>
                         </div>
 
-                        <div class="col-lg col-md-3 mb-4">
+                        <div class="col-lg col-md-3">
                             <button type="submit"
                                     class="btn btn-block btn-success">{{ __('index.filter') }}</button>
                         </div>
 
                         @can('attendance_csv_export')
-                            <div class="col-lg col-md-3 mb-4">
+                            <div class="col-lg col-md-3">
                                 <button type="button" id="download-excel"
                                         data-href="{{ route('admin.attendances.show', $userDetail->id) }}"
                                         class="btn btn-block btn-secondary">
@@ -140,7 +457,7 @@
                             </div>
                         @endcan
 
-                        <div class="col-lg col-md-3 mb-4">
+                        <div class="col-lg col-md-3">
                             <a class="btn btn-block btn-primary"
                             href="{{ route('admin.attendances.show', $userDetail->id) }}">{{ __('index.reset') }}</a>
                         </div>
@@ -150,81 +467,168 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.total_days_in_month') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalDays']) : 0 }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.present_days') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalPresent']) : 0 }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.absent_days') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalAbsent']) : 0 }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.weekend_days') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalWeekend']) : 0 }}</h5>
-                    </div>
-                </div>
-            </div>
+        @php
+            $isDayOffLeave = static function ($leaveRequest): bool {
+                $leaveTypeName = strtolower((string) ($leaveRequest->leaveType?->name ?? ''));
 
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.holiday_days') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalHoliday']) : 0 }}</h5>
+                return str_contains($leaveTypeName, 'day off') || str_contains($leaveTypeName, 'ឈប់សម្រាក');
+            };
+
+            $detailCardStats = [
+                'total' => (int) ($attendanceSummary['totalDays'] ?? 0),
+                'present' => (int) ($attendanceSummary['totalPresent'] ?? 0),
+                'sun' => (int) ($attendanceSummary['totalWeekend'] ?? 0),
+                'late' => 0,
+                'absent' => (int) ($attendanceSummary['totalAbsent'] ?? 0),
+                'leave' => 0,
+                'off_day' => (int) (($attendanceSummary['totalWeekend'] ?? 0) + ($attendanceSummary['totalHoliday'] ?? 0)),
+                'pending_day_off' => 0,
+                'pending_leave' => 0,
+                'time_leave' => 0,
+                'time_leave_request' => 0,
+                'no_checkout' => 0,
+            ];
+            $lateDates = [];
+            $noCheckoutDates = [];
+
+            foreach ($leaveRequestsByDate ?? [] as $leaveRequest) {
+                $status = strtolower((string) $leaveRequest->status);
+                $isDayOff = $isDayOffLeave($leaveRequest);
+
+                if ($status === 'pending') {
+                    $isDayOff ? $detailCardStats['pending_day_off']++ : $detailCardStats['pending_leave']++;
+                }
+            }
+
+            foreach ($leaveRequestsByDate ?? [] as $leaveRequest) {
+                $status = strtolower((string) $leaveRequest->status);
+                $isDayOff = $isDayOffLeave($leaveRequest);
+
+                if ($status === 'approved') {
+                    $isDayOff ? $detailCardStats['off_day']++ : $detailCardStats['leave']++;
+                }
+            }
+
+            if ($detailCardStats['leave'] === 0) {
+                $detailCardStats['leave'] = (int) ($attendanceSummary['totalLeave'] ?? 0);
+            }
+
+            foreach ($timeLeavesByDate ?? [] as $timeLeave) {
+                $status = strtolower((string) $timeLeave->status);
+
+                if ($status === 'approved') {
+                    $detailCardStats['time_leave']++;
+                } elseif ($status === 'pending') {
+                    $detailCardStats['time_leave_request']++;
+                }
+            }
+
+            foreach ($attendanceDetail as $dayData) {
+                foreach (($dayData['data'] ?? []) as $attendance) {
+                    $checkIn = $attendance['check_in_at'] ?? $attendance['night_checkin'] ?? null;
+                    $checkOut = $attendance['check_out_at'] ?? $attendance['night_checkout'] ?? null;
+
+                    if ($checkIn && !$checkOut) {
+                        $noCheckoutDates[$dayData['attendance_date']] = true;
+                    }
+
+                    $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
+                    $checkInAfter = $attendance['checkin_after'] ?? $userDetail->officeTime?->checkin_after ?? null;
+                    $lateEnabled = (int) ($attendance['is_late_check_in'] ?? $userDetail->officeTime?->is_late_check_in ?? 0) === 1;
+
+                    if ($checkIn && $shiftOpening) {
+                        $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening);
+                        if ($lateEnabled && $checkInAfter !== null) {
+                            $allowedCheckIn = $allowedCheckIn->addMinutes((int) $checkInAfter);
+                        }
+
+                        if (
+                            \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
+                            && ($attendance['attendance_status'] === null || $attendance['attendance_status'] == \App\Models\Attendance::ATTENDANCE_APPROVED)
+                        ) {
+                            $lateDates[$dayData['attendance_date']] = true;
+                        }
+                    }
+                }
+            }
+
+            $detailCardStats['late'] = count($lateDates);
+            $detailCardStats['no_checkout'] = count($noCheckoutDates);
+            $detailCardStats['present'] = max($detailCardStats['present'] - $detailCardStats['late'], 0);
+
+            $detailCards = [
+                ['key' => 'total', 'class' => 'is-highlight', 'icon' => 'SUM', 'title' => 'Total', 'note' => 'Calendar days'],
+                ['key' => 'sun', 'class' => 'is-off', 'icon' => 'SUN', 'title' => 'Sun', 'note' => 'Weekend days'],
+                ['key' => 'present', 'class' => 'is-present', 'icon' => 'P', 'title' => 'Present', 'note' => 'Approved attendance'],
+                ['key' => 'late', 'class' => 'is-late', 'icon' => 'L', 'title' => 'Late', 'note' => 'After office rule'],
+                ['key' => 'absent', 'class' => 'is-absent', 'icon' => 'A', 'title' => 'Absent', 'note' => 'No attendance'],
+                ['key' => 'leave', 'class' => 'is-leave', 'icon' => 'LV', 'title' => 'Leave', 'note' => 'Approved leave'],
+                ['key' => 'off_day', 'class' => 'is-off', 'icon' => 'O', 'title' => 'Off Day', 'note' => 'Weekend/holiday'],
+                ['key' => 'pending_day_off', 'class' => 'is-pending', 'icon' => 'PO', 'title' => 'Pending Day Off', 'note' => 'Waiting approval'],
+                ['key' => 'pending_leave', 'class' => 'is-pending', 'icon' => 'PL', 'title' => 'Pending Leave', 'note' => 'Waiting approval'],
+                ['key' => 'time_leave', 'class' => 'is-time', 'icon' => 'TL', 'title' => 'Time Leave', 'note' => 'Approved hours'],
+                ['key' => 'time_leave_request', 'class' => 'is-pending', 'icon' => 'TR', 'title' => 'Time Leave Request', 'note' => 'Waiting approval'],
+                ['key' => 'no_checkout', 'class' => 'is-danger', 'icon' => 'NC', 'title' => 'No Checkout', 'note' => 'Open attendance'],
+            ];
+
+            $statusBadge = static function (string $code, string $label, string $class, ?string $title = null): string {
+                $title = $title ?: $label;
+
+                return '<span class="attendance-status-pill '.$class.'" title="'.e($title).'">'.e($code).'</span>';
+            };
+        @endphp
+
+        <div class="employee-attendance-dashboard-title">
+            <div>
+                <h6>Employee Attendance Dashboard</h6>
+                <p>{{ $userDetail->name }} - {{ $monthName }} {{ $filterParameter['year'] }}</p>
+            </div>
+            <div class="text-muted small">
+                Working {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}
+            </div>
+        </div>
+
+        <div class="employee-attendance-dashboard">
+            @foreach($detailCards as $card)
+                <div class="employee-attendance-card {{ $card['class'] }}">
+                    <span class="employee-attendance-card-icon">{{ $card['icon'] }}</span>
+                    <div>
+                        <p class="employee-attendance-card-title">{{ $card['title'] }}</p>
+                        <p class="employee-attendance-card-value">{{ number_format($detailCardStats[$card['key']] ?? 0) }}</p>
+                        <p class="employee-attendance-card-note">{{ $card['note'] }}</p>
                     </div>
                 </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.leave_days') }}</h6>
-                        <h5 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? number_format($attendanceSummary['totalLeave']) : 0 }}</h5>
-                    </div>
-                </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.working_hours') }}</h6>
-                        <h6 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}</h6>
-                    </div>
-                </div>
-            </div>
-            <div class=" col-xl-3 col-md-6 mb-4 d-flex">
-                <div class="card w-100">
-                    <div class="card-body d-flex align-items-center">
-                        <h6 class="card-title w-100 mb-0 border-end">{{ __('index.worked_hours') }}</h6>
-                        <h6 class="text-primary ps-5 text-nowrap">{{ $attendanceSummary ? $attendanceSummary['totalWorkedHours'] : '-' }}</h6>
-                    </div>
+            @endforeach
+            <div class="employee-attendance-card is-total">
+                <span class="employee-attendance-card-icon"><i data-feather="clock"></i></span>
+                <div>
+                    <p class="employee-attendance-card-title">Worked Hours</p>
+                    <p class="employee-attendance-card-value" style="font-size: 16px;">{{ $attendanceSummary ? $attendanceSummary['totalWorkedHours'] : '-' }}</p>
+                    <p class="employee-attendance-card-note">of {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="card">
+        <div class="attendance-detail-legend mb-3">
+            <span><i class="attendance-detail-legend-badge attendance-legend-present">P</i> Present</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-late">L</i> Late</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-absent">A</i> Absent</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-off">O</i> Day Off</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-leave">LV</i> ច្បាប់ផ្សេង</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PO</i> Pending Day Off</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PL</i> Pending Leave</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-time">TL</i> Time Leave</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">TR</i> Time Leave Request</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-danger">NC</i> No Checkout</span>
+        </div>
+
+        <div class="card attendance-table-card">
             <div class="card-header">
                 <h6 class="card-title mb-0">{{ __('index.attendance_details_of', ['month' => $monthName]) }}</h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="dataTableExample" class="table attendance-detail-table">
                         <thead>
                         <tr>
                             <th>{{ __('index.date') }}</th>
@@ -268,6 +672,45 @@
 
                                     @php
                                         $totalMinutes += $attendance['worked_hour'];
+                                        $attendanceCheckIn = $attendance['check_in_at'] ?? $attendance['night_checkin'] ?? null;
+                                        $attendanceCheckOut = $attendance['check_out_at'] ?? $attendance['night_checkout'] ?? null;
+                                        $attendanceNoCheckout = $attendanceCheckIn && !$attendanceCheckOut;
+                                        $attendanceLate = false;
+                                        $attendanceEarlyCheckout = false;
+                                        $attendanceRejected = $attendance['attendance_status'] !== null && $attendance['attendance_status'] != \App\Models\Attendance::ATTENDANCE_APPROVED;
+                                        $allowedCheckInLabel = null;
+                                        $allowedCheckOutLabel = null;
+                                        $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
+                                        $shiftClosing = $attendance['closing_time'] ?? $userDetail->officeTime?->closing_time ?? null;
+                                        $checkInAfter = $attendance['checkin_after'] ?? $userDetail->officeTime?->checkin_after ?? null;
+                                        $checkoutBefore = $attendance['checkout_before'] ?? $userDetail->officeTime?->checkout_before ?? null;
+                                        $lateEnabled = (int) ($attendance['is_late_check_in'] ?? $userDetail->officeTime?->is_late_check_in ?? 0) === 1;
+                                        $earlyCheckoutEnabled = (int) ($attendance['is_early_check_out'] ?? $userDetail->officeTime?->is_early_check_out ?? 0) === 1;
+
+                                        if ($attendanceCheckIn && $shiftOpening) {
+                                            $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening);
+                                            if ($lateEnabled && $checkInAfter !== null) {
+                                                $allowedCheckIn = $allowedCheckIn->addMinutes((int) $checkInAfter);
+                                            }
+                                            $allowedCheckInLabel = $allowedCheckIn->format('H:i');
+                                            $attendanceLate = \Carbon\Carbon::parse($attendanceCheckIn)->gt($allowedCheckIn);
+                                        }
+
+                                        if ($attendanceCheckOut && $shiftClosing && $earlyCheckoutEnabled) {
+                                            $allowedCheckOut = \Carbon\Carbon::parse($shiftClosing);
+                                            if ($checkoutBefore !== null) {
+                                                $allowedCheckOut = $allowedCheckOut->subMinutes((int) $checkoutBefore);
+                                            }
+                                            $allowedCheckOutLabel = $allowedCheckOut->format('H:i');
+                                            $attendanceEarlyCheckout = \Carbon\Carbon::parse($attendanceCheckOut)->lt($allowedCheckOut);
+                                        }
+
+                                        $attendanceStatusTitle = trim(
+                                            ($attendanceCheckIn ? 'In '.$attendanceCheckIn : '').
+                                            ($attendanceCheckOut ? ' Out '.$attendanceCheckOut : '')
+                                        );
+                                        $lateBadgeTitle = trim(($attendanceStatusTitle ?: 'Late') . ($allowedCheckInLabel ? ' | Allowed ' . $allowedCheckInLabel : ''));
+                                        $earlyBadgeTitle = trim(($attendanceStatusTitle ?: 'Early Checkout') . ($allowedCheckOutLabel ? ' | Allowed ' . $allowedCheckOutLabel : ''));
                                     @endphp
                                     <tr class="attendance-detail-row">
 
@@ -281,7 +724,7 @@
                                         @endif
                                             @if(isset($attendance['shift'])  && ($attendance['shift'] == \App\Enum\ShiftTypeEnum::night->value))
                                                 @if(isset($attendance['night_checkin']))
-                                                    <td class="text-center">
+                                                    <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                                 title="{{$attendance['check_in_type'] == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkin_location') : strtoupper($attendance['check_in_type']).' '.__('index.checkin') }}"
                                                                 data-bs-toggle="modal"
@@ -289,12 +732,15 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{  \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $attendance['night_checkin']) }}
                                                         </span>
+                                                        @if($attendanceLate && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $lateBadgeTitle) !!}</span>
+                                                        @endif
                                                     </td>
                                                 @else
-                                                    <td></td>
+                                                    <td class="text-center attendance-time-cell"></td>
                                                 @endif
                                                 @if(isset($attendance['night_checkout']))
-                                                    <td class="text-center">
+                                                    <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                                 title="{{$attendance['check_out_type'] == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkout_location') : strtoupper($attendance['check_out_type']).' '.__('index.checkout') }}"
                                                                 data-bs-toggle="modal"
@@ -302,13 +748,20 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{ \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $attendance['night_checkout'])}}
                                                         </span>
+                                                        @if($attendanceEarlyCheckout && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('E', 'Early Checkout', 'is-early', $earlyBadgeTitle) !!}</span>
+                                                        @endif
                                                     </td>
                                                 @else
-                                                    <td></td>
+                                                    <td class="text-center attendance-time-cell">
+                                                        @if($attendanceNoCheckout)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('NC', 'No Checkout', 'is-danger', 'No Checkout') !!}</span>
+                                                        @endif
+                                                    </td>
                                                 @endif
                                             @else
                                                 @if(isset($attendance['check_in_at']))
-                                                    <td class="text-center">
+                                                    <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                                 title="{{$attendance['check_in_type'] == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkin_location') : strtoupper($attendance['check_in_type']).' '.__('index.checkin') }}"
                                                                 data-bs-toggle="modal"
@@ -316,12 +769,15 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{  \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $attendance['check_in_at']) }}
                                                         </span>
+                                                        @if($attendanceLate && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $lateBadgeTitle) !!}</span>
+                                                        @endif
                                                     </td>
                                                 @else
-                                                    <td></td>
+                                                    <td class="text-center attendance-time-cell"></td>
                                                 @endif
                                                 @if(isset($attendance['check_out_at']))
-                                                    <td class="text-center">
+                                                    <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                                 title="{{$attendance['check_out_type'] == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkout_location') : strtoupper($attendance['check_out_type']).' '.__('index.checkout') }}"
                                                                 data-bs-toggle="modal"
@@ -329,46 +785,62 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{  \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting,  $attendance['check_out_at']) }}
                                                         </span>
+                                                        @if($attendanceEarlyCheckout && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('E', 'Early Checkout', 'is-early', $earlyBadgeTitle) !!}</span>
+                                                        @endif
                                                     </td>
                                                 @else
-                                                    <td></td>
+                                                    <td class="text-center attendance-time-cell">
+                                                        @if($attendanceNoCheckout)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('NC', 'No Checkout', 'is-danger', 'No Checkout') !!}</span>
+                                                        @endif
+                                                    </td>
                                                 @endif
                                             @endif
                                         <td  class="text-center">
                                             {{ \App\Helpers\AttendanceHelper::getWorkedTimeInHourAndMinute($attendance['worked_hour']) }}
                                         </td>
-                                        @if(!is_null($attendance['attendance_status']))
-                                            <td class="text-center">
-                                                <a class="btn btn-{{ $changeColor[$attendance['attendance_status']] }} btn-xs"
-                                                     title="{{ __('index.change_attendance_status') }}">
-                                                    {{ ($attendance['attendance_status'] == \App\Models\Attendance::ATTENDANCE_APPROVED) ? __('index.present') : __('index.rejected') }}
-                                                </a>
-                                            </td>
-                                        @else
+                                          @if(!is_null($attendance['attendance_status']))
+                                              <td class="text-center">
+                                                  <a class="btn btn-{{ $changeColor[$attendance['attendance_status']] }} btn-xs"
+                                                       title="{{ __('index.change_attendance_status') }}">
+                                                      {{ ($attendance['attendance_status'] == \App\Models\Attendance::ATTENDANCE_APPROVED) ? __('index.present') : __('index.rejected') }}
+                                                  </a>
+                                              </td>
+                                         @else
                                             <td  class="text-center">
-                                                @if($leaveRequest)
-                                                    <div class="d-flex justify-content-center align-items-center gap-2">
-                                                        @canany(['update_leave_request','access_admin_leave'])
-                                                            <a href="#"
+                                                 @if($leaveRequest)
+                                                     @php
+                                                         $leaveStatus = strtolower((string) $leaveRequest->status);
+                                                         $leaveIsDayOff = $isDayOffLeave($leaveRequest);
+                                                         $leaveCode = $leaveStatus === 'pending' ? ($leaveIsDayOff ? 'PO' : 'PL') : ($leaveIsDayOff ? 'O' : 'LV');
+                                                         $leaveClass = $leaveStatus === 'pending' ? 'is-pending' : ($leaveIsDayOff ? 'is-off' : 'is-leave');
+                                                         $leaveLabel = $leaveStatus === 'pending'
+                                                             ? ($leaveIsDayOff ? 'Pending Day Off' : 'Pending Leave')
+                                                             : ($leaveIsDayOff ? 'Day Off' : 'ច្បាប់ផ្សេង');
+                                                     @endphp
+                                                     <div class="d-flex justify-content-center align-items-center gap-2">
+                                                         @canany(['update_leave_request','access_admin_leave'])
+                                                             <a href="#"
                                                                class="attendanceLeaveRequestUpdate"
                                                                data-href="{{ route('admin.leave-request.update-status', $leaveRequest->id) }}"
                                                                data-status="{{ $leaveRequest->status }}"
-                                                               data-remark="{{ $leaveRequest->admin_remark }}"
-                                                               data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
-                                                               data-id="{{ $leaveRequest->id }}">
-                                                                <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
-                                                                      title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
-                                                                    {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
-                                                                    ({{ ucfirst($leaveRequest->status) }})
-                                                                </span>
-                                                            </a>
-                                                        @else
-                                                            <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
-                                                                  title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
-                                                                {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
-                                                                ({{ ucfirst($leaveRequest->status) }})
-                                                            </span>
-                                                        @endcanany
+                                                                data-remark="{{ $leaveRequest->admin_remark }}"
+                                                                 data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
+                                                                 data-id="{{ $leaveRequest->id }}">
+                                                                  <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
+                                                                        title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
+                                                                      {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
+                                                                      ({{ ucfirst($leaveRequest->status) }})
+                                                                  </span>
+                                                              </a>
+                                                          @else
+                                                              <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
+                                                                    title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
+                                                                  {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
+                                                                  ({{ ucfirst($leaveRequest->status) }})
+                                                              </span>
+                                                          @endcanany
                                                         @canany(['show_leave_request_detail','access_admin_leave'])
                                                             <a href="{{ route('admin.leave-request.show', $leaveRequest->id) }}"
                                                                class="showAttendanceLeaveReason"
@@ -377,30 +849,37 @@
                                                             </a>
                                                          @endcanany
                                                      </div>
-                                                 @elseif($timeLeave)
-                                                     <div class="d-flex justify-content-center align-items-center gap-2">
-                                                         @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
-                                                             <a href="#"
+                                                  @elseif($timeLeave)
+                                                      @php
+                                                          $timeLeaveStatus = strtolower((string) $timeLeave->status);
+                                                          $timeLeaveCode = $timeLeaveStatus === 'approved' ? 'TL' : 'TR';
+                                                          $timeLeaveClass = $timeLeaveStatus === 'approved' ? 'is-time' : 'is-pending';
+                                                          $timeLeaveLabel = $timeLeaveStatus === 'approved' ? 'Time Leave' : 'Time Leave Request';
+                                                          $timeLeaveTitle = $timeLeaveLabel.' '.\App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time).' - '.\App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time);
+                                                      @endphp
+                                                      <div class="d-flex justify-content-center align-items-center gap-2">
+                                                          @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
+                                                              <a href="#"
                                                                 class="attendanceTimeLeaveRequestUpdate"
                                                                 data-href="{{ route('admin.time-leave-request.update-status', $timeLeave->id) }}"
                                                                 data-status="{{ $timeLeave->status }}"
                                                                 data-remark="{{ $timeLeave->admin_remark }}"
-                                                                data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
-                                                                data-id="{{ $timeLeave->id }}"
-                                                                data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                                 <span class="btn btn-info btn-xs"
-                                                                       title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                                     {{ __('index.time_leave_request') }}
-                                                                     ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
-                                                                 </span>
-                                                             </a>
-                                                         @else
-                                                             <span class="btn btn-info btn-xs"
-                                                                   title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                                 {{ __('index.time_leave_request') }}
-                                                                 ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
-                                                             </span>
-                                                         @endif
+                                                                  data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
+                                                                  data-id="{{ $timeLeave->id }}"
+                                                                  data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                   <span class="btn btn-info btn-xs"
+                                                                         title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                       {{ __('index.time_leave_request') }}
+                                                                       ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                                   </span>
+                                                               </a>
+                                                           @else
+                                                               <span class="btn btn-info btn-xs"
+                                                                     title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                   {{ __('index.time_leave_request') }}
+                                                                   ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                               </span>
+                                                           @endif
                                                          @can('time_leave_list')
                                                              <a href="{{ route('admin.time-leave-request.show', $timeLeave->id) }}"
                                                                 class="showAttendanceLeaveReason"
@@ -409,12 +888,12 @@
                                                              </a>
                                                          @endcan
                                                      </div>
-                                                 @else
-                                                     <div class="attendance-status-stack">
-                                                         <span class="btn btn-light btn-xs disabled">
-                                                             {{ __('index.pending') }}
-                                                         </span>
-                                                        @can('quick_leave')
+                                                   @else
+                                                       <div class="attendance-status-stack">
+                                                          <span class="btn btn-light btn-xs disabled">
+                                                              {{ __('index.pending') }}
+                                                          </span>
+                                                         @can('quick_leave')
                                                             <a href="#"
                                                                class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
                                                                data-user-id="{{ $userDetail->id }}"
@@ -537,38 +1016,74 @@
                                     </tr>
                                 @endif
                             @else
+                                @php
+                                    $reason = (\App\Helpers\AttendanceHelper::getHolidayOrLeaveDetail($dayData['attendance_date'], $userDetail->id));
+                                    $dayCheckBadge = null;
+
+                                    if ($leaveRequest) {
+                                        $leaveStatus = strtolower((string) $leaveRequest->status);
+                                        $leaveIsDayOff = $isDayOffLeave($leaveRequest);
+                                        $dayCheckBadge = [
+                                            'code' => $leaveStatus === 'pending' ? ($leaveIsDayOff ? 'PO' : 'PL') : ($leaveIsDayOff ? 'O' : 'LV'),
+                                            'label' => $leaveStatus === 'pending' ? ($leaveIsDayOff ? 'Pending Day Off' : 'Pending Leave') : ($leaveIsDayOff ? 'Day Off' : 'ច្បាប់ផ្សេង'),
+                                            'class' => $leaveStatus === 'pending' ? 'is-pending' : ($leaveIsDayOff ? 'is-off' : 'is-leave'),
+                                        ];
+                                    } elseif ($timeLeave) {
+                                        $timeLeaveStatus = strtolower((string) $timeLeave->status);
+                                        $dayCheckBadge = [
+                                            'code' => $timeLeaveStatus === 'approved' ? 'TL' : 'TR',
+                                            'label' => $timeLeaveStatus === 'approved' ? 'Time Leave' : 'Time Leave Request',
+                                            'class' => $timeLeaveStatus === 'approved' ? 'is-time' : 'is-pending',
+                                        ];
+                                    } elseif ($reason) {
+                                        $reasonText = (string) $reason;
+                                        $reasonLower = strtolower($reasonText);
+                                        $reasonCode = $reasonText === 'Absent' ? 'A' : ((str_contains($reasonLower, 'leave') || str_contains($reasonLower, 'ច្បាប់')) ? 'LV' : 'O');
+                                        $dayCheckBadge = [
+                                            'code' => $reasonCode,
+                                            'label' => $reasonCode === 'A' ? 'Absent' : ($reasonCode === 'LV' ? 'ច្បាប់ផ្សេង' : 'Day Off'),
+                                            'class' => $reasonCode === 'A' ? 'is-absent' : ($reasonCode === 'LV' ? 'is-leave' : 'is-off'),
+                                        ];
+                                    }
+                                @endphp
                                 <tr class="attendance-detail-row">
                                     <td>{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}</td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
-                                    @php
-                                        $reason = (\App\Helpers\AttendanceHelper::getHolidayOrLeaveDetail($dayData['attendance_date'], $userDetail->id));
-                                    @endphp
-                                    <td class="text-center">
-                                        @if($leaveRequest)
-                                            <div class="d-flex justify-content-center align-items-center gap-2">
-                                                @canany(['update_leave_request','access_admin_leave'])
-                                                    <a href="#"
+                                     <td class="text-center">
+                                         @if($leaveRequest)
+                                             @php
+                                                 $leaveStatus = strtolower((string) $leaveRequest->status);
+                                                 $leaveIsDayOff = $isDayOffLeave($leaveRequest);
+                                                 $leaveCode = $leaveStatus === 'pending' ? ($leaveIsDayOff ? 'PO' : 'PL') : ($leaveIsDayOff ? 'O' : 'LV');
+                                                 $leaveClass = $leaveStatus === 'pending' ? 'is-pending' : ($leaveIsDayOff ? 'is-off' : 'is-leave');
+                                                 $leaveLabel = $leaveStatus === 'pending'
+                                                     ? ($leaveIsDayOff ? 'Pending Day Off' : 'Pending Leave')
+                                                     : ($leaveIsDayOff ? 'Day Off' : 'ច្បាប់ផ្សេង');
+                                             @endphp
+                                             <div class="d-flex justify-content-center align-items-center gap-2">
+                                                 @canany(['update_leave_request','access_admin_leave'])
+                                                     <a href="#"
                                                        class="attendanceLeaveRequestUpdate"
                                                        data-href="{{ route('admin.leave-request.update-status', $leaveRequest->id) }}"
                                                        data-status="{{ $leaveRequest->status }}"
-                                                       data-remark="{{ $leaveRequest->admin_remark }}"
-                                                       data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
-                                                       data-id="{{ $leaveRequest->id }}">
-                                                        <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
-                                                              title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
-                                                            {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
-                                                            ({{ ucfirst($leaveRequest->status) }})
-                                                        </span>
-                                                    </a>
-                                                @else
-                                                    <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
-                                                          title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
-                                                        {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
-                                                        ({{ ucfirst($leaveRequest->status) }})
-                                                    </span>
-                                                @endcanany
+                                                        data-remark="{{ $leaveRequest->admin_remark }}"
+                                                        data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
+                                                        data-id="{{ $leaveRequest->id }}">
+                                                          <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
+                                                                title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
+                                                              {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
+                                                              ({{ ucfirst($leaveRequest->status) }})
+                                                          </span>
+                                                      </a>
+                                                  @else
+                                                      <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
+                                                            title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
+                                                          {{ $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request') }}
+                                                          ({{ ucfirst($leaveRequest->status) }})
+                                                      </span>
+                                                  @endcanany
                                                 @canany(['show_leave_request_detail','access_admin_leave'])
                                                     <a href="{{ route('admin.leave-request.show', $leaveRequest->id) }}"
                                                        class="showAttendanceLeaveReason"
@@ -577,30 +1092,37 @@
                                                     </a>
                                                  @endcanany
                                              </div>
-                                         @elseif($timeLeave)
-                                             <div class="d-flex justify-content-center align-items-center gap-2">
-                                                 @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
-                                                     <a href="#"
+                                          @elseif($timeLeave)
+                                              @php
+                                                  $timeLeaveStatus = strtolower((string) $timeLeave->status);
+                                                  $timeLeaveCode = $timeLeaveStatus === 'approved' ? 'TL' : 'TR';
+                                                  $timeLeaveClass = $timeLeaveStatus === 'approved' ? 'is-time' : 'is-pending';
+                                                  $timeLeaveLabel = $timeLeaveStatus === 'approved' ? 'Time Leave' : 'Time Leave Request';
+                                                  $timeLeaveTitle = $timeLeaveLabel.' '.\App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time).' - '.\App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time);
+                                              @endphp
+                                              <div class="d-flex justify-content-center align-items-center gap-2">
+                                                  @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
+                                                      <a href="#"
                                                         class="attendanceTimeLeaveRequestUpdate"
                                                         data-href="{{ route('admin.time-leave-request.update-status', $timeLeave->id) }}"
                                                         data-status="{{ $timeLeave->status }}"
                                                         data-remark="{{ $timeLeave->admin_remark }}"
-                                                        data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
-                                                        data-id="{{ $timeLeave->id }}"
-                                                        data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                         <span class="btn btn-info btn-xs"
-                                                               title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                             {{ __('index.time_leave_request') }}
-                                                             ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
-                                                         </span>
-                                                     </a>
-                                                 @else
-                                                     <span class="btn btn-info btn-xs"
-                                                           title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
-                                                         {{ __('index.time_leave_request') }}
-                                                         ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
-                                                     </span>
-                                                 @endif
+                                                          data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
+                                                          data-id="{{ $timeLeave->id }}"
+                                                          data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                           <span class="btn btn-info btn-xs"
+                                                                 title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                               {{ __('index.time_leave_request') }}
+                                                               ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                           </span>
+                                                       </a>
+                                                   @else
+                                                       <span class="btn btn-info btn-xs"
+                                                             title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                           {{ __('index.time_leave_request') }}
+                                                           ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                       </span>
+                                                   @endif
                                                  @can('time_leave_list')
                                                      <a href="{{ route('admin.time-leave-request.show', $timeLeave->id) }}"
                                                         class="showAttendanceLeaveReason"
@@ -609,12 +1131,19 @@
                                                      </a>
                                                  @endcan
                                              </div>
-                                         @elseif($reason)
-                                             <div class="attendance-status-stack">
-                                                 <span class="btn btn-outline-secondary btn-xs">
-                                                     {{ $reason }}
-                                                 </span>
-                                                @if($reason === 'Absent')
+                                          @elseif($reason)
+                                              @php
+                                                  $reasonText = (string) $reason;
+                                                  $reasonLower = strtolower($reasonText);
+                                                  $reasonCode = $reasonText === 'Absent' ? 'A' : ((str_contains($reasonLower, 'leave') || str_contains($reasonLower, 'ច្បាប់')) ? 'LV' : 'O');
+                                                  $reasonClass = $reasonCode === 'A' ? 'is-absent' : ($reasonCode === 'LV' ? 'is-leave' : 'is-off');
+                                                  $reasonLabel = $reasonCode === 'A' ? 'Absent' : ($reasonCode === 'LV' ? 'ច្បាប់ផ្សេង' : 'Day Off');
+                                              @endphp
+                                              <div class="attendance-status-stack">
+                                                  <span class="btn btn-outline-secondary btn-xs">
+                                                      {{ $reason }}
+                                                  </span>
+                                                  @if($reason === 'Absent')
                                                     @can('quick_leave')
                                                         <a href="#"
                                                            class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
@@ -697,6 +1226,19 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <div class="attendance-detail-legend mt-3 mb-4">
+            <span><i class="attendance-detail-legend-badge attendance-legend-present">P</i> Present</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-late">L</i> Late</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-absent">A</i> Absent</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-off">O</i> Day Off</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-leave">LV</i> ច្បាប់ផ្សេង</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PO</i> Pending Day Off</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PL</i> Pending Leave</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-time">TL</i> Time Leave</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-pending">TR</i> Time Leave Request</span>
+            <span><i class="attendance-detail-legend-badge attendance-legend-danger">NC</i> No Checkout</span>
         </div>
 
         <div class="modal fade" id="addslider" tabindex="-1" aria-labelledby="addslider" aria-hidden="true">

@@ -10,6 +10,8 @@ use App\Models\Company;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\LeaveRequestMaster;
+use App\Models\OfficeTime;
+use App\Models\Post;
 use App\Models\TimeLeave;
 use App\Models\User;
 use Carbon\Carbon;
@@ -67,6 +69,19 @@ class AttendanceMonthlyController extends Controller
             ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
             ->orderBy('dept_name')
             ->get(['id', 'dept_name', 'branch_id']);
+        $posts = Post::query()
+            ->where('is_active', Post::IS_ACTIVE)
+            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
+            ->when($filter['department_id'], fn ($query) => $query->where('dept_id', $filter['department_id']))
+            ->orderBy('post_name')
+            ->get(['id', 'post_name', 'branch_id', 'dept_id']);
+        $shifts = OfficeTime::query()
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->where('is_active', 1)
+            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
+            ->orderBy('shift')
+            ->get(['id', 'shift', 'opening_time', 'closing_time', 'branch_id']);
+
         return view('admin.attendance.monthly', compact(
             'monthlyRows',
             'calendarDays',
@@ -74,7 +89,9 @@ class AttendanceMonthlyController extends Controller
             'filter',
             'month',
             'branches',
-            'departments'
+            'departments',
+            'posts',
+            'shifts'
         ));
     }
 

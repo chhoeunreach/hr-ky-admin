@@ -989,6 +989,47 @@
                     </div>
                 </div>
 
+                <div class="monthly-filter-select">
+                    <div class="monthly-inline-field">
+                        <label class="monthly-filter-label" for="post_id">Position</label>
+                        <select class="form-select" id="post_id" name="post_id">
+                            <option value="">All Positions</option>
+                            @foreach($posts as $post)
+                                <option value="{{ $post->id }}" @selected((string) $filter['post_id'] === (string) $post->id)>{{ ucfirst($post->post_name) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="monthly-filter-select">
+                    <div class="monthly-inline-field">
+                        <label class="monthly-filter-label" for="shift_id">Shift</label>
+                        <select class="form-select" id="shift_id" name="shift_id">
+                            <option value="">All Shifts</option>
+                            @foreach($shifts as $shift)
+                                @php
+                                    $shiftText = $shift->shift ?: trim(($shift->opening_time ?: '') . ' - ' . ($shift->closing_time ?: ''));
+                                @endphp
+                                <option value="{{ $shift->id }}" @selected((string) $filter['shift_id'] === (string) $shift->id)>{{ $shiftText ?: 'Shift #' . $shift->id }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="monthly-filter-select">
+                    <div class="monthly-inline-field">
+                        <label class="monthly-filter-label" for="status">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            <option value="present" @selected($filter['status'] === 'present')>Present</option>
+                            <option value="late" @selected($filter['status'] === 'late')>Late</option>
+                            <option value="absent" @selected($filter['status'] === 'absent')>Absent</option>
+                            <option value="leave" @selected($filter['status'] === 'leave')>Leave</option>
+                            <option value="off_day" @selected($filter['status'] === 'off_day')>Off Day</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div class="monthly-filter-actions d-flex gap-2">
                     <button class="btn btn-primary flex-fill" type="submit">Apply</button>
                     <a class="btn btn-outline-secondary" href="{{ route('admin.attendance-monthly.index') }}">Reset</a>
@@ -1102,6 +1143,15 @@
                     @endif
                     @if($filter['department_id'])
                         <input type="hidden" name="department_id" value="{{ $filter['department_id'] }}">
+                    @endif
+                    @if($filter['post_id'])
+                        <input type="hidden" name="post_id" value="{{ $filter['post_id'] }}">
+                    @endif
+                    @if($filter['shift_id'])
+                        <input type="hidden" name="shift_id" value="{{ $filter['shift_id'] }}">
+                    @endif
+                    @if($filter['status'])
+                        <input type="hidden" name="status" value="{{ $filter['status'] }}">
                     @endif
 
                     <div class="monthly-inline-field">

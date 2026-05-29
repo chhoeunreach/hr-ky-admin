@@ -630,7 +630,11 @@ class AttendanceController extends Controller
             $multipleAttendance = AppHelper::getAttendanceLimit();
 
             $months = AppHelper::MONTHS;
-            $userDetail = $this->userRepository->findUserDetailById($employeeId, ['id', 'name']);
+            $userDetail = $this->userRepository->findUserDetailById(
+                $employeeId,
+                ['id', 'name', 'office_time_id'],
+                ['officeTime:id,opening_time,closing_time,is_late_check_in,checkin_after,is_early_check_out,checkout_before']
+            );
 
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
             $leaveRequestsByDate = $this->getEmployeeLeaveRequestsByDate($employeeId, $filterParameter);
@@ -642,7 +646,9 @@ class AttendanceController extends Controller
                 if($filterParameter['date_in_bs']){
                     $month = AppHelper::getNepaliMonthName($filterParameter['month']);
                 }else{
-                    $month = date("F", strtotime($attendanceDetail[0]['attendance_date']));
+                    $month = $attendanceDetail
+                        ? date("F", strtotime($attendanceDetail[0]['attendance_date']))
+                        : date("F", strtotime($filterParameter['year'].'-'.$filterParameter['month'].'-01'));
                 }
 
                 return \Maatwebsite\Excel\Facades\Excel::download(new AttendanceExport($attendanceDetail, $userDetail,$multipleAttendance,$isBsEnabled), 'attendance-' . $userDetail->name . '-' . $filterParameter['year'] . '-' . $month . '-report.xlsx');

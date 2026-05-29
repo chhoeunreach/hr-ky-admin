@@ -104,10 +104,10 @@ class AttendanceService
 //
 //                $employeeMonthlyAttendance[] = ['attendance_date' => $attendance_date];
 //            }
-            $with = ['officeTime:id,shift_type,opening_time,closing_time'];
+            $with = ['officeTime:id,shift_type,opening_time,closing_time,is_late_check_in,checkin_after,is_early_check_out,checkout_before'];
             $attendanceDetail = $this->attendanceRepo->getEmployeeAttendanceDetailOfTheMonth($filterParameter, $select, $with);
 
-            if (($filterParameter['start_date'] <= $today) && $attendanceDetail->isNotEmpty()) {
+            if ($filterParameter['start_date'] <= $today) {
                 do {
                     $employeeMonthlyAttendance[] = [
                         'attendance_date' => $filterParameter['start_date'],
@@ -147,6 +147,12 @@ class AttendanceService
                     'working_hour' => $extraData['workingHourMin'],
                     'night_checkin' => $value->night_checkin,
                     'night_checkout' => $value->night_checkout,
+                    'opening_time' => $value->officeTime?->opening_time,
+                    'closing_time' => $value->officeTime?->closing_time,
+                    'is_late_check_in' => $value->officeTime?->is_late_check_in,
+                    'checkin_after' => $value->officeTime?->checkin_after,
+                    'is_early_check_out' => $value->officeTime?->is_early_check_out,
+                    'checkout_before' => $value->officeTime?->checkout_before,
                     'shift' => $value->officeTime->shift_type ?? '',
                     'overtime' => $extraData['overTime'] ?? 0,
                     'undertime' => isset($value->check_out_at) ? $extraData['underTime'] : 0,
