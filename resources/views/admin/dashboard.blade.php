@@ -18,6 +18,7 @@ $checkOutAt = $lastAttendance['check_out_at'] ?? '';
 $attendanceDate = $lastAttendance['attendance_date'] ?? '';
 $viewCheckIn = $checkInAt ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $checkInAt) : '-:-:-';
 $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $checkOutAt) : '-:-:-';
+$currentMonthLabel = now()->format('M Y');
 ?>
 
 @section('nav-head',__('index.welcome').' : ' .ucfirst($dashboardDetail?->company_name) )
@@ -356,6 +357,120 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             padding: 0.32rem 0.82rem;
         }
 
+        .dashboard-kpi-card {
+            width: 100%;
+            min-height: 138px;
+            padding: 0;
+            border: 1px solid #dbe7f4;
+            border-radius: 8px;
+            background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+            color: #172033;
+            cursor: pointer;
+            text-align: left;
+            appearance: none;
+            transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+        }
+
+        .dashboard-kpi-card:hover,
+        .dashboard-kpi-card:focus-visible {
+            border-color: var(--kpi-accent, #2563eb);
+            box-shadow: 0 16px 32px rgba(15, 23, 42, 0.14);
+            transform: translateY(-2px);
+            outline: 0;
+        }
+
+        .dashboard-kpi-card .card-body {
+            padding: 1.15rem 1.2rem;
+        }
+
+        .dashboard-kpi-eyebrow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .dashboard-kpi-title {
+            margin: 0;
+            color: #334155;
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1.25;
+        }
+
+        .dashboard-kpi-period {
+            flex: 0 0 auto;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--kpi-accent, #2563eb) 10%, #ffffff);
+            color: var(--kpi-accent, #2563eb);
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
+        .dashboard-kpi-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .dashboard-kpi-value {
+            margin: 0;
+            color: #0f172a;
+            font-size: 2rem;
+            line-height: 1;
+            font-weight: 850;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .dashboard-kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: color-mix(in srgb, var(--kpi-accent, #2563eb) 12%, #ffffff);
+            color: var(--kpi-accent, #2563eb);
+        }
+
+        .dashboard-kpi-icon svg {
+            width: 23px;
+            height: 23px;
+            stroke-width: 2.4;
+        }
+
+        .dashboard-kpi-hint {
+            margin-top: 12px;
+            color: #64748b;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .dashboard-kpi-total {
+            --kpi-accent: #2563eb;
+        }
+
+        .dashboard-kpi-inactive {
+            --kpi-accent: #64748b;
+        }
+
+        .dashboard-kpi-active {
+            --kpi-accent: #16a34a;
+        }
+
+        .dashboard-kpi-leave {
+            --kpi-accent: #7c3aed;
+        }
+
+        .dashboard-kpi-time-leave {
+            --kpi-accent: #0891b2;
+        }
+
         @media (max-width: 991.98px) {
             .summary-panel .card-body {
                 padding: 1rem;
@@ -404,6 +519,10 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             </div>
         </div>
 
+        @php
+            $dashboardCardBranchIds = $branchDashboardSummaries->pluck('id')->filter()->implode(',');
+        @endphp
+
         <div class="row">
             @can('attendance_summary')
                 <div class=" {{ isset(auth()->user()->id) ? 'col-xxl-9 col-xl-8': 'col-xxl-12 col-xl-12'  }} d-flex">
@@ -427,22 +546,73 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                         </div>
 
                         <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 mb-4 d-flex">
-                            <div class="card w-100">
+                            <button type="button"
+                                    class="card dashboard-kpi-card dashboard-kpi-total summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="total_all_employee"
+                                    data-entity-name="Total Employee"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
-                                    <div class="d-md-flex justify-content-between align-items-baseline mb-3">
-                                        <h6 class="card-title mb-2 mb-md-0">{{ __('index.total_employees') }}</h6>
+                                    <div class="dashboard-kpi-eyebrow">
+                                        <h6 class="dashboard-kpi-title">Total Employee</h6>
+                                        <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
 
-                                    <div class="row align-items-center d-md-flex">
-                                        <div class="col-lg-6 col-md-6">
-                                            <h3>{{number_format($dashboardDetail?->total_employee)}}</h3>
-                                        </div>
-                                        <div class="col-lg-6 col-md-6 text-md-end dash-icon mt-md-0 mt-2">
-                                            <i class="link-icon" data-feather="users"> </i>
+                                    <div class="dashboard-kpi-main">
+                                        <h3 class="dashboard-kpi-value">{{ number_format($dashboardDetail?->total_employee ?? 0) }}</h3>
+                                        <div class="dashboard-kpi-icon">
+                                            <i class="link-icon" data-feather="users"></i>
                                         </div>
                                     </div>
+                                    <div class="dashboard-kpi-hint">Click to view employee detail</div>
                                 </div>
-                            </div>
+                            </button>
+                        </div>
+
+                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 mb-4 d-flex">
+                            <button type="button"
+                                    class="card dashboard-kpi-card dashboard-kpi-inactive summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="inactive_employee"
+                                    data-entity-name="Inactive Employee"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
+                                <div class="card-body text-md-start text-center">
+                                    <div class="dashboard-kpi-eyebrow">
+                                        <h6 class="dashboard-kpi-title">Inactive Employee</h6>
+                                        <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
+                                    </div>
+                                    <div class="dashboard-kpi-main">
+                                        <h3 class="dashboard-kpi-value">{{ number_format($dashboardDetail?->inactive_employee ?? 0) }}</h3>
+                                        <div class="dashboard-kpi-icon">
+                                            <i class="link-icon" data-feather="user-x"></i>
+                                        </div>
+                                    </div>
+                                    <div class="dashboard-kpi-hint">Click to view inactive staff</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 mb-4 d-flex">
+                            <button type="button"
+                                    class="card dashboard-kpi-card dashboard-kpi-active summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="active_employee"
+                                    data-entity-name="Active Employee"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
+                                <div class="card-body text-md-start text-center">
+                                    <div class="dashboard-kpi-eyebrow">
+                                        <h6 class="dashboard-kpi-title">Active Employee</h6>
+                                        <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
+                                    </div>
+                                    <div class="dashboard-kpi-main">
+                                        <h3 class="dashboard-kpi-value">{{ number_format($dashboardDetail?->active_employee ?? 0) }}</h3>
+                                        <div class="dashboard-kpi-icon">
+                                            <i class="link-icon" data-feather="user-check"></i>
+                                        </div>
+                                    </div>
+                                    <div class="dashboard-kpi-hint">Click to view active staff</div>
+                                </div>
+                            </button>
                         </div>
 
                         <div class="col-xxl-3 col-xl-4 col-lg-4 col-md-4 mb-4 d-flex">
@@ -500,22 +670,49 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                         </div>
 
                         <div class="col-xxl-3 col-xl-4 col-lg-4 col-md-4 mb-4 d-flex">
-                            <div class="card w-100">
+                            <button type="button"
+                                    class="card dashboard-kpi-card dashboard-kpi-leave summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="current_month_leave_request"
+                                    data-entity-name="Leave Request"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
-                                    <div class="d-md-flex justify-content-between align-items-baseline mb-3">
-                                        <h6 class="card-title mb-2 mb-md-0">{{ __('index.pending_leave_requests') }}</h6>
+                                    <div class="dashboard-kpi-eyebrow">
+                                        <h6 class="dashboard-kpi-title">Leave Request</h6>
+                                        <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
-                                    <div class="row align-items-center d-md-flex">
-                                        <div class="col-lg-6 col-md-6">
-                                            <h3>{{ number_format($dashboardDetail?->total_pending_leave_requests) ?? 0}}</h3>
+                                    <div class="dashboard-kpi-main">
+                                        <h3 class="dashboard-kpi-value">{{ number_format($dashboardDetail?->current_month_leave_requests ?? 0) }}</h3>
+                                        <div class="dashboard-kpi-icon">
+                                            <i class="link-icon" data-feather="file-text"></i>
                                         </div>
-                                        <div class="col-lg-6 col-md-6 text-md-end dash-icon mt-md-0 mt-2">
-                                            <i class="link-icon" data-feather="twitch"> </i>
-                                        </div>
-
                                     </div>
+                                    <div class="dashboard-kpi-hint">Click to view monthly requests</div>
                                 </div>
-                            </div>
+                            </button>
+                        </div>
+
+                        <div class="col-xxl-3 col-xl-4 col-lg-4 col-md-4 mb-4 d-flex">
+                            <button type="button"
+                                    class="card dashboard-kpi-card dashboard-kpi-time-leave summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="current_month_time_leave_request"
+                                    data-entity-name="Time Leave Request"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
+                                <div class="card-body text-md-start text-center">
+                                    <div class="dashboard-kpi-eyebrow">
+                                        <h6 class="dashboard-kpi-title">Time Leave Request</h6>
+                                        <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
+                                    </div>
+                                    <div class="dashboard-kpi-main">
+                                        <h3 class="dashboard-kpi-value">{{ number_format($dashboardDetail?->current_month_time_leave_requests ?? 0) }}</h3>
+                                        <div class="dashboard-kpi-icon">
+                                            <i class="link-icon" data-feather="clock"></i>
+                                        </div>
+                                    </div>
+                                    <div class="dashboard-kpi-hint">Click to view monthly time leave</div>
+                                </div>
+                            </button>
                         </div>
 
                         <div class="col-xxl-3 col-xl-4 col-lg-4 col-md-4 mb-4 d-flex">

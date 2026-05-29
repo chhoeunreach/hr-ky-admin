@@ -92,7 +92,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'scope' => ['required', 'in:branch,department'],
-            'metric' => ['required', 'in:total_all_employee,inactive_employee,active_employee,active_employee_checkin,active_employee_not_yet_checkin,active_employee_checkout,active_employee_not_yet_checkout,active_employee_dayoff,active_employee_leave,active_employee_pending_request,active_employee_time_leave,active_employee_time_leave_request'],
+            'metric' => ['required', 'in:total_all_employee,inactive_employee,active_employee,current_month_leave_request,current_month_time_leave_request,active_employee_checkin,active_employee_not_yet_checkin,active_employee_checkout,active_employee_not_yet_checkout,active_employee_dayoff,active_employee_leave,active_employee_pending_request,active_employee_time_leave,active_employee_time_leave_request'],
             'entity_ids' => ['required', 'array', 'min:1'],
             'entity_ids.*' => ['integer'],
             'entity_name' => ['nullable', 'string'],
@@ -112,9 +112,15 @@ class DashboardController extends Controller
                 'requested_by' => $row['id'],
                 'status' => 'pending',
             ]);
+            $row['leave_requests_url'] = route('admin.leave-request.index', [
+                'requested_by' => $row['id'],
+            ]);
             $row['pending_time_leave_url'] = route('admin.time-leave-request.index', [
                 'requested_by' => $row['id'],
                 'status' => 'pending',
+            ]);
+            $row['time_leave_requests_url'] = route('admin.time-leave-request.index', [
+                'requested_by' => $row['id'],
             ]);
             $row['leave_types_url'] = route('admin.leaves.employee-data', $row['id']);
 
@@ -290,6 +296,8 @@ class DashboardController extends Controller
             'total_all_employee' => 'All Staff',
             'inactive_employee' => 'Inactive Employee',
             'active_employee' => 'Active',
+            'current_month_leave_request' => 'Leave Request',
+            'current_month_time_leave_request' => 'Time Leave Request',
             'active_employee_checkin' => 'Checked In',
             'active_employee_not_yet_checkin' => 'No Check-In',
             'active_employee_checkout' => 'Checked Out',

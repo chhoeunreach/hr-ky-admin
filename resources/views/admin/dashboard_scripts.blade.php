@@ -62,6 +62,8 @@
                     $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
                     const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
                     const isPendingTimeLeaveMetric = response.metric === 'active_employee_time_leave_request';
+                    const isCurrentMonthLeaveMetric = response.metric === 'current_month_leave_request';
+                    const isCurrentMonthTimeLeaveMetric = response.metric === 'current_month_time_leave_request';
                     const canQuickLeave = Boolean(response.can_quick_leave);
                     const canUpdateLeaveRequest = Boolean(response.can_update_leave_request);
                     const canUpdateTimeLeave = Boolean(response.can_update_time_leave);
@@ -101,6 +103,10 @@
                                     : ''}
                                 <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>
                             `;
+                        } else if (isCurrentMonthLeaveMetric) {
+                            actionsHtml = `<a href="${row.leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Leave Requests</a>`;
+                        } else if (isCurrentMonthTimeLeaveMetric) {
+                            actionsHtml = `<a href="${row.time_leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>`;
                         } else if (canQuickLeave) {
                             actionsHtml = `
                                 <a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"

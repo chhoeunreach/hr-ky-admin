@@ -13,6 +13,64 @@
     </a>
 @endsection
 
+@section('styles')
+    <style>
+        .attendance-status-stack {
+            position: relative;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            min-width: 128px;
+            overflow: visible;
+        }
+
+        .attendance-status-stack .quickApproveLeaveTrigger,
+        .attendance-status-stack .quickApproveTimeLeaveTrigger {
+            position: absolute;
+            left: 50%;
+            z-index: 7;
+            opacity: 0;
+            visibility: hidden;
+            white-space: nowrap;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+            transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .attendance-status-stack .quickApproveLeaveTrigger {
+            bottom: 0;
+            transform: translate(-50%, 118%) scale(0.98);
+        }
+
+        .attendance-status-stack .quickApproveTimeLeaveTrigger {
+            top: 0;
+            transform: translate(-50%, -118%) scale(0.98);
+        }
+
+        .attendance-detail-row:hover .attendance-status-stack .quickApproveLeaveTrigger,
+        .attendance-detail-row:hover .attendance-status-stack .quickApproveTimeLeaveTrigger,
+        .attendance-status-stack:hover .quickApproveLeaveTrigger,
+        .attendance-status-stack:hover .quickApproveTimeLeaveTrigger,
+        .attendance-status-stack .quickApproveLeaveTrigger:focus,
+        .attendance-status-stack .quickApproveTimeLeaveTrigger:focus {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .attendance-detail-row:hover .attendance-status-stack .quickApproveLeaveTrigger,
+        .attendance-status-stack:hover .quickApproveLeaveTrigger,
+        .attendance-status-stack .quickApproveLeaveTrigger:focus {
+            transform: translate(-50%, 118%) scale(1);
+        }
+
+        .attendance-detail-row:hover .attendance-status-stack .quickApproveTimeLeaveTrigger,
+        .attendance-status-stack:hover .quickApproveTimeLeaveTrigger,
+        .attendance-status-stack .quickApproveTimeLeaveTrigger:focus {
+            transform: translate(-50%, -118%) scale(1);
+        }
+    </style>
+@endsection
+
 @section('main-content')
     <?php
     if ($isBsEnabled) {
@@ -201,6 +259,7 @@
                                 $totalMinutes = 0;
                                 $isFirstIteration = true;
                                 $leaveRequest = $leaveRequestsByDate[$dayData['attendance_date']] ?? null;
+                                $timeLeave = $timeLeavesByDate[$dayData['attendance_date']] ?? null;
 
                             @endphp
                         <tbody>
@@ -210,7 +269,7 @@
                                     @php
                                         $totalMinutes += $attendance['worked_hour'];
                                     @endphp
-                                    <tr>
+                                    <tr class="attendance-detail-row">
 
                                         @if($isFirstIteration)
                                             <td>{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}</td>
@@ -316,13 +375,45 @@
                                                                title="{{ __('index.show_leave_reason') }}">
                                                                 <i class="link-icon" data-feather="eye"></i>
                                                             </a>
-                                                        @endcanany
-                                                    </div>
-                                                @else
-                                                    <div class="d-inline-flex flex-column align-items-center gap-2">
-                                                        <span class="btn btn-light btn-xs disabled">
-                                                            {{ __('index.pending') }}
-                                                        </span>
+                                                         @endcanany
+                                                     </div>
+                                                 @elseif($timeLeave)
+                                                     <div class="d-flex justify-content-center align-items-center gap-2">
+                                                         @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
+                                                             <a href="#"
+                                                                class="attendanceTimeLeaveRequestUpdate"
+                                                                data-href="{{ route('admin.time-leave-request.update-status', $timeLeave->id) }}"
+                                                                data-status="{{ $timeLeave->status }}"
+                                                                data-remark="{{ $timeLeave->admin_remark }}"
+                                                                data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
+                                                                data-id="{{ $timeLeave->id }}"
+                                                                data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                 <span class="btn btn-info btn-xs"
+                                                                       title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                     {{ __('index.time_leave_request') }}
+                                                                     ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                                 </span>
+                                                             </a>
+                                                         @else
+                                                             <span class="btn btn-info btn-xs"
+                                                                   title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                                 {{ __('index.time_leave_request') }}
+                                                                 ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                             </span>
+                                                         @endif
+                                                         @can('time_leave_list')
+                                                             <a href="{{ route('admin.time-leave-request.show', $timeLeave->id) }}"
+                                                                class="showAttendanceLeaveReason"
+                                                                title="{{ __('index.show_leave_reason') }}">
+                                                                 <i class="link-icon" data-feather="eye"></i>
+                                                             </a>
+                                                         @endcan
+                                                     </div>
+                                                 @else
+                                                     <div class="attendance-status-stack">
+                                                         <span class="btn btn-light btn-xs disabled">
+                                                             {{ __('index.pending') }}
+                                                         </span>
                                                         @can('quick_leave')
                                                             <a href="#"
                                                                class="btn btn-outline-primary btn-xs quickApproveLeaveTrigger"
@@ -331,11 +422,21 @@
                                                                data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
                                                                data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
                                                                data-fetch-url="{{ route('admin.leaves.employee-data', $userDetail->id) }}">
-                                                                Quick Leave
-                                                            </a>
-                                                        @endcan
-                                                    </div>
-                                                @endif
+                                                                 Quick Leave
+                                                             </a>
+                                                         @endcan
+                                                         @can('create_time_leave_request')
+                                                             <a href="#"
+                                                                 class="btn btn-outline-info btn-xs quickApproveTimeLeaveTrigger"
+                                                                data-user-id="{{ $userDetail->id }}"
+                                                                data-user-name="{{ ucfirst($userDetail->name) }}"
+                                                                data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                                data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}">
+                                                                 Quick Time Leave
+                                                             </a>
+                                                         @endcan
+                                                     </div>
+                                                 @endif
                                             </td>
                                         @endif
                                             @if($attendance['shift'])
@@ -436,7 +537,7 @@
                                     </tr>
                                 @endif
                             @else
-                                <tr>
+                                <tr class="attendance-detail-row">
                                     <td>{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}</td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
@@ -474,13 +575,45 @@
                                                        title="{{ __('index.show_leave_reason') }}">
                                                         <i class="link-icon" data-feather="eye"></i>
                                                     </a>
-                                                @endcanany
-                                            </div>
-                                        @elseif($reason)
-                                            <div class="d-inline-flex flex-column align-items-center gap-2">
-                                                <span class="btn btn-outline-secondary btn-xs">
-                                                    {{ $reason }}
-                                                </span>
+                                                 @endcanany
+                                             </div>
+                                         @elseif($timeLeave)
+                                             <div class="d-flex justify-content-center align-items-center gap-2">
+                                                 @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
+                                                     <a href="#"
+                                                        class="attendanceTimeLeaveRequestUpdate"
+                                                        data-href="{{ route('admin.time-leave-request.update-status', $timeLeave->id) }}"
+                                                        data-status="{{ $timeLeave->status }}"
+                                                        data-remark="{{ $timeLeave->admin_remark }}"
+                                                        data-reason="{{ strip_tags((string) $timeLeave->reasons) }}"
+                                                        data-id="{{ $timeLeave->id }}"
+                                                        data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                         <span class="btn btn-info btn-xs"
+                                                               title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                             {{ __('index.time_leave_request') }}
+                                                             ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                         </span>
+                                                     </a>
+                                                 @else
+                                                     <span class="btn btn-info btn-xs"
+                                                           title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($timeLeave->issue_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }}">
+                                                         {{ __('index.time_leave_request') }}
+                                                         ({{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($timeLeave->end_time) }})
+                                                     </span>
+                                                 @endif
+                                                 @can('time_leave_list')
+                                                     <a href="{{ route('admin.time-leave-request.show', $timeLeave->id) }}"
+                                                        class="showAttendanceLeaveReason"
+                                                        title="{{ __('index.show_leave_reason') }}">
+                                                         <i class="link-icon" data-feather="eye"></i>
+                                                     </a>
+                                                 @endcan
+                                             </div>
+                                         @elseif($reason)
+                                             <div class="attendance-status-stack">
+                                                 <span class="btn btn-outline-secondary btn-xs">
+                                                     {{ $reason }}
+                                                 </span>
                                                 @if($reason === 'Absent')
                                                     @can('quick_leave')
                                                         <a href="#"
@@ -490,14 +623,24 @@
                                                            data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
                                                            data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
                                                            data-fetch-url="{{ route('admin.leaves.employee-data', $userDetail->id) }}">
-                                                            Quick Leave
-                                                        </a>
-                                                    @endcan
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div class="d-inline-flex flex-column align-items-center gap-2">
-                                                <span class="btn btn-light btn-xs disabled">
+                                                             Quick Leave
+                                                         </a>
+                                                     @endcan
+                                                     @can('create_time_leave_request')
+                                                         <a href="#"
+                                                            class="btn btn-outline-info btn-xs quickApproveTimeLeaveTrigger"
+                                                            data-user-id="{{ $userDetail->id }}"
+                                                            data-user-name="{{ ucfirst($userDetail->name) }}"
+                                                            data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                            data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}">
+                                                             Quick Time Leave
+                                                         </a>
+                                                     @endcan
+                                                 @endif
+                                             </div>
+                                         @else
+                                             <div class="attendance-status-stack">
+                                                 <span class="btn btn-light btn-xs disabled">
                                                     {{ __('index.pending') }}
                                                 </span>
                                                 @can('quick_leave')
@@ -508,15 +651,25 @@
                                                        data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
                                                        data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
                                                        data-fetch-url="{{ route('admin.leaves.employee-data', $userDetail->id) }}">
-                                                        Quick Leave
-                                                    </a>
-                                                @endcan
-                                            </div>
-                                        @endif
-                                    </td>
+                                                         Quick Leave
+                                                     </a>
+                                                 @endcan
+                                                 @can('create_time_leave_request')
+                                                     <a href="#"
+                                                        class="btn btn-outline-info btn-xs quickApproveTimeLeaveTrigger"
+                                                        data-user-id="{{ $userDetail->id }}"
+                                                        data-user-name="{{ ucfirst($userDetail->name) }}"
+                                                        data-attendance-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                        data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}">
+                                                         Quick Time Leave
+                                                     </a>
+                                                 @endcan
+                                             </div>
+                                         @endif
+                                     </td>
                                     <td  class="text-center"><i class="link-icon" data-feather="x"></i></td>
                                     <td  class="text-center">
-                                        @if(!$leaveRequest && isset($reason) && $reason == 'Absent')
+                                        @if(!$leaveRequest && !$timeLeave && isset($reason) && $reason == 'Absent')
                                             <a href=""
                                                 class="addEmployeeAttendance"
                                                 data-href="{{ route('admin.attendances.store') }}"
@@ -590,7 +743,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header text-center">
-                        <h5 class="modal-title">{{ __('index.leave_request_section') }}</h5>
+                        <h5 class="modal-title" id="attendanceLeaveStatusUpdateTitle">{{ __('index.leave_request_section') }}</h5>
                     </div>
                     <div class="modal-body">
                         <div class="container">
@@ -669,6 +822,48 @@
             </div>
         </div>
 
+        <div class="modal fade" id="attendanceQuickTimeLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickTimeLeaveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">Quick Time Leave</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form action="{{ route('admin.attendances.quick-approved-time-leave') }}" method="post" id="attendanceQuickTimeLeaveForm">
+                            @csrf
+                            <input type="hidden" name="user_id" id="attendanceQuickTimeLeaveUserId">
+                            <input type="hidden" name="attendance_date" id="attendanceQuickTimeLeaveDate">
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveFrom" class="form-label">{{ __('index.from') }}</label>
+                                <input type="time" class="form-control" name="leave_from" id="attendanceQuickTimeLeaveFrom" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveTo" class="form-label">{{ __('index.to') }}</label>
+                                <input type="time" class="form-control" name="leave_to" id="attendanceQuickTimeLeaveTo" required>
+                                <small class="text-muted d-block mt-2" id="attendanceQuickTimeLeaveHelpText">
+                                    This will create an already approved time leave for the selected attendance day.
+                                </small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="attendanceQuickTimeLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
+                                <textarea class="form-control" name="reasons" id="attendanceQuickTimeLeaveReason" rows="3" minlength="10" required placeholder="Required note"></textarea>
+                            </div>
+
+                            <div class="text-start">
+                                <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickTimeLeaveSubmit">
+                                    Save as Approved Time Leave
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </section>
 @endsection
 
@@ -685,6 +880,16 @@
             const attendanceQuickLeaveSubmit = document.getElementById('attendanceQuickLeaveSubmit');
             const attendanceQuickLeaveLabel = document.getElementById('attendanceQuickLeaveModalLabel');
             const attendanceQuickLeaveHelpText = document.getElementById('attendanceQuickLeaveHelpText');
+            const attendanceQuickTimeLeaveModalElement = document.getElementById('attendanceQuickTimeLeaveModal');
+            const attendanceQuickTimeLeaveModal = attendanceQuickTimeLeaveModalElement ? new bootstrap.Modal(attendanceQuickTimeLeaveModalElement) : null;
+            const attendanceQuickTimeLeaveUserId = document.getElementById('attendanceQuickTimeLeaveUserId');
+            const attendanceQuickTimeLeaveDate = document.getElementById('attendanceQuickTimeLeaveDate');
+            const attendanceQuickTimeLeaveFrom = document.getElementById('attendanceQuickTimeLeaveFrom');
+            const attendanceQuickTimeLeaveTo = document.getElementById('attendanceQuickTimeLeaveTo');
+            const attendanceQuickTimeLeaveReason = document.getElementById('attendanceQuickTimeLeaveReason');
+            const attendanceQuickTimeLeaveLabel = document.getElementById('attendanceQuickTimeLeaveModalLabel');
+            const attendanceQuickTimeLeaveHelpText = document.getElementById('attendanceQuickTimeLeaveHelpText');
+            const attendanceLeaveStatusUpdateTitle = document.getElementById('attendanceLeaveStatusUpdateTitle');
 
             const resetQuickLeaveOptions = (message = 'Loading leave types...') => {
                 if (!attendanceQuickLeaveType) {
@@ -759,6 +964,31 @@
                 });
             });
 
+            document.querySelectorAll('.quickApproveTimeLeaveTrigger').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    if (!attendanceQuickTimeLeaveModal) {
+                        return;
+                    }
+
+                    const userId = this.getAttribute('data-user-id');
+                    const userName = this.getAttribute('data-user-name');
+                    const attendanceDate = this.getAttribute('data-attendance-date');
+                    const displayDate = this.getAttribute('data-display-date');
+
+                    attendanceQuickTimeLeaveUserId.value = userId;
+                    attendanceQuickTimeLeaveDate.value = attendanceDate;
+                    attendanceQuickTimeLeaveFrom.value = '';
+                    attendanceQuickTimeLeaveTo.value = '';
+                    attendanceQuickTimeLeaveReason.value = '';
+                    attendanceQuickTimeLeaveLabel.textContent = `Quick Time Leave: ${userName}`;
+                    attendanceQuickTimeLeaveHelpText.textContent = `Create an already approved time leave for ${displayDate}.`;
+
+                    attendanceQuickTimeLeaveModal.show();
+                });
+            });
+
             document.querySelectorAll('.showAttendanceLeaveReason').forEach(function (element) {
                 element.addEventListener('click', function (event) {
                     event.preventDefault();
@@ -792,12 +1022,13 @@
                     const leaveRequestId = this.getAttribute('data-id');
 
                     document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
-                    document.getElementById('attendanceLeaveStatus').value = status;
-                    document.getElementById('attendanceLeaveRemark').value = remark || '';
-                    document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
-                    document.getElementById('attendancePreviousApprovers').innerHTML = '';
+                     document.getElementById('attendanceLeaveStatus').value = status;
+                     document.getElementById('attendanceLeaveRemark').value = remark || '';
+                     document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                     document.getElementById('attendancePreviousApprovers').innerHTML = '';
+                     attendanceLeaveStatusUpdateTitle.textContent = '{{ __('index.leave_request_section') }}';
 
-                    fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
+                     fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
                         .then(response => response.json())
                         .then(response => {
                             if (!response.success) {
@@ -827,10 +1058,32 @@
                         })
                         .catch(error => console.error('Error:', error));
 
+                     const modal = new bootstrap.Modal(document.getElementById('attendanceLeaveStatusUpdate'));
+                     modal.show();
+                 });
+             });
+
+            document.querySelectorAll('.attendanceTimeLeaveRequestUpdate').forEach(function (element) {
+                element.addEventListener('click', function (event) {
+                    event.preventDefault();
+
+                    const url = this.getAttribute('data-href');
+                    const status = this.getAttribute('data-status');
+                    const remark = this.getAttribute('data-remark');
+                    const reason = this.getAttribute('data-reason');
+                    const label = this.getAttribute('data-label') || '{{ __('index.time_leave_request') }}';
+
+                    document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                    document.getElementById('attendanceLeaveStatus').value = status;
+                    document.getElementById('attendanceLeaveRemark').value = remark || '';
+                    document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                    document.getElementById('attendancePreviousApprovers').innerHTML = '';
+                    attendanceLeaveStatusUpdateTitle.textContent = label;
+
                     const modal = new bootstrap.Modal(document.getElementById('attendanceLeaveStatusUpdate'));
                     modal.show();
                 });
             });
-        });
-    </script>
+         });
+     </script>
 @endsection

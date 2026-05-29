@@ -634,6 +634,7 @@ class AttendanceController extends Controller
 
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
             $leaveRequestsByDate = $this->getEmployeeLeaveRequestsByDate($employeeId, $filterParameter);
+            $timeLeavesByDate = $this->getEmployeeTimeLeavesByDate($employeeId, $filterParameter);
 
             $attendanceSummary = AttendanceHelper::getMonthlyDetail($employeeId, $filterParameter['date_in_bs'], $filterParameter['year'], $filterParameter['month']);
 
@@ -657,6 +658,7 @@ class AttendanceController extends Controller
                     'monthName',
                     'multipleAttendance',
                     'leaveRequestsByDate',
+                    'timeLeavesByDate',
                 )
             );
 
@@ -944,6 +946,32 @@ class AttendanceController extends Controller
         }
 
         return $leaveRequestsByDate;
+    }
+
+    private function getEmployeeTimeLeavesByDate(int $employeeId, array $filterParameter): array
+    {
+        if ($filterParameter['date_in_bs']) {
+            $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($filterParameter['year'], $filterParameter['month']);
+            $startDate = date('Y-m-d', strtotime($dateInAD['start_date']));
+            $endDate = date('Y-m-d', strtotime($dateInAD['end_date']));
+        } else {
+            $firstDay = $filterParameter['year'] . '-' . $filterParameter['month'] . '-01';
+            $startDate = date('Y-m-d', strtotime($firstDay));
+            $endDate = date('Y-m-t', strtotime($firstDay));
+        }
+
+        $today = date('Y-m-d');
+        if ($endDate > $today) {
+            $endDate = $today;
+        }
+
+        return TimeLeave::query()
+            ->where('requested_by', $employeeId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->whereBetween('issue_date', [$startDate, $endDate])
+            ->get()
+            ->keyBy(fn ($timeLeave) => Carbon::parse($timeLeave->issue_date)->format('Y-m-d'))
+            ->all();
     }
 
     public function store(AttendanceTimeAddRequest $request)

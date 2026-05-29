@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Helpers\AppHelper;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardRepository
@@ -15,13 +16,19 @@ class DashboardRepository
     public function getCompanyDashboardDetail($companyId, $date)
     {
         $currentDate = AppHelper::getCurrentDateInYmdFormat();
+        $currentMonthStart = Carbon::now()->startOfMonth()->toDateString();
+        $currentMonthEnd = Carbon::now()->endOfMonth()->toDateString();
         $branchId = $this->getAuthenticatedBranchId();
 
         $totalCompanyEmployee = DB::table('users')
-            ->select('company_id', DB::raw('COUNT(id) as total_employee'))
+            ->select(
+                'company_id',
+                DB::raw('COUNT(id) as total_employee'),
+                DB::raw('COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_employee'),
+                DB::raw('COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive_employee')
+            )
             ->whereNull('deleted_at')
             ->where('status', 'verified')
-            ->where('is_active', 1)
             ->when(isset($branchId), function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
             })
@@ -83,7 +90,24 @@ class DashboardRepository
             });
             $pendingLeavesRequests->groupBy('leave_requests_master.company_id');
 
+        $currentMonthLeaveRequests = DB::table('leave_requests_master')
+            ->select('leave_requests_master.company_id', DB::raw('COUNT(leave_requests_master.id) as current_month_leave_requests'))
+            ->leftJoin('users', 'leave_requests_master.requested_by', '=', 'users.id')
+            ->whereDate('leave_requests_master.leave_from', '<=', $currentMonthEnd)
+            ->whereDate('leave_requests_master.leave_to', '>=', $currentMonthStart)
+            ->when(isset($branchId), function ($query) use ($branchId) {
+                $query->where('users.branch_id', $branchId);
+            })
+            ->groupBy('leave_requests_master.company_id');
 
+        $currentMonthTimeLeaveRequests = DB::table('time_leaves')
+            ->select('users.company_id', DB::raw('COUNT(time_leaves.id) as current_month_time_leave_requests'))
+            ->join('users', 'time_leaves.requested_by', '=', 'users.id')
+            ->whereBetween('time_leaves.issue_date', [$currentMonthStart, $currentMonthEnd])
+            ->when(isset($branchId), function ($query) use ($branchId) {
+                $query->where('users.branch_id', $branchId);
+            })
+            ->groupBy('users.company_id');
 
         $companyPaidLeaves = DB::table('leave_types')
             ->select('company_id', DB::raw('sum(leave_allocated) as total_paid_leaves'))
@@ -119,12 +143,16 @@ class DashboardRepository
         return DB::table('companies')->select(
             'companies.name as company_name',
             'company_employee.total_employee',
+            'company_employee.active_employee',
+            'company_employee.inactive_employee',
             'checked_in_employee.total_checked_in_employee',
             'checked_out_employee.total_checked_out_employee',
             'holidays.total_holidays',
             'on_leave_today.total_on_leave',
             'paid_leaves.total_paid_leaves',
             'pending_leave_requests.total_pending_leave_requests',
+            'current_month_leave_requests.current_month_leave_requests',
+            'current_month_time_leave_requests.current_month_time_leave_requests',
             'departments.total_departments',
             'projects.total_projects'
         )
@@ -152,6 +180,12 @@ class DashboardRepository
             })
             ->leftJoinSub($pendingLeavesRequests, 'pending_leave_requests', function ($join) {
                 $join->on('companies.id', '=', 'pending_leave_requests.company_id');
+            })
+            ->leftJoinSub($currentMonthLeaveRequests, 'current_month_leave_requests', function ($join) {
+                $join->on('companies.id', '=', 'current_month_leave_requests.company_id');
+            })
+            ->leftJoinSub($currentMonthTimeLeaveRequests, 'current_month_time_leave_requests', function ($join) {
+                $join->on('companies.id', '=', 'current_month_time_leave_requests.company_id');
             })
             ->leftJoinSub($projects, 'projects', function ($join) {
                 $join->on('companies.id', '=', 'projects.company_id');
@@ -529,6 +563,8 @@ class DashboardRepository
     public function getSummaryDetailRows(int $companyId, string $scope, array $entityIds, string $metric)
     {
         $currentDate = AppHelper::getCurrentDateInYmdFormat();
+        $currentMonthStart = Carbon::now()->startOfMonth()->toDateString();
+        $currentMonthEnd = Carbon::now()->endOfMonth()->toDateString();
         $scopeColumn = $scope === 'branch' ? 'users.branch_id' : 'users.department_id';
         $latestPendingLeaveRequests = DB::table('leave_requests_master')
             ->select(
@@ -656,12 +692,37 @@ class DashboardRepository
             });
         };
 
+        $applyCurrentMonthLeaveRequest = function ($query) use ($currentMonthStart, $currentMonthEnd) {
+            $query->whereExists(function ($leaveQuery) use ($currentMonthStart, $currentMonthEnd) {
+                $leaveQuery->select(DB::raw(1))
+                    ->from('leave_requests_master')
+                    ->whereColumn('leave_requests_master.requested_by', 'users.id')
+                    ->whereDate('leave_requests_master.leave_from', '<=', $currentMonthEnd)
+                    ->whereDate('leave_requests_master.leave_to', '>=', $currentMonthStart);
+            });
+        };
+
+        $applyCurrentMonthTimeLeaveRequest = function ($query) use ($currentMonthStart, $currentMonthEnd) {
+            $query->whereExists(function ($timeLeaveQuery) use ($currentMonthStart, $currentMonthEnd) {
+                $timeLeaveQuery->select(DB::raw(1))
+                    ->from('time_leaves')
+                    ->whereColumn('time_leaves.requested_by', 'users.id')
+                    ->whereBetween('time_leaves.issue_date', [$currentMonthStart, $currentMonthEnd]);
+            });
+        };
+
         switch ($metric) {
             case 'inactive_employee':
                 $baseQuery->where('users.is_active', 0);
                 break;
             case 'active_employee':
                 $baseQuery->where('users.is_active', 1);
+                break;
+            case 'current_month_leave_request':
+                $applyCurrentMonthLeaveRequest($baseQuery);
+                break;
+            case 'current_month_time_leave_request':
+                $applyCurrentMonthTimeLeaveRequest($baseQuery);
                 break;
             case 'active_employee_checkin':
                 $baseQuery->where('users.is_active', 1);
