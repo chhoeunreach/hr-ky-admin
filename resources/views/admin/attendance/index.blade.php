@@ -1803,6 +1803,7 @@
                                                                data-href="{{ route('admin.leave-request.update-status', $firstAttendance->leave_request_id) }}"
                                                                data-status="{{ $firstAttendance->leave_request_status }}"
                                                                data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
+                                                               data-reason="{{ strip_tags((string) $firstAttendance->leave_request_reason) }}"
                                                                data-id="{{ $firstAttendance->leave_request_id }}">
                                                                 <span class="attendance-leave-pill {{ $rowIsDayOff ? 'is-day-off' : ($rowIsLeave ? 'is-leave' : 'is-' . $firstAttendance->leave_request_status) }}"
                                                                       title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
@@ -1828,6 +1829,7 @@
                                                                data-href="{{ route('admin.time-leave-request.update-status', $firstAttendance->time_leave_id) }}"
                                                                data-status="{{ $firstAttendance->time_leave_status }}"
                                                                data-remark="{{ $firstAttendance->time_leave_admin_remark }}"
+                                                               data-reason="{{ strip_tags((string) $firstAttendance->time_leave_reason) }}"
                                                                data-id="{{ $firstAttendance->time_leave_id }}"
                                                                data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
                                                                 <span class="attendance-leave-pill is-time-leave {{ $firstAttendance->time_leave_status === 'pending' ? 'is-pending' : '' }}"
@@ -2278,6 +2280,11 @@
                                 @method('put')
                                 <input type="hidden" name="redirect_back" value="1">
                                 <div class="row">
+                                    <div class="col-lg-12 mb-3">
+                                        <label class="form-label">{{ __('index.leave_reason') }}</label>
+                                        <div class="form-control bg-light" style="height: auto; min-height: 44px;" id="attendanceLeaveStatusReason">N/A</div>
+                                    </div>
+
                                     <label for="attendanceLeaveStatus" class="form-label">{{ __('index.status') }} </label>
                                     <div class="col-lg-12 mb-3">
                                         <select class="form-select" id="attendanceLeaveStatus" name="status">
@@ -2704,6 +2711,7 @@
                                         data-href="${escapeAttendanceHtml(record.update_url)}"
                                         data-status="{{ \App\Enum\LeaveStatusEnum::approved->value }}"
                                         data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
+                                        data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.approve') }}
@@ -2713,6 +2721,7 @@
                                         data-href="${escapeAttendanceHtml(record.update_url)}"
                                         data-status="{{ \App\Enum\LeaveStatusEnum::rejected->value }}"
                                         data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
+                                        data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.reject') }}
@@ -2801,6 +2810,7 @@
                 const url = element.getAttribute('data-href');
                 const status = element.getAttribute('data-status');
                 const remark = element.getAttribute('data-remark');
+                const reason = element.getAttribute('data-reason');
                 const leaveRequestId = element.getAttribute('data-id');
                 const label = element.getAttribute('data-label') || '{{ __('index.leave_request_section') }}';
 
@@ -2808,6 +2818,7 @@
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
+                document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
                 document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
                 fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
@@ -2857,12 +2868,14 @@
                 const url = element.getAttribute('data-href');
                 const status = element.getAttribute('data-status');
                 const remark = element.getAttribute('data-remark');
+                const reason = element.getAttribute('data-reason');
                 const label = element.getAttribute('data-label') || '{{ __('index.time_leave_request') }}';
 
                 document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
+                document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
                 document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
                 const modalElement = document.getElementById('attendanceLeaveStatusUpdate');

@@ -262,6 +262,31 @@ class DashboardRepository
             ->where('leave_requests_master.status', 'pending')
             ->groupBy('users.branch_id');
 
+        $approvedTimeLeaveEmployees = DB::table('time_leaves')
+            ->select(
+                'users.branch_id',
+                DB::raw('COUNT(DISTINCT time_leaves.requested_by) as active_employee_time_leave')
+            )
+            ->join('users', 'time_leaves.requested_by', '=', 'users.id')
+            ->where('users.status', 'verified')
+            ->whereNull('users.deleted_at')
+            ->where('users.is_active', 1)
+            ->where('time_leaves.status', 'approved')
+            ->whereDate('time_leaves.issue_date', $currentDate)
+            ->groupBy('users.branch_id');
+
+        $pendingTimeLeaveRequestEmployees = DB::table('time_leaves')
+            ->select(
+                'users.branch_id',
+                DB::raw('COUNT(DISTINCT time_leaves.requested_by) as active_employee_time_leave_request')
+            )
+            ->join('users', 'time_leaves.requested_by', '=', 'users.id')
+            ->where('users.status', 'verified')
+            ->whereNull('users.deleted_at')
+            ->where('users.is_active', 1)
+            ->where('time_leaves.status', 'pending')
+            ->groupBy('users.branch_id');
+
         return DB::table('branches')
             ->select(
                 'branches.id',
@@ -275,7 +300,9 @@ class DashboardRepository
                 DB::raw('COALESCE(open_checkin.active_employee_not_yet_checkout, 0) as active_employee_not_yet_checkout'),
                 DB::raw('COALESCE(day_off.active_employee_dayoff, 0) as active_employee_dayoff'),
                 DB::raw('COALESCE(approved_leave.active_employee_leave, 0) as active_employee_leave'),
-                DB::raw('COALESCE(pending_request.active_employee_pending_request, 0) as active_employee_pending_request')
+                DB::raw('COALESCE(pending_request.active_employee_pending_request, 0) as active_employee_pending_request'),
+                DB::raw('COALESCE(approved_time_leave.active_employee_time_leave, 0) as active_employee_time_leave'),
+                DB::raw('COALESCE(pending_time_leave_request.active_employee_time_leave_request, 0) as active_employee_time_leave_request')
             )
             ->leftJoinSub($userTotals, 'user_totals', function ($join) {
                 $join->on('branches.id', '=', 'user_totals.branch_id');
@@ -297,6 +324,12 @@ class DashboardRepository
             })
             ->leftJoinSub($pendingRequestEmployees, 'pending_request', function ($join) {
                 $join->on('branches.id', '=', 'pending_request.branch_id');
+            })
+            ->leftJoinSub($approvedTimeLeaveEmployees, 'approved_time_leave', function ($join) {
+                $join->on('branches.id', '=', 'approved_time_leave.branch_id');
+            })
+            ->leftJoinSub($pendingTimeLeaveRequestEmployees, 'pending_time_leave_request', function ($join) {
+                $join->on('branches.id', '=', 'pending_time_leave_request.branch_id');
             })
             ->where('branches.company_id', $companyId)
             ->where('branches.is_active', 1)
@@ -413,6 +446,33 @@ class DashboardRepository
             ->where('leave_requests_master.status', 'pending')
             ->groupBy('users.department_id');
 
+        $approvedTimeLeaveEmployees = DB::table('time_leaves')
+            ->select(
+                'users.department_id',
+                DB::raw('COUNT(DISTINCT time_leaves.requested_by) as active_employee_time_leave')
+            )
+            ->join('users', 'time_leaves.requested_by', '=', 'users.id')
+            ->whereNotNull('users.department_id')
+            ->where('users.status', 'verified')
+            ->whereNull('users.deleted_at')
+            ->where('users.is_active', 1)
+            ->where('time_leaves.status', 'approved')
+            ->whereDate('time_leaves.issue_date', $currentDate)
+            ->groupBy('users.department_id');
+
+        $pendingTimeLeaveRequestEmployees = DB::table('time_leaves')
+            ->select(
+                'users.department_id',
+                DB::raw('COUNT(DISTINCT time_leaves.requested_by) as active_employee_time_leave_request')
+            )
+            ->join('users', 'time_leaves.requested_by', '=', 'users.id')
+            ->whereNotNull('users.department_id')
+            ->where('users.status', 'verified')
+            ->whereNull('users.deleted_at')
+            ->where('users.is_active', 1)
+            ->where('time_leaves.status', 'pending')
+            ->groupBy('users.department_id');
+
         return DB::table('departments')
             ->select(
                 'departments.id',
@@ -426,7 +486,9 @@ class DashboardRepository
                 DB::raw('COALESCE(open_checkin.active_employee_not_yet_checkout, 0) as active_employee_not_yet_checkout'),
                 DB::raw('COALESCE(day_off.active_employee_dayoff, 0) as active_employee_dayoff'),
                 DB::raw('COALESCE(approved_leave.active_employee_leave, 0) as active_employee_leave'),
-                DB::raw('COALESCE(pending_request.active_employee_pending_request, 0) as active_employee_pending_request')
+                DB::raw('COALESCE(pending_request.active_employee_pending_request, 0) as active_employee_pending_request'),
+                DB::raw('COALESCE(approved_time_leave.active_employee_time_leave, 0) as active_employee_time_leave'),
+                DB::raw('COALESCE(pending_time_leave_request.active_employee_time_leave_request, 0) as active_employee_time_leave_request')
             )
             ->leftJoinSub($userTotals, 'user_totals', function ($join) {
                 $join->on('departments.id', '=', 'user_totals.department_id');
@@ -449,6 +511,12 @@ class DashboardRepository
             ->leftJoinSub($pendingRequestEmployees, 'pending_request', function ($join) {
                 $join->on('departments.id', '=', 'pending_request.department_id');
             })
+            ->leftJoinSub($approvedTimeLeaveEmployees, 'approved_time_leave', function ($join) {
+                $join->on('departments.id', '=', 'approved_time_leave.department_id');
+            })
+            ->leftJoinSub($pendingTimeLeaveRequestEmployees, 'pending_time_leave_request', function ($join) {
+                $join->on('departments.id', '=', 'pending_time_leave_request.department_id');
+            })
             ->where('departments.company_id', $companyId)
             ->where('departments.is_active', 1)
             ->when(isset($branchId), function ($query) use ($branchId) {
@@ -469,12 +537,22 @@ class DashboardRepository
             )
             ->where('status', 'pending')
             ->groupBy('requested_by');
+        $latestPendingTimeLeaveRequests = DB::table('time_leaves')
+            ->select(
+                'requested_by',
+                DB::raw('MAX(id) as pending_time_leave_request_id')
+            )
+            ->where('status', 'pending')
+            ->groupBy('requested_by');
 
         $baseQuery = DB::table('users')
             ->leftJoin('branches', 'users.branch_id', '=', 'branches.id')
             ->leftJoin('departments', 'users.department_id', '=', 'departments.id')
             ->leftJoinSub($latestPendingLeaveRequests, 'pending_leave_requests', function ($join) {
                 $join->on('users.id', '=', 'pending_leave_requests.requested_by');
+            })
+            ->leftJoinSub($latestPendingTimeLeaveRequests, 'pending_time_leave_requests', function ($join) {
+                $join->on('users.id', '=', 'pending_time_leave_requests.requested_by');
             })
             ->select(
                 'users.id',
@@ -483,6 +561,7 @@ class DashboardRepository
                 'users.email',
                 'users.is_active',
                 'pending_leave_requests.pending_leave_request_id',
+                'pending_time_leave_requests.pending_time_leave_request_id',
                 'branches.name as branch_name',
                 'departments.dept_name as department_name'
             )
@@ -558,6 +637,25 @@ class DashboardRepository
             });
         };
 
+        $applyTimeLeave = function ($query) use ($currentDate) {
+            $query->whereExists(function ($timeLeaveQuery) use ($currentDate) {
+                $timeLeaveQuery->select(DB::raw(1))
+                    ->from('time_leaves')
+                    ->whereColumn('time_leaves.requested_by', 'users.id')
+                    ->where('time_leaves.status', 'approved')
+                    ->whereDate('time_leaves.issue_date', $currentDate);
+            });
+        };
+
+        $applyPendingTimeLeave = function ($query) {
+            $query->whereExists(function ($timeLeaveQuery) {
+                $timeLeaveQuery->select(DB::raw(1))
+                    ->from('time_leaves')
+                    ->whereColumn('time_leaves.requested_by', 'users.id')
+                    ->where('time_leaves.status', 'pending');
+            });
+        };
+
         switch ($metric) {
             case 'inactive_employee':
                 $baseQuery->where('users.is_active', 0);
@@ -607,6 +705,14 @@ class DashboardRepository
                 $baseQuery->where('users.is_active', 1);
                 $applyPending($baseQuery);
                 break;
+            case 'active_employee_time_leave':
+                $baseQuery->where('users.is_active', 1);
+                $applyTimeLeave($baseQuery);
+                break;
+            case 'active_employee_time_leave_request':
+                $baseQuery->where('users.is_active', 1);
+                $applyPendingTimeLeave($baseQuery);
+                break;
             case 'total_all_employee':
             default:
                 break;
@@ -625,6 +731,7 @@ class DashboardRepository
                     'department' => $row->department_name ?: 'N/A',
                     'status' => (int) $row->is_active === 1 ? 'Active' : 'Inactive',
                     'pending_leave_request_id' => $row->pending_leave_request_id ? (int) $row->pending_leave_request_id : null,
+                    'pending_time_leave_request_id' => $row->pending_time_leave_request_id ? (int) $row->pending_time_leave_request_id : null,
                 ];
             })
             ->values();

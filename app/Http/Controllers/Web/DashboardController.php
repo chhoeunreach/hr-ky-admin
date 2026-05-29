@@ -92,7 +92,7 @@ class DashboardController extends Controller
 
         $validated = $request->validate([
             'scope' => ['required', 'in:branch,department'],
-            'metric' => ['required', 'in:total_all_employee,inactive_employee,active_employee,active_employee_checkin,active_employee_not_yet_checkin,active_employee_checkout,active_employee_not_yet_checkout,active_employee_dayoff,active_employee_leave,active_employee_pending_request'],
+            'metric' => ['required', 'in:total_all_employee,inactive_employee,active_employee,active_employee_checkin,active_employee_not_yet_checkin,active_employee_checkout,active_employee_not_yet_checkout,active_employee_dayoff,active_employee_leave,active_employee_pending_request,active_employee_time_leave,active_employee_time_leave_request'],
             'entity_ids' => ['required', 'array', 'min:1'],
             'entity_ids.*' => ['integer'],
             'entity_name' => ['nullable', 'string'],
@@ -112,10 +112,18 @@ class DashboardController extends Controller
                 'requested_by' => $row['id'],
                 'status' => 'pending',
             ]);
+            $row['pending_time_leave_url'] = route('admin.time-leave-request.index', [
+                'requested_by' => $row['id'],
+                'status' => 'pending',
+            ]);
             $row['leave_types_url'] = route('admin.leaves.employee-data', $row['id']);
 
             if (!empty($row['pending_leave_request_id'])) {
                 $row['leave_update_url'] = route('admin.leave-request.update-status', $row['pending_leave_request_id']);
+            }
+
+            if (!empty($row['pending_time_leave_request_id'])) {
+                $row['time_leave_update_url'] = route('admin.time-leave-request.update-status', $row['pending_time_leave_request_id']);
             }
 
             return $row;
@@ -128,6 +136,7 @@ class DashboardController extends Controller
             'current_date_display' => AppHelper::convertLeaveDateFormat(AppHelper::getCurrentDateInYmdFormat()),
             'can_quick_leave' => Gate::allows('quick_leave'),
             'can_update_leave_request' => Gate::allows('update_leave_request') || Gate::allows('access_admin_leave') || auth('admin')->check(),
+            'can_update_time_leave' => Gate::allows('update_time_leave'),
             'rows' => $rows,
         ]);
     }
@@ -184,6 +193,8 @@ class DashboardController extends Controller
                     'active_employee_dayoff' => $groupedDepartmentSummaries->sum('active_employee_dayoff'),
                     'active_employee_leave' => $groupedDepartmentSummaries->sum('active_employee_leave'),
                     'active_employee_pending_request' => $groupedDepartmentSummaries->sum('active_employee_pending_request'),
+                    'active_employee_time_leave' => $groupedDepartmentSummaries->sum('active_employee_time_leave'),
+                    'active_employee_time_leave_request' => $groupedDepartmentSummaries->sum('active_employee_time_leave_request'),
                 ];
             })
             ->filter(function ($departmentSummary) {
@@ -196,7 +207,9 @@ class DashboardController extends Controller
                     || $departmentSummary->active_employee_not_yet_checkout > 0
                     || $departmentSummary->active_employee_dayoff > 0
                     || $departmentSummary->active_employee_leave > 0
-                    || $departmentSummary->active_employee_pending_request > 0;
+                    || $departmentSummary->active_employee_pending_request > 0
+                    || $departmentSummary->active_employee_time_leave > 0
+                    || $departmentSummary->active_employee_time_leave_request > 0;
             })
             ->sortBy('dept_name')
             ->values();
@@ -284,6 +297,8 @@ class DashboardController extends Controller
             'active_employee_dayoff' => 'Day Off',
             'active_employee_leave' => 'Leave',
             'active_employee_pending_request' => 'Pending Leave Requests',
+            'active_employee_time_leave' => 'Time Leave',
+            'active_employee_time_leave_request' => 'Time Leave Request',
             default => ucfirst(str_replace('_', ' ', $metric)),
         };
     }

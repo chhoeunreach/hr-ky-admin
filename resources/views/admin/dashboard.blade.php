@@ -64,77 +64,100 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
         }
 
         .summary-panel {
-            border: 1px solid rgba(15, 23, 42, 0.06);
-            border-radius: 24px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 18px;
             overflow: hidden;
             background: linear-gradient(180deg, var(--summary-card-top) 0%, var(--summary-card-bottom) 100%);
-            box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.10);
         }
 
         .summary-panel .card-header {
-            border-bottom: 1px solid rgba(217, 226, 239, 0.95);
+            border-bottom: 1px solid rgba(219, 234, 254, 0.28);
             background:
-                radial-gradient(circle at top right, rgba(255, 255, 255, 0.22), transparent 32%),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.16), transparent 42%),
                 linear-gradient(135deg, var(--summary-head-top) 0%, var(--summary-head-bottom) 100%);
-            padding: 1.35rem 1.7rem;
+            padding: 1.25rem 1.6rem;
         }
 
         .summary-panel .card-body {
-            padding: 1.5rem;
+            padding: 1.35rem 1.5rem 1.5rem;
+            background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
         }
 
         .summary-panel-title {
             color: #fff;
-            font-size: 1.6rem;
+            font-size: 1.45rem;
             font-weight: 800;
-            letter-spacing: -0.03em;
+            letter-spacing: 0;
             margin: 0;
         }
 
         .summary-panel-subtitle {
             margin-top: 0.35rem;
-            color: rgba(255, 255, 255, 0.82);
+            color: rgba(255, 255, 255, 0.86);
             font-size: 0.92rem;
         }
 
         .summary-table-shell {
-            border: 1px solid rgba(217, 226, 239, 0.95);
-            border-radius: 20px;
+            border: 1px solid #dbe7f4;
+            border-radius: 16px;
             overflow: auto;
-            background: rgba(255, 255, 255, 0.96);
+            background: #ffffff;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
+            scrollbar-color: #8aa0b8 #eef4fb;
+            scrollbar-width: thin;
+        }
+
+        .summary-table-shell::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+
+        .summary-table-shell::-webkit-scrollbar-track {
+            background: #eef4fb;
+            border-radius: 999px;
+        }
+
+        .summary-table-shell::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #94a3b8, #64748b);
+            border: 2px solid #eef4fb;
+            border-radius: 999px;
         }
 
         .branch-summary-table {
             margin-bottom: 0;
-            min-width: 1180px;
+            min-width: 1500px;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
         .branch-summary-table th,
         .branch-summary-table td {
             white-space: nowrap;
             vertical-align: middle;
-            border-color: rgba(217, 226, 239, 0.95);
-            padding: 1rem 1.05rem;
+            border-color: #dbe7f4;
+            padding: 0.82rem 0.95rem;
         }
 
         .branch-summary-table thead th {
             position: sticky;
             top: 0;
             z-index: 3;
-            background: #eef5ff;
+            background: linear-gradient(180deg, #f8fbff 0%, #edf5ff 100%);
             color: var(--summary-ink);
-            font-size: 0.82rem;
+            font-size: 0.76rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0;
+            box-shadow: inset 0 -1px 0 #d9e6f5;
         }
 
         .branch-summary-table tbody tr:nth-child(even) td {
-            background: rgba(245, 249, 255, 0.78);
+            background: #f6f9fd;
         }
 
         .branch-summary-table tbody tr:hover td {
-            background: #fff3d9;
+            background: #fff8ea;
             transition: background-color 0.2s ease;
         }
 
@@ -144,68 +167,154 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
             left: 0;
             z-index: 2;
             background-clip: padding-box;
+            box-shadow: 1px 0 0 #dbe7f4, 10px 0 18px rgba(15, 23, 42, 0.04);
         }
 
         .branch-summary-table thead th:first-child {
             z-index: 4;
+            border-top-left-radius: 14px;
         }
 
         .branch-summary-table tbody td:first-child {
             background: #ffffff;
+            font-weight: 700;
         }
 
         .branch-summary-table tbody tr:nth-child(even) td:first-child {
-            background: #f8fbff;
+            background: #f6f9fd;
         }
 
         .branch-summary-table tbody tr:hover td:first-child {
-            background: #fff3d9;
+            background: #fff8ea;
         }
 
         .summary-name-trigger {
             display: inline-flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.7rem;
             font-weight: 700;
             color: var(--summary-ink);
         }
 
         .summary-name-trigger::before {
             content: "";
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 999px;
             background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
-            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+            box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.14);
+            flex: 0 0 auto;
         }
 
         .summary-value-trigger {
-            min-width: 44px;
+            --metric-accent: #2563eb;
+            --metric-bg: #eff6ff;
+            --metric-border: #dbeafe;
+            min-width: 48px;
             display: inline-flex;
             justify-content: center;
             align-items: center;
-            padding: 0.28rem 0.7rem;
+            padding: 0.25rem 0.74rem;
             border-radius: 999px;
-            background: rgba(22, 58, 95, 0.08);
+            background: var(--metric-bg);
             color: var(--summary-ink);
             font-weight: 800;
             line-height: 1.1;
-            box-shadow: inset 0 0 0 1px rgba(22, 58, 95, 0.08);
+            box-shadow: inset 0 0 0 1px var(--metric-border);
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease, color 0.16s ease;
         }
 
-        .summary-value-trigger:hover {
-            background: rgba(239, 68, 68, 0.12);
-            color: #b91c1c;
+        .summary-value-trigger:hover,
+        .summary-value-trigger:focus-visible {
+            background: #ffffff;
+            color: var(--metric-accent);
+            box-shadow: inset 0 0 0 1px var(--metric-border), 0 8px 18px rgba(15, 23, 42, 0.12);
+            transform: translateY(-1px);
+            outline: 0;
+        }
+
+        .summary-metric-heading {
+            position: relative;
+        }
+
+        .summary-metric-heading::after {
+            content: "";
+            position: absolute;
+            left: 18%;
+            right: 18%;
+            bottom: 0;
+            height: 3px;
+            border-radius: 999px 999px 0 0;
+            background: var(--metric-accent, #2563eb);
+            opacity: 0.75;
+        }
+
+        .summary-metric-total_all_employee,
+        .summary-metric-active_employee {
+            --metric-accent: #0ea5e9;
+            --metric-bg: #ecfeff;
+            --metric-border: #bae6fd;
+        }
+
+        .summary-metric-inactive_employee {
+            --metric-accent: #64748b;
+            --metric-bg: #f1f5f9;
+            --metric-border: #d9e2ec;
+        }
+
+        .summary-metric-active_employee_checkin,
+        .summary-metric-active_employee_checkout {
+            --metric-accent: #16a34a;
+            --metric-bg: #f0fdf4;
+            --metric-border: #bbf7d0;
+        }
+
+        .summary-metric-active_employee_not_yet_checkin,
+        .summary-metric-active_employee_not_yet_checkout {
+            --metric-accent: #f97316;
+            --metric-bg: #fff7ed;
+            --metric-border: #fed7aa;
+        }
+
+        .summary-metric-active_employee_dayoff,
+        .summary-metric-active_employee_leave {
+            --metric-accent: #8b5cf6;
+            --metric-bg: #f5f3ff;
+            --metric-border: #ddd6fe;
+        }
+
+        .summary-metric-active_employee_pending_request,
+        .summary-metric-active_employee_time_leave_request {
+            --metric-accent: #dc2626;
+            --metric-bg: #fef2f2;
+            --metric-border: #fecaca;
+        }
+
+        .summary-metric-active_employee_time_leave {
+            --metric-accent: #0891b2;
+            --metric-bg: #ecfeff;
+            --metric-border: #a5f3fc;
         }
 
         .branch-summary-table tfoot th,
         .branch-summary-table tfoot td {
-            font-weight: 700;
-            background: linear-gradient(180deg, var(--summary-total-top) 0%, var(--summary-total-bottom) 100%);
+            font-weight: 800;
+            background: linear-gradient(180deg, #fff9e8 0%, #ffeab8 100%);
             color: var(--summary-ink);
             position: sticky;
             bottom: 0;
             z-index: 2;
+            border-top: 1px solid #f3c86b;
+        }
+
+        .branch-summary-table tfoot th:first-child {
+            z-index: 3;
+            box-shadow: 1px 0 0 #f3c86b, 10px 0 18px rgba(15, 23, 42, 0.05);
+        }
+
+        .branch-summary-table tfoot .summary-value-trigger {
+            background: rgba(255, 255, 255, 0.48);
+            box-shadow: inset 0 0 0 1px rgba(202, 138, 4, 0.20);
         }
 
         .summary-trigger {
@@ -305,7 +414,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                     <div class="d-md-flex justify-content-between align-items-baseline mb-3">
                                         <h6 class="card-title mb-2 mb-md-0">{{ __('index.total_departments') }}</h6>
                                     </div>
-                                    <div class="row align-items-center d-md-flex">
+                                    <div class="row align-items-center d-md-fle">
                                         <div class="col-lg-6 col-md-6">
                                             <h3>{{number_format($dashboardDetail?->total_departments)}}</h3>
                                         </div>
@@ -433,7 +542,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                     <div class="d-md-flex justify-content-between align-items-baseline mb-3">
                                         <h6 class="card-title mb-2 mb-md-0">{{ __('index.total_check_out_today') }}</h6>
                                     </div>
-                                    <div class="row align-items-center d-md-fle">
+                                    <div class="row align-items-center d-md-flex">
                                         <div class="col-lg-6 col-md-6">
                                             <h3>{{number_format($dashboardDetail?->total_checked_out_employee) ?? 0 }}</h3>
                                         </div>
@@ -512,7 +621,6 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     </div>
                 @endcan
             @endif
-
         </div>
         @can('attendance_summary')
             @php
@@ -527,6 +635,8 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     'active_employee_dayoff' => 'Day Off',
                     'active_employee_leave' => 'Leave',
                     'active_employee_pending_request' => 'Pending Leave Requests',
+                    'active_employee_time_leave' => __('index.time_leave'),
+                    'active_employee_time_leave_request' => __('index.time_leave_request'),
                 ];
                 $branchSummaryTotals = [
                     'total_all_employee' => $branchDashboardSummaries->sum('total_all_employee'),
@@ -539,6 +649,8 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     'active_employee_dayoff' => $branchDashboardSummaries->sum('active_employee_dayoff'),
                     'active_employee_leave' => $branchDashboardSummaries->sum('active_employee_leave'),
                     'active_employee_pending_request' => $branchDashboardSummaries->sum('active_employee_pending_request'),
+                    'active_employee_time_leave' => $branchDashboardSummaries->sum('active_employee_time_leave'),
+                    'active_employee_time_leave_request' => $branchDashboardSummaries->sum('active_employee_time_leave_request'),
                 ];
                 $branchSummaryAllIds = $branchDashboardSummaries->pluck('id')->filter()->implode(',');
             @endphp
@@ -553,8 +665,8 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                             <thead>
                             <tr>
                                 <th>Branch</th>
-                                @foreach($summaryMetrics as $metricLabel)
-                                    <th class="text-center">{{ $metricLabel }}</th>
+                                @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                    <th class="text-center summary-metric-heading summary-metric-{{ $metricKey }}">{{ $metricLabel }}</th>
                                 @endforeach
                             </tr>
                             </thead>
@@ -574,7 +686,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                     @foreach($summaryMetrics as $metricKey => $metricLabel)
                                         <td class="text-center">
                                             <button type="button"
-                                                    class="summary-trigger summary-value-trigger"
+                                                    class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                     data-summary-scope="branch"
                                                     data-summary-metric="{{ $metricKey }}"
                                                     data-entity-name="{{ ucfirst($branchSummary->name) }}"
@@ -586,7 +698,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                    <td colspan="13" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
                                 </tr>
                             @endforelse
                             </tbody>
@@ -596,7 +708,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <td class="text-center">
                                         <button type="button"
-                                                class="summary-trigger summary-value-trigger"
+                                                class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                 data-summary-scope="branch"
                                                 data-summary-metric="{{ $metricKey }}"
                                                 data-entity-name="All Branches"
@@ -623,6 +735,8 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                     'active_employee_dayoff' => $departmentDashboardSummaries->sum('active_employee_dayoff'),
                     'active_employee_leave' => $departmentDashboardSummaries->sum('active_employee_leave'),
                     'active_employee_pending_request' => $departmentDashboardSummaries->sum('active_employee_pending_request'),
+                    'active_employee_time_leave' => $departmentDashboardSummaries->sum('active_employee_time_leave'),
+                    'active_employee_time_leave_request' => $departmentDashboardSummaries->sum('active_employee_time_leave_request'),
                 ];
                 $departmentSummaryAllIds = $departmentDashboardSummaries->pluck('department_ids')->flatten()->filter()->unique()->implode(',');
             @endphp
@@ -637,8 +751,8 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                             <thead>
                             <tr>
                                 <th>Department</th>
-                                @foreach($summaryMetrics as $metricLabel)
-                                    <th class="text-center">{{ $metricLabel }}</th>
+                                @foreach($summaryMetrics as $metricKey => $metricLabel)
+                                    <th class="text-center summary-metric-heading summary-metric-{{ $metricKey }}">{{ $metricLabel }}</th>
                                 @endforeach
                             </tr>
                             </thead>
@@ -658,7 +772,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                     @foreach($summaryMetrics as $metricKey => $metricLabel)
                                         <td class="text-center">
                                             <button type="button"
-                                                    class="summary-trigger summary-value-trigger"
+                                                    class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                     data-summary-scope="department"
                                                     data-summary-metric="{{ $metricKey }}"
                                                     data-entity-name="{{ ucfirst($departmentSummary->dept_name) }}"
@@ -670,7 +784,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="11" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                    <td colspan="13" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
                                 </tr>
                             @endforelse
                             </tbody>
@@ -680,7 +794,7 @@ $viewCheckOut = $checkOutAt ? AttendanceHelper::changeTimeFormatForAttendanceAdm
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <td class="text-center">
                                         <button type="button"
-                                                class="summary-trigger summary-value-trigger"
+                                                class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                 data-summary-scope="department"
                                                 data-summary-metric="{{ $metricKey }}"
                                                 data-entity-name="All Departments"

@@ -130,7 +130,14 @@ class LeaveService
 
 
         $leaveRequest = $this->leaveRepo->store($validatedData);
-        $this->sendTelegramAfterCommit(fn () => $this->sendTelegramLeaveRequestSubmitted($leaveRequest));
+        $this->sendTelegramAfterCommit(function () use ($leaveRequest, $validatedData) {
+            if (in_array($validatedData['status'] ?? null, ['approved', 'rejected'], true)) {
+                $this->sendTelegramLeaveApproved($leaveRequest, $validatedData['status'], $validatedData['admin_remark'] ?? null);
+                return;
+            }
+
+            $this->sendTelegramLeaveRequestSubmitted($leaveRequest);
+        });
 
         return $leaveRequest;
 
@@ -496,7 +503,7 @@ class LeaveService
 
     private function sendTelegramLeaveApproved(LeaveRequestMaster $leaveRequest, string $status, ?string $remark = null): void
     {
-        if ($status !== 'approved') {
+        if (!in_array($status, ['approved', 'rejected'], true)) {
             return;
         }
 

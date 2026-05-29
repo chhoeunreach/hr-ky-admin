@@ -61,8 +61,10 @@
                 success: function (response) {
                     $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
                     const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
+                    const isPendingTimeLeaveMetric = response.metric === 'active_employee_time_leave_request';
                     const canQuickLeave = Boolean(response.can_quick_leave);
                     const canUpdateLeaveRequest = Boolean(response.can_update_leave_request);
+                    const canUpdateTimeLeave = Boolean(response.can_update_time_leave);
                     dashboardSummaryCurrentDate = response.current_date || '';
                     dashboardSummaryCurrentDateDisplay = response.current_date_display || response.current_date || '';
 
@@ -71,44 +73,66 @@
                         return;
                     }
 
-                    const rowsHtml = response.rows.map((row) => `
-                        <tr>
-                            <td>${row.name ?? 'N/A'}</td>
-                            <td>${row.employee_code ?? 'N/A'}</td>
-                            <td>${row.email ?? 'N/A'}</td>
-                            <td>${row.branch ?? 'N/A'}</td>
-                            <td>${row.department ?? 'N/A'}</td>
-                            <td>${row.status ?? 'N/A'}</td>
-                            <td>
-                                <div class="summary-quick-actions">
-                                    ${row.pending_leave_request_id
-                                        ? `
-                                            ${canUpdateLeaveRequest
-                                                ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-leave-request-update"
-                                                        data-href="${row.leave_update_url ?? '#'}"
-                                                        data-status="approved"
-                                                        data-remark=""
-                                                        data-id="${row.pending_leave_request_id}">
-                                                        Approve / Reject
-                                                   </a>`
-                                                : ''}
-                                            <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>
-                                          `
-                                        : `${canQuickLeave
-                                                ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
-                                                        data-user-id="${row.id}"
-                                                        data-user-name="${row.name ?? 'Employee'}"
-                                                        data-fetch-url="${row.leave_types_url ?? '#'}">
-                                                        Quick Leave
-                                                   </a>`
-                                                : (isPendingLeaveMetric ? `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>` : '')
-                                            }`
-                                    }
-                                    <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
-                                </div>
-                            </td>
-                        </tr>
-                    `).join('');
+                    const rowsHtml = response.rows.map((row) => {
+                        let actionsHtml = '';
+
+                        if (isPendingTimeLeaveMetric && row.pending_time_leave_request_id) {
+                            actionsHtml = `
+                                ${canUpdateTimeLeave
+                                    ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-time-leave-request-update"
+                                            data-href="${row.time_leave_update_url ?? '#'}"
+                                            data-status="approved"
+                                            data-remark="">
+                                            Approve / Reject
+                                       </a>`
+                                    : ''}
+                                <a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>
+                            `;
+                        } else if (row.pending_leave_request_id) {
+                            actionsHtml = `
+                                ${canUpdateLeaveRequest
+                                    ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-leave-request-update"
+                                            data-href="${row.leave_update_url ?? '#'}"
+                                            data-status="approved"
+                                            data-remark=""
+                                            data-id="${row.pending_leave_request_id}">
+                                            Approve / Reject
+                                       </a>`
+                                    : ''}
+                                <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>
+                            `;
+                        } else if (canQuickLeave) {
+                            actionsHtml = `
+                                <a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
+                                    data-user-id="${row.id}"
+                                    data-user-name="${row.name ?? 'Employee'}"
+                                    data-fetch-url="${row.leave_types_url ?? '#'}">
+                                    Quick Leave
+                                </a>
+                            `;
+                        } else if (isPendingLeaveMetric) {
+                            actionsHtml = `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>`;
+                        } else if (isPendingTimeLeaveMetric) {
+                            actionsHtml = `<a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>`;
+                        }
+
+                        return `
+                            <tr>
+                                <td>${row.name ?? 'N/A'}</td>
+                                <td>${row.employee_code ?? 'N/A'}</td>
+                                <td>${row.email ?? 'N/A'}</td>
+                                <td>${row.branch ?? 'N/A'}</td>
+                                <td>${row.department ?? 'N/A'}</td>
+                                <td>${row.status ?? 'N/A'}</td>
+                                <td>
+                                    <div class="summary-quick-actions">
+                                        ${actionsHtml}
+                                        <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
 
                     $('#summaryDetailTableBody').html(rowsHtml);
                 },
@@ -227,6 +251,25 @@
                     $('#dashboardPreviousApprovers').html(approversData);
                 }
             });
+
+            dashboardLeaveStatusModal.show();
+        });
+
+        $(document).on('click', '.dashboard-time-leave-request-update', function (event) {
+            event.preventDefault();
+
+            if (!dashboardLeaveStatusModal) {
+                return;
+            }
+
+            const url = $(this).data('href');
+            const status = $(this).data('status');
+            const remark = $(this).data('remark');
+
+            $('#dashboardUpdateLeaveStatus').attr('action', url);
+            $('#dashboardLeaveStatus').val(status || 'approved');
+            $('#dashboardLeaveRemark').val(remark || '');
+            $('#dashboardPreviousApprovers').html('');
 
             dashboardLeaveStatusModal.show();
         });

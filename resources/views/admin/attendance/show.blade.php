@@ -295,6 +295,7 @@
                                                                data-href="{{ route('admin.leave-request.update-status', $leaveRequest->id) }}"
                                                                data-status="{{ $leaveRequest->status }}"
                                                                data-remark="{{ $leaveRequest->admin_remark }}"
+                                                               data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
                                                                data-id="{{ $leaveRequest->id }}">
                                                                 <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
                                                                       title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
@@ -452,6 +453,7 @@
                                                        data-href="{{ route('admin.leave-request.update-status', $leaveRequest->id) }}"
                                                        data-status="{{ $leaveRequest->status }}"
                                                        data-remark="{{ $leaveRequest->admin_remark }}"
+                                                       data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
                                                        data-id="{{ $leaveRequest->id }}">
                                                         <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
                                                               title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
@@ -597,6 +599,11 @@
                                 @method('put')
                                 <input type="hidden" name="redirect_back" value="1">
                                 <div class="row">
+                                    <div class="col-lg-12 mb-3">
+                                        <label class="form-label">{{ __('index.leave_reason') }}</label>
+                                        <div class="form-control bg-light" style="height: auto; min-height: 44px;" id="attendanceLeaveStatusReason">N/A</div>
+                                    </div>
+
                                     <label for="attendanceLeaveStatus" class="form-label">{{ __('index.status') }} </label>
                                     <div class="col-lg-12 mb-3">
                                         <select class="form-select" id="attendanceLeaveStatus" name="status">
@@ -781,11 +788,13 @@
                     const url = this.getAttribute('data-href');
                     const status = this.getAttribute('data-status');
                     const remark = this.getAttribute('data-remark');
+                    const reason = this.getAttribute('data-reason');
                     const leaveRequestId = this.getAttribute('data-id');
 
                     document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
                     document.getElementById('attendanceLeaveStatus').value = status;
                     document.getElementById('attendanceLeaveRemark').value = remark || '';
+                    document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
                     document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
                     fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
