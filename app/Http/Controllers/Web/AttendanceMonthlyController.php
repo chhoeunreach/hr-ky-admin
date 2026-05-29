@@ -517,14 +517,10 @@ class AttendanceMonthlyController extends Controller
                 $rules['early_check_in_allowed'] = $allowed->format('H:i');
             }
 
-            if ((int) $shift->is_late_check_in === 1 && $shift->checkin_after !== null) {
-                $allowed = $openingTime->copy()->addMinutes((int) $shift->checkin_after);
-                $rules['late_check_in'] = $checkInAt->gt($allowed);
-                $rules['late_check_in_allowed'] = $allowed->format('H:i');
-            } else {
-                $rules['late_check_in'] = $checkInAt->gt($openingTime);
-                $rules['late_check_in_allowed'] = $openingTime->format('H:i');
-            }
+            $manualLateGraceMinutes = 15;
+            $allowed = $openingTime->copy()->addMinutes($manualLateGraceMinutes);
+            $rules['late_check_in'] = $checkInAt->gt($allowed);
+            $rules['late_check_in_allowed'] = $allowed->format('H:i');
         }
 
         if ($checkOut && $shift->closing_time) {

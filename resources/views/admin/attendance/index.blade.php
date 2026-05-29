@@ -868,6 +868,83 @@
                 min-width: 72px;
             }
 
+            .attendance-multi-time-stack {
+                display: inline-flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 6px;
+                min-width: 76px;
+            }
+
+            .attendance-multi-time-stack .checkLocation,
+            .attendance-multi-time-empty {
+                min-width: 68px;
+            }
+
+            .attendance-multi-time-empty {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 26px;
+                color: #94a3b8;
+                font-weight: 700;
+            }
+
+            .attendance-status-pill {
+                min-width: 23px;
+                height: 20px;
+                padding: 0 6px;
+                border-radius: 999px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: #ffffff;
+                font-size: 9px;
+                font-weight: 900;
+                line-height: 1;
+                box-shadow: 0 2px 6px rgba(15, 23, 42, 0.16);
+            }
+
+            .attendance-status-pill.is-late {
+                background: #f97316;
+            }
+
+            .attendance-status-pill.is-early {
+                background: #0ea5e9;
+            }
+
+            .attendance-status-pill.is-danger {
+                background: #dc2626;
+            }
+
+            .attendance-time-cell,
+            .attendance-multi-time-item {
+                position: relative;
+                overflow: visible;
+            }
+
+            .attendance-multi-time-item {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .attendance-overlay-badge {
+                position: absolute;
+                top: -7px;
+                right: -9px;
+                z-index: 8;
+                pointer-events: auto;
+            }
+
+            .attendance-overlay-badge .attendance-status-pill {
+                min-width: 21px;
+                height: 19px;
+                padding: 0 5px;
+                border: 2px solid #ffffff;
+                box-shadow: 0 3px 8px rgba(15, 23, 42, 0.22);
+            }
+
             .attendance-profile-chat-badge {
                 position: absolute;
                 top: 50%;
@@ -1349,6 +1426,54 @@
             $hasCheckOut = static function ($attendanceRows) {
                 return $attendanceRows->contains(fn ($row) => !empty($row->check_out_at) || !empty($row->night_checkout));
             };
+            $statusBadge = static function (string $code, string $label, string $class, ?string $title = null): string {
+                $title = $title ?: $label;
+
+                return '<span class="attendance-status-pill '.$class.'" title="'.e($title).'">'.e($code).'</span>';
+            };
+            $attendanceBadgeMeta = static function ($attendance): array {
+                $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+                $checkOut = $attendance->check_out_at ?: $attendance->night_checkout;
+                $shiftOpening = $attendance->attendance_office_opening_time ?: $attendance->office_opening_time;
+                $shiftClosing = $attendance->attendance_office_closing_time ?: $attendance->office_closing_time;
+                $checkoutBefore = $attendance->checkout_before;
+                $manualLateGraceMinutes = 15;
+                $earlyCheckoutEnabled = (int) ($attendance->is_early_check_out ?? 0) === 1;
+                $attendanceRejected = $attendance->attendance_status !== null
+                    && $attendance->attendance_status != \App\Models\Attendance::ATTENDANCE_APPROVED;
+                $attendanceLate = false;
+                $attendanceEarlyCheckout = false;
+                $allowedCheckInLabel = null;
+                $allowedCheckOutLabel = null;
+
+                if ($checkIn && $shiftOpening) {
+                    $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
+                    $allowedCheckInLabel = $allowedCheckIn->format('H:i');
+                    $attendanceLate = \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn);
+                }
+
+                if ($checkOut && $shiftClosing && $earlyCheckoutEnabled) {
+                    $allowedCheckOut = \Carbon\Carbon::parse($shiftClosing);
+                    if ($checkoutBefore !== null) {
+                        $allowedCheckOut = $allowedCheckOut->subMinutes((int) $checkoutBefore);
+                    }
+                    $allowedCheckOutLabel = $allowedCheckOut->format('H:i');
+                    $attendanceEarlyCheckout = \Carbon\Carbon::parse($checkOut)->lt($allowedCheckOut);
+                }
+
+                $attendanceStatusTitle = trim(
+                    ($checkIn ? 'In '.$checkIn : '').
+                    ($checkOut ? ' Out '.$checkOut : '')
+                );
+
+                return [
+                    'late' => $attendanceLate && !$attendanceRejected,
+                    'early' => $attendanceEarlyCheckout && !$attendanceRejected,
+                    'no_checkout' => $checkIn && !$checkOut,
+                    'late_title' => trim(($attendanceStatusTitle ?: 'Late') . ($allowedCheckInLabel ? ' | Allowed ' . $allowedCheckInLabel : '')),
+                    'early_title' => trim(($attendanceStatusTitle ?: 'Early Checkout') . ($allowedCheckOutLabel ? ' | Allowed ' . $allowedCheckOutLabel : '')),
+                ];
+            };
 
         @endphp
 
@@ -1419,6 +1544,8 @@
                                 <th>{{ __('index.employee_name') }}</th>
                                     @if($multipleAttendance > 1)
                                         <th class="text-center">{{ __('index.total_worked_hours') }}</th>
+                                        <th class="text-center">{{ __('index.check_in_at') }}</th>
+                                        <th class="text-center">{{ __('index.check_out_at') }}</th>
                                     @else
                                         <th class="text-center">Time In</th>
                                         <th class="text-center">{{ __('index.check_in_at') }}</th>
@@ -1505,6 +1632,7 @@
                                         $rowCanQuickLeave = $firstAttendance?->attendance_status !== \App\Models\Attendance::ATTENDANCE_APPROVED;
                                         $rowHasAnyRequest = (bool) ($firstAttendance?->leave_request_id || $firstAttendance?->time_leave_id);
                                         $rowShowAttendanceStatus = !is_null($firstAttendance->attendance_status) || !$rowHasAnyRequest;
+                                        $firstAttendanceBadgeMeta = $attendanceBadgeMeta($firstAttendance);
                                     @endphp
 
                                     <tr class="attendance-day-row"
@@ -1646,8 +1774,7 @@
                                         </div>
                                     </td>
 
-                                    @if($nightShift)
-                                        @if($multipleAttendance <= 1)
+                                    @if($nightShift && $multipleAttendance <= 1)
                                             <td class="text-center attendance-time-in-cell">
                                                 <div class="attendance-time-in-wrap">
                                                     <span>{{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}</span>
@@ -1667,7 +1794,7 @@
                                                 </div>
                                             </td>
                                             @if(isset($firstAttendance->night_checkin))
-                                                <td class="text-center">
+                                                <td class="text-center attendance-time-cell">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                       title="{{ $firstAttendance->check_in_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkin_location') : strtoupper($firstAttendance->check_in_type).' '.__('index.checkin') }}"
                                                       data-bs-toggle="modal"
@@ -1676,16 +1803,19 @@
                                                 >
                                                     {{  \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $firstAttendance->night_checkin) ?? '' }}
                                                 </span>
+                                                    @if($firstAttendanceBadgeMeta['late'])
+                                                        <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $firstAttendanceBadgeMeta['late_title']) !!}</span>
+                                                    @endif
                                                 </td>
                                             @else
-                                                <td class="text-center"></td>
+                                                <td class="text-center attendance-time-cell"></td>
                                             @endif
                                             <td class="text-center">
                                                 {{ $firstAttendance->office_closing_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_closing_time) : 'N/A' }}
                                             </td>
 
                                             @if( isset($firstAttendance->night_checkout))
-                                                <td class="text-center">
+                                                <td class="text-center attendance-time-cell">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                       title="{{ $firstAttendance->check_out_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkout_location') : strtoupper($firstAttendance->check_out_type).' '.__('index.checkout') }}"
                                                       data-bs-toggle="modal"
@@ -1694,11 +1824,17 @@
                                                 >
                                                    {{  \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $firstAttendance->night_checkout)  ??  '' }}
                                                 </span>
+                                                    @if($firstAttendanceBadgeMeta['early'])
+                                                        <span class="attendance-overlay-badge">{!! $statusBadge('E', 'Early Checkout', 'is-early', $firstAttendanceBadgeMeta['early_title']) !!}</span>
+                                                    @endif
                                                 </td>
                                             @else
-                                                <td class="text-center"></td>
+                                                <td class="text-center attendance-time-cell">
+                                                    @if($firstAttendanceBadgeMeta['no_checkout'])
+                                                        <span class="attendance-overlay-badge">{!! $statusBadge('NC', 'No Checkout', 'is-danger', 'No Checkout') !!}</span>
+                                                    @endif
+                                                </td>
                                             @endif
-                                        @endif
 
                                             <td class="text-center">
                                                 {{ \App\Helpers\AttendanceHelper::getWorkedTimeInHourAndMinute($firstAttendance->worked_hour) }}
@@ -1706,6 +1842,67 @@
                                     @elseif($multipleAttendance > 1)
                                         <td class="text-center">
                                             {{ $workedHours }}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="attendance-multi-time-stack">
+                                                @foreach($userAttendances as $attendanceEntry)
+                                                    @php
+                                                        $multiCheckIn = $attendanceEntry->check_in_at ?: $attendanceEntry->night_checkin;
+                                                        $multiCheckInIsNight = empty($attendanceEntry->check_in_at) && !empty($attendanceEntry->night_checkin);
+                                                        $attendanceEntryBadgeMeta = $attendanceBadgeMeta($attendanceEntry);
+                                                    @endphp
+                                                    <span class="attendance-multi-time-item">
+                                                        @if($multiCheckIn)
+                                                            <span class="btn btn-outline-secondary btn-xs checkLocation"
+                                                                  title="{{ $attendanceEntry->check_in_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkin_location') : strtoupper($attendanceEntry->check_in_type).' '.__('index.checkin') }}"
+                                                                  data-bs-toggle="modal"
+                                                                  data-href="{{ 'https://maps.google.com/maps?q='.$attendanceEntry->check_in_latitude.','.$attendanceEntry->check_in_longitude.'&t=&z=20&ie=UTF8&iwloc=&output=embed' }}"
+                                                                  data-bs-target="{{ '#addslider' }}">
+                                                                {{ $multiCheckInIsNight
+                                                                    ? \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $multiCheckIn)
+                                                                    : \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $multiCheckIn) }}
+                                                            </span>
+                                                            @if($attendanceEntryBadgeMeta['late'])
+                                                                <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $attendanceEntryBadgeMeta['late_title']) !!}</span>
+                                                            @endif
+                                                        @else
+                                                            <span class="attendance-multi-time-empty">-</span>
+                                                        @endif
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="attendance-multi-time-stack">
+                                                @foreach($userAttendances as $attendanceEntry)
+                                                    @php
+                                                        $multiCheckOut = $attendanceEntry->check_out_at ?: $attendanceEntry->night_checkout;
+                                                        $multiCheckOutIsNight = empty($attendanceEntry->check_out_at) && !empty($attendanceEntry->night_checkout);
+                                                        $attendanceEntryBadgeMeta = $attendanceBadgeMeta($attendanceEntry);
+                                                    @endphp
+                                                    <span class="attendance-multi-time-item">
+                                                        @if($multiCheckOut)
+                                                            <span class="btn btn-outline-secondary btn-xs checkLocation"
+                                                                  title="{{ $attendanceEntry->check_out_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkout_location') : strtoupper($attendanceEntry->check_out_type).' '.__('index.checkout') }}"
+                                                                  data-bs-toggle="modal"
+                                                                  data-href="{{ 'https://maps.google.com/maps?q='.$attendanceEntry->check_out_latitude.','.$attendanceEntry->check_out_longitude.'&t=&z=20&ie=UTF8&iwloc=&output=embed' }}"
+                                                                  data-bs-target="{{ '#addslider' }}">
+                                                                {{ $multiCheckOutIsNight
+                                                                    ? \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $multiCheckOut)
+                                                                    : \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $multiCheckOut) }}
+                                                            </span>
+                                                            @if($attendanceEntryBadgeMeta['early'])
+                                                                <span class="attendance-overlay-badge">{!! $statusBadge('E', 'Early Checkout', 'is-early', $attendanceEntryBadgeMeta['early_title']) !!}</span>
+                                                            @endif
+                                                        @else
+                                                            <span class="attendance-multi-time-empty">-</span>
+                                                            @if($attendanceEntryBadgeMeta['no_checkout'])
+                                                                <span class="attendance-overlay-badge">{!! $statusBadge('NC', 'No Checkout', 'is-danger', 'No Checkout') !!}</span>
+                                                            @endif
+                                                        @endif
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         </td>
                                     @else
                                         <td class="text-center attendance-time-in-cell">
@@ -1727,7 +1924,7 @@
                                             </div>
                                         </td>
                                         @if(isset($firstAttendance->check_in_at))
-                                            <td class="text-center">
+                                            <td class="text-center attendance-time-cell">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                       title="{{ $firstAttendance->check_in_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkin_location') : strtoupper($firstAttendance->check_in_type).' '.__('index.checkin') }}"
                                                       data-bs-toggle="modal"
@@ -1736,16 +1933,19 @@
                                                 >
                                                     {{  \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->check_in_at) ?? '' }}
                                                 </span>
+                                                @if($firstAttendanceBadgeMeta['late'])
+                                                    <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $firstAttendanceBadgeMeta['late_title']) !!}</span>
+                                                @endif
                                             </td>
                                         @else
-                                            <td class="text-center"></td>
+                                            <td class="text-center attendance-time-cell"></td>
                                         @endif
                                         <td class="text-center">
                                             {{ $firstAttendance->office_closing_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_closing_time) : 'N/A' }}
                                         </td>
 
                                         @if(isset($firstAttendance->check_out_at) )
-                                            <td class="text-center">
+                                            <td class="text-center attendance-time-cell">
                                                 <span class="btn btn-outline-secondary btn-xs checkLocation"
                                                       title="{{ $firstAttendance->check_out_type == \App\Enum\EmployeeAttendanceTypeEnum::wifi->value ? __('index.show_checkout_location') : strtoupper($firstAttendance->check_out_type).' '.__('index.checkout') }}"
                                                       data-bs-toggle="modal"
@@ -1754,9 +1954,16 @@
                                                 >
                                                    {{ \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->check_out_at) ??  '' }}
                                                 </span>
+                                                @if($firstAttendanceBadgeMeta['early'])
+                                                    <span class="attendance-overlay-badge">{!! $statusBadge('E', 'Early Checkout', 'is-early', $firstAttendanceBadgeMeta['early_title']) !!}</span>
+                                                @endif
                                             </td>
                                         @else
-                                            <td class="text-center"></td>
+                                            <td class="text-center attendance-time-cell">
+                                                @if($firstAttendanceBadgeMeta['no_checkout'])
+                                                    <span class="attendance-overlay-badge">{!! $statusBadge('NC', 'No Checkout', 'is-danger', 'No Checkout') !!}</span>
+                                                @endif
+                                            </td>
                                         @endif
 
                                         <td class="text-center">

@@ -533,14 +533,10 @@
                     }
 
                     $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
-                    $checkInAfter = $attendance['checkin_after'] ?? $userDetail->officeTime?->checkin_after ?? null;
-                    $lateEnabled = (int) ($attendance['is_late_check_in'] ?? $userDetail->officeTime?->is_late_check_in ?? 0) === 1;
+                    $manualLateGraceMinutes = 15;
 
                     if ($checkIn && $shiftOpening) {
-                        $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening);
-                        if ($lateEnabled && $checkInAfter !== null) {
-                            $allowedCheckIn = $allowedCheckIn->addMinutes((int) $checkInAfter);
-                        }
+                        $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
 
                         if (
                             \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
@@ -682,16 +678,12 @@
                                         $allowedCheckOutLabel = null;
                                         $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
                                         $shiftClosing = $attendance['closing_time'] ?? $userDetail->officeTime?->closing_time ?? null;
-                                        $checkInAfter = $attendance['checkin_after'] ?? $userDetail->officeTime?->checkin_after ?? null;
                                         $checkoutBefore = $attendance['checkout_before'] ?? $userDetail->officeTime?->checkout_before ?? null;
-                                        $lateEnabled = (int) ($attendance['is_late_check_in'] ?? $userDetail->officeTime?->is_late_check_in ?? 0) === 1;
+                                        $manualLateGraceMinutes = 15;
                                         $earlyCheckoutEnabled = (int) ($attendance['is_early_check_out'] ?? $userDetail->officeTime?->is_early_check_out ?? 0) === 1;
 
                                         if ($attendanceCheckIn && $shiftOpening) {
-                                            $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening);
-                                            if ($lateEnabled && $checkInAfter !== null) {
-                                                $allowedCheckIn = $allowedCheckIn->addMinutes((int) $checkInAfter);
-                                            }
+                                            $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
                                             $allowedCheckInLabel = $allowedCheckIn->format('H:i');
                                             $attendanceLate = \Carbon\Carbon::parse($attendanceCheckIn)->gt($allowedCheckIn);
                                         }
