@@ -9,6 +9,7 @@ use App\Http\Controllers\Web\AssetController;
 use App\Http\Controllers\Web\AssetTypeController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AttendanceController;
+use App\Http\Controllers\Web\AttendanceMonthlyController;
 use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
 use App\Http\Controllers\Web\AwardTypeController;
@@ -249,6 +250,7 @@ Route::group([
         Route::put('employees/night-attendance/{id}', [AttendanceController::class, 'updateNightAttendance'])->name('night_attendances.update');
 
         Route::get('attendances/leave-details', [AttendanceController::class, 'leaveDetails'])->name('attendances.leave-details');
+        Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
         Route::resource('attendances', AttendanceController::class);
         Route::get('employees/attendance/check-in/{companyId}/{userId}', [AttendanceController::class, 'checkInEmployee'])->name('employees.check-in');
         Route::get('employees/attendance/check-out/{companyId}/{userId}', [AttendanceController::class, 'checkOutEmployee'])->name('employees.check-out');

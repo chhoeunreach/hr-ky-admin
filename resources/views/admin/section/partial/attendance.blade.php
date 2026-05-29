@@ -1,5 +1,5 @@
 @can(['list_attendance'])
-    <li class="nav-item  {{ request()->routeIs('admin.attendances.*') || request()->routeIs('admin.attendance.*')  ? 'active' : '' }}   ">
+    <li class="nav-item  {{ request()->routeIs('admin.attendances.*') || request()->routeIs('admin.attendance.*') || request()->routeIs('admin.attendance-monthly.*')  ? 'active' : '' }}   ">
         <a data-href="#"
            class="nav-link"
            data-bs-toggle="collapse"
@@ -12,13 +12,19 @@
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
 
-        <div class="{{ request()->routeIs('admin.attendances.*') || request()->routeIs('admin.attendance.*')  ? '' : 'collapse'  }}"  id="attendance_management">
+        <div class="{{ request()->routeIs('admin.attendances.*') || request()->routeIs('admin.attendance.*') || request()->routeIs('admin.attendance-monthly.*')  ? '' : 'collapse'  }}"  id="attendance_management">
             <ul class="nav sub-menu">
 
                 <li class="nav-item">
                     <a href="{{route('admin.attendances.index')}}"
                        data-href="{{route('admin.attendances.index')}}"
                        class="nav-link {{ request()->routeIs('admin.attendances.*') ? 'active' : ''}}">{{ __('index.attendance') }}</a>
+                </li>
+
+                <li class="nav-item">
+                    <a href="{{route('admin.attendance-monthly.index')}}"
+                       data-href="{{route('admin.attendance-monthly.index')}}"
+                       class="nav-link {{ request()->routeIs('admin.attendance-monthly.*') ? 'active' : ''}}">Attendance Monthly</a>
                 </li>
 
                 <li class="nav-item">
@@ -36,6 +42,5 @@
         </div>
     </li>
 @endcan
-
 
 
