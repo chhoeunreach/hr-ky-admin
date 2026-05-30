@@ -22,6 +22,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceMonthlyController extends Controller
 {
+    public const LATE_CHECK_IN_GRACE_MINUTES = 16;
+
     public function index(Request $request)
     {
         $this->authorizeMonthlyAttendance();
@@ -217,7 +219,7 @@ class AttendanceMonthlyController extends Controller
     private function lateBreakdownTemplate(): array
     {
         return [
-            15 => 0,
+            self::LATE_CHECK_IN_GRACE_MINUTES => 0,
             20 => 0,
             30 => 0,
             40 => 0,
@@ -235,7 +237,7 @@ class AttendanceMonthlyController extends Controller
         }
 
         if ($lateMinutes < 20) {
-            $lateBreakdown[15]++;
+            $lateBreakdown[self::LATE_CHECK_IN_GRACE_MINUTES]++;
         } elseif ($lateMinutes < 30) {
             $lateBreakdown[20]++;
         } elseif ($lateMinutes < 40) {
@@ -268,7 +270,7 @@ class AttendanceMonthlyController extends Controller
 
         $lateMinutes = Carbon::parse($shift->opening_time)->diffInMinutes(Carbon::parse($checkIn), false);
 
-        return $lateMinutes < 16 ? null : (int) $lateMinutes;
+        return $lateMinutes <= self::LATE_CHECK_IN_GRACE_MINUTES ? null : (int) $lateMinutes;
     }
 
     private function leaveMap(array $userIds, Carbon $startDate, Carbon $endDate): array
@@ -570,7 +572,7 @@ class AttendanceMonthlyController extends Controller
                 $rules['early_check_in_allowed'] = $allowed->format('H:i');
             }
 
-            $manualLateGraceMinutes = 15;
+            $manualLateGraceMinutes = self::LATE_CHECK_IN_GRACE_MINUTES;
             $lateStart = $openingTime->copy()->addMinutes($manualLateGraceMinutes + 1);
             $rules['late_check_in'] = $checkInAt->gte($lateStart);
             $rules['late_check_in_allowed'] = $lateStart->format('H:i');

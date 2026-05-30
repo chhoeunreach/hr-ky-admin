@@ -533,7 +533,7 @@
                     }
 
                     $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
-                    $manualLateGraceMinutes = 15;
+                    $manualLateGraceMinutes = 16;
 
                     if ($checkIn && $shiftOpening) {
                         $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
@@ -679,7 +679,7 @@
                                         $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
                                         $shiftClosing = $attendance['closing_time'] ?? $userDetail->officeTime?->closing_time ?? null;
                                         $checkoutBefore = $attendance['checkout_before'] ?? $userDetail->officeTime?->checkout_before ?? null;
-                                        $manualLateGraceMinutes = 15;
+                                        $manualLateGraceMinutes = 16;
                                         $earlyCheckoutEnabled = (int) ($attendance['is_early_check_out'] ?? $userDetail->officeTime?->is_early_check_out ?? 0) === 1;
 
                                         if ($attendanceCheckIn && $shiftOpening) {

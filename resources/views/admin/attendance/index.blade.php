@@ -1437,7 +1437,7 @@
                 $shiftOpening = $attendance->attendance_office_opening_time ?: $attendance->office_opening_time;
                 $shiftClosing = $attendance->attendance_office_closing_time ?: $attendance->office_closing_time;
                 $checkoutBefore = $attendance->checkout_before;
-                $manualLateGraceMinutes = 15;
+                $manualLateGraceMinutes = 16;
                 $earlyCheckoutEnabled = (int) ($attendance->is_early_check_out ?? 0) === 1;
                 $attendanceRejected = $attendance->attendance_status !== null
                     && $attendance->attendance_status != \App\Models\Attendance::ATTENDANCE_APPROVED;

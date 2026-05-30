@@ -1937,7 +1937,7 @@
                                         data-late-total="{{ array_sum($row['late_breakdown'] ?? []) }}"
                                         data-late-minutes-total="{{ $row['late_minutes_total'] ?? 0 }}"
                                         data-opening-time="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->format('h:i A') : 'N/A' }}"
-                                        data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(15)->format('h:i A') : 'opening + 15m' }}"
+                                        data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(\App\Http\Controllers\Web\AttendanceMonthlyController::LATE_CHECK_IN_GRACE_MINUTES)->format('h:i A') : 'opening + 16m' }}"
                                          data-total-employees="{{ $summary['employees'] }}"
                                          data-report-subtitle="{{ $employee->department?->dept_name ?: ($employee->branch?->name ?: $employee->name) }}"
                                          data-export-url="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}"
@@ -2360,7 +2360,7 @@
 
             const buildLateTimeRange = (openingTime, minutes) => {
                 const ranges = {
-                    15: [16, 19],
+                    16: [17, 19],
                     20: [20, 29],
                     30: [30, 39],
                     40: [40, 49],
@@ -2387,12 +2387,12 @@
                 const openingTime = element.getAttribute('data-opening-time') || 'N/A';
                 const grandTotal = Number(element.getAttribute('data-late-total') || 0);
                 const lateMinutesTotal = Number(element.getAttribute('data-late-minutes-total') || 0);
-                const lateAfter = element.getAttribute('data-late-after') || 'opening + 15m';
+                const lateAfter = element.getAttribute('data-late-after') || 'opening + 16m';
                 const totalEmployees = element.getAttribute('data-total-employees') || '0';
                 const exportUrl = element.getAttribute('data-export-url') || '#';
                 const reportSubtitle = element.getAttribute('data-report-subtitle') || matchedDays[0]?.getAttribute('data-employee-subtitle') || matchedDays[0]?.getAttribute('data-employee') || '';
                 const rows = [
-                    [15, '15 Minutes', 'Late more than 15 minutes', 0.10],
+                    [16, '16 Minutes', 'Late more than 16 minutes', 0.10],
                     [20, '20 Minutes', 'Late more than 20 minutes', 0.20],
                     [30, '30 Minutes', 'Late more than 30 minutes', 0.30],
                     [40, '40 Minutes', 'Late more than 40 minutes', 0.40],
@@ -2435,7 +2435,7 @@
                             <span class="late-dashboard-icon is-amber"><i data-feather="watch"></i></span>
                             <div>
                                 <p class="late-dashboard-card-label">Grace Period</p>
-                                <p class="late-dashboard-card-value">15 Minutes</p>
+                                <p class="late-dashboard-card-value">16 Minutes</p>
                                 <p class="late-dashboard-card-note">Until ${escapeHtml(lateAfter)}</p>
                             </div>
                         </div>
