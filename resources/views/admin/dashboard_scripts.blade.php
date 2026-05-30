@@ -15,8 +15,28 @@
         const dashboardLeaveStatusModal = dashboardLeaveStatusModalElement ? new bootstrap.Modal(dashboardLeaveStatusModalElement) : null;
         let dashboardSummaryCurrentDate = '';
         let dashboardSummaryCurrentDateDisplay = '';
+        const dashboardI18n = {
+            summaryDetail: @json(__('index.summary_detail')),
+            noRecordsFound: @json(__('index.no_records_found')),
+            approveReject: @json(__('index.approve_reject')),
+            viewTimeLeave: @json(__('index.view_time_leave')),
+            viewPendingLeave: @json(__('index.view_pending_leave')),
+            viewLeaveRequests: @json(__('index.view_leave_requests')),
+            quickLeave: @json(__('index.quick_leave')),
+            quickChat: @json(__('index.quick_chat')),
+            employee: @json(__('index.employee')),
+            loadingLeaveTypes: @json(__('index.loading_leave_types')),
+            noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
+            noLeaveTypesAvailableEmployee: @json(__('index.no_leave_types_available_employee')),
+            selectLeaveType: @json(__('index.select_leave_type')),
+            unableLoadLeaveTypes: @json(__('index.unable_load_leave_types')),
+            unableLoadLeaveTypesTryAgain: @json(__('index.unable_load_leave_types_try_again')),
+            createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
+            today: @json(__('index.today')),
+            unableLoadDetailNow: @json(__('index.unable_load_detail_now')),
+        };
 
-        const resetDashboardQuickLeaveOptions = (message = 'Loading leave types...') => {
+        const resetDashboardQuickLeaveOptions = (message = dashboardI18n.loadingLeaveTypes) => {
             if (!dashboardQuickLeaveType) {
                 return;
             }
@@ -42,9 +62,9 @@
                 return;
             }
 
-            $('#summaryDetailModalLabel').text('Summary Detail');
+            $('#summaryDetailModalLabel').text(dashboardI18n.summaryDetail);
             $('#summaryDetailTableBody').empty();
-            $('#summaryDetailEmpty').addClass('d-none').text('No records found.');
+            $('#summaryDetailEmpty').addClass('d-none').text(dashboardI18n.noRecordsFound);
             $('#summaryDetailLoading').removeClass('d-none');
             summaryDetailModal.show();
 
@@ -59,7 +79,7 @@
                     entity_ids: entityIds
                 },
                 success: function (response) {
-                    $('#summaryDetailModalLabel').text(response.title || 'Summary Detail');
+                    $('#summaryDetailModalLabel').text(response.title || dashboardI18n.summaryDetail);
                     const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
                     const isPendingTimeLeaveMetric = response.metric === 'active_employee_time_leave_request';
                     const isCurrentMonthLeaveMetric = response.metric === 'current_month_leave_request';
@@ -85,10 +105,10 @@
                                             data-href="${row.time_leave_update_url ?? '#'}"
                                             data-status="approved"
                                             data-remark="">
-                                            Approve / Reject
+                                            ${dashboardI18n.approveReject}
                                        </a>`
                                     : ''}
-                                <a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>
+                                <a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>
                             `;
                         } else if (row.pending_leave_request_id) {
                             actionsHtml = `
@@ -98,28 +118,28 @@
                                             data-status="approved"
                                             data-remark=""
                                             data-id="${row.pending_leave_request_id}">
-                                            Approve / Reject
+                                            ${dashboardI18n.approveReject}
                                        </a>`
                                     : ''}
-                                <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>
+                                <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>
                             `;
                         } else if (isCurrentMonthLeaveMetric) {
-                            actionsHtml = `<a href="${row.leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Leave Requests</a>`;
+                            actionsHtml = `<a href="${row.leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewLeaveRequests}</a>`;
                         } else if (isCurrentMonthTimeLeaveMetric) {
-                            actionsHtml = `<a href="${row.time_leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>`;
+                            actionsHtml = `<a href="${row.time_leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
                         } else if (canQuickLeave) {
                             actionsHtml = `
                                 <a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
                                     data-user-id="${row.id}"
-                                    data-user-name="${row.name ?? 'Employee'}"
+                                    data-user-name="${row.name ?? dashboardI18n.employee}"
                                     data-fetch-url="${row.leave_types_url ?? '#'}">
-                                    Quick Leave
+                                    ${dashboardI18n.quickLeave}
                                 </a>
                             `;
                         } else if (isPendingLeaveMetric) {
-                            actionsHtml = `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Pending Leave</a>`;
+                            actionsHtml = `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>`;
                         } else if (isPendingTimeLeaveMetric) {
-                            actionsHtml = `<a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">View Time Leave</a>`;
+                            actionsHtml = `<a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
                         }
 
                         return `
@@ -133,7 +153,7 @@
                                 <td>
                                     <div class="summary-quick-actions">
                                         ${actionsHtml}
-                                        <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">Quick Chat</a>
+                                        <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.quickChat}</a>
                                     </div>
                                 </td>
                             </tr>
@@ -143,7 +163,7 @@
                     $('#summaryDetailTableBody').html(rowsHtml);
                 },
                 error: function () {
-                    $('#summaryDetailEmpty').removeClass('d-none').text('Unable to load detail right now.');
+                    $('#summaryDetailEmpty').removeClass('d-none').text(dashboardI18n.unableLoadDetailNow);
                 },
                 complete: function () {
                     $('#summaryDetailLoading').addClass('d-none');
@@ -165,8 +185,8 @@
             dashboardQuickLeaveUserId.value = userId;
             dashboardQuickLeaveDate.value = dashboardSummaryCurrentDate;
             dashboardQuickLeaveReason.value = '';
-            dashboardQuickLeaveLabel.textContent = `Quick Leave: ${userName}`;
-            dashboardQuickLeaveHelpText.textContent = `Create an already approved leave for ${dashboardSummaryCurrentDateDisplay || 'today'}.`;
+            dashboardQuickLeaveLabel.textContent = `${dashboardI18n.quickLeave}: ${userName}`;
+            dashboardQuickLeaveHelpText.textContent = dashboardI18n.createApprovedLeaveForDate.replace(':date', dashboardSummaryCurrentDateDisplay || dashboardI18n.today);
 
             resetDashboardQuickLeaveOptions();
             dashboardQuickLeaveModal.show();
@@ -177,13 +197,13 @@
                     const leaveTypes = data.leaveTypes || data.leveTypes || [];
 
                     if (!leaveTypes.length) {
-                        resetDashboardQuickLeaveOptions('No leave types available');
-                        dashboardQuickLeaveHelpText.textContent = 'No leave types are available for this employee.';
+                        resetDashboardQuickLeaveOptions(dashboardI18n.noLeaveTypesAvailable);
+                        dashboardQuickLeaveHelpText.textContent = dashboardI18n.noLeaveTypesAvailableEmployee;
                         return;
                     }
 
                     dashboardQuickLeaveType.disabled = false;
-                    dashboardQuickLeaveType.innerHTML = '<option value="">Select leave type</option>';
+                    dashboardQuickLeaveType.innerHTML = `<option value="">${dashboardI18n.selectLeaveType}</option>`;
 
                     leaveTypes.forEach((leaveType) => {
                         const option = document.createElement('option');
@@ -203,8 +223,8 @@
                     }
                 })
                 .catch(() => {
-                    resetDashboardQuickLeaveOptions('Unable to load leave types');
-                    dashboardQuickLeaveHelpText.textContent = 'Unable to load leave types right now. Please try again.';
+                    resetDashboardQuickLeaveOptions(dashboardI18n.unableLoadLeaveTypes);
+                    dashboardQuickLeaveHelpText.textContent = dashboardI18n.unableLoadLeaveTypesTryAgain;
                 });
         });
 

@@ -2019,7 +2019,7 @@
                                                        data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
                                                        data-attendance-date="{{ $selectedAttendanceDate }}"
                                                        data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}">
-                                                        Quick Time Leave
+                                                        {{ __('index.quick_time_leave') }}
                                                     </a>
                                                 @endcan
                                             @endif
@@ -2096,7 +2096,7 @@
                                                        data-attendance-date="{{ $selectedAttendanceDate }}"
                                                        data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}"
                                                        data-fetch-url="{{ route('admin.leaves.employee-data', $firstAttendance->user_id) }}">
-                                                        Quick Leave
+                                                        {{ __('index.quick_leave') }}
                                                     </a>
                                                     @endcan
                                                 @endif
@@ -2545,7 +2545,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="attendanceQuickLeaveModalLabel">Quick Leave</h5>
+                        <h5 class="modal-title" id="attendanceQuickLeaveModalLabel">{{ __('index.quick_leave') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -2555,23 +2555,23 @@
                             <input type="hidden" name="attendance_date" id="attendanceQuickLeaveDate">
 
                             <div class="mb-3">
-                                <label for="attendanceQuickLeaveType" class="form-label">Leave Type</label>
+                                <label for="attendanceQuickLeaveType" class="form-label">{{ __('index.leave_type') }}</label>
                                 <select class="form-select" name="leave_type_id" id="attendanceQuickLeaveType" required>
-                                    <option value="">Select leave type</option>
+                                    <option value="">{{ __('index.select_leave_type') }}</option>
                                 </select>
                                 <small class="text-muted d-block mt-2" id="attendanceQuickLeaveHelpText">
-                                    This will create an already approved leave for the selected attendance day.
+                                    {{ __('index.create_approved_leave_selected_day') }}
                                 </small>
                             </div>
 
                             <div class="mb-3">
                                 <label for="attendanceQuickLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
-                                <textarea class="form-control" name="reasons" id="attendanceQuickLeaveReason" rows="3" placeholder="Optional note"></textarea>
+                                <textarea class="form-control" name="reasons" id="attendanceQuickLeaveReason" rows="3" placeholder="{{ __('index.optional_note') }}"></textarea>
                             </div>
 
                             <div class="text-start">
                                 <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickLeaveSubmit">
-                                    Save as Approved Leave
+                                    {{ __('index.save_as_approved_leave') }}
                                 </button>
                             </div>
                         </form>
@@ -2584,7 +2584,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">Quick Time Leave</h5>
+                        <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">{{ __('index.quick_time_leave') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -2602,7 +2602,7 @@
                                 <label for="attendanceQuickTimeLeaveTo" class="form-label">{{ __('index.to') }}</label>
                                 <input type="time" class="form-control" name="leave_to" id="attendanceQuickTimeLeaveTo" required>
                                 <small class="text-muted d-block mt-2" id="attendanceQuickTimeLeaveHelpText">
-                                    This will create an already approved time leave for the selected attendance day.
+                                    {{ __('index.create_approved_time_leave_today') }}
                                 </small>
                             </div>
 
@@ -3436,6 +3436,16 @@
                 selectEmployeeStartChatting: @json(__('index.select_employee_start_chatting')),
                 sendChatHint: @json(__('index.send_chat_hint')),
                 chatReadOnly: @json(__('index.chat_read_only')),
+                quickLeave: @json(__('index.quick_leave')),
+                quickTimeLeave: @json(__('index.quick_time_leave')),
+                loadingLeaveTypes: @json(__('index.loading_leave_types')),
+                noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
+                noLeaveTypesAvailableEmployee: @json(__('index.no_leave_types_available_employee')),
+                selectLeaveType: @json(__('index.select_leave_type')),
+                unableLoadLeaveTypes: @json(__('index.unable_load_leave_types')),
+                unableLoadLeaveTypesTryAgain: @json(__('index.unable_load_leave_types_try_again')),
+                createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
+                createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
             };
             const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
             const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
@@ -3458,7 +3468,7 @@
             let attendanceChatPoller = null;
             let activeAttendanceChatEmployeeId = null;
 
-            const resetQuickLeaveOptions = (message = 'Loading leave types...') => {
+            const resetQuickLeaveOptions = (message = attendanceI18n.loadingLeaveTypes) => {
                 if (!attendanceQuickLeaveType) {
                     return;
                 }
@@ -3491,8 +3501,8 @@
                     attendanceQuickLeaveUserId.value = userId;
                     attendanceQuickLeaveDate.value = attendanceDate;
                     attendanceQuickLeaveReason.value = '';
-                    attendanceQuickLeaveLabel.textContent = `Quick Leave: ${userName}`;
-                    attendanceQuickLeaveHelpText.textContent = `Create an already approved leave for ${displayDate}.`;
+                    attendanceQuickLeaveLabel.textContent = `${attendanceI18n.quickLeave}: ${userName}`;
+                    attendanceQuickLeaveHelpText.textContent = attendanceI18n.createApprovedLeaveForDate.replace(':date', displayDate);
 
                     resetQuickLeaveOptions();
                     attendanceQuickLeaveModal.show();
@@ -3503,13 +3513,13 @@
                             const leaveTypes = data.leaveTypes || data.leveTypes || [];
 
                             if (!leaveTypes.length) {
-                                resetQuickLeaveOptions('No leave types available');
-                                attendanceQuickLeaveHelpText.textContent = 'No leave types are available for this employee.';
+                                resetQuickLeaveOptions(attendanceI18n.noLeaveTypesAvailable);
+                                attendanceQuickLeaveHelpText.textContent = attendanceI18n.noLeaveTypesAvailableEmployee;
                                 return;
                             }
 
                             attendanceQuickLeaveType.disabled = false;
-                            attendanceQuickLeaveType.innerHTML = '<option value="">Select leave type</option>';
+                            attendanceQuickLeaveType.innerHTML = `<option value="">${attendanceI18n.selectLeaveType}</option>`;
 
                             leaveTypes.forEach((leaveType) => {
                                 const option = document.createElement('option');
@@ -3529,8 +3539,8 @@
                             }
                         })
                         .catch(() => {
-                            resetQuickLeaveOptions('Unable to load leave types');
-                            attendanceQuickLeaveHelpText.textContent = 'Unable to load leave types right now. Please try again.';
+                            resetQuickLeaveOptions(attendanceI18n.unableLoadLeaveTypes);
+                            attendanceQuickLeaveHelpText.textContent = attendanceI18n.unableLoadLeaveTypesTryAgain;
                         });
             });
 
@@ -3556,8 +3566,8 @@
                     attendanceQuickTimeLeaveFrom.value = '';
                     attendanceQuickTimeLeaveTo.value = '';
                     attendanceQuickTimeLeaveReason.value = '';
-                    attendanceQuickTimeLeaveLabel.textContent = `Quick Time Leave: ${userName}`;
-                    attendanceQuickTimeLeaveHelpText.textContent = `Create an already approved time leave for ${displayDate}.`;
+                    attendanceQuickTimeLeaveLabel.textContent = `${attendanceI18n.quickTimeLeave}: ${userName}`;
+                    attendanceQuickTimeLeaveHelpText.textContent = attendanceI18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
 
                     attendanceQuickTimeLeaveModal.show();
             });
