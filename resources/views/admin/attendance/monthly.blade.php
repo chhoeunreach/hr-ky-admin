@@ -50,6 +50,72 @@
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
         }
 
+        .monthly-results-block {
+            position: relative;
+        }
+
+        .monthly-results-reload {
+            position: absolute;
+            inset: 0;
+            z-index: 80;
+            display: none;
+            padding: 24px;
+            background: rgba(248, 250, 252, 0.72);
+            backdrop-filter: blur(3px);
+        }
+
+        .monthly-results-block.is-refreshing .monthly-results-reload {
+            display: block;
+        }
+
+        .monthly-reload-panel {
+            position: sticky;
+            top: calc(50vh - 90px);
+            width: min(360px, 92%);
+            margin: 80px auto;
+            padding: 18px 20px;
+            border: 1px solid #dbe5f3;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.16);
+        }
+
+        .monthly-reload-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 12px;
+            color: #172033;
+            font-weight: 800;
+        }
+
+        .monthly-reload-percent {
+            color: #2563eb;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .monthly-reload-track {
+            height: 9px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #dbeafe;
+        }
+
+        .monthly-reload-bar {
+            width: 0%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #2563eb, #60a5fa);
+            transition: width 0.18s ease;
+        }
+
+        .monthly-reload-text {
+            margin-top: 10px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
         .monthly-report-strip {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1660,6 +1726,20 @@
             </ol>
         </nav>
 
+        <div id="monthlyResultsBlock" class="monthly-results-block">
+        <div class="monthly-results-reload" aria-hidden="true">
+            <div class="monthly-reload-panel" role="status" aria-live="polite">
+                <div class="monthly-reload-header">
+                    <span>Reloading monthly attendance</span>
+                    <span class="monthly-reload-percent">0%</span>
+                </div>
+                <div class="monthly-reload-track">
+                    <div class="monthly-reload-bar"></div>
+                </div>
+                <div class="monthly-reload-text">Refreshing monthly table data...</div>
+            </div>
+        </div>
+
         <div class="monthly-filter-shell mb-3">
             <div class="monthly-filter-toggle">
                 <div class="monthly-filter-toggle-actions">
@@ -2117,6 +2197,7 @@
                 </div>
             </div>
         </div>
+        </div>
 
         <div class="modal fade" id="monthlyAttendanceDetailModal" tabindex="-1" aria-labelledby="monthlyAttendanceDetailModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
@@ -2378,11 +2459,13 @@
             const chatModalElement = document.getElementById('attendanceChatModal');
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            const signalToggle = document.getElementById('monthlySignalToggle');
             const monthlyScrollShortcuts = document.getElementById('monthlyScrollShortcuts');
             const monthlyScrollTopButton = document.getElementById('monthlyScrollTop');
             const monthlyScrollBottomButton = document.getElementById('monthlyScrollBottom');
             const signalColumns = () => document.querySelectorAll('.monthly-signal-column');
+            let monthlySearchTimer = null;
+            let monthlyRefreshProgressTimer = null;
+            let monthlyResultsLoading = false;
 
             const updateMonthlyScrollShortcuts = () => {
                 if (!monthlyScrollShortcuts) {
@@ -2409,6 +2492,7 @@
                     column.classList.toggle('is-hidden', !visible);
                 });
 
+                const signalToggle = document.getElementById('monthlySignalToggle');
                 if (signalToggle) {
                     signalToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
                     const label = signalToggle.querySelector('span');
@@ -2420,13 +2504,206 @@
                 localStorage.setItem('monthlyAttendanceSignalsVisible', visible ? '1' : '0');
             };
 
-            if (signalToggle) {
+            const bindMonthlySignalToggle = () => {
+                const signalToggle = document.getElementById('monthlySignalToggle');
+                if (!signalToggle || signalToggle.dataset.bound === '1') {
+                    return;
+                }
+
+                signalToggle.dataset.bound = '1';
                 setSignalColumnsVisible(localStorage.getItem('monthlyAttendanceSignalsVisible') !== '0');
                 signalToggle.addEventListener('click', function () {
                     const visible = signalToggle.getAttribute('aria-pressed') !== 'true';
                     setSignalColumnsVisible(visible);
                 });
-            }
+            };
+
+            const setMonthlyReloadProgress = (block, percent) => {
+                const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+                const bar = block.querySelector('.monthly-reload-bar');
+                const label = block.querySelector('.monthly-reload-percent');
+
+                if (bar) {
+                    bar.style.width = `${safePercent}%`;
+                }
+
+                if (label) {
+                    label.textContent = `${safePercent}%`;
+                }
+            };
+
+            const startMonthlyReloadProgress = (block) => {
+                let progress = 0;
+                block.classList.add('is-refreshing');
+                block.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', 'false');
+                setMonthlyReloadProgress(block, progress);
+                clearInterval(monthlyRefreshProgressTimer);
+                monthlyRefreshProgressTimer = setInterval(() => {
+                    const remaining = 95 - progress;
+                    progress += Math.max(1, Math.ceil(remaining * 0.16));
+                    setMonthlyReloadProgress(block, Math.min(progress, 95));
+                }, 220);
+            };
+
+            const stopMonthlyReloadProgress = (block) => {
+                clearInterval(monthlyRefreshProgressTimer);
+                monthlyRefreshProgressTimer = null;
+                setMonthlyReloadProgress(block, 100);
+            };
+
+            const refreshMonthlyResultsBlock = async (url, pushState = true) => {
+                const currentBlock = document.getElementById('monthlyResultsBlock');
+
+                if (!currentBlock || monthlyResultsLoading) {
+                    return;
+                }
+
+                monthlyResultsLoading = true;
+                startMonthlyReloadProgress(currentBlock);
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'text/html',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Unable to refresh monthly attendance.');
+                    }
+
+                    const html = await response.text();
+                    const parsed = new DOMParser().parseFromString(html, 'text/html');
+                    const nextBlock = parsed.getElementById('monthlyResultsBlock');
+
+                    if (!nextBlock) {
+                        window.location.href = url.toString();
+                        return;
+                    }
+
+                    stopMonthlyReloadProgress(currentBlock);
+                    await new Promise((resolve) => setTimeout(resolve, 160));
+                    currentBlock.replaceWith(nextBlock);
+
+                    if (pushState) {
+                        window.history.pushState({}, '', url.toString());
+                    }
+
+                    bindMonthlySignalToggle();
+                    updateMonthlyScrollShortcuts();
+
+                    if (window.feather) {
+                        feather.replace();
+                    }
+
+                    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                        bootstrap.Tooltip.getOrCreateInstance(element);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    window.location.href = url.toString();
+                } finally {
+                    monthlyResultsLoading = false;
+                    const refreshedBlock = document.getElementById('monthlyResultsBlock');
+                    if (refreshedBlock) {
+                        refreshedBlock.classList.remove('is-refreshing');
+                        refreshedBlock.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', 'true');
+                    }
+                }
+            };
+
+            const urlFromForm = (form) => {
+                const url = new URL(form.action || window.location.href, window.location.origin);
+                const formData = new FormData(form);
+                url.search = '';
+
+                formData.forEach((value, key) => {
+                    if (value !== null && String(value).trim() !== '') {
+                        url.searchParams.set(key, value);
+                    }
+                });
+
+                url.searchParams.delete('page');
+                return url;
+            };
+
+            bindMonthlySignalToggle();
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target.closest('#monthlyAttendanceFilters, .monthly-table-controls');
+                if (!form) {
+                    return;
+                }
+
+                event.preventDefault();
+                clearTimeout(monthlySearchTimer);
+                refreshMonthlyResultsBlock(urlFromForm(form));
+            });
+
+            document.addEventListener('change', (event) => {
+                if (!event.target || event.target.id !== 'table_per_page') {
+                    return;
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('per_page', event.target.value);
+                url.searchParams.delete('page');
+                refreshMonthlyResultsBlock(url);
+            });
+
+            document.addEventListener('input', (event) => {
+                if (!event.target || event.target.id !== 'table_search') {
+                    return;
+                }
+
+                clearTimeout(monthlySearchTimer);
+                monthlySearchTimer = setTimeout(() => {
+                    const url = new URL(window.location.href);
+                    const searchValue = event.target.value.trim();
+
+                    if (searchValue) {
+                        url.searchParams.set('search', searchValue);
+                    } else {
+                        url.searchParams.delete('search');
+                    }
+
+                    url.searchParams.delete('page');
+                    refreshMonthlyResultsBlock(url);
+                }, 350);
+            });
+
+            document.addEventListener('click', (event) => {
+                const paginationLink = event.target.closest('#monthlyResultsBlock .pagination a');
+
+                if (!paginationLink) {
+                    return;
+                }
+
+                event.preventDefault();
+                refreshMonthlyResultsBlock(new URL(paginationLink.href, window.location.origin));
+            });
+
+            document.addEventListener('click', (event) => {
+                const link = event.target.closest('#monthlyResultsBlock a[href]');
+
+                if (!link || link.closest('.pagination') || link.closest('[data-bs-toggle]') || link.getAttribute('href') === '#') {
+                    return;
+                }
+
+                const url = new URL(link.href, window.location.origin);
+                if (url.origin !== window.location.origin || !url.pathname.includes('/attendance-monthly') || url.searchParams.has('export')) {
+                    return;
+                }
+
+                event.preventDefault();
+                clearTimeout(monthlySearchTimer);
+                refreshMonthlyResultsBlock(url);
+            });
+
+            window.addEventListener('popstate', () => {
+                refreshMonthlyResultsBlock(new URL(window.location.href), false);
+            });
 
             const setQuickActionData = (button, trigger) => {
                 if (!button || !trigger) {
