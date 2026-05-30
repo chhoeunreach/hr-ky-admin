@@ -1985,6 +1985,7 @@
                                             data-employee-online="{{ (int) ($employee->online_status ?? 0) }}"
                                             data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: 'No department') . ' • ' . ($employee->branch?->name ?: 'No branch')) }}"
                                             data-date="{{ $day['date'] }}"
+                                            data-attendance-date="{{ $day['date'] }}"
                                             data-display-date="{{ \Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
                                             data-status-key="{{ $day['status'] }}"
                                             data-status="{{ $day['label'] }}"
@@ -2915,10 +2916,23 @@
 
                 document.getElementById('createAttendance')?.setAttribute('action', element.getAttribute('data-href') || '');
                 document.getElementById('empId').value = element.getAttribute('data-user-id') || '';
-                document.getElementById('addDate').value = element.getAttribute('data-attendance-date') || '';
+                document.getElementById('addDate').value = element.getAttribute('data-attendance-date') || element.getAttribute('data-date') || '';
                 document.getElementById('checkAddIn').value = '';
                 document.getElementById('checkAddOut').value = '';
-                document.getElementById('createRemark').value = '';
+                const remark = document.getElementById('createRemark');
+                if (remark) {
+                    remark.value = '';
+                    remark.removeAttribute('required');
+                }
+
+                const form = document.getElementById('createAttendance');
+                if (form && !form.querySelector('input[name="monthly_quick_attendance"]')) {
+                    const quickFlag = document.createElement('input');
+                    quickFlag.type = 'hidden';
+                    quickFlag.name = 'monthly_quick_attendance';
+                    quickFlag.value = '1';
+                    form.appendChild(quickFlag);
+                }
 
                 const title = document.querySelector('#attendanceCreateForm .add-modal-title');
                 if (title) {

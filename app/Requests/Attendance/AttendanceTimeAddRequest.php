@@ -36,13 +36,14 @@ class AttendanceTimeAddRequest extends FormRequest
     public function rules()
     {
         $checkOutRequiredRule = $this->canLeaveCheckoutBlank() ? 'nullable' : 'required';
+        $remarkRequiredRule = $this->boolean('monthly_quick_attendance') ? 'nullable' : 'required';
 
         return [
             'user_id' => 'nullable',
             'attendance_date' => 'nullable',
             'check_in_at' => 'required|date_format:H:i',
             'check_out_at' => $checkOutRequiredRule . '|date_format:H:i',
-            'edit_remark' => 'required|string|min:10'
+            'edit_remark' => $remarkRequiredRule . '|string|min:10'
         ];
     }
 
@@ -52,8 +53,6 @@ class AttendanceTimeAddRequest extends FormRequest
     }
 
 }
-
-
 
 
 
