@@ -1366,8 +1366,8 @@
         <div class="attendance-page-loader" id="attendancePageLoader" aria-hidden="true">
             <div class="attendance-loader-panel" role="status" aria-live="polite">
                 <div class="attendance-loader-spinner"></div>
-                <div class="attendance-loader-title">Loading attendance</div>
-                <div class="attendance-loader-text" id="attendancePageLoaderText">Please wait...</div>
+                <div class="attendance-loader-title">{{ __('index.loading_attendance') }}</div>
+                <div class="attendance-loader-text" id="attendancePageLoaderText">{{ __('index.please_wait') }}</div>
             </div>
         </div>
 
@@ -1502,15 +1502,15 @@
                 <div class="attendance-table-toolbar mb-0">
                     <div class="attendance-toolbar-left">
                         <div class="attendance-entry-control">
-                            <span>Show</span>
+                            <span>{{ __('index.show') }}</span>
                             <select id="attendanceEntries" class="form-control attendance-entry-select">
                                 <option value="25" {{ (string) $perPage === '25' ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ (string) $perPage === '50' ? 'selected' : '' }}>50</option>
                                 <option value="100" {{ (string) $perPage === '100' ? 'selected' : '' }}>100</option>
                                 <option value="200" {{ (string) $perPage === '200' ? 'selected' : '' }}>200</option>
-                                <option value="all" {{ $perPage === 'all' ? 'selected' : '' }}>All</option>
+                                <option value="all" {{ $perPage === 'all' ? 'selected' : '' }}>{{ __('index.all') }}</option>
                             </select>
-                            <span>entries</span>
+                            <span>{{ __('index.entries') }}</span>
                         </div>
                         <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
                     </div>
@@ -1519,7 +1519,7 @@
                             <button type="button"
                                     id="download-daywise-attendance-excel"
                                     data-href="{{ route('admin.attendances.index') }}"
-                                    class="btn btn-outline-secondary btn-sm">Export
+                                    class="btn btn-outline-secondary btn-sm">{{ __('index.export') }}
                             </button>
                         @endcan
                     </div>
@@ -1535,7 +1535,7 @@
                                id="attendanceDaySearch"
                                class="attendance-table-search"
                                value="{{ $filterParameter['search'] ?? '' }}"
-                               placeholder="Search ...">
+                               placeholder="{{ __('index.search') }} ...">
                     </div>
                 </div>
             </div>
@@ -1543,13 +1543,13 @@
                 <div class="attendance-results-reload" aria-hidden="true">
                     <div class="attendance-reload-panel" role="status" aria-live="polite">
                         <div class="attendance-reload-header">
-                            <span>Reloading attendance</span>
+                            <span>{{ __('index.reloading_attendance') }}</span>
                             <span class="attendance-reload-percent">0%</span>
                         </div>
                         <div class="attendance-reload-track">
                             <div class="attendance-reload-bar"></div>
                         </div>
-                        <div class="attendance-reload-text">Refreshing table data...</div>
+                        <div class="attendance-reload-text">{{ __('index.refreshing_table_data') }}</div>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -1567,9 +1567,9 @@
                                         <th class="text-center">{{ __('index.check_in_at') }}</th>
                                         <th class="text-center">{{ __('index.check_out_at') }}</th>
                                     @else
-                                        <th class="text-center">Time In</th>
+                                        <th class="text-center">{{ __('index.time_in') }}</th>
                                         <th class="text-center">{{ __('index.check_in_at') }}</th>
-                                        <th class="text-center">Time Out</th>
+                                        <th class="text-center">{{ __('index.time_out') }}</th>
                                         <th class="text-center">{{ __('index.check_out_at') }}</th>
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
@@ -1809,7 +1809,7 @@
                                                            data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
                                                            title="{{ $quickChatTitle }}">
                                                              <i class="link-icon" data-feather="message-circle"></i>
-                                                             Quick Chat
+                                                             {{ __('index.quick_chat') }}
                                                              <span class="attendance-chat-unread-count {{ $unreadChatCount > 0 ? '' : 'is-empty' }}">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
                                                          </a>
                                                      @endcan
@@ -1940,7 +1940,7 @@
                                                        data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
                                                        title="{{ $quickChatTitle }}">
                                                          <i class="link-icon" data-feather="message-circle"></i>
-                                                         Quick Chat
+                                                         {{ __('index.quick_chat') }}
                                                          <span class="attendance-chat-unread-count {{ $unreadChatCount > 0 ? '' : 'is-empty' }}">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
                                                      </a>
                                                  @endcan
@@ -2650,8 +2650,8 @@
                                 <span id="attendanceChatStatus" class="attendance-chat-status"></span>
                             </div>
                             <div class="min-w-0">
-                                <h5 id="attendanceChatModalLabel">Employee Chat</h5>
-                                <p id="attendanceChatSubtitle">Open a conversation from attendance.</p>
+                                <h5 id="attendanceChatModalLabel">{{ __('index.employee_chat') }}</h5>
+                                <p id="attendanceChatSubtitle">{{ __('index.open_conversation_attendance') }}</p>
                             </div>
                         </div>
                         <div class="attendance-chat-actions">
@@ -2666,7 +2666,7 @@
                         <div id="attendanceChatThread"
                              class="attendance-chat-thread"
                              data-base-url="{{ route('admin.employee-chat.messages') }}">
-                            <div class="chat-empty">Select an employee to start chatting.</div>
+                            <div class="chat-empty">{{ __('index.select_employee_start_chatting') }}</div>
                         </div>
                     </div>
                     <div class="attendance-chat-footer">
@@ -2684,12 +2684,12 @@
                                     <i data-feather="paperclip"></i>
                                     <input type="file" name="attachment" id="attendanceChatAttachment">
                                 </label>
-                                <input type="text" class="attendance-chat-input" name="message" id="attendanceChatMessage" placeholder="Type your message">
-                                <button type="submit" class="attendance-chat-send">Send</button>
+                                <input type="text" class="attendance-chat-input" name="message" id="attendanceChatMessage" placeholder="{{ __('index.type_your_message') }}">
+                                <button type="submit" class="attendance-chat-send">{{ __('index.send') }}</button>
                             </form>
-                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">You can send text, image, or voice files here. You can also paste a screenshot.</div>
+                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">{{ __('index.send_chat_hint') }}</div>
                         @else
-                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">You have view access only. Chat sending is disabled for your role.</div>
+                            <div class="attendance-chat-status-text" id="attendanceChatStatusText">{{ __('index.chat_read_only') }}</div>
                         @endcan
                     </div>
                 </div>
@@ -2763,7 +2763,7 @@
             const attendancePageLoader = document.getElementById('attendancePageLoader');
             const attendancePageLoaderText = document.getElementById('attendancePageLoaderText');
             let skipAttendanceUnloadLoader = false;
-            const showAttendancePageLoader = (message = 'Please wait...') => {
+            const showAttendancePageLoader = (message = @json(__('index.please_wait'))) => {
                 if (!attendancePageLoader) {
                     return;
                 }
@@ -2796,7 +2796,7 @@
                     return;
                 }
 
-                showAttendancePageLoader('Refreshing attendance...');
+                showAttendancePageLoader(@json(__('index.refreshing_attendance')));
             });
 
             document.querySelectorAll('form').forEach((form) => {
@@ -2805,7 +2805,7 @@
                         return;
                     }
 
-                    showAttendancePageLoader('Saving changes...');
+                    showAttendancePageLoader(@json(__('index.saving_changes')));
                 });
             });
 
@@ -2835,7 +2835,7 @@
                         return;
                     }
 
-                    showAttendancePageLoader('Loading...');
+                    showAttendancePageLoader(@json(__('index.loading')));
                 });
             });
 
@@ -3424,6 +3424,19 @@
             const attendanceChatSubtitle = document.getElementById('attendanceChatSubtitle');
             const attendanceChatStatus = document.getElementById('attendanceChatStatus');
             const attendanceChatStatusText = document.getElementById('attendanceChatStatusText');
+            const attendanceI18n = {
+                employeeChat: @json(__('index.employee_chat')),
+                employee: @json(__('index.employee')),
+                loadingConversation: @json(__('index.loading_conversation')),
+                loadingMessages: @json(__('index.loading_messages')),
+                sendingMessage: @json(__('index.sending_message')),
+                unableSendMessage: @json(__('index.unable_send_message')),
+                messageSentSuccessfully: @json(__('index.message_sent_successfully')),
+                unableSendMessageNow: @json(__('index.unable_send_message_now')),
+                selectEmployeeStartChatting: @json(__('index.select_employee_start_chatting')),
+                sendChatHint: @json(__('index.send_chat_hint')),
+                chatReadOnly: @json(__('index.chat_read_only')),
+            };
             const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
             const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
             const attendanceQuickLeaveUserId = document.getElementById('attendanceQuickLeaveUserId');
@@ -3702,19 +3715,19 @@
                         attendanceChatAvatar.setAttribute('src', element.getAttribute('data-employee-avatar') || '{{ asset('assets/images/img.png') }}');
                     }
                     if (attendanceChatTitle) {
-                        attendanceChatTitle.textContent = element.getAttribute('data-employee-name') || 'Employee Chat';
+                        attendanceChatTitle.textContent = element.getAttribute('data-employee-name') || attendanceI18n.employeeChat;
                     }
                     if (attendanceChatSubtitle) {
-                        attendanceChatSubtitle.textContent = element.getAttribute('data-employee-subtitle') || 'Employee';
+                        attendanceChatSubtitle.textContent = element.getAttribute('data-employee-subtitle') || attendanceI18n.employee;
                     }
                     if (attendanceChatStatus) {
                         attendanceChatStatus.classList.toggle('online', element.getAttribute('data-employee-online') === '1');
                     }
                     if (attendanceChatThread) {
-                        attendanceChatThread.innerHTML = '<div class="chat-empty">Loading conversation...</div>';
+                        attendanceChatThread.innerHTML = `<div class="chat-empty">${attendanceI18n.loadingConversation}</div>`;
                     }
                     if (attendanceChatStatusText) {
-                        attendanceChatStatusText.textContent = 'Loading messages...';
+                        attendanceChatStatusText.textContent = attendanceI18n.loadingMessages;
                     }
 
                     attendanceChatModal.show();
@@ -3760,7 +3773,7 @@
                     }
 
                     if (attendanceChatStatusText) {
-                        attendanceChatStatusText.textContent = 'Sending message...';
+                        attendanceChatStatusText.textContent = attendanceI18n.sendingMessage;
                     }
 
                     try {
@@ -3775,7 +3788,7 @@
                         const data = await response.json();
 
                         if (!response.ok || !data.success) {
-                            throw new Error(data.message || 'Unable to send message.');
+                            throw new Error(data.message || attendanceI18n.unableSendMessage);
                         }
 
                         attendanceChatThread.innerHTML = data.html;
@@ -3783,14 +3796,14 @@
                         clearAttendanceChatPreview();
                         attendanceChatScrollToBottom();
                         if (attendanceChatStatusText) {
-                            attendanceChatStatusText.textContent = 'Message sent successfully.';
+                            attendanceChatStatusText.textContent = attendanceI18n.messageSentSuccessfully;
                         }
                         if (window.feather) {
                             feather.replace();
                         }
                     } catch (error) {
                         if (attendanceChatStatusText) {
-                            attendanceChatStatusText.textContent = error.message || 'Unable to send message right now.';
+                            attendanceChatStatusText.textContent = error.message || attendanceI18n.unableSendMessageNow;
                         }
                     }
                 });
@@ -3801,7 +3814,7 @@
                     stopAttendanceChatPolling();
                     activeAttendanceChatEmployeeId = null;
                     if (attendanceChatThread) {
-                        attendanceChatThread.innerHTML = '<div class="chat-empty">Select an employee to start chatting.</div>';
+                        attendanceChatThread.innerHTML = `<div class="chat-empty">${attendanceI18n.selectEmployeeStartChatting}</div>`;
                     }
                     if (attendanceChatForm) {
                         attendanceChatForm.reset();
@@ -3809,9 +3822,9 @@
                     clearAttendanceChatPreview();
                     if (attendanceChatStatusText) {
                         attendanceChatStatusText.textContent = @can('send_employee_chat')
-                            'You can send text, image, or voice files here. You can also paste a screenshot.'
+                            attendanceI18n.sendChatHint
                         @else
-                            'You have view access only. Chat sending is disabled for your role.'
+                            attendanceI18n.chatReadOnly
                         @endcan;
                     }
                 });

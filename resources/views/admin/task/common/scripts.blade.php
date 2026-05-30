@@ -209,7 +209,7 @@
                 return;
             }
 
-            $('#project').prop('disabled', true).empty().append('<option disabled>Loading...</option>');
+            $('#project').prop('disabled', true).empty().append('<option disabled>{{ __('index.loading') }}</option>');
             try {
                 const response = await $.ajax({
                     type: 'GET',

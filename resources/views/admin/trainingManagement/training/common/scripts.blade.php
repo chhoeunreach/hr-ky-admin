@@ -250,7 +250,7 @@
                             trainerIdDropdown.append('<option value="' + data.id + '">' + data.name + '</option>');
                         });
                     } else {
-                        trainerIdDropdown.append('<option disabled>No trainers available</option>');
+                        trainerIdDropdown.append('<option disabled>{{ __('index.no_trainers_available') }}</option>');
                     }
                 }).fail(function () {
                     // Handle errors

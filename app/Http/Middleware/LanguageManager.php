@@ -17,9 +17,14 @@ class LanguageManager
      */
     public function handle(Request $request, Closure $next)
     {
-        if (session()->has('locale')) {
-            App::setLocale(session()->get('locale'));
+        $supportedLocales = array_keys(config('app.supported_locales', []));
+        $locale = session('locale', config('app.locale'));
+
+        if (in_array($locale, $supportedLocales, true)) {
+            App::setLocale($locale);
+            session(['locale' => $locale]);
         }
+
         return $next($request);
     }
 }

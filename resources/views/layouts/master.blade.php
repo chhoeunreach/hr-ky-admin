@@ -3,7 +3,7 @@
     $themeColor = \App\Helpers\AppHelper::getThemeColor();
 @endphp
 <!DOCTYPE html>
-<html lang="{{ $locale ?? 'en' }}">
+<html lang="{{ $locale ?? 'en' }}" class="locale-{{ $locale ?? 'en' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,6 +20,43 @@
             --hover-color: {{ $themeColor->hover_color ?? '#115E59' }};
             --dark-primary-color: {{ $themeColor->dark_primary_color ?? '#14B8A6' }};
             --dark-hover-color: {{ $themeColor->dark_hover_color ?? '#0F766E' }};
+        }
+
+        html.locale-km body,
+        html.locale-km button,
+        html.locale-km input,
+        html.locale-km select,
+        html.locale-km textarea {
+            font-family: 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
+        }
+
+        .sidebar .sidebar-body .nav .nav-item .nav-link {
+            min-height: 42px;
+            height: auto;
+            align-items: flex-start;
+            white-space: normal;
+        }
+
+        .sidebar .sidebar-body .nav .nav-item .nav-link .link-title,
+        .sidebar .sidebar-body .nav.sub-menu .nav-item .nav-link,
+        .navbar .dropdown-menu .dropdown-item,
+        .navbar .nav-link {
+            line-height: 1.45;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .sidebar .sidebar-body .nav .nav-item .nav-link .link-title {
+            min-width: 0;
+            max-width: 170px;
+        }
+
+        .sidebar .sidebar-body .nav.sub-menu .nav-item .nav-link {
+            height: auto;
+            min-height: 32px;
+            padding-top: 0.45rem;
+            padding-bottom: 0.45rem;
         }
     </style>
     @include('admin.section.head_links')
@@ -68,5 +105,3 @@
 </body>
 
 </html>
-
-

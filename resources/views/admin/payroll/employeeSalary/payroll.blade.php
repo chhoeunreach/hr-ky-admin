@@ -442,7 +442,7 @@
                     url: "{{ url('admin/departments/get-All-Departments') }}" + '/' + selectedBranchId ,
                 }).done(function(response) {
                     if(!departmentId){
-                        $('#department_id').append('<option disabled  selected >Select Department</option>');
+                        $('#department_id').append('<option disabled  selected >{{ __('index.select_department') }}</option>');
                     }
                     response.data.forEach(function(data) {
                         $('#department_id').append('<option ' + ((data.id == departmentId) ? "selected" : '') + ' value="'+data.id+'" >'+data.dept_name+'</option>');
@@ -452,4 +452,3 @@
         }).trigger('change');
     </script>
 @endsection
-

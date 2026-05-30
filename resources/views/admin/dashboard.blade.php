@@ -127,17 +127,21 @@ $currentMonthLabel = now()->format('M Y');
 
         .branch-summary-table {
             margin-bottom: 0;
-            min-width: 1500px;
+            min-width: 1680px;
             border-collapse: separate;
             border-spacing: 0;
         }
 
         .branch-summary-table th,
         .branch-summary-table td {
-            white-space: nowrap;
             vertical-align: middle;
             border-color: #dbe7f4;
             padding: 0.82rem 0.95rem;
+        }
+
+        .branch-summary-table tbody td,
+        .branch-summary-table tfoot td {
+            white-space: nowrap;
         }
 
         .branch-summary-table thead th {
@@ -150,7 +154,28 @@ $currentMonthLabel = now()->format('M Y');
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0;
+            line-height: 1.45;
+            min-width: 126px;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: auto;
             box-shadow: inset 0 -1px 0 #d9e6f5;
+        }
+
+        .branch-summary-table thead th:first-child {
+            min-width: 190px;
+        }
+
+        .branch-summary-table thead .summary-metric-active_employee_pending_request,
+        .branch-summary-table thead .summary-metric-active_employee_time_leave_request {
+            min-width: 180px;
+        }
+
+        .branch-summary-table thead .summary-metric-active_employee_not_yet_checkin,
+        .branch-summary-table thead .summary-metric-active_employee_not_yet_checkout,
+        .branch-summary-table thead .summary-metric-active_employee_time_leave {
+            min-width: 156px;
         }
 
         .branch-summary-table tbody tr:nth-child(even) td {
@@ -195,6 +220,11 @@ $currentMonthLabel = now()->format('M Y');
             gap: 0.7rem;
             font-weight: 700;
             color: var(--summary-ink);
+            max-width: 260px;
+            white-space: normal;
+            overflow-wrap: break-word;
+            line-height: 1.45;
+            text-align: left;
         }
 
         .summary-name-trigger::before {
@@ -398,7 +428,11 @@ $currentMonthLabel = now()->format('M Y');
             font-size: 0.82rem;
             font-weight: 800;
             text-transform: uppercase;
-            line-height: 1.25;
+            line-height: 1.45;
+            min-width: 0;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
 
         .dashboard-kpi-period {
@@ -449,6 +483,14 @@ $currentMonthLabel = now()->format('M Y');
             color: #64748b;
             font-size: 0.78rem;
             font-weight: 600;
+            line-height: 1.45;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .summary-panel,
+        .dashboard-kpi-card {
+            font-family: "Noto Sans Khmer", "Khmer OS", "Battambang", var(--bs-body-font-family);
         }
 
         .dashboard-kpi-total {
@@ -478,6 +520,10 @@ $currentMonthLabel = now()->format('M Y');
 
             .summary-panel-title {
                 font-size: 1.3rem;
+            }
+
+            .branch-summary-table {
+                min-width: 1600px;
             }
         }
     </style>
@@ -550,11 +596,11 @@ $currentMonthLabel = now()->format('M Y');
                                     class="card dashboard-kpi-card dashboard-kpi-total summary-trigger"
                                     data-summary-scope="branch"
                                     data-summary-metric="total_all_employee"
-                                    data-entity-name="Total Employee"
+                                    data-entity-name="{{ __('index.total_employees') }}"
                                     data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
                                     <div class="dashboard-kpi-eyebrow">
-                                        <h6 class="dashboard-kpi-title">Total Employee</h6>
+                                        <h6 class="dashboard-kpi-title">{{ __('index.total_employees') }}</h6>
                                         <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
 
@@ -564,7 +610,7 @@ $currentMonthLabel = now()->format('M Y');
                                             <i class="link-icon" data-feather="users"></i>
                                         </div>
                                     </div>
-                                    <div class="dashboard-kpi-hint">Click to view employee detail</div>
+                                    <div class="dashboard-kpi-hint">{{ __('index.click_view_employee_detail') }}</div>
                                 </div>
                             </button>
                         </div>
@@ -574,11 +620,11 @@ $currentMonthLabel = now()->format('M Y');
                                     class="card dashboard-kpi-card dashboard-kpi-inactive summary-trigger"
                                     data-summary-scope="branch"
                                     data-summary-metric="inactive_employee"
-                                    data-entity-name="Inactive Employee"
+                                    data-entity-name="{{ __('index.inactive_employee') }}"
                                     data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
                                     <div class="dashboard-kpi-eyebrow">
-                                        <h6 class="dashboard-kpi-title">Inactive Employee</h6>
+                                        <h6 class="dashboard-kpi-title">{{ __('index.inactive_employee') }}</h6>
                                         <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
                                     <div class="dashboard-kpi-main">
@@ -587,7 +633,7 @@ $currentMonthLabel = now()->format('M Y');
                                             <i class="link-icon" data-feather="user-x"></i>
                                         </div>
                                     </div>
-                                    <div class="dashboard-kpi-hint">Click to view inactive staff</div>
+                                    <div class="dashboard-kpi-hint">{{ __('index.click_view_inactive_staff') }}</div>
                                 </div>
                             </button>
                         </div>
@@ -597,11 +643,11 @@ $currentMonthLabel = now()->format('M Y');
                                     class="card dashboard-kpi-card dashboard-kpi-active summary-trigger"
                                     data-summary-scope="branch"
                                     data-summary-metric="active_employee"
-                                    data-entity-name="Active Employee"
+                                    data-entity-name="{{ __('index.active_employee') }}"
                                     data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
                                     <div class="dashboard-kpi-eyebrow">
-                                        <h6 class="dashboard-kpi-title">Active Employee</h6>
+                                        <h6 class="dashboard-kpi-title">{{ __('index.active_employee') }}</h6>
                                         <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
                                     <div class="dashboard-kpi-main">
@@ -610,7 +656,7 @@ $currentMonthLabel = now()->format('M Y');
                                             <i class="link-icon" data-feather="user-check"></i>
                                         </div>
                                     </div>
-                                    <div class="dashboard-kpi-hint">Click to view active staff</div>
+                                    <div class="dashboard-kpi-hint">{{ __('index.click_view_active_staff') }}</div>
                                 </div>
                             </button>
                         </div>
@@ -674,11 +720,11 @@ $currentMonthLabel = now()->format('M Y');
                                     class="card dashboard-kpi-card dashboard-kpi-leave summary-trigger"
                                     data-summary-scope="branch"
                                     data-summary-metric="current_month_leave_request"
-                                    data-entity-name="Leave Request"
+                                    data-entity-name="{{ __('index.leave_request') }}"
                                     data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
                                     <div class="dashboard-kpi-eyebrow">
-                                        <h6 class="dashboard-kpi-title">Leave Request</h6>
+                                        <h6 class="dashboard-kpi-title">{{ __('index.leave_request') }}</h6>
                                         <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
                                     <div class="dashboard-kpi-main">
@@ -687,7 +733,7 @@ $currentMonthLabel = now()->format('M Y');
                                             <i class="link-icon" data-feather="file-text"></i>
                                         </div>
                                     </div>
-                                    <div class="dashboard-kpi-hint">Click to view monthly requests</div>
+                                    <div class="dashboard-kpi-hint">{{ __('index.click_view_monthly_requests') }}</div>
                                 </div>
                             </button>
                         </div>
@@ -697,11 +743,11 @@ $currentMonthLabel = now()->format('M Y');
                                     class="card dashboard-kpi-card dashboard-kpi-time-leave summary-trigger"
                                     data-summary-scope="branch"
                                     data-summary-metric="current_month_time_leave_request"
-                                    data-entity-name="Time Leave Request"
+                                    data-entity-name="{{ __('index.time_leave_request') }}"
                                     data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div class="card-body text-md-start text-center">
                                     <div class="dashboard-kpi-eyebrow">
-                                        <h6 class="dashboard-kpi-title">Time Leave Request</h6>
+                                        <h6 class="dashboard-kpi-title">{{ __('index.time_leave_request') }}</h6>
                                         <span class="dashboard-kpi-period">{{ $currentMonthLabel }}</span>
                                     </div>
                                     <div class="dashboard-kpi-main">
@@ -710,7 +756,7 @@ $currentMonthLabel = now()->format('M Y');
                                             <i class="link-icon" data-feather="clock"></i>
                                         </div>
                                     </div>
-                                    <div class="dashboard-kpi-hint">Click to view monthly time leave</div>
+                                    <div class="dashboard-kpi-hint">{{ __('index.click_view_monthly_time_leave') }}</div>
                                 </div>
                             </button>
                         </div>
@@ -822,16 +868,16 @@ $currentMonthLabel = now()->format('M Y');
         @can('attendance_summary')
             @php
                 $summaryMetrics = [
-                    'total_all_employee' => 'All Staff',
-                    'inactive_employee' => 'Inactive Employee',
-                    'active_employee' => 'Active',
-                    'active_employee_checkin' => 'Checked In',
-                    'active_employee_not_yet_checkin' => 'No Check-In',
-                    'active_employee_checkout' => 'Checked Out',
-                    'active_employee_not_yet_checkout' => 'No Check-Out',
-                    'active_employee_dayoff' => 'Day Off',
-                    'active_employee_leave' => 'Leave',
-                    'active_employee_pending_request' => 'Pending Leave Requests',
+                    'total_all_employee' => __('index.all_staff'),
+                    'inactive_employee' => __('index.inactive_employee'),
+                    'active_employee' => __('index.active'),
+                    'active_employee_checkin' => __('index.checked_in'),
+                    'active_employee_not_yet_checkin' => __('index.no_check_in'),
+                    'active_employee_checkout' => __('index.checked_out'),
+                    'active_employee_not_yet_checkout' => __('index.no_check_out'),
+                    'active_employee_dayoff' => __('index.day_off'),
+                    'active_employee_leave' => __('index.leave'),
+                    'active_employee_pending_request' => __('index.pending_leave_requests'),
                     'active_employee_time_leave' => __('index.time_leave'),
                     'active_employee_time_leave_request' => __('index.time_leave_request'),
                 ];
@@ -853,15 +899,15 @@ $currentMonthLabel = now()->format('M Y');
             @endphp
             <div class="card mb-4 summary-panel">
                 <div class="card-header">
-                    <h4 class="summary-panel-title">Branch Summary</h4>
-                    <p class="summary-panel-subtitle">Quick branch-by-branch staffing and attendance snapshot.</p>
+                    <h4 class="summary-panel-title">{{ __('index.branch_summary') }}</h4>
+                    <p class="summary-panel-subtitle">{{ __('index.branch_summary_subtitle') }}</p>
                 </div>
                 <div class="card-body">
                     <div class="summary-table-shell">
                         <table class="table table-striped table-bordered branch-summary-table mb-0">
                             <thead>
                             <tr>
-                                <th>Branch</th>
+                                <th>{{ __('index.branch') }}</th>
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <th class="text-center summary-metric-heading summary-metric-{{ $metricKey }}">{{ $metricLabel }}</th>
                                 @endforeach
@@ -901,14 +947,14 @@ $currentMonthLabel = now()->format('M Y');
                             </tbody>
                             <tfoot>
                             <tr>
-                                <th>Total</th>
+                                <th>{{ __('index.total') }}</th>
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <td class="text-center">
                                         <button type="button"
                                                 class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                 data-summary-scope="branch"
                                                 data-summary-metric="{{ $metricKey }}"
-                                                data-entity-name="All Branches"
+                                                data-entity-name="{{ __('index.all_branches') }}"
                                                 data-entity-ids="{{ $branchSummaryAllIds }}">
                                             {{ number_format($branchSummaryTotals[$metricKey]) }}
                                         </button>
@@ -939,15 +985,15 @@ $currentMonthLabel = now()->format('M Y');
             @endphp
             <div class="card mb-4 summary-panel">
                 <div class="card-header">
-                    <h4 class="summary-panel-title">Department Summary</h4>
-                    <p class="summary-panel-subtitle">Merged department groups with live detail drill-down.</p>
+                    <h4 class="summary-panel-title">{{ __('index.department_summary') }}</h4>
+                    <p class="summary-panel-subtitle">{{ __('index.department_summary_subtitle') }}</p>
                 </div>
                 <div class="card-body">
                     <div class="summary-table-shell">
                         <table class="table table-striped table-bordered branch-summary-table mb-0">
                             <thead>
                             <tr>
-                                <th>Department</th>
+                                <th>{{ __('index.department') }}</th>
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <th class="text-center summary-metric-heading summary-metric-{{ $metricKey }}">{{ $metricLabel }}</th>
                                 @endforeach
@@ -987,14 +1033,14 @@ $currentMonthLabel = now()->format('M Y');
                             </tbody>
                             <tfoot>
                             <tr>
-                                <th>Total</th>
+                                <th>{{ __('index.total') }}</th>
                                 @foreach($summaryMetrics as $metricKey => $metricLabel)
                                     <td class="text-center">
                                         <button type="button"
                                                 class="summary-trigger summary-value-trigger summary-metric-{{ $metricKey }}"
                                                 data-summary-scope="department"
                                                 data-summary-metric="{{ $metricKey }}"
-                                                data-entity-name="All Departments"
+                                                data-entity-name="{{ __('index.all_departments') }}"
                                                 data-entity-ids="{{ $departmentSummaryAllIds }}">
                                             {{ number_format($departmentSummaryTotals[$metricKey]) }}
                                         </button>
@@ -1010,23 +1056,23 @@ $currentMonthLabel = now()->format('M Y');
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="summaryDetailModalLabel">Summary Detail</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h5 class="modal-title" id="summaryDetailModalLabel">{{ __('index.summary_detail') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                         </div>
                         <div class="modal-body">
-                            <div id="summaryDetailLoading" class="text-center py-4 d-none">Loading...</div>
-                            <div id="summaryDetailEmpty" class="text-center py-4 d-none">No records found.</div>
+                            <div id="summaryDetailLoading" class="text-center py-4 d-none">{{ __('index.loading') }}</div>
+                            <div id="summaryDetailEmpty" class="text-center py-4 d-none">{{ __('index.no_records_found') }}</div>
                             <div class="table-responsive">
                                 <table class="table table-striped summary-modal-table mb-0">
                                     <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Employee Code</th>
-                                        <th>Email</th>
-                                        <th>Branch</th>
-                                        <th>Department</th>
-                                        <th>Status</th>
-                                        <th>Quick Action</th>
+                                        <th>{{ __('index.name') }}</th>
+                                        <th>{{ __('index.employee_code') }}</th>
+                                        <th>{{ __('index.email') }}</th>
+                                        <th>{{ __('index.branch') }}</th>
+                                        <th>{{ __('index.department') }}</th>
+                                        <th>{{ __('index.status') }}</th>
+                                        <th>{{ __('index.quick_action') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody id="summaryDetailTableBody"></tbody>
@@ -1040,8 +1086,8 @@ $currentMonthLabel = now()->format('M Y');
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="dashboardQuickLeaveModalLabel">Quick Leave</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h5 class="modal-title" id="dashboardQuickLeaveModalLabel">{{ __('index.quick_leave') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <form action="{{ route('admin.attendances.quick-approved-leave') }}" method="post" id="dashboardQuickLeaveForm">
@@ -1049,20 +1095,20 @@ $currentMonthLabel = now()->format('M Y');
                                 <input type="hidden" name="user_id" id="dashboardQuickLeaveUserId">
                                 <input type="hidden" name="attendance_date" id="dashboardQuickLeaveDate">
                                 <div class="mb-3">
-                                    <label for="dashboardQuickLeaveType" class="form-label">Leave Type</label>
+                                    <label for="dashboardQuickLeaveType" class="form-label">{{ __('index.leave_type') }}</label>
                                     <select class="form-select" name="leave_type_id" id="dashboardQuickLeaveType" required>
-                                        <option value="">Loading leave types...</option>
+                                        <option value="">{{ __('index.loading_leave_types') }}</option>
                                     </select>
                                     <small class="text-muted d-block mt-2" id="dashboardQuickLeaveHelpText">
-                                        Create an already approved leave for today.
+                                        {{ __('index.create_approved_leave_today') }}
                                     </small>
                                 </div>
                                 <div class="mb-3">
                                     <label for="dashboardQuickLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
-                                    <textarea class="form-control" name="reasons" id="dashboardQuickLeaveReason" rows="3" placeholder="Optional note"></textarea>
+                                    <textarea class="form-control" name="reasons" id="dashboardQuickLeaveReason" rows="3" placeholder="{{ __('index.optional_note') }}"></textarea>
                                 </div>
                                 <div class="text-end">
-                                    <button type="submit" class="btn btn-primary btn-sm" id="dashboardQuickLeaveSubmit">Save Quick Leave</button>
+                                    <button type="submit" class="btn btn-primary btn-sm" id="dashboardQuickLeaveSubmit">{{ __('index.save_quick_leave') }}</button>
                                 </div>
                             </form>
                         </div>
@@ -1073,8 +1119,8 @@ $currentMonthLabel = now()->format('M Y');
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header text-center">
-                            <h5 class="modal-title">Leave Status Update</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <h5 class="modal-title">{{ __('index.leave_status_update') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                         </div>
                         <div class="modal-body">
                             <form class="forms-sample" id="dashboardUpdateLeaveStatus" action="" method="post">

@@ -9,9 +9,6 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
-
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,9 +40,6 @@ class AppServiceProvider extends ServiceProvider
         ]);
 
         Task::observe(TaskObserver::class);
-
-        $locale = Cache::get('locale', 'en'); // Default to 'en' if no locale is set
-        App::setLocale($locale);
 
         // Override Blade's @can to respect the admin guard
         Blade::directive('can', function ($expression) {

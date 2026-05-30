@@ -27,7 +27,7 @@
                     @canany(['list_attendance', 'list_monthly_attendance'])
                     <a href="{{route('admin.attendance-monthly.index')}}"
                        data-href="{{route('admin.attendance-monthly.index')}}"
-                       class="nav-link {{ request()->routeIs('admin.attendance-monthly.*') ? 'active' : ''}}">Attendance Monthly</a>
+                       class="nav-link {{ request()->routeIs('admin.attendance-monthly.*') ? 'active' : ''}}">{{ __('index.attendance_monthly') }}</a>
                     @endcanany
                 </li>
 
@@ -46,4 +46,3 @@
         </div>
     </li>
 @endcan
-

@@ -162,7 +162,7 @@
                    const form = document.getElementById('assetReturnForm');
                    const modalTitle = document.getElementById('assetReturnModalLabel');
                    form.action = this.getAttribute('data-href');
-                   modalTitle.textContent = this.getAttribute('data-title') || 'Return Asset';
+                   modalTitle.textContent = this.getAttribute('data-title') || @json(__('index.return_asset'));
                    form.classList.remove('was-validated');
                    document.getElementById('notes').value = '';
                });
@@ -171,4 +171,3 @@
        });
    </script>
 @endsection
-

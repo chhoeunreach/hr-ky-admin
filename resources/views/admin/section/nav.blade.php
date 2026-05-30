@@ -1,5 +1,7 @@
 @php
     $locale = \Illuminate\Support\Facades\App::getLocale();
+    $languages = config('app.supported_locales', []);
+    $currentLanguage = $languages[$locale] ?? $languages['en'];
     $authUser = auth('admin')->user();
     $authEmployee = auth()->user();
 @endphp
@@ -52,7 +54,7 @@
                                type="text"
                                autocomplete="off"
                                placeholder="{{ __('index.search_menu') }}(ctrl+q)"
-                               aria-label="Search">
+                               aria-label="{{ __('index.search') }}">
 
                         <div class="card card-admin-search" data-toggle="" style="position: absolute !important;">
                             <ul id="nav-search-listing" class="list-group list-group-flush" >
@@ -68,83 +70,21 @@
             <li class="nav-item dropdown">
 
                 <a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    @if($locale == 'fr')
-                        <i class="flag-icon flag-icon-fr" title="fr" id="fr"></i> <span class="ml-1"> Français </span>
-                    @elseif($locale == 'de')
-                        <i class="flag-icon flag-icon-de" title="de" id="de"></i> <span class="ml-1"> Deutsch </span>
-                    @elseif($locale == 'pt')
-                        <i class="flag-icon flag-icon-pt" title="pt" id="pt"></i> <span class="ml-1"> Português </span>
-                    @elseif($locale == 'es')
-                        <i class="flag-icon flag-icon-es" title="es" id="es"></i> <span class="ml-1"> Española </span>
-                    @elseif($locale == 'hi')
-                        <i class="flag-icon flag-icon-in" title="hi" id="hi"></i> <span class="ml-1"> हिंदी </span>
-                    @elseif($locale == 'ru')
-                        <i class="flag-icon flag-icon-ru" title="ru" id="ru"></i> <span class="ml-1"> русский </span>
-                    @elseif($locale == 'ar')
-                        <i class="flag-icon flag-icon-sa" title="ar" id="ar"></i> <span class="ml-1"> عربي </span>
-                    @elseif($locale == 'fa')
-                        <i class="flag-icon flag-icon-ir" title="fa" id="fa"></i> <span class="ml-1"> فارسی </span>
-                    @elseif($locale == 'ne')
-                        <i class="flag-icon flag-icon-np" title="ne" id="ne"></i> <span class="ml-1"> नेपाली </span>
-                    @else
-                        <i class="flag-icon flag-icon-us" title="us" id="us"></i> <span class="ml-1"> English </span>
-                    @endif
+                    <i class="flag-icon flag-icon-{{ $currentLanguage['flag'] }}" title="{{ $locale }}" id="{{ $locale }}"></i>
+                    <span class="ml-1">{{ $currentLanguage['name'] }}</span>
                 </a>
                 <div class="dropdown-menu p-0" aria-labelledby="langDropdown">
 
                     <ul class="list-unstyled p-1">
 
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'en' || $locale == '') active text-white @endif" data-lang="en">
-                                <i class="flag-icon flag-icon-us" title="us" id="us"></i> <span class="ml-1"> English </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'fr') active text-white @endif" data-lang="fr">
-                                <i class="flag-icon flag-icon-fr" title="fr" id="fr"></i> <span class="ml-1"> Français </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'de') active text-white @endif" data-lang="de">
-                           <i class="flag-icon flag-icon-de" title="de" id="de"></i> <span class="ml-1"> Deutsch </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'pt') active text-white @endif" data-lang="pt">
-                           <i class="flag-icon flag-icon-pt" title="pt" id="pt"></i> <span class="ml-1"> Português </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'es') active text-white @endif" data-lang="es">
-                            <i class="flag-icon flag-icon-es" title="es" id="es"></i> <span class="ml-1"> Española </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'hi') active text-white @endif" data-lang="hi">
-                           <i class="flag-icon flag-icon-in" title="hi" id="hi"></i> <span class="ml-1"> हिंदी </span>
-                            </a>
-                        </li>
-
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'ru') active text-white @endif" data-lang="ru">
-                           <i class="flag-icon flag-icon-ru" title="ru" id="ru"></i> <span class="ml-1"> русский </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'ne') active text-white @endif" data-lang="ne">
-                           <i class="flag-icon flag-icon-np" title="ne" id="ne"></i> <span class="ml-1"> नेपाली" </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'ar') active text-white @endif" data-lang="ar">
-                                <i class="flag-icon flag-icon-sa" title="ar" id="ar"></i> <span class="ml-1"> عربي </span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == 'fa') active text-white @endif" data-lang="fa">
-                                <i class="flag-icon flag-icon-ir" title="fa" id="fa"></i> <span class="ml-1"> فارسی </span>
-                            </a>
-                        </li>
+                        @foreach($languages as $languageCode => $language)
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item changeLang @if($locale == $languageCode || ($languageCode == 'en' && $locale == '')) active text-white @endif" data-lang="{{ $languageCode }}">
+                                    <i class="flag-icon flag-icon-{{ $language['flag'] }}" title="{{ $languageCode }}" id="{{ $languageCode }}"></i>
+                                    <span class="ml-1">{{ $language['name'] }}</span>
+                                </a>
+                            </li>
+                        @endforeach
                     </ul>
                 </div>
             </li>
@@ -227,9 +167,9 @@
                             @endif
                             @can('app_qr')
                             <li class="dropdown-item py-2">
-                                <a class="text-body ms-0 qr-modal" title="App QR " target="_blank" href='{{route('admin.showQR')}}'>
+                                <a class="text-body ms-0 qr-modal" title="{{ __('index.app_qr') }}" target="_blank" href='{{route('admin.showQR')}}'>
                                     <i class="me-2 icon-md" data-feather="image"></i>
-                                    <span>App QR</span>
+                                    <span>{{ __('index.app_qr') }}</span>
                                 </a>
                             </li>
                             @endcan
@@ -252,9 +192,6 @@
     </div>
 </nav>
 <!-- partial -->
-
-
-
 
 
 

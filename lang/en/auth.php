@@ -25,4 +25,5 @@ return [
     'username_not_found' => 'Username does not match our records.',
     'invalid_credentials' => 'These credentials do not match our records.',
     'user_type' => 'Login As',
+    'unauthenticated' => 'Unauthenticated',
 ];

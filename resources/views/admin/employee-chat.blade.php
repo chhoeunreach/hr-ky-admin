@@ -524,16 +524,16 @@
                                     <i data-feather="paperclip"></i>
                                     <input type="file" name="attachment" id="chat-attachment">
                                 </label>
-                                <input class="chat-composer-input" type="text" name="message" placeholder="Type your message">
-                                <button class="chat-send-btn" type="submit">Send</button>
+                                <input class="chat-composer-input" type="text" name="message" placeholder="{{ __('index.type_your_message') }}">
+                                <button class="chat-send-btn" type="submit">{{ __('index.send') }}</button>
                             </form>
-                            <div class="chat-helper-text" id="chat-status-text">You can send text, image, or voice files here. You can also paste a screenshot.</div>
+                            <div class="chat-helper-text" id="chat-status-text">{{ __('index.send_chat_hint') }}</div>
                         @else
-                            <div class="chat-helper-text" id="chat-status-text">You have view access only. Chat sending is disabled for your role.</div>
+                            <div class="chat-helper-text" id="chat-status-text">{{ __('index.chat_read_only') }}</div>
                         @endcan
                     </div>
                 @else
-                    <div class="chat-empty">Select a staff member to start chatting.</div>
+                    <div class="chat-empty">{{ __('index.select_staff_start_chatting') }}</div>
                 @endif
             </main>
 

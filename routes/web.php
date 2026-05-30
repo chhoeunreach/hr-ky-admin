@@ -251,6 +251,7 @@ Route::group([
 
         Route::get('attendances/leave-details', [AttendanceController::class, 'leaveDetails'])->name('attendances.leave-details');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
+        Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
         Route::resource('attendances', AttendanceController::class);
         Route::get('employees/attendance/check-in/{companyId}/{userId}', [AttendanceController::class, 'checkInEmployee'])->name('employees.check-in');
         Route::get('employees/attendance/check-out/{companyId}/{userId}', [AttendanceController::class, 'checkOutEmployee'])->name('employees.check-out');

@@ -151,7 +151,7 @@
                                                data-branch-id="{{$value->branch_id}}"
                                                data-href="{{route('admin.asset-assignment.store',$value->id)}}"
                                                title="{{  __('index.assign') }}">
-                                                Assign to Employee
+                                                 {{ __('index.assign_to_user') }}
                                             </a>
                                         @elseif(isset($value->latestAssignment) && is_null($value->latestAssignment->returned_date))
                                             {{ $value?->latestAssignment?->user?->name }}
@@ -267,4 +267,3 @@
     </script>
     @include('admin.assetManagement.assetDetail.common.scripts')
 @endsection
-

@@ -7,10 +7,10 @@
 
 
         $("#employee_id").select2({
-            placeholder: "Select Employees"
+            placeholder: @json(__('index.select_employee'))
         });
         $("#department_id").select2({
-            placeholder: "Select Department"
+            placeholder: @json(__('index.select_department'))
         });
 
 

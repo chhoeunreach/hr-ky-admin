@@ -76,18 +76,8 @@ class AttendanceMonthlyController extends Controller
             ->where('is_active', Branch::IS_ACTIVE)
             ->orderBy('name')
             ->get(['id', 'name']);
-        $departments = Department::query()
-            ->where('company_id', AppHelper::getAuthUserCompanyId())
-            ->where('is_active', Department::IS_ACTIVE)
-            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
-            ->orderBy('dept_name')
-            ->get(['id', 'dept_name', 'branch_id']);
-        $shifts = OfficeTime::query()
-            ->where('company_id', AppHelper::getAuthUserCompanyId())
-            ->where('is_active', 1)
-            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
-            ->orderBy('shift')
-            ->get(['id', 'shift', 'opening_time', 'closing_time', 'branch_id']);
+        $departments = $this->departmentsForFilter($filter['branch_id']);
+        $shifts = $this->shiftsForFilter($filter['branch_id'], $filter['department_id']);
 
         return view('admin.attendance.monthly', compact(
             'monthlyRows',
@@ -99,6 +89,69 @@ class AttendanceMonthlyController extends Controller
             'departments',
             'shifts'
         ));
+    }
+
+    public function filterOptions(Request $request)
+    {
+        $this->authorizeMonthlyAttendance();
+
+        $branchId = $request->query('branch_id');
+        $departmentId = $request->query('department_id');
+
+        return response()->json([
+            'departments' => $this->departmentsForFilter($branchId)->map(fn (Department $department) => [
+                'id' => $department->id,
+                'name' => $department->dept_name,
+            ])->values(),
+            'shifts' => $this->shiftsForFilter($branchId, $departmentId)->map(fn (OfficeTime $shift) => [
+                'id' => $shift->id,
+                'name' => $this->shiftLabel($shift),
+            ])->values(),
+        ]);
+    }
+
+    private function departmentsForFilter($branchId): Collection
+    {
+        return Department::query()
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->where('is_active', Department::IS_ACTIVE)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name', 'branch_id']);
+    }
+
+    private function shiftsForFilter($branchId, $departmentId): Collection
+    {
+        $employeeShiftIds = User::query()
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->where('status', 'verified')
+            ->where('is_active', 1)
+            ->whereNotNull('office_time_id')
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->pluck('office_time_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($departmentId && $employeeShiftIds->isEmpty()) {
+            return collect();
+        }
+
+        return OfficeTime::query()
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->where('is_active', 1)
+            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when($employeeShiftIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $employeeShiftIds))
+            ->orderBy('shift')
+            ->get(['id', 'shift', 'opening_time', 'closing_time', 'branch_id']);
+    }
+
+    private function shiftLabel(OfficeTime $shift): string
+    {
+        $label = $shift->shift ?: trim(($shift->opening_time ?: '') . ' - ' . ($shift->closing_time ?: ''));
+
+        return $label ?: __('index.shift') . ' #' . $shift->id;
     }
 
     private function authorizeMonthlyAttendance(): void

@@ -173,7 +173,7 @@
         $(document).ready(function () {
 
             $("#branch_id").select2({
-                placeholder: "Select Branch"
+                placeholder: @json(__('index.select_branch'))
             });
 
             $.ajaxSetup({

@@ -95,7 +95,58 @@ return [
     |
     */
 
-    'locale' => 'en',
+    'locale' => 'km',
+
+    'api_locale' => env('APP_API_LOCALE', 'km'),
+
+    'supported_locales' => [
+        'en' => [
+            'name' => 'English',
+            'flag' => 'us',
+        ],
+        'km' => [
+            'name' => 'ភាសាខ្មែរ',
+            'flag' => 'kh',
+        ],
+        'ar' => [
+            'name' => 'عربي',
+            'flag' => 'sa',
+            'rtl' => true,
+        ],
+        'de' => [
+            'name' => 'Deutsch',
+            'flag' => 'de',
+        ],
+        'es' => [
+            'name' => 'Española',
+            'flag' => 'es',
+        ],
+        'fa' => [
+            'name' => 'فارسی',
+            'flag' => 'ir',
+            'rtl' => true,
+        ],
+        'fr' => [
+            'name' => 'Français',
+            'flag' => 'fr',
+        ],
+        'hi' => [
+            'name' => 'हिंदी',
+            'flag' => 'in',
+        ],
+        'ne' => [
+            'name' => 'नेपाली',
+            'flag' => 'np',
+        ],
+        'pt' => [
+            'name' => 'Português',
+            'flag' => 'pt',
+        ],
+        'ru' => [
+            'name' => 'русский',
+            'flag' => 'ru',
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------

@@ -2,8 +2,7 @@
 <!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@300;400;500;700;900&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
 <!-- End fonts -->
@@ -34,14 +33,13 @@
 
 <!-- End layout styles -->
 <!-- RTL -->
-@if(in_array(App::getLocale(),['ar','fa']))
+@if(config('app.supported_locales.' . App::getLocale() . '.rtl'))
     <link rel="stylesheet" href="{{ asset('assets/css/rtl_style.css') }}" id="rtl">
 @endif
 
 
 <link rel="shortcut icon" href="{{asset('assets/images/favicon.png')}}" />
 <link rel="stylesheet" href="{{asset('assets/vendors/sweetalert2/sweetalert2.min.css')}}"/>
-
 
 
 

@@ -35,19 +35,19 @@
                     <li class="nav-item">
                         <a href="{{route('admin.employee.log')}}"
                            data-href="{{route('admin.employee.log')}}"
-                           class="nav-link {{request()->routeIs('admin.employee.log') ? 'active' : ''}}"> Location Logs</a>
+                           class="nav-link {{request()->routeIs('admin.employee.log') ? 'active' : ''}}">{{ __('index.location_logs') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{route('admin.live-map')}}"
                            data-href="{{route('admin.live-map')}}"
-                           class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}"> Live Map</a>
+                           class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}">{{ __('index.live_map') }}</a>
                     </li>
                 @endcan
                 @can('view_employee_chat')
                     <li class="nav-item">
                         <a href="{{ route('admin.employee-chat') }}"
                            data-href="{{ route('admin.employee-chat') }}"
-                           class="nav-link {{request()->routeIs('admin.employee-chat*') ? 'active' : ''}}">Live Chat</a>
+                           class="nav-link {{request()->routeIs('admin.employee-chat*') ? 'active' : ''}}">{{ __('index.live_chat') }}</a>
                     </li>
                 @endcan
 

@@ -8,17 +8,17 @@
 @endphp
 @extends('layouts.master')
 
-@section('title', 'Monthly Attendance')
-@section('action', 'Monthly Attendance')
+@section('title', __('index.attendance_monthly'))
+@section('action', __('index.attendance_monthly'))
 
 @section('button')
     <div class="d-flex flex-wrap gap-2 justify-content-end">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceFilters">
-            <i class="link-icon" data-feather="filter"></i> Filter
+            <i class="link-icon" data-feather="filter"></i> {{ __('index.filter') }}
         </button>
         @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
             <a class="btn btn-primary btn-sm" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">
-                <i class="link-icon" data-feather="download"></i> Export
+                <i class="link-icon" data-feather="download"></i> {{ __('index.export') }}
             </a>
         @endcanany
     </div>
@@ -326,7 +326,7 @@
         }
 
         .monthly-signal-column {
-            min-width: 58px;
+            min-width: 92px;
             transition: opacity .15s ease;
         }
 
@@ -557,7 +557,10 @@
             font-size: 10px;
             font-weight: 800;
             background: #f8fafc;
-            line-height: 1.15;
+            line-height: 1.35;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
 
         .monthly-attendance-table thead small {
@@ -1720,9 +1723,9 @@
 
         <nav class="page-breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('admin.attendances.index') }}">Attendance</a></li>
-                <li class="breadcrumb-item active" aria-current="page">Monthly Attendance</li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">{{ __('index.home') }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.attendances.index') }}">{{ __('index.attendance') }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ __('index.attendance_monthly') }}</li>
             </ol>
         </nav>
 
@@ -1730,13 +1733,13 @@
         <div class="monthly-results-reload" aria-hidden="true">
             <div class="monthly-reload-panel" role="status" aria-live="polite">
                 <div class="monthly-reload-header">
-                    <span>Reloading monthly attendance</span>
+                    <span>{{ __('index.reloading_monthly_attendance') }}</span>
                     <span class="monthly-reload-percent">0%</span>
                 </div>
                 <div class="monthly-reload-track">
                     <div class="monthly-reload-bar"></div>
                 </div>
-                <div class="monthly-reload-text">Refreshing monthly table data...</div>
+                <div class="monthly-reload-text">{{ __('index.refreshing_monthly_table') }}</div>
             </div>
         </div>
 
@@ -1745,12 +1748,12 @@
                 <div class="monthly-filter-toggle-actions">
                     <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceFilters" aria-expanded="true" aria-controls="monthlyAttendanceFilters">
                         <i data-feather="filter"></i>
-                        <span>Filters</span>
+                        <span>{{ __('index.filters') }}</span>
                         <i data-feather="chevron-down"></i>
                     </button>
                     <button class="btn btn-link p-0" type="button" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceSummary" aria-expanded="false" aria-controls="monthlyAttendanceSummary">
                         <i data-feather="bar-chart-2"></i>
-                        <span>Summary</span>
+                        <span>{{ __('index.summary') }}</span>
                         <i data-feather="chevron-down"></i>
                     </button>
                 </div>
@@ -1760,13 +1763,13 @@
             <div class="monthly-filter-row">
                 <div class="monthly-filter-month">
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label">Month</label>
+                        <label class="monthly-filter-label">{{ __('index.month') }}</label>
                         <div class="month-switcher">
-                        <a href="{{ request()->fullUrlWithQuery(['month' => $month->copy()->subMonth()->format('Y-m'), 'page' => null]) }}" title="Previous month">
+                        <a href="{{ request()->fullUrlWithQuery(['month' => $month->copy()->subMonth()->format('Y-m'), 'page' => null]) }}" title="{{ __('index.previous_month') }}">
                             <i data-feather="chevron-left"></i>
                         </a>
-                        <input class="form-control" type="month" name="month" value="{{ $filter['month'] }}" aria-label="Select month">
-                        <a href="{{ request()->fullUrlWithQuery(['month' => $month->copy()->addMonth()->format('Y-m'), 'page' => null]) }}" title="Next month">
+                        <input class="form-control" type="month" name="month" value="{{ $filter['month'] }}" aria-label="{{ __('index.select_month') }}">
+                        <a href="{{ request()->fullUrlWithQuery(['month' => $month->copy()->addMonth()->format('Y-m'), 'page' => null]) }}" title="{{ __('index.next_month') }}">
                             <i data-feather="chevron-right"></i>
                         </a>
                         </div>
@@ -1775,9 +1778,9 @@
 
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="branch_id">Branch</label>
+                        <label class="monthly-filter-label" for="branch_id">{{ __('index.branch') }}</label>
                         <select class="form-select" id="branch_id" name="branch_id">
-                            <option value="">All Branches</option>
+                            <option value="">{{ __('index.all_branches') }}</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}" @selected((string) $filter['branch_id'] === (string) $branch->id)>{{ ucfirst($branch->name) }}</option>
                             @endforeach
@@ -1787,9 +1790,9 @@
 
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="department_id">Department</label>
+                        <label class="monthly-filter-label" for="department_id">{{ __('index.department') }}</label>
                         <select class="form-select" id="department_id" name="department_id">
-                            <option value="">All Departments</option>
+                            <option value="">{{ __('index.all_departments') }}</option>
                             @foreach($departments as $department)
                                 <option value="{{ $department->id }}" @selected((string) $filter['department_id'] === (string) $department->id)>{{ ucfirst($department->dept_name) }}</option>
                             @endforeach
@@ -1799,22 +1802,22 @@
 
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="shift_id">Shift</label>
+                        <label class="monthly-filter-label" for="shift_id">{{ __('index.shift') }}</label>
                         <select class="form-select" id="shift_id" name="shift_id">
-                            <option value="">All Shifts</option>
+                            <option value="">{{ __('index.all_shifts') }}</option>
                             @foreach($shifts as $shift)
                                 @php
                                     $shiftText = $shift->shift ?: trim(($shift->opening_time ?: '') . ' - ' . ($shift->closing_time ?: ''));
                                 @endphp
-                                <option value="{{ $shift->id }}" @selected((string) $filter['shift_id'] === (string) $shift->id)>{{ $shiftText ?: 'Shift #' . $shift->id }}</option>
+                                <option value="{{ $shift->id }}" @selected((string) $filter['shift_id'] === (string) $shift->id)>{{ $shiftText ?: __('index.shift') . ' #' . $shift->id }}</option>
                             @endforeach
                         </select>
                     </div>
                 </div>
 
                 <div class="monthly-filter-actions d-flex gap-2">
-                    <button class="btn btn-primary flex-fill" type="submit">Apply</button>
-                    <a class="btn btn-outline-secondary" href="{{ route('admin.attendance-monthly.index') }}">Reset</a>
+                    <button class="btn btn-primary flex-fill" type="submit">{{ __('index.apply') }}</button>
+                    <a class="btn btn-outline-secondary" href="{{ route('admin.attendance-monthly.index') }}">{{ __('index.reset') }}</a>
                 </div>
             </div>
             </form>
@@ -1822,24 +1825,24 @@
             <div class="collapse p-2 pt-0" id="monthlyAttendanceSummary">
                 <div class="monthly-report-strip">
                     <div class="monthly-report-item">
-                        <span class="monthly-report-label">Report Month</span>
+                        <span class="monthly-report-label">{{ __('index.report_month') }}</span>
                         <span class="monthly-report-value">{{ $month->format('F Y') }}</span>
                         <span class="monthly-report-note">{{ $calendarDays[0]['date'] ?? $month->startOfMonth()->toDateString() }} to {{ $calendarDays[count($calendarDays) - 1]['date'] ?? $month->endOfMonth()->toDateString() }}</span>
                     </div>
                     <div class="monthly-report-item">
-                        <span class="monthly-report-label">Employees In View</span>
+                        <span class="monthly-report-label">{{ __('index.employees_in_view') }}</span>
                         <span class="monthly-report-value">{{ number_format($summary['employees']) }}</span>
-                        <span class="monthly-report-note">After branch and department filters</span>
+                        <span class="monthly-report-note">{{ __('index.after_branch_department_filters') }}</span>
                     </div>
                     <div class="monthly-report-item">
-                        <span class="monthly-report-label">Calendar Days</span>
+                        <span class="monthly-report-label">{{ __('index.calendar_days') }}</span>
                         <span class="monthly-report-value">{{ count($calendarDays) }}</span>
-                        <span class="monthly-report-note">{{ collect($calendarDays)->where('is_weekend', true)->count() }} weekend columns highlighted</span>
+                        <span class="monthly-report-note">{{ __('index.weekend_columns_highlighted', ['count' => collect($calendarDays)->where('is_weekend', true)->count()]) }}</span>
                     </div>
                     <div class="monthly-report-item">
-                        <span class="monthly-report-label">Attendance Signals</span>
+                        <span class="monthly-report-label">{{ __('index.attendance_signals') }}</span>
                         <span class="monthly-report-value">{{ number_format($summary['present'] + $summary['late'] + $summary['leave'] + $summary['absent']) }}</span>
-                        <span class="monthly-report-note">Present, late, leave, and absent cells</span>
+                        <span class="monthly-report-note">{{ __('index.attendance_signals_note') }}</span>
                     </div>
                 </div>
 
@@ -1848,9 +1851,9 @@
                         <div class="monthly-stat-card stat-employees">
                             <span class="monthly-stat-icon"><i data-feather="users"></i></span>
                             <div>
-                                <p class="monthly-stat-title">Total Employees</p>
+                                <p class="monthly-stat-title">{{ __('index.total_employees') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['employees']) }}</p>
-                                <p class="monthly-stat-subtitle">All Employees</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.all_employees') }}</p>
                             </div>
                         </div>
                     </div>
@@ -1858,7 +1861,7 @@
                         <div class="monthly-stat-card stat-present">
                             <span class="monthly-stat-icon"><i data-feather="check"></i></span>
                             <div>
-                                <p class="monthly-stat-title">Present</p>
+                                <p class="monthly-stat-title">{{ __('index.present') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['present']) }}</p>
                                 <p class="monthly-stat-subtitle">{{ number_format($summary['present_rate'], 2) }}%</p>
                             </div>
@@ -1868,7 +1871,7 @@
                         <div class="monthly-stat-card stat-late">
                             <span class="monthly-stat-icon"><i data-feather="clock"></i></span>
                             <div>
-                                <p class="monthly-stat-title">Late</p>
+                                <p class="monthly-stat-title">{{ __('index.late') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['late']) }}</p>
                                 <p class="monthly-stat-subtitle">{{ number_format($summary['late_rate'], 2) }}%</p>
                             </div>
@@ -1878,7 +1881,7 @@
                         <div class="monthly-stat-card stat-absent">
                             <span class="monthly-stat-icon"><i data-feather="x"></i></span>
                             <div>
-                                <p class="monthly-stat-title">Absent</p>
+                                <p class="monthly-stat-title">{{ __('index.absent') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['absent']) }}</p>
                                 <p class="monthly-stat-subtitle">{{ number_format($summary['absent_rate'], 2) }}%</p>
                             </div>
@@ -1888,7 +1891,7 @@
                         <div class="monthly-stat-card stat-leave">
                             <span class="monthly-stat-icon"><i data-feather="umbrella"></i></span>
                             <div>
-                                <p class="monthly-stat-title">On Leave</p>
+                                <p class="monthly-stat-title">{{ __('index.on_leave') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['leave']) }}</p>
                                 <p class="monthly-stat-subtitle">{{ number_format($summary['leave_rate'], 2) }}%</p>
                             </div>
@@ -1898,9 +1901,9 @@
                         <div class="monthly-stat-card stat-off">
                             <span class="monthly-stat-icon"><i data-feather="calendar"></i></span>
                             <div>
-                                <p class="monthly-stat-title">Off Day</p>
+                                <p class="monthly-stat-title">{{ __('index.off_day') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['off_day']) }}</p>
-                                <p class="monthly-stat-subtitle">Monthly Off</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.monthly_off') }}</p>
                             </div>
                         </div>
                     </div>
@@ -1911,11 +1914,11 @@
         <div class="monthly-table-shell">
             <div class="monthly-table-toolbar">
                 <div>
-                    <p class="monthly-table-toolbar-title">Employee Monthly Attendance</p>
-                    <p class="monthly-table-toolbar-subtitle">Full employee identity, daily status, and month totals for {{ $month->format('F Y') }}</p>
+                    <p class="monthly-table-toolbar-title">{{ __('index.employee_monthly_attendance') }}</p>
+                    <p class="monthly-table-toolbar-subtitle">{{ __('index.monthly_attendance_subtitle', ['month' => $month->format('F Y')]) }}</p>
                     <button type="button" class="btn btn-outline-secondary btn-sm monthly-signal-toggle" id="monthlySignalToggle" aria-pressed="true">
                         <i data-feather="columns"></i>
-                        <span>Hide Signals</span>
+                        <span>{{ __('index.hide_signals') }}</span>
                     </button>
                 </div>
                 <form action="{{ route('admin.attendance-monthly.index') }}" method="get" class="monthly-table-controls">
@@ -1932,28 +1935,28 @@
 
                     @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
                         <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}">
-                            <i class="link-icon" data-feather="file-text"></i> Export Reduc XLSX
+                            <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
                         </a>
                     @endcanany
 
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="table_per_page">Rows</label>
+                        <label class="monthly-filter-label" for="table_per_page">{{ __('index.rows') }}</label>
                         <select class="form-select monthly-table-rows" id="table_per_page" name="per_page">
                             @foreach([10, 25, 50, 100] as $perPage)
                                 <option value="{{ $perPage }}" @selected($filter['per_page'] === $perPage)>{{ $perPage }}</option>
                             @endforeach
-                            <option value="all" @selected($filter['per_page'] === 'all')>All</option>
+                            <option value="all" @selected($filter['per_page'] === 'all')>{{ __('index.all') }}</option>
                         </select>
                     </div>
 
                     <div class="monthly-inline-field">
-                        <label class="monthly-filter-label" for="table_search">Search</label>
-                        <input class="form-control monthly-table-search" id="table_search" name="search" value="{{ $filter['search'] }}" placeholder="Name, code, or username">
+                        <label class="monthly-filter-label" for="table_search">{{ __('index.search') }}</label>
+                        <input class="form-control monthly-table-search" id="table_search" name="search" value="{{ $filter['search'] }}" placeholder="{{ __('index.search_name_code_username') }}">
                     </div>
 
-                    <button class="btn btn-primary" type="submit">Apply</button>
+                    <button class="btn btn-primary" type="submit">{{ __('index.apply') }}</button>
                     @if($filter['search'])
-                        <a class="btn btn-outline-secondary" href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}">Clear</a>
+                        <a class="btn btn-outline-secondary" href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}">{{ __('index.clear') }}</a>
                     @endif
                 </form>
             </div>
@@ -1963,24 +1966,24 @@
                     <thead>
                     <tr>
                         <th class="sticky-number">#</th>
-                        <th class="sticky-employee">Employee</th>
+                        <th class="sticky-employee">{{ __('index.employee') }}</th>
                         @foreach($calendarDays as $day)
                             <th class="{{ $day['is_weekend'] ? 'monthly-weekend' : '' }}">
                                 <div>{{ $day['day'] }}</div>
                                 <small>{{ $day['weekday'] }}</small>
                             </th>
                         @endforeach
-                        <th>Present</th>
-                        <th>Late</th>
-                        <th>Absent</th>
-                        <th>Leave</th>
-                        <th>Off Day</th>
-                        <th>Total</th>
-                        <th class="monthly-signal-column">Pending<br>Day Off</th>
-                        <th class="monthly-signal-column">Pending<br>Leave</th>
-                        <th class="monthly-signal-column">Time<br>Leave</th>
-                        <th class="monthly-signal-column">Time Leave<br>Request</th>
-                        <th class="monthly-signal-column">No<br>Checkout</th>
+                        <th>{{ __('index.present') }}</th>
+                        <th>{{ __('index.late') }}</th>
+                        <th>{{ __('index.absent') }}</th>
+                        <th>{{ __('index.leave') }}</th>
+                        <th>{{ __('index.off_day') }}</th>
+                        <th>{{ __('index.total') }}</th>
+                        <th class="monthly-signal-column">{{ __('index.pending_day_off') }}</th>
+                        <th class="monthly-signal-column">{{ __('index.pending_leave') }}</th>
+                        <th class="monthly-signal-column">{{ __('index.time_leave') }}</th>
+                        <th class="monthly-signal-column">{{ __('index.time_leave_request') }}</th>
+                        <th class="monthly-signal-column">{{ __('index.no_checkout') }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -1997,12 +2000,12 @@
                                     @if($canViewEmployeeChat)
                                         <button type="button"
                                                 class="monthly-row-chat-badge openAttendanceChat"
-                                                title="Quick chat with {{ $employee->name }}"
-                                                aria-label="Quick chat with {{ $employee->name }}"
+                                                title="{{ __('index.quick_chat_with', ['name' => $employee->name]) }}"
+                                                aria-label="{{ __('index.quick_chat_with', ['name' => $employee->name]) }}"
                                                 data-employee-id="{{ $employee->id }}"
                                                 data-employee-name="{{ $employee->name }}"
                                                 data-employee-avatar="{{ $avatar }}"
-                                                data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: 'No department') . ' - ' . ($employee->branch?->name ?: 'No branch')) }}"
+                                                data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: __('index.no_department')) . ' - ' . ($employee->branch?->name ?: __('index.no_branch'))) }}"
                                                 data-employee-online="{{ (int) ($employee->online_status ?? 0) }}">
                                             <i data-feather="message-circle"></i>
                                         </button>
@@ -2017,35 +2020,35 @@
                                     <div class="monthly-employee-main">
                                         <div class="monthly-employee-line">
                                             <strong>{{ ucfirst($employee->name) }}</strong>
-                                            <span class="monthly-employee-username">{{ $employee->username ?: 'Employee' }}</span>
+                                            <span class="monthly-employee-username">{{ $employee->username ?: __('index.employee') }}</span>
                                         </div>
                                         <div class="monthly-employee-meta">
-                                            <span class="meta-branch" title="Branch: {{ $employee->branch?->name ?: 'No branch' }}">
-                                                <b>Branch</b>
-                                                <em>{{ $employee->branch?->name ?: 'No branch' }}</em>
+                                            <span class="meta-branch" title="{{ __('index.branch') }}: {{ $employee->branch?->name ?: __('index.no_branch') }}">
+                                                <b>{{ __('index.branch') }}</b>
+                                                <em>{{ $employee->branch?->name ?: __('index.no_branch') }}</em>
                                             </span>
-                                            <span class="meta-department" title="Department: {{ $employee->department?->dept_name ?: 'No department' }}">
-                                                <b>Dept</b>
-                                                <em>{{ $employee->department?->dept_name ?: 'No department' }}</em>
+                                            <span class="meta-department" title="{{ __('index.department') }}: {{ $employee->department?->dept_name ?: __('index.no_department') }}">
+                                                <b>{{ __('index.dept') }}</b>
+                                                <em>{{ $employee->department?->dept_name ?: __('index.no_department') }}</em>
                                             </span>
-                                            <span class="meta-position" title="Position: {{ $employee->post?->post_name ?: 'No position' }}">
-                                                <b>Position</b>
-                                                <em>{{ $employee->post?->post_name ?: 'No position' }}</em>
+                                            <span class="meta-position" title="{{ __('index.position') }}: {{ $employee->post?->post_name ?: __('index.no_position') }}">
+                                                <b>{{ __('index.position') }}</b>
+                                                <em>{{ $employee->post?->post_name ?: __('index.no_position') }}</em>
                                             </span>
-                                            <span class="meta-shift" title="Shift: {{ $shiftLabel ?: 'No shift' }}">
-                                                <b>Shift</b>
-                                                <em>{{ $shiftLabel ?: 'No shift' }}</em>
+                                            <span class="meta-shift" title="{{ __('index.shift') }}: {{ $shiftLabel ?: __('index.no_shift') }}">
+                                                <b>{{ __('index.shift') }}</b>
+                                                <em>{{ $shiftLabel ?: __('index.no_shift') }}</em>
                                             </span>
-                                            <span class="meta-phone" title="Phone: {{ $employee->phone ?: 'No phone' }}">
-                                                <b>Phone</b>
-                                                <em>{{ $employee->phone ?: 'No phone' }}</em>
+                                            <span class="meta-phone" title="{{ __('index.phone') }}: {{ $employee->phone ?: __('index.no_phone') }}">
+                                                <b>{{ __('index.phone') }}</b>
+                                                <em>{{ $employee->phone ?: __('index.no_phone') }}</em>
                                             </span>
                                             @if($canViewAttendanceDetail)
                                                 <a class="monthly-employee-detail-link"
                                                    href="{{ route('admin.attendances.show', ['attendance' => $employee->id, 'year' => $month->format('Y'), 'month' => (int) $month->format('n')]) }}"
-                                                   title="View {{ $employee->name }} detail for {{ $month->format('F Y') }}">
+                                                   title="{{ __('index.view_employee_month_detail', ['name' => $employee->name, 'month' => $month->format('F Y')]) }}">
                                                     <i data-feather="eye"></i>
-                                                    View Detail
+                                                    {{ __('index.view_detail') }}
                                                 </a>
                                             @endif
                                         </div>
@@ -2060,10 +2063,10 @@
                                             data-bs-target="#monthlyAttendanceDetailModal"
                                             data-user-id="{{ $employee->id }}"
                                             data-employee="{{ $employee->name }}"
-                                            data-employee-code="{{ $employee->username ?: ($employee->employee_code ?: 'Employee') }}"
+                                            data-employee-code="{{ $employee->username ?: ($employee->employee_code ?: __('index.employee')) }}"
                                             data-employee-avatar="{{ $avatar }}"
                                             data-employee-online="{{ (int) ($employee->online_status ?? 0) }}"
-                                            data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: 'No department') . ' • ' . ($employee->branch?->name ?: 'No branch')) }}"
+                                            data-employee-subtitle="{{ trim(($employee->department?->dept_name ?: __('index.no_department')) . ' - ' . ($employee->branch?->name ?: __('index.no_branch'))) }}"
                                             data-date="{{ $day['date'] }}"
                                             data-attendance-date="{{ $day['date'] }}"
                                             data-display-date="{{ \Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
@@ -2108,7 +2111,7 @@
                                         data-late-total="{{ array_sum($row['late_breakdown'] ?? []) }}"
                                         data-late-minutes-total="{{ $row['late_minutes_total'] ?? 0 }}"
                                         data-opening-time="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->format('h:i A') : 'N/A' }}"
-                                        data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(\App\Http\Controllers\Web\AttendanceMonthlyController::LATE_CHECK_IN_GRACE_MINUTES)->format('h:i A') : 'opening + 16m' }}"
+                                        data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(\App\Http\Controllers\Web\AttendanceMonthlyController::LATE_CHECK_IN_GRACE_MINUTES)->format('h:i A') : __('index.opening_plus_grace') }}"
                                          data-total-employees="{{ $summary['employees'] }}"
                                          data-report-subtitle="{{ $employee->department?->dept_name ?: ($employee->branch?->name ?: $employee->name) }}"
                                           data-export-url="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}"
@@ -2137,27 +2140,27 @@
                                 </button>
                             </td>
                             <td class="monthly-signal-column">
-                                <button type="button" class="monthly-signal-button" data-signal="PO" data-signal-title="Pending Day Off" @disabled(($row['signal_totals']['pending_day_off'] ?? 0) <= 0)>
+                                <button type="button" class="monthly-signal-button" data-signal="PO" data-signal-title="{{ __('index.pending_day_off') }}" @disabled(($row['signal_totals']['pending_day_off'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['pending_day_off'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['pending_day_off'] ?? 0 }}</span>
                                 </button>
                             </td>
                             <td class="monthly-signal-column">
-                                <button type="button" class="monthly-signal-button" data-signal="PL" data-signal-title="Pending Leave" @disabled(($row['signal_totals']['pending_leave'] ?? 0) <= 0)>
+                                <button type="button" class="monthly-signal-button" data-signal="PL" data-signal-title="{{ __('index.pending_leave') }}" @disabled(($row['signal_totals']['pending_leave'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['pending_leave'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['pending_leave'] ?? 0 }}</span>
                                 </button>
                             </td>
                             <td class="monthly-signal-column">
-                                <button type="button" class="monthly-signal-button" data-signal="TL" data-signal-title="Time Leave" @disabled(($row['signal_totals']['time_leave'] ?? 0) <= 0)>
+                                <button type="button" class="monthly-signal-button" data-signal="TL" data-signal-title="{{ __('index.time_leave') }}" @disabled(($row['signal_totals']['time_leave'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['time_leave'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['time_leave'] ?? 0 }}</span>
                                 </button>
                             </td>
                             <td class="monthly-signal-column">
-                                <button type="button" class="monthly-signal-button" data-signal="TR" data-signal-title="Time Leave Request" @disabled(($row['signal_totals']['time_leave_request'] ?? 0) <= 0)>
+                                <button type="button" class="monthly-signal-button" data-signal="TR" data-signal-title="{{ __('index.time_leave_request') }}" @disabled(($row['signal_totals']['time_leave_request'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['time_leave_request'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['time_leave_request'] ?? 0 }}</span>
                                 </button>
                             </td>
                             <td class="monthly-signal-column">
-                                <button type="button" class="monthly-signal-button" data-signal="NC" data-signal-title="No Checkout" @disabled(($row['signal_totals']['no_checkout'] ?? 0) <= 0)>
+                                <button type="button" class="monthly-signal-button" data-signal="NC" data-signal-title="{{ __('index.no_checkout') }}" @disabled(($row['signal_totals']['no_checkout'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['no_checkout'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['no_checkout'] ?? 0 }}</span>
                                 </button>
                             </td>
@@ -2166,8 +2169,8 @@
                         <tr>
                             <td colspan="{{ count($calendarDays) + 13 }}">
                                 <div class="monthly-empty-state">
-                                    <strong>No monthly attendance records found.</strong>
-                                    <div>Try changing the month or filters.</div>
+                                    <strong>{{ __('index.no_monthly_attendance_records_found') }}</strong>
+                                    <div>{{ __('index.try_changing_month_filters') }}</div>
                                 </div>
                             </td>
                         </tr>
@@ -2178,21 +2181,21 @@
 
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-2">
                 <div class="monthly-legend">
-                    <span><i class="monthly-status-dot status-present">P</i> Present</span>
-                    <span><i class="monthly-status-dot status-late">L</i> Late</span>
-                    <span><i class="monthly-status-dot status-absent">A</i> Absent</span>
-                    <span><i class="monthly-status-dot status-off_day">O</i> Day Off</span>
-                    <span><i class="monthly-status-dot status-leave">LV</i> ច្បាប់ផ្សេង</span>
-                    <span><i class="monthly-cell-indicator indicator-leave-request">PO</i> Pending Day Off</span>
-                    <span><i class="monthly-cell-indicator indicator-leave-request">PL</i> Pending Leave</span>
-                    <span><i class="monthly-cell-indicator indicator-time-leave-approved">TL</i> Time Leave</span>
-                    <span><i class="monthly-cell-indicator indicator-time-leave-request">TR</i> Time Leave Request</span>
-                    <span><i class="monthly-cell-indicator indicator-open-checkout">NC</i> No Checkout</span>
+                    <span><i class="monthly-status-dot status-present">P</i> {{ __('index.present') }}</span>
+                    <span><i class="monthly-status-dot status-late">L</i> {{ __('index.late') }}</span>
+                    <span><i class="monthly-status-dot status-absent">A</i> {{ __('index.absent') }}</span>
+                    <span><i class="monthly-status-dot status-off_day">O</i> {{ __('index.day_off') }}</span>
+                    <span><i class="monthly-status-dot status-leave">LV</i> {{ __('index.other_leave') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-leave-request">PO</i> {{ __('index.pending_day_off') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-leave-request">PL</i> {{ __('index.pending_leave') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-time-leave-approved">TL</i> {{ __('index.time_leave') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-time-leave-request">TR</i> {{ __('index.time_leave_request') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-open-checkout">NC</i> {{ __('index.no_checkout') }}</span>
                 </div>
                 <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
                     {{ $monthlyRows->links() }}
                     <span class="text-muted small">
-                        Showing {{ $monthlyRows->firstItem() ?? 0 }} to {{ $monthlyRows->lastItem() ?? 0 }} of {{ $monthlyRows->total() }} entries
+                        {{ __('index.showing_entries', ['from' => $monthlyRows->firstItem() ?? 0, 'to' => $monthlyRows->lastItem() ?? 0, 'total' => $monthlyRows->total()]) }}
                     </span>
                 </div>
             </div>
@@ -2204,7 +2207,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <div>
-                            <h5 class="modal-title" id="monthlyAttendanceDetailModalLabel">Attendance Detail</h5>
+                            <h5 class="modal-title" id="monthlyAttendanceDetailModalLabel">{{ __('index.attendance_detail') }}</h5>
                             <small class="text-muted" id="monthlyAttendanceDetailSubtitle"></small>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -2216,26 +2219,26 @@
                     <div class="modal-footer">
                         @canany(['attendance_create', 'attendance_update'])
                             <button type="button" class="btn btn-outline-success btn-sm quickAttendanceTrigger d-none" id="monthlyQuickAttendanceButton">
-                                Quick Attendance
+                                {{ __('index.quick_attendance') }}
                             </button>
                         @endcanany
                         @can('quick_leave')
                             <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-none" id="monthlyQuickLeaveButton">
-                                Quick Approve Leave
+                                {{ __('index.quick_approve_leave') }}
                             </button>
                         @endcan
                         @can('create_time_leave_request')
                             <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-none" id="monthlyQuickTimeLeaveButton">
-                                Quick Time Leave
+                                {{ __('index.quick_time_leave') }}
                             </button>
                         @endcan
                         @if($canViewEmployeeChat)
                             <button type="button" class="btn btn-outline-secondary btn-sm openAttendanceChat" id="monthlyQuickChatButton">
-                                Quick Chat
+                                {{ __('index.quick_chat') }}
                             </button>
                         @endif
-                        <a href="#" class="btn btn-primary btn-sm" id="monthlyAttendanceDetailLink">Open Day Detail</a>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        <a href="#" class="btn btn-primary btn-sm" id="monthlyAttendanceDetailLink">{{ __('index.open_day_detail') }}</a>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('index.close') }}</button>
                     </div>
                 </div>
             </div>
@@ -2246,7 +2249,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <div>
-                            <h5 class="modal-title" id="monthlySignalDetailModalLabel">Signal Detail</h5>
+                            <h5 class="modal-title" id="monthlySignalDetailModalLabel">{{ __('index.signal_detail') }}</h5>
                             <small class="text-muted" id="monthlySignalDetailSubtitle"></small>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -2262,7 +2265,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="attendanceLeaveStatusUpdateTitle">Leave Request</h5>
+                        <h5 class="modal-title" id="attendanceLeaveStatusUpdateTitle">{{ __('index.leave_request') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -2305,7 +2308,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="attendanceQuickLeaveModalLabel">Quick Leave</h5>
+                            <h5 class="modal-title" id="attendanceQuickLeaveModalLabel">{{ __('index.quick_leave') }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
@@ -2315,22 +2318,22 @@
                                 <input type="hidden" name="attendance_date" id="attendanceQuickLeaveDate">
 
                                 <div class="mb-3">
-                                    <label for="attendanceQuickLeaveType" class="form-label">Leave Type</label>
+                                    <label for="attendanceQuickLeaveType" class="form-label">{{ __('index.leave_type') }}</label>
                                     <select class="form-select" name="leave_type_id" id="attendanceQuickLeaveType" required>
-                                        <option value="">Select leave type</option>
+                                        <option value="">{{ __('index.select_leave_type') }}</option>
                                     </select>
                                     <small class="text-muted d-block mt-2" id="attendanceQuickLeaveHelpText">
-                                        This will create an already approved leave for the selected attendance day.
+                                        {{ __('index.create_approved_leave_today') }}
                                     </small>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="attendanceQuickLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
-                                    <textarea class="form-control" name="reasons" id="attendanceQuickLeaveReason" rows="3" placeholder="Optional note"></textarea>
+                                    <textarea class="form-control" name="reasons" id="attendanceQuickLeaveReason" rows="3" placeholder="{{ __('index.optional_note') }}"></textarea>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickLeaveSubmit">
-                                    Save as Approved Leave
+                                    {{ __('index.save_as_approved_leave') }}
                                 </button>
                             </form>
                         </div>
@@ -2344,7 +2347,7 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">Quick Time Leave</h5>
+                            <h5 class="modal-title" id="attendanceQuickTimeLeaveModalLabel">{{ __('index.quick_time_leave') }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
@@ -2362,17 +2365,17 @@
                                     <label for="attendanceQuickTimeLeaveTo" class="form-label">{{ __('index.to') }}</label>
                                     <input type="time" class="form-control" name="leave_to" id="attendanceQuickTimeLeaveTo" required>
                                     <small class="text-muted d-block mt-2" id="attendanceQuickTimeLeaveHelpText">
-                                        This will create an already approved time leave for the selected attendance day.
+                                        {{ __('index.create_approved_time_leave_today') }}
                                     </small>
                                 </div>
 
                                 <div class="mb-3">
                                     <label for="attendanceQuickTimeLeaveReason" class="form-label">{{ __('index.leave_reason') }}</label>
-                                    <textarea class="form-control" name="reasons" id="attendanceQuickTimeLeaveReason" rows="3" minlength="10" required placeholder="Required note"></textarea>
+                                    <textarea class="form-control" name="reasons" id="attendanceQuickTimeLeaveReason" rows="3" minlength="10" required placeholder="{{ __('index.required_note') }}"></textarea>
                                 </div>
 
                                 <button type="submit" class="btn btn-primary btn-sm" id="attendanceQuickTimeLeaveSubmit">
-                                    Save as Approved Time Leave
+                                    {{ __('index.save_as_approved_time_leave') }}
                                 </button>
                             </form>
                         </div>
@@ -2389,15 +2392,15 @@
                             <div class="d-flex align-items-center gap-2 min-w-0">
                                 <img id="attendanceChatAvatar" src="{{ asset('assets/images/img.png') }}" alt="Employee avatar" class="monthly-avatar">
                                 <div class="min-w-0">
-                                    <h5 class="modal-title" id="attendanceChatModalLabel">Employee Chat</h5>
-                                    <small class="text-muted" id="attendanceChatSubtitle">Open a conversation from monthly attendance.</small>
+                                    <h5 class="modal-title" id="attendanceChatModalLabel">{{ __('index.employee_chat') }}</h5>
+                                    <small class="text-muted" id="attendanceChatSubtitle">{{ __('index.open_conversation_monthly_attendance') }}</small>
                                 </div>
                             </div>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div id="attendanceChatThread" class="attendance-chat-thread" data-base-url="{{ route('admin.employee-chat.messages') }}">
-                                <div class="chat-empty">Select an employee to start chatting.</div>
+                                <div class="chat-empty">{{ __('index.select_employee_start_chatting') }}</div>
                             </div>
                         </div>
                         <div class="modal-footer d-block">
@@ -2405,16 +2408,16 @@
                                 <form id="attendanceChatForm" class="attendance-chat-form" action="{{ route('admin.employee-chat.store') }}" method="post" enctype="multipart/form-data">
                                     @csrf
                                     <input type="hidden" name="employee_id" id="attendanceChatEmployeeId">
-                                    <label class="attendance-chat-attach" title="Attach file">
+                                    <label class="attendance-chat-attach" title="{{ __('index.attach_file') }}">
                                         <i data-feather="paperclip"></i>
                                         <input type="file" name="attachment" id="attendanceChatAttachment">
                                     </label>
-                                    <input type="text" class="attendance-chat-input" name="message" id="attendanceChatMessage" placeholder="Type your message">
-                                    <button type="submit" class="btn btn-primary btn-sm">Send</button>
+                                    <input type="text" class="attendance-chat-input" name="message" id="attendanceChatMessage" placeholder="{{ __('index.type_your_message') }}">
+                                    <button type="submit" class="btn btn-primary btn-sm">{{ __('index.send') }}</button>
                                 </form>
-                                <div class="attendance-chat-status-text mt-2" id="attendanceChatStatusText">You can send text or attach a file here.</div>
+                                <div class="attendance-chat-status-text mt-2" id="attendanceChatStatusText">{{ __('index.send_chat_hint_monthly') }}</div>
                             @else
-                                <div class="attendance-chat-status-text" id="attendanceChatStatusText">You have view access only. Chat sending is disabled for your role.</div>
+                                <div class="attendance-chat-status-text" id="attendanceChatStatusText">{{ __('index.chat_read_only') }}</div>
                             @endif
                         </div>
                     </div>
@@ -2426,15 +2429,15 @@
             <button type="button"
                     class="monthly-scroll-shortcut"
                     id="monthlyScrollTop"
-                    title="Go to top"
-                    aria-label="Go to top">
+                    title="{{ __('index.go_to_top') }}"
+                    aria-label="{{ __('index.go_to_top') }}">
                 <i data-feather="arrow-up"></i>
             </button>
             <button type="button"
                     class="monthly-scroll-shortcut"
                     id="monthlyScrollBottom"
-                    title="Go to bottom"
-                    aria-label="Go to bottom">
+                    title="{{ __('index.go_to_bottom') }}"
+                    aria-label="{{ __('index.go_to_bottom') }}">
                 <i data-feather="arrow-down"></i>
             </button>
         </div>
@@ -2459,6 +2462,55 @@
             const chatModalElement = document.getElementById('attendanceChatModal');
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const i18n = {
+                signalDetail: @json(__('index.signal_detail')),
+                attendanceDetail: @json(__('index.attendance_detail')),
+                officeTimeLateReport: @json(__('index.office_time_late_checkin_report')),
+                openingTime: @json(__('index.opening_time')),
+                gracePeriod: @json(__('index.grace_period')),
+                lateCheckIn: @json(__('index.late_check_in')),
+                employees: @json(__('index.employees')),
+                totalLate: @json(__('index.total_late')),
+                lateHours: @json(__('index.late_hours')),
+                minutesTotal: @json(__('index.minutes_total')),
+                checkinLateRule: @json(__('index.checkin_late_rule')),
+                lateMoreThan: @json(__('index.late_more_than')),
+                lateTimeRange: @json(__('index.late_time_range')),
+                description: @json(__('index.description')),
+                count: @json(__('index.count')),
+                payment: @json(__('index.payment')),
+                grandTotal: @json(__('index.grand_total')),
+                paymentNoteUsd: @json(__('index.payment_note_usd')),
+                exportExcel: @json(__('index.export_excel')),
+                viewQuick: @json(__('index.view_quick')),
+                noMatchingDaysFound: @json(__('index.no_matching_days_found')),
+                pendingRequest: @json(__('index.pending_request')),
+                leaveRequest: @json(__('index.leave_request')),
+                employee: @json(__('index.employee')),
+                quickAttendance: @json(__('index.quick_attendance')),
+                quickLeave: @json(__('index.quick_leave')),
+                quickTimeLeave: @json(__('index.quick_time_leave')),
+                loadingLeaveTypes: @json(__('index.loading_leave_types')),
+                noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
+                selectLeaveType: @json(__('index.select_leave_type')),
+                unableLoadLeaveTypes: @json(__('index.unable_load_leave_types')),
+                employeeChat: @json(__('index.employee_chat')),
+                loadingConversation: @json(__('index.loading_conversation')),
+                loadingMessages: @json(__('index.loading_messages')),
+                sendingMessage: @json(__('index.sending_message')),
+                unableLoadChatMessages: @json(__('index.unable_load_chat_messages')),
+                unableSendMessage: @json(__('index.unable_send_message')),
+                messageSentSuccessfully: @json(__('index.message_sent_successfully')),
+                unableSendMessageNow: @json(__('index.unable_send_message_now')),
+                attachmentReady: @json(__('index.attachment_ready')),
+                openingPlusGrace: @json(__('index.opening_plus_grace')),
+                createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
+                createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
+                selectEmployeeStartChatting: @json(__('index.select_employee_start_chatting')),
+                approver: @json(__('index.approver')),
+                status: @json(__('index.status')),
+                remark: @json(__('index.remark')),
+            };
             const monthlyScrollShortcuts = document.getElementById('monthlyScrollShortcuts');
             const monthlyScrollTopButton = document.getElementById('monthlyScrollTop');
             const monthlyScrollBottomButton = document.getElementById('monthlyScrollBottom');
@@ -2497,7 +2549,7 @@
                     signalToggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
                     const label = signalToggle.querySelector('span');
                     if (label) {
-                        label.textContent = visible ? 'Hide Signals' : 'Show Signals';
+                        label.textContent = visible ? @json(__('index.hide_signals')) : @json(__('index.show_signals'));
                     }
                 }
 
@@ -2628,6 +2680,84 @@
                 return url;
             };
 
+            const monthlyFilterLabels = {
+                allDepartments: @json(__('index.all_departments')),
+                allShifts: @json(__('index.all_shifts')),
+                loading: @json(__('index.loading')),
+                errorLoadingDepartments: @json(__('index.error_loading_departments')),
+                errorLoadingShifts: @json(__('index.error_loading_shifts')),
+            };
+
+            const replaceSelectOptions = (select, placeholder, items, selectedValue = '') => {
+                if (!select) {
+                    return;
+                }
+
+                select.innerHTML = '';
+                select.append(new Option(placeholder, ''));
+
+                items.forEach((item) => {
+                    const option = new Option(item.name, item.id);
+                    option.selected = String(selectedValue || '') === String(item.id);
+                    select.append(option);
+                });
+            };
+
+            const setSelectLoading = (select, placeholder) => {
+                if (!select) {
+                    return;
+                }
+
+                select.innerHTML = '';
+                select.append(new Option(placeholder, ''));
+            };
+
+            const loadMonthlyFilterOptions = async ({ resetDepartment = false, resetShift = true } = {}) => {
+                const branchSelect = document.getElementById('branch_id');
+                const departmentSelect = document.getElementById('department_id');
+                const shiftSelect = document.getElementById('shift_id');
+
+                if (!branchSelect || !departmentSelect || !shiftSelect) {
+                    return;
+                }
+
+                const branchId = branchSelect.value;
+                const departmentId = resetDepartment ? '' : departmentSelect.value;
+                const selectedShiftId = resetShift ? '' : shiftSelect.value;
+
+                setSelectLoading(departmentSelect, monthlyFilterLabels.loading);
+                setSelectLoading(shiftSelect, monthlyFilterLabels.loading);
+
+                const url = new URL(@json(route('admin.attendance-monthly.filter-options')), window.location.origin);
+                if (branchId) {
+                    url.searchParams.set('branch_id', branchId);
+                }
+                if (departmentId) {
+                    url.searchParams.set('department_id', departmentId);
+                }
+
+                try {
+                    const response = await fetch(url.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Unable to load monthly attendance filter options.');
+                    }
+
+                    const data = await response.json();
+                    replaceSelectOptions(departmentSelect, monthlyFilterLabels.allDepartments, data.departments || [], departmentId);
+                    replaceSelectOptions(shiftSelect, monthlyFilterLabels.allShifts, data.shifts || [], selectedShiftId);
+                } catch (error) {
+                    console.error(error);
+                    replaceSelectOptions(departmentSelect, monthlyFilterLabels.errorLoadingDepartments, [], '');
+                    replaceSelectOptions(shiftSelect, monthlyFilterLabels.errorLoadingShifts, [], '');
+                }
+            };
+
             bindMonthlySignalToggle();
 
             document.addEventListener('submit', (event) => {
@@ -2642,6 +2772,16 @@
             });
 
             document.addEventListener('change', (event) => {
+                if (event.target?.id === 'branch_id') {
+                    loadMonthlyFilterOptions({ resetDepartment: true, resetShift: true });
+                    return;
+                }
+
+                if (event.target?.id === 'department_id') {
+                    loadMonthlyFilterOptions({ resetDepartment: false, resetShift: true });
+                    return;
+                }
+
                 if (!event.target || event.target.id !== 'table_per_page') {
                     return;
                 }
@@ -2804,7 +2944,7 @@
                 const openingTime = element.getAttribute('data-opening-time') || 'N/A';
                 const grandTotal = Number(element.getAttribute('data-late-total') || 0);
                 const lateMinutesTotal = Number(element.getAttribute('data-late-minutes-total') || 0);
-                const lateAfter = element.getAttribute('data-late-after') || 'opening + 16m';
+                const lateAfter = element.getAttribute('data-late-after') || i18n.openingPlusGrace;
                 const totalEmployees = element.getAttribute('data-total-employees') || '0';
                 const exportUrl = element.getAttribute('data-export-url') || '#';
                 const reportSubtitle = element.getAttribute('data-report-subtitle') || matchedDays[0]?.getAttribute('data-employee-subtitle') || matchedDays[0]?.getAttribute('data-employee') || '';
@@ -2823,7 +2963,7 @@
                     return sum + (count * rate);
                 }, 0);
 
-                document.getElementById('monthlySignalDetailModalLabel').textContent = 'Office Time / Late Check-in Report';
+                document.getElementById('monthlySignalDetailModalLabel').textContent = i18n.officeTimeLateReport;
                 document.getElementById('monthlySignalDetailSubtitle').textContent = reportSubtitle;
 
                 const report = document.createElement('div');
@@ -2831,7 +2971,7 @@
                 report.innerHTML = `
                     <div class="late-dashboard-header">
                         <div>
-                            <h2 class="late-dashboard-title">Office Time / Late Check-in Report</h2>
+                            <h2 class="late-dashboard-title">${escapeHtml(i18n.officeTimeLateReport)}</h2>
                             <p class="late-dashboard-subtitle">${escapeHtml(reportSubtitle)}</p>
                         </div>
                         <div class="late-dashboard-actions">
@@ -2844,14 +2984,14 @@
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-green"><i data-feather="clock"></i></span>
                             <div>
-                                <p class="late-dashboard-card-label">Opening Time</p>
+                                <p class="late-dashboard-card-label">${escapeHtml(i18n.openingTime)}</p>
                                 <p class="late-dashboard-card-value">${escapeHtml(openingTime)}</p>
                             </div>
                         </div>
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-amber"><i data-feather="watch"></i></span>
                             <div>
-                                <p class="late-dashboard-card-label">Grace Period</p>
+                                <p class="late-dashboard-card-label">${escapeHtml(i18n.gracePeriod)}</p>
                                 <p class="late-dashboard-card-value">16 Minutes</p>
                                 <p class="late-dashboard-card-note">Until ${escapeHtml(lateAfter)}</p>
                             </div>
@@ -2859,40 +2999,40 @@
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-orange"><i data-feather="alert-triangle"></i></span>
                             <div>
-                                <p class="late-dashboard-card-label">Late Check-in</p>
+                                <p class="late-dashboard-card-label">${escapeHtml(i18n.lateCheckIn)}</p>
                                 <p class="late-dashboard-card-value">After ${escapeHtml(lateAfter)}</p>
                             </div>
                         </div>
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-purple"><i data-feather="users"></i></span>
                             <div>
-                                <p class="late-dashboard-card-label">Employees</p>
+                                <p class="late-dashboard-card-label">${escapeHtml(i18n.employees)}</p>
                                 <p class="late-dashboard-card-value">${escapeHtml(totalEmployees)}</p>
-                                <p class="late-dashboard-card-note">Total Late: ${grandTotal}</p>
+                                <p class="late-dashboard-card-note">${escapeHtml(i18n.totalLate)}: ${grandTotal}</p>
                             </div>
                         </div>
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-blue"><i data-feather="bar-chart-2"></i></span>
                             <div>
-                                <p class="late-dashboard-card-label">Late Hours</p>
+                                <p class="late-dashboard-card-label">${escapeHtml(i18n.lateHours)}</p>
                                 <p class="late-dashboard-card-value">${escapeHtml(formatLateDuration(lateMinutesTotal))}</p>
-                                <p class="late-dashboard-card-note">${lateMinutesTotal} minutes total</p>
+                                <p class="late-dashboard-card-note">${lateMinutesTotal} ${escapeHtml(i18n.minutesTotal)}</p>
                             </div>
                         </div>
                     </div>
                     <div class="late-dashboard-info">
                         <i data-feather="info"></i>
-                        Check-in from <strong>opening time + 16 minutes</strong> will be considered as <strong>Late</strong>.
+                        ${escapeHtml(i18n.checkinLateRule)}
                     </div>
                     <div class="late-dashboard-table-wrap">
                         <table class="late-dashboard-table">
                             <thead>
                                 <tr>
-                                    <th>Late More Than</th>
-                                    <th>Late Time Range</th>
-                                    <th>Description</th>
-                                    <th>Count</th>
-                                    <th>Payment</th>
+                                    <th>${escapeHtml(i18n.lateMoreThan)}</th>
+                                    <th>${escapeHtml(i18n.lateTimeRange)}</th>
+                                    <th>${escapeHtml(i18n.description)}</th>
+                                    <th>${escapeHtml(i18n.count)}</th>
+                                    <th>${escapeHtml(i18n.payment)}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2916,7 +3056,7 @@
                                     `;
                                 }).join('')}
                                 <tr class="late-dashboard-grand">
-                                    <td colspan="3">Grand Total</td>
+                                    <td colspan="3">${escapeHtml(i18n.grandTotal)}</td>
                                     <td><span class="late-dashboard-count">${grandTotal}</span></td>
                                     <td><span class="late-dashboard-payment">${formatPayment(paymentTotal)}</span></td>
                                 </tr>
@@ -2924,10 +3064,10 @@
                         </table>
                     </div>
                     <div class="late-dashboard-footer">
-                        <p class="late-dashboard-note">* Payment is calculated by late time range and shown in USD.</p>
+                        <p class="late-dashboard-note">${escapeHtml(i18n.paymentNoteUsd)}</p>
                         <a class="late-dashboard-action" href="${escapeHtml(exportUrl)}">
                             <i data-feather="download"></i>
-                            Export Excel
+                            ${escapeHtml(i18n.exportExcel)}
                         </a>
                     </div>
                 `;
@@ -3015,7 +3155,7 @@
                 button.dataset.remark = action.remark || '';
                 button.dataset.reason = action.reason || 'N/A';
                 button.dataset.id = action.id || '';
-                button.dataset.label = action.title || 'Leave Request';
+                button.dataset.label = action.title || i18n.leaveRequest;
                 button.dataset.approversUrl = action.approvers_url || '';
                 return button;
             };
@@ -3032,7 +3172,7 @@
                     card.className = 'monthly-detail-action-card';
 
                     const title = document.createElement('strong');
-                    title.textContent = action.title || 'Pending Request';
+                    title.textContent = action.title || i18n.pendingRequest;
                     card.appendChild(title);
 
                     const reason = document.createElement('p');
@@ -3077,7 +3217,7 @@
 
                 const row = element.closest('tr');
                 const signal = element.getAttribute('data-signal');
-                const signalTitle = element.getAttribute('data-signal-title') || 'Signal Detail';
+                const signalTitle = element.getAttribute('data-signal-title') || i18n.signalDetail;
                 const dayButtons = Array.from(row?.querySelectorAll('.monthly-day-link') || []);
                 const matchedDays = dayButtons.filter((dayButton) => {
                     return readJsonData(dayButton, 'data-indicators').some((indicator) => indicator.short === signal);
@@ -3105,7 +3245,7 @@
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
                     actionButton.className = 'btn btn-primary btn-xs';
-                    actionButton.textContent = 'View / Quick';
+                    actionButton.textContent = i18n.viewQuick;
                     actionButton.addEventListener('click', function () {
                         signalDetailModal.hide();
                         openMonthlyDayDetail(dayButton);
@@ -3117,7 +3257,7 @@
                 });
 
                 if (!matchedDays.length) {
-                    list.innerHTML = '<div class="text-muted small">No matching days found.</div>';
+                    list.innerHTML = `<div class="text-muted small">${escapeHtml(i18n.noMatchingDaysFound)}</div>`;
                 }
 
                 signalDetailModal.show();
@@ -3131,7 +3271,7 @@
 
                 const row = element.closest('tr');
                 const status = element.getAttribute('data-total-status');
-                const titleText = element.getAttribute('data-total-title') || 'Attendance Detail';
+                const titleText = element.getAttribute('data-total-title') || i18n.attendanceDetail;
                 const dayButtons = Array.from(row?.querySelectorAll('.monthly-day-link') || []);
                 const matchedDays = status === 'all'
                     ? dayButtons
@@ -3170,7 +3310,7 @@
                     const actionButton = document.createElement('button');
                     actionButton.type = 'button';
                     actionButton.className = 'btn btn-primary btn-xs';
-                    actionButton.textContent = 'View / Quick';
+                    actionButton.textContent = i18n.viewQuick;
                     actionButton.addEventListener('click', function () {
                         signalDetailModal.hide();
                         openMonthlyDayDetail(dayButton);
@@ -3182,7 +3322,7 @@
                 });
 
                 if (!matchedDays.length) {
-                    list.innerHTML = '<div class="text-muted small">No matching days found.</div>';
+                    list.innerHTML = `<div class="text-muted small">${escapeHtml(i18n.noMatchingDaysFound)}</div>`;
                 }
 
                 signalDetailModal.show();
@@ -3218,16 +3358,16 @@
 
                 const title = document.querySelector('#attendanceCreateForm .add-modal-title');
                 if (title) {
-                    const userName = element.getAttribute('data-user-name') || 'Employee';
+                    const userName = element.getAttribute('data-user-name') || i18n.employee;
                     const displayDate = element.getAttribute('data-cdate') || element.getAttribute('data-display-date') || '';
-                    title.textContent = `Quick Attendance: ${userName}${displayDate ? ' - ' + displayDate : ''}`;
+                    title.textContent = `${i18n.quickAttendance}: ${userName}${displayDate ? ' - ' + displayDate : ''}`;
                 }
 
                 detailModal?.hide();
                 quickAttendanceModal.show();
             });
 
-            const resetQuickLeaveOptions = (message = 'Loading leave types...') => {
+            const resetQuickLeaveOptions = (message = i18n.loadingLeaveTypes) => {
                 const type = document.getElementById('attendanceQuickLeaveType');
                 const submit = document.getElementById('attendanceQuickLeaveSubmit');
                 if (!type) {
@@ -3250,7 +3390,7 @@
                 detailModal?.hide();
 
                 const userId = element.getAttribute('data-user-id');
-                const userName = element.getAttribute('data-user-name') || 'Employee';
+                const userName = element.getAttribute('data-user-name') || i18n.employee;
                 const attendanceDate = element.getAttribute('data-attendance-date');
                 const displayDate = element.getAttribute('data-display-date') || attendanceDate;
                 const fetchUrl = element.getAttribute('data-fetch-url');
@@ -3258,8 +3398,8 @@
                 document.getElementById('attendanceQuickLeaveUserId').value = userId;
                 document.getElementById('attendanceQuickLeaveDate').value = attendanceDate;
                 document.getElementById('attendanceQuickLeaveReason').value = '';
-                document.getElementById('attendanceQuickLeaveModalLabel').textContent = `Quick Leave: ${userName}`;
-                document.getElementById('attendanceQuickLeaveHelpText').textContent = `Create an already approved leave for ${displayDate}.`;
+                document.getElementById('attendanceQuickLeaveModalLabel').textContent = `${i18n.quickLeave}: ${userName}`;
+                document.getElementById('attendanceQuickLeaveHelpText').textContent = i18n.createApprovedLeaveForDate.replace(':date', displayDate);
 
                 resetQuickLeaveOptions();
                 quickLeaveModal.show();
@@ -3272,12 +3412,12 @@
                         const submit = document.getElementById('attendanceQuickLeaveSubmit');
 
                         if (!leaveTypes.length) {
-                            resetQuickLeaveOptions('No leave types available');
+                            resetQuickLeaveOptions(i18n.noLeaveTypesAvailable);
                             return;
                         }
 
                         type.disabled = false;
-                        type.innerHTML = '<option value="">Select leave type</option>';
+                        type.innerHTML = `<option value="">${escapeHtml(i18n.selectLeaveType)}</option>`;
                         leaveTypes.forEach((leaveType) => {
                             const option = document.createElement('option');
                             option.value = leaveType.id;
@@ -3289,7 +3429,7 @@
                             submit.disabled = false;
                         }
                     })
-                    .catch(() => resetQuickLeaveOptions('Unable to load leave types'));
+                    .catch(() => resetQuickLeaveOptions(i18n.unableLoadLeaveTypes));
             });
 
             document.addEventListener('click', function (event) {
@@ -3301,7 +3441,7 @@
                 event.preventDefault();
                 detailModal?.hide();
 
-                const userName = element.getAttribute('data-user-name') || 'Employee';
+                const userName = element.getAttribute('data-user-name') || i18n.employee;
                 const attendanceDate = element.getAttribute('data-attendance-date');
                 const displayDate = element.getAttribute('data-display-date') || attendanceDate;
 
@@ -3310,8 +3450,8 @@
                 document.getElementById('attendanceQuickTimeLeaveFrom').value = '';
                 document.getElementById('attendanceQuickTimeLeaveTo').value = '';
                 document.getElementById('attendanceQuickTimeLeaveReason').value = '';
-                document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `Quick Time Leave: ${userName}`;
-                document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = `Create an already approved time leave for ${displayDate}.`;
+                document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `${i18n.quickTimeLeave}: ${userName}`;
+                document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = i18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
                 quickTimeLeaveModal.show();
             });
 
@@ -3324,7 +3464,7 @@
                 event.preventDefault();
                 detailModal?.hide();
 
-                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = element.dataset.label || 'Leave Request';
+                document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = element.dataset.label || i18n.leaveRequest;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', element.dataset.href || '#');
                 document.getElementById('attendanceLeaveStatus').value = element.dataset.status || '{{ \App\Enum\LeaveStatusEnum::approved->value }}';
                 document.getElementById('attendanceLeaveRemark').value = element.dataset.remark || '';
@@ -3342,9 +3482,9 @@
                             const approvers = response.data.approval_data || [];
                             document.getElementById('attendancePreviousApprovers').innerHTML = approvers.map((approver) => `
                                 <div class="border rounded p-2 mb-2 small">
-                                    <b>Approver:</b> ${approver.approved_by_name || 'N/A'}<br>
-                                    <b>Status:</b> ${approver.status || 'N/A'}<br>
-                                    <b>Remark:</b> ${approver.reason || 'N/A'}
+                                    <b>${escapeHtml(i18n.approver)}:</b> ${approver.approved_by_name || 'N/A'}<br>
+                                    <b>${escapeHtml(i18n.status)}:</b> ${approver.status || 'N/A'}<br>
+                                    <b>${escapeHtml(i18n.remark)}:</b> ${approver.reason || 'N/A'}
                                 </div>
                             `).join('');
                         })
@@ -3385,13 +3525,13 @@
                     });
                     const data = await response.json();
                     if (!response.ok || !data.success) {
-                        throw new Error(data.message || 'Unable to load chat messages.');
+                        throw new Error(data.message || i18n.unableLoadChatMessages);
                     }
                     chatThread.innerHTML = data.html;
                     scrollChatToBottom();
                 } catch (error) {
                     if (chatStatusText) {
-                        chatStatusText.textContent = error.message || 'Unable to load chat messages.';
+                        chatStatusText.textContent = error.message || i18n.unableLoadChatMessages;
                     }
                 }
             };
@@ -3421,13 +3561,13 @@
                     chatEmployeeId.value = activeChatEmployeeId;
                 }
                 document.getElementById('attendanceChatAvatar')?.setAttribute('src', element.getAttribute('data-employee-avatar') || '{{ asset('assets/images/img.png') }}');
-                document.getElementById('attendanceChatModalLabel').textContent = element.getAttribute('data-employee-name') || 'Employee Chat';
-                document.getElementById('attendanceChatSubtitle').textContent = element.getAttribute('data-employee-subtitle') || 'Employee';
+                document.getElementById('attendanceChatModalLabel').textContent = element.getAttribute('data-employee-name') || i18n.employeeChat;
+                document.getElementById('attendanceChatSubtitle').textContent = element.getAttribute('data-employee-subtitle') || i18n.employee;
                 if (chatThread) {
-                    chatThread.innerHTML = '<div class="chat-empty">Loading conversation...</div>';
+                    chatThread.innerHTML = `<div class="chat-empty">${escapeHtml(i18n.loadingConversation)}</div>`;
                 }
                 if (chatStatusText) {
-                    chatStatusText.textContent = 'Loading messages...';
+                    chatStatusText.textContent = i18n.loadingMessages;
                 }
 
                 chatModal.show();
@@ -3444,7 +3584,7 @@
                     }
 
                     if (chatStatusText) {
-                        chatStatusText.textContent = 'Sending message...';
+                        chatStatusText.textContent = i18n.sendingMessage;
                     }
 
                     try {
@@ -3458,18 +3598,18 @@
                         });
                         const data = await response.json();
                         if (!response.ok || !data.success) {
-                            throw new Error(data.message || 'Unable to send message.');
+                            throw new Error(data.message || i18n.unableSendMessage);
                         }
 
                         chatThread.innerHTML = data.html;
                         chatForm.reset();
                         scrollChatToBottom();
                         if (chatStatusText) {
-                            chatStatusText.textContent = 'Message sent successfully.';
+                            chatStatusText.textContent = i18n.messageSentSuccessfully;
                         }
                     } catch (error) {
                         if (chatStatusText) {
-                            chatStatusText.textContent = error.message || 'Unable to send message right now.';
+                            chatStatusText.textContent = error.message || i18n.unableSendMessageNow;
                         }
                     }
                 });
@@ -3477,7 +3617,7 @@
 
             chatAttachment?.addEventListener('change', function () {
                 if (chatStatusText && this.files?.[0]) {
-                    chatStatusText.textContent = `Attachment ready: ${this.files[0].name}`;
+                    chatStatusText.textContent = `${i18n.attachmentReady}: ${this.files[0].name}`;
                 }
             });
 
@@ -3485,7 +3625,7 @@
                 stopChatPolling();
                 activeChatEmployeeId = null;
                 if (chatThread) {
-                    chatThread.innerHTML = '<div class="chat-empty">Select an employee to start chatting.</div>';
+                    chatThread.innerHTML = `<div class="chat-empty">${escapeHtml(i18n.selectEmployeeStartChatting)}</div>`;
                 }
                 chatForm?.reset();
             });

@@ -59,7 +59,7 @@ class Handler extends ExceptionHandler
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         if ($request->expectsJson()) {
-           return AppHelper::sendErrorResponse('Unauthenticated', 401);
+           return AppHelper::sendErrorResponse(__('auth.unauthenticated'), 401);
         }
     }
 
