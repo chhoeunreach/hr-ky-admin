@@ -1991,9 +1991,11 @@
                                             data-details='@json($day["details"] ?? array_merge([$day["label"]], array_column($day["indicators"] ?? [], "label")))'
                                             data-indicators='@json($day["indicators"] ?? [])'
                                             data-actions='@json($day["actions"] ?? [])'
+                                            data-can-quick-attendance="{{ $day['status'] === 'absent' && !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-leave="{{ !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-time-leave="{{ !empty($day['can_quick_time_leave']) ? '1' : '0' }}"
                                             data-fetch-url="{{ route('admin.leaves.employee-data', $employee->id) }}"
+                                            data-attendance-store-url="{{ route('admin.attendances.store') }}"
                                             data-detail-url="{{ $day['detail_url'] }}"
                                             title="{{ $day['date'] }} - {{ $day['tooltip'] ?? $day['label'] }}">
                                         <span class="monthly-status-dot status-{{ $day['status'] }}">
@@ -2130,6 +2132,11 @@
                         <div class="monthly-detail-actions" id="monthlyAttendanceRequestActions"></div>
                     </div>
                     <div class="modal-footer">
+                        @canany(['attendance_create', 'attendance_update'])
+                            <button type="button" class="btn btn-outline-success btn-sm quickAttendanceTrigger d-none" id="monthlyQuickAttendanceButton">
+                                Quick Attendance
+                            </button>
+                        @endcanany
                         @can('quick_leave')
                             <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-none" id="monthlyQuickLeaveButton">
                                 Quick Approve Leave
@@ -2208,6 +2215,8 @@
                 </div>
             </div>
         </div>
+
+        @include('admin.attendance.common.create-attendance-form')
 
         @can('quick_leave')
             <div class="modal fade" id="attendanceQuickLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickLeaveModalLabel" aria-hidden="true">
@@ -2359,6 +2368,8 @@
             const quickLeaveModal = quickLeaveModalElement ? new bootstrap.Modal(quickLeaveModalElement) : null;
             const quickTimeLeaveModalElement = document.getElementById('attendanceQuickTimeLeaveModal');
             const quickTimeLeaveModal = quickTimeLeaveModalElement ? new bootstrap.Modal(quickTimeLeaveModalElement) : null;
+            const quickAttendanceModalElement = document.getElementById('attendanceCreateForm');
+            const quickAttendanceModal = quickAttendanceModalElement ? new bootstrap.Modal(quickAttendanceModalElement) : null;
             const statusModalElement = document.getElementById('attendanceLeaveStatusUpdate');
             const statusModal = statusModalElement ? new bootstrap.Modal(statusModalElement) : null;
             const signalDetailModalElement = document.getElementById('monthlySignalDetailModal');
@@ -2660,6 +2671,7 @@
                 const details = readJsonData(trigger, 'data-details');
                 const actions = readJsonData(trigger, 'data-actions');
                 const detailUrl = trigger.getAttribute('data-detail-url') || '#';
+                const canQuickAttendance = trigger.getAttribute('data-can-quick-attendance') === '1';
                 const canQuickLeave = trigger.getAttribute('data-can-quick-leave') === '1';
                 const canQuickTimeLeave = trigger.getAttribute('data-can-quick-time-leave') === '1';
 
@@ -2677,9 +2689,18 @@
 
                 renderRequestActions(actions);
 
+                const quickAttendanceButton = document.getElementById('monthlyQuickAttendanceButton');
                 const quickLeaveButton = document.getElementById('monthlyQuickLeaveButton');
                 const quickTimeLeaveButton = document.getElementById('monthlyQuickTimeLeaveButton');
                 const quickChatButton = document.getElementById('monthlyQuickChatButton');
+
+                if (quickAttendanceButton) {
+                    quickAttendanceButton.classList.toggle('d-none', !canQuickAttendance);
+                    setQuickActionData(quickAttendanceButton, trigger);
+                    quickAttendanceButton.setAttribute('data-user-name', employee);
+                    quickAttendanceButton.setAttribute('data-href', trigger.getAttribute('data-attendance-store-url') || '');
+                    quickAttendanceButton.setAttribute('data-cdate', trigger.getAttribute('data-display-date') || date);
+                }
 
                 if (quickLeaveButton) {
                     quickLeaveButton.classList.toggle('d-none', !canQuickLeave);
@@ -2882,6 +2903,32 @@
                 }
 
                 signalDetailModal.show();
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.quickAttendanceTrigger');
+                if (!element || !quickAttendanceModal) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                document.getElementById('createAttendance')?.setAttribute('action', element.getAttribute('data-href') || '');
+                document.getElementById('empId').value = element.getAttribute('data-user-id') || '';
+                document.getElementById('addDate').value = element.getAttribute('data-attendance-date') || '';
+                document.getElementById('checkAddIn').value = '';
+                document.getElementById('checkAddOut').value = '';
+                document.getElementById('createRemark').value = '';
+
+                const title = document.querySelector('#attendanceCreateForm .add-modal-title');
+                if (title) {
+                    const userName = element.getAttribute('data-user-name') || 'Employee';
+                    const displayDate = element.getAttribute('data-cdate') || element.getAttribute('data-display-date') || '';
+                    title.textContent = `Quick Attendance: ${userName}${displayDate ? ' - ' + displayDate : ''}`;
+                }
+
+                detailModal?.hide();
+                quickAttendanceModal.show();
             });
 
             const resetQuickLeaveOptions = (message = 'Loading leave types...') => {
