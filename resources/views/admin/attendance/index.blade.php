@@ -954,8 +954,20 @@
                 white-space: nowrap;
                 margin-left: 0.35rem;
                 box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
-                transform: none;
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-2px);
+                pointer-events: none;
                 transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+            }
+
+            .attendance-day-row:hover .attendance-profile-chat-badge,
+            .attendance-profile-chat-badge:focus,
+            .attendance-profile-chat-badge.has-unread {
+                opacity: 1;
+                visibility: visible;
+                transform: none;
+                pointer-events: auto;
             }
 
             .attendance-profile-chat-badge .attendance-chat-unread-count {
@@ -1789,7 +1801,7 @@
                                                     <span>{{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}</span>
                                                     @can('view_employee_chat')
                                                         <a href="#"
-                                                           class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
+                                                           class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat {{ $unreadChatCount > 0 ? 'has-unread' : '' }}"
                                                            data-employee-id="{{ $firstAttendance->user_id }}"
                                                            data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
                                                            data-employee-avatar="{{ $profileImage }}"
@@ -1920,7 +1932,7 @@
                                                 <span>{{ $firstAttendance->office_opening_time ? \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time) : 'N/A' }}</span>
                                                 @can('view_employee_chat')
                                                     <a href="#"
-                                                       class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat"
+                                                       class="btn btn-outline-primary btn-xs attendance-profile-chat-badge openAttendanceChat {{ $unreadChatCount > 0 ? 'has-unread' : '' }}"
                                                        data-employee-id="{{ $firstAttendance->user_id }}"
                                                        data-employee-name="{{ ucfirst($firstAttendance->user_name) }}"
                                                        data-employee-avatar="{{ $profileImage }}"
@@ -3553,6 +3565,9 @@
                 document.querySelectorAll(`.attendance-profile-chat-badge[data-employee-id="${employeeId}"] .attendance-chat-unread-count`).forEach((badge) => {
                     badge.textContent = '0';
                     badge.classList.add('is-empty');
+                });
+                document.querySelectorAll(`.attendance-profile-chat-badge[data-employee-id="${employeeId}"]`).forEach((badge) => {
+                    badge.classList.remove('has-unread');
                 });
             };
 

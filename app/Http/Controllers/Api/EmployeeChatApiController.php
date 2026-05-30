@@ -21,6 +21,12 @@ use Intervention\Image\Facades\Image;
 
 class EmployeeChatApiController extends Controller
 {
+    private const HR_ASSISTANT_BRANCH_NAME = 'វីអាយភី';
+    private const HR_ASSISTANT_ROLE_TERMS = [
+        'hr assistance',
+        'hr assistant',
+    ];
+
     public function access(): JsonResponse
     {
         try {
@@ -36,6 +42,11 @@ class EmployeeChatApiController extends Controller
                 ? $this->getOrCreateAdminConversation($user->id, $primaryAdmin->id)
                 : null;
             $adminContact = $this->buildAdminContact($conversation, $primaryAdmin);
+            $adminDirectoryEntries = $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
+                $admin,
+                $this->getOrCreateAdminConversation($user->id, $admin->id)
+            ))->values();
+            $hrAssistantContacts = $this->getHrAssistantDirectoryEntries($user->id);
 
             return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
                 'scope' => $scope,
@@ -44,10 +55,8 @@ class EmployeeChatApiController extends Controller
                 'admin_chat_enabled' => true,
                 'per_admin_conversation_enabled' => $supportsPerAdminConversation,
                 'admin_contact' => $adminContact,
-                'admins' => $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
-                    $admin,
-                    $this->getOrCreateAdminConversation($user->id, $admin->id)
-                ))->values(),
+                'admins' => $this->mergeDirectoryContacts($adminDirectoryEntries, $hrAssistantContacts),
+                'hr_assistant_contacts' => $hrAssistantContacts,
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
@@ -72,6 +81,8 @@ class EmployeeChatApiController extends Controller
                 $conversation,
                 $primaryAdmin
             );
+            $adminDirectoryEntries = $this->getAdminDirectoryEntries($authUserId);
+            $hrAssistantContacts = $this->getHrAssistantDirectoryEntries($authUserId);
 
             if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
                 return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
@@ -79,7 +90,8 @@ class EmployeeChatApiController extends Controller
                     'admin_contact' => $adminContact,
                     'pinned_contacts' => [$adminContact],
                     'online_contacts' => [],
-                    'contacts' => $this->getAdminDirectoryEntries($authUserId),
+                    'contacts' => $this->mergeDirectoryContacts($adminDirectoryEntries, $hrAssistantContacts),
+                    'hr_assistant_contacts' => $hrAssistantContacts,
                 ]);
             }
 
@@ -96,7 +108,9 @@ class EmployeeChatApiController extends Controller
                 ->values();
 
             $contacts = $employeeContacts
-                ->concat($this->getAdminDirectoryEntries($authUserId))
+                ->concat($adminDirectoryEntries)
+                ->concat($hrAssistantContacts)
+                ->unique(fn (array $contact) => ($contact['directory_type'] ?? 'unknown') . ':' . ($contact['source_id'] ?? $contact['id'] ?? ''))
                 ->values();
 
             return AppHelper::sendSuccessResponse('Mobile chat contacts loaded successfully.', [
@@ -106,6 +120,7 @@ class EmployeeChatApiController extends Controller
                 'pinned_contacts' => [$adminContact],
                 'online_contacts' => $employeeContacts->where('is_online', true)->values(),
                 'contacts' => $contacts,
+                'hr_assistant_contacts' => $hrAssistantContacts,
             ]);
         } catch (Throwable $throwable) {
             report($throwable);
@@ -394,6 +409,43 @@ class EmployeeChatApiController extends Controller
 
                 return $this->transformAdminDirectoryEntry($admin, $conversation);
             })
+            ->values();
+    }
+
+    private function getHrAssistantDirectoryEntries(int $authUserId)
+    {
+        return User::withoutGlobalScopes()
+            ->select(['id', 'name', 'username', 'email', 'avatar', 'phone', 'department_id', 'branch_id', 'post_id', 'role_id', 'user_type', 'online_status'])
+            ->with(['department:id,dept_name', 'branch:id,name', 'post:id,post_name', 'role:id,name,slug'])
+            ->where('status', 'verified')
+            ->where('is_active', 1)
+            ->where('id', '!=', $authUserId)
+            ->whereIn('branch_id', function ($query) {
+                $query->select('id')
+                    ->from('branches')
+                    ->where('name', self::HR_ASSISTANT_BRANCH_NAME);
+            })
+            ->whereHas('role', function ($query) {
+                $query->where(function ($roleQuery) {
+                    foreach (self::HR_ASSISTANT_ROLE_TERMS as $term) {
+                        $roleQuery
+                            ->orWhereRaw('LOWER(name) LIKE ?', ['%' . $term . '%'])
+                            ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . str_replace(' ', '-', $term) . '%'])
+                            ->orWhereRaw('LOWER(slug) LIKE ?', ['%' . str_replace(' ', '_', $term) . '%']);
+                    }
+                });
+            })
+            ->orderBy('name')
+            ->get()
+            ->map(fn (User $user) => $this->transformEmployeeDirectoryEntry($user))
+            ->values();
+    }
+
+    private function mergeDirectoryContacts($contacts, $additionalContacts)
+    {
+        return $contacts
+            ->concat($additionalContacts)
+            ->unique(fn (array $contact) => ($contact['directory_type'] ?? 'unknown') . ':' . ($contact['source_id'] ?? $contact['id'] ?? ''))
             ->values();
     }
 

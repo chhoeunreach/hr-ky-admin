@@ -606,9 +606,9 @@ class AttendanceMonthlyController extends Controller
             }
 
             $manualLateGraceMinutes = self::LATE_CHECK_IN_GRACE_MINUTES;
-            $lateStart = $openingTime->copy()->addMinutes($manualLateGraceMinutes + 1);
-            $rules['late_check_in'] = $checkInAt->gte($lateStart);
-            $rules['late_check_in_allowed'] = $lateStart->format('H:i');
+            $allowedLateCheckIn = $openingTime->copy()->addMinutes($manualLateGraceMinutes);
+            $rules['late_check_in'] = $checkInAt->gt($allowedLateCheckIn);
+            $rules['late_check_in_allowed'] = $allowedLateCheckIn->format('H:i');
         }
 
         if ($checkOut && $shift->closing_time) {
