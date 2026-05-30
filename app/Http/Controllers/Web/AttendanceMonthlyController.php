@@ -47,10 +47,10 @@ class AttendanceMonthlyController extends Controller
             'department_id' => $request->query('department_id'),
             'shift_id' => $request->query('shift_id'),
             'search' => trim((string) $request->query('search', '')),
-            'per_page' => (int) $request->query('per_page', 25),
+            'per_page' => $request->query('per_page', 25),
         ];
 
-        $filter['per_page'] = in_array($filter['per_page'], [10, 25, 50, 100], true) ? $filter['per_page'] : 25;
+        $filter['per_page'] = $this->resolvePerPage($filter['per_page']);
 
         $employees = $this->filteredEmployees($filter)->get();
         $rows = $this->buildRows($employees, $month);
@@ -730,8 +730,26 @@ class AttendanceMonthlyController extends Controller
         ];
     }
 
-    private function paginateRows(Collection $rows, int $perPage): LengthAwarePaginator
+    private function resolvePerPage(mixed $perPage): int|string
     {
+        if ($perPage === 'all') {
+            return 'all';
+        }
+
+        $perPage = (int) $perPage;
+
+        return in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
+    }
+
+    private function paginateRows(Collection $rows, int|string $perPage): LengthAwarePaginator
+    {
+        if ($perPage === 'all') {
+            return new LengthAwarePaginator($rows->values(), $rows->count(), max($rows->count(), 1), 1, [
+                'path' => request()->url(),
+                'query' => request()->query(),
+            ]);
+        }
+
         $page = LengthAwarePaginator::resolveCurrentPage();
         $items = $rows->slice(($page - 1) * $perPage, $perPage)->values();
 

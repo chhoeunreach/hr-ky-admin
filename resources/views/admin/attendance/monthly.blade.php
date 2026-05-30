@@ -1585,6 +1585,40 @@
             color: #64748b;
         }
 
+        .monthly-scroll-shortcuts {
+            position: fixed;
+            right: 22px;
+            bottom: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1040;
+        }
+
+        .monthly-scroll-shortcut {
+            width: 44px;
+            height: 44px;
+            border: 1px solid #d6e1f0;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.94);
+            color: #3b4d73;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .monthly-scroll-shortcut:hover {
+            transform: translateY(-1px);
+            border-color: #9db4da;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.16);
+        }
+
+        .monthly-scroll-shortcuts.is-hidden {
+            display: none;
+        }
+
         @media (max-width: 991.98px) {
             .monthly-report-strip {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1604,6 +1638,11 @@
         @media (max-width: 575.98px) {
             .monthly-report-strip {
                 grid-template-columns: 1fr;
+            }
+
+            .monthly-scroll-shortcuts {
+                right: 14px;
+                bottom: 14px;
             }
         }
     </style>
@@ -1821,8 +1860,9 @@
                         <label class="monthly-filter-label" for="table_per_page">Rows</label>
                         <select class="form-select monthly-table-rows" id="table_per_page" name="per_page">
                             @foreach([10, 25, 50, 100] as $perPage)
-                                <option value="{{ $perPage }}" @selected((int) $filter['per_page'] === $perPage)>{{ $perPage }}</option>
+                                <option value="{{ $perPage }}" @selected($filter['per_page'] === $perPage)>{{ $perPage }}</option>
                             @endforeach
+                            <option value="all" @selected($filter['per_page'] === 'all')>All</option>
                         </select>
                     </div>
 
@@ -2290,6 +2330,23 @@
                 </div>
             </div>
         @endif
+
+        <div class="monthly-scroll-shortcuts" id="monthlyScrollShortcuts">
+            <button type="button"
+                    class="monthly-scroll-shortcut"
+                    id="monthlyScrollTop"
+                    title="Go to top"
+                    aria-label="Go to top">
+                <i data-feather="arrow-up"></i>
+            </button>
+            <button type="button"
+                    class="monthly-scroll-shortcut"
+                    id="monthlyScrollBottom"
+                    title="Go to bottom"
+                    aria-label="Go to bottom">
+                <i data-feather="arrow-down"></i>
+            </button>
+        </div>
     </section>
 @endsection
 
@@ -2310,7 +2367,30 @@
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             const signalToggle = document.getElementById('monthlySignalToggle');
+            const monthlyScrollShortcuts = document.getElementById('monthlyScrollShortcuts');
+            const monthlyScrollTopButton = document.getElementById('monthlyScrollTop');
+            const monthlyScrollBottomButton = document.getElementById('monthlyScrollBottom');
             const signalColumns = () => document.querySelectorAll('.monthly-signal-column');
+
+            const updateMonthlyScrollShortcuts = () => {
+                if (!monthlyScrollShortcuts) {
+                    return;
+                }
+
+                const scrollable = document.documentElement.scrollHeight > (window.innerHeight + 120);
+                monthlyScrollShortcuts.classList.toggle('is-hidden', !scrollable);
+            };
+
+            monthlyScrollTopButton?.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+
+            monthlyScrollBottomButton?.addEventListener('click', () => {
+                window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+            });
+
+            window.addEventListener('resize', updateMonthlyScrollShortcuts);
+            updateMonthlyScrollShortcuts();
 
             const setSignalColumnsVisible = (visible) => {
                 signalColumns().forEach((column) => {
