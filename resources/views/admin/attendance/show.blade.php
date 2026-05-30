@@ -490,6 +490,7 @@
             ];
             $lateDates = [];
             $noCheckoutDates = [];
+            $presentCheckInDates = [];
 
             foreach ($leaveRequestsByDate ?? [] as $leaveRequest) {
                 $status = strtolower((string) $leaveRequest->status);
@@ -527,6 +528,12 @@
                 foreach (($dayData['data'] ?? []) as $attendance) {
                     $checkIn = $attendance['check_in_at'] ?? $attendance['night_checkin'] ?? null;
                     $checkOut = $attendance['check_out_at'] ?? $attendance['night_checkout'] ?? null;
+                    $attendanceApproved = $attendance['attendance_status'] === null
+                        || $attendance['attendance_status'] == \App\Models\Attendance::ATTENDANCE_APPROVED;
+
+                    if ($checkIn && $attendanceApproved) {
+                        $presentCheckInDates[$dayData['attendance_date']] = true;
+                    }
 
                     if ($checkIn && !$checkOut) {
                         $noCheckoutDates[$dayData['attendance_date']] = true;
@@ -540,7 +547,7 @@
 
                         if (
                             \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
-                            && ($attendance['attendance_status'] === null || $attendance['attendance_status'] == \App\Models\Attendance::ATTENDANCE_APPROVED)
+                            && $attendanceApproved
                         ) {
                             $lateDates[$dayData['attendance_date']] = true;
                         }
@@ -550,12 +557,12 @@
 
             $detailCardStats['late'] = count($lateDates);
             $detailCardStats['no_checkout'] = count($noCheckoutDates);
-            $detailCardStats['present'] = max($detailCardStats['present'] - $detailCardStats['late'], 0);
+            $detailCardStats['present'] = count($presentCheckInDates);
 
             $detailCards = [
                 ['key' => 'total', 'class' => 'is-highlight', 'icon' => 'SUM', 'title' => 'Total', 'note' => 'Calendar days'],
                 ['key' => 'sun', 'class' => 'is-off', 'icon' => 'SUN', 'title' => 'Sun', 'note' => 'Weekend days'],
-                ['key' => 'present', 'class' => 'is-present', 'icon' => 'P', 'title' => 'Present', 'note' => 'Approved attendance'],
+                ['key' => 'present', 'class' => 'is-present', 'icon' => 'P', 'title' => 'Present', 'note' => 'Check-in days'],
                 ['key' => 'late', 'class' => 'is-late', 'icon' => 'L', 'title' => 'Late', 'note' => 'After office rule'],
                 ['key' => 'absent', 'class' => 'is-absent', 'icon' => 'A', 'title' => 'Absent', 'note' => 'No attendance'],
                 ['key' => 'leave', 'class' => 'is-leave', 'icon' => 'LV', 'title' => 'Leave', 'note' => 'Approved leave'],

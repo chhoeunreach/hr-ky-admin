@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Helpers\AppHelper;
+use App\Exports\MonthlyAttendanceReductionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Branch;
@@ -18,11 +19,21 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceMonthlyController extends Controller
 {
     public const LATE_CHECK_IN_GRACE_MINUTES = 16;
+    private const LATE_REDUCTION_RATES = [
+        self::LATE_CHECK_IN_GRACE_MINUTES => 0.10,
+        20 => 0.20,
+        30 => 0.30,
+        40 => 0.40,
+        50 => 0.50,
+        60 => 1.00,
+        120 => 5.00,
+    ];
 
     public function index(Request $request)
     {
@@ -49,6 +60,12 @@ class AttendanceMonthlyController extends Controller
             $this->authorizeMonthlyAttendanceExport();
 
             return $this->exportCsv($rows, $month);
+        }
+
+        if ($request->query('export') === 'reduc_xlsx') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            return $this->exportReductionXlsx($rows, $month);
         }
 
         $monthlyRows = $this->paginateRows($rows, $filter['per_page']);
@@ -110,7 +127,7 @@ class AttendanceMonthlyController extends Controller
                 'post:id,post_name',
                 'officeTime:id,shift,opening_time,closing_time,is_early_check_in,checkin_before,is_early_check_out,checkout_before,is_late_check_in,checkin_after,is_late_check_out,checkout_after',
             ])
-            ->select(['id', 'name', 'employee_code', 'username', 'avatar', 'phone', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
+            ->select(['id', 'name', 'email', 'employee_code', 'username', 'avatar', 'phone', 'company_id', 'branch_id', 'department_id', 'post_id', 'office_time_id', 'online_status'])
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('status', 'verified')
             ->where('is_active', 1)
@@ -706,6 +723,97 @@ class AttendanceMonthlyController extends Controller
             'path' => request()->url(),
             'query' => request()->query(),
         ]);
+    }
+
+    private function exportReductionXlsx(Collection $rows, Carbon $month)
+    {
+        $filename = 'monthly-attendance-reduc-' . $month->format('Y-m') . '.xlsx';
+
+        return Excel::download(
+            new MonthlyAttendanceReductionExport($this->reductionExportRows($rows, $month)),
+            $filename
+        );
+    }
+
+    private function reductionExportRows(Collection $rows, Carbon $month): Collection
+    {
+        $createdAt = now();
+        $dateText = $createdAt->format('n/j/Y');
+        $monthYear = $month->format('M-y');
+        $companyEmail = (string) Company::query()
+            ->where('id', AppHelper::getAuthUserCompanyId())
+            ->value('email');
+        $admin = auth('admin')->user();
+        $webUser = auth()->user();
+        $receiver = (string) ($admin?->name ?? $webUser?->name ?? 'Admin');
+
+        return $rows
+            ->map(function (array $row) use ($dateText, $month, $monthYear, $companyEmail, $receiver, $createdAt) {
+                $payment = $this->lateReductionPayment($row['late_breakdown'] ?? []);
+                if ($payment <= 0) {
+                    return null;
+                }
+
+                $employee = $row['employee'];
+                $employeeId = $employee->employee_code ?: ($employee->username ?: (string) $employee->id);
+                $number = $employeeId . '-' . $month->format('n-Y');
+                $expenseType = 'កាត់';
+
+                return [
+                    $dateText,
+                    $number,
+                    $employeeId,
+                    $employee->name,
+                    $employee->username,
+                    $employee->branch?->name,
+                    $employee->phone,
+                    $expenseType,
+                    $this->lateReductionReason($row['late_breakdown'] ?? []),
+                    round($payment, 2),
+                    'Cash',
+                    $receiver,
+                    $monthYear,
+                    $monthYear,
+                    $number . $expenseType,
+                    $employee->email,
+                    $companyEmail,
+                    $createdAt->format('n/j/Y H:i'),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function lateReductionPayment(array $breakdown): float
+    {
+        $payment = 0;
+
+        foreach (self::LATE_REDUCTION_RATES as $minutes => $rate) {
+            $payment += ((int) ($breakdown[$minutes] ?? 0)) * $rate;
+        }
+
+        return $payment;
+    }
+
+    private function lateReductionReason(array $breakdown): string
+    {
+        $parts = [];
+
+        foreach (self::LATE_REDUCTION_RATES as $minutes => $rate) {
+            $count = (int) ($breakdown[$minutes] ?? 0);
+            if ($count <= 0) {
+                continue;
+            }
+
+            $label = match ((int) $minutes) {
+                self::LATE_CHECK_IN_GRACE_MINUTES => '16m',
+                120 => '2h+',
+                default => $minutes . 'm',
+            };
+            $parts[] = $label . ' x ' . $count;
+        }
+
+        return 'Late check-in' . ($parts ? ' (' . implode(', ', $parts) . ')' : '');
     }
 
     private function exportCsv(Collection $rows, Carbon $month): StreamedResponse

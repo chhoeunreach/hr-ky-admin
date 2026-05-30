@@ -1777,6 +1777,12 @@
                         <input type="hidden" name="shift_id" value="{{ $filter['shift_id'] }}">
                     @endif
 
+                    @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
+                        <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}">
+                            <i class="link-icon" data-feather="file-text"></i> Export Reduc XLSX
+                        </a>
+                    @endcanany
+
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="table_per_page">Rows</label>
                         <select class="form-select monthly-table-rows" id="table_per_page" name="per_page">
@@ -1940,7 +1946,7 @@
                                         data-late-after="{{ $employee->officeTime?->opening_time ? \Carbon\Carbon::parse($employee->officeTime->opening_time)->addMinutes(\App\Http\Controllers\Web\AttendanceMonthlyController::LATE_CHECK_IN_GRACE_MINUTES)->format('h:i A') : 'opening + 16m' }}"
                                          data-total-employees="{{ $summary['employees'] }}"
                                          data-report-subtitle="{{ $employee->department?->dept_name ?: ($employee->branch?->name ?: $employee->name) }}"
-                                         data-export-url="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}"
+                                          data-export-url="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}"
                                         @disabled(($row['totals']['late'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['late'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['late'] }}</span>
                                 </button>
