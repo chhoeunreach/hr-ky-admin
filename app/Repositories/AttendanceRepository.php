@@ -8,6 +8,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AttendanceRepository
 {
@@ -131,6 +132,8 @@ class AttendanceRepository
         $selectedDate = Carbon::parse($filterParameter['attendance_date']);
         $selectedMonthStart = $selectedDate->copy()->startOfMonth()->toDateString();
         $selectedMonthEnd = $selectedDate->copy()->endOfMonth()->toDateString();
+        $adminId = auth('admin')->id();
+        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
         $leaveSummarySubQuery = DB::table('leave_requests_master')
             ->leftJoin('leave_types', 'leave_requests_master.leave_type_id', '=', 'leave_types.id')
             ->selectRaw('
@@ -174,6 +177,19 @@ class AttendanceRepository
             ->whereMonth('time_leaves.issue_date', $selectedDate->month)
             ->whereYear('time_leaves.issue_date', $selectedDate->year)
             ->groupBy('time_leaves.requested_by');
+        $chatUnreadSubQuery = DB::table('chat_conversations')
+            ->join('chat_messages', 'chat_messages.conversation_id', '=', 'chat_conversations.id')
+            ->select('chat_conversations.user_id', DB::raw('COUNT(chat_messages.id) AS unread_chat_count'))
+            ->where('chat_messages.sender_type', 'user')
+            ->where('chat_messages.is_read_by_admin', false)
+            ->when($supportsPerAdminConversation, function ($query) use ($adminId) {
+                if ($adminId) {
+                    $query->where('chat_conversations.admin_id', $adminId);
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            })
+            ->groupBy('chat_conversations.user_id');
 
         $select = $summaryOnly ? [
             'attendances.id AS attendance_id',
@@ -243,6 +259,7 @@ class AttendanceRepository
             DB::raw('COALESCE(leave_summary.pending_leave_days, 0) AS pending_leave_days'),
             DB::raw('COALESCE(time_leave_summary.approved_time_leave_days, 0) AS approved_time_leave_days'),
             DB::raw('COALESCE(time_leave_summary.pending_time_leave_days, 0) AS pending_time_leave_days'),
+            DB::raw('COALESCE(chat_unread.unread_chat_count, 0) AS unread_chat_count'),
         ];
 
         return User::select($select)->leftJoin('attendances', function ($join) use ($filterParameter) {
@@ -269,6 +286,9 @@ class AttendanceRepository
             })
             ->leftJoinSub($timeLeaveSummarySubQuery, 'time_leave_summary', function ($join) {
                 $join->on('users.id', '=', 'time_leave_summary.requested_by');
+            })
+            ->leftJoinSub($chatUnreadSubQuery, 'chat_unread', function ($join) {
+                $join->on('users.id', '=', 'chat_unread.user_id');
             })
             ->leftJoin('office_times as user_office_times', 'users.office_time_id', '=', 'user_office_times.id')
             ->leftJoin('office_times','attendances.office_time_id','office_times.id')

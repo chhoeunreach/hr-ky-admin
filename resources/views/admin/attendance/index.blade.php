@@ -946,27 +946,35 @@
             }
 
             .attendance-profile-chat-badge {
-                position: absolute;
-                top: 50%;
-                right: 0;
+                position: static;
                 z-index: 7;
-                opacity: 0;
-                visibility: hidden;
                 display: inline-flex;
                 align-items: center;
                 gap: 5px;
                 white-space: nowrap;
+                margin-left: 0.35rem;
                 box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
-                transform: translate(8px, -50%) scale(0.98);
+                transform: none;
                 transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
             }
 
-            .attendance-time-in-cell:hover .attendance-profile-chat-badge,
-            .attendance-time-in-cell:focus-within .attendance-profile-chat-badge,
-            .attendance-profile-chat-badge:focus {
-                opacity: 1;
-                visibility: visible;
-                transform: translate(0, -50%) scale(1);
+            .attendance-profile-chat-badge .attendance-chat-unread-count {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 18px;
+                height: 18px;
+                padding: 0 5px;
+                border-radius: 999px;
+                background: #ef232a;
+                color: #ffffff;
+                font-size: 10px;
+                font-weight: 800;
+                line-height: 1;
+            }
+
+            .attendance-profile-chat-badge .attendance-chat-unread-count.is-empty {
+                display: none;
             }
 
             .attendance-leave-pill {
@@ -1598,6 +1606,7 @@
                                             && !$firstAttendance->attendance_id
                                             && !$firstAttendance->leave_request_id;
                                         $quickChatTitle = 'Quick chat with ' . ucfirst($firstAttendance->user_name);
+                                        $unreadChatCount = (int) ($firstAttendance->unread_chat_count ?? 0);
                                         $approvedDayOffDays = (int) ($firstAttendance->approved_day_off_days ?? 0);
                                         $approvedLeaveDays = (int) ($firstAttendance->approved_leave_days ?? 0);
                                         $pendingLeaveDays = (int) ($firstAttendance->pending_leave_days ?? 0);
@@ -1787,10 +1796,11 @@
                                                            data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
                                                            data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
                                                            title="{{ $quickChatTitle }}">
-                                                            <i class="link-icon" data-feather="message-circle"></i>
-                                                            Quick Chat
-                                                        </a>
-                                                    @endcan
+                                                             <i class="link-icon" data-feather="message-circle"></i>
+                                                             Quick Chat
+                                                             <span class="attendance-chat-unread-count {{ $unreadChatCount > 0 ? '' : 'is-empty' }}">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
+                                                         </a>
+                                                     @endcan
                                                 </div>
                                             </td>
                                             @if(isset($firstAttendance->night_checkin))
@@ -1917,10 +1927,11 @@
                                                        data-employee-subtitle="{{ $firstAttendance->department_name ? ucfirst($firstAttendance->department_name) : ($firstAttendance->phone ?: 'Employee') }}"
                                                        data-employee-online="{{ (int) ($firstAttendance->online_status ?? 0) === \App\Models\User::ONLINE ? '1' : '0' }}"
                                                        title="{{ $quickChatTitle }}">
-                                                        <i class="link-icon" data-feather="message-circle"></i>
-                                                        Quick Chat
-                                                    </a>
-                                                @endcan
+                                                         <i class="link-icon" data-feather="message-circle"></i>
+                                                         Quick Chat
+                                                         <span class="attendance-chat-unread-count {{ $unreadChatCount > 0 ? '' : 'is-empty' }}">{{ $unreadChatCount > 99 ? '99+' : $unreadChatCount }}</span>
+                                                     </a>
+                                                 @endcan
                                             </div>
                                         </td>
                                         @if(isset($firstAttendance->check_in_at))
@@ -3538,6 +3549,13 @@
                 return url.toString();
             };
 
+            const markAttendanceChatUnreadAsRead = (employeeId) => {
+                document.querySelectorAll(`.attendance-profile-chat-badge[data-employee-id="${employeeId}"] .attendance-chat-unread-count`).forEach((badge) => {
+                    badge.textContent = '0';
+                    badge.classList.add('is-empty');
+                });
+            };
+
             const renderAttendanceChatMessages = async (employeeId, keepStatus = true) => {
                 if (!attendanceChatThread || !employeeId) {
                     return;
@@ -3556,6 +3574,7 @@
                     }
 
                     attendanceChatThread.innerHTML = data.html;
+                    markAttendanceChatUnreadAsRead(employeeId);
                     attendanceChatScrollToBottom();
                     if (!keepStatus && attendanceChatStatusText) {
                         attendanceChatStatusText.textContent = 'Conversation loaded.';
