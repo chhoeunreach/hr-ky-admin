@@ -4,6 +4,7 @@
 
     $canViewEmployeeChat = auth('admin')->check() || Gate::allows('view_employee_chat');
     $canSendEmployeeChat = auth('admin')->check() || Gate::allows('send_employee_chat');
+    $canViewAttendanceDetail = auth('admin')->check() || Gate::allows('attendance_show');
 @endphp
 @extends('layouts.master')
 
@@ -681,9 +682,11 @@
         }
 
         .monthly-attendance-table tbody tr:hover .monthly-employee-meta,
-        .monthly-employee:hover .monthly-employee-meta {
+        .monthly-employee:hover .monthly-employee-meta,
+        .monthly-employee:focus-within .monthly-employee-meta {
             opacity: 1;
             visibility: visible;
+            pointer-events: auto;
             transform: translateY(0);
         }
 
@@ -725,6 +728,37 @@
         .monthly-employee-meta .meta-position { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
         .monthly-employee-meta .meta-shift { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
         .monthly-employee-meta .meta-phone { background: #f0fdfa; color: #0f766e; border-color: #99f6e4; }
+
+        .monthly-employee-detail-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            min-height: 28px;
+            padding: 5px 8px;
+            border: 1px solid #c7d2fe;
+            border-radius: 6px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-size: 9px;
+            font-weight: 800;
+            line-height: 1.1;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+
+        .monthly-employee-detail-link:hover,
+        .monthly-employee-detail-link:focus {
+            background: #e0e7ff;
+            color: #312e81;
+            text-decoration: none;
+        }
+
+        .monthly-employee-detail-link svg {
+            width: 12px;
+            height: 12px;
+        }
 
         .monthly-status-dot {
             width: 16px;
@@ -1886,6 +1920,14 @@
                                                 <b>Phone</b>
                                                 <em>{{ $employee->phone ?: 'No phone' }}</em>
                                             </span>
+                                            @if($canViewAttendanceDetail)
+                                                <a class="monthly-employee-detail-link"
+                                                   href="{{ route('admin.attendances.show', ['attendance' => $employee->id, 'year' => $month->format('Y'), 'month' => (int) $month->format('n')]) }}"
+                                                   title="View {{ $employee->name }} detail for {{ $month->format('F Y') }}">
+                                                    <i data-feather="eye"></i>
+                                                    View Detail
+                                                </a>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
