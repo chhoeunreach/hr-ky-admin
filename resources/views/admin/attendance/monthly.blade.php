@@ -2858,7 +2858,12 @@
                 const dayButtons = Array.from(row?.querySelectorAll('.monthly-day-link') || []);
                 const matchedDays = status === 'all'
                     ? dayButtons
-                    : dayButtons.filter((dayButton) => dayButton.getAttribute('data-status-key') === status);
+                    : dayButtons.filter((dayButton) => {
+                        const dayStatus = dayButton.getAttribute('data-status-key');
+                        return status === 'present'
+                            ? ['present', 'late'].includes(dayStatus)
+                            : dayStatus === status;
+                    });
 
                 document.getElementById('monthlySignalDetailModalLabel').textContent = titleText;
                 document.getElementById('monthlySignalDetailSubtitle').textContent = matchedDays[0]?.getAttribute('data-employee') || '';

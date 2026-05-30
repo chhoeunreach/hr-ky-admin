@@ -203,6 +203,10 @@ class AttendanceMonthlyController extends Controller
                     $totals[$cell['status']]++;
                 }
 
+                if ($cell['status'] === 'late') {
+                    $totals['present']++;
+                }
+
                 if ($dayAttendances->isNotEmpty()) {
                     $firstAttendance = $dayAttendances->first();
                     $lateMinutes = $this->lateMinutesForAttendance($employee, $firstAttendance);
@@ -718,10 +722,10 @@ class AttendanceMonthlyController extends Controller
             'leave' => $rows->sum(fn ($row) => $row['totals']['leave']),
             'off_day' => $rows->sum(fn ($row) => $row['totals']['off_day']),
         ];
-        $workable = max($totals['present'] + $totals['late'] + $totals['absent'] + $totals['leave'], 1);
+        $workable = max($totals['present'] + $totals['absent'] + $totals['leave'], 1);
 
         return $totals + [
-            'present_rate' => round((($totals['present'] + $totals['late']) / $workable) * 100, 2),
+            'present_rate' => round(($totals['present'] / $workable) * 100, 2),
             'late_rate' => round(($totals['late'] / $workable) * 100, 2),
             'absent_rate' => round(($totals['absent'] / $workable) * 100, 2),
             'leave_rate' => round(($totals['leave'] / $workable) * 100, 2),
