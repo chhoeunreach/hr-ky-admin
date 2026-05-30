@@ -101,13 +101,14 @@ return [
 
     'supported_locales' => [
         
-        'km' => [
-            'name' => 'ភាសាខ្មែរ',
-            'flag' => 'kh',
-        ],
+        
         'en' => [
             'name' => 'English',
             'flag' => 'us',
+        ],
+        'km' => [
+            'name' => 'ភាសាខ្មែរ',
+            'flag' => 'kh',
         ]
         // ,
         // 'ar' => [
