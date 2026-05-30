@@ -25,6 +25,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class AttendanceMonthlyController extends Controller
 {
     public const LATE_CHECK_IN_GRACE_MINUTES = 16;
+    private const LATE_WARNING_THRESHOLD = 4;
     private const LATE_REDUCTION_RATES = [
         self::LATE_CHECK_IN_GRACE_MINUTES => 0.10,
         20 => 0.20,
@@ -166,8 +167,13 @@ class AttendanceMonthlyController extends Controller
             ->whereBetween('issue_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get(['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'admin_remark', 'status'])
             ->groupBy(fn ($leave) => $leave->requested_by . '|' . Carbon::parse($leave->issue_date)->format('Y-m-d'));
+        $approvedLateRequestCounts = $timeLeaveByUserDate
+            ->flatten(1)
+            ->where('status', 'approved')
+            ->groupBy('requested_by')
+            ->map(fn (Collection $requests) => $requests->count());
 
-        return $employees->map(function (User $employee) use ($month, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $nonAttendanceReasons) {
+        return $employees->map(function (User $employee) use ($month, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
@@ -183,12 +189,13 @@ class AttendanceMonthlyController extends Controller
             foreach ($this->calendarDays($month) as $day) {
                 $key = $employee->id . '|' . $day['date'];
                 $dayAttendances = $attendanceByUserDate->get($key, collect());
+                $dayTimeLeaves = $timeLeaveByUserDate->get($key, collect());
                 $cell = $this->statusCell(
                     $employee,
                     $day['date'],
                     $dayAttendances,
                     $leaveByUserDate[$key] ?? null,
-                    $timeLeaveByUserDate->get($key, collect()),
+                    $dayTimeLeaves,
                     $nonAttendanceReasons[$day['date']] ?? null
                 );
 
@@ -198,8 +205,11 @@ class AttendanceMonthlyController extends Controller
 
                 if ($dayAttendances->isNotEmpty()) {
                     $firstAttendance = $dayAttendances->first();
+                    $lateMinutes = $this->lateMinutesForAttendance($employee, $firstAttendance);
                     $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $firstAttendance);
-                    $lateMinutesTotal += $this->lateMinutesForAttendance($employee, $firstAttendance) ?? 0;
+                    if ($lateMinutes !== null) {
+                        $lateMinutesTotal += $lateMinutes;
+                    }
                 }
 
                 foreach ($cell['indicators'] ?? [] as $indicator) {
@@ -221,12 +231,18 @@ class AttendanceMonthlyController extends Controller
                 ];
             }
 
+            $totalLateRecords = array_sum($lateBreakdown);
+            $approvedLateRequests = (int) ($approvedLateRequestCounts[$employee->id] ?? 0);
+
             return [
                 'employee' => $employee,
                 'days' => $days,
                 'totals' => $totals,
                 'late_breakdown' => $lateBreakdown,
                 'late_minutes_total' => $lateMinutesTotal,
+                'total_late_records' => $totalLateRecords,
+                'approved_late_requests' => $approvedLateRequests,
+                'effective_late_count' => max($totalLateRecords - $approvedLateRequests, 0),
                 'signal_totals' => $signalTotals,
                 'total_days' => count($days),
             ];
@@ -749,6 +765,10 @@ class AttendanceMonthlyController extends Controller
 
         return $rows
             ->map(function (array $row) use ($dateText, $month, $monthYear, $companyEmail, $receiver, $createdAt) {
+                if (($row['effective_late_count'] ?? 0) < self::LATE_WARNING_THRESHOLD) {
+                    return null;
+                }
+
                 $payment = $this->lateReductionPayment($row['late_breakdown'] ?? []);
                 if ($payment <= 0) {
                     return null;
@@ -768,7 +788,7 @@ class AttendanceMonthlyController extends Controller
                     $employee->branch?->name,
                     $employee->phone,
                     $expenseType,
-                    $this->lateReductionReason($row['late_breakdown'] ?? []),
+                    $this->lateReductionReason($row['late_breakdown'] ?? [], (int) ($row['approved_late_requests'] ?? 0), (int) ($row['effective_late_count'] ?? 0)),
                     round($payment, 2),
                     'Cash',
                     $receiver,
@@ -795,7 +815,7 @@ class AttendanceMonthlyController extends Controller
         return $payment;
     }
 
-    private function lateReductionReason(array $breakdown): string
+    private function lateReductionReason(array $breakdown, int $approvedLateRequests = 0, ?int $effectiveLateCount = null): string
     {
         $parts = [];
 
@@ -813,7 +833,17 @@ class AttendanceMonthlyController extends Controller
             $parts[] = $label . ' x ' . $count;
         }
 
-        return 'Late check-in' . ($parts ? ' (' . implode(', ', $parts) . ')' : '');
+        $reason = 'Late check-in' . ($parts ? ' (' . implode(', ', $parts) . ')' : '');
+
+        if ($approvedLateRequests > 0) {
+            $reason .= ' - Approved late requests: ' . $approvedLateRequests;
+        }
+
+        if ($effectiveLateCount !== null) {
+            $reason .= ' - Effective late count: ' . $effectiveLateCount;
+        }
+
+        return $reason;
     }
 
     private function exportCsv(Collection $rows, Carbon $month): StreamedResponse
