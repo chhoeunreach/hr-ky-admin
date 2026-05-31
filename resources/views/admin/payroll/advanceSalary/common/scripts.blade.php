@@ -40,6 +40,65 @@
             })
         })
 
+        $('body').on('click', '.quick-approve-advance-salary', function (event) {
+            event.preventDefault();
+
+            const button = $(this);
+            const href = button.data('href');
+            const row = button.closest('tr');
+
+            Swal.fire({
+                title: 'Quick approve this advance salary?',
+                text: 'Requested amount will be used as the released amount.',
+                icon: 'question',
+                showDenyButton: true,
+                confirmButtonText: `{{ __('index.yes') }}`,
+                denyButtonText: `{{ __('index.no') }}`,
+                padding:'10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    return;
+                }
+
+                const originalHtml = button.html();
+                button.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>');
+
+                $.ajax({
+                    type: 'POST',
+                    url: href,
+                    data: {
+                        remark: 'Quick approved from advance salary list.'
+                    },
+                    success: function (response) {
+                        const data = response.data;
+
+                        row.find('.advance-salary-released-amount').text(data.released_amount);
+                        row.find('.advance-salary-released-on').text(data.released_on);
+                        row.find('.advance-salary-is-paid').html(`<span class="btn btn-${data.is_paid_class} btn-xs cursor-default">${data.is_paid}</span>`);
+                        row.find('.advance-salary-status').html(`
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <span class="btn btn-${data.status_class} btn-xs cursor-default advance-salary-status-badge">${data.status}</span>
+                            </div>
+                        `);
+
+                        Swal.fire('Success', response.message, 'success');
+                    },
+                    error: function (xhr) {
+                        const message = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Unable to quick approve advance salary.';
+
+                        button.prop('disabled', false).html(originalHtml);
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
+                        Swal.fire('Error', message, 'error');
+                    }
+                });
+            })
+        })
+
 
         $('#status').change(function(e) {
             let status = $(this).val();

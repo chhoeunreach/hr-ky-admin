@@ -118,22 +118,34 @@
                                 ];
                             ?>
                         @forelse($advanceSalaryRequestLists as $key => $value)
-                            <tr>
+                            <tr data-advance-salary-row="{{ $value->id }}">
                                 <td>{{(($advanceSalaryRequestLists->currentPage()- 1 ) * $advanceSalaryRequestLists->perPage() + (++$key))}} </td>
                                 <td>{{($value->requestedBy->name)}}</td>
                                 <td class="text-center">{{number_format($value->requested_amount)}}</td>
 
                                 <td class="text-center">{{ isset($value->advance_requested_date) ? \App\Helpers\AppHelper::formatDateForView($value->advance_requested_date) : 'N/A'}}</td>
-                                 <td class="text-center">{{number_format($value->released_amount)}}</td>
-                                <td class="text-center">{{ isset($value->amount_granted_date) ? \App\Helpers\AppHelper::formatDateForView($value->amount_granted_date) : 'N/A'}}</td>
+                                 <td class="text-center advance-salary-released-amount">{{number_format($value->released_amount)}}</td>
+                                <td class="text-center advance-salary-released-on">{{ isset($value->amount_granted_date) ? \App\Helpers\AppHelper::formatDateForView($value->amount_granted_date) : 'N/A'}}</td>
 
-                                <td class="text-center">
+                                <td class="text-center advance-salary-is-paid">
                                   <span class="btn btn-{{$value->is_settled ? 'success' : 'warning'}} btn-xs cursor-default">{{$value->is_settled == 1 ? 'Yes' : 'No'}}</span>
                                 </td>
-                                <td class="text-center">
-                                    <span class="btn btn-{{$status[$value->status]}} btn-xs">
-                                        {{ucfirst($value->status)}}
-                                    </span>
+                                <td class="text-center advance-salary-status">
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        <span class="btn btn-{{$status[$value->status]}} btn-xs cursor-default advance-salary-status-badge">
+                                            {{ucfirst($value->status)}}
+                                        </span>
+                                        @can('update_advance_salary')
+                                            @if(!in_array($value->status, ['approved', 'rejected']))
+                                                <button type="button"
+                                                        class="btn btn-success btn-xs quick-approve-advance-salary"
+                                                        data-href="{{ route('admin.advance-salaries.quick-approve', $value->id) }}"
+                                                        title="Quick approve">
+                                                    <i class="link-icon" data-feather="check-circle"></i>
+                                                </button>
+                                            @endif
+                                        @endcan
+                                    </div>
                                 </td>
 
                                 <td class="text-center">

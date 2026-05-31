@@ -99,6 +99,53 @@ class AdvanceSalaryController extends Controller
         }
     }
 
+    public function quickApprove(Request $request, $id)
+    {
+        $this->authorize('update_advance_salary');
+
+        try {
+            $advanceSalaryRequestDetail = $this->advanceSalaryService->findAdvanceSalaryDetailById($id, ['requestedBy:id,name'], ['*']);
+            $validatedData = [
+                'status' => 'approved',
+                'released_amount' => $advanceSalaryRequestDetail->requested_amount,
+                'remark' => $request->input('remark', 'Quick approved from advance salary list.'),
+            ];
+
+            $updatedDetail = $this->advanceSalaryService->advanceSalaryUpdateByAdmin($advanceSalaryRequestDetail, $validatedData);
+            $updatedDetail->loadMissing('requestedBy:id,name');
+
+            $notificationData = [
+                'title' => 'Advance Salary Approved',
+                'type' => 'Advance Salary',
+                'user_id' => [$advanceSalaryRequestDetail->employee_id],
+                'description' => 'Your advance salary requested on ' . date('M d Y', strtotime($advanceSalaryRequestDetail->advance_requested_date)) . ' has been Approved',
+                'notification_for_id' => $id,
+            ];
+
+            $this->sendAdvanceSalaryStatusNotification($notificationData, $advanceSalaryRequestDetail->employee_id);
+            $this->sendAdvanceSalaryApprovedTelegramNotification($advanceSalaryRequestDetail, $validatedData);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('message.status_changed'),
+                'data' => [
+                    'id' => $updatedDetail->id,
+                    'status' => ucfirst($updatedDetail->status),
+                    'status_class' => 'success',
+                    'released_amount' => number_format($updatedDetail->released_amount),
+                    'released_on' => isset($updatedDetail->amount_granted_date) ? AppHelper::formatDateForView($updatedDetail->amount_granted_date) : 'N/A',
+                    'is_paid' => $updatedDetail->is_settled == 1 ? 'Yes' : 'No',
+                    'is_paid_class' => $updatedDetail->is_settled ? 'success' : 'warning',
+                ],
+            ]);
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
     private function sendAdvanceSalaryStatusNotification($notificationData,$userId)
     {
         SMPushHelper::sendAdvanceSalaryNotification($notificationData['title'], $notificationData['description'],$userId);

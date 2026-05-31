@@ -442,6 +442,7 @@ Route::group([
 
         /** Advance Salary route */
         Route::get('advance-salaries/export', [AdvanceSalaryController::class, 'export'])->name('advance-salaries.export');
+        Route::post('advance-salaries/{id}/quick-approve', [AdvanceSalaryController::class, 'quickApprove'])->name('advance-salaries.quick-approve');
         Route::resource('advance-salaries', AdvanceSalaryController::class,[
             'except' => ['destroy','store','edit']
         ]);
