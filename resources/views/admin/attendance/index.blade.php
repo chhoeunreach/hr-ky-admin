@@ -403,6 +403,10 @@
                 display: block;
             }
 
+            .attendance-day-card.is-searching .attendance-results-reload {
+                display: none;
+            }
+
             .attendance-reload-panel {
                 position: sticky;
                 top: calc(50vh - 90px);
@@ -577,6 +581,17 @@
                 color: #111827;
                 background: #f8fbff;
                 box-shadow: none;
+            }
+
+            .attendance-table-search.is-loading {
+                background-image: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.02), rgba(37, 99, 235, 0.12));
+                background-size: 180% 100%;
+                animation: attendanceSearchLoading 1s linear infinite;
+            }
+
+            @keyframes attendanceSearchLoading {
+                from { background-position: 180% 0; }
+                to { background-position: -180% 0; }
             }
 
             .attendance-table-search:focus {
@@ -1524,16 +1539,10 @@
                         @endcan
                     </div>
                     <div class="attendance-table-search-wrap">
-                        <button type="button"
-                                id="attendanceResetFilters"
-                                class="btn btn-outline-secondary btn-sm attendance-table-reset"
-                                title="{{ __('index.reset') }}">
-                            <i class="link-icon" data-feather="rotate-ccw"></i>
-                            {{ __('index.reset') }}
-                        </button>
-                        <input type="text"
+                        <input type="search"
                                id="attendanceDaySearch"
                                class="attendance-table-search"
+                               autocomplete="off"
                                value="{{ $filterParameter['search'] ?? '' }}"
                                placeholder="{{ __('index.search') }} ...">
                     </div>
@@ -2859,7 +2868,8 @@
             const attendanceLeaveDetailModalSubtitle = document.getElementById('attendanceLeaveDetailModalSubtitle');
             const attendanceLeaveDetailModalBody = document.getElementById('attendanceLeaveDetailModalBody');
             let activeAttendanceSummaryFilter = null;
-            let attendanceResultsLoading = false;
+            let attendanceResultsAbortController = null;
+            let attendanceResultsRequestId = 0;
             let attendanceSearchTimer = null;
             let attendanceReloadProgressTimer = null;
 
@@ -3150,12 +3160,17 @@
                 }
             };
 
-            const startAttendanceReloadProgress = (block) => {
+            const startAttendanceReloadProgress = (block, quiet = false) => {
                 let progress = 0;
-                block.classList.add('is-refreshing');
-                block.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', 'false');
+                block.classList.toggle('is-searching', quiet);
+                block.classList.toggle('is-refreshing', !quiet);
+                block.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', quiet ? 'true' : 'false');
                 setAttendanceReloadProgress(block, progress);
                 clearInterval(attendanceReloadProgressTimer);
+                if (quiet) {
+                    return;
+                }
+
                 attendanceReloadProgressTimer = setInterval(() => {
                     const remaining = 95 - progress;
                     progress += Math.max(1, Math.ceil(remaining * 0.16));
@@ -3169,18 +3184,65 @@
                 setAttendanceReloadProgress(block, 100);
             };
 
-            const refreshAttendanceResultsBlock = async (url, pushState = true) => {
-                const currentBlock = document.getElementById('attendanceResultsBlock');
+            const attendanceSearchFocusState = () => {
+                const searchInput = document.getElementById('attendanceDaySearch');
 
-                if (!currentBlock || attendanceResultsLoading) {
+                if (!searchInput || document.activeElement !== searchInput) {
+                    return null;
+                }
+
+                return {
+                    value: searchInput.value,
+                    selectionStart: searchInput.selectionStart,
+                    selectionEnd: searchInput.selectionEnd,
+                };
+            };
+
+            const restoreAttendanceSearchFocus = (state) => {
+                if (!state) {
                     return;
                 }
 
-                attendanceResultsLoading = true;
-                startAttendanceReloadProgress(currentBlock);
+                const searchInput = document.getElementById('attendanceDaySearch');
+                if (!searchInput) {
+                    return;
+                }
+
+                searchInput.value = state.value;
+                searchInput.focus({ preventScroll: true });
+
+                if (typeof searchInput.setSelectionRange === 'function') {
+                    const cursorStart = Math.min(state.selectionStart ?? state.value.length, state.value.length);
+                    const cursorEnd = Math.min(state.selectionEnd ?? cursorStart, state.value.length);
+                    searchInput.setSelectionRange(cursorStart, cursorEnd);
+                }
+            };
+
+            const setAttendanceSearchLoading = (loading) => {
+                document.getElementById('attendanceDaySearch')?.classList.toggle('is-loading', loading);
+            };
+
+            const refreshAttendanceResultsBlock = async (url, pushState = true, options = {}) => {
+                const currentBlock = document.getElementById('attendanceResultsBlock');
+                const quiet = options.quiet === true;
+
+                if (!currentBlock) {
+                    return;
+                }
+
+                if (attendanceResultsAbortController) {
+                    attendanceResultsAbortController.abort();
+                }
+
+                const requestId = ++attendanceResultsRequestId;
+                const abortController = new AbortController();
+                attendanceResultsAbortController = abortController;
+                setAttendanceSearchLoading(quiet);
+                startAttendanceReloadProgress(currentBlock, quiet);
 
                 try {
                     const response = await fetch(url.toString(), {
+                        signal: abortController.signal,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'text/html',
@@ -3200,8 +3262,15 @@
                         return;
                     }
 
+                    if (requestId !== attendanceResultsRequestId) {
+                        return;
+                    }
+
+                    const searchFocus = attendanceSearchFocusState();
                     stopAttendanceReloadProgress(currentBlock);
-                    await new Promise((resolve) => setTimeout(resolve, 160));
+                    if (!quiet) {
+                        await new Promise((resolve) => setTimeout(resolve, 160));
+                    }
                     currentBlock.replaceWith(nextBlock);
 
                     if (pushState) {
@@ -3219,15 +3288,24 @@
                     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
                         bootstrap.Tooltip.getOrCreateInstance(element);
                     });
+                    restoreAttendanceSearchFocus(searchFocus);
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
                     console.error(error);
                     window.location.href = url.toString();
                 } finally {
-                    attendanceResultsLoading = false;
-                    const refreshedBlock = document.getElementById('attendanceResultsBlock');
-                    if (refreshedBlock) {
-                        refreshedBlock.classList.remove('is-refreshing');
-                        refreshedBlock.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', 'true');
+                    if (requestId === attendanceResultsRequestId) {
+                        attendanceResultsAbortController = null;
+                        setAttendanceSearchLoading(false);
+                        const refreshedBlock = document.getElementById('attendanceResultsBlock');
+                        if (refreshedBlock) {
+                            refreshedBlock.classList.remove('is-refreshing');
+                            refreshedBlock.classList.remove('is-searching');
+                            refreshedBlock.querySelector('.attendance-results-reload')?.setAttribute('aria-hidden', 'true');
+                        }
                     }
                 }
             };
@@ -3246,7 +3324,7 @@
                         }
 
                         url.searchParams.delete('page');
-                        refreshAttendanceResultsBlock(url);
+                        refreshAttendanceResultsBlock(url, true, { quiet: true });
                     }, 350);
                 }
             });
@@ -3259,30 +3337,6 @@
                 const url = new URL(window.location.href);
                 url.searchParams.set('per_page', event.target.value);
                 url.searchParams.delete('page');
-                refreshAttendanceResultsBlock(url);
-            });
-
-            document.addEventListener('click', (event) => {
-                const resetButton = event.target.closest('#attendanceResetFilters');
-
-                if (!resetButton) {
-                    return;
-                }
-
-                event.preventDefault();
-                clearTimeout(attendanceSearchTimer);
-
-                const searchInput = document.getElementById('attendanceDaySearch');
-                if (searchInput) {
-                    searchInput.value = '';
-                }
-
-                const url = new URL(window.location.href);
-                url.searchParams.delete('search');
-                url.searchParams.delete('status_filter');
-                url.searchParams.delete('per_page');
-                url.searchParams.delete('page');
-
                 refreshAttendanceResultsBlock(url);
             });
 

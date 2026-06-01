@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Helpers\AppHelper;
+use App\Exports\MonthlyAttendanceBonusExport;
 use App\Exports\MonthlyAttendanceReductionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
@@ -52,13 +53,10 @@ class AttendanceMonthlyController extends Controller
 
         $filter['per_page'] = $this->resolvePerPage($filter['per_page']);
 
-        $employees = $this->filteredEmployees($filter)->get();
-        $rows = $this->buildRows($employees, $month);
-
-        $summary = $this->summary($rows);
-
         if ($request->query('export') === 'csv') {
             $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
 
             return $this->exportCsv($rows, $month);
         }
@@ -66,10 +64,33 @@ class AttendanceMonthlyController extends Controller
         if ($request->query('export') === 'reduc_xlsx') {
             $this->authorizeMonthlyAttendanceExport();
 
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+
             return $this->exportReductionXlsx($rows, $month);
         }
 
-        $monthlyRows = $this->paginateRows($rows, $filter['per_page']);
+        if ($request->query('export') === 'bonus_xlsx') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+
+            return $this->exportBonusXlsx($rows, $month);
+        }
+
+        if ($filter['per_page'] === 'all') {
+            $employees = $this->filteredEmployees($filter)->get();
+            $rows = $this->buildRows($employees, $month);
+            $summary = $this->summary($rows);
+            $monthlyRows = $this->paginateRows($rows, $filter['per_page']);
+        } else {
+            $employees = $this->filteredEmployees($filter)
+                ->paginate($filter['per_page'])
+                ->withQueryString();
+            $rows = $this->buildRows($employees->getCollection(), $month);
+            $summary = $this->summary($rows, $employees->total());
+            $monthlyRows = $this->paginateRowsForEmployees($rows, $employees);
+        }
+
         $calendarDays = $this->calendarDays($month);
         $branches = Branch::query()
             ->where('company_id', AppHelper::getAuthUserCompanyId())
@@ -204,6 +225,7 @@ class AttendanceMonthlyController extends Controller
         $startDate = $month->copy()->startOfMonth();
         $endDate = $month->copy()->endOfMonth();
         $userIds = $employees->pluck('id')->all();
+        $calendarDays = $this->calendarDays($month);
 
         $attendanceByUserDate = Attendance::query()
             ->whereIn('user_id', $userIds)
@@ -226,11 +248,14 @@ class AttendanceMonthlyController extends Controller
             ->groupBy('requested_by')
             ->map(fn (Collection $requests) => $requests->count());
 
-        return $employees->map(function (User $employee) use ($month, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons) {
+        return $employees->map(function (User $employee) use ($calendarDays, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
             $lateMinutesTotal = 0;
+            $bonusDays = [];
+            $bonusEligibleDays = 0;
+            $bonusWorkingDays = 0;
             $signalTotals = [
                 'pending_day_off' => 0,
                 'pending_leave' => 0,
@@ -239,7 +264,7 @@ class AttendanceMonthlyController extends Controller
                 'no_checkout' => 0,
             ];
 
-            foreach ($this->calendarDays($month) as $day) {
+            foreach ($calendarDays as $day) {
                 $key = $employee->id . '|' . $day['date'];
                 $dayAttendances = $attendanceByUserDate->get($key, collect());
                 $dayTimeLeaves = $timeLeaveByUserDate->get($key, collect());
@@ -251,6 +276,23 @@ class AttendanceMonthlyController extends Controller
                     $dayTimeLeaves,
                     $nonAttendanceReasons[$day['date']] ?? null
                 );
+                $bonusDay = $this->bonusDay(
+                    $employee,
+                    $day['date'],
+                    $dayAttendances,
+                    $leaveByUserDate[$key] ?? null,
+                    $dayTimeLeaves,
+                    $nonAttendanceReasons[$day['date']] ?? null
+                );
+                $bonusDays[] = $bonusDay + [
+                    'date' => $day['date'],
+                    'display_date' => Carbon::parse($day['date'])->format('M d, Y'),
+                ];
+
+                if ($bonusDay['working_day']) {
+                    $bonusWorkingDays++;
+                    $bonusEligibleDays += $bonusDay['value'];
+                }
 
                 if (isset($totals[$cell['status']])) {
                     $totals[$cell['status']]++;
@@ -302,8 +344,105 @@ class AttendanceMonthlyController extends Controller
                 'effective_late_count' => max($totalLateRecords - $approvedLateRequests, 0),
                 'signal_totals' => $signalTotals,
                 'total_days' => count($days),
+                'bonus_days' => $bonusDays,
+                'bonus_eligible_days' => $bonusEligibleDays,
+                'bonus_working_days' => $bonusWorkingDays,
+                'bonus_amount' => ($bonusWorkingDays > 0 && $bonusEligibleDays === $bonusWorkingDays) ? 15 : 0,
             ];
         });
+    }
+
+    private function bonusDay(User $employee, string $date, Collection $attendances, ?array $leaveRequests, Collection $timeLeaves, ?string $nonAttendanceReason): array
+    {
+        $leaveRequests = $leaveRequests ?? [];
+        $approvedLeave = collect($leaveRequests)->firstWhere('status', 'approved');
+        $approvedTimeLeave = $timeLeaves->firstWhere('status', 'approved');
+        $hasLeave = $approvedLeave || $approvedTimeLeave;
+        $workingDay = !$nonAttendanceReason && !Carbon::parse($date)->isFuture();
+        $validAttendances = $attendances->reject(fn (Attendance $attendance) => !is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED);
+        $firstAttendance = $validAttendances->first();
+        $checkIns = $validAttendances
+            ->map(fn (Attendance $attendance) => $attendance->check_in_at ?: $attendance->night_checkin)
+            ->filter()
+            ->sortBy(fn ($time) => Carbon::parse($time)->timestamp)
+            ->values();
+        $checkOuts = $validAttendances
+            ->map(fn (Attendance $attendance) => $attendance->check_out_at ?: $attendance->night_checkout)
+            ->filter()
+            ->sortByDesc(fn ($time) => Carbon::parse($time)->timestamp)
+            ->values();
+        $checkIn = $checkIns->first();
+        $checkOut = $checkOuts->first();
+        $shift = $employee->officeTime;
+        $checkInOnTime = false;
+        $notEarlyCheckout = false;
+        $lateStatus = 'Missing check-in';
+        $checkoutStatus = 'Missing check-out';
+        $reason = null;
+
+        if (!$workingDay) {
+            $reason = $nonAttendanceReason ?: 'Upcoming';
+        } elseif ($hasLeave) {
+            $reason = 'Leave taken';
+        } elseif (!$firstAttendance) {
+            $reason = 'No approved attendance';
+        } elseif (!$checkIn) {
+            $reason = 'Missing check-in';
+        } elseif (!$checkOut) {
+            $reason = 'Missing check-out';
+        } elseif (!$shift?->opening_time || !$shift?->closing_time) {
+            $reason = 'Missing office time';
+        } else {
+            $openingAt = Carbon::parse($date . ' ' . $shift->opening_time);
+            $closingAt = Carbon::parse($date . ' ' . $shift->closing_time);
+            if ($closingAt->lte($openingAt)) {
+                $closingAt->addDay();
+            }
+
+            $checkInAt = $this->attendanceMoment($date, $checkIn);
+            $checkOutAt = $this->attendanceMoment($date, $checkOut);
+            if ($checkOutAt->lt($checkInAt)) {
+                $checkOutAt->addDay();
+            }
+            $checkInOnTime = $checkInAt->lte($openingAt);
+            $notEarlyCheckout = $checkOutAt->gte($closingAt);
+            $lateStatus = $checkInOnTime ? 'On time' : 'Late';
+            $checkoutStatus = $notEarlyCheckout ? 'Full checkout' : 'Early checkout';
+
+            if (!$checkInOnTime) {
+                $reason = 'Late check-in';
+            } elseif (!$notEarlyCheckout) {
+                $reason = 'Early checkout';
+            }
+        }
+
+        $eligible = $workingDay
+            && !$hasLeave
+            && $firstAttendance
+            && $checkIn
+            && $checkOut
+            && $checkInOnTime
+            && $notEarlyCheckout;
+
+        return [
+            'value' => $eligible ? 1 : 0,
+            'working_day' => $workingDay,
+            'check_in' => $checkIn ? Carbon::parse($checkIn)->format('H:i') : 'N/A',
+            'check_out' => $checkOut ? Carbon::parse($checkOut)->format('H:i') : 'N/A',
+            'leave_status' => $hasLeave ? 'Leave' : 'No leave',
+            'late_status' => $lateStatus,
+            'checkout_status' => $checkoutStatus,
+            'reason' => $eligible ? 'Eligible' : ($reason ?: 'Not eligible'),
+        ];
+    }
+
+    private function attendanceMoment(string $date, string $time): Carbon
+    {
+        if (preg_match('/^\d{1,2}:\d{2}/', $time)) {
+            return Carbon::parse($date . ' ' . $time);
+        }
+
+        return Carbon::parse($time);
     }
 
     private function lateBreakdownTemplate(): array
@@ -758,7 +897,7 @@ class AttendanceMonthlyController extends Controller
         return $days;
     }
 
-    private function summary(Collection $rows): array
+    private function summary(Collection $rows, ?int $employeeCount = null): array
     {
         $lateBreakdown = $this->lateBreakdownTemplate();
         foreach ($rows as $row) {
@@ -768,12 +907,14 @@ class AttendanceMonthlyController extends Controller
         }
 
         $totals = [
-            'employees' => $rows->count(),
+            'employees' => $employeeCount ?? $rows->count(),
             'present' => $rows->sum(fn ($row) => $row['totals']['present']),
             'late' => $rows->sum(fn ($row) => $row['totals']['late']),
             'absent' => $rows->sum(fn ($row) => $row['totals']['absent']),
             'leave' => $rows->sum(fn ($row) => $row['totals']['leave']),
             'off_day' => $rows->sum(fn ($row) => $row['totals']['off_day']),
+            'bonus_employees' => $rows->where('bonus_amount', '>', 0)->count(),
+            'bonus_amount' => $rows->sum(fn ($row) => $row['bonus_amount'] ?? 0),
         ];
         $workable = max($totals['present'] + $totals['absent'] + $totals['leave'], 1);
 
@@ -816,6 +957,14 @@ class AttendanceMonthlyController extends Controller
         ]);
     }
 
+    private function paginateRowsForEmployees(Collection $rows, LengthAwarePaginator $employees): LengthAwarePaginator
+    {
+        return new LengthAwarePaginator($rows->values(), $employees->total(), $employees->perPage(), $employees->currentPage(), [
+            'path' => request()->url(),
+            'query' => request()->query(),
+        ]);
+    }
+
     private function exportReductionXlsx(Collection $rows, Carbon $month)
     {
         $filename = 'monthly-attendance-reduc-' . $month->format('Y-m') . '.xlsx';
@@ -824,6 +973,67 @@ class AttendanceMonthlyController extends Controller
             new MonthlyAttendanceReductionExport($this->reductionExportRows($rows, $month)),
             $filename
         );
+    }
+
+    private function exportBonusXlsx(Collection $rows, Carbon $month)
+    {
+        $filename = 'monthly-attendance-bonus-' . $month->format('Y-m') . '.xlsx';
+
+        return Excel::download(
+            new MonthlyAttendanceBonusExport($this->bonusExportRows($rows, $month)),
+            $filename
+        );
+    }
+
+    private function bonusExportRows(Collection $rows, Carbon $month): Collection
+    {
+        $createdAt = now();
+        $dateText = $createdAt->format('n/j/Y');
+        $monthYear = $month->format('M-y');
+        $companyEmail = (string) Company::query()
+            ->where('id', AppHelper::getAuthUserCompanyId())
+            ->value('email');
+        $admin = auth('admin')->user();
+        $webUser = auth()->user();
+        $receiver = (string) ($admin?->name ?? $webUser?->name ?? 'Admin');
+        $expenseType = 'លើកទឹកចិត្ត';
+        $reason = 'Attendance Bonus';
+
+        return $rows
+            ->map(function (array $row) use ($dateText, $month, $monthYear, $companyEmail, $receiver, $createdAt, $expenseType, $reason) {
+                $bonusAmount = (float) ($row['bonus_amount'] ?? 0);
+                if ($bonusAmount <= 0) {
+                    return null;
+                }
+
+                $employee = $row['employee'];
+                $employeeId =  ($employee->username ?: (string) $employee->id);
+                $number = $employeeId . '-' . $month->format('n-Y');
+
+                return [
+                    $dateText,
+                    $number,
+                    $employee->username,
+                    $employee->name,
+                    $employee->username,
+                    $employee->branch?->name,
+                    $employee->phone,
+                    $expenseType,
+                    $reason,
+                    round($bonusAmount, 2),
+                    'Cash',
+                    $receiver,
+                    '',
+                    $monthYear,
+                    $employeeId . $month->format('n-Y') . $expenseType,
+                    $employee->email,
+                    $companyEmail,
+                    $createdAt->format('n/j/Y H:i'),
+                    $receiver,
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     private function reductionExportRows(Collection $rows, Carbon $month): Collection
@@ -850,14 +1060,14 @@ class AttendanceMonthlyController extends Controller
                 }
 
                 $employee = $row['employee'];
-                $employeeId = $employee->employee_code ?: ($employee->username ?: (string) $employee->id);
+                $employeeId = ($employee->username ?: (string) $employee->id);
                 $number = $employeeId . '-' . $month->format('n-Y');
                 $expenseType = 'កាត់';
 
                 return [
                     $dateText,
                     $number,
-                    $employeeId,
+                    $employee->username,
                     $employee->name,
                     $employee->username,
                     $employee->branch?->name,

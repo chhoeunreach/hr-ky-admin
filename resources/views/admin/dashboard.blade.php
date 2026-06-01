@@ -80,6 +80,43 @@ $currentMonthLabel = now()->format('M Y');
             padding: 1.25rem 1.6rem;
         }
 
+        .summary-panel-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .summary-panel-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 34px;
+            width: 34px;
+            height: 34px;
+            border: 1px solid rgba(255, 255, 255, 0.38);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            transition: background 0.16s ease;
+        }
+
+        .summary-panel-toggle:hover,
+        .summary-panel-toggle:focus-visible {
+            background: rgba(255, 255, 255, 0.22);
+            outline: 0;
+        }
+
+        .summary-panel-toggle svg {
+            width: 18px;
+            height: 18px;
+            transition: transform 0.18s ease;
+        }
+
+        .summary-panel-toggle[aria-expanded="false"] svg {
+            transform: rotate(180deg);
+        }
+
         .summary-panel .card-body {
             padding: 1.35rem 1.5rem 1.5rem;
             background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
@@ -899,10 +936,23 @@ $currentMonthLabel = now()->format('M Y');
             @endphp
             <div class="card mb-4 summary-panel">
                 <div class="card-header">
-                    <h4 class="summary-panel-title">{{ __('index.branch_summary') }}</h4>
-                    <p class="summary-panel-subtitle">{{ __('index.branch_summary_subtitle') }}</p>
+                    <div class="summary-panel-heading">
+                        <div>
+                            <h4 class="summary-panel-title">{{ __('index.branch_summary') }}</h4>
+                            <p class="summary-panel-subtitle">{{ __('index.branch_summary_subtitle') }}</p>
+                        </div>
+                        <button type="button"
+                                class="summary-panel-toggle"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#branchSummaryCollapse"
+                                aria-expanded="false"
+                                aria-controls="branchSummaryCollapse"
+                                title="Collapse / expand">
+                            <i data-feather="chevron-up"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body collapse" id="branchSummaryCollapse">
                     <div class="summary-table-shell">
                         <table class="table table-striped table-bordered branch-summary-table mb-0">
                             <thead>
@@ -985,10 +1035,23 @@ $currentMonthLabel = now()->format('M Y');
             @endphp
             <div class="card mb-4 summary-panel">
                 <div class="card-header">
-                    <h4 class="summary-panel-title">{{ __('index.department_summary') }}</h4>
-                    <p class="summary-panel-subtitle">{{ __('index.department_summary_subtitle') }}</p>
+                    <div class="summary-panel-heading">
+                        <div>
+                            <h4 class="summary-panel-title">{{ __('index.department_summary') }}</h4>
+                            <p class="summary-panel-subtitle">{{ __('index.department_summary_subtitle') }}</p>
+                        </div>
+                        <button type="button"
+                                class="summary-panel-toggle"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#departmentSummaryCollapse"
+                                aria-expanded="false"
+                                aria-controls="departmentSummaryCollapse"
+                                title="Collapse / expand">
+                            <i data-feather="chevron-up"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body collapse" id="departmentSummaryCollapse">
                     <div class="summary-table-shell">
                         <table class="table table-striped table-bordered branch-summary-table mb-0">
                             <thead>

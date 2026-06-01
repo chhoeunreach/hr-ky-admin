@@ -1663,6 +1663,7 @@ return [
     'hide_signals' => 'Hide Signals',
     'show_signals' => 'Show Signals',
     'export_reduc_xlsx' => 'Export Reduc XLSX',
+    'export_bonus_xlsx' => 'Export Bonus XLSX',
     'rows' => 'Rows',
     'all' => 'All',
     'search' => 'Search',

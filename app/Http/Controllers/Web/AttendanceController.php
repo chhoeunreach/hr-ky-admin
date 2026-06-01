@@ -376,7 +376,7 @@ class AttendanceController extends Controller
         }
     }
 
-    public function quickApproveLeave(Request $request): RedirectResponse
+    public function quickApproveLeave(Request $request): RedirectResponse|JsonResponse
     {
         $this->authorize('quick_leave');
 
@@ -431,15 +431,30 @@ class AttendanceController extends Controller
             app(\App\Services\Leave\LeaveService::class)->storeLeaveRequest($leaveRequestData);
             DB::commit();
 
-            return redirect()->back()->with('success', 'Approved leave added from attendance list successfully.');
+            $message = 'Approved leave added from attendance list successfully.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
             DB::rollBack();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }
 
-    public function quickApproveTimeLeave(Request $request): RedirectResponse
+    public function quickApproveTimeLeave(Request $request): RedirectResponse|JsonResponse
     {
         $this->authorize('create_time_leave_request');
 
@@ -494,9 +509,24 @@ class AttendanceController extends Controller
             $this->applyApprovedTimeLeaveToAttendance($employee->id, $timeLeaveData['issue_date'], $timeLeave['start_time'], $timeLeave['end_time']);
             DB::commit();
 
-            return redirect()->back()->with('success', 'Approved time leave added from attendance list successfully.');
+            $message = 'Approved time leave added from attendance list successfully.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                ]);
+            }
+
+            return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
             DB::rollBack();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -1033,9 +1063,25 @@ class AttendanceController extends Controller
             DB::beginTransaction();
             $this->attendanceService->addAttendance($validatedData);
             DB::commit();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('message.add_attendance'),
+                ]);
+            }
+
             return redirect()->back()->with('success', __('message.add_attendance'));
         }catch (Exception $exception) {
             DB::rollBack();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
+
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }

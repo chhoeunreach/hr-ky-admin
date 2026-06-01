@@ -68,6 +68,10 @@
             display: block;
         }
 
+        .monthly-results-block.is-searching .monthly-results-reload {
+            display: none;
+        }
+
         .monthly-reload-panel {
             position: sticky;
             top: calc(50vh - 90px);
@@ -118,7 +122,7 @@
 
         .monthly-report-strip {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 1px;
             overflow: hidden;
             border: 1px solid #e5e7eb;
@@ -314,6 +318,17 @@
             width: min(240px, 100%);
         }
 
+        .monthly-table-search.is-loading {
+            background-image: linear-gradient(90deg, rgba(37, 99, 235, 0.12), rgba(37, 99, 235, 0.02), rgba(37, 99, 235, 0.12));
+            background-size: 180% 100%;
+            animation: monthlySearchLoading 1s linear infinite;
+        }
+
+        @keyframes monthlySearchLoading {
+            from { background-position: 180% 0; }
+            to { background-position: -180% 0; }
+        }
+
         .monthly-table-rows {
             width: 84px;
         }
@@ -326,7 +341,8 @@
         }
 
         .monthly-signal-column {
-            min-width: 92px;
+            min-width: 52px;
+            max-width: 68px;
             transition: opacity .15s ease;
         }
 
@@ -338,13 +354,13 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 20px;
-            height: 18px;
-            padding: 0 5px;
+            min-width: 18px;
+            height: 16px;
+            padding: 0 4px;
             border-radius: 999px;
             background: #f1f5f9;
             color: #334155;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
         }
 
@@ -503,6 +519,7 @@
         .stat-absent .monthly-stat-icon { color: #dc2626; background: #fef2f2; }
         .stat-leave .monthly-stat-icon { color: #7c3aed; background: #f5f3ff; }
         .stat-off .monthly-stat-icon { color: #64748b; background: #f1f5f9; }
+        .stat-bonus .monthly-stat-icon { color: #15803d; background: #ecfdf3; }
 
         .monthly-stat-title {
             margin: 0;
@@ -532,7 +549,7 @@
 
         .monthly-attendance-table {
             width: 100%;
-            min-width: 1120px;
+            min-width: 980px;
             border-collapse: separate;
             border-spacing: 0;
             margin: 0;
@@ -545,8 +562,8 @@
             background: #fff;
             text-align: center;
             vertical-align: middle;
-            padding: 4px 3px;
-            font-size: 10px;
+            padding: 3px 2px;
+            font-size: 9px;
         }
 
         .monthly-attendance-table thead th {
@@ -554,25 +571,25 @@
             top: 0;
             z-index: 4;
             color: #334155;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
             background: #f8fafc;
-            line-height: 1.35;
+            line-height: 1.15;
             white-space: normal;
             overflow-wrap: break-word;
             word-break: normal;
         }
 
         .monthly-attendance-table thead small {
-            font-size: 8px;
+            font-size: 7px;
         }
 
         .monthly-attendance-table .sticky-number {
             position: sticky;
             left: 0;
             z-index: 5;
-            min-width: 30px;
-            width: 30px;
+            min-width: 26px;
+            width: 26px;
             overflow: visible;
         }
 
@@ -585,7 +602,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 20px;
+            min-width: 18px;
         }
 
         .monthly-row-number-value {
@@ -640,10 +657,10 @@
 
         .monthly-attendance-table .sticky-employee {
             position: sticky;
-            left: 30px;
+            left: 26px;
             z-index: 5;
-            min-width: 190px;
-            width: 190px;
+            min-width: 168px;
+            width: 168px;
             text-align: left;
             box-shadow: 5px 0 10px rgba(15, 23, 42, 0.04);
             overflow: visible;
@@ -668,19 +685,19 @@
         .monthly-employee {
             display: flex;
             align-items: flex-start;
-            gap: 7px;
+            gap: 5px;
             min-width: 0;
         }
 
         .monthly-avatar-wrap {
             position: relative;
-            flex: 0 0 28px;
-            padding-top: 2px;
+            flex: 0 0 24px;
+            padding-top: 1px;
         }
 
         .monthly-avatar {
-            width: 26px;
-            height: 26px;
+            width: 22px;
+            height: 22px;
             border-radius: 50%;
             object-fit: cover;
             background: #e5e7eb;
@@ -693,7 +710,7 @@
             color: #0f172a;
             font-weight: 800;
             line-height: 1.15;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .monthly-employee-main {
@@ -719,7 +736,7 @@
             display: inline-flex;
             flex: 0 0 auto;
             color: #475569;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
         }
 
@@ -830,14 +847,14 @@
         }
 
         .monthly-status-dot {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 7px;
+            font-size: 6px;
             font-weight: 800;
             line-height: 1;
         }
@@ -851,7 +868,7 @@
 
         .monthly-day-cell {
             position: relative;
-            min-width: 24px;
+            min-width: 20px;
             padding: 0 !important;
         }
 
@@ -860,8 +877,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 26px;
-            padding: 4px 3px;
+            min-height: 22px;
+            padding: 2px 1px;
             background: transparent;
             color: inherit;
             cursor: pointer;
@@ -1020,7 +1037,8 @@
         .monthly-total {
             font-weight: 800;
             color: #0f172a;
-            min-width: 42px;
+            min-width: 32px;
+            max-width: 44px;
         }
 
         .monthly-total-button {
@@ -1040,17 +1058,117 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 22px;
-            height: 18px;
-            padding: 0 5px;
+            min-width: 18px;
+            height: 16px;
+            padding: 0 4px;
             border-radius: 999px;
             background: #f8fafc;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 800;
         }
 
         .monthly-total-value.has-value {
             background: #eff6ff;
+        }
+
+        .monthly-bonus-cell {
+            min-width: 78px;
+        }
+
+        .monthly-bonus-button {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+        }
+
+        .monthly-bonus-amount {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            height: 18px;
+            padding: 0 5px;
+            border-radius: 999px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 9px;
+            font-weight: 900;
+        }
+
+        .monthly-bonus-amount.has-value {
+            background: #ecfdf3;
+            color: #15803d;
+        }
+
+        .monthly-bonus-link {
+            color: #2563eb;
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .monthly-bonus-detail-list {
+            display: grid;
+            gap: 7px;
+            max-height: 62vh;
+            overflow: auto;
+        }
+
+        .monthly-bonus-detail-item {
+            display: grid;
+            grid-template-columns: 74px 34px minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+            padding: 7px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #fff;
+            font-size: 11px;
+        }
+
+        .monthly-bonus-detail-date {
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .monthly-bonus-detail-value {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #64748b;
+            font-weight: 900;
+        }
+
+        .monthly-bonus-detail-value.is-eligible {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .monthly-bonus-detail-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            min-width: 0;
+        }
+
+        .monthly-bonus-detail-meta span {
+            display: inline-flex;
+            border-radius: 999px;
+            background: #f8fafc;
+            padding: 2px 6px;
+            color: #475569;
+            font-size: 9px;
+            font-weight: 700;
         }
 
         .total-present { color: #16a34a; }
@@ -1844,6 +1962,11 @@
                         <span class="monthly-report-value">{{ number_format($summary['present'] + $summary['late'] + $summary['leave'] + $summary['absent']) }}</span>
                         <span class="monthly-report-note">{{ __('index.attendance_signals_note') }}</span>
                     </div>
+                    <div class="monthly-report-item">
+                        <span class="monthly-report-label">{{ __('index.bonus') }}</span>
+                        <span class="monthly-report-value">${{ number_format($summary['bonus_amount'] ?? 0, 0) }}</span>
+                        <span class="monthly-report-note">{{ number_format($summary['bonus_employees'] ?? 0) }} {{ __('index.employees') }}</span>
+                    </div>
                 </div>
 
                 <div class="row g-2">
@@ -1907,6 +2030,16 @@
                             </div>
                         </div>
                     </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <div class="monthly-stat-card stat-bonus">
+                            <span class="monthly-stat-icon"><i data-feather="dollar-sign"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.bonus') }}</p>
+                                <p class="monthly-stat-value">${{ number_format($summary['bonus_amount'] ?? 0, 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ number_format($summary['bonus_employees'] ?? 0) }} {{ __('index.employees') }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1937,6 +2070,9 @@
                         <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}">
                             <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
                         </a>
+                        <a class="btn btn-outline-success" href="{{ request()->fullUrlWithQuery(['export' => 'bonus_xlsx']) }}">
+                            <i class="link-icon" data-feather="award"></i> {{ __('index.export_bonus_xlsx') }}
+                        </a>
                     @endcanany
 
                     <div class="monthly-inline-field">
@@ -1951,13 +2087,9 @@
 
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="table_search">{{ __('index.search') }}</label>
-                        <input class="form-control monthly-table-search" id="table_search" name="search" value="{{ $filter['search'] }}" placeholder="{{ __('index.search_name_code_username') }}">
+                        <input class="form-control monthly-table-search" id="table_search" name="search" type="search" autocomplete="off" value="{{ $filter['search'] }}" placeholder="{{ __('index.search_name_code_username') }}">
                     </div>
 
-                    <button class="btn btn-primary" type="submit">{{ __('index.apply') }}</button>
-                    @if($filter['search'])
-                        <a class="btn btn-outline-secondary" href="{{ request()->fullUrlWithQuery(['search' => null, 'page' => null]) }}">{{ __('index.clear') }}</a>
-                    @endif
                 </form>
             </div>
 
@@ -1979,6 +2111,7 @@
                         <th>{{ __('index.leave') }}</th>
                         <th>{{ __('index.off_day') }}</th>
                         <th>{{ __('index.total') }}</th>
+                        <th>{{ __('index.bonus') }}</th>
                         <th class="monthly-signal-column">{{ __('index.pending_day_off') }}</th>
                         <th class="monthly-signal-column">{{ __('index.pending_leave') }}</th>
                         <th class="monthly-signal-column">{{ __('index.time_leave') }}</th>
@@ -1993,7 +2126,7 @@
                             $avatar = $employee->avatar ? asset(User::AVATAR_UPLOAD_PATH . $employee->avatar) : asset('assets/images/img.png');
                             $shiftLabel = $employee->officeTime?->shift ?: trim(($employee->officeTime?->opening_time ?: '') . ' - ' . ($employee->officeTime?->closing_time ?: ''));
                         @endphp
-                        <tr>
+                        <tr data-monthly-employee-row="{{ $employee->id }}">
                             <td class="sticky-number">
                                 <span class="monthly-row-number">
                                     <span class="monthly-row-number-value">{{ $monthlyRows->firstItem() + $loop->index }}</span>
@@ -2139,6 +2272,20 @@
                                     <span class="monthly-total-value {{ ($row['total_days'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['total_days'] }}</span>
                                 </button>
                             </td>
+                            <td class="monthly-total monthly-bonus-cell">
+                                <button type="button"
+                                        class="monthly-bonus-button"
+                                        data-employee="{{ $employee->name }}"
+                                        data-bonus-days='@json($row['bonus_days'] ?? [])'
+                                        data-bonus-eligible-days="{{ $row['bonus_eligible_days'] ?? 0 }}"
+                                        data-bonus-working-days="{{ $row['bonus_working_days'] ?? 0 }}"
+                                        data-bonus-amount="{{ $row['bonus_amount'] ?? 0 }}">
+                                    <span class="monthly-bonus-amount {{ ($row['bonus_amount'] ?? 0) > 0 ? 'has-value' : '' }}">
+                                        ${{ number_format($row['bonus_amount'] ?? 0, 0) }}
+                                    </span>
+                                    <span class="monthly-bonus-link">{{ __('index.view_detail') }}</span>
+                                </button>
+                            </td>
                             <td class="monthly-signal-column">
                                 <button type="button" class="monthly-signal-button" data-signal="PO" data-signal-title="{{ __('index.pending_day_off') }}" @disabled(($row['signal_totals']['pending_day_off'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['pending_day_off'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['pending_day_off'] ?? 0 }}</span>
@@ -2167,7 +2314,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ count($calendarDays) + 13 }}">
+                            <td colspan="{{ count($calendarDays) + 14 }}">
                                 <div class="monthly-empty-state">
                                     <strong>{{ __('index.no_monthly_attendance_records_found') }}</strong>
                                     <div>{{ __('index.try_changing_month_filters') }}</div>
@@ -2256,6 +2403,23 @@
                     </div>
                     <div class="modal-body">
                         <div class="monthly-signal-day-list" id="monthlySignalDayList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="monthlyBonusDetailModal" tabindex="-1" aria-labelledby="monthlyBonusDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title" id="monthlyBonusDetailModalLabel">{{ __('index.bonus') }}</h5>
+                            <small class="text-muted" id="monthlyBonusDetailSubtitle"></small>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="monthly-bonus-detail-list" id="monthlyBonusDetailList"></div>
                     </div>
                 </div>
             </div>
@@ -2459,6 +2623,8 @@
             const statusModal = statusModalElement ? new bootstrap.Modal(statusModalElement) : null;
             const signalDetailModalElement = document.getElementById('monthlySignalDetailModal');
             const signalDetailModal = signalDetailModalElement ? new bootstrap.Modal(signalDetailModalElement) : null;
+            const bonusDetailModalElement = document.getElementById('monthlyBonusDetailModal');
+            const bonusDetailModal = bonusDetailModalElement ? new bootstrap.Modal(bonusDetailModalElement) : null;
             const chatModalElement = document.getElementById('attendanceChatModal');
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
@@ -2510,6 +2676,11 @@
                 approver: @json(__('index.approver')),
                 status: @json(__('index.status')),
                 remark: @json(__('index.remark')),
+                bonus: @json(__('index.bonus')),
+                eligible: 'Eligible',
+                notEligible: 'Not eligible',
+                workingDays: 'Working days',
+                monthlyBonus: 'Monthly bonus',
             };
             const monthlyScrollShortcuts = document.getElementById('monthlyScrollShortcuts');
             const monthlyScrollTopButton = document.getElementById('monthlyScrollTop');
@@ -2517,7 +2688,8 @@
             const signalColumns = () => document.querySelectorAll('.monthly-signal-column');
             let monthlySearchTimer = null;
             let monthlyRefreshProgressTimer = null;
-            let monthlyResultsLoading = false;
+            let monthlyResultsAbortController = null;
+            let monthlyResultsRequestId = 0;
 
             const updateMonthlyScrollShortcuts = () => {
                 if (!monthlyScrollShortcuts) {
@@ -2584,12 +2756,17 @@
                 }
             };
 
-            const startMonthlyReloadProgress = (block) => {
+            const startMonthlyReloadProgress = (block, quiet = false) => {
                 let progress = 0;
-                block.classList.add('is-refreshing');
-                block.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', 'false');
+                block.classList.toggle('is-searching', quiet);
+                block.classList.toggle('is-refreshing', !quiet);
+                block.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', quiet ? 'true' : 'false');
                 setMonthlyReloadProgress(block, progress);
                 clearInterval(monthlyRefreshProgressTimer);
+                if (quiet) {
+                    return;
+                }
+
                 monthlyRefreshProgressTimer = setInterval(() => {
                     const remaining = 95 - progress;
                     progress += Math.max(1, Math.ceil(remaining * 0.16));
@@ -2603,18 +2780,65 @@
                 setMonthlyReloadProgress(block, 100);
             };
 
-            const refreshMonthlyResultsBlock = async (url, pushState = true) => {
-                const currentBlock = document.getElementById('monthlyResultsBlock');
+            const monthlySearchFocusState = () => {
+                const searchInput = document.getElementById('table_search');
 
-                if (!currentBlock || monthlyResultsLoading) {
+                if (!searchInput || document.activeElement !== searchInput) {
+                    return null;
+                }
+
+                return {
+                    value: searchInput.value,
+                    selectionStart: searchInput.selectionStart,
+                    selectionEnd: searchInput.selectionEnd,
+                };
+            };
+
+            const restoreMonthlySearchFocus = (state) => {
+                if (!state) {
                     return;
                 }
 
-                monthlyResultsLoading = true;
-                startMonthlyReloadProgress(currentBlock);
+                const searchInput = document.getElementById('table_search');
+                if (!searchInput) {
+                    return;
+                }
+
+                searchInput.value = state.value;
+                searchInput.focus({ preventScroll: true });
+
+                if (typeof searchInput.setSelectionRange === 'function') {
+                    const cursorStart = Math.min(state.selectionStart ?? state.value.length, state.value.length);
+                    const cursorEnd = Math.min(state.selectionEnd ?? cursorStart, state.value.length);
+                    searchInput.setSelectionRange(cursorStart, cursorEnd);
+                }
+            };
+
+            const setMonthlySearchLoading = (loading) => {
+                document.getElementById('table_search')?.classList.toggle('is-loading', loading);
+            };
+
+            const refreshMonthlyResultsBlock = async (url, pushState = true, options = {}) => {
+                const currentBlock = document.getElementById('monthlyResultsBlock');
+                const quiet = options.quiet === true;
+
+                if (!currentBlock) {
+                    return;
+                }
+
+                if (monthlyResultsAbortController) {
+                    monthlyResultsAbortController.abort();
+                }
+
+                const requestId = ++monthlyResultsRequestId;
+                const abortController = new AbortController();
+                monthlyResultsAbortController = abortController;
+                setMonthlySearchLoading(quiet);
+                startMonthlyReloadProgress(currentBlock, quiet);
 
                 try {
                     const response = await fetch(url.toString(), {
+                        signal: abortController.signal,
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'text/html',
@@ -2634,8 +2858,15 @@
                         return;
                     }
 
+                    if (requestId !== monthlyResultsRequestId) {
+                        return;
+                    }
+
+                    const searchFocus = monthlySearchFocusState();
                     stopMonthlyReloadProgress(currentBlock);
-                    await new Promise((resolve) => setTimeout(resolve, 160));
+                    if (!quiet) {
+                        await new Promise((resolve) => setTimeout(resolve, 160));
+                    }
                     currentBlock.replaceWith(nextBlock);
 
                     if (pushState) {
@@ -2652,15 +2883,163 @@
                     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
                         bootstrap.Tooltip.getOrCreateInstance(element);
                     });
+                    restoreMonthlySearchFocus(searchFocus);
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
                     console.error(error);
                     window.location.href = url.toString();
                 } finally {
-                    monthlyResultsLoading = false;
-                    const refreshedBlock = document.getElementById('monthlyResultsBlock');
-                    if (refreshedBlock) {
-                        refreshedBlock.classList.remove('is-refreshing');
-                        refreshedBlock.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', 'true');
+                    if (requestId === monthlyResultsRequestId) {
+                        monthlyResultsAbortController = null;
+                        setMonthlySearchLoading(false);
+                        const refreshedBlock = document.getElementById('monthlyResultsBlock');
+                        if (refreshedBlock) {
+                            refreshedBlock.classList.remove('is-refreshing');
+                            refreshedBlock.classList.remove('is-searching');
+                            refreshedBlock.querySelector('.monthly-results-reload')?.setAttribute('aria-hidden', 'true');
+                        }
+                    }
+                }
+            };
+
+            const monthlyActionMessage = (title, message, type = 'success') => {
+                if (window.Swal) {
+                    Swal.fire(title, message, type);
+                    return;
+                }
+
+                alert(message || title);
+            };
+
+            const monthlyActionErrorMessage = async (response) => {
+                try {
+                    const data = await response.json();
+                    if (data.message) {
+                        return data.message;
+                    }
+
+                    if (data.errors) {
+                        return Object.values(data.errors).flat().join('\n');
+                    }
+                } catch (error) {
+                    return 'Unable to save. Please try again.';
+                }
+
+                return 'Unable to save. Please try again.';
+            };
+
+            const monthlyActionUserId = (form) => {
+                if (form.id === 'createAttendance') {
+                    return form.querySelector('[name="user_id"]')?.value || document.getElementById('empId')?.value || '';
+                }
+
+                return form.querySelector('[name="user_id"]')?.value || '';
+            };
+
+            const monthlyEmployeeRowSelector = (userId) => {
+                const safeUserId = window.CSS?.escape ? CSS.escape(String(userId)) : String(userId).replace(/"/g, '\\"');
+
+                return `[data-monthly-employee-row="${safeUserId}"]`;
+            };
+
+            const syncMonthlySummaryFrom = (parsedDocument) => {
+                const nextSummary = parsedDocument.getElementById('monthlyAttendanceSummary');
+                const currentSummary = document.getElementById('monthlyAttendanceSummary');
+                if (nextSummary && currentSummary) {
+                    currentSummary.innerHTML = nextSummary.innerHTML;
+                }
+
+                const nextReport = parsedDocument.querySelector('.monthly-report-strip');
+                const currentReport = document.querySelector('.monthly-report-strip');
+                if (nextReport && currentReport) {
+                    currentReport.innerHTML = nextReport.innerHTML;
+                }
+            };
+
+            const refreshMonthlyEmployeeRow = async (userId) => {
+                if (!userId) {
+                    await refreshMonthlyResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                const rowSelector = monthlyEmployeeRowSelector(userId);
+                const currentRow = document.querySelector(rowSelector);
+                if (!currentRow) {
+                    await refreshMonthlyResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                const response = await fetch(window.location.href, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Saved, but unable to refresh the employee row.');
+                }
+
+                const html = await response.text();
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                const nextRow = parsed.querySelector(rowSelector);
+
+                if (!nextRow) {
+                    await refreshMonthlyResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                currentRow.replaceWith(nextRow);
+                syncMonthlySummaryFrom(parsed);
+                bindMonthlySignalToggle();
+                updateMonthlyScrollShortcuts();
+
+                if (window.feather) {
+                    feather.replace();
+                }
+
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                    bootstrap.Tooltip.getOrCreateInstance(element);
+                });
+            };
+
+            const submitMonthlyActionForm = async (form, modalInstance = null) => {
+                const submitButton = form.querySelector('[type="submit"]');
+                const originalHtml = submitButton?.innerHTML;
+                const userId = monthlyActionUserId(form);
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                }
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: form.method || 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(await monthlyActionErrorMessage(response));
+                    }
+
+                    const data = await response.json();
+                    modalInstance?.hide();
+                    monthlyActionMessage('Success', data.message || 'Saved successfully.', 'success');
+                    await refreshMonthlyEmployeeRow(userId);
+                } catch (error) {
+                    monthlyActionMessage('Error', error.message || 'Unable to save. Please try again.', 'error');
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalHtml;
                     }
                 }
             };
@@ -2768,7 +3147,26 @@
 
                 event.preventDefault();
                 clearTimeout(monthlySearchTimer);
-                refreshMonthlyResultsBlock(urlFromForm(form));
+                refreshMonthlyResultsBlock(urlFromForm(form), true, { quiet: document.activeElement?.id === 'table_search' });
+            });
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target.closest('#createAttendance, #attendanceQuickLeaveForm, #attendanceQuickTimeLeaveForm');
+                if (!form) {
+                    return;
+                }
+
+                if (form.id === 'createAttendance' && !form.querySelector('input[name="monthly_quick_attendance"]')) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const modalInstance = form.id === 'createAttendance'
+                    ? quickAttendanceModal
+                    : (form.id === 'attendanceQuickLeaveForm' ? quickLeaveModal : quickTimeLeaveModal);
+
+                submitMonthlyActionForm(form, modalInstance);
             });
 
             document.addEventListener('change', (event) => {
@@ -2809,7 +3207,7 @@
                     }
 
                     url.searchParams.delete('page');
-                    refreshMonthlyResultsBlock(url);
+                    refreshMonthlyResultsBlock(url, true, { quiet: true });
                 }, 350);
             });
 
@@ -3326,6 +3724,65 @@
                 }
 
                 signalDetailModal.show();
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.monthly-bonus-button');
+                if (!element || !bonusDetailModal) {
+                    return;
+                }
+
+                let bonusDays = [];
+                try {
+                    bonusDays = JSON.parse(element.getAttribute('data-bonus-days') || '[]');
+                } catch (error) {
+                    bonusDays = [];
+                }
+
+                const employee = element.getAttribute('data-employee') || i18n.employee;
+                const eligibleDays = element.getAttribute('data-bonus-eligible-days') || '0';
+                const workingDays = element.getAttribute('data-bonus-working-days') || '0';
+                const amount = element.getAttribute('data-bonus-amount') || '0';
+                const list = document.getElementById('monthlyBonusDetailList');
+
+                document.getElementById('monthlyBonusDetailModalLabel').textContent = `${i18n.bonus}: ${employee}`;
+                document.getElementById('monthlyBonusDetailSubtitle').textContent = `${i18n.workingDays}: ${eligibleDays}/${workingDays} - ${i18n.monthlyBonus}: $${amount}`;
+                list.innerHTML = '';
+
+                bonusDays.forEach((day) => {
+                    const item = document.createElement('div');
+                    item.className = 'monthly-bonus-detail-item';
+
+                    const date = document.createElement('div');
+                    date.className = 'monthly-bonus-detail-date';
+                    date.textContent = day.display_date || day.date || '';
+
+                    const value = document.createElement('div');
+                    value.className = `monthly-bonus-detail-value ${Number(day.value) === 1 ? 'is-eligible' : ''}`;
+                    value.textContent = Number(day.value) === 1 ? '1' : '0';
+
+                    const meta = document.createElement('div');
+                    meta.className = 'monthly-bonus-detail-meta';
+                    [
+                        `In: ${day.check_in || 'N/A'}`,
+                        `Out: ${day.check_out || 'N/A'}`,
+                        day.leave_status || 'No leave',
+                        day.late_status || '',
+                        day.checkout_status || '',
+                        day.reason || (Number(day.value) === 1 ? i18n.eligible : i18n.notEligible),
+                    ].filter(Boolean).forEach((text) => {
+                        const chip = document.createElement('span');
+                        chip.textContent = text;
+                        meta.appendChild(chip);
+                    });
+
+                    item.appendChild(date);
+                    item.appendChild(value);
+                    item.appendChild(meta);
+                    list.appendChild(item);
+                });
+
+                bonusDetailModal.show();
             });
 
             document.addEventListener('click', function (event) {

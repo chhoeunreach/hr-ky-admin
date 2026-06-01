@@ -1701,6 +1701,7 @@ return [
     'hide_signals' => 'លាក់សញ្ញា',
     'show_signals' => 'បង្ហាញសញ្ញា',
     'export_reduc_xlsx' => 'នាំចេញ Reduc XLSX',
+    'export_bonus_xlsx' => 'នាំចេញ Bonus XLSX',
     'rows' => 'ជួរដេក',
     'all' => 'ទាំងអស់',
     'search' => 'ស្វែងរក',
