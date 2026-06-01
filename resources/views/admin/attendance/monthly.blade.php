@@ -2694,6 +2694,12 @@
                 userId: '',
             };
 
+            window.addEventListener('beforeunload', () => {
+                if (monthlyResultsAbortController) {
+                    monthlyResultsAbortController.abort();
+                }
+            });
+
             const updateMonthlyScrollShortcuts = () => {
                 if (!monthlyScrollShortcuts) {
                     return;

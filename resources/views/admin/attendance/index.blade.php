@@ -1666,6 +1666,7 @@
                                     @endphp
 
                                     <tr class="attendance-day-row"
+                                        data-attendance-user-row="{{ $userId }}"
                                         data-summary-total_employee="1"
                                         data-summary-total_check_in="{{ $rowHasCheckIn ? '1' : '0' }}"
                                         data-summary-total_not_yet_check_in="{{ $rowIsNotYetCheckIn ? '1' : '0' }}"
@@ -2042,8 +2043,9 @@
                                                                data-href="{{ route('admin.leave-request.update-status', $firstAttendance->leave_request_id) }}"
                                                                data-status="{{ $firstAttendance->leave_request_status }}"
                                                                data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
-                                                               data-reason="{{ strip_tags((string) $firstAttendance->leave_request_reason) }}"
-                                                               data-id="{{ $firstAttendance->leave_request_id }}">
+                                                                data-reason="{{ strip_tags((string) $firstAttendance->leave_request_reason) }}"
+                                                                data-id="{{ $firstAttendance->leave_request_id }}"
+                                                                data-user-id="{{ $firstAttendance->user_id }}">
                                                                 <span class="attendance-leave-pill {{ $rowIsDayOff ? 'is-day-off' : ($rowIsLeave ? 'is-leave' : 'is-' . $firstAttendance->leave_request_status) }}"
                                                                       title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
                                                                     <span class="attendance-leave-pill-label">{{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}</span>
@@ -2068,9 +2070,10 @@
                                                                data-href="{{ route('admin.time-leave-request.update-status', $firstAttendance->time_leave_id) }}"
                                                                data-status="{{ $firstAttendance->time_leave_status }}"
                                                                data-remark="{{ $firstAttendance->time_leave_admin_remark }}"
-                                                               data-reason="{{ strip_tags((string) $firstAttendance->time_leave_reason) }}"
-                                                               data-id="{{ $firstAttendance->time_leave_id }}"
-                                                               data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
+                                                                data-reason="{{ strip_tags((string) $firstAttendance->time_leave_reason) }}"
+                                                                data-id="{{ $firstAttendance->time_leave_id }}"
+                                                                data-user-id="{{ $firstAttendance->user_id }}"
+                                                                data-label="{{ __('index.time_leave_request') }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
                                                                 <span class="attendance-leave-pill is-time-leave {{ $firstAttendance->time_leave_status === 'pending' ? 'is-pending' : '' }}"
                                                                       title="{{ \App\Helpers\AppHelper::timeLeaverequestDate($firstAttendance->time_leave_date) }} {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) }} - {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}">
                                                                     <span class="attendance-leave-pill-label">{{ __('index.time_leave_request') }}</span>
@@ -2805,12 +2808,21 @@
                     return;
                 }
 
+                if (attendanceResultsAbortController) {
+                    attendanceResultsAbortController.abort();
+                }
+
                 showAttendancePageLoader(@json(__('index.refreshing_attendance')));
             });
 
             document.querySelectorAll('form').forEach((form) => {
                 form.addEventListener('submit', () => {
-                    if (form.id === 'attendanceChatForm') {
+                    if ([
+                        'attendanceChatForm',
+                        'attendanceQuickLeaveForm',
+                        'attendanceQuickTimeLeaveForm',
+                        'attendanceUpdateLeaveStatus',
+                    ].includes(form.id)) {
                         return;
                     }
 
@@ -2840,7 +2852,13 @@
                         || link.classList.contains('editNightAttendance')
                         || link.classList.contains('addEmployeeAttendance')
                         || link.closest('#attendanceResultsBlock .pagination')
+                        || link.closest('.sidebar')
+                        || link.closest('.navbar')
                     ) {
+                        if (!href.startsWith('#') && !href.startsWith('javascript:')) {
+                            skipAttendanceUnloadLoader = true;
+                        }
+
                         return;
                     }
 
@@ -2868,6 +2886,7 @@
             const attendanceLeaveDetailModalSubtitle = document.getElementById('attendanceLeaveDetailModalSubtitle');
             const attendanceLeaveDetailModalBody = document.getElementById('attendanceLeaveDetailModalBody');
             let activeAttendanceSummaryFilter = null;
+            let activeAttendanceDetailUserId = '';
             let attendanceResultsAbortController = null;
             let attendanceResultsRequestId = 0;
             let attendanceSearchTimer = null;
@@ -2953,6 +2972,7 @@
                                         data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
                                         data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
+                                        data-user-id="${escapeAttendanceHtml(activeAttendanceDetailUserId)}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.approve') }}
                                 </button>
@@ -2963,6 +2983,7 @@
                                         data-remark="${escapeAttendanceHtml(record.raw_admin_remark)}"
                                         data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
+                                        data-user-id="${escapeAttendanceHtml(activeAttendanceDetailUserId)}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.reject') }}
                                 </button>
@@ -3056,6 +3077,7 @@
 
                 document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                document.getElementById('attendanceUpdateLeaveStatus').dataset.userId = element.dataset.userId || element.closest('.attendance-day-row')?.dataset.attendanceUserRow || activeAttendanceDetailUserId || '';
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
                 document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
@@ -3113,6 +3135,7 @@
 
                 document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
+                document.getElementById('attendanceUpdateLeaveStatus').dataset.userId = element.dataset.userId || element.closest('.attendance-day-row')?.dataset.attendanceUserRow || activeAttendanceDetailUserId || '';
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
                 document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
@@ -3310,6 +3333,158 @@
                 }
             };
 
+            const attendanceActionMessage = (title, message, type = 'success') => {
+                if (window.Swal) {
+                    Swal.fire(title, message, type);
+                    return;
+                }
+
+                alert(message || title);
+            };
+
+            const attendanceActionErrorMessage = async (response) => {
+                try {
+                    const data = await response.json();
+                    if (data.message) {
+                        return data.message;
+                    }
+
+                    if (data.errors) {
+                        return Object.values(data.errors).flat().join('\n');
+                    }
+                } catch (error) {
+                    return 'Unable to save. Please try again.';
+                }
+
+                return 'Unable to save. Please try again.';
+            };
+
+            const attendanceActionUserId = (form) => {
+                if (form.dataset.userId) {
+                    return form.dataset.userId;
+                }
+
+                return form.querySelector('[name="user_id"]')?.value || '';
+            };
+
+            const attendanceEmployeeRowSelector = (userId) => {
+                const safeUserId = window.CSS?.escape ? CSS.escape(String(userId)) : String(userId).replace(/"/g, '\\"');
+
+                return `[data-attendance-user-row="${safeUserId}"]`;
+            };
+
+            const syncAttendanceSummaryFrom = (parsedDocument) => {
+                const nextSummary = parsedDocument.querySelector('.attendance-summary-footer');
+                const currentSummary = document.querySelector('.attendance-summary-footer');
+
+                if (nextSummary && currentSummary) {
+                    currentSummary.innerHTML = nextSummary.innerHTML;
+                }
+            };
+
+            const refreshAttendanceEmployeeRow = async (userId) => {
+                if (!userId) {
+                    await refreshAttendanceResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                const rowSelector = attendanceEmployeeRowSelector(userId);
+                const currentRow = document.querySelector(rowSelector);
+                if (!currentRow) {
+                    await refreshAttendanceResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                const response = await fetch(window.location.href, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'text/html',
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error('Saved, but unable to refresh the employee row.');
+                }
+
+                const html = await response.text();
+                const parsed = new DOMParser().parseFromString(html, 'text/html');
+                const nextRow = parsed.querySelector(rowSelector);
+
+                if (!nextRow) {
+                    await refreshAttendanceResultsBlock(new URL(window.location.href), false, { quiet: true });
+                    return;
+                }
+
+                currentRow.replaceWith(nextRow);
+                syncAttendanceSummaryFrom(parsed);
+                applyAttendanceTableFilters();
+                updateAttendanceScrollShortcuts();
+
+                if (window.feather) {
+                    feather.replace();
+                }
+
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
+                    bootstrap.Tooltip.getOrCreateInstance(element);
+                });
+            };
+
+            const submitAttendanceActionForm = async (form, modalInstance = null) => {
+                const submitButton = form.querySelector('[type="submit"]');
+                const originalHtml = submitButton?.innerHTML;
+                const userId = attendanceActionUserId(form);
+
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+                }
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: form.method || 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(await attendanceActionErrorMessage(response));
+                    }
+
+                    const data = await response.json();
+                    modalInstance?.hide();
+                    attendanceLeaveDetailModal?.hide();
+                    attendanceActionMessage('Success', data.message || 'Saved successfully.', 'success');
+                    await refreshAttendanceEmployeeRow(userId);
+                } catch (error) {
+                    attendanceActionMessage('Error', error.message || 'Unable to save. Please try again.', 'error');
+                } finally {
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalHtml;
+                    }
+                }
+            };
+
+            document.addEventListener('submit', (event) => {
+                const form = event.target.closest('#attendanceQuickLeaveForm, #attendanceQuickTimeLeaveForm, #attendanceUpdateLeaveStatus');
+                if (!form) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                const modalInstance = form.id === 'attendanceQuickLeaveForm'
+                    ? attendanceQuickLeaveModal
+                    : (form.id === 'attendanceQuickTimeLeaveForm'
+                        ? attendanceQuickTimeLeaveModal
+                        : bootstrap.Modal.getOrCreateInstance(document.getElementById('attendanceLeaveStatusUpdate')));
+
+                submitAttendanceActionForm(form, modalInstance);
+            });
+
             document.addEventListener('input', (event) => {
                 if (event.target && event.target.id === 'attendanceDaySearch') {
                     clearTimeout(attendanceSearchTimer);
@@ -3374,6 +3549,7 @@
                 url.searchParams.set('month', trigger.dataset.month || '');
                 url.searchParams.set('category', trigger.dataset.category || '');
                 url.searchParams.set('date_in_bs', trigger.dataset.dateInBs || '0');
+                activeAttendanceDetailUserId = trigger.dataset.userId || '';
 
                 if (attendanceLeaveDetailModalLabel) {
                     attendanceLeaveDetailModalLabel.textContent = trigger.dataset.label || '{{ __('index.leave_request_section') }}';
