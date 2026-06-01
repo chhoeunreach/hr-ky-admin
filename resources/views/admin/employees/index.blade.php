@@ -214,10 +214,12 @@
                     }
 
                     .employee-table {
+                        --employee-table-font-size: 0.6875rem;
+                        --employee-table-header-size: 0.59375rem;
                         width: 100%;
                         min-width: 1120px;
                         table-layout: fixed;
-                        font-size: 11px;
+                        font-size: var(--employee-table-font-size);
                     }
 
                     .employee-table th,
@@ -228,7 +230,7 @@
 
                     .employee-table th {
                         padding: 6px 6px;
-                        font-size: 9.5px;
+                        font-size: var(--employee-table-header-size);
                         font-weight: 600;
                         line-height: 1.15;
                         white-space: normal;
@@ -382,8 +384,9 @@
                             width: 150px;
                         }
 
-                        .employee-table th {
-                            font-size: 9px;
+                        .employee-table {
+                            --employee-table-font-size: 0.625rem;
+                            --employee-table-header-size: 0.5625rem;
                         }
                     }
                 </style>

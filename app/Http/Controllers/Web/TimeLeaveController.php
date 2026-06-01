@@ -182,7 +182,9 @@ class TimeLeaveController extends Controller
                 ->route('admin.time-leave-request.index')
                 ->with('success', __('message.status_update'));
         } catch (Exception $exception) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
 
             if ($request->expectsJson()) {
                 return response()->json([

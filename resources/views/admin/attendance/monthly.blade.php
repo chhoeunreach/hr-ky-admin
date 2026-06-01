@@ -548,6 +548,9 @@
         }
 
         .monthly-attendance-table {
+            --monthly-table-font-size: 0.5625rem;
+            --monthly-table-header-size: 0.5625rem;
+            --monthly-table-small-size: 0.4375rem;
             width: 100%;
             min-width: 980px;
             border-collapse: separate;
@@ -563,7 +566,7 @@
             text-align: center;
             vertical-align: middle;
             padding: 3px 2px;
-            font-size: 9px;
+            font-size: var(--monthly-table-font-size);
         }
 
         .monthly-attendance-table thead th {
@@ -571,7 +574,7 @@
             top: 0;
             z-index: 4;
             color: #334155;
-            font-size: 9px;
+            font-size: var(--monthly-table-header-size);
             font-weight: 800;
             background: #f8fafc;
             line-height: 1.15;
@@ -581,7 +584,7 @@
         }
 
         .monthly-attendance-table thead small {
-            font-size: 7px;
+            font-size: var(--monthly-table-small-size);
         }
 
         .monthly-attendance-table .sticky-number {
@@ -1807,6 +1810,12 @@
         }
 
         @media (max-width: 991.98px) {
+            .monthly-attendance-table {
+                --monthly-table-font-size: 0.5rem;
+                --monthly-table-header-size: 0.5rem;
+                --monthly-table-small-size: 0.40625rem;
+            }
+
             .monthly-report-strip {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -2737,14 +2746,19 @@
                 localStorage.setItem('monthlyAttendanceSignalsVisible', visible ? '1' : '0');
             };
 
+            const applyStoredSignalColumnsVisibility = () => {
+                setSignalColumnsVisible(localStorage.getItem('monthlyAttendanceSignalsVisible') !== '0');
+            };
+
             const bindMonthlySignalToggle = () => {
                 const signalToggle = document.getElementById('monthlySignalToggle');
+                applyStoredSignalColumnsVisibility();
+
                 if (!signalToggle || signalToggle.dataset.bound === '1') {
                     return;
                 }
 
                 signalToggle.dataset.bound = '1';
-                setSignalColumnsVisible(localStorage.getItem('monthlyAttendanceSignalsVisible') !== '0');
                 signalToggle.addEventListener('click', function () {
                     const visible = signalToggle.getAttribute('aria-pressed') !== 'true';
                     setSignalColumnsVisible(visible);
@@ -3007,7 +3021,7 @@
 
                 currentRow.replaceWith(nextRow);
                 syncMonthlySummaryFrom(parsed);
-                bindMonthlySignalToggle();
+                applyStoredSignalColumnsVisibility();
                 updateMonthlyScrollShortcuts();
 
                 if (window.feather) {

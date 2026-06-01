@@ -441,7 +441,9 @@ class AttendanceController extends Controller
 
             return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
@@ -519,7 +521,9 @@ class AttendanceController extends Controller
 
             return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([

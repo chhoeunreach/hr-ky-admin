@@ -139,7 +139,9 @@ class LeaveController extends Controller
                     ->route('admin.leave-request.index')
                     ->with('success', __('message.leave_status_updated'));
             } catch (Exception $exception) {
-                DB::rollBack();
+                if (DB::transactionLevel() > 0) {
+                    DB::rollBack();
+                }
 
                 if ($request->expectsJson()) {
                     return response()->json([
