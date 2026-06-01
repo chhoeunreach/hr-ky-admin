@@ -208,18 +208,40 @@
                         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
                     }
 
+                    .employee-table-wrap {
+                        overflow-x: auto;
+                        overflow-y: visible;
+                    }
+
                     .employee-table {
                         width: 100%;
-                        table-layout: auto;
+                        min-width: 1120px;
+                        table-layout: fixed;
+                        font-size: 11px;
                     }
 
                     .employee-table th,
                     .employee-table td {
+                        padding: 7px 8px;
                         vertical-align: middle;
+                    }
+
+                    .employee-table th {
+                        padding: 6px 6px;
+                        font-size: 9.5px;
+                        font-weight: 600;
+                        line-height: 1.15;
+                        white-space: normal;
+                        word-break: normal;
+                        overflow-wrap: break-word;
+                        text-align: center;
                     }
 
                     .employee-table .col-icon,
                     .employee-table .col-code,
+                    .employee-table .col-name,
+                    .employee-table .col-address,
+                    .employee-table .col-email,
                     .employee-table .col-branch,
                     .employee-table .col-designation,
                     .employee-table .col-department,
@@ -232,49 +254,63 @@
                     }
 
                     .employee-table .col-icon {
-                        min-width: 56px;
+                        width: 36px;
                     }
 
                     .employee-table .col-code {
-                        min-width: 110px;
+                        width: 70px;
                     }
 
                     .employee-table .col-name {
-                        min-width: 260px;
+                        width: 160px;
                     }
 
                     .employee-table .col-address {
-                        min-width: 180px;
-                        white-space: nowrap;
+                        width: 90px;
                     }
 
                     .employee-table .col-email {
-                        min-width: 220px;
-                        white-space: normal;
-                        word-break: break-word;
+                        width: 145px;
                     }
 
-                    .employee-table .col-branch,
+                    .employee-table .col-branch {
+                        width: 85px;
+                    }
+
                     .employee-table .col-designation,
-                    .employee-table .col-department,
+                    .employee-table .col-department {
+                        width: 90px;
+                    }
+
                     .employee-table .col-role {
-                        min-width: 130px;
+                        width: 80px;
                     }
 
                     .employee-table .col-shift {
-                        min-width: 120px;
+                        width: 64px;
                     }
 
-                    .employee-table .col-boolean,
-                    .employee-table .col-workplace,
+                    .employee-table .col-boolean {
+                        width: 62px;
+                    }
+
+                    .employee-table .col-workplace {
+                        width: 64px;
+                    }
+
                     .employee-table .col-action {
-                        min-width: 110px;
+                        width: 46px;
                     }
 
                     .employee-name-cell {
                         display: flex;
                         align-items: center;
-                        gap: 12px;
+                        gap: 8px;
+                    }
+
+                    .employee-name-cell img {
+                        width: 32px !important;
+                        height: 32px !important;
                     }
 
                     .employee-name-main {
@@ -284,7 +320,32 @@
 
                     .employee-name-main p,
                     .employee-name-main small {
-                        word-break: break-word;
+                        display: block;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+
+                    .employee-table td.col-code,
+                    .employee-table td.col-address,
+                    .employee-table td.col-email,
+                    .employee-table td.col-branch,
+                    .employee-table td.col-designation,
+                    .employee-table td.col-department,
+                    .employee-table td.col-role,
+                    .employee-table td.col-shift {
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        white-space: nowrap;
+                    }
+
+                    .employee-table .btn-xs {
+                        padding: 2px 6px;
+                        font-size: 11px;
+                    }
+
+                    .employee-table .switch {
+                        margin-bottom: 0;
                     }
 
                     @media (max-width: 767.98px) {
@@ -313,16 +374,20 @@
                         }
 
                         .employee-table .col-name {
-                            min-width: 220px;
+                            width: 180px;
                         }
 
                         .employee-table .col-address,
                         .employee-table .col-email {
-                            min-width: 160px;
+                            width: 150px;
+                        }
+
+                        .employee-table th {
+                            font-size: 9px;
                         }
                     }
                 </style>
-                <div class="table-responsive">
+                <div class="table-responsive employee-table-wrap">
                     <table id="employeeTable" class="table employee-table">
                         <thead>
                         <tr>
@@ -347,7 +412,6 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr>
                             <?php
                             $changeColor = [
                                 0 => 'success',
