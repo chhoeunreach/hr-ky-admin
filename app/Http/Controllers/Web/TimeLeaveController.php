@@ -167,6 +167,13 @@ class TimeLeaveController extends Controller
             }
             DB::commit();
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('message.status_update'),
+                ]);
+            }
+
             if ($request->boolean('redirect_back')) {
                 return redirect()->back()->with('success', __('message.status_update'));
             }
@@ -176,6 +183,14 @@ class TimeLeaveController extends Controller
                 ->with('success', __('message.status_update'));
         } catch (Exception $exception) {
             DB::rollBack();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
+
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }

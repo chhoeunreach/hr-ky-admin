@@ -2690,6 +2690,9 @@
             let monthlyRefreshProgressTimer = null;
             let monthlyResultsAbortController = null;
             let monthlyResultsRequestId = 0;
+            const monthlyDetailContext = {
+                userId: '',
+            };
 
             const updateMonthlyScrollShortcuts = () => {
                 if (!monthlyScrollShortcuts) {
@@ -2932,6 +2935,10 @@
             };
 
             const monthlyActionUserId = (form) => {
+                if (form.dataset.userId) {
+                    return form.dataset.userId;
+                }
+
                 if (form.id === 'createAttendance') {
                     return form.querySelector('[name="user_id"]')?.value || document.getElementById('empId')?.value || '';
                 }
@@ -3151,7 +3158,7 @@
             });
 
             document.addEventListener('submit', (event) => {
-                const form = event.target.closest('#createAttendance, #attendanceQuickLeaveForm, #attendanceQuickTimeLeaveForm');
+                const form = event.target.closest('#createAttendance, #attendanceQuickLeaveForm, #attendanceQuickTimeLeaveForm, #attendanceUpdateLeaveStatus');
                 if (!form) {
                     return;
                 }
@@ -3164,7 +3171,9 @@
 
                 const modalInstance = form.id === 'createAttendance'
                     ? quickAttendanceModal
-                    : (form.id === 'attendanceQuickLeaveForm' ? quickLeaveModal : quickTimeLeaveModal);
+                    : (form.id === 'attendanceQuickLeaveForm'
+                        ? quickLeaveModal
+                        : (form.id === 'attendanceQuickTimeLeaveForm' ? quickTimeLeaveModal : statusModal));
 
                 submitMonthlyActionForm(form, modalInstance);
             });
@@ -3490,6 +3499,7 @@
                 const canQuickAttendance = trigger.getAttribute('data-can-quick-attendance') === '1';
                 const canQuickLeave = trigger.getAttribute('data-can-quick-leave') === '1';
                 const canQuickTimeLeave = trigger.getAttribute('data-can-quick-time-leave') === '1';
+                monthlyDetailContext.userId = trigger.getAttribute('data-user-id') || '';
 
                 document.getElementById('monthlyAttendanceDetailModalLabel').textContent = `${employee} ${employeeCode}`;
                 document.getElementById('monthlyAttendanceDetailSubtitle').textContent = date;
@@ -3555,6 +3565,7 @@
                 button.dataset.id = action.id || '';
                 button.dataset.label = action.title || i18n.leaveRequest;
                 button.dataset.approversUrl = action.approvers_url || '';
+                button.dataset.userId = monthlyDetailContext.userId || '';
                 return button;
             };
 
@@ -3923,6 +3934,7 @@
 
                 document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = element.dataset.label || i18n.leaveRequest;
                 document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', element.dataset.href || '#');
+                document.getElementById('attendanceUpdateLeaveStatus').dataset.userId = element.dataset.userId || '';
                 document.getElementById('attendanceLeaveStatus').value = element.dataset.status || '{{ \App\Enum\LeaveStatusEnum::approved->value }}';
                 document.getElementById('attendanceLeaveRemark').value = element.dataset.remark || '';
                 document.getElementById('attendanceLeaveStatusReason').textContent = element.dataset.reason || 'N/A';

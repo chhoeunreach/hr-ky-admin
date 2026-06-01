@@ -122,6 +122,13 @@ class LeaveController extends Controller
                 $this->leaveService->updateLeaveRequestStatus($validatedData, $leaveRequestId);
                 DB::commit();
 
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => __('message.leave_status_updated'),
+                    ]);
+                }
+
                 if ($request->boolean('redirect_back')) {
                     return redirect()
                         ->back()
@@ -133,6 +140,13 @@ class LeaveController extends Controller
                     ->with('success', __('message.leave_status_updated'));
             } catch (Exception $exception) {
                 DB::rollBack();
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $exception->getMessage(),
+                    ], 422);
+                }
 
                 return redirect()->back()->with('danger', $exception->getMessage());
             }
