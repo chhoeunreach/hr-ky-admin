@@ -177,7 +177,7 @@ class AttendanceMonthlyController extends Controller
 
     private function authorizeMonthlyAttendance(): void
     {
-        if (auth('admin')->check() || Gate::any(['list_attendance', 'list_monthly_attendance'])) {
+        if (auth('admin')->check() || Gate::allows('list_monthly_attendance')) {
             return;
         }
 
@@ -186,7 +186,7 @@ class AttendanceMonthlyController extends Controller
 
     private function authorizeMonthlyAttendanceExport(): void
     {
-        if (auth('admin')->check() || Gate::any(['attendance_csv_export', 'monthly_attendance_csv_export'])) {
+        if (auth('admin')->check() || Gate::allows('monthly_attendance_csv_export')) {
             return;
         }
 
