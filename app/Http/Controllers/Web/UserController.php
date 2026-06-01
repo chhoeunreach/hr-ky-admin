@@ -336,7 +336,7 @@ class UserController extends Controller
         }
     }
 
-    public function toggleStatus($id)
+    public function toggleStatus(Request $request, $id)
     {
         $this->authorize('edit_employee');
         try {
@@ -345,10 +345,30 @@ class UserController extends Controller
             }
             DB::beginTransaction();
             $this->userRepo->toggleIsActiveStatus($id);
+            $userDetail = $this->userRepo->findUserDetailById($id, ['id', 'is_active']);
             DB::commit();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('message.user_is_active_changed'),
+                    'is_active' => (int) $userDetail->is_active,
+                ]);
+            }
+
             return redirect()->back()->with('success', __('message.user_is_active_changed'));
         } catch (Exception $exception) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 500);
+            }
+
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }

@@ -19,7 +19,7 @@
             }
         });
 
-        $('.changePassword').click(function (event) {
+        $(document).on('click', '.changePassword', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
             $('.modal-title').html('{{ __('index.user_change_password') }}');
@@ -27,8 +27,10 @@
             $('#statusUpdate').modal('show');
         });
 
-        $('.toggleStatus').change(function (event) {
+        $(document).on('change', '.toggleStatus', function (event) {
             event.preventDefault();
+            const toggle = $(this);
+            const row = toggle.closest('tr');
             let status = $(this).prop('checked') == true ? 1 : 0;
             let href = $(this).attr('href');
 
@@ -41,15 +43,53 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = href;
+                    toggle.prop('disabled', true);
+
+                    fetch(href, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then((response) => {
+                            if (!response.ok) {
+                                throw new Error(@json(__('message.something_went_wrong')));
+                            }
+
+                            return response.json();
+                        })
+                        .then((response) => {
+                            const updatedStatus = Number(response.is_active);
+                            toggle.prop('checked', updatedStatus === 1);
+
+                            const activeFilter = $('#is_active').val();
+                            if (activeFilter !== '' && Number(activeFilter) !== updatedStatus) {
+                                row.fadeOut(180, function () {
+                                    $(this).remove();
+                                });
+                            }
+                        })
+                        .catch((error) => {
+                            (status === 0) ? toggle.prop('checked', true) : toggle.prop('checked', false);
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: error.message,
+                                padding: '10px 50px 10px 50px',
+                            });
+                        })
+                        .finally(() => {
+                            toggle.prop('disabled', false);
+                        });
                 } else if (result.isDenied) {
-                    (status === 0) ? $(this).prop('checked', true) : $(this).prop('checked', false)
+                    (status === 0) ? toggle.prop('checked', true) : toggle.prop('checked', false)
                 }
             })
         });
 
-        $('.toggleHolidayCheckIn').change(function (event) {
+        $(document).on('change', '.toggleHolidayCheckIn', function (event) {
             event.preventDefault();
+            const toggle = $(this);
             let status = $(this).prop('checked') == true ? 1 : 0;
             let href = $(this).attr('href');
 
@@ -64,12 +104,12 @@
                 if (result.isConfirmed) {
                     window.location.href = href;
                 } else if (result.isDenied) {
-                    (status === 0) ? $(this).prop('checked', true) : $(this).prop('checked', false)
+                    (status === 0) ? toggle.prop('checked', true) : toggle.prop('checked', false)
                 }
             })
         });
 
-        $('.deleteEmployee').click(function (event) {
+        $(document).on('click', '.deleteEmployee', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
@@ -86,7 +126,7 @@
             })
         });
 
-        $('.forceLogOut').click(function (event) {
+        $(document).on('click', '.forceLogOut', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
@@ -103,7 +143,7 @@
             })
         });
 
-        $('.changeWorkPlace').click(function (event) {
+        $(document).on('click', '.changeWorkPlace', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
@@ -121,10 +161,44 @@
         });
 
         let employeeSearchTimer = null;
+        let employeeListController = null;
+        let employeeListRequestId = 0;
+
+        const initEmployeeListControls = () => {
+            const perPage = $('#per_page');
+
+            if (perPage.length && !perPage.hasClass('select2-hidden-accessible')) {
+                perPage.select2({minimumResultsForSearch: Infinity});
+            }
+        };
+
+        const replaceEmployeeResults = (doc) => {
+            const currentTableBody = document.querySelector('#employeeTable tbody');
+            const nextTableBody = doc.querySelector('#employeeTable tbody');
+            const currentPagination = document.querySelector('#employeeListSection .dataTables_paginate');
+            const nextPagination = doc.querySelector('#employeeListSection .dataTables_paginate');
+
+            if (!currentTableBody || !nextTableBody) {
+                return false;
+            }
+
+            currentTableBody.innerHTML = nextTableBody.innerHTML;
+
+            if (currentPagination && nextPagination) {
+                currentPagination.innerHTML = nextPagination.innerHTML;
+            }
+
+            if (window.feather) {
+                feather.replace();
+            }
+
+            return true;
+        };
 
         const refreshEmployeeList = (options = {}) => {
             const form = document.getElementById('employeeFilterForm');
             const listSection = document.getElementById('employeeListSection');
+            const tableBody = document.querySelector('#employeeTable tbody');
 
             if (!form || !listSection) {
                 form?.submit();
@@ -133,44 +207,54 @@
 
             const params = new URLSearchParams(new FormData(form));
             const requestUrl = `${form.action}?${params.toString()}`;
+            const requestId = ++employeeListRequestId;
 
-            listSection.style.opacity = '0.6';
+            if (employeeListController) {
+                employeeListController.abort();
+            }
+
+            employeeListController = new AbortController();
+
+            if (tableBody) {
+                tableBody.style.opacity = '0.6';
+            }
 
             fetch(requestUrl, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                signal: employeeListController.signal
             })
                 .then((response) => response.text())
                 .then((html) => {
+                    if (requestId !== employeeListRequestId) {
+                        return;
+                    }
+
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
-                    const nextSection = doc.getElementById('employeeListSection');
 
-                    if (!nextSection) {
+                    if (!replaceEmployeeResults(doc)) {
                         window.location.href = requestUrl;
                         return;
                     }
 
-                    listSection.innerHTML = nextSection.innerHTML;
-
-                    if (window.feather) {
-                        feather.replace();
-                    }
-
-                    const currentSearch = document.getElementById('employeeListSearch');
-                    if (currentSearch && options.focusSearch) {
-                        currentSearch.focus();
-                        currentSearch.setSelectionRange(currentSearch.value.length, currentSearch.value.length);
-                    }
-
                     window.history.replaceState({}, '', requestUrl);
                 })
-                .catch(() => {
+                .catch((error) => {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
                     form.submit();
                 })
                 .finally(() => {
-                    listSection.style.opacity = '1';
+                    if (requestId === employeeListRequestId) {
+                        if (tableBody) {
+                            tableBody.style.opacity = '1';
+                        }
+                        employeeListController = null;
+                    }
                 });
         };
 
@@ -192,8 +276,72 @@
             clearTimeout(employeeSearchTimer);
             employeeSearchTimer = setTimeout(() => {
                 refreshEmployeeList({focusSearch: true});
-            }, 500);
+            }, 300);
         });
+
+        $(document).on('click', '#employeeListSection .pagination a', function (event) {
+            event.preventDefault();
+
+            const form = document.getElementById('employeeFilterForm');
+            const listSection = document.getElementById('employeeListSection');
+            const tableBody = document.querySelector('#employeeTable tbody');
+            const requestUrl = this.href;
+            const requestId = ++employeeListRequestId;
+
+            if (!form || !listSection) {
+                window.location.href = requestUrl;
+                return;
+            }
+
+            if (employeeListController) {
+                employeeListController.abort();
+            }
+
+            employeeListController = new AbortController();
+            if (tableBody) {
+                tableBody.style.opacity = '0.6';
+            }
+
+            fetch(requestUrl, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                signal: employeeListController.signal
+            })
+                .then((response) => response.text())
+                .then((html) => {
+                    if (requestId !== employeeListRequestId) {
+                        return;
+                    }
+
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    if (!replaceEmployeeResults(doc)) {
+                        window.location.href = requestUrl;
+                        return;
+                    }
+
+                    window.history.replaceState({}, '', requestUrl);
+                })
+                .catch((error) => {
+                    if (error.name === 'AbortError') {
+                        return;
+                    }
+
+                    window.location.href = requestUrl;
+                })
+                .finally(() => {
+                    if (requestId === employeeListRequestId) {
+                        if (tableBody) {
+                            tableBody.style.opacity = '1';
+                        }
+                        employeeListController = null;
+                    }
+                });
+        });
+
+        initEmployeeListControls();
 
 
     });
@@ -209,6 +357,7 @@
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),
             department_id: $('#department').val(),
+            is_active: $('#is_active').val(),
             per_page: $('#per_page').val(),
             action: 'export'  // This should match what the controller is checking for
         };
@@ -225,6 +374,7 @@
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),
             department_id: $('#department').val(),
+            is_active: $('#is_active').val(),
             per_page: $('#per_page').val()
         };
     }
