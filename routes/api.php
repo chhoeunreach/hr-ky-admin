@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ProjectApiController;
 use App\Http\Controllers\Api\ProjectManagementDashboardApiController;
 use App\Http\Controllers\Api\PushNotificationController;
 use App\Http\Controllers\Api\ResignationApiController;
+use App\Http\Controllers\Api\SellOutReportController;
 use App\Http\Controllers\Api\StaticPageContentApiController;
 use App\Http\Controllers\Api\SupportApiController;
 use App\Http\Controllers\Api\TadaApiController;
@@ -158,6 +159,12 @@ Route::group([
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
+
+    /** Sell Out Report */
+    Route::get('sell-out-reports', [SellOutReportController::class, 'index']);
+    Route::post('sell-out-reports', [SellOutReportController::class, 'store']);
+    Route::get('sell-out-reports/{id}', [SellOutReportController::class, 'show']);
+    Route::delete('sell-out-reports/{id}', [SellOutReportController::class, 'destroy']);
 
     /** Payslip */
     Route::post('employee/payslip',[EmployeePayrollApiController::class, 'getPayrollList']);

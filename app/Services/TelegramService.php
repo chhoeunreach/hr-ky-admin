@@ -130,6 +130,60 @@ class TelegramService
         return $response?->successful() ?? false;
     }
 
+    public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null): ?int
+    {
+        $botToken = (string) config('services.telegram.bot_token', '');
+
+        if ($botToken === '') {
+            Log::error('Telegram photo skipped: bot token missing (services.telegram.bot_token).', [
+                'chatId' => $chatId,
+            ]);
+            return null;
+        }
+
+        if (! is_file($photoPath)) {
+            Log::error('Telegram photo skipped: file not found.', [
+                'chatId' => $chatId,
+                'photoPath' => $photoPath,
+            ]);
+            return null;
+        }
+
+        $url = rtrim(self::TELEGRAM_API_BASE, '/') . '/bot' . $botToken . '/sendPhoto';
+
+        try {
+            $request = Http::timeout(20)
+                ->retry(2, 200)
+                ->acceptJson()
+                ->attach('photo', file_get_contents($photoPath), basename($photoPath));
+
+            $payload = ['chat_id' => $chatId];
+
+            if ($caption !== null && $caption !== '') {
+                $payload['caption'] = Str::limit($caption, 1024, '...');
+            }
+
+            $response = $request->post($url, $payload);
+
+            if (! $response->successful()) {
+                Log::error('Telegram sendPhoto failed.', [
+                    'chatId' => $chatId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return null;
+            }
+
+            return $response->json('result.message_id');
+        } catch (\Throwable $e) {
+            Log::error('Telegram sendPhoto exception.', [
+                'chatId' => $chatId,
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
     private function getNotificationChatIds(string $branchName, string $departmentName): array
     {
         $defaultChatId = (string) config('services.telegram.default_chat_id', '');

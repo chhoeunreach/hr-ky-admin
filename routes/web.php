@@ -58,6 +58,7 @@ use App\Http\Controllers\Web\SalaryHistoryController;
 use App\Http\Controllers\Web\SalaryTDSController;
 use App\Http\Controllers\Web\SSFController;
 use App\Http\Controllers\Web\PFController;
+use App\Http\Controllers\Web\SellStaffReportController;
 use App\Http\Controllers\Web\StaticPageContentController;
 use App\Http\Controllers\Web\SupportController;
 use App\Http\Controllers\Web\TadaAttachmentController;
@@ -456,6 +457,12 @@ Route::group([
         Route::get('employee-salaries/tax-report/{id}/edit', [TaxReportController::class, 'editTaxReport'])->name('payroll.tax-report.edit');
         Route::get('employee-salaries/tax-report/{id}/delete', [TaxReportController::class, 'deleteTaxReport'])->name('payroll.tax-report.delete');
         Route::put('employee-salaries/tax-report/{id}', [TaxReportController::class, 'updateTaxReport'])->name('payroll.tax-report.update');
+
+        /** Sell staff report */
+        Route::get('sell-staff-report', [SellStaffReportController::class, 'index'])->name('sell-staff-report.index');
+        Route::get('sell-staff-report/create', [SellStaffReportController::class, 'create'])->name('sell-staff-report.create');
+        Route::post('sell-staff-report', [SellStaffReportController::class, 'store'])->name('sell-staff-report.store');
+        Route::get('sell-staff-report/{id}', [SellStaffReportController::class, 'show'])->name('sell-staff-report.show');
 
 
         /** Payroll OverTime Setting route */

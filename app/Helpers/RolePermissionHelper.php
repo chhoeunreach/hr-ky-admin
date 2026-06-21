@@ -1425,6 +1425,11 @@ class RolePermissionHelper
                 "permission_key" => "edit_tax_report",
                 "permission_groups_id" => 38
             ],
+            [
+                "name" => "View Sell Staff Report",
+                "permission_key" => "view_sell_staff_report",
+                "permission_groups_id" => 38
+            ],
 
             /** Event Management  -39 */
             [
