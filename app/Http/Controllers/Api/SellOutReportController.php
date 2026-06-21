@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
+use App\Requests\SellOutReport\StoreSellOutReportRequest;
+use App\Resources\SellOutReport\SellOutReportResource;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,7 +20,7 @@ class SellOutReportController extends Controller
             ->withCount(['lines', 'photos'])
             ->latest()
             ->get()
-            ->map(fn (SellOutReport $report) => $this->formatReport($report, true));
+            ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->summary()->toArray(request()));
 
         return response()->json([
             'status' => true,
@@ -36,36 +37,13 @@ class SellOutReportController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $this->formatReport($report),
+            'data' => (new SellOutReportResource($report))->toArray(request()),
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreSellOutReportRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'seller_name' => ['required', 'string', 'max:255'],
-            'original_invoice_no' => ['nullable', 'string', 'max:255'],
-            'branch_name' => ['required', 'string', 'max:255'],
-            'customer_name' => ['nullable', 'string', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:50'],
-            'service_type' => ['required', 'string', 'max:255'],
-            'payment_method' => ['required', 'string', 'max:255'],
-            'note' => ['nullable', 'string'],
-            'extracted_text' => ['nullable', 'string'],
-            'lines' => ['required', 'array', 'min:1'],
-            'lines.*.product_name' => ['required', 'string', 'max:255'],
-            'lines.*.sku' => ['nullable', 'string', 'max:255'],
-            'lines.*.imei' => ['nullable', 'string', 'max:255'],
-            'lines.*.imei2' => ['nullable', 'string', 'max:255'],
-            'lines.*.serial_number' => ['nullable', 'string', 'max:255'],
-            'lines.*.model_number' => ['nullable', 'string', 'max:255'],
-            'lines.*.color' => ['nullable', 'string', 'max:255'],
-            'lines.*.storage' => ['nullable', 'string', 'max:255'],
-            'lines.*.qty' => ['required', 'integer', 'min:1'],
-            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
-            'photos' => ['nullable', 'array'],
-            'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
-        ]);
+        $validated = $request->validated();
 
         $report = DB::transaction(function () use ($request, $validated) {
             $totalAmount = collect($validated['lines'])->sum(function (array $line): float {
@@ -120,7 +98,7 @@ class SellOutReportController extends Controller
 
         return response()->json([
             'status' => true,
-            'data' => $this->formatReport($report),
+            'data' => (new SellOutReportResource($report))->toArray(request()),
         ], 201);
     }
 
@@ -151,49 +129,4 @@ class SellOutReportController extends Controller
         return 'SOR-' . str_pad((string) ($lastId + 1), 6, '0', STR_PAD_LEFT);
     }
 
-    private function formatReport(SellOutReport $report, bool $summary = false): array
-    {
-        $data = [
-            'id' => $report->id,
-            'invoice_no' => $report->invoice_no,
-            'original_invoice_no' => $report->original_invoice_no ?? '',
-            'seller_name' => $report->seller_name,
-            'branch_name' => $report->branch_name,
-            'customer_name' => $report->customer_name,
-            'customer_phone' => $report->customer_phone,
-            'service_type' => $report->service_type,
-            'payment_method' => $report->payment_method,
-            'note' => $report->note ?? '',
-            'extracted_text' => $report->extracted_text ?? '',
-            'total_amount' => (float) $report->total_amount,
-            'created_at' => optional($report->created_at)->format('Y-m-d H:i:s'),
-        ];
-
-        if ($summary) {
-            $data['lines_count'] = $report->lines_count ?? $report->lines->count();
-            $data['photos_count'] = $report->photos_count ?? $report->photos->count();
-        }
-
-        $data['lines'] = $summary ? [] : $report->lines->map(fn ($line) => [
-            'id' => $line->id,
-            'product_name' => $line->product_name,
-            'sku' => $line->sku,
-            'imei' => $line->imei ?? '',
-            'imei2' => $line->imei2 ?? '',
-            'serial_number' => $line->serial_number ?? '',
-            'model_number' => $line->model_number ?? '',
-            'color' => $line->color,
-            'storage' => $line->storage,
-            'qty' => (int) $line->qty,
-            'unit_price' => (float) $line->unit_price,
-        ])->values();
-
-        $data['photos'] = $summary ? [] : $report->photos->map(fn ($photo) => [
-            'id' => $photo->id,
-            'photo_path' => $photo->photo_path,
-            'photo_url' => Storage::disk('public')->url($photo->photo_path),
-        ])->values();
-
-        return $data;
-    }
 }
