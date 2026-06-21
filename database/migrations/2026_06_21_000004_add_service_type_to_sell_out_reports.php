@@ -8,24 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasColumn('sell_out_reports', 'original_invoice_no')) {
+        if (Schema::hasColumn('sell_out_reports', 'service_type')) {
             return;
         }
 
         Schema::table('sell_out_reports', function (Blueprint $table) {
-            $table->string('original_invoice_no')->nullable()->after('invoice_no')->index();
+            $table->string('service_type')->nullable()->after('customer_phone');
         });
     }
 
     public function down(): void
     {
-        if (! Schema::hasColumn('sell_out_reports', 'original_invoice_no')) {
+        if (! Schema::hasColumn('sell_out_reports', 'service_type')) {
             return;
         }
 
         Schema::table('sell_out_reports', function (Blueprint $table) {
-            $table->dropIndex(['original_invoice_no']);
-            $table->dropColumn('original_invoice_no');
+            $table->dropColumn('service_type');
         });
     }
 };

@@ -16,19 +16,19 @@ return new class extends Migration
             $table->foreignId('sell_out_report_id')->constrained('sell_out_reports')->cascadeOnDelete();
             $table->unsignedBigInteger('product_id')->nullable();
             $table->unsignedBigInteger('variation_id')->nullable();
-            $table->string('product_name')->nullable();
+            $table->string('product_name');
             $table->string('sku')->nullable();
             $table->string('identifier_type')->nullable();
-            $table->string('primary_identifier')->nullable()->unique();
-            $table->string('imei')->nullable()->unique();
+            $table->string('primary_identifier')->nullable();
+            $table->string('imei')->nullable();
             $table->string('imei2')->nullable();
-            $table->string('serial_number')->nullable()->unique();
+            $table->string('serial_number')->nullable();
             $table->string('model_number')->nullable();
             $table->string('color')->nullable();
             $table->string('storage')->nullable();
-            $table->decimal('qty', 12, 2)->default(1);
-            $table->decimal('unit_price', 15, 2)->nullable();
-            $table->decimal('subtotal', 15, 2)->nullable();
+            $table->integer('qty')->default(1);
+            $table->decimal('unit_price', 12, 2);
+            $table->decimal('subtotal', 12, 2);
             $table->timestamps();
 
             $table->index('sell_out_report_id');

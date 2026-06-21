@@ -19,6 +19,7 @@ class SellOutReport extends Model
         'branch_name',
         'customer_name',
         'customer_phone',
+        'service_type',
         'payment_method',
         'total_amount',
         'note',

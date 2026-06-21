@@ -14,12 +14,15 @@ return new class extends Migration
         Schema::create('sell_out_reports', function (Blueprint $table) {
             $table->id();
             $table->string('invoice_no')->unique();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('seller_name')->nullable();
-            $table->string('branch_name')->nullable();
+            $table->string('original_invoice_no')->nullable()->index();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('seller_name');
+            $table->string('branch_name');
             $table->string('customer_name')->nullable();
-            $table->string('payment_method')->nullable();
-            $table->decimal('total_amount', 15, 2)->nullable();
+            $table->string('customer_phone', 50)->nullable();
+            $table->string('service_type');
+            $table->string('payment_method');
+            $table->decimal('total_amount', 12, 2)->default(0);
             $table->text('note')->nullable();
             $table->longText('extracted_text')->nullable();
             $table->string('telegram_message_id')->nullable();

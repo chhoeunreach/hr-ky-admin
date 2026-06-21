@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('sell_out_reports', 'customer_phone')) {
+            return;
+        }
+
         Schema::table('sell_out_reports', function (Blueprint $table) {
             $table->string('customer_phone', 50)->nullable()->after('customer_name')->index();
         });
@@ -15,6 +19,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasColumn('sell_out_reports', 'customer_phone')) {
+            return;
+        }
+
         Schema::table('sell_out_reports', function (Blueprint $table) {
             $table->dropIndex(['customer_phone']);
             $table->dropColumn('customer_phone');

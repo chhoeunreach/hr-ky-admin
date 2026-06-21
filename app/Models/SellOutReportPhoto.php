@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class SellOutReportPhoto extends Model
 {
@@ -14,9 +15,17 @@ class SellOutReportPhoto extends Model
         'sell_out_report_id',
         'sell_out_report_line_id',
         'photo_path',
-        'photo_url',
         'original_name',
     ];
+
+    protected $appends = [
+        'photo_url',
+    ];
+
+    public function getPhotoUrlAttribute(): string
+    {
+        return Storage::disk('public')->url($this->photo_path);
+    }
 
     public function report(): BelongsTo
     {

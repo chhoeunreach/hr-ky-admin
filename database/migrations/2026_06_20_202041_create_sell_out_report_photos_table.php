@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('sell_out_report_id')->constrained('sell_out_reports')->cascadeOnDelete();
             $table->foreignId('sell_out_report_line_id')->nullable()->constrained('sell_out_report_lines')->nullOnDelete();
             $table->string('photo_path');
-            $table->string('photo_url')->nullable();
             $table->string('original_name')->nullable();
             $table->timestamps();
 
