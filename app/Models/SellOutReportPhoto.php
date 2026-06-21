@@ -15,6 +15,7 @@ class SellOutReportPhoto extends Model
         'sell_out_report_id',
         'sell_out_report_line_id',
         'photo_path',
+        'photo_url',
         'original_name',
     ];
 
@@ -22,8 +23,12 @@ class SellOutReportPhoto extends Model
         'photo_url',
     ];
 
-    public function getPhotoUrlAttribute(): string
+    public function getPhotoUrlAttribute(?string $value): string
     {
+        if ($value) {
+            return $value;
+        }
+
         return Storage::disk('public')->url($this->photo_path);
     }
 

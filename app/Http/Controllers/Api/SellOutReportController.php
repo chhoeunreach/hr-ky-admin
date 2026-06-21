@@ -20,7 +20,7 @@ class SellOutReportController extends Controller
             ->withCount(['lines', 'photos'])
             ->latest()
             ->get()
-            ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->summary()->toArray(request()));
+            ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->toArray(request()));
 
         return response()->json([
             'status' => true,
@@ -49,20 +49,23 @@ class SellOutReportController extends Controller
             $totalAmount = collect($validated['lines'])->sum(function (array $line): float {
                 return round((int) $line['qty'] * (float) $line['unit_price'], 2);
             });
+            $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
+            $commission = $validated['commission'] ?? ($totalQty * 0.25);
 
             $report = SellOutReport::create([
                 'user_id' => auth()->id(),
                 'invoice_no' => $this->generateInvoiceNo(),
                 'original_invoice_no' => $validated['original_invoice_no'] ?? null,
                 'seller_name' => $validated['seller_name'],
-                'branch_name' => $validated['branch_name'],
+                'branch_name' => $validated['branch_name'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
-                'service_type' => $validated['service_type'],
-                'payment_method' => $validated['payment_method'],
+                'service_type' => $validated['service_type'] ?? null,
+                'payment_method' => $validated['payment_method'] ?? null,
                 'note' => $validated['note'] ?? null,
                 'extracted_text' => $validated['extracted_text'] ?? null,
                 'total_amount' => round($totalAmount, 2),
+                'commission' => round((float) $commission, 2),
             ]);
 
             foreach ($validated['lines'] as $line) {
@@ -85,8 +88,11 @@ class SellOutReportController extends Controller
             }
 
             foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
                 $report->photos()->create([
-                    'photo_path' => $photo->store('sell-out-reports', 'public'),
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -98,6 +104,7 @@ class SellOutReportController extends Controller
 
         return response()->json([
             'status' => true,
+            'message' => 'Sell Out Report submitted successfully!',
             'data' => (new SellOutReportResource($report))->toArray(request()),
         ], 201);
     }
@@ -122,11 +129,20 @@ class SellOutReportController extends Controller
 
     private function generateInvoiceNo(): string
     {
-        $lastId = (int) SellOutReport::query()
+        $date = now()->format('Ymd');
+        $prefix = 'SO-' . $date . '-';
+        $lastInvoiceNo = SellOutReport::query()
             ->lockForUpdate()
-            ->max('id');
+            ->where('invoice_no', 'like', $prefix . '%')
+            ->orderByDesc('invoice_no')
+            ->value('invoice_no');
 
-        return 'SOR-' . str_pad((string) ($lastId + 1), 6, '0', STR_PAD_LEFT);
+        $nextNumber = 1;
+        if ($lastInvoiceNo) {
+            $nextNumber = ((int) substr($lastInvoiceNo, -4)) + 1;
+        }
+
+        return $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
 }

@@ -7,15 +7,6 @@ use Illuminate\Support\Facades\Storage;
 
 class SellOutReportResource extends JsonResource
 {
-    private bool $summary = false;
-
-    public function summary(): self
-    {
-        $this->summary = true;
-
-        return $this;
-    }
-
     public function toArray($request): array
     {
         $data = [
@@ -30,16 +21,15 @@ class SellOutReportResource extends JsonResource
             'payment_method' => $this->payment_method,
             'note' => $this->note ?? '',
             'extracted_text' => $this->extracted_text ?? '',
-            'total_amount' => (float) $this->total_amount,
+            'total_amount' => number_format((float) $this->total_amount, 2, '.', ''),
+            'commission' => number_format((float) $this->commission, 2, '.', ''),
             'created_at' => optional($this->created_at)->format('Y-m-d H:i:s'),
         ];
 
-        if ($this->summary) {
-            $data['lines_count'] = $this->lines_count ?? $this->lines->count();
-            $data['photos_count'] = $this->photos_count ?? $this->photos->count();
-        }
+        $data['lines_count'] = $this->lines_count ?? $this->lines->count();
+        $data['photos_count'] = $this->photos_count ?? $this->photos->count();
 
-        $data['lines'] = $this->summary ? [] : $this->lines->map(fn ($line) => [
+        $data['lines'] = $this->lines->map(fn ($line) => [
             'id' => $line->id,
             'product_name' => $line->product_name,
             'sku' => $line->sku,
@@ -50,13 +40,14 @@ class SellOutReportResource extends JsonResource
             'color' => $line->color,
             'storage' => $line->storage,
             'qty' => (int) $line->qty,
-            'unit_price' => (float) $line->unit_price,
+            'unit_price' => number_format((float) $line->unit_price, 2, '.', ''),
+            'subtotal' => number_format((float) $line->subtotal, 2, '.', ''),
         ])->values();
 
-        $data['photos'] = $this->summary ? [] : $this->photos->map(fn ($photo) => [
+        $data['photos'] = $this->photos->map(fn ($photo) => [
             'id' => $photo->id,
             'photo_path' => $photo->photo_path,
-            'photo_url' => Storage::disk('public')->url($photo->photo_path),
+            'photo_url' => $photo->photo_url ?: Storage::disk('public')->url($photo->photo_path),
         ])->values();
 
         return $data;

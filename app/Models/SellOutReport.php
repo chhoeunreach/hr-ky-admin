@@ -22,6 +22,7 @@ class SellOutReport extends Model
         'service_type',
         'payment_method',
         'total_amount',
+        'commission',
         'note',
         'extracted_text',
         'telegram_message_id',
@@ -29,6 +30,7 @@ class SellOutReport extends Model
 
     protected $casts = [
         'total_amount' => 'decimal:2',
+        'commission' => 'decimal:2',
     ];
 
     public function user(): BelongsTo
