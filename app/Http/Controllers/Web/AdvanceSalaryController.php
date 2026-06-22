@@ -157,12 +157,10 @@ class AdvanceSalaryController extends Controller
             return;
         }
 
-        $chatId = (string) config('services.telegram.advance_salary_chat_id', '');
         $botToken = (string) config('services.telegram.bot_token', '');
 
-        if ($chatId === '' || $botToken === '') {
+        if ($botToken === '') {
             Log::warning('Advance salary Telegram notification skipped due to missing Telegram configuration.', [
-                'chat_id_configured' => $chatId !== '',
                 'bot_token_configured' => $botToken !== '',
                 'advance_salary_id' => $advanceSalaryRequestDetail->id ?? null,
             ]);
@@ -193,7 +191,11 @@ class AdvanceSalaryController extends Controller
             . "Approved By: {$approvedBy}\n"
             . "Remark: {$remark}";
 
-        $this->telegramService->sendMessage($chatId, $message, 'HTML');
+        $this->telegramService->sendToAction(
+            \App\Models\TelegramGroup::EVENT_ADVANCE_SALARY_APPROVED,
+            $message,
+            'HTML'
+        );
     }
 
     public function delete($id)

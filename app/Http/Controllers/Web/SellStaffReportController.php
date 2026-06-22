@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Web;
 use App\Exports\SellStaffReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
+use App\Models\TelegramGroup;
+use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SellStaffReportController extends Controller
@@ -16,6 +19,10 @@ class SellStaffReportController extends Controller
     use CustomAuthorizesRequests;
 
     private string $view = 'admin.sellStaffReport.';
+
+    public function __construct(private TelegramService $telegramService)
+    {
+    }
 
     public function index(Request $request)
     {
@@ -57,6 +64,7 @@ class SellStaffReportController extends Controller
             'branch_name' => ['nullable', 'string', 'max:255'],
             'customer_name' => ['nullable', 'string', 'max:255'],
             'customer_phone' => ['nullable', 'string', 'max:50'],
+            'service_type' => ['nullable', 'string', 'max:255'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'note' => ['nullable', 'string'],
             'lines' => ['required', 'array', 'min:1'],
@@ -102,6 +110,7 @@ class SellStaffReportController extends Controller
                 'branch_name' => $validated['branch_name'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
+                'service_type' => $validated['service_type'] ?? null,
                 'payment_method' => $validated['payment_method'] ?? null,
                 'note' => $validated['note'] ?? null,
                 'total_amount' => 0,
@@ -138,6 +147,7 @@ class SellStaffReportController extends Controller
             $report->update(['total_amount' => round($totalAmount, 2)]);
 
             DB::commit();
+            $this->sendSellOutReportTelegram($report->fresh(['lines']));
 
             return redirect()
                 ->route('admin.sell-staff-report.index')
@@ -281,5 +291,33 @@ class SellStaffReportController extends Controller
         }
 
         return false;
+    }
+
+    private function sendSellOutReportTelegram(SellOutReport $report): void
+    {
+        try {
+            $message = "<b>Sell Out Report</b>\n"
+                . "Invoice: {$report->invoice_no}\n"
+                . "Original Invoice: " . ($report->original_invoice_no ?: 'N/A') . "\n"
+                . "Seller: " . ($report->seller_name ?: 'N/A') . "\n"
+                . "Branch: " . ($report->branch_name ?: 'N/A') . "\n"
+                . "Customer: " . ($report->customer_name ?: 'N/A') . "\n"
+                . "Service Type: " . ($report->service_type ?: 'N/A') . "\n"
+                . "Payment Method: " . ($report->payment_method ?: 'N/A') . "\n"
+                . "Total: " . number_format((float) $report->total_amount, 2);
+
+            $this->telegramService->sendToAction(
+                TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
+                $message,
+                'HTML',
+                (string) ($report->branch_name ?? ''),
+                ''
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Sell out report Telegram notification failed.', [
+                'sell_out_report_id' => $report->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 }

@@ -330,163 +330,156 @@ return [
 
 
     /** service */
-    'asset_type_not_found'=>'រកមិនឃើញប្រភេទទ្រព្យសម្បត្តិ',
-    'attachment_not_found'=>'រកមិនឃើញព័ត៌មានឯកសារភ្ជាប់',
-    'project_attachment_not_found'=>'រកមិនឃើញព័ត៌មានឯកសារភ្ជាប់គម្រោង',
-    'leave_attendance'=>'មិនអាចចូលម៉ោងបានទេ នៅពេលសំណើឈប់សម្រាកត្រូវបានអនុម័ត/កំពុងរង់ចាំ។',
-    'holiday_attendance'=>'មិនអនុញ្ញាតឱ្យចូលម៉ោងនៅថ្ងៃឈប់សម្រាក ឬថ្ងៃឈប់ការិយាល័យទេ',
-    'earlier_checkin'=>'ការចូលម៉ោងលឿនជាងម៉ោងដែលអនុញ្ញាត!',
-    'late_checkin'=>'ការចូលម៉ោងយឺតជាងម៉ោងដែលអនុញ្ញាត សូមទាក់ទងអ្នកគ្រប់គ្រង!',
-    'early_checkout'=>'អ្នកមិនអាចចេញម៉ោងមុនបានទេ!',
-    'late_checkout'=>'ការចេញម៉ោងយឺតជាងម៉ោងដែលអនុញ្ញាត សូមទាក់ទងអ្នកគ្រប់គ្រង',
-    'attendance_outside'=>'មិនអាចកត់វត្តមានក្រៅតំបន់កន្លែងធ្វើការបានទេ',
-    'attendance_not_found'=>'រកមិនឃើញព័ត៌មានវត្តមាន',
-    'invalid_credential'=>'ព័ត៌មានឈ្មោះអ្នកប្រើមិនត្រឹមត្រូវ!',
-    'no_record_credentials'=>'ព័ត៌មានសម្គាល់ទាំងនេះមិនត្រូវនឹងកំណត់ត្រារបស់យើងទេ។',
-    'log_out_request'=>'សំណើចេញពីប្រព័ន្ធនៅតែរង់ចាំ សូមទាក់ទងអ្នកគ្រប់គ្រង!',
-    'log_out_error'=>'សូមចេញពីប្រព័ន្ធពីឧបករណ៍ផ្សេងទៀត',
-    'client_not_found'=>'រកមិនឃើញព័ត៌មានអតិថិជន',
-    'holiday_not_found'=>'រកមិនឃើញព័ត៌មានថ្ងៃឈប់សម្រាក',
-    'different_leave_bs_year'=>'Leave to B.S year must be the same as the leave from B.S year.',
-    'different_leave_ad_year'=>'Leave to A.D year must be the same as the leave from A.D year.',
-    'offday_leave'=>'You cannot take leave on holidays or on office Off Days',
-    'leave_status_error'=>'Leave request is already :status for given date.',
-    'leave_exceed_error'=>'Leave Request Days Exceeded by :day days for :name. Please try another type of leave',
-    'leave_request_not_found'=>'Leave request detail not found',
-    'leave_pending_error'=>'Leave request is already :status for given date.',
-    'leave_end_time_error'=>'You cannot take leave after office end time',
-    'leave_start_time_error'=>'You cannot take leave before office start time',
-    'nfc_not_found'=>'Nfc detail not found',
-    'notice_not_found'=>'Notice Detail Not Found',
-    'user_notification_not_found'=>'User notification detail not found',
-    'unauthorized_action'=>'UnAuthorized Action',
-    'advance_salary_not_found'=>'Advance Salary Detail Not Found',
-    'approve_salary_delete_error'=>'Approved Advance Salary Detail Cannot Be Deleted.',
-    'advance_salary_limit'=>'The released amount cannot be greater than the requested amount (:amount )',
-    'advance_salary_update_error'=>'Detail Cannot Be Updated or Changed Once Approved or Rejected',
-    'employee_salary_not_found'=>'Employee Salary Not found',
-    'cannot_comment'=>'sorry you cannot comment on this task',
-    'cannot_delete_comment'=>'Sorry, You cannot delete this comment',
-    'cannot_delete_reply'=>'Sorry, You cannot delete this comment reply',
+'asset_type_not_found'=>'រកមិនឃើញប្រភេទទ្រព្យសម្បត្តិ',
+'attachment_not_found'=>'រកមិនឃើញព័ត៌មានឯកសារភ្ជាប់',
+'project_attachment_not_found'=>'រកមិនឃើញព័ត៌មានឯកសារភ្ជាប់គម្រោង',
+'leave_attendance'=>'មិនអាចចូលម៉ោងបានទេ នៅពេលសំណើសុំឈប់សម្រាកត្រូវបានអនុម័ត ឬកំពុងរង់ចាំអនុម័ត។',
+'holiday_attendance'=>'មិនអនុញ្ញាតឱ្យចូលម៉ោងនៅថ្ងៃឈប់សម្រាក ឬថ្ងៃឈប់ការងាររបស់ការិយាល័យទេ។',
+'earlier_checkin'=>'ការចូលម៉ោងលឿនជាងម៉ោងដែលបានកំណត់!',
+'late_checkin'=>'ការចូលម៉ោងយឺតជាងម៉ោងដែលបានកំណត់ សូមទាក់ទងអ្នកគ្រប់គ្រង!',
+'early_checkout'=>'អ្នកមិនអាចចេញម៉ោងមុនម៉ោងដែលបានកំណត់បានទេ!',
+'late_checkout'=>'ការចេញម៉ោងយឺតជាងម៉ោងដែលបានកំណត់ សូមទាក់ទងអ្នកគ្រប់គ្រង!',
+'attendance_outside'=>'មិនអាចកត់វត្តមាននៅក្រៅតំបន់ការងារបានទេ។',
+'attendance_not_found'=>'រកមិនឃើញព័ត៌មានវត្តមាន។',
+'invalid_credential'=>'ព័ត៌មានចូលប្រើប្រាស់មិនត្រឹមត្រូវ!',
+'no_record_credentials'=>'ព័ត៌មានចូលប្រើប្រាស់នេះមិនត្រូវនឹងកំណត់ត្រារបស់យើងទេ។',
+'log_out_request'=>'សំណើចាកចេញពីប្រព័ន្ធកំពុងរង់ចាំអនុម័ត សូមទាក់ទងអ្នកគ្រប់គ្រង!',
+'log_out_error'=>'សូមចាកចេញពីប្រព័ន្ធនៅលើឧបករណ៍ផ្សេងជាមុនសិន។',
+'client_not_found'=>'រកមិនឃើញព័ត៌មានអតិថិជន។',
+'holiday_not_found'=>'រកមិនឃើញព័ត៌មានថ្ងៃឈប់សម្រាក។',
+'different_leave_bs_year'=>'ឆ្នាំ B.S នៃថ្ងៃចាប់ផ្តើម និងថ្ងៃបញ្ចប់ការឈប់សម្រាក ត្រូវតែដូចគ្នា។',
+'different_leave_ad_year'=>'ឆ្នាំ A.D នៃថ្ងៃចាប់ផ្តើម និងថ្ងៃបញ្ចប់ការឈប់សម្រាក ត្រូវតែដូចគ្នា។',
+'offday_leave'=>'អ្នកមិនអាចស្នើសុំឈប់សម្រាកនៅថ្ងៃឈប់សម្រាក ឬថ្ងៃឈប់ការងាររបស់ការិយាល័យបានទេ។',
+'leave_status_error'=>'សំណើសុំឈប់សម្រាកសម្រាប់កាលបរិច្ឆេទនេះមានស្ថានភាពជា :status រួចហើយ។',
+'leave_exceed_error'=>'ចំនួនថ្ងៃសុំឈប់សម្រាកលើសកំណត់ចំនួន :day ថ្ងៃ សម្រាប់ :name។ សូមជ្រើសរើសប្រភេទការឈប់សម្រាកផ្សេង។',
+'leave_request_not_found'=>'រកមិនឃើញព័ត៌មានលម្អិតនៃសំណើសុំឈប់សម្រាក។',
+'leave_pending_error'=>'សំណើសុំឈប់សម្រាកសម្រាប់កាលបរិច្ឆេទនេះមានស្ថានភាពជា :status រួចហើយ។',
+'leave_end_time_error'=>'អ្នកមិនអាចស្នើសុំឈប់សម្រាកបន្ទាប់ពីម៉ោងបញ្ចប់ការងារបានទេ។',
+'leave_start_time_error'=>'អ្នកមិនអាចស្នើសុំឈប់សម្រាកមុនម៉ោងចាប់ផ្តើមការងារបានទេ។',
+'nfc_not_found'=>'រកមិនឃើញព័ត៌មាន NFC។',
+'notice_not_found'=>'រកមិនឃើញព័ត៌មានសេចក្តីជូនដំណឹង។',
+'user_notification_not_found'=>'រកមិនឃើញព័ត៌មានជូនដំណឹងរបស់អ្នកប្រើប្រាស់។',
+'unauthorized_action'=>'អ្នកមិនមានសិទ្ធិអនុវត្តសកម្មភាពនេះទេ។',
+'advance_salary_not_found'=>'រកមិនឃើញព័ត៌មានប្រាក់ខែបើកមុន។',
+'approve_salary_delete_error'=>'មិនអាចលុបព័ត៌មានប្រាក់ខែបើកមុនដែលបានអនុម័តរួចបានទេ។',
+'advance_salary_limit'=>'ចំនួនទឹកប្រាក់ដែលបញ្ចេញមិនអាចលើសពីចំនួនដែលបានស្នើសុំ (:amount) បានទេ។',
+'advance_salary_update_error'=>'មិនអាចកែប្រែព័ត៌មានបានទេ បន្ទាប់ពីបានអនុម័ត ឬបដិសេធរួច។',
+'employee_salary_not_found'=>'រកមិនឃើញព័ត៌មានប្រាក់ខែបុគ្គលិក។',
+'cannot_comment'=>'សូមអភ័យទោស អ្នកមិនអាចបញ្ចេញមតិលើកិច្ចការនេះបានទេ។',
+'cannot_delete_comment'=>'សូមអភ័យទោស អ្នកមិនអាចលុបមតិនេះបានទេ។',
+'cannot_delete_reply'=>'សូមអភ័យទោស អ្នកមិនអាចលុបការឆ្លើយតបនេះបានទេ។',
 
+/** Leave Approval */
+'add_leave_approval'=>'អនុម័តការឈប់សម្រាកបានជោគជ័យ។',
+'update_leave_approval'=>'បានធ្វើបច្ចុប្បន្នភាពការអនុម័តការឈប់សម្រាកដោយជោគជ័យ។',
+'delete_leave_approval'=>'បានលុបការអនុម័តការឈប់សម្រាកដោយជោគជ័យ។',
 
-    /** Leave Approval */
-    'add_leave_approval'=>'Leave Approval Successfully',
-    'update_leave_approval'=>'Leave Approval Updated Successfully',
-    'delete_leave_approval'=>'Leave Approval Deleted Successfully',
+/** Event */
+'event_create'=>'បានបង្កើតព្រឹត្តិការណ៍ដោយជោគជ័យ។',
+'event_update'=>'បានធ្វើបច្ចុប្បន្នភាពព្រឹត្តិការណ៍ដោយជោគជ័យ។',
+'event_delete'=>'បានលុបព្រឹត្តិការណ៍ដោយជោគជ័យ។',
 
-    /** Event */
-    'event_create'=>'Event created Successfully',
-    'event_update'=>'Event Updated Successfully',
-    'event_delete'=>'Event Deleted Successfully',
+/** Training Type */
+'delete_training_type'=>'បានលុបប្រភេទវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'update_training_type'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានប្រភេទវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'add_training_type'=>'បានបង្កើតប្រភេទវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
 
-    /** training Type */
-    'delete_training_type'=>'Training Type Deleted Successfully',
-    'update_training_type'=>'Training Type Detail Updated Successfully',
-    'add_training_type'=>'Training Type Created Successfully',
+/** Trainer */
+'delete_trainer'=>'បានលុបគ្រូបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'update_trainer'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានគ្រូបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'add_trainer'=>'បានបង្កើតគ្រូបណ្តុះបណ្តាលដោយជោគជ័យ។',
 
+/** Training */
+'delete_training'=>'បានលុបវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'update_training'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
+'add_training'=>'បានបង្កើតវគ្គបណ្តុះបណ្តាលដោយជោគជ័យ។',
 
-    /** trainer */
-    'delete_trainer'=>'Trainer Deleted Successfully',
-    'update_trainer'=>'Trainer Detail Updated Successfully',
-    'add_trainer'=>'Trainer Created Successfully',
+'training_type_status_change_error'=>'មិនអាចផ្លាស់ប្តូរស្ថានភាពប្រភេទវគ្គបណ្តុះបណ្តាលនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'training_type_delete_error'=>'មិនអាចលុបប្រភេទវគ្គបណ្តុះបណ្តាលនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'trainer_status_change_error'=>'មិនអាចផ្លាស់ប្តូរស្ថានភាពគ្រូបណ្តុះបណ្តាលនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'trainer_delete_error'=>'មិនអាចលុបគ្រូបណ្តុះបណ្តាលនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'award_type_status_change_error'=>'មិនអាចផ្លាស់ប្តូរស្ថានភាពប្រភេទរង្វាន់នេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'award_type_delete_error'=>'មិនអាចលុបប្រភេទរង្វាន់នេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
 
-    /** training */
-    'delete_training'=>'Training Deleted Successfully',
-    'update_training'=>'Training Detail Updated Successfully',
-    'add_training'=>'Training Created Successfully',
+'project_remove'=>'អ្នកត្រូវបានដកចេញពីគម្រោង :name',
+'project_change_msg'=>'គម្រោង ":name" ដែលអ្នកពាក់ព័ន្ធ ត្រូវបានធ្វើបច្ចុប្បន្នភាព។',
+'task_change_msg'=>'កិច្ចការ ":name" ដែលអ្នកត្រូវបានចាត់តាំង ត្រូវបានធ្វើបច្ចុប្បន្នភាព។',
 
+'salary_notification'=>'ការជូនដំណឹងអំពីប្រាក់ខែ',
 
-    'training_type_status_change_error' => 'This training type status cannot be changed. It is in use.',
-    'training_type_delete_error' => 'This training type cannot be deleted. It is in use.',
-    'trainer_status_change_error' => 'This trainer status cannot be changed. It is in use.',
-    'trainer_delete_error' => 'This trainer cannot be deleted. It is in use.',
-    'award_type_status_change_error' => 'This award type status cannot be changed. It is in use.',
-    'award_type_delete_error' => 'This award type cannot be deleted. It is in use.',
+/** Warning */
+'delete_warning'=>'បានលុបការព្រមានដោយជោគជ័យ។',
+'update_warning'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានការព្រមានដោយជោគជ័យ។',
+'add_warning'=>'បានបង្កើតការព្រមានដោយជោគជ័យ។',
 
-    'project_remove'=>'You are removed from the project :name',
-    'project_change_msg' => 'The project ":name" you are associated with has been updated',
-    'task_change_msg' => 'The task ":name" you are assigned to has been updated',
+/** Termination Type */
+'delete_termination_type'=>'បានលុបប្រភេទការបញ្ចប់ការងារដោយជោគជ័យ។',
+'update_termination_type'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានប្រភេទការបញ្ចប់ការងារដោយជោគជ័យ។',
+'add_termination_type'=>'បានបង្កើតប្រភេទការបញ្ចប់ការងារដោយជោគជ័យ។',
 
+/** Termination */
+'delete_termination'=>'បានលុបព័ត៌មានបញ្ចប់ការងារដោយជោគជ័យ។',
+'update_termination'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានបញ្ចប់ការងារដោយជោគជ័យ។',
+'add_termination'=>'បានបង្កើតព័ត៌មានបញ្ចប់ការងារដោយជោគជ័យ។',
 
-    'salary_notification'=>'Salary Notification',
+/** Resignation */
+'delete_resignation'=>'បានលុបការលាលែងពីការងារដោយជោគជ័យ។',
+'update_resignation'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានលាលែងពីការងារដោយជោគជ័យ។',
+'add_resignation'=>'បានបង្កើតការលាលែងពីការងារដោយជោគជ័យ។',
 
-    /** warning */
-    'delete_warning'=>'Warning Deleted Successfully',
-    'update_warning'=>'Warning Detail Updated Successfully',
-    'add_warning'=>'Warning Created Successfully',
+/** Complaint */
+'delete_complaint'=>'បានលុបពាក្យបណ្តឹងដោយជោគជ័យ។',
+'update_complaint'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានពាក្យបណ្តឹងដោយជោគជ័យ។',
+'add_complaint'=>'បានបង្កើតពាក្យបណ្តឹងដោយជោគជ័យ។',
 
+'task_member_updated'=>'បានធ្វើបច្ចុប្បន្នភាពសមាជិកកិច្ចការ :name ដោយជោគជ័យ។',
+'task_not_found'=>'រកមិនឃើញព័ត៌មានកិច្ចការ។',
 
-    /** Termination Type */
-    'delete_termination_type'=>'Termination Type Deleted Successfully',
-    'update_termination_type'=>'Termination Type Detail Updated Successfully',
-    'add_termination_type'=>'Termination Type Created Successfully',
+/** Promotion */
+'delete_promotion'=>'បានលុបការតម្លើងតំណែងដោយជោគជ័យ។',
+'update_promotion'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានការតម្លើងតំណែងដោយជោគជ័យ។',
+'add_promotion'=>'បានបង្កើតការតម្លើងតំណែងដោយជោគជ័យ។',
 
-    /** Termination */
-    'delete_termination'=>'Termination Deleted Successfully',
-    'update_termination'=>'Termination Detail Updated Successfully',
-    'add_termination'=>'Termination Created Successfully',
+/** Transfer */
+'delete_transfer'=>'បានលុបការផ្ទេរដោយជោគជ័យ។',
+'update_transfer'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានការផ្ទេរដោយជោគជ័យ។',
+'add_transfer'=>'បានបង្កើតការផ្ទេរដោយជោគជ័យ។',
 
-    /** Resignation */
-    'delete_resignation'=>'Resignation Deleted Successfully',
-    'update_resignation'=>'Resignation Detail Updated Successfully',
-    'add_resignation'=>'Resignation Created Successfully',
+/** Theme Color */
+'theme_color_create'=>'បានបង្កើតពណ៌ Theme ដោយជោគជ័យ។',
+'theme_color_update'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មានពណ៌ Theme ដោយជោគជ័យ។',
 
-    /** complaint */
-    'delete_complaint'=>'Complaint Deleted Successfully',
-    'update_complaint'=>'Complaint Detail Updated Successfully',
-    'add_complaint'=>'Complaint Created Successfully',
+'client_status_change_error'=>'មិនអាចផ្លាស់ប្តូរស្ថានភាពអតិថិជនបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'client_delete_error'=>'មិនអាចលុបអតិថិជនបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
 
-    'task_member_updated'=>':name task member data updated successfully ',
-    'task_not_found'=>'Task detail not found',
+'add_admin'=>'បានបន្ថែមអ្នកប្រើប្រាស់ថ្មីដោយជោគជ័យ។',
+'asset_notification_title'=>'ការជូនដំណឹងអំពីការប្រគល់ទ្រព្យសម្បត្តិ',
+'asset_notification_message'=>':asset ត្រូវបានប្រគល់ឱ្យអ្នក។',
+'asset_assignment_return'=>'បានប្រគល់ទ្រព្យសម្បត្តិត្រឡប់មកវិញដោយជោគជ័យ។',
 
-    /** promotion */
-    'delete_promotion'=>'Promotion Deleted Successfully',
-    'update_promotion'=>'Promotion Detail Updated Successfully',
-    'add_promotion'=>'Promotion Created Successfully',
+'just_check_in'=>'អ្នកទើបតែបានចូលម៉ោង!',
 
-     /** transfer */
-    'delete_transfer'=>'Transfer Deleted Successfully',
-    'update_transfer'=>'Transfer Detail Updated Successfully',
-    'add_transfer'=>'Transfer Created Successfully',
+'user_allow_holiday_check_in_changed'=>'បានផ្លាស់ប្តូរការកំណត់អនុញ្ញាតឱ្យចូល/ចេញម៉ោងនៅថ្ងៃឈប់សម្រាក និងថ្ងៃឈប់ការងារដោយជោគជ័យ។',
 
-    /** Theme Color */
-    'theme_color_create'=>'Theme Color Created Successfully',
-    'theme_color_update'=>'Theme Color Detail Updated Successfully',
+'asset_assignment_saved'=>'បានប្រគល់ទ្រព្យសម្បត្តិដោយជោគជ័យ។',
+'tax_report_remove'=>'បានលុបរបាយការណ៍ពន្ធដោយជោគជ័យ។',
+'salary_component_delete_error'=>'មិនអាចលុបធាតុប្រាក់ខែនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
+'salary_component_status_change_error'=>'មិនអាចបិទធាតុប្រាក់ខែនេះបានទេ ព្រោះកំពុងត្រូវបានប្រើប្រាស់។',
 
+/** Device */
+'device_delete'=>'បានលុបឧបករណ៍កត់វត្តមាន Biometric ដោយជោគជ័យ។',
+'device_update'=>'បានធ្វើបច្ចុប្បន្នភាពឧបករណ៍កត់វត្តមាន Biometric ដោយជោគជ័យ។',
+'device_saved'=>'បានបង្កើតឧបករណ៍កត់វត្តមាន Biometric ដោយជោគជ័យ។',
 
-    'client_status_change_error' => 'Client status cannot be changed. It is in use.',
-    'client_delete_error' => 'Client cannot be deleted. It is in use.',
+/** Attendance Setting */
+'attendance_setting_update'=>'បានធ្វើបច្ចុប្បន្នភាពការកំណត់វត្តមានដោយជោគជ័យ។',
+'attendance_setting_delete'=>'បានលុបការកំណត់វត្តមានដោយជោគជ័យ។',
 
-    'add_admin'=>'New User Added Successfully',
-    'asset_notification_title' => 'Asset Assignment Notification',
-    'asset_notification_message' => ':asset has been assigned to you.',
-    'asset_assignment_return' => 'Asset returned successful.',
+'payslip_payment_error'=>'មិនអាចដំណើរការការទូទាត់សម្រាប់បង្កាន់ដៃប្រាក់ខែរបស់ខែបច្ចុប្បន្ន ឬខែអនាគតបានទេ។',
 
-    'just_check_in'=>'You have just checked in!',
+/** PF */
+'pf_add'=>'បានបន្ថែមព័ត៌មាន EPF ដោយជោគជ័យ។',
+'pf_update'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មាន EPF ដោយជោគជ័យ។',
 
-    'user_allow_holiday_check_in_changed'=>'Users allow checkin/checkout on holidays and off days status changed successfully',
-
-    'asset_assignment_saved' => 'Asset has been assigned successfully',
-    'tax_report_remove'=>'Tax Report Removed Successfully',
-    'salary_component_delete_error'=>'You cannot delete this salary component, it is in use.',
-    'salary_component_status_change_error'=>'You cannot disable this salary component, it is in use.',
-
-
-    /** device */
-    'device_delete'=>'Biometric attendance device deleted successfully',
-    'device_update'=>'Biometric attendance device updated successfully',
-    'device_saved'=>'Biometric attendance device created successfully',
-
-    /** attendance setting */
-    'attendance_setting_update'=> 'Attendance Setting Detail Updated Successfully',
-    'attendance_setting_delete'=>'Attendance Setting Detail Deleted  Successfully',
-
-    'payslip_payment_error'=>'Cannot process payment for a future or current month payslip.',
-    /** PF */
-       'pf_add'=>'EPF Detail Added Successfully',
-       'pf_update'=>'EPF Detail Updated Successfully',
-
-
-    'invalid_leave_request' =>'You have previous leave request pending for approval.',
+'invalid_leave_request'=>'អ្នកមានសំណើសុំឈប់សម្រាកមុនដែលកំពុងរង់ចាំការអនុម័ត។',
 ];

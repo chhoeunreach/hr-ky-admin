@@ -97,12 +97,14 @@
     'fiscal_year',
     'payment_currency',
     'notification',
+    'list_telegram_group',
     'theme_setting'
 ])
     <li class="nav-item  {{
                    request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
+                      request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
                       request()->routeIs('admin.fiscal_year.*')||
@@ -122,6 +124,7 @@
         <div class="{{ request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
+                      request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
 
@@ -158,6 +161,15 @@
                             class="nav-link {{request()->routeIs('admin.app-settings.*') ? 'active' : ''}}">{{ __('index.app_settings') }}</a>
                     </li>
                 @endif
+
+                @can('list_telegram_group')
+                    <li class="nav-item">
+                        <a
+                            href="{{route('admin.telegram-groups.index')}}"
+                            data-href="{{route('admin.telegram-groups.index')}}"
+                            class="nav-link {{request()->routeIs('admin.telegram-groups.*') ? 'active' : ''}}">Telegram Groups</a>
+                    </li>
+                @endcan
 
                 @can('notification')
                     <li class="nav-item">

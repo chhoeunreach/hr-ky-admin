@@ -4,7 +4,9 @@ namespace App\Services\Attendance;
 
 use App\Helpers\AttendanceHelper;
 use App\Models\Attendance;
+use App\Models\TelegramGroup;
 use App\Models\User;
+use App\Services\TelegramService;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -12,6 +14,10 @@ use Illuminate\Support\Carbon;
 
 class AttendanceTelegramNotifier
 {
+    public function __construct(private TelegramService $telegramService)
+    {
+    }
+
     public function notify(User $user, Attendance $attendance, array $notificationData): void
     {
         if (!config('attendance_telegram.enabled')) {
@@ -23,12 +29,12 @@ class AttendanceTelegramNotifier
             return;
         }
 
-        $chatIds = $this->resolveChatIdsForUser($user);
+        $permissionKey = (string) ($notificationData['permissionKey'] ?? '');
+        $chatIds = $this->resolveChatIdsForUser($user, $permissionKey);
         if ($chatIds === []) {
             return;
         }
 
-        $permissionKey = (string) ($notificationData['permissionKey'] ?? '');
         $time = $notificationData['time'] ?? null;
         $workedTime = $notificationData['workedTime'] ?? null;
 
@@ -99,178 +105,17 @@ class AttendanceTelegramNotifier
         }
     }
 
-    private function resolveChatIdsForUser(User $user): array
+    private function resolveChatIdsForUser(User $user, string $permissionKey): array
     {
-        $selectedChatId = $this->resolveChatIdFromRules($user)
-            ?? $this->resolveChatIdFromDepartmentMapping($user)
-            ?? $this->resolveDefaultChatId();
+        $eventKey = $permissionKey === 'employee_check_out'
+            ? TelegramGroup::EVENT_ATTENDANCE_CHECKOUT
+            : TelegramGroup::EVENT_ATTENDANCE_CHECKIN;
 
-        $chatIds = [];
-        if (is_string($selectedChatId) && trim($selectedChatId) !== '') {
-            $chatIds[] = trim($selectedChatId);
-        }
-
-        foreach ($this->parseChatIdList((string) config('attendance_telegram.always_chat_ids', '')) as $chatId) {
-            $chatIds[] = $chatId;
-        }
-
-        $chatIds = array_values(array_unique(array_filter(array_map('trim', $chatIds))));
-        return $chatIds;
-    }
-
-    private function resolveChatIdFromRules(User $user): ?string
-    {
-        $raw = (string) config('attendance_telegram.rules', '');
-        $rules = $this->parseRules($raw);
-        if ($rules === []) {
-            return null;
-        }
-
-        $branchName = is_string($user->branch?->name) ? trim((string) $user->branch?->name) : '';
-        $departmentName = is_string($user->department?->name) ? trim((string) $user->department?->name) : '';
-
-        foreach ($rules as $rule) {
-            $ruleChatId = trim((string) ($rule['chat_id'] ?? ''));
-            if ($ruleChatId === '') {
-                continue;
-            }
-
-            $ruleBranch = isset($rule['branch']) ? trim((string) $rule['branch']) : null;
-            $ruleDepartment = isset($rule['department']) ? trim((string) $rule['department']) : null;
-
-            if ($ruleBranch !== null && $ruleBranch !== '' && $ruleBranch !== $branchName) {
-                continue;
-            }
-            if ($ruleDepartment !== null && $ruleDepartment !== '' && $ruleDepartment !== $departmentName) {
-                continue;
-            }
-
-            return $ruleChatId;
-        }
-
-        return null;
-    }
-
-    private function resolveChatIdFromDepartmentMapping(User $user): ?string
-    {
-        $mappingRaw = (string) config('attendance_telegram.department_chat_ids', '');
-        $mapping = $this->parseDepartmentChatIdMapping($mappingRaw);
-
-        $candidates = [];
-        if ($user->department_id !== null) {
-            $candidates[] = (string) $user->department_id;
-        }
-        $departmentName = $user->department?->name;
-        if (is_string($departmentName) && trim($departmentName) !== '') {
-            $candidates[] = trim($departmentName);
-            $candidates[] = strtolower(trim($departmentName));
-        }
-
-        foreach ($candidates as $key) {
-            if (array_key_exists($key, $mapping) && (string) $mapping[$key] !== '') {
-                return (string) $mapping[$key];
-            }
-        }
-
-        return null;
-    }
-
-    private function resolveDefaultChatId(): ?string
-    {
-        $defaultChatId = (string) config('attendance_telegram.default_chat_id');
-        return $defaultChatId !== '' ? $defaultChatId : null;
-    }
-
-    private function parseDepartmentChatIdMapping(string $raw): array
-    {
-        $raw = trim($raw);
-        if ($raw === '') {
-            return [];
-        }
-
-        $json = json_decode($raw, true);
-        if (is_array($json)) {
-            $out = [];
-            foreach ($json as $k => $v) {
-                $k = trim((string) $k);
-                $v = trim((string) $v);
-                if ($k !== '' && $v !== '') {
-                    $out[$k] = $v;
-                }
-            }
-            return $out;
-        }
-
-        // CSV: 1:-100123,2:-100456
-        $out = [];
-        foreach (explode(',', $raw) as $pair) {
-            $pair = trim($pair);
-            if ($pair === '') {
-                continue;
-            }
-            $parts = preg_split('/[:=]/', $pair, 2);
-            if (!$parts || count($parts) !== 2) {
-                continue;
-            }
-            $k = trim((string) $parts[0]);
-            $v = trim((string) $parts[1]);
-            if ($k !== '' && $v !== '') {
-                $out[$k] = $v;
-            }
-        }
-        return $out;
-    }
-
-    private function parseRules(string $raw): array
-    {
-        $raw = trim($raw);
-        if ($raw === '') {
-            return [];
-        }
-
-        $json = json_decode($raw, true);
-        if (!is_array($json)) {
-            return [];
-        }
-
-        $rules = [];
-        foreach ($json as $rule) {
-            if (!is_array($rule)) {
-                continue;
-            }
-            $rules[] = $rule;
-        }
-
-        return $rules;
-    }
-
-    private function parseChatIdList(string $raw): array
-    {
-        $raw = trim($raw);
-        if ($raw === '') {
-            return [];
-        }
-
-        $json = json_decode($raw, true);
-        if (is_array($json)) {
-            $out = [];
-            foreach ($json as $v) {
-                $v = trim((string) $v);
-                if ($v !== '') {
-                    $out[] = $v;
-                }
-            }
-            return $out;
-        }
-
-        $out = [];
-        foreach (explode(',', $raw) as $v) {
-            $v = trim((string) $v);
-            if ($v !== '') {
-                $out[] = $v;
-            }
-        }
-        return $out;
+        return $this->telegramService->chatIdsForAction(
+            $eventKey,
+            (string) ($user->branch?->name ?? ''),
+            (string) ($user->department?->dept_name ?? $user->department?->name ?? '')
+        );
     }
 
     private function resolveCoordsForAction(Attendance $attendance, string $permissionKey): array

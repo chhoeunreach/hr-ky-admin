@@ -9,41 +9,28 @@ return [
     | Sends a Telegram message to a group after successful attendance check-in
     | / check-out. Messages are routed by the employee's department.
     |
-    | ATTENDANCE_TELEGRAM_DEPARTMENT_CHAT_IDS accepts either:
-    |  - JSON: {"1":"-100123","2":"-100456"}
-    |  - CSV:  1:-100123,2:-100456
+    | Chat IDs are controlled by the Telegram Groups interface.
     */
-    'enabled' => (bool) env('ATTENDANCE_TELEGRAM_ENABLED', false),
-    'bot_token' => env('ATTENDANCE_TELEGRAM_BOT_TOKEN'),
+    'enabled' => true,
+    'bot_token' => env('TELEGRAM_BOT_TOKEN'),
 
-    // Used when no department mapping exists (or department is null)
-    'default_chat_id' => env('ATTENDANCE_TELEGRAM_DEFAULT_CHAT_ID'),
+    // Chat routing is stored in telegram_groups.
+    'default_chat_id' => null,
 
-    // JSON or CSV string (parsed by the notifier service)
-    'department_chat_ids' => env('ATTENDANCE_TELEGRAM_DEPARTMENT_CHAT_IDS', ''),
+    'department_chat_ids' => '',
 
-    /*
-     * Optional routing rules (first match wins).
-     * JSON array example:
-     *  [
-     *    {"department":"management","chat_id":"-1002799577548"},
-     *    {"branch":"កម្ពុជាក្រោម","department":"មេឌៀ(KY)","chat_id":"-1002727901053"}
-     *  ]
-     */
-    'rules' => env('ATTENDANCE_TELEGRAM_RULES', ''),
+    // Legacy env routing is disabled; use telegram_groups instead.
+    'rules' => '',
 
-    /*
-     * Optional additional recipients for every message.
-     * Accepts JSON array (["-1001","-1002"]) or CSV (-1001,-1002).
-     */
-    'always_chat_ids' => env('ATTENDANCE_TELEGRAM_ALWAYS_CHAT_IDS', ''),
+    // Additional recipients are also managed by telegram_groups.
+    'always_chat_ids' => '',
 
     // Optional reverse-geocoding (to show "real address")
     'reverse_geocode_enabled' => (bool) env('ATTENDANCE_TELEGRAM_REVERSE_GEOCODE_ENABLED', false),
     'reverse_geocode_user_agent' => env('ATTENDANCE_TELEGRAM_GEOCODE_USER_AGENT', 'hr-ky-admin-attendance-bot'),
 
     // Optional Telegram location pin
-    'send_location_enabled' => (bool) env('ATTENDANCE_TELEGRAM_SEND_LOCATION', false),
+    'send_location_enabled' => false,
 
-    'timeout_seconds' => (int) env('ATTENDANCE_TELEGRAM_TIMEOUT', 3),
+    'timeout_seconds' => 3,
 ];

@@ -12,6 +12,7 @@ class TelegramNotificationApiController extends Controller
     public function send(Request $request, TelegramService $telegramService): JsonResponse
     {
         $validated = $request->validate([
+            'actionKey' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9_\-]+$/'],
             'branchName' => ['nullable', 'string'],
             'departmentName' => ['nullable', 'string'],
             'messageText' => ['required', 'string'],
@@ -19,10 +20,12 @@ class TelegramNotificationApiController extends Controller
             'longitude' => ['nullable', 'numeric'],
         ]);
 
-        $ok = $telegramService->sendNotification(
+        $ok = $telegramService->sendToAction(
+            (string) ($validated['actionKey'] ?? \App\Models\TelegramGroup::ACTION_ATTENDANCE),
+            $validated['messageText'],
+            null,
             (string) ($validated['branchName'] ?? ''),
             (string) ($validated['departmentName'] ?? ''),
-            $validated['messageText'],
             array_key_exists('latitude', $validated) ? (float) $validated['latitude'] : null,
             array_key_exists('longitude', $validated) ? (float) $validated['longitude'] : null,
         );

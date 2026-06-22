@@ -4,14 +4,21 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
+use App\Models\TelegramGroup;
 use App\Requests\SellOutReport\StoreSellOutReportRequest;
 use App\Resources\SellOutReport\SellOutReportResource;
+use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class SellOutReportController extends Controller
 {
+    public function __construct(private TelegramService $telegramService)
+    {
+    }
+
     public function index(): JsonResponse
     {
         $reports = SellOutReport::query()
@@ -101,6 +108,7 @@ class SellOutReportController extends Controller
         });
 
         $report->load(['lines', 'photos'])->loadCount(['lines', 'photos']);
+        $this->sendSellOutReportTelegram($report);
 
         return response()->json([
             'status' => true,
@@ -183,6 +191,33 @@ class SellOutReportController extends Controller
         $value = trim((string) $value);
 
         return $value !== '' ? $value : $default;
+    }
+
+    private function sendSellOutReportTelegram(SellOutReport $report): void
+    {
+        try {
+            $message = "<b>Sell Out Report</b>\n"
+                . "Invoice: {$report->invoice_no}\n"
+                . "Original Invoice: " . ($report->original_invoice_no ?: 'N/A') . "\n"
+                . "Seller: " . ($report->seller_name ?: 'N/A') . "\n"
+                . "Branch: " . ($report->branch_name ?: 'N/A') . "\n"
+                . "Customer: " . ($report->customer_name ?: 'N/A') . "\n"
+                . "Service Type: " . ($report->service_type ?: 'N/A') . "\n"
+                . "Total: " . number_format((float) $report->total_amount, 2);
+
+            $this->telegramService->sendToAction(
+                TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
+                $message,
+                'HTML',
+                (string) ($report->branch_name ?? ''),
+                ''
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Sell out report Telegram notification failed.', [
+                'sell_out_report_id' => $report->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
 }

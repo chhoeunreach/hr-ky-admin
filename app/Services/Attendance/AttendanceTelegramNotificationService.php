@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Helpers\AttendanceHelper;
+use App\Models\TelegramGroup;
 use App\Models\User;
 use App\Services\TelegramService;
 use Carbon\Carbon;
@@ -117,10 +118,12 @@ class AttendanceTelegramNotificationService
             }
             $messageText .= "🗺️ ផែនទី: " . ($locationInfo['link'] ?? '');
 
-            $this->telegramService->sendNotification(
+            $this->telegramService->sendToAction(
+                $type === 'check_out' ? TelegramGroup::EVENT_ATTENDANCE_CHECKOUT : TelegramGroup::EVENT_ATTENDANCE_CHECKIN,
+                $messageText,
+                null,
                 $branchName,
                 $departmentName,
-                $messageText,
                 $latitude !== null ? (float) $latitude : null,
                 $longitude !== null ? (float) $longitude : null,
             );
@@ -132,4 +135,3 @@ class AttendanceTelegramNotificationService
         }
     }
 }
-

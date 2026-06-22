@@ -485,7 +485,7 @@ class LeaveService
 
         $message = $this->buildTelegramLeaveRequestMessage($leaveRequest, $employee);
 
-        $this->sendTelegramLeaveMessage($employee, $message);
+        $this->sendTelegramLeaveMessage($employee, $message, \App\Models\TelegramGroup::EVENT_LEAVE_REQUEST);
         $this->sendSubmittedLeaveChatMessage($leaveRequest, $employee, $message);
     }
 
@@ -516,7 +516,13 @@ class LeaveService
         $updatedBy = auth('admin')->user()?->name ?? auth()->user()?->name ?? 'Admin';
         $telegramMessage = $this->buildTelegramLeaveMessage($leaveRequest, $employee, ucfirst($status), $updatedBy, $remark);
 
-        $this->sendTelegramLeaveMessage($employee, $telegramMessage);
+        $this->sendTelegramLeaveMessage(
+            $employee,
+            $telegramMessage,
+            $status === 'rejected'
+                ? \App\Models\TelegramGroup::EVENT_LEAVE_REJECTED
+                : \App\Models\TelegramGroup::EVENT_LEAVE_APPROVED
+        );
         $this->sendApprovedLeaveChatMessage($leaveRequest, $employee, $telegramMessage);
     }
 
@@ -594,16 +600,17 @@ class LeaveService
         return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
-    private function sendTelegramLeaveMessage($employee, string $message): void
+    private function sendTelegramLeaveMessage($employee, string $message, string $eventKey = \App\Models\TelegramGroup::ACTION_LEAVE): void
     {
         try {
-            $this->telegramService->sendNotification(
+            $this->telegramService->sendToAction(
+                $eventKey,
+                $message,
+                'HTML',
                 (string) optional($employee->branch)->name,
                 (string) optional($employee->department)->dept_name,
-                $message,
                 null,
-                null,
-                'HTML'
+                null
             );
         } catch (\Throwable $exception) {
             Log::warning('Leave Telegram notification failed.', [

@@ -7,9 +7,11 @@ use App\Helpers\SMPush\SMPushHelper;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\OfficeTime;
+use App\Models\TelegramGroup;
 use App\Models\TimeLeave;
 use App\Repositories\TimeLeaveRepository;
 use App\Repositories\UserRepository;
+use App\Services\TelegramService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +21,11 @@ use Illuminate\Support\Facades\Schema;
 class TimeLeaveService
 {
 
-    public function __construct(protected TimeLeaveRepository $timeLeaveRepository, protected UserRepository $userRepository)
+    public function __construct(
+        protected TimeLeaveRepository $timeLeaveRepository,
+        protected UserRepository $userRepository,
+        protected TelegramService $telegramService
+    )
     {}
 
     public function getAllEmployeeLeaveRequests($filterParameters, $select=['*'], $with=[])
@@ -106,6 +112,8 @@ class TimeLeaveService
         $timeLeave = $this->timeLeaveRepository->store($validatedData);
 
         $this->sendChatAfterCommit(function () use ($timeLeave, $validatedData) {
+            $this->sendTimeLeaveRequestTelegramMessage($timeLeave);
+
             if (in_array($validatedData['status'] ?? null, ['approved', 'rejected'], true)) {
                 $this->sendTimeLeaveStatusChatMessage($timeLeave, $validatedData['status'], $validatedData['admin_remark'] ?? null);
             }
@@ -283,6 +291,43 @@ class TimeLeaveService
         }
     }
 
+    private function sendTimeLeaveRequestTelegramMessage(TimeLeave $timeLeave): void
+    {
+        $employee = $this->userRepository->findUserDetailById(
+            $timeLeave->requested_by,
+            ['id', 'name', 'username', 'branch_id', 'department_id'],
+            ['branch:id,name', 'department:id,dept_name']
+        );
+
+        if (!$employee) {
+            return;
+        }
+
+        try {
+            $message = "<b>Time Leave Request</b>\n"
+                . "Employee: " . $this->escapeTelegramHtml((string) ($employee->name ?: 'N/A')) . "\n"
+                . "Branch: " . $this->escapeTelegramHtml((string) (optional($employee->branch)->name ?: 'N/A')) . "\n"
+                . "Department: " . $this->escapeTelegramHtml((string) (optional($employee->department)->dept_name ?: 'N/A')) . "\n"
+                . "Date: " . $this->escapeTelegramHtml(AppHelper::timeLeaverequestDate($timeLeave->issue_date)) . "\n"
+                . "Time: " . $this->escapeTelegramHtml(AppHelper::convertLeaveTimeFormat($timeLeave->start_time) . ' - ' . AppHelper::convertLeaveTimeFormat($timeLeave->end_time)) . "\n"
+                . "Reason: " . $this->escapeTelegramHtml(strip_tags((string) ($timeLeave->reasons ?: 'N/A')));
+
+            $this->telegramService->sendToAction(
+                TelegramGroup::EVENT_TIME_LEAVE_REQUEST,
+                $message,
+                'HTML',
+                (string) optional($employee->branch)->name,
+                (string) optional($employee->department)->dept_name
+            );
+        } catch (\Throwable $exception) {
+            Log::warning('Time leave Telegram notification failed.', [
+                'time_leave_id' => $timeLeave->id ?? null,
+                'employee_id' => $employee->id ?? null,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
     private function buildTimeLeaveStatusChatText(TimeLeave $timeLeave, $employee, string $status, string $adminName, ?string $remark = null): string
     {
         $lines = [
@@ -298,6 +343,11 @@ class TimeLeaveService
         ];
 
         return implode("\n", $lines);
+    }
+
+    private function escapeTelegramHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     private function getOrCreateAdminEmployeeConversation(int $employeeId, int $adminId): ChatConversation

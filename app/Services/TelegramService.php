@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\TelegramGroup;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class TelegramService
@@ -19,13 +21,37 @@ class TelegramService
         ?float $longitude = null,
         ?string $parseMode = null
     ): bool {
-        $branchName = trim($branchName);
-        $departmentName = trim($departmentName);
+        return $this->sendToAction(
+            TelegramGroup::ACTION_ATTENDANCE,
+            $messageText,
+            $parseMode,
+            $branchName,
+            $departmentName,
+            $latitude,
+            $longitude
+        );
+    }
 
-        $chatIds = $this->getNotificationChatIds($branchName, $departmentName);
+    public function sendToAction(
+        string $actionKey,
+        string $messageText,
+        ?string $parseMode = null,
+        ?string $branchName = null,
+        ?string $departmentName = null,
+        ?float $latitude = null,
+        ?float $longitude = null
+    ): bool {
+        $branchName = trim((string) $branchName);
+        $departmentName = trim((string) $departmentName);
+
+        $chatIds = $this->getActionChatIds($actionKey, $branchName, $departmentName);
 
         if ($chatIds === []) {
-            Log::error('Telegram notification skipped: no chat_id available (check services.telegram.default_chat_id).');
+            Log::error('Telegram notification skipped: no chat_id available.', [
+                'actionKey' => $actionKey,
+                'branchName' => $branchName,
+                'departmentName' => $departmentName,
+            ]);
             return false;
         }
 
@@ -45,7 +71,7 @@ class TelegramService
 
     public function sendToAllKnownChats(string $messageText, ?string $parseMode = null): bool
     {
-        $chatIds = $this->getAllKnownChatIds();
+        $chatIds = $this->getBroadcastChatIds(TelegramGroup::ACTION_NEW_EMPLOYEE);
 
         if ($chatIds === []) {
             Log::error('Telegram broadcast skipped: no chat IDs available.');
@@ -62,43 +88,14 @@ class TelegramService
 
     public function resolveChatId(string $branchName, string $departmentName): ?string
     {
-        $branchName = trim($branchName);
-        $departmentName = trim($departmentName);
+        $configuredChatIds = $this->resolveConfiguredChatIds(TelegramGroup::ACTION_ATTENDANCE, $branchName, $departmentName);
 
-        if ($branchName === '' || $departmentName === '') {
-            return null;
-        }
+        return $configuredChatIds[0] ?? null;
+    }
 
-        $departmentChatIds = [
-            'management' => '-1002799577548',
-            'ជាង' => '-1002842364173',
-        ];
-
-        $departmentKey = Str::lower($departmentName);
-        if (isset($departmentChatIds[$departmentKey])) {
-            return $departmentChatIds[$departmentKey];
-        }
-
-        if (isset($departmentChatIds[$departmentName])) {
-            return $departmentChatIds[$departmentName];
-        }
-
-        if ($branchName === 'កម្ពុជាក្រោម') {
-            if (in_array($departmentName, ['មេឌៀ(KY)', 'អ្នកលក់អនឡាញ(KY)'], true)) {
-                return '-1002727901053';
-            }
-
-            return '-1002617998738';
-        }
-
-        $branchChatIds = [
-            'អ៊ីអន' => '-1002705869028',
-            'កាប់គោ' => '-1002351902820',
-            'ស្តុកធំ' => '-1002509454514',
-            'វីអាយភី' => '-1002806714995',
-        ];
-
-        return $branchChatIds[$branchName] ?? null;
+    public function chatIdsForAction(string $actionKey, ?string $branchName = null, ?string $departmentName = null): array
+    {
+        return $this->getActionChatIds($actionKey, trim((string) $branchName), trim((string) $departmentName));
     }
 
     public function sendMessage(string $chatId, string $messageText, ?string $parseMode = null): bool
@@ -184,36 +181,109 @@ class TelegramService
         }
     }
 
-    private function getNotificationChatIds(string $branchName, string $departmentName): array
+    private function getActionChatIds(string $actionKey, string $branchName, string $departmentName): array
     {
-        $defaultChatId = (string) config('services.telegram.default_chat_id', '');
-        $resolvedChatId = $this->resolveChatId($branchName, $departmentName);
+        $chatIds = $this->resolveConfiguredChatIds($actionKey, $branchName, $departmentName);
 
-        if ($resolvedChatId === null) {
+        if ($chatIds === []) {
             Log::error('Telegram routing failed (missing or unknown branch/department).', [
+                'actionKey' => $actionKey,
                 'branchName' => $branchName,
                 'departmentName' => $departmentName,
             ]);
         }
 
-        return array_values(array_unique(array_filter([$defaultChatId, $resolvedChatId])));
+        return $chatIds;
     }
 
-    private function getAllKnownChatIds(): array
+    private function getBroadcastChatIds(string $actionKey): array
     {
-        return array_values(array_unique(array_filter([
-            (string) config('services.telegram.default_chat_id', ''),
-            (string) config('services.telegram.advance_salary_chat_id', ''),
-            (string) config('services.telegram.advance_salary_request_chat_id', ''),
-            '-1002799577548',
-            '-1002842364173',
-            '-1002705869028',
-            '-1002351902820',
-            '-1002509454514',
-            '-1002806714995',
-            '-1002727901053',
-            '-1002617998738',
-        ])));
+        return $this->resolveConfiguredChatIds($actionKey, '', '');
+    }
+
+    private function resolveConfiguredChatIds(string $actionKey, string $branchName, string $departmentName): array
+    {
+        try {
+            if (! Schema::hasTable('telegram_groups')) {
+                return [];
+            }
+
+            $groups = TelegramGroup::query()
+                ->where('is_active', true)
+                ->get();
+        } catch (\Throwable $exception) {
+            Log::warning('Telegram database group lookup failed.', [
+                'actionKey' => $actionKey,
+                'error' => $exception->getMessage(),
+            ]);
+            return [];
+        }
+
+        $branchName = Str::lower(trim($branchName));
+        $departmentName = Str::lower(trim($departmentName));
+
+        $alwaysChatIds = [];
+        $routedChatIdsBySpecificity = [];
+        foreach ($groups as $group) {
+            if (! $this->groupMatchesEvent($group, $actionKey)) {
+                continue;
+            }
+
+            $chatId = trim((string) $group->chat_id);
+            if ($chatId === '') {
+                continue;
+            }
+
+            if ($group->send_for_all) {
+                $alwaysChatIds[] = $chatId;
+                continue;
+            }
+
+            $specificity = $this->routeMatchSpecificity($group, $branchName, $departmentName);
+            if ($specificity !== null) {
+                $routedChatIdsBySpecificity[$specificity][] = $chatId;
+            }
+        }
+
+        $chatIds = $alwaysChatIds;
+        if ($routedChatIdsBySpecificity !== []) {
+            $maxSpecificity = max(array_keys($routedChatIdsBySpecificity));
+            $chatIds = array_merge($chatIds, $routedChatIdsBySpecificity[$maxSpecificity]);
+        }
+
+        return array_values(array_unique($chatIds));
+    }
+
+    private function groupMatchesEvent(TelegramGroup $group, string $actionKey): bool
+    {
+        $eventKeys = is_array($group->event_keys) ? $group->event_keys : [];
+
+        if ($eventKeys !== []) {
+            return in_array($actionKey, $eventKeys, true)
+                || ($this->isSellOutEvent($actionKey) && in_array(TelegramGroup::EVENT_SELL_OUT_REPORT, $eventKeys, true));
+        }
+
+        return $group->action_key === TelegramGroup::ACTION_GENERAL || $group->action_key === $actionKey;
+    }
+
+    private function isSellOutEvent(string $actionKey): bool
+    {
+        return in_array($actionKey, array_keys(TelegramGroup::sellOutEventOptions()), true);
+    }
+
+    private function routeMatchSpecificity(TelegramGroup $group, string $branchName, string $departmentName): ?int
+    {
+        $groupBranchName = Str::lower(trim((string) $group->branch_name));
+        $groupDepartmentName = Str::lower(trim((string) $group->department_name));
+
+        $branchMatches = $groupBranchName === '' || ($branchName !== '' && $groupBranchName === $branchName);
+        $departmentMatches = $groupDepartmentName === '' || ($departmentName !== '' && $groupDepartmentName === $departmentName);
+
+        if (! $branchMatches || ! $departmentMatches) {
+            return null;
+        }
+
+        return (int) ($groupBranchName !== '') + (int) ($groupDepartmentName !== '');
     }
 
     private function post(string $method, array $payload, array $context = []): ?Response

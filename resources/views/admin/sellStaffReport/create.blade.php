@@ -46,6 +46,14 @@
                             <input type="text" name="customer_phone" class="form-control" value="{{ old('customer_phone') }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
+                            <label class="form-label">Report Type</label>
+                            <select name="service_type" class="form-select">
+                                @foreach(\App\Models\TelegramGroup::sellOutEventOptions() as $eventKey => $label)
+                                    <option value="{{ $label }}" {{ old('service_type', 'លក់') === $label ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.payment_method') }}</label>
                             <input type="text" name="payment_method" class="form-control" value="{{ old('payment_method') }}">
                         </div>

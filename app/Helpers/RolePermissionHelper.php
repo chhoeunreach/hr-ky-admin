@@ -417,6 +417,26 @@ class RolePermissionHelper
                 "permission_key" => "general_setting",
                 "permission_groups_id" => 6
             ],
+            [
+                "name" => "List Telegram Group",
+                "permission_key" => "list_telegram_group",
+                "permission_groups_id" => 6
+            ],
+            [
+                "name" => "Create Telegram Group",
+                "permission_key" => "create_telegram_group",
+                "permission_groups_id" => 6
+            ],
+            [
+                "name" => "Edit Telegram Group",
+                "permission_key" => "edit_telegram_group",
+                "permission_groups_id" => 6
+            ],
+            [
+                "name" => "Delete Telegram Group",
+                "permission_key" => "delete_telegram_group",
+                "permission_groups_id" => 6
+            ],
 
             [
                 "name" => "App Setting",

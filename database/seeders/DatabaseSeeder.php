@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             LeaveTypeSeeder::class,
             FeatureSeeder::class,
             ThemeSettingSeeder::class,
+            TelegramGroupSeeder::class,
         ]);
     }
 }

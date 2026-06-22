@@ -75,6 +75,7 @@ use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
 use App\Http\Controllers\Web\TrackLocationController;
 use App\Http\Controllers\Web\TelegramNotificationController;
+use App\Http\Controllers\Web\TelegramGroupController;
 use App\Http\Controllers\Web\TrainerController;
 use App\Http\Controllers\Web\TrainingController;
 use App\Http\Controllers\Web\TrainingTypeController;
@@ -156,6 +157,12 @@ Route::group([
             /** app settings */
             Route::get('app-settings/index', [AppSettingController::class, 'index'])->name('app-settings.index');
             Route::get('app-settings/toggle-status/{id}', [AppSettingController::class, 'toggleStatus'])->name('app-settings.toggle-status');
+
+            /** Telegram group route */
+            Route::resource('telegram-groups', TelegramGroupController::class)->except(['show', 'destroy']);
+            Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
+            Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');
+            Route::get('telegram-groups/delete/{id}', [TelegramGroupController::class, 'delete'])->name('telegram-groups.delete');
 
             /** General settings */
             Route::resource('general-settings', GeneralSettingController::class);

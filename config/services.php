@@ -33,10 +33,6 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'chat_id' => env('TELEGRAM_CHAT_ID', env('TELEGRAM_DEFAULT_CHAT_ID')),
-        'default_chat_id' => env('TELEGRAM_DEFAULT_CHAT_ID'),
-        'advance_salary_chat_id' => env('TELEGRAM_ADVANCE_SALARY_CHAT_ID', '-1002000139489'),
-        'advance_salary_request_chat_id' => env('TELEGRAM_ADVANCE_SALARY_REQUEST_CHAT_ID', '-1003389081526'),
     ],
 
 ];
