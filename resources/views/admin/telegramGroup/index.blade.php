@@ -44,9 +44,10 @@
 
                     <div class="col-lg-2 col-md-6 mb-4">
                         <select class="form-select" name="per_page">
-                            <option value="10" {{ (int) $filterParameters['per_page'] === 10 ? 'selected' : '' }}>10</option>
-                            <option value="25" {{ (int) $filterParameters['per_page'] === 25 ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ (int) $filterParameters['per_page'] === 50 ? 'selected' : '' }}>50</option>
+                            <option value="10" {{ (string) $filterParameters['per_page'] === '10' ? 'selected' : '' }}>10</option>
+                            <option value="25" {{ (string) $filterParameters['per_page'] === '25' ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ (string) $filterParameters['per_page'] === '50' ? 'selected' : '' }}>50</option>
+                            <option value="all" {{ (string) $filterParameters['per_page'] === 'all' ? 'selected' : '' }}>All</option>
                         </select>
                     </div>
 

@@ -10,7 +10,7 @@ class TelegramGroupRepository
 {
     public function getPaginated(array $filters): LengthAwarePaginator
     {
-        return TelegramGroup::with(['branch:id,name', 'department:id,dept_name'])
+        $query = TelegramGroup::with(['branch:id,name', 'department:id,dept_name'])
             ->when(!empty($filters['name']), function ($query) use ($filters) {
                 $query->where('name', 'like', '%' . $filters['name'] . '%');
             })
@@ -20,8 +20,14 @@ class TelegramGroupRepository
             ->when(isset($filters['is_active']) && $filters['is_active'] !== '', function ($query) use ($filters) {
                 $query->where('is_active', (bool) $filters['is_active']);
             })
-            ->latest()
-            ->paginate($filters['per_page'] ?? TelegramGroup::RECORDS_PER_PAGE);
+            ->latest();
+
+        $perPage = $filters['per_page'] ?? TelegramGroup::RECORDS_PER_PAGE;
+        if ($perPage === 'all') {
+            $perPage = max((clone $query)->count(), 1);
+        }
+
+        return $query->paginate((int) $perPage);
     }
 
     public function find(int $id): ?TelegramGroup
