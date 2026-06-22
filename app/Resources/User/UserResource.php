@@ -34,6 +34,7 @@ class UserResource extends JsonResource
             'department' => ucfirst($this->department?->dept_name),
             'post' => ucfirst($this->post?->post_name),
             'role' => ucfirst($this->role?->name),
+            'theme_mode' => $this->app_theme_mode ?: User::DEFAULT_THEME_MODE,
             'avatar' => ($this->avatar) ? asset(User::AVATAR_UPLOAD_PATH.$this->avatar)  : asset('assets/images/img.png'),
             'joining_date' => !is_null($this->joining_date) ? ($this->joining_date) : 'N/A',
             'bank_name' => !is_null($this?->accountDetail?->bank_name) ? removeSpecialChars($this?->accountDetail?->bank_name):'N/A',

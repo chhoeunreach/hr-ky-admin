@@ -55,13 +55,13 @@ class SellOutReportController extends Controller
             $report = SellOutReport::create([
                 'user_id' => auth()->id(),
                 'invoice_no' => $this->generateInvoiceNo(),
-                'original_invoice_no' => $validated['original_invoice_no'] ?? null,
+                'original_invoice_no' => $this->resolveOriginalInvoiceNo($validated),
                 'seller_name' => $validated['seller_name'],
                 'branch_name' => $validated['branch_name'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
-                'service_type' => $validated['service_type'] ?? null,
-                'payment_method' => $validated['payment_method'] ?? null,
+                'service_type' => $this->filledString($validated['service_type'] ?? null, 'Sale'),
+                'payment_method' => $this->filledString($validated['payment_method'] ?? null, 'Cash'),
                 'note' => $validated['note'] ?? null,
                 'extracted_text' => $validated['extracted_text'] ?? null,
                 'total_amount' => round($totalAmount, 2),
@@ -143,6 +143,46 @@ class SellOutReportController extends Controller
         }
 
         return $prefix . str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function resolveOriginalInvoiceNo(array $validated): ?string
+    {
+        if (! empty($validated['original_invoice_no'])) {
+            return trim($validated['original_invoice_no']);
+        }
+
+        foreach ([$validated['note'] ?? '', $validated['extracted_text'] ?? ''] as $text) {
+            $invoiceNo = $this->extractInvoiceNo((string) $text);
+
+            if ($invoiceNo !== null) {
+                return $invoiceNo;
+            }
+        }
+
+        return null;
+    }
+
+    private function extractInvoiceNo(string $text): ?string
+    {
+        $patterns = [
+            '/\b(?:original\s+)?invoice\s*(?:no\.?|number|#)?\s*[:\-]\s*([A-Za-z0-9][A-Za-z0-9\-_.\/]{2,})/i',
+            '/\binv\s*(?:no\.?|number|#)?\s*[:\-]\s*([A-Za-z0-9][A-Za-z0-9\-_.\/]{2,})/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $matches)) {
+                return trim($matches[1], " \t\n\r\0\x0B.,;:");
+            }
+        }
+
+        return null;
+    }
+
+    private function filledString(?string $value, string $default): string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : $default;
     }
 
 }

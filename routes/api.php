@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\TaskCommentApiController;
 use App\Http\Controllers\Api\TeamMeetingApiController;
 use App\Http\Controllers\Api\TelegramNotificationApiController;
 use App\Http\Controllers\Api\TrainingApiController;
+use App\Http\Controllers\Api\UserThemeController;
 use App\Http\Controllers\Api\UserProfileApiController;
 use App\Http\Controllers\Api\WarningApiController;
 use Illuminate\Support\Facades\Route;
@@ -50,6 +51,8 @@ Route::group([
     Route::get('users/profile', [UserProfileApiController::class, 'userProfileDetail']);
     Route::post('users/change-password', [UserProfileApiController::class, 'changePassword']);
     Route::post('users/update-profile', [UserProfileApiController::class, 'updateUserProfile']);
+    Route::get('user/theme', [UserThemeController::class, 'show']);
+    Route::post('user/theme', [UserThemeController::class, 'update']);
     Route::get('users/profile-detail/{userId}', [UserProfileApiController::class, 'findEmployeeDetailById']);
     Route::get('users/company/team-sheet', [UserProfileApiController::class, 'getTeamSheetOfCompany']);
     Route::post('users/location',[UserProfileApiController::class, 'storeLocation']);

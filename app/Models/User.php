@@ -36,6 +36,21 @@ class User extends Authenticatable
     const FIELD = 0;
     const OFFICE = 1;
     const DEMO_USERS_USERNAME = [];
+    const DEFAULT_THEME_MODE = 'light';
+    const THEME_MODES = [
+        'light',
+        'dark',
+        'ky_enterprise',
+        'neo_glass',
+        'premium_gradient',
+        'amoled',
+        'sunset',
+        'ocean_blue',
+        'forest_green',
+        'royal_purple',
+        'copper_brown',
+        'rose_pink',
+    ];
 
     const MARITAL_STATUS = [
         'single',
@@ -91,7 +106,8 @@ class User extends Authenticatable
         'created_at',
         'updated_at',
         'employee_code',
-        'allow_holiday_check_in'
+        'allow_holiday_check_in',
+        'app_theme_mode',
     ];
     protected $hidden = [
         'password',
@@ -99,6 +115,7 @@ class User extends Authenticatable
     ];
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'app_theme_mode' => 'string',
     ];
 
     public static function boot()
