@@ -92,13 +92,15 @@ class LeaveTypeController extends Controller
                     'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt'],
                 ]);
 
-                DB::transaction(function () use ($request) {
-                    Excel::import(new LeaveTypesImport(), $request->file('file'));
+                $import = new LeaveTypesImport();
+
+                DB::transaction(function () use ($request, $import) {
+                    Excel::import($import, $request->file('file'));
                 });
 
                 return redirect()
                     ->route('admin.leaves.index')
-                    ->with('success', 'Leave types imported successfully.');
+                    ->with('success', "Leave types imported successfully. Inserted: {$import->insertedCount()}, Updated: {$import->updatedCount()}.");
             } catch (Exception $exception) {
                 Log::error('Leave type import failed', [
                     'message' => $exception->getMessage(),

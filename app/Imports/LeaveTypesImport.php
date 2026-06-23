@@ -17,6 +17,8 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
 {
     private int $companyId;
     private ?int $authBranchId;
+    private int $inserted = 0;
+    private int $updated = 0;
 
     public function __construct()
     {
@@ -38,30 +40,57 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
                 throw new Exception("Row {$line}: name is required.");
             }
 
-            $branchId = $this->authBranchId ?: $this->resolveBranchId($row, $line);
-            $gender = $this->genderValue($row, $line);
-            $leaveAllocated = $this->leaveAllocatedValue($row, $line);
+            $leaveType = $this->findExistingLeaveType($row, $name);
+            $leaveTypeData = [
+                'company_id' => $this->companyId,
+                'name' => $name,
+                'slug' => Str::slug($name),
+                'branch_id' => $this->authBranchId ?: $this->resolveBranchId($row, $line, $leaveType),
+                'gender' => $this->genderValue($row, $line, $leaveType),
+                'leave_allocated' => $this->leaveAllocatedValue($row, $line, $leaveType),
+                'is_active' => $this->booleanValue($row, 'is_active', $leaveType?->is_active ?? true),
+            ];
 
-            LeaveType::updateOrCreate(
-                [
-                    'company_id' => $this->companyId,
-                    'name' => $name,
-                ],
-                [
-                    'slug' => Str::slug($name),
-                    'branch_id' => $branchId,
-                    'gender' => $gender,
-                    'leave_allocated' => $leaveAllocated,
-                    'is_active' => $this->booleanValue($row, 'is_active', true),
-                ]
-            );
+            if ($leaveType) {
+                $leaveType->update($leaveTypeData);
+                $this->updated++;
+                continue;
+            }
+
+            LeaveType::create($leaveTypeData);
+            $this->inserted++;
         }
+    }
+
+    public function insertedCount(): int
+    {
+        return $this->inserted;
+    }
+
+    public function updatedCount(): int
+    {
+        return $this->updated;
+    }
+
+    private function findExistingLeaveType(Collection $row, string $name): ?LeaveType
+    {
+        $id = $this->numberValue($row, 'id');
+
+        if ($id) {
+            return LeaveType::where('company_id', $this->companyId)
+                ->where('id', $id)
+                ->first();
+        }
+
+        return LeaveType::where('company_id', $this->companyId)
+            ->where('name', $name)
+            ->first();
     }
 
     /**
      * @throws Exception
      */
-    private function resolveBranchId(Collection $row, int $line): int
+    private function resolveBranchId(Collection $row, int $line, ?LeaveType $leaveType): int
     {
         $branchId = $this->numberValue($row, 'branch_id');
 
@@ -76,6 +105,10 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         }
 
         $branchName = $this->stringValue($row, 'branch');
+
+        if (!$branchName && $leaveType?->branch_id) {
+            return $leaveType->branch_id;
+        }
 
         if (!$branchName) {
             throw new Exception("Row {$line}: branch_id or branch is required.");
@@ -95,9 +128,9 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
     /**
      * @throws Exception
      */
-    private function genderValue(Collection $row, int $line): string
+    private function genderValue(Collection $row, int $line, ?LeaveType $leaveType): string
     {
-        $gender = strtolower($this->stringValue($row, 'gender', LeaveGenderEnum::all->value));
+        $gender = strtolower($this->stringValue($row, 'gender', $leaveType?->gender ?? LeaveGenderEnum::all->value));
         $allowed = array_column(LeaveGenderEnum::cases(), 'value');
 
         if (!in_array($gender, $allowed, true)) {
@@ -110,8 +143,12 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
     /**
      * @throws Exception
      */
-    private function leaveAllocatedValue(Collection $row, int $line): int|null
+    private function leaveAllocatedValue(Collection $row, int $line, ?LeaveType $leaveType): int|null
     {
+        if (!$row->has('is_paid') && !$row->has('leave_allocated') && $leaveType) {
+            return $leaveType->leave_allocated;
+        }
+
         $leaveAllocated = $this->numberValue($row, 'leave_allocated');
         $isPaid = $this->booleanValue($row, 'is_paid', $leaveAllocated !== null && $leaveAllocated > 0);
 
