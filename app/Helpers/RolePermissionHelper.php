@@ -433,6 +433,16 @@ class RolePermissionHelper
                 "permission_groups_id" => 6
             ],
             [
+                "name" => "Toggle Telegram Group Status",
+                "permission_key" => "toggle_telegram_group_status",
+                "permission_groups_id" => 6
+            ],
+            [
+                "name" => "Test Telegram Group",
+                "permission_key" => "test_telegram_group",
+                "permission_groups_id" => 6
+            ],
+            [
                 "name" => "Delete Telegram Group",
                 "permission_key" => "delete_telegram_group",
                 "permission_groups_id" => 6
@@ -1448,6 +1458,16 @@ class RolePermissionHelper
             [
                 "name" => "View Sell Staff Report",
                 "permission_key" => "view_sell_staff_report",
+                "permission_groups_id" => 38
+            ],
+            [
+                "name" => "Edit Sell Staff Report",
+                "permission_key" => "edit_sell_staff_report",
+                "permission_groups_id" => 38
+            ],
+            [
+                "name" => "Delete Sell Staff Report",
+                "permission_key" => "delete_sell_staff_report",
                 "permission_groups_id" => 38
             ],
 

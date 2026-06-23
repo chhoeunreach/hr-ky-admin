@@ -107,8 +107,9 @@ class SellOutReportController extends Controller
             return $report;
         });
 
-        $report->load(['lines', 'photos'])->loadCount(['lines', 'photos']);
+        $report->load(['lines', 'photos', 'user'])->loadCount(['lines', 'photos']);
         $this->sendSellOutReportTelegram($report);
+        $this->sendSellOutReportPhotosToTelegram($report);
 
         return response()->json([
             'status' => true,
@@ -220,4 +221,64 @@ class SellOutReportController extends Controller
         }
     }
 
+    private function sendSellOutReportPhotosToTelegram(SellOutReport $report): void
+    {
+        try {
+            $photoPaths = $report->photos
+                ->map(fn ($photo) => Storage::disk('public')->path($photo->photo_path))
+                ->all();
+
+            if ($photoPaths === []) {
+                return;
+            }
+
+            $caption = $this->buildPhotoCaption($report);
+            $chatIds = $this->telegramService->chatIdsForAction(
+                TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
+                (string) ($report->branch_name ?? ''),
+                ''
+            );
+
+            foreach ($chatIds as $chatId) {
+                $this->telegramService->sendMediaGroup($chatId, $photoPaths, $caption);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('Sell out report Telegram photo send failed.', [
+                'sell_out_report_id' => $report->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function buildPhotoCaption(SellOutReport $report): string
+    {
+        $userId = $this->userIdNumber($report->user->employee_code ?? null);
+        $phoneLast4 = $this->phoneLast4Digits($report->customer_phone);
+
+        $caption = trim($userId . '-' . $phoneLast4, '-');
+
+        if ($report->customer_phone) {
+            $caption .= "\n{$report->customer_phone}";
+        }
+
+        if ($report->invoice_no) {
+            $caption .= "\nInvoice: {$report->invoice_no}";
+        }
+
+        return $caption;
+    }
+
+    private function userIdNumber(?string $employeeCode): string
+    {
+        $digits = ltrim(preg_replace('/\D/', '', (string) $employeeCode), '0');
+
+        return $digits !== '' ? $digits : '0';
+    }
+
+    private function phoneLast4Digits(?string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+
+        return $digits !== '' ? substr($digits, -4) : '';
+    }
 }

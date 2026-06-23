@@ -569,6 +569,7 @@ return [
     'event_date' => 'Event Date',
     'is_public_holiday' => 'Is Public Holiday?',
     'confirm_delete_holiday' => 'Are you sure you want to Delete Holiday Detail?',
+    'confirm_delete_sell_staff_report' => 'Are you sure you want to delete this sell out report?',
     'holiday_detail_title' => 'Holiday Detail',
     'holiday' => 'Holiday',
     'csv_import' => 'CSV Import',

@@ -123,7 +123,7 @@ class TelegramGroupController extends Controller
 
     public function toggleStatus(int $id): RedirectResponse
     {
-        $this->authorize('edit_telegram_group');
+        $this->authorize('toggle_telegram_group_status');
 
         try {
             DB::beginTransaction();
@@ -140,7 +140,7 @@ class TelegramGroupController extends Controller
 
     public function test(int $id, TelegramService $telegramService): RedirectResponse
     {
-        $this->authorize('edit_telegram_group');
+        $this->authorize('test_telegram_group');
 
         try {
             $telegramGroup = $this->telegramGroupRepo->find($id);

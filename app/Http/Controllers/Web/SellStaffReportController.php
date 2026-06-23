@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
 class SellStaffReportController extends Controller
@@ -78,6 +79,8 @@ class SellStaffReportController extends Controller
             'lines.*.storage' => ['nullable', 'string', 'max:255'],
             'lines.*.qty' => ['required', 'numeric', 'min:1'],
             'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
         ]);
 
         $lines = collect($validated['lines'])
@@ -144,10 +147,23 @@ class SellStaffReportController extends Controller
                 ]);
             }
 
+            foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
+                $report->photos()->create([
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
+                    'original_name' => $photo->getClientOriginalName(),
+                ]);
+            }
+
             $report->update(['total_amount' => round($totalAmount, 2)]);
 
             DB::commit();
-            $this->sendSellOutReportTelegram($report->fresh(['lines']));
+
+            $report = $report->fresh(['lines', 'photos', 'user']);
+            $this->sendSellOutReportTelegram($report);
+            $this->sendSellOutReportPhotosToTelegram($report);
 
             return redirect()
                 ->route('admin.sell-staff-report.index')
@@ -169,6 +185,172 @@ class SellStaffReportController extends Controller
             ->findOrFail($id);
 
         return view($this->view . 'show', compact('report'));
+    }
+
+    public function edit(int $id)
+    {
+        $this->authorize('edit_sell_staff_report');
+
+        $report = SellOutReport::with(['lines', 'photos'])->findOrFail($id);
+
+        return view($this->view . 'edit', compact('report'));
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $this->authorize('edit_sell_staff_report');
+
+        $report = SellOutReport::with(['lines', 'photos'])->findOrFail($id);
+
+        $validated = $request->validate([
+            'original_invoice_no' => ['nullable', 'string', 'max:255'],
+            'seller_name' => ['nullable', 'string', 'max:255'],
+            'branch_name' => ['nullable', 'string', 'max:255'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:50'],
+            'service_type' => ['nullable', 'string', 'max:255'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'note' => ['nullable', 'string'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.product_name' => ['nullable', 'string', 'max:255'],
+            'lines.*.sku' => ['nullable', 'string', 'max:255'],
+            'lines.*.imei' => ['nullable', 'string', 'max:255'],
+            'lines.*.imei2' => ['nullable', 'string', 'max:255'],
+            'lines.*.serial_number' => ['nullable', 'string', 'max:255'],
+            'lines.*.model_number' => ['nullable', 'string', 'max:255'],
+            'lines.*.color' => ['nullable', 'string', 'max:255'],
+            'lines.*.storage' => ['nullable', 'string', 'max:255'],
+            'lines.*.qty' => ['required', 'numeric', 'min:1'],
+            'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'delete_photos' => ['nullable', 'array'],
+            'delete_photos.*' => ['integer'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
+        ]);
+
+        $lines = collect($validated['lines'])
+            ->map(fn (array $line) => $this->trimLineValues($line))
+            ->filter(fn (array $line) => $this->hasLineContent($line))
+            ->values();
+
+        if ($lines->isEmpty()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['lines' => 'At least one product line is required.']);
+        }
+
+        $missingIdentifierIndex = $lines->search(fn (array $line) => $this->resolvePrimaryIdentifier($line)['value'] === null);
+
+        if ($missingIdentifierIndex !== false) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['lines.' . $missingIdentifierIndex . '.sku' => 'SKU, IMEI, or Serial Number is required for each product line.']);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $report->update([
+                'original_invoice_no' => $validated['original_invoice_no'] ?? null,
+                'seller_name' => $validated['seller_name'] ?? null,
+                'branch_name' => $validated['branch_name'] ?? null,
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_phone' => $validated['customer_phone'] ?? null,
+                'service_type' => $validated['service_type'] ?? null,
+                'payment_method' => $validated['payment_method'] ?? null,
+                'note' => $validated['note'] ?? null,
+            ]);
+
+            $report->lines()->delete();
+
+            $totalAmount = 0;
+
+            foreach ($lines as $lineData) {
+                $identifier = $this->resolvePrimaryIdentifier($lineData);
+                $qty = (float) ($lineData['qty'] ?? 1);
+                $unitPrice = array_key_exists('unit_price', $lineData) && $lineData['unit_price'] !== null
+                    ? (float) $lineData['unit_price']
+                    : null;
+                $subtotal = $unitPrice !== null ? round($qty * $unitPrice, 2) : null;
+                $totalAmount += $subtotal ?? 0;
+
+                $report->lines()->create([
+                    'product_name' => $lineData['product_name'] ?? null,
+                    'sku' => $lineData['sku'] ?? null,
+                    'identifier_type' => $identifier['type'],
+                    'primary_identifier' => $identifier['value'],
+                    'imei' => $lineData['imei'] ?? null,
+                    'imei2' => $lineData['imei2'] ?? null,
+                    'serial_number' => $lineData['serial_number'] ?? null,
+                    'model_number' => $lineData['model_number'] ?? null,
+                    'color' => $lineData['color'] ?? null,
+                    'storage' => $lineData['storage'] ?? null,
+                    'qty' => $qty,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => $subtotal,
+                ]);
+            }
+
+            foreach ($validated['delete_photos'] ?? [] as $photoId) {
+                $photo = $report->photos->firstWhere('id', (int) $photoId);
+
+                if ($photo) {
+                    Storage::disk('public')->delete($photo->photo_path);
+                    $photo->delete();
+                }
+            }
+
+            foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
+                $report->photos()->create([
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
+                    'original_name' => $photo->getClientOriginalName(),
+                ]);
+            }
+
+            $report->update(['total_amount' => round($totalAmount, 2)]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.sell-staff-report.show', $report->id)
+                ->with('success', 'Sell out report updated successfully.');
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+
+            return redirect()->back()
+                ->withInput()
+                ->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function delete(int $id)
+    {
+        $this->authorize('delete_sell_staff_report');
+
+        $report = SellOutReport::with('photos')->findOrFail($id);
+
+        DB::beginTransaction();
+
+        try {
+            foreach ($report->photos as $photo) {
+                Storage::disk('public')->delete($photo->photo_path);
+            }
+
+            $report->photos()->delete();
+            $report->lines()->delete();
+            $report->delete();
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Sell out report deleted successfully.');
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
     }
 
     private function filterData(Request $request): array
@@ -319,5 +501,66 @@ class SellStaffReportController extends Controller
                 'error' => $exception->getMessage(),
             ]);
         }
+    }
+
+    private function sendSellOutReportPhotosToTelegram(SellOutReport $report): void
+    {
+        try {
+            $photoPaths = $report->photos
+                ->map(fn ($photo) => Storage::disk('public')->path($photo->photo_path))
+                ->all();
+
+            if ($photoPaths === []) {
+                return;
+            }
+
+            $caption = $this->buildPhotoCaption($report);
+            $chatIds = $this->telegramService->chatIdsForAction(
+                TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
+                (string) ($report->branch_name ?? ''),
+                ''
+            );
+
+            foreach ($chatIds as $chatId) {
+                $this->telegramService->sendMediaGroup($chatId, $photoPaths, $caption);
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('Sell out report Telegram photo send failed.', [
+                'sell_out_report_id' => $report->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+    }
+
+    private function buildPhotoCaption(SellOutReport $report): string
+    {
+        $userId = $this->userIdNumber($report->user->employee_code ?? null);
+        $phoneLast4 = $this->phoneLast4Digits($report->customer_phone);
+
+        $caption = trim($userId . '-' . $phoneLast4, '-');
+
+        if ($report->customer_phone) {
+            $caption .= "\n{$report->customer_phone}";
+        }
+
+        if ($report->invoice_no) {
+            $caption .= "\nInvoice: {$report->invoice_no}";
+        }
+
+        return $caption;
+    }
+
+    private function userIdNumber(?string $employeeCode): string
+    {
+        $digits = ltrim(preg_replace('/\D/', '', (string) $employeeCode), '0');
+
+        return $digits !== '' ? $digits : '0';
+    }
+
+    private function phoneLast4Digits(?string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+
+        return $digits !== '' ? substr($digits, -4) : '';
     }
 }

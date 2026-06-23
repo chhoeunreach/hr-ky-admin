@@ -77,7 +77,7 @@
                             <th>Department</th>
                             <th class="text-center">All</th>
                             <th class="text-center">{{ __('index.status') }}</th>
-                            @canany(['edit_telegram_group','delete_telegram_group'])
+                            @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
                                 <th class="text-center">{{ __('index.action') }}</th>
                             @endcanany
                         </tr>
@@ -99,16 +99,22 @@
                                 <td>{{ $telegramGroup->department?->dept_name ?? $telegramGroup->department_name ?? 'All' }}</td>
                                 <td class="text-center">{{ $telegramGroup->send_for_all ? 'Yes' : 'No' }}</td>
                                 <td class="text-center">
-                                    <label class="switch">
-                                        <input class="toggleStatus" href="{{ route('admin.telegram-groups.toggle-status', $telegramGroup->id) }}"
-                                               type="checkbox" {{ $telegramGroup->is_active ? 'checked' : '' }}>
-                                        <span class="slider round"></span>
-                                    </label>
+                                    @can('toggle_telegram_group_status')
+                                        <label class="switch">
+                                            <input class="toggleStatus" href="{{ route('admin.telegram-groups.toggle-status', $telegramGroup->id) }}"
+                                                   type="checkbox" {{ $telegramGroup->is_active ? 'checked' : '' }}>
+                                            <span class="slider round"></span>
+                                        </label>
+                                    @else
+                                        <span class="badge {{ $telegramGroup->is_active ? 'bg-success' : 'bg-danger' }}">
+                                            {{ $telegramGroup->is_active ? __('index.active') : __('index.inactive') }}
+                                        </span>
+                                    @endcan
                                 </td>
-                                @canany(['edit_telegram_group','delete_telegram_group'])
+                                @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
                                     <td class="text-center">
                                         <ul class="d-flex list-unstyled mb-0 justify-content-center">
-                                            @can('edit_telegram_group')
+                                            @can('test_telegram_group')
                                                 <li class="me-2">
                                                     <a class="btn btn-sm btn-outline-primary sendTelegramTest"
                                                        data-href="{{ route('admin.telegram-groups.test', $telegramGroup->id) }}"
@@ -116,6 +122,8 @@
                                                         <i class="link-icon" data-feather="send"></i> Send Test
                                                     </a>
                                                 </li>
+                                            @endcan
+                                            @can('edit_telegram_group')
                                                 <li class="me-2">
                                                     <a href="{{ route('admin.telegram-groups.edit', $telegramGroup->id) }}">
                                                         <i class="link-icon" data-feather="edit"></i>

@@ -181,6 +181,69 @@ class TelegramService
         }
     }
 
+    public function sendMediaGroup(string $chatId, array $photoPaths, ?string $caption = null): ?array
+    {
+        $botToken = (string) config('services.telegram.bot_token', '');
+
+        if ($botToken === '') {
+            Log::error('Telegram media group skipped: bot token missing (services.telegram.bot_token).', [
+                'chatId' => $chatId,
+            ]);
+            return null;
+        }
+
+        $photoPaths = array_values(array_filter($photoPaths, fn (string $path): bool => is_file($path)));
+
+        if ($photoPaths === []) {
+            Log::error('Telegram media group skipped: no valid photo files.', [
+                'chatId' => $chatId,
+            ]);
+            return null;
+        }
+
+        $url = rtrim(self::TELEGRAM_API_BASE, '/') . '/bot' . $botToken . '/sendMediaGroup';
+
+        try {
+            $request = Http::timeout(30)->retry(2, 200)->acceptJson();
+
+            $media = [];
+            foreach ($photoPaths as $index => $photoPath) {
+                $attachName = 'photo' . $index;
+                $request = $request->attach($attachName, file_get_contents($photoPath), basename($photoPath));
+
+                $item = ['type' => 'photo', 'media' => 'attach://' . $attachName];
+
+                if ($index === 0 && $caption !== null && $caption !== '') {
+                    $item['caption'] = Str::limit($caption, 1024, '...');
+                }
+
+                $media[] = $item;
+            }
+
+            $response = $request->post($url, [
+                'chat_id' => $chatId,
+                'media' => json_encode($media),
+            ]);
+
+            if (! $response->successful()) {
+                Log::error('Telegram sendMediaGroup failed.', [
+                    'chatId' => $chatId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return null;
+            }
+
+            return $response->json('result');
+        } catch (\Throwable $e) {
+            Log::error('Telegram sendMediaGroup exception.', [
+                'chatId' => $chatId,
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
     private function getActionChatIds(string $actionKey, string $branchName, string $departmentName): array
     {
         $chatIds = $this->resolveConfiguredChatIds($actionKey, $branchName, $departmentName);

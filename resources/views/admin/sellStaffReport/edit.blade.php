@@ -1,8 +1,8 @@
 @extends('layouts.master')
 
-@section('title', __('index.add_sell_staff_report'))
+@section('title', __('index.sell_staff_report'))
 
-@section('action', __('index.add_sell_staff_report'))
+@section('action', __('index.sell_staff_report'))
 
 @section('main-content')
     <section class="content">
@@ -12,13 +12,14 @@
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">{{ __('index.dashboard') }}</a></li>
                 <li class="breadcrumb-item"><a href="{{ route('admin.sell-staff-report.index') }}">{{ __('index.sell_staff_report') }}</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ __('index.add_new') }}</li>
+                <li class="breadcrumb-item active" aria-current="page">{{ __('index.edit') }}</li>
             </ol>
             <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-secondary btn-sm">{{ __('index.button_back') }}</a>
         </nav>
 
-        <form action="{{ route('admin.sell-staff-report.store') }}" method="post" enctype="multipart/form-data">
+        <form action="{{ route('admin.sell-staff-report.update', $report->id) }}" method="post" enctype="multipart/form-data">
             @csrf
+            @method('PUT')
             <div class="card mb-4">
                 <div class="card-header">
                     <h6 class="card-title mb-0">{{ __('index.sell_staff_report_detail') }}</h6>
@@ -27,46 +28,66 @@
                     <div class="row">
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.original_invoice_no') }}</label>
-                            <input type="text" name="original_invoice_no" class="form-control" value="{{ old('original_invoice_no') }}">
+                            <input type="text" name="original_invoice_no" class="form-control" value="{{ old('original_invoice_no', $report->original_invoice_no) }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.seller_name') }}</label>
-                            <input type="text" name="seller_name" class="form-control" value="{{ old('seller_name') }}">
+                            <input type="text" name="seller_name" class="form-control" value="{{ old('seller_name', $report->seller_name) }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.branch_name') }}</label>
-                            <input type="text" name="branch_name" class="form-control" value="{{ old('branch_name') }}">
+                            <input type="text" name="branch_name" class="form-control" value="{{ old('branch_name', $report->branch_name) }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.customer_name') }}</label>
-                            <input type="text" name="customer_name" class="form-control" value="{{ old('customer_name') }}">
+                            <input type="text" name="customer_name" class="form-control" value="{{ old('customer_name', $report->customer_name) }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.customer_phone') }}</label>
-                            <input type="text" name="customer_phone" class="form-control" value="{{ old('customer_phone') }}">
+                            <input type="text" name="customer_phone" class="form-control" value="{{ old('customer_phone', $report->customer_phone) }}">
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">Report Type</label>
                             <select name="service_type" class="form-select">
                                 @foreach(\App\Models\TelegramGroup::sellOutEventOptions() as $eventKey => $label)
-                                    <option value="{{ $label }}" {{ old('service_type', 'លក់') === $label ? 'selected' : '' }}>{{ $label }}</option>
+                                    <option value="{{ $label }}" {{ old('service_type', $report->service_type) === $label ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.payment_method') }}</label>
-                            <input type="text" name="payment_method" class="form-control" value="{{ old('payment_method') }}">
+                            <input type="text" name="payment_method" class="form-control" value="{{ old('payment_method', $report->payment_method) }}">
                         </div>
                         <div class="col-12 mb-3">
                             <label class="form-label">{{ __('index.notes') }}</label>
-                            <textarea name="note" rows="3" class="form-control">{{ old('note') }}</textarea>
+                            <textarea name="note" rows="3" class="form-control">{{ old('note', $report->note) }}</textarea>
                         </div>
+
+                        @if($report->photos->isNotEmpty())
+                            <div class="col-12 mb-3">
+                                <label class="form-label">{{ __('index.photos') }}</label>
+                                <div class="row">
+                                    @foreach($report->photos as $photo)
+                                        <div class="col-lg-2 col-md-3 col-sm-4 mb-3 text-center">
+                                            <a href="{{ $photo->photo_url }}" target="_blank">
+                                                <img src="{{ $photo->photo_url }}" alt="{{ $photo->original_name ?? __('index.photo') }}" class="img-fluid rounded border mb-2">
+                                            </a>
+                                            <div class="form-check d-flex justify-content-center align-items-center gap-1">
+                                                <input type="checkbox" class="form-check-input" name="delete_photos[]" value="{{ $photo->id }}" id="delete_photo_{{ $photo->id }}">
+                                                <label class="form-check-label" for="delete_photo_{{ $photo->id }}">{{ __('index.delete') }}</label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <div class="col-lg-6 mb-3">
-                            <label class="form-label">Photo 1</label>
+                            <label class="form-label">{{ __('index.add_new') }} - Photo 1</label>
                             <input type="file" name="photos[]" accept="image/*" class="form-control">
                         </div>
                         <div class="col-lg-6 mb-3">
-                            <label class="form-label">Photo 2</label>
+                            <label class="form-label">{{ __('index.add_new') }} - Photo 2</label>
                             <input type="file" name="photos[]" accept="image/*" class="form-control">
                         </div>
                         @error('photos')
@@ -104,7 +125,8 @@
                             </thead>
                             <tbody>
                             @php
-                                $oldLines = old('lines', [['qty' => 1]]);
+                                $oldLines = old('lines', $report->lines->map(fn ($line) => $line->toArray())->all());
+                                $oldLines = $oldLines ?: [['qty' => 1]];
                             @endphp
                             @foreach($oldLines as $index => $line)
                                 <tr>

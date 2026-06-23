@@ -35,10 +35,7 @@
                         <div class="col-lg-2 col-md-6 mb-3">
                             <input type="text" name="branch_name" class="form-control" value="{{ $filterData['branch_name'] ?? '' }}" placeholder="{{ __('index.branch_name') }}">
                         </div>
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <input type="text" name="search" class="form-control" value="{{ $filterData['search'] ?? '' }}" placeholder="{{ __('index.search') }}">
-                        </div>
-                        <div class="col-lg-2 col-md-6 mb-3 d-flex gap-2">
+                        <div class="col-lg-4 col-md-6 mb-3 d-flex gap-2">
                             <button type="submit" class="btn btn-primary">{{ __('index.filter') }}</button>
                             <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-warning">{{ __('index.clear') }}</a>
                         </div>
@@ -106,8 +103,16 @@
         </div>
 
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <h6 class="card-title mb-0">{{ __('index.sell_staff_report') }}</h6>
+                <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="d-flex gap-2">
+                    <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
+                    <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
+                    <input type="hidden" name="seller_name" value="{{ $filterData['seller_name'] ?? '' }}">
+                    <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
+                    <input type="text" name="search" class="form-control" value="{{ $filterData['search'] ?? '' }}" placeholder="{{ __('index.search') }}">
+                    <button type="submit" class="btn btn-primary">{{ __('index.search') }}</button>
+                </form>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -142,6 +147,12 @@
                                 <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
                                 <td class="text-center">
                                     <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="btn btn-primary btn-xs">{{ __('index.view') }}</a>
+                                    @can('edit_sell_staff_report')
+                                        <a href="{{ route('admin.sell-staff-report.edit', $report->id) }}" class="btn btn-warning btn-xs">{{ __('index.edit') }}</a>
+                                    @endcan
+                                    @can('delete_sell_staff_report')
+                                        <a href="javascript:void(0)" class="btn btn-danger btn-xs deleteSellStaffReport" data-href="{{ route('admin.sell-staff-report.delete', $report->id) }}">{{ __('index.delete') }}</a>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty
@@ -158,4 +169,25 @@
             </div>
         </div>
     </section>
+@endsection
+
+@section('scripts')
+    <script>
+        $(document).on('click', '.deleteSellStaffReport', function (event) {
+            event.preventDefault();
+            let href = $(this).data('href');
+            Swal.fire({
+                title: '{{ __('index.confirm_delete_sell_staff_report') }}',
+                showDenyButton: true,
+                confirmButtonText: `{{ __('index.yes') }}`,
+                denyButtonText: `{{ __('index.no') }}`,
+                padding: '10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    </script>
 @endsection

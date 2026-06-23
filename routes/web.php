@@ -469,6 +469,9 @@ Route::group([
         Route::get('sell-staff-report', [SellStaffReportController::class, 'index'])->name('sell-staff-report.index');
         Route::get('sell-staff-report/create', [SellStaffReportController::class, 'create'])->name('sell-staff-report.create');
         Route::post('sell-staff-report', [SellStaffReportController::class, 'store'])->name('sell-staff-report.store');
+        Route::get('sell-staff-report/{id}/edit', [SellStaffReportController::class, 'edit'])->name('sell-staff-report.edit');
+        Route::put('sell-staff-report/{id}', [SellStaffReportController::class, 'update'])->name('sell-staff-report.update');
+        Route::get('sell-staff-report/{id}/delete', [SellStaffReportController::class, 'delete'])->name('sell-staff-report.delete');
         Route::get('sell-staff-report/{id}', [SellStaffReportController::class, 'show'])->name('sell-staff-report.show');
 
 
