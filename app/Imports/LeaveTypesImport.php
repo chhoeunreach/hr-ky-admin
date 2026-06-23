@@ -44,7 +44,7 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             $leaveTypeData = [
                 'company_id' => $this->companyId,
                 'name' => $name,
-                'slug' => Str::slug($name),
+                'slug' => $this->uniqueSlug($name, $leaveType?->id),
                 'branch_id' => $this->authBranchId ?: $this->resolveBranchId($row, $line, $leaveType),
                 'gender' => $this->genderValue($row, $line, $leaveType),
                 'leave_allocated' => $this->leaveAllocatedValue($row, $line, $leaveType),
@@ -85,6 +85,26 @@ class LeaveTypesImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
         return LeaveType::where('company_id', $this->companyId)
             ->where('name', $name)
             ->first();
+    }
+
+    private function uniqueSlug(string $name, ?int $ignoreId = null): string
+    {
+        $baseSlug = Str::slug($name) ?: 'leave-type';
+        $slug = $baseSlug;
+        $suffix = 2;
+
+        while (
+            LeaveType::where('slug', $slug)
+                ->when($ignoreId, function ($query) use ($ignoreId) {
+                    $query->where('id', '!=', $ignoreId);
+                })
+                ->exists()
+        ) {
+            $slug = "{$baseSlug}-{$suffix}";
+            $suffix++;
+        }
+
+        return $slug;
     }
 
     /**
