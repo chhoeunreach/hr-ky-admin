@@ -257,6 +257,10 @@ class SellOutReportController extends Controller
 
         $caption = trim($userId . '-' . $phoneLast4, '-');
 
+        if ($report->user->name ?? null) {
+            $caption .= "\n{$report->user->name}";
+        }
+
         if ($report->customer_phone) {
             $caption .= "\n{$report->customer_phone}";
         }
