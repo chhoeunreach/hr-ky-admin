@@ -234,6 +234,8 @@ Route::group([
 
 
         /** Leave route */
+        Route::get('leaves/export-excel', [LeaveTypeController::class, 'export'])->name('leaves.export-excel');
+        Route::post('leaves/import-excel', [LeaveTypeController::class, 'import'])->name('leaves.import-excel');
         Route::resource('leaves', LeaveTypeController::class);
         Route::get('leaves/toggle-status/{id}', [LeaveTypeController::class, 'toggleStatus'])->name('leaves.toggle-status');
         Route::get('leaves/toggle-early-exit/{id}', [LeaveTypeController::class, 'toggleEarlyExit'])->name('leaves.toggle-early-exit');

@@ -1,9 +1,14 @@
 <table>
     <thead>
     <tr>
-        <th>Id</th>
-        <th>Name</th>
-        <th>Leave Allocated</th>
+        <th>id</th>
+        <th>name</th>
+        <th>branch_id</th>
+        <th>branch</th>
+        <th>gender</th>
+        <th>is_paid</th>
+        <th>leave_allocated</th>
+        <th>is_active</th>
     </tr>
     </thead>
     <tbody>
@@ -11,7 +16,12 @@
         <tr>
             <td>{{$data->id}}</td>
             <td>{{ $data->name }}</td>
-            <td>{{ $data->leave_allocated ?? 0 }}</td>
+            <td>{{ $data->branch_id }}</td>
+            <td>{{ $data->branch?->name }}</td>
+            <td>{{ $data->gender }}</td>
+            <td>{{ $data->leave_allocated ? 1 : 0 }}</td>
+            <td>{{ $data->leave_allocated }}</td>
+            <td>{{ $data->is_active ? 1 : 0 }}</td>
         </tr>
     @endforeach
     </tbody>

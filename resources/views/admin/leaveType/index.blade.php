@@ -6,7 +6,13 @@
 @section('action',__('index.lists'))
 
 @section('button')
+    <a class="btn btn-success mb-3 me-2" href="{{ route('admin.leaves.export-excel', request()->query()) }}">
+        <i class="link-icon" data-feather="download"></i> {{ __('index.export_excel') }}
+    </a>
     @canany(['leave_type_create','access_admin_leave'])
+        <button class="btn btn-outline-success import-leaveType mb-3 me-2" type="button">
+            <i class="link-icon" data-feather="upload"></i> Import Excel
+        </button>
         <button class="btn btn-primary create-leaveType mb-3">
             <i class="link-icon" data-feather="plus"></i> {{ __('index.add_leave_type') }}
         </button>
@@ -202,6 +208,32 @@
                             </div>
                         </div>
 
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="leaveTypeImportModal" tabindex="-1" aria-labelledby="leaveTypeImportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header text-center">
+                    <h5 class="modal-title" id="leaveTypeImportModalLabel">Import Leave Types</h5>
+                </div>
+                <div class="modal-body">
+                    <form class="forms-sample" action="{{ route('admin.leaves.import-excel') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="mb-4">
+                            <label for="leave_type_import_file" class="form-label">Excel File <span style="color: red">*</span></label>
+                            <input type="file" class="form-control" id="leave_type_import_file" name="file" accept=".xlsx,.xls,.csv,.txt" required>
+                            <small class="text-muted d-block mt-2">
+                                Use columns: name, branch_id or branch, gender, is_paid, leave_allocated, is_active.
+                            </small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="link-icon" data-feather="upload"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
                     </form>
                 </div>
             </div>

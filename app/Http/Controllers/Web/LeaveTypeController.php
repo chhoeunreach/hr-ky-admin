@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Web;
 
 use App\Enum\LeaveGenderEnum;
+use App\Exports\DatabaseData\LeaveTypeExport;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Imports\LeaveTypesImport;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\LeaveRepository;
@@ -13,7 +15,10 @@ use App\Requests\Leave\LeaveTypeRequest;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class LeaveTypeController extends Controller
 {
@@ -53,6 +58,57 @@ class LeaveTypeController extends Controller
         } else {
             abort(403);
         }
+    }
+
+    public function export(Request $request)
+    {
+        if (auth('admin')->user() || Gate::allows('list_leave_type') || Gate::allows('access_admin_leave')) {
+            try {
+                $filterParameters = [
+                    'branch_id' => $request->branch_id ?? null,
+                    'type' => $request->type ?? null,
+                ];
+
+                if (!auth('admin')->check() && auth()->check()) {
+                    $filterParameters['branch_id'] = auth()->user()->branch_id;
+                }
+
+                $leaveTypes = $this->leaveTypeRepo->getAllLeaveTypes($filterParameters, ['leave_types.*'], ['branch:id,name']);
+
+                return Excel::download(new LeaveTypeExport($leaveTypes), 'leave-types.xlsx');
+            } catch (Exception $exception) {
+                return redirect()->back()->with('danger', $exception->getMessage());
+            }
+        }
+
+        abort(403);
+    }
+
+    public function import(Request $request)
+    {
+        if (auth('admin')->user() || Gate::allows('leave_type_create') || Gate::allows('access_admin_leave')) {
+            try {
+                $request->validate([
+                    'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt'],
+                ]);
+
+                DB::transaction(function () use ($request) {
+                    Excel::import(new LeaveTypesImport(), $request->file('file'));
+                });
+
+                return redirect()
+                    ->route('admin.leaves.index')
+                    ->with('success', 'Leave types imported successfully.');
+            } catch (Exception $exception) {
+                Log::error('Leave type import failed', [
+                    'message' => $exception->getMessage(),
+                ]);
+
+                return redirect()->back()->with('danger', $exception->getMessage());
+            }
+        }
+
+        abort(403);
     }
 
 //    public function create()

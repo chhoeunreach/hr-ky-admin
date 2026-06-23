@@ -83,6 +83,11 @@
             $('#leaveTypeModal').modal('show');
         });
 
+        $(document).on('click', '.import-leaveType', function() {
+            $('#leave_type_import_file').val('');
+            $('#leaveTypeImportModal').modal('show');
+        });
+
         $(document).on('click', '.edit-leaveType', function() {
             const leaveTypeId = $(this).data('id');
 
