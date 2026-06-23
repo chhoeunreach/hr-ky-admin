@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
 use App\Models\TelegramGroup;
 use App\Requests\SellOutReport\StoreSellOutReportRequest;
+use App\Requests\SellOutReport\UpdateSellOutReportRequest;
 use App\Resources\SellOutReport\SellOutReportResource;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
@@ -116,6 +117,85 @@ class SellOutReportController extends Controller
             'message' => 'Sell Out Report submitted successfully!',
             'data' => (new SellOutReportResource($report))->toArray(request()),
         ], 201);
+    }
+
+    public function update(UpdateSellOutReportRequest $request, int $id): JsonResponse
+    {
+        $report = SellOutReport::query()
+            ->where('user_id', auth()->id())
+            ->with(['lines', 'photos'])
+            ->findOrFail($id);
+
+        if (! $report->created_at->isToday()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This report can no longer be updated because it was not created today.',
+            ], 403);
+        }
+
+        $validated = $request->validated();
+
+        $report = DB::transaction(function () use ($request, $validated, $report) {
+            $totalAmount = collect($validated['lines'])->sum(function (array $line): float {
+                return round((int) $line['qty'] * (float) $line['unit_price'], 2);
+            });
+            $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
+            $commission = $validated['commission'] ?? ($totalQty * 0.25);
+
+            $report->update([
+                'seller_name' => $validated['seller_name'],
+                'branch_name' => $validated['branch_name'] ?? null,
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_phone' => $validated['customer_phone'] ?? null,
+                'service_type' => $this->filledString($validated['service_type'] ?? null, 'Sale'),
+                'payment_method' => $this->filledString($validated['payment_method'] ?? null, 'Cash'),
+                'note' => $validated['note'] ?? null,
+                'extracted_text' => $validated['extracted_text'] ?? null,
+                'total_amount' => round($totalAmount, 2),
+                'commission' => round((float) $commission, 2),
+            ]);
+
+            $report->lines()->delete();
+
+            foreach ($validated['lines'] as $line) {
+                $qty = (int) $line['qty'];
+                $unitPrice = (float) $line['unit_price'];
+
+                $report->lines()->create([
+                    'product_name' => $line['product_name'],
+                    'sku' => $line['sku'] ?? null,
+                    'imei' => $line['imei'] ?? null,
+                    'imei2' => $line['imei2'] ?? null,
+                    'serial_number' => $line['serial_number'] ?? null,
+                    'model_number' => $line['model_number'] ?? null,
+                    'color' => $line['color'] ?? null,
+                    'storage' => $line['storage'] ?? null,
+                    'qty' => $qty,
+                    'unit_price' => $unitPrice,
+                    'subtotal' => round($qty * $unitPrice, 2),
+                ]);
+            }
+
+            foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
+                $report->photos()->create([
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
+                    'original_name' => $photo->getClientOriginalName(),
+                ]);
+            }
+
+            return $report;
+        });
+
+        $report->load(['lines', 'photos', 'user'])->loadCount(['lines', 'photos']);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Sell Out Report updated successfully!',
+            'data' => (new SellOutReportResource($report))->toArray(request()),
+        ]);
     }
 
     public function destroy(int $id): JsonResponse

@@ -166,6 +166,7 @@ Route::group([
     /** Sell Out Report */
     Route::get('sell-out-reports', [SellOutReportController::class, 'index']);
     Route::post('sell-out-reports', [SellOutReportController::class, 'store']);
+    Route::put('sell-out-reports/{id}', [SellOutReportController::class, 'update']);
     Route::get('sell-out-reports/{id}', [SellOutReportController::class, 'show']);
     Route::delete('sell-out-reports/{id}', [SellOutReportController::class, 'destroy']);
 
