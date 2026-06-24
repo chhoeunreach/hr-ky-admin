@@ -173,6 +173,7 @@ Route::group([
     /** Group Chat Routes */
     Route::get('chat/groups', [GroupChatController::class, 'index']);
     Route::post('chat/groups', [GroupChatController::class, 'store']);
+    Route::post('chat/groups/media-upload', [GroupChatController::class, 'mediaUpload']);
     Route::get('chat/groups/{id}', [GroupChatController::class, 'show']);
     Route::match(['PUT', 'POST'], 'chat/groups/{id}', [GroupChatController::class, 'update']);
     Route::delete('chat/groups/{id}', [GroupChatController::class, 'destroy']);
@@ -184,7 +185,6 @@ Route::group([
     Route::post('chat/groups/{id}/messages', [GroupChatController::class, 'sendMessage']);
     Route::post('chat/groups/{id}/messages/{messageId}', [GroupChatController::class, 'updateMessage']);
     Route::delete('chat/groups/{id}/messages/{messageId}', [GroupChatController::class, 'deleteMessage']);
-    Route::post('chat/groups/media-upload', [GroupChatController::class, 'mediaUpload']);
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
