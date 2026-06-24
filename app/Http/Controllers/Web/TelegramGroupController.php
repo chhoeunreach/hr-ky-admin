@@ -53,8 +53,9 @@ class TelegramGroupController extends Controller
         $departments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
         $actionOptions = TelegramGroup::actionOptions();
         $eventOptions = TelegramGroup::eventOptions();
+        $chatOptions = $this->chatOptions();
 
-        return view($this->view . 'create', compact('branches', 'departments', 'actionOptions', 'eventOptions'));
+        return view($this->view . 'create', compact('branches', 'departments', 'actionOptions', 'eventOptions', 'chatOptions'));
     }
 
     public function store(TelegramGroupRequest $request): RedirectResponse
@@ -90,8 +91,9 @@ class TelegramGroupController extends Controller
             $departments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
             $actionOptions = TelegramGroup::actionOptions();
             $eventOptions = TelegramGroup::eventOptions();
+            $chatOptions = $this->chatOptions();
 
-            return view($this->view . 'edit', compact('telegramGroup', 'branches', 'departments', 'actionOptions', 'eventOptions'));
+            return view($this->view . 'edit', compact('telegramGroup', 'branches', 'departments', 'actionOptions', 'eventOptions', 'chatOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -148,10 +150,15 @@ class TelegramGroupController extends Controller
                 throw new Exception('Telegram group not found.', 404);
             }
 
-            $ok = $telegramService->sendMessage(
-                $telegramGroup->chat_id,
-                'Telegram group test from HR Admin: ' . $telegramGroup->name
-            );
+            $ok = true;
+            $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id];
+
+            foreach (array_filter($chatIds) as $chatId) {
+                $ok = $telegramService->sendMessage(
+                    $chatId,
+                    'Telegram group test from HR Admin: ' . $telegramGroup->name
+                ) && $ok;
+            }
 
             if (! $ok) {
                 return redirect()->back()->with('danger', 'Telegram test failed. Please check bot token, chat ID, and server logs.');
@@ -187,16 +194,42 @@ class TelegramGroupController extends Controller
 
     private function prepareTelegramGroupData(array $data): array
     {
-        if (! empty($data['branch_id'])) {
+        if (! empty($data['branch_ids'])) {
+            $branchNames = Branch::whereIn('id', $data['branch_ids'])
+                ->orderBy('name')
+                ->pluck('name')
+                ->toArray();
+            $data['branch_name'] = implode(',', $branchNames);
+        } elseif (! empty($data['branch_id'])) {
             $branch = Branch::select('id', 'name')->find($data['branch_id']);
             $data['branch_name'] = $branch?->name ?? $data['branch_name'] ?? null;
+        } else {
+            $data['branch_name'] = null;
         }
 
-        if (! empty($data['department_id'])) {
+        if (! empty($data['department_ids'])) {
+            $departmentNames = Department::whereIn('id', $data['department_ids'])
+                ->orderBy('dept_name')
+                ->pluck('dept_name')
+                ->toArray();
+            $data['department_name'] = implode(',', $departmentNames);
+        } elseif (! empty($data['department_id'])) {
             $department = Department::select('id', 'dept_name')->find($data['department_id']);
             $data['department_name'] = $department?->dept_name ?? $data['department_name'] ?? null;
+        } else {
+            $data['department_name'] = null;
         }
 
         return $data;
+    }
+
+    private function chatOptions(): array
+    {
+        return TelegramGroup::query()
+            ->pluck('chat_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
     }
 }

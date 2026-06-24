@@ -87,16 +87,26 @@
                             <tr>
                                 <td>{{ (($telegramGroups->currentPage() - 1) * $telegramGroups->perPage()) + (++$key) }}</td>
                                 <td>{{ $telegramGroup->name }}</td>
-                                <td>{{ $telegramGroup->chat_id }}</td>
-                                <td>{{ $actionOptions[$telegramGroup->action_key] ?? $telegramGroup->action_key }}</td>
+                                <td>
+                                    @php $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id]; @endphp
+                                    @foreach(array_filter($chatIds) as $chatId)
+                                        <span class="badge bg-light text-dark mb-1">{{ $chatId }}</span>
+                                    @endforeach
+                                </td>
+                                <td>
+                                    @php $actionKeys = $telegramGroup->action_keys ?: [$telegramGroup->action_key]; @endphp
+                                    @foreach(array_filter($actionKeys) as $actionKey)
+                                        <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
+                                    @endforeach
+                                </td>
                                 <td>
                                     @php $eventKeys = $telegramGroup->event_keys ?: [$telegramGroup->action_key]; @endphp
                                     @foreach($eventKeys as $eventKey)
                                         <span class="badge bg-secondary mb-1">{{ $actionOptions[$eventKey] ?? \App\Models\TelegramGroup::eventOptions()[$eventKey] ?? $eventKey }}</span>
                                     @endforeach
                                 </td>
-                                <td>{{ $telegramGroup->branch?->name ?? $telegramGroup->branch_name ?? 'All' }}</td>
-                                <td>{{ $telegramGroup->department?->dept_name ?? $telegramGroup->department_name ?? 'All' }}</td>
+                                <td>{{ $telegramGroup->branch_name ?: ($telegramGroup->branch?->name ?? 'All') }}</td>
+                                <td>{{ $telegramGroup->department_name ?: ($telegramGroup->department?->dept_name ?? 'All') }}</td>
                                 <td class="text-center">{{ $telegramGroup->send_for_all ? 'Yes' : 'No' }}</td>
                                 <td class="text-center">
                                     @can('toggle_telegram_group_status')

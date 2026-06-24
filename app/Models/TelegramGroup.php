@@ -39,10 +39,14 @@ class TelegramGroup extends Model
     protected $fillable = [
         'name',
         'chat_id',
+        'chat_ids',
         'action_key',
+        'action_keys',
         'event_keys',
         'branch_id',
+        'branch_ids',
         'department_id',
+        'department_ids',
         'branch_name',
         'department_name',
         'send_for_all',
@@ -53,7 +57,11 @@ class TelegramGroup extends Model
     protected $casts = [
         'send_for_all' => 'boolean',
         'is_active' => 'boolean',
+        'chat_ids' => 'array',
+        'action_keys' => 'array',
         'event_keys' => 'array',
+        'branch_ids' => 'array',
+        'department_ids' => 'array',
     ];
 
     public static function actionOptions(): array

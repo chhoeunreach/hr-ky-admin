@@ -15,7 +15,10 @@ class TelegramGroupRepository
                 $query->where('name', 'like', '%' . $filters['name'] . '%');
             })
             ->when(!empty($filters['action_key']), function ($query) use ($filters) {
-                $query->where('action_key', $filters['action_key']);
+                $query->where(function ($query) use ($filters) {
+                    $query->where('action_key', $filters['action_key'])
+                        ->orWhereJsonContains('action_keys', $filters['action_key']);
+                });
             })
             ->when(isset($filters['is_active']) && $filters['is_active'] !== '', function ($query) use ($filters) {
                 $query->where('is_active', (bool) $filters['is_active']);
@@ -65,7 +68,9 @@ class TelegramGroupRepository
             ->where('is_active', true)
             ->where(function ($query) use ($actionKey) {
                 $query->where('action_key', $actionKey)
-                    ->orWhere('action_key', TelegramGroup::ACTION_GENERAL);
+                    ->orWhere('action_key', TelegramGroup::ACTION_GENERAL)
+                    ->orWhereJsonContains('action_keys', $actionKey)
+                    ->orWhereJsonContains('action_keys', TelegramGroup::ACTION_GENERAL);
             })
             ->get();
     }
@@ -74,7 +79,15 @@ class TelegramGroupRepository
     {
         $data['send_for_all'] = (bool) ($data['send_for_all'] ?? false);
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
+        $data['chat_ids'] = array_values(array_unique(array_filter($data['chat_ids'] ?? [])));
+        $data['action_keys'] = array_values(array_unique(array_filter($data['action_keys'] ?? [])));
         $data['event_keys'] = array_values(array_unique(array_filter($data['event_keys'] ?? [])));
+        $data['branch_ids'] = array_values(array_unique(array_filter($data['branch_ids'] ?? [])));
+        $data['department_ids'] = array_values(array_unique(array_filter($data['department_ids'] ?? [])));
+        $data['chat_id'] = $data['chat_ids'][0] ?? $data['chat_id'] ?? null;
+        $data['action_key'] = $data['action_keys'][0] ?? $data['action_key'] ?? TelegramGroup::ACTION_GENERAL;
+        $data['branch_id'] = $data['branch_ids'][0] ?? null;
+        $data['department_id'] = $data['department_ids'][0] ?? null;
 
         return $data;
     }

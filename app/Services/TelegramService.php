@@ -292,19 +292,19 @@ class TelegramService
                 continue;
             }
 
-            $chatId = trim((string) $group->chat_id);
-            if ($chatId === '') {
+            $groupChatIds = $this->groupChatIds($group);
+            if ($groupChatIds === []) {
                 continue;
             }
 
             if ($group->send_for_all) {
-                $alwaysChatIds[] = $chatId;
+                $alwaysChatIds = array_merge($alwaysChatIds, $groupChatIds);
                 continue;
             }
 
             $specificity = $this->routeMatchSpecificity($group, $branchName, $departmentName);
             if ($specificity !== null) {
-                $routedChatIdsBySpecificity[$specificity][] = $chatId;
+                $routedChatIdsBySpecificity[$specificity] = array_merge($routedChatIdsBySpecificity[$specificity] ?? [], $groupChatIds);
             }
         }
 
@@ -320,13 +320,16 @@ class TelegramService
     private function groupMatchesEvent(TelegramGroup $group, string $actionKey): bool
     {
         $eventKeys = is_array($group->event_keys) ? $group->event_keys : [];
+        $actionKeys = is_array($group->action_keys) && $group->action_keys !== []
+            ? $group->action_keys
+            : [$group->action_key];
 
         if ($eventKeys !== []) {
             return in_array($actionKey, $eventKeys, true)
                 || ($this->isSellOutEvent($actionKey) && in_array(TelegramGroup::EVENT_SELL_OUT_REPORT, $eventKeys, true));
         }
 
-        return $group->action_key === TelegramGroup::ACTION_GENERAL || $group->action_key === $actionKey;
+        return in_array(TelegramGroup::ACTION_GENERAL, $actionKeys, true) || in_array($actionKey, $actionKeys, true);
     }
 
     private function isSellOutEvent(string $actionKey): bool
@@ -336,17 +339,37 @@ class TelegramService
 
     private function routeMatchSpecificity(TelegramGroup $group, string $branchName, string $departmentName): ?int
     {
-        $groupBranchName = Str::lower(trim((string) $group->branch_name));
-        $groupDepartmentName = Str::lower(trim((string) $group->department_name));
+        $groupBranchNames = $this->normalizedRouteNames($group->branch_name);
+        $groupDepartmentNames = $this->normalizedRouteNames($group->department_name);
 
-        $branchMatches = $groupBranchName === '' || ($branchName !== '' && $groupBranchName === $branchName);
-        $departmentMatches = $groupDepartmentName === '' || ($departmentName !== '' && $groupDepartmentName === $departmentName);
+        $branchMatches = $groupBranchNames === [] || ($branchName !== '' && in_array($branchName, $groupBranchNames, true));
+        $departmentMatches = $groupDepartmentNames === [] || ($departmentName !== '' && in_array($departmentName, $groupDepartmentNames, true));
 
         if (! $branchMatches || ! $departmentMatches) {
             return null;
         }
 
-        return (int) ($groupBranchName !== '') + (int) ($groupDepartmentName !== '');
+        return (int) ($groupBranchNames !== []) + (int) ($groupDepartmentNames !== []);
+    }
+
+    private function groupChatIds(TelegramGroup $group): array
+    {
+        $chatIds = is_array($group->chat_ids) && $group->chat_ids !== []
+            ? $group->chat_ids
+            : [$group->chat_id];
+
+        return array_values(array_filter(array_map(function ($chatId) {
+            return trim((string) $chatId);
+        }, $chatIds)));
+    }
+
+    private function normalizedRouteNames(?string $names): array
+    {
+        return collect(explode(',', (string) $names))
+            ->map(fn ($name) => Str::lower(trim($name)))
+            ->filter()
+            ->values()
+            ->toArray();
     }
 
     private function post(string $method, array $payload, array $context = []): ?Response
