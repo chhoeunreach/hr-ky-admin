@@ -182,6 +182,8 @@ Route::group([
     Route::post('chat/groups/{id}/leave', [GroupChatController::class, 'leaveGroup']);
     Route::get('chat/groups/{id}/messages', [GroupChatController::class, 'messages']);
     Route::post('chat/groups/{id}/messages', [GroupChatController::class, 'sendMessage']);
+    Route::post('chat/groups/{id}/messages/{messageId}', [GroupChatController::class, 'updateMessage']);
+    Route::delete('chat/groups/{id}/messages/{messageId}', [GroupChatController::class, 'deleteMessage']);
     Route::post('chat/groups/media-upload', [GroupChatController::class, 'mediaUpload']);
 
     /** Telegram Notification */

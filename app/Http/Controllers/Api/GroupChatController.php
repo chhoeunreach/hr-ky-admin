@@ -659,6 +659,75 @@ class GroupChatController extends Controller
         }
     }
 
+    public function updateMessage(Request $request, int $id, int $messageId): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'message' => ['required', 'string'],
+        ]);
+
+        if ($validator->fails()) {
+            return AppHelper::sendErrorResponse($validator->errors()->first(), 422, $validator->errors()->toArray());
+        }
+
+        try {
+            $message = $this->editableGroupMessage($id, $messageId);
+
+            if ($message->message_type !== GroupChatMessage::TYPE_TEXT) {
+                return AppHelper::sendErrorResponse('Only text messages can be edited.', 422);
+            }
+
+            $meta = $message->meta ?? [];
+            $meta['edited_at'] = now()->toIso8601String();
+
+            $message->update([
+                'message' => $request->input('message'),
+                'meta' => $meta,
+            ]);
+
+            $message->load('sender:id,name,username,avatar');
+
+            return AppHelper::sendSuccessResponse('Message updated successfully.', [
+                'message' => $this->transformMessage($message),
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+            return AppHelper::sendErrorResponse($throwable->getMessage(), (int) $throwable->getCode() ?: 500);
+        }
+    }
+
+    public function deleteMessage(int $id, int $messageId): JsonResponse
+    {
+        try {
+            $message = $this->editableGroupMessage($id, $messageId);
+            $meta = $message->meta ?? [];
+            $meta['deleted_at'] = now()->toIso8601String();
+
+            $message->update([
+                'message_type' => GroupChatMessage::TYPE_TEXT,
+                'message' => '',
+                'media_url' => null,
+                'media_path' => null,
+                'file_name' => null,
+                'media_width' => null,
+                'media_height' => null,
+                'duration_seconds' => null,
+                'latitude' => null,
+                'longitude' => null,
+                'map_url' => null,
+                'meta' => $meta,
+            ]);
+
+            $message->load('sender:id,name,username,avatar');
+
+            return AppHelper::sendSuccessResponse('Message deleted successfully.', [
+                'message' => $this->transformMessage($message),
+            ]);
+        } catch (Throwable $throwable) {
+            report($throwable);
+            return AppHelper::sendErrorResponse($throwable->getMessage(), (int) $throwable->getCode() ?: 500);
+        }
+    }
+
     private function transformGroup(GroupChat $group, int $userId): array
     {
         $myMember = $group->members->firstWhere('user_id', $userId);
@@ -710,7 +779,47 @@ class GroupChatController extends Controller
             'longitude' => $message->longitude,
             'map_url' => $message->map_url,
             'created_at' => $message->created_at?->toIso8601String(),
+            'is_edited' => isset(($message->meta ?? [])['edited_at']),
+            'is_deleted' => isset(($message->meta ?? [])['deleted_at']),
+            'edited_at' => ($message->meta ?? [])['edited_at'] ?? null,
+            'deleted_at' => ($message->meta ?? [])['deleted_at'] ?? null,
         ];
+    }
+
+    private function editableGroupMessage(int $groupId, int $messageId): GroupChatMessage
+    {
+        $userId = auth()->id();
+        $isMember = GroupChatMember::query()
+            ->where('group_chat_id', $groupId)
+            ->where('user_id', $userId)
+            ->exists();
+
+        if (!$isMember) {
+            throw new \Exception('You are not a member of this group.', 403);
+        }
+
+        $message = GroupChatMessage::query()
+            ->where('group_chat_id', $groupId)
+            ->where('id', $messageId)
+            ->first();
+
+        if (!$message) {
+            throw new \Exception('Message not found.', 404);
+        }
+
+        if ((int) $message->sender_id !== (int) $userId) {
+            throw new \Exception('You can only modify your own messages.', 403);
+        }
+
+        if ($message->created_at && $message->created_at->diffInMinutes(now()) >= 15) {
+            throw new \Exception('Messages can only be changed within 15 minutes.', 422);
+        }
+
+        if (isset(($message->meta ?? [])['deleted_at'])) {
+            throw new \Exception('Deleted messages cannot be changed.', 422);
+        }
+
+        return $message;
     }
 
     private function generateGroupCode(): string
