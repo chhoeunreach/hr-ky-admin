@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\EmployeePayrollApiController;
 use App\Http\Controllers\Api\EmployeeChatApiController;
 use App\Http\Controllers\Api\EventApiController;
+use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
@@ -159,6 +160,20 @@ Route::group([
     Route::get('employee/chat/contacts', [EmployeeChatApiController::class, 'contacts']);
     Route::get('employee/chat/admin/messages', [EmployeeChatApiController::class, 'messages']);
     Route::post('employee/chat/admin/messages', [EmployeeChatApiController::class, 'store']);
+
+    /** Group Chat Routes */
+    Route::get('chat/groups', [GroupChatController::class, 'index']);
+    Route::post('chat/groups', [GroupChatController::class, 'store']);
+    Route::get('chat/groups/{id}', [GroupChatController::class, 'show']);
+    Route::put('chat/groups/{id}', [GroupChatController::class, 'update']);
+    Route::delete('chat/groups/{id}', [GroupChatController::class, 'destroy']);
+    Route::post('chat/groups/{id}/members', [GroupChatController::class, 'addMembers']);
+    Route::delete('chat/groups/{id}/members/{userId}', [GroupChatController::class, 'removeMember']);
+    Route::put('chat/groups/{id}/members/{userId}/role', [GroupChatController::class, 'updateMemberRole']);
+    Route::post('chat/groups/{id}/leave', [GroupChatController::class, 'leaveGroup']);
+    Route::get('chat/groups/{id}/messages', [GroupChatController::class, 'messages']);
+    Route::post('chat/groups/{id}/messages', [GroupChatController::class, 'sendMessage']);
+    Route::post('chat/groups/media-upload', [GroupChatController::class, 'mediaUpload']);
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
