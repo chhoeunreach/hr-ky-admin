@@ -65,6 +65,7 @@ Route::group([
 
     /** notifications Routes **/
     Route::get('notifications', [NotificationApiController::class, 'getAllRecentPublishedNotification']);
+    Route::post('notifications/{id}/read', [NotificationApiController::class, 'changeUserNotificationSeenStatus']);
 
     /** notice Routes **/
     Route::get('notices', [NoticeApiController::class, 'getAllRecentlyReceivedNotice']);
@@ -173,11 +174,11 @@ Route::group([
     Route::get('chat/groups', [GroupChatController::class, 'index']);
     Route::post('chat/groups', [GroupChatController::class, 'store']);
     Route::get('chat/groups/{id}', [GroupChatController::class, 'show']);
-    Route::put('chat/groups/{id}', [GroupChatController::class, 'update']);
+    Route::match(['PUT', 'POST'], 'chat/groups/{id}', [GroupChatController::class, 'update']);
     Route::delete('chat/groups/{id}', [GroupChatController::class, 'destroy']);
     Route::post('chat/groups/{id}/members', [GroupChatController::class, 'addMembers']);
     Route::delete('chat/groups/{id}/members/{userId}', [GroupChatController::class, 'removeMember']);
-    Route::put('chat/groups/{id}/members/{userId}/role', [GroupChatController::class, 'updateMemberRole']);
+    Route::match(['PUT', 'POST'], 'chat/groups/{id}/members/{userId}/role', [GroupChatController::class, 'updateMemberRole']);
     Route::post('chat/groups/{id}/leave', [GroupChatController::class, 'leaveGroup']);
     Route::get('chat/groups/{id}/messages', [GroupChatController::class, 'messages']);
     Route::post('chat/groups/{id}/messages', [GroupChatController::class, 'sendMessage']);

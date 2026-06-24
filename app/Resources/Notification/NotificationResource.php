@@ -17,7 +17,7 @@ class NotificationResource extends JsonResource
             'published_date_nepali' => AppHelper::formatDateForView($this->notification_publish_date). ', ' .date('h:i A',strtotime($this->notification_publish_date)),
             'type' => $this->type,
             'notification_for_id' => $this->notification_for_id ?? '',
-//            'is_seen' => $this->notifiedUsers->where('user_id',getAuthUserCode())->first()?->is_seen ?? 0
+            'is_read' => (bool) ($this->notifiedUsers->where('user_id', getAuthUserCode())->first()?->is_seen ?? false),
         ];
     }
 }

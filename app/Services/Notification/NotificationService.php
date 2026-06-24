@@ -90,8 +90,18 @@ class NotificationService
     public function changeUserNotificationToSeen($id)
     {
         try{
-            $userNotificationDetail = $this->findUserNotificationDetailById($id);
-            if($userNotificationDetail->user_id !== getAuthUserCode()){
+            $authUserId = getAuthUserCode();
+            $userNotificationDetail = $this->notificationRepo->findUserNotificationDetailByNotificationId($id, $authUserId);
+
+            if(!$userNotificationDetail){
+                $userNotificationDetail = $this->notificationRepo->findUserNotificationDetailById($id, ['*']);
+            }
+
+            if(!$userNotificationDetail){
+                throw new \Exception(__('message.user_notification_not_found'),404);
+            }
+
+            if((int) $userNotificationDetail->user_id !== (int) $authUserId){
                 throw new \Exception(__('message.unauthorized_action'),422);
             }
             DB::beginTransaction();

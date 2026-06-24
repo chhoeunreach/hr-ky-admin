@@ -107,6 +107,14 @@ class NotificationRepository
             ->first();
     }
 
+    public function findUserNotificationDetailByNotificationId($notificationId, $userId, $select=['*'])
+    {
+        return UserNotification::select($select)
+            ->where('notification_id', $notificationId)
+            ->where('user_id', $userId)
+            ->first();
+    }
+
     public function changeUserNotificationToSeen($userNotificationDetail)
     {
         return $userNotificationDetail->update([

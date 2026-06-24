@@ -89,7 +89,7 @@ class GroupChatController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'avatar' => ['nullable', 'image', 'max:2048'],
             'member_ids' => ['required', 'array', 'min:1'],
@@ -109,9 +109,13 @@ class GroupChatController extends Controller
 
             return DB::transaction(function () use ($request, $userId, $memberIds) {
                 $groupCode = $this->generateGroupCode();
+                $groupName = trim((string) $request->input('name'));
+                if ($groupName === '') {
+                    $groupName = $this->defaultGroupName($memberIds, $userId);
+                }
 
                 $group = GroupChat::create([
-                    'name' => $request->input('name'),
+                    'name' => $groupName,
                     'description' => $request->input('description'),
                     'creator_id' => $userId,
                     'group_code' => $groupCode,
@@ -245,6 +249,12 @@ class GroupChatController extends Controller
 
     public function addMembers(Request $request, int $id): JsonResponse
     {
+        $userIds = $request->input('user_ids');
+        if (is_string($userIds)) {
+            $userIds = json_decode($userIds, true);
+        }
+        $request->merge(['user_ids' => $userIds ?? []]);
+
         $validator = Validator::make($request->all(), [
             'user_ids' => ['required', 'array', 'min:1'],
             'user_ids.*' => ['integer', 'exists:users,id'],
@@ -273,7 +283,7 @@ class GroupChatController extends Controller
                 ->toArray();
 
             $newUserIds = array_filter(
-                array_map('intval', $request->input('user_ids', [])),
+                array_map('intval', $userIds),
                 fn ($uid) => !in_array($uid, $existingUserIds, true)
             );
 
@@ -710,6 +720,28 @@ class GroupChatController extends Controller
         } while (GroupChat::where('group_code', $code)->exists());
 
         return $code;
+    }
+
+    private function defaultGroupName(array $memberIds, int $creatorId): string
+    {
+        $names = User::query()
+            ->whereIn('id', array_values(array_diff($memberIds, [$creatorId])))
+            ->orderBy('name')
+            ->limit(3)
+            ->pluck('name')
+            ->filter()
+            ->values();
+
+        if ($names->isEmpty()) {
+            return 'New group';
+        }
+
+        $remainingCount = max(count($memberIds) - 1 - $names->count(), 0);
+        $name = $names->implode(', ');
+
+        return $remainingCount > 0
+            ? $name . ' +' . $remainingCount
+            : $name;
     }
 
     private function normalizeMessageType(Request $request): string
