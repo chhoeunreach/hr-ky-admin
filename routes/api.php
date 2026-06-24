@@ -150,6 +150,14 @@ Route::group([
     Route::post('employee/advance-salaries/{id}/approve', [AdvanceSalaryApiController::class, 'approve']);
     Route::post('employee/advance-salaries/{id}/reject', [AdvanceSalaryApiController::class, 'reject']);
 
+    /** Admin Advance Salary (Flutter compatibility) */
+    Route::get('admin/advance-salaries-lists', [AdvanceSalaryApiController::class, 'getAdminAdvanceSalaryLists']);
+    Route::post('admin/advance-salaries/store', [AdvanceSalaryApiController::class, 'adminStore']);
+
+    /** Advance Salary Approve/Reject by body (Flutter compatibility) */
+    Route::post('employee/advance-salaries-detail/approve', [AdvanceSalaryApiController::class, 'approveByBody']);
+    Route::post('employee/advance-salaries-detail/reject', [AdvanceSalaryApiController::class, 'rejectByBody']);
+
     /** Nfc  */
     Route::post('nfc/store', [NfcApiController::class, 'save']);
 

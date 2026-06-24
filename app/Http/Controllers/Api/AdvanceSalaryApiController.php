@@ -214,6 +214,53 @@ class AdvanceSalaryApiController extends Controller
         }
     }
 
+    public function getAdminAdvanceSalaryLists(Request $request)
+    {
+        try {
+            $this->authorize('advance_salary_list');
+            $select = ['*'];
+            $with = [];
+            $filterParameters = [];
+            $advanceSalaryLists = $this->advanceSalaryService->getAllAdvanceSalaryDetailPaginated($filterParameters,$select,$with);
+            $data = new AdvanceSalaryCollection($advanceSalaryLists);
+            return AppHelper::sendSuccessResponse(__('index.data_found'),$data);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
+
+    public function adminStore(AdvanceSalaryRequest $request)
+    {
+        return $this->store($request);
+    }
+
+    public function approveByBody(Request $request)
+    {
+        try {
+            $request->validate([
+                'advance_salary_id' => ['required', 'integer', 'exists:advance_salaries,id'],
+                'released_amount' => ['required', 'numeric', 'min:0'],
+                'remark' => ['nullable', 'string'],
+            ]);
+            return $this->approve($request, $request->advance_salary_id);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
+
+    public function rejectByBody(Request $request)
+    {
+        try {
+            $request->validate([
+                'advance_salary_id' => ['required', 'integer', 'exists:advance_salaries,id'],
+                'remark' => ['nullable', 'string'],
+            ]);
+            return $this->reject($request, $request->advance_salary_id);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
+
     private function sendAdvanceSalaryStatusNotification($notificationData, $userId): void
     {
         SMPushHelper::sendAdvanceSalaryNotification(
