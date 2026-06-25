@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\AppHelper;
 use App\Helpers\MobileChatHelper;
+use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\ChatConversation;
@@ -232,8 +233,9 @@ class EmployeeChatApiController extends Controller
 
         try {
             [$conversation, $threadMeta] = $this->resolveConversation(auth()->id(), $request);
+            $sentMessage = null;
 
-            DB::transaction(function () use ($request, $conversation, $threadMeta) {
+            DB::transaction(function () use ($request, $conversation, $threadMeta, &$sentMessage) {
                 $messageType = $this->normalizeIncomingMessageType($request);
                 $mediaUrl = $request->input('media_url');
                 $storedMediaPath = null;
@@ -285,7 +287,13 @@ class EmployeeChatApiController extends Controller
                 $conversation->update([
                     'last_message_at' => $message->created_at,
                 ]);
+
+                $sentMessage = $message;
             });
+
+            if ($sentMessage !== null) {
+                $this->sendEmployeeChatPushNotification($conversation, $sentMessage, $threadMeta);
+            }
 
             $messages = $this->loadConversationThreadMessages($conversation, $threadMeta);
 
@@ -1096,5 +1104,45 @@ class EmployeeChatApiController extends Controller
             'audio' => 'voice',
             default => strtolower((string) $messageType) ?: (isset($meta['duration_seconds']) ? 'voice' : 'text'),
         };
+    }
+
+    private function sendEmployeeChatPushNotification(ChatConversation $conversation, ChatMessage $message, array $threadMeta): void
+    {
+        if (($threadMeta['type'] ?? null) !== 'employee' || empty($threadMeta['peer_user_id'])) {
+            return;
+        }
+
+        try {
+            $peer = User::query()->select(['id', 'username'])->find($threadMeta['peer_user_id']);
+            if (!$peer || !$peer->username) {
+                return;
+            }
+
+            $sender = auth()->user();
+            $notificationBody = match ($message->message_type) {
+                ChatMessage::TYPE_IMAGE => 'Sent a photo',
+                ChatMessage::TYPE_VOICE => 'Sent a voice message',
+                ChatMessage::TYPE_LOCATION => 'Sent a location',
+                'file' => 'Sent a file',
+                default => (string) ($message->message ?: 'New message'),
+            };
+
+            SMPushHelper::sendPushNotification(
+                title: $sender?->name ?? 'New message',
+                conversation_id: $this->threadConversationIdentifier($conversation, $threadMeta),
+                message: $notificationBody,
+                type: 'chat',
+                usernames: [$peer->username],
+                project_id: '',
+                chatMessageType: $message->message_type,
+                media_url: $message->media_url ?? '',
+                latitude: $message->latitude,
+                longitude: $message->longitude,
+                map_url: $message->map_url ?? '',
+                internalConversationId: (string) $conversation->id,
+            );
+        } catch (Throwable $throwable) {
+            report($throwable);
+        }
     }
 }
