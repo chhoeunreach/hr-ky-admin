@@ -55,6 +55,12 @@ class PushNotificationController extends Controller
             $data = $request->all();
             $usernames = $this->parseUsernames($data['usernames']);
 
+            if ($data['type'] === 'chat') {
+                // Sender identity for chat must come from the authenticated user,
+                // not client input, to prevent spoofing another employee's name.
+                $data['title'] = $request->user()->name ?? $data['title'];
+            }
+
             if ($data['type'] === 'chat' && $usernames === []) {
                 return $this->pushErrorResponse('Please provide at least one chat recipient.', 422);
             }
