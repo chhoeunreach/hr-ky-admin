@@ -52,6 +52,7 @@ Route::group([
     Route::get('users/profile', [UserProfileApiController::class, 'userProfileDetail']);
     Route::post('users/change-password', [UserProfileApiController::class, 'changePassword']);
     Route::post('users/update-profile', [UserProfileApiController::class, 'updateUserProfile']);
+    Route::post('users/update-fcm-token', [UserProfileApiController::class, 'updateFcmToken']);
     Route::get('user/theme', [UserThemeController::class, 'show']);
     Route::post('user/theme', [UserThemeController::class, 'update']);
     Route::get('users/profile-detail/{userId}', [UserProfileApiController::class, 'findEmployeeDetailById']);

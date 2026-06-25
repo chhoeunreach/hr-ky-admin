@@ -333,4 +333,28 @@ class UserProfileApiController extends Controller
         }
     }
 
+    public function updateFcmToken(Request $request): JsonResponse
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'fcm_token' => ['required', 'string'],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('index.validation_failed'),
+                    'errors' => $validator->errors()->toArray()
+                ], 422);
+            }
+
+            $userDetail = $this->userRepo->findUserDetailById(getAuthUserCode());
+            $this->userRepo->updateUserFcmToken($userDetail, $validator->validated()['fcm_token']);
+
+            return AppHelper::sendSuccessResponse('FCM token updated successfully', []);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), 400);
+        }
+    }
+
 }
