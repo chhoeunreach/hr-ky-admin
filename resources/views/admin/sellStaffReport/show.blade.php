@@ -182,11 +182,11 @@
                         @forelse($report->lines as $line)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $line->product_name ?? '-' }}</td>
-                                <td>{{ $line->sku ?? '-' }}</td>
-                                <td>{{ $line->primary_identifier ?? '-' }}</td>
-                                <td>{{ $line->imei ?? '-' }}</td>
-                                <td>{{ $line->serial_number ?? '-' }}</td>
+                                <td><span class="text-truncate d-block" title="{{ $line->product_name }}" style="max-width:180px">{{ $line->product_name ?? '-' }}</span></td>
+                                <td><span title="{{ $line->sku }}">{{ $line->sku ?? '-' }}</span></td>
+                                <td><span title="{{ $line->primary_identifier }}">{{ $line->primary_identifier ?? '-' }}</span></td>
+                                <td><span title="{{ $line->imei }}">{{ $line->imei ?? '-' }}</span></td>
+                                <td><span title="{{ $line->serial_number }}">{{ $line->serial_number ?? '-' }}</span></td>
                                 <td class="text-center">{{ number_format((float) $line->qty, 2) }}</td>
                                 <td class="text-end">{{ $line->unit_price !== null ? number_format((float) $line->unit_price, 2) : '-' }}</td>
                                 <td class="text-end">{{ $line->subtotal !== null ? number_format((float) $line->subtotal, 2) : '-' }}</td>

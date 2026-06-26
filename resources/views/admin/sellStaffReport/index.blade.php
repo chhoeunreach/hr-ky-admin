@@ -22,20 +22,35 @@
             </div>
             <div class="card-body pb-0">
                 <form action="{{ route('admin.sell-staff-report.index') }}" method="get">
+                    <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
+                    <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
+                    <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
                     <div class="row">
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <input type="date" name="date_from" class="form-control" value="{{ $filterData['date_from'] ?? '' }}" placeholder="{{ __('index.date_from') }}">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <input type="text" name="date_range" class="form-control" value="{{ $filterData['date_from'] && $filterData['date_to'] ? $filterData['date_from'] . ' - ' . $filterData['date_to'] : '' }}" placeholder="{{ __('index.date_range') }}" readonly>
                         </div>
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <input type="date" name="date_to" class="form-control" value="{{ $filterData['date_to'] ?? '' }}" placeholder="{{ __('index.date_to') }}">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <select class="form-control" id="top_filter_branch">
+                                <option value="">{{ __('index.all_branches') }}</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" data-name="{{ $branch->name }}" {{ ($filterData['branch_name'] ?? '') == $branch->name ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <input type="text" name="seller_name" class="form-control" value="{{ $filterData['seller_name'] ?? '' }}" placeholder="{{ __('index.seller_name') }}">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <select class="form-control" name="department_id">
+                                <option value="">{{ __('index.select_department') }}</option>
+                            </select>
                         </div>
-                        <div class="col-lg-2 col-md-6 mb-3">
-                            <input type="text" name="branch_name" class="form-control" value="{{ $filterData['branch_name'] ?? '' }}" placeholder="{{ __('index.branch_name') }}">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <select class="form-control" name="service_type">
+                                <option value="">{{ __('index.all_sell_types') }}</option>
+                                @foreach($sellTypes as $type)
+                                    <option value="{{ $type }}" {{ ($filterData['service_type'] ?? '') == $type ? 'selected' : '' }}>{{ $type }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="col-lg-4 col-md-6 mb-3 d-flex gap-2">
+                        <div class="col-lg-3 col-md-6 mb-3 d-flex gap-2">
                             <button type="submit" class="btn btn-primary">{{ __('index.filter') }}</button>
                             <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-warning">{{ __('index.clear') }}</a>
                         </div>
@@ -75,32 +90,6 @@
                     <i data-feather="chevron-down" class="collapse-icon"></i>
                 </button>
             </div>
-            <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="card-body pb-0 border-bottom">
-                <div class="row">
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <input type="date" name="ss_date_from" class="form-control" value="{{ $filterData['ss_date_from'] ?? '' }}">
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <input type="date" name="ss_date_to" class="form-control" value="{{ $filterData['ss_date_to'] ?? '' }}">
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <select class="form-control" name="ss_branch_id">
-                            <option value="">{{ __('index.all_branches') }}</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ ($filterData['ss_branch_id'] ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-lg-3 col-md-6 mb-3">
-                        <select class="form-control" name="ss_department_id">
-                            <option value="">{{ __('index.select_department') }}</option>
-                        </select>
-                    </div>
-                    <div class="col-12 mb-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">{{ __('index.filter') }}</button>
-                    </div>
-                </div>
-            </form>
             <div class="collapse" id="staffSummaryCollapse">
                 <div class="card-body">
                     <div class="mb-3">
@@ -142,8 +131,8 @@
                 <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="d-flex gap-2">
                     <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
                     <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
-                    <input type="hidden" name="seller_name" value="{{ $filterData['seller_name'] ?? '' }}">
                     <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
+                    <input type="hidden" name="service_type" value="{{ $filterData['service_type'] ?? '' }}">
                     <input type="text" name="search" class="form-control" value="{{ $filterData['search'] ?? '' }}" placeholder="{{ __('index.search') }}">
                     <button type="submit" class="btn btn-primary">{{ __('index.search') }}</button>
                 </form>
@@ -171,13 +160,13 @@
                         @forelse($reports as $report)
                             <tr>
                                 <td>{{ $reports->firstItem() + $loop->iteration }}</td>
-                                <td>{{ $report->invoice_no }}</td>
-                                <td>{{ $report->service_type ?? '-' }}</td>
-                                <td>{{ $report->seller_name ?: ($report->user->name ?? '-') }}</td>
-                                <td>{{ $report->branch_name ?? '-' }}</td>
-                                <td>{{ $report->customer_phone ?? '-' }}</td>
-                                <td>{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') ?: '-' }}</td>
-                                <td>{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') ?: '-' }}</td>
+                                <td><span title="{{ $report->invoice_no }}">{{ $report->invoice_no }}</span></td>
+                                <td><span title="{{ $report->service_type }}">{{ $report->service_type ?: '-' }}</span></td>
+                                <td><span class="text-truncate d-block" title="{{ $report->seller_name ?: ($report->user->name ?? '-') }}" style="max-width:120px">{{ $report->seller_name ?: ($report->user->name ?? '-') }}</span></td>
+                                <td><span class="text-truncate d-block" title="{{ $report->branch_name ?? '-' }}" style="max-width:120px">{{ $report->branch_name ?? '-' }}</span></td>
+                                <td><span title="{{ $report->customer_phone ?? '-' }}">{{ $report->customer_phone ?? '-' }}</span></td>
+                                <td><span class="text-truncate d-block" title="{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') }}" style="max-width:150px">{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') ?: '-' }}</span></td>
+                                <td><span class="text-truncate d-block" title="{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') }}" style="max-width:130px">{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') ?: '-' }}</span></td>
                                 <td class="text-center">{{ $report->lines_count }}</td>
                                 <td class="text-end">{{ number_format((float) $report->total_amount, 2) }}</td>
                                 <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
@@ -197,6 +186,17 @@
                             </tr>
                         @endforelse
                         </tbody>
+                        @if($reports->count())
+                            <tfoot>
+                                <tr class="fw-bold">
+                                    <td colspan="7"></td>
+                                    <td>{{ __('index.total') }}</td>
+                                    <td class="text-center">{{ $reports->sum(fn($r) => $r->lines->sum('qty')) }}</td>
+                                    <td class="text-end">{{ number_format((float) $reports->sum('total_amount'), 2) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        @endif
                     </table>
                 </div>
                 <div class="mt-3">
@@ -208,11 +208,37 @@
 @endsection
 
 @section('scripts')
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css"/>
     <script>
+        $(document).ready(function () {
+            $('input[name="date_range"]').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Clear',
+                    format: 'YYYY-MM-DD'
+                }
+            });
+
+            $('input[name="date_range"]').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+                let form = $(this).closest('form');
+                form.find('input[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
+                form.find('input[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('input[name="date_range"]').on('cancel.daterangepicker', function () {
+                $(this).val('');
+                let form = $(this).closest('form');
+                form.find('input[name="date_from"]').val('');
+                form.find('input[name="date_to"]').val('');
+            });
+        });
+
         $(document).on('click', '.deleteSellStaffReport', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
-            let row = $(this).closest('tr');
             Swal.fire({
                 title: '{{ __('index.confirm_delete_sell_staff_report') }}',
                 showDenyButton: true,
@@ -238,6 +264,29 @@
             });
         });
 
+        $(document).on('change', '#top_filter_branch', function () {
+            let selected = $(this).find(':selected');
+            let branchId = selected.val();
+            let branchName = selected.data('name') || '';
+            let form = $(this).closest('form');
+            form.find('input[name="branch_name"]').val(branchName);
+            let deptSelect = form.find('select[name="department_id"]');
+            deptSelect.html('<option value="">{{ __('index.select_department') }}</option>');
+            if (branchId) {
+                $.ajax({
+                    url: '{{ url("admin/departments/get-All-Departments") }}/' + branchId,
+                    type: 'GET',
+                    success: function (response) {
+                        if (response.data) {
+                            $.each(response.data, function (idx, dept) {
+                                deptSelect.append('<option value="' + dept.id + '">' + dept.dept_name + '</option>');
+                            });
+                        }
+                    }
+                });
+            }
+        });
+
         $('#staffSummaryCollapse').on('show.bs.collapse', function () {
             let icon = $(this).parent().find('.collapse-icon');
             icon.removeClass('feather-chevron-down').addClass('feather-chevron-up');
@@ -259,23 +308,5 @@
             });
         });
 
-        $(document).on('change', 'select[name="ss_branch_id"]', function () {
-            let branchId = $(this).val();
-            let deptSelect = $(this).closest('.row').find('select[name="ss_department_id"]');
-            deptSelect.html('<option value="">{{ __('index.select_department') }}</option>');
-            if (branchId) {
-                $.ajax({
-                    url: '{{ url("admin/departments/get-All-Departments") }}/' + branchId,
-                    type: 'GET',
-                    success: function (response) {
-                        if (response.data) {
-                            $.each(response.data, function (idx, dept) {
-                                deptSelect.append('<option value="' + dept.id + '">' + dept.dept_name + '</option>');
-                            });
-                        }
-                    }
-                });
-            }
-        });
     </script>
 @endsection

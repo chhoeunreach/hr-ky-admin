@@ -52,9 +52,16 @@ class SellStaffReportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $sellTypes = SellOutReport::query()
+            ->whereNotNull('service_type')
+            ->where('service_type', '!=', '')
+            ->distinct()
+            ->orderBy('service_type')
+            ->pluck('service_type');
+
         return view($this->view . 'index', compact(
             'reports', 'summary', 'staffSummary', 'filterData',
-            'branches'
+            'branches', 'sellTypes'
         ));
     }
 
@@ -383,13 +390,14 @@ class SellStaffReportController extends Controller
             'ss_date_to' => $request->query('ss_date_to'),
             'ss_branch_id' => $request->query('ss_branch_id'),
             'ss_department_id' => $request->query('ss_department_id'),
+            'service_type' => $request->query('service_type'),
         ];
     }
 
     private function reportQuery(array $filterData)
     {
         return $this->baseReportQuery($filterData)
-            ->with(['user:id,name,employee_code,username', 'lines:product_name,serial_number'])
+            ->with(['user:id,name,employee_code,username', 'lines:id,sell_out_report_id,product_name,serial_number,qty'])
             ->withCount(['lines', 'photos'])
             ->latest();
     }
@@ -408,6 +416,9 @@ class SellStaffReportController extends Controller
             })
             ->when($filterData['branch_name'], function ($query, $branchName) {
                 $query->where('branch_name', 'like', '%' . $branchName . '%');
+            })
+            ->when($filterData['service_type'], function ($query, $type) {
+                $query->where('service_type', $type);
             })
             ->when($filterData['search'], function ($query, $search) {
                 $query->where(function ($query) use ($search) {
