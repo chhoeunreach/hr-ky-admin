@@ -69,35 +69,69 @@
         </div>
 
         <div class="card mb-4">
-            <div class="card-header">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h6 class="card-title mb-0">{{ __('index.staff_summary') }}</h6>
+                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#staffSummaryCollapse" aria-expanded="false" aria-controls="staffSummaryCollapse">
+                    <i data-feather="chevron-down" class="collapse-icon"></i>
+                </button>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>{{ __('index.seller_name') }}</th>
-                            <th class="text-center">{{ __('index.total_reports') }}</th>
-                            <th class="text-end">{{ __('index.total_amount') }}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @forelse($staffSummary as $staff)
+            <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="card-body pb-0 border-bottom">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <input type="date" name="ss_date_from" class="form-control" value="{{ $filterData['ss_date_from'] ?? '' }}">
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <input type="date" name="ss_date_to" class="form-control" value="{{ $filterData['ss_date_to'] ?? '' }}">
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <select class="form-control" name="ss_branch_id">
+                            <option value="">{{ __('index.all_branches') }}</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ ($filterData['ss_branch_id'] ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <select class="form-control" name="ss_department_id">
+                            <option value="">{{ __('index.select_department') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mb-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">{{ __('index.filter') }}</button>
+                    </div>
+                </div>
+            </form>
+            <div class="collapse" id="staffSummaryCollapse">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" id="staffSummarySearch" class="form-control" placeholder="{{ __('index.search') }}...">
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table" id="staffSummaryTable">
+                            <thead>
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
-                                <td>{{ $staff->seller_name }}</td>
-                                <td class="text-center">{{ number_format((int) $staff->total_reports) }}</td>
-                                <td class="text-end">{{ number_format((float) $staff->total_amount, 2) }}</td>
+                                <th>#</th>
+                                <th>{{ __('index.seller_name') }}</th>
+                                <th class="text-center">{{ __('index.total_reports') }}</th>
+                                <th class="text-end">{{ __('index.total_amount') }}</th>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            @forelse($staffSummary as $staff)
+                                <tr>
+                                    <td>{{ $loop->iteration }}</td>
+                                    <td>{{ $staff->seller_name }}</td>
+                                    <td class="text-center">{{ number_format((int) $staff->total_reports) }}</td>
+                                    <td class="text-end">{{ number_format((float) $staff->total_amount, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -121,11 +155,12 @@
                         <tr>
                             <th>#</th>
                             <th>{{ __('index.internal_invoice_no') }}</th>
-                            <th>{{ __('index.original_invoice_no') }}</th>
+                            <th>{{ __('index.sell_type') }}</th>
                             <th>{{ __('index.seller_name') }}</th>
                             <th>{{ __('index.branch_name') }}</th>
-                            <th>{{ __('index.customer_name') }}</th>
-                            <th>{{ __('index.customer_phone') }}</th>
+                            <th>Phone</th>
+                            <th>Product</th>
+                            <th>S/N</th>
                             <th class="text-center">{{ __('index.items') }}</th>
                             <th class="text-end">{{ __('index.total_amount') }}</th>
                             <th>{{ __('index.created_at') }}</th>
@@ -135,13 +170,14 @@
                         <tbody>
                         @forelse($reports as $report)
                             <tr>
-                                <td>{{ $reports->firstItem() + $loop->index }}</td>
+                                <td>{{ $reports->firstItem() + $loop->iteration }}</td>
                                 <td>{{ $report->invoice_no }}</td>
-                                <td>{{ $report->original_invoice_no ?? '-' }}</td>
+                                <td>{{ $report->service_type ?? '-' }}</td>
                                 <td>{{ $report->seller_name ?: ($report->user->name ?? '-') }}</td>
                                 <td>{{ $report->branch_name ?? '-' }}</td>
-                                <td>{{ $report->customer_name ?? '-' }}</td>
                                 <td>{{ $report->customer_phone ?? '-' }}</td>
+                                <td>{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') ?: '-' }}</td>
+                                <td>{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') ?: '-' }}</td>
                                 <td class="text-center">{{ $report->lines_count }}</td>
                                 <td class="text-end">{{ number_format((float) $report->total_amount, 2) }}</td>
                                 <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
@@ -157,7 +193,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                <td colspan="12" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
                             </tr>
                         @endforelse
                         </tbody>
@@ -188,6 +224,46 @@
                     window.location.href = href;
                 }
             });
+        });
+
+        $('#staffSummaryCollapse').on('show.bs.collapse', function () {
+            let icon = $(this).parent().find('.collapse-icon');
+            icon.removeClass('feather-chevron-down').addClass('feather-chevron-up');
+            if (icon[0]) {
+                feather.replace();
+            }
+        }).on('hide.bs.collapse', function () {
+            let icon = $(this).parent().find('.collapse-icon');
+            icon.removeClass('feather-chevron-up').addClass('feather-chevron-down');
+            if (icon[0]) {
+                feather.replace();
+            }
+        });
+
+        $(document).on('keyup', '#staffSummarySearch', function () {
+            let value = $(this).val().toLowerCase();
+            $('#staffSummaryTable tbody tr').filter(function () {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+
+        $(document).on('change', 'select[name="ss_branch_id"]', function () {
+            let branchId = $(this).val();
+            let deptSelect = $(this).closest('.row').find('select[name="ss_department_id"]');
+            deptSelect.html('<option value="">{{ __('index.select_department') }}</option>');
+            if (branchId) {
+                $.ajax({
+                    url: '{{ url("admin/departments/get-All-Departments") }}/' + branchId,
+                    type: 'GET',
+                    success: function (response) {
+                        if (response.data) {
+                            $.each(response.data, function (idx, dept) {
+                                deptSelect.append('<option value="' + dept.id + '">' + dept.dept_name + '</option>');
+                            });
+                        }
+                    }
+                });
+            }
         });
     </script>
 @endsection

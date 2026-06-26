@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Exports\SellStaffReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Department;
 use App\Models\SellOutReport;
 use App\Models\TelegramGroup;
 use App\Services\TelegramService;
@@ -44,8 +46,16 @@ class SellStaffReportController extends Controller
         $reports = $query->paginate(25)->withQueryString();
         $summary = $this->summaryQuery($filterData)->first();
         $staffSummary = $this->staffSummaryQuery($filterData)->get();
+        $branches = Branch::query()
+            ->where('company_id', app(\App\Helpers\AppHelper::class)::getAuthUserCompanyId())
+            ->where('is_active', Branch::IS_ACTIVE)
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view($this->view . 'index', compact('reports', 'summary', 'staffSummary', 'filterData'));
+        return view($this->view . 'index', compact(
+            'reports', 'summary', 'staffSummary', 'filterData',
+            'branches'
+        ));
     }
 
     public function create()
@@ -361,13 +371,17 @@ class SellStaffReportController extends Controller
             'seller_name' => trim((string) $request->query('seller_name', '')),
             'branch_name' => trim((string) $request->query('branch_name', '')),
             'search' => trim((string) $request->query('search', '')),
+            'ss_date_from' => $request->query('ss_date_from'),
+            'ss_date_to' => $request->query('ss_date_to'),
+            'ss_branch_id' => $request->query('ss_branch_id'),
+            'ss_department_id' => $request->query('ss_department_id'),
         ];
     }
 
     private function reportQuery(array $filterData)
     {
         return $this->baseReportQuery($filterData)
-            ->with(['user:id,name,employee_code,username'])
+            ->with(['user:id,name,employee_code,username', 'lines:product_name,serial_number'])
             ->withCount(['lines', 'photos'])
             ->latest();
     }
@@ -412,9 +426,22 @@ class SellStaffReportController extends Controller
 
     private function staffSummaryQuery(array $filterData)
     {
-        $query = $this->baseReportQuery($filterData)->toBase();
+        $branchName = null;
+        if ($branchId = $filterData['ss_branch_id']) {
+            $branch = Branch::find($branchId);
+            $branchName = $branch?->name;
+        }
 
-        return $query
+        return SellOutReport::query()
+            ->when($filterData['ss_date_from'], function ($query, $date) {
+                $query->whereDate('created_at', '>=', Carbon::parse($date)->toDateString());
+            })
+            ->when($filterData['ss_date_to'], function ($query, $date) {
+                $query->whereDate('created_at', '<=', Carbon::parse($date)->toDateString());
+            })
+            ->when($branchName, function ($query, $name) {
+                $query->where('branch_name', $name);
+            })
             ->selectRaw("COALESCE(NULLIF(seller_name, ''), 'Unknown') as seller_name")
             ->selectRaw('COUNT(*) as total_reports')
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total_amount')
