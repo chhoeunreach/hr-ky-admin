@@ -198,6 +198,30 @@ class SellOutReportController extends Controller
         ]);
     }
 
+    public function destroyPhoto(int $id, int $photoId): JsonResponse
+    {
+        $report = SellOutReport::query()
+            ->where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        if (! $report->created_at->isToday()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'This report can no longer be updated because it was not created today.',
+            ], 403);
+        }
+
+        $photo = $report->photos()->findOrFail($photoId);
+
+        Storage::disk('public')->delete($photo->photo_path);
+        $photo->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Photo removed successfully.',
+        ]);
+    }
+
     public function destroy(int $id): JsonResponse
     {
         $report = SellOutReport::query()

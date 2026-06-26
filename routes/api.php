@@ -196,6 +196,7 @@ Route::group([
     Route::put('sell-out-reports/{id}', [SellOutReportController::class, 'update']);
     Route::get('sell-out-reports/{id}', [SellOutReportController::class, 'show']);
     Route::delete('sell-out-reports/{id}', [SellOutReportController::class, 'destroy']);
+    Route::delete('sell-out-reports/{id}/photos/{photoId}', [SellOutReportController::class, 'destroyPhoto']);
 
     /** Payslip */
     Route::post('employee/payslip',[EmployeePayrollApiController::class, 'getPayrollList']);
