@@ -325,7 +325,7 @@ class SellStaffReportController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('admin.sell-staff-report.show', $report->id)
+                ->route('admin.sell-staff-report.index')
                 ->with('success', 'Sell out report updated successfully.');
         } catch (\Throwable $exception) {
             DB::rollBack();
@@ -355,9 +355,17 @@ class SellStaffReportController extends Controller
 
             DB::commit();
 
+            if (request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Sell out report deleted successfully.']);
+            }
+
             return redirect()->back()->with('success', 'Sell out report deleted successfully.');
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            if (request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }

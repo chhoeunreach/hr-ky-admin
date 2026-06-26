@@ -212,6 +212,7 @@
         $(document).on('click', '.deleteSellStaffReport', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
+            let row = $(this).closest('tr');
             Swal.fire({
                 title: '{{ __('index.confirm_delete_sell_staff_report') }}',
                 showDenyButton: true,
@@ -221,7 +222,18 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = href;
+                    $.ajax({
+                        url: href,
+                        type: 'GET',
+                        dataType: 'json',
+                        headers: { 'Accept': 'application/json' },
+                        success: function () {
+                            window.location.reload();
+                        },
+                        error: function () {
+                            window.location.reload();
+                        }
+                    });
                 }
             });
         });
