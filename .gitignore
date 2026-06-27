@@ -21,6 +21,7 @@
 /storage/framework/views/*
 /storage/logs/*
 /storage/debugbar/*
+/storage/firebase-adminsdk.json
 
 # Allow empty folders
 !/storage/app/.gitignore
@@ -52,13 +53,14 @@ yarn.lock
 # ===============================
 .vscode/
 .idea/
+opencode.json
 *.sublime-project
 *.sublime-workspace
 
 # ===============================
 # OS Files
 # ===============================
-.DS_Store
+**/.DS_Store
 Thumbs.db
 
 # ===============================
@@ -78,7 +80,6 @@ Thumbs.db
 *.tar
 *.gz
 public/downloads/ky-checking-24-04-2026.apk
-.env
-.env.*
-!.env.example
 public/uploads/
+config/passport.php
+git
