@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
+use App\Models\SellOutReportLine;
 use App\Models\TelegramGroup;
 use App\Requests\SellOutReport\StoreSellOutReportRequest;
 use App\Requests\SellOutReport\UpdateSellOutReportRequest;
 use App\Resources\SellOutReport\SellOutReportResource;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -76,11 +78,11 @@ class SellOutReportController extends Controller
                 'commission' => round((float) $commission, 2),
             ]);
 
-            foreach ($validated['lines'] as $line) {
+            foreach ($validated['lines'] as $index => $line) {
                 $qty = (int) $line['qty'];
                 $unitPrice = (float) $line['unit_price'];
 
-                $report->lines()->create([
+                $lineModel = $report->lines()->create([
                     'product_name' => $line['product_name'],
                     'sku' => $line['sku'] ?? null,
                     'imei' => $line['imei'] ?? null,
@@ -93,6 +95,8 @@ class SellOutReportController extends Controller
                     'unit_price' => $unitPrice,
                     'subtotal' => round($qty * $unitPrice, 2),
                 ]);
+
+                $this->storeLinePhotos($report, $lineModel, $request, $index);
             }
 
             foreach ($request->file('photos', []) as $photo) {
@@ -157,11 +161,11 @@ class SellOutReportController extends Controller
 
             $report->lines()->delete();
 
-            foreach ($validated['lines'] as $line) {
+            foreach ($validated['lines'] as $index => $line) {
                 $qty = (int) $line['qty'];
                 $unitPrice = (float) $line['unit_price'];
 
-                $report->lines()->create([
+                $lineModel = $report->lines()->create([
                     'product_name' => $line['product_name'],
                     'sku' => $line['sku'] ?? null,
                     'imei' => $line['imei'] ?? null,
@@ -174,6 +178,8 @@ class SellOutReportController extends Controller
                     'unit_price' => $unitPrice,
                     'subtotal' => round($qty * $unitPrice, 2),
                 ]);
+
+                $this->storeLinePhotos($report, $lineModel, $request, $index);
             }
 
             foreach ($request->file('photos', []) as $photo) {
@@ -238,6 +244,24 @@ class SellOutReportController extends Controller
         return response()->json([
             'status' => true,
         ]);
+    }
+
+    private function storeLinePhotos(
+        SellOutReport $report,
+        SellOutReportLine $line,
+        Request $request,
+        int $index
+    ): void {
+        foreach ($request->file("lines.$index.photos", []) as $photo) {
+            $photoPath = $photo->store('sell-out-reports', 'public');
+
+            $report->photos()->create([
+                'sell_out_report_line_id' => $line->id,
+                'photo_path' => $photoPath,
+                'photo_url' => Storage::disk('public')->url($photoPath),
+                'original_name' => $photo->getClientOriginalName(),
+            ]);
+        }
     }
 
     private function generateInvoiceNo(): string

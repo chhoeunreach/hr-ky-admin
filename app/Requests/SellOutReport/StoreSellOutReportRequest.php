@@ -37,6 +37,8 @@ class StoreSellOutReportRequest extends FormRequest
             'lines.*.storage' => ['nullable', 'string', 'max:255'],
             'lines.*.qty' => ['required', 'integer', 'min:1'],
             'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'lines.*.photos' => ['nullable', 'array'],
+            'lines.*.photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
         ];

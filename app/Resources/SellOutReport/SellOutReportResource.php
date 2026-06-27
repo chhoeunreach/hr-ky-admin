@@ -42,13 +42,24 @@ class SellOutReportResource extends JsonResource
             'qty' => (int) $line->qty,
             'unit_price' => number_format((float) $line->unit_price, 2, '.', ''),
             'subtotal' => number_format((float) $line->subtotal, 2, '.', ''),
+            'photos' => $this->photos
+                ->where('sell_out_report_line_id', $line->id)
+                ->map(fn ($photo) => [
+                    'id' => $photo->id,
+                    'photo_path' => $photo->photo_path,
+                    'photo_url' => $photo->photo_url ?: Storage::disk('public')->url($photo->photo_path),
+                ])
+                ->values(),
         ])->values();
 
-        $data['photos'] = $this->photos->map(fn ($photo) => [
-            'id' => $photo->id,
-            'photo_path' => $photo->photo_path,
-            'photo_url' => $photo->photo_url ?: Storage::disk('public')->url($photo->photo_path),
-        ])->values();
+        $data['photos'] = $this->photos
+            ->whereNull('sell_out_report_line_id')
+            ->map(fn ($photo) => [
+                'id' => $photo->id,
+                'photo_path' => $photo->photo_path,
+                'photo_url' => $photo->photo_url ?: Storage::disk('public')->url($photo->photo_path),
+            ])
+            ->values();
 
         return $data;
     }
