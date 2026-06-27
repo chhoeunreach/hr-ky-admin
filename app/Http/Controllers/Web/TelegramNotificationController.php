@@ -27,10 +27,12 @@ class TelegramNotificationController extends Controller
             'quantity' => ['nullable', 'numeric', 'min:1'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'serial_number' => ['nullable', 'string', 'max:255'],
+            'user_id' => ['nullable', 'string', 'max:50'],
             'seller_name' => ['nullable', 'string', 'max:255'],
-            'reference' => ['nullable', 'string', 'max:255'],
+            'branch_name' => ['nullable', 'string', 'max:255'],
             'contact' => ['nullable', 'string', 'max:50'],
-            'photo' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+            'photos' => ['nullable', 'array'],
+            'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
         ]);
 
         $messageText = $validated['messageText'] ?? '';
@@ -46,13 +48,14 @@ class TelegramNotificationController extends Controller
         $branchName = $validated['branchName'] ?? $validated['branch_name'] ?? '';
         $actionKey = (string) ($validated['actionKey'] ?? TelegramGroup::EVENT_SELL_OUT_SALE);
 
-        $fullPath = null;
-        if ($request->hasFile('photo')) {
-            $photoPath = $request->file('photo')->store('receipt-telegram', 'public');
-            $fullPath = Storage::disk('public')->path($photoPath);
+        $photoPaths = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $photo) {
+                $photoPaths[] = Storage::disk('public')->path($photo->store('receipt-telegram', 'public'));
+            }
         }
 
-        if ($fullPath !== null) {
+        if ($photoPaths !== []) {
             $chatIds = $telegramService->chatIdsForAction($actionKey, $branchName, '');
             if (empty($chatIds)) {
                 return back()->withErrors(['telegram' => 'No active Telegram group found.']);
@@ -60,7 +63,11 @@ class TelegramNotificationController extends Controller
             $allOk = true;
             foreach ($chatIds as $chatId) {
                 $allOk = $telegramService->sendMessage($chatId, $messageText, 'HTML') && $allOk;
-                $allOk = $telegramService->sendPhoto($chatId, $fullPath) !== null && $allOk;
+                if (count($photoPaths) === 1) {
+                    $allOk = $telegramService->sendPhoto($chatId, $photoPaths[0]) !== null && $allOk;
+                } else {
+                    $allOk = $telegramService->sendMediaGroup($chatId, $photoPaths) !== null && $allOk;
+                }
             }
             $ok = $allOk;
         } else {
@@ -91,7 +98,7 @@ class TelegramNotificationController extends Controller
 
     private function buildReceiptMessage(array $data): string
     {
-        $msg = "🛒 <b>វិក្កយបត្រ (Receipt)</b>\n";
+        $msg = "🛒 <b>វិក្កយបត្រ</b>\n";
         if (!empty($data['invoice_no'])) {
             $msg .= "Invoice: {$data['invoice_no']}\n";
         }
@@ -103,18 +110,30 @@ class TelegramNotificationController extends Controller
         if (!empty($data['serial_number'])) {
             $msg .= "SN: {$data['serial_number']}\n";
         }
-        if (!empty($data['seller_name'])) {
+        if (!empty($data['user_id'])) {
+            $msg .= "ID: {$data['user_id']}";
+            if (!empty($data['seller_name'])) {
+                $msg .= " {$data['seller_name']}";
+            }
+            if (!empty($data['branch_name'] ?? $data['branchName'] ?? '')) {
+                $msg .= " (សាខា៖ " . ($data['branch_name'] ?? $data['branchName']) . ")";
+            }
+            $msg .= "\n";
+        } elseif (!empty($data['seller_name'])) {
             $msg .= "អ្នកលក់: {$data['seller_name']}";
             if (!empty($data['branch_name'] ?? $data['branchName'] ?? '')) {
                 $msg .= " (សាខា៖ " . ($data['branch_name'] ?? $data['branchName']) . ")";
             }
             $msg .= "\n";
         }
-        if (!empty($data['reference'])) {
-            $msg .= "សម្គាល់: {$data['reference']}\n";
-        }
         if (!empty($data['contact'])) {
             $msg .= "ទំនាក់ទំនង: {$data['contact']}\n";
+        }
+        $userDigits = ltrim(preg_replace('/\D/', '', $data['user_id'] ?? ''), '0');
+        $phoneDigits = preg_replace('/\D/', '', $data['contact'] ?? '');
+        $note = trim($userDigits . '-' . substr($phoneDigits, -4), '-');
+        if ($note !== '') {
+            $msg .= "សម្គាល់: {$note}\n";
         }
         return $msg;
     }

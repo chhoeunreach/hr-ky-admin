@@ -81,21 +81,27 @@
 
             <div class="row">
                 <div>
-                    <label>សម្គាល់ (Reference)</label>
-                    <input name="reference" value="{{ old('reference', '88-1168') }}" placeholder="Reference">
+                    <label>ID អ្នកលក់ (User ID)</label>
+                    <input name="user_id" id="user_id" value="{{ old('user_id', '88') }}" placeholder="Seller ID" oninput="updateNote()">
                 </div>
                 <div>
-                    <label>ទំនាក់ទំនង (Contact)</label>
-                    <input name="contact" value="{{ old('contact', '090 821 168') }}" placeholder="Phone number">
+                    <label>ទូរស័ព្ទ (Phone)</label>
+                    <input name="contact" id="contact" value="{{ old('contact', '090 821 168') }}" placeholder="Phone number" oninput="updateNote()">
                 </div>
             </div>
 
-            <label>រូបភាព (Photo)</label>
-            <input name="photo" type="file" accept="image/jpeg,image/png,image/webp" onchange="previewFile(this)">
-
-            <div class="preview" id="photoPreview">
-                <img id="previewImg" src="#" alt="Preview">
+            <div class="row">
+                <div>
+                    <label>សម្គាល់ (Note)</label>
+                    <input name="note" id="note" value="{{ old('note', '88-1168') }}" readonly style="background:#f9fafb; color:#6b7280;">
+                </div>
+                <div></div>
             </div>
+
+            <label>រូបភាពវិក្កយបត្រ និងទំនិញ (Photos)</label>
+            <input name="photos[]" type="file" multiple accept="image/jpeg,image/png,image/webp" onchange="previewFiles(this)">
+
+            <div class="preview" id="photoPreview"></div>
 
             <button type="submit">ផ្ញើទៅ Telegram</button>
         </form>
@@ -104,13 +110,30 @@
     </div>
 
     <script>
-        function previewFile(input) {
+        function updateNote() {
+            const userId = document.getElementById('user_id').value.replace(/\D/g, '');
+            const phone = document.getElementById('contact').value.replace(/\D/g, '');
+            const last4 = phone.slice(-4);
+            document.getElementById('note').value = userId && last4 ? userId + '-' + last4 : userId || last4;
+        }
+
+        function previewFiles(input) {
             const preview = document.getElementById('photoPreview');
-            const img = document.getElementById('previewImg');
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) { img.src = e.target.result; preview.style.display = 'block'; };
-                reader.readAsDataURL(input.files[0]);
+            preview.innerHTML = '';
+            if (input.files && input.files.length > 0) {
+                preview.style.display = 'block';
+                for (const file of input.files) {
+                    const img = document.createElement('img');
+                    img.style.maxWidth = '100%';
+                    img.style.maxHeight = '160px';
+                    img.style.borderRadius = '8px';
+                    img.style.border = '1px solid #e5e7eb';
+                    img.style.marginTop = '8px';
+                    const reader = new FileReader();
+                    reader.onload = function (e) { img.src = e.target.result; };
+                    reader.readAsDataURL(file);
+                    preview.appendChild(img);
+                }
             } else {
                 preview.style.display = 'none';
             }
