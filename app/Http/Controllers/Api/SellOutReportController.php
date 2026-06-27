@@ -113,8 +113,14 @@ class SellOutReportController extends Controller
         });
 
         $report->load(['lines', 'photos', 'user'])->loadCount(['lines', 'photos']);
-        $this->sendSellOutReportTelegram($report);
-        $this->sendSellOutReportPhotosToTelegram($report);
+
+        // Telegram delivery involves uploading every photo over the network;
+        // deferring it until after the response is sent keeps submission
+        // latency down to just the DB write, regardless of photo count/size.
+        dispatch(function () use ($report) {
+            $this->sendSellOutReportTelegram($report);
+            $this->sendSellOutReportPhotosToTelegram($report);
+        })->afterResponse();
 
         return response()->json([
             'status' => true,
