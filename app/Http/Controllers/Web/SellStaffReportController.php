@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Exports\SellStaffReportExport;
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\Department;
 use App\Models\SellOutReport;
 use App\Models\TelegramGroup;
 use App\Services\TelegramService;
@@ -44,8 +46,23 @@ class SellStaffReportController extends Controller
         $reports = $query->paginate(25)->withQueryString();
         $summary = $this->summaryQuery($filterData)->first();
         $staffSummary = $this->staffSummaryQuery($filterData)->get();
+        $branches = Branch::query()
+            ->where('company_id', app(\App\Helpers\AppHelper::class)::getAuthUserCompanyId())
+            ->where('is_active', Branch::IS_ACTIVE)
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
-        return view($this->view . 'index', compact('reports', 'summary', 'staffSummary', 'filterData'));
+        $sellTypes = SellOutReport::query()
+            ->whereNotNull('service_type')
+            ->where('service_type', '!=', '')
+            ->distinct()
+            ->orderBy('service_type')
+            ->pluck('service_type');
+
+        return view($this->view . 'index', compact(
+            'reports', 'summary', 'staffSummary', 'filterData',
+            'branches', 'sellTypes'
+        ));
     }
 
     public function create()
@@ -315,7 +332,7 @@ class SellStaffReportController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('admin.sell-staff-report.show', $report->id)
+                ->route('admin.sell-staff-report.index')
                 ->with('success', 'Sell out report updated successfully.');
         } catch (\Throwable $exception) {
             DB::rollBack();
@@ -345,9 +362,17 @@ class SellStaffReportController extends Controller
 
             DB::commit();
 
+            if (request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Sell out report deleted successfully.']);
+            }
+
             return redirect()->back()->with('success', 'Sell out report deleted successfully.');
         } catch (\Throwable $exception) {
             DB::rollBack();
+
+            if (request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -361,13 +386,18 @@ class SellStaffReportController extends Controller
             'seller_name' => trim((string) $request->query('seller_name', '')),
             'branch_name' => trim((string) $request->query('branch_name', '')),
             'search' => trim((string) $request->query('search', '')),
+            'ss_date_from' => $request->query('ss_date_from'),
+            'ss_date_to' => $request->query('ss_date_to'),
+            'ss_branch_id' => $request->query('ss_branch_id'),
+            'ss_department_id' => $request->query('ss_department_id'),
+            'service_type' => $request->query('service_type'),
         ];
     }
 
     private function reportQuery(array $filterData)
     {
         return $this->baseReportQuery($filterData)
-            ->with(['user:id,name,employee_code,username'])
+            ->with(['user:id,name,employee_code,username', 'lines:id,sell_out_report_id,product_name,serial_number,qty'])
             ->withCount(['lines', 'photos'])
             ->latest();
     }
@@ -386,6 +416,9 @@ class SellStaffReportController extends Controller
             })
             ->when($filterData['branch_name'], function ($query, $branchName) {
                 $query->where('branch_name', 'like', '%' . $branchName . '%');
+            })
+            ->when($filterData['service_type'], function ($query, $type) {
+                $query->where('service_type', $type);
             })
             ->when($filterData['search'], function ($query, $search) {
                 $query->where(function ($query) use ($search) {
@@ -412,9 +445,22 @@ class SellStaffReportController extends Controller
 
     private function staffSummaryQuery(array $filterData)
     {
-        $query = $this->baseReportQuery($filterData)->toBase();
+        $branchName = null;
+        if ($branchId = $filterData['ss_branch_id']) {
+            $branch = Branch::find($branchId);
+            $branchName = $branch?->name;
+        }
 
-        return $query
+        return SellOutReport::query()
+            ->when($filterData['ss_date_from'], function ($query, $date) {
+                $query->whereDate('created_at', '>=', Carbon::parse($date)->toDateString());
+            })
+            ->when($filterData['ss_date_to'], function ($query, $date) {
+                $query->whereDate('created_at', '<=', Carbon::parse($date)->toDateString());
+            })
+            ->when($branchName, function ($query, $name) {
+                $query->where('branch_name', $name);
+            })
             ->selectRaw("COALESCE(NULLIF(seller_name, ''), 'Unknown') as seller_name")
             ->selectRaw('COUNT(*) as total_reports')
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total_amount')
