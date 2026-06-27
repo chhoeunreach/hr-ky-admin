@@ -74,6 +74,7 @@ use App\Http\Controllers\Web\ThemeController;
 use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
 use App\Http\Controllers\Web\TrackLocationController;
+use App\Http\Controllers\Web\ReceiptTelegramController;
 use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TelegramGroupController;
 use App\Http\Controllers\Web\TrainerController;
@@ -116,6 +117,10 @@ Route::post('telegram/notify', [TelegramNotificationController::class, 'send'])-
 Route::get('telegram/test', function () {
     return view('telegram-test');
 })->name('telegram.test');
+
+/** Receipt to Telegram */
+Route::get('receipt-telegram', [ReceiptTelegramController::class, 'form'])->name('receipt.telegram.form');
+Route::post('receipt-telegram/send', [ReceiptTelegramController::class, 'send'])->name('receipt.telegram.send');
 
 Route::group([
     'prefix' => 'admin',
