@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 
 class SellOutReportPhoto extends Model
 {
     use HasFactory;
+
+    const UPLOAD_PATH = 'uploads/sell-out-reports/';
 
     protected $fillable = [
         'sell_out_report_id',
@@ -23,13 +24,9 @@ class SellOutReportPhoto extends Model
         'photo_url',
     ];
 
-    public function getPhotoUrlAttribute(?string $value): string
+    public function getPhotoUrlAttribute(): string
     {
-        if ($value) {
-            return $value;
-        }
-
-        return Storage::disk('public')->url($this->photo_path);
+        return asset(self::UPLOAD_PATH . $this->photo_path);
     }
 
     public function report(): BelongsTo
