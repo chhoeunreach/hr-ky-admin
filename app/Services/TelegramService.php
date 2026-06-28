@@ -181,7 +181,7 @@ class TelegramService
         }
     }
 
-    public function sendMediaGroup(string $chatId, array $photoPaths, ?string $caption = null): ?array
+    public function sendMediaGroup(string $chatId, array $photoPaths, ?string $caption = null, ?string $parseMode = null): ?array
     {
         $botToken = (string) config('services.telegram.bot_token', '');
 
@@ -215,6 +215,10 @@ class TelegramService
 
                 if ($index === 0 && $caption !== null && $caption !== '') {
                     $item['caption'] = Str::limit($caption, 1024, '...');
+
+                    if ($parseMode !== null) {
+                        $item['parse_mode'] = $parseMode;
+                    }
                 }
 
                 $media[] = $item;

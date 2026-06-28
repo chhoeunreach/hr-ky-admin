@@ -180,7 +180,6 @@ class SellStaffReportController extends Controller
 
             $report = $report->fresh(['lines', 'photos', 'user']);
             $this->sendSellOutReportTelegram($report);
-            $this->sendSellOutReportPhotosToTelegram($report);
 
             return redirect()
                 ->route('admin.sell-staff-report.index')
@@ -378,6 +377,26 @@ class SellStaffReportController extends Controller
         }
     }
 
+    public function resendTelegram(int $id)
+    {
+        $this->authorize('view_sell_staff_report');
+
+        $report = SellOutReport::with(['lines', 'photos', 'user:id,name,employee_code,username'])
+            ->findOrFail($id);
+
+        $success = $this->sendSellOutReportTelegram($report);
+
+        $responseMessage = $success
+            ? __('index.resend_telegram_success')
+            : __('index.resend_telegram_failed');
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => $success, 'message' => $responseMessage], $success ? 200 : 500);
+        }
+
+        return redirect()->back()->with($success ? 'success' : 'danger', $responseMessage);
+    }
+
     private function filterData(Request $request): array
     {
         return [
@@ -521,46 +540,17 @@ class SellStaffReportController extends Controller
         return false;
     }
 
-    private function sendSellOutReportTelegram(SellOutReport $report): void
+    private function sendSellOutReportTelegram(SellOutReport $report): bool
     {
         try {
-            $message = "<b>Sell Out Report</b>\n"
-                . "Invoice: {$report->invoice_no}\n"
-                . "Original Invoice: " . ($report->original_invoice_no ?: 'N/A') . "\n"
-                . "Seller: " . ($report->seller_name ?: 'N/A') . "\n"
-                . "Branch: " . ($report->branch_name ?: 'N/A') . "\n"
-                . "Customer: " . ($report->customer_name ?: 'N/A') . "\n"
-                . "Service Type: " . ($report->service_type ?: 'N/A') . "\n"
-                . "Payment Method: " . ($report->payment_method ?: 'N/A') . "\n"
-                . "Total: " . number_format((float) $report->total_amount, 2);
+            $message = $this->buildSellOutTelegramMessage($report);
 
-            $this->telegramService->sendToAction(
-                TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
-                $message,
-                'HTML',
-                (string) ($report->branch_name ?? ''),
-                ''
-            );
-        } catch (\Throwable $exception) {
-            Log::warning('Sell out report Telegram notification failed.', [
-                'sell_out_report_id' => $report->id,
-                'error' => $exception->getMessage(),
-            ]);
-        }
-    }
-
-    private function sendSellOutReportPhotosToTelegram(SellOutReport $report): void
-    {
-        try {
             $photoPaths = $report->photos
                 ->map(fn ($photo) => Storage::disk('public')->path($photo->photo_path))
+                ->filter(fn (string $path): bool => is_file($path))
+                ->values()
                 ->all();
 
-            if ($photoPaths === []) {
-                return;
-            }
-
-            $caption = $this->buildPhotoCaption($report);
             $chatIds = $this->telegramService->chatIdsForAction(
                 TelegramGroup::sellOutEventKeyForServiceType($report->service_type),
                 (string) ($report->branch_name ?? ''),
@@ -568,36 +558,54 @@ class SellStaffReportController extends Controller
             );
 
             foreach ($chatIds as $chatId) {
-                $this->telegramService->sendMediaGroup($chatId, $photoPaths, $caption);
+                if ($photoPaths !== []) {
+                    $this->telegramService->sendMediaGroup($chatId, $photoPaths, $message);
+                } else {
+                    $this->telegramService->sendMessage($chatId, $message);
+                }
             }
+
+            return true;
         } catch (\Throwable $exception) {
-            Log::warning('Sell out report Telegram photo send failed.', [
+            Log::warning('Sell out report Telegram notification failed.', [
                 'sell_out_report_id' => $report->id,
                 'error' => $exception->getMessage(),
             ]);
+
+            return false;
         }
     }
 
-    private function buildPhotoCaption(SellOutReport $report): string
+    private function buildSellOutTelegramMessage(SellOutReport $report): string
     {
-        $userId = $this->userIdNumber($report->user->employee_code ?? null);
-        $phoneLast4 = $this->phoneLast4Digits($report->customer_phone);
+        $lines = ['🛒 វិក្កយបត្រ'];
+        $lines[] = "Invoice: {$report->invoice_no}";
 
-        $caption = trim($userId . '-' . $phoneLast4, '-');
+        foreach ($report->lines as $line) {
+            $lines[] = "ទំនិញ: {$line->product_name} ចំនួន{$line->qty} តម្លៃ: \$"
+                . number_format((float) $line->unit_price, 2);
 
-        if ($report->user->name ?? null) {
-            $caption .= "\n{$report->user->name}";
+            if (! empty($line->serial_number)) {
+                $lines[] = "SN: {$line->serial_number}";
+            }
         }
+
+        $userId = $this->userIdNumber($report->user->employee_code ?? null);
+        $sellerName = $report->seller_name ?: 'N/A';
+        $branchName = $report->branch_name ?: 'N/A';
+        $lines[] = "ID: {$userId} {$sellerName} (សាខា៖ {$branchName})";
 
         if ($report->customer_phone) {
-            $caption .= "\n{$report->customer_phone}";
+            $lines[] = "ទំនាក់ទំនង: {$report->customer_phone}";
         }
 
-        if ($report->invoice_no) {
-            $caption .= "\nInvoice: {$report->invoice_no}";
+        $phoneLast4 = $this->phoneLast4Digits($report->customer_phone);
+        $remark = trim($userId . '-' . $phoneLast4, '-');
+        if ($remark !== '') {
+            $lines[] = "សម្គាល់: {$remark}";
         }
 
-        return $caption;
+        return implode("\n", $lines);
     }
 
     private function userIdNumber(?string $employeeCode): string

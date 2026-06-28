@@ -139,7 +139,7 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table">
+                    <table class="table align-middle">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -159,25 +159,59 @@
                         <tbody>
                         @forelse($reports as $report)
                             <tr>
-                                <td>{{ $reports->firstItem() + $loop->iteration }}</td>
-                                <td><span title="{{ $report->invoice_no }}">{{ $report->invoice_no }}</span></td>
-                                <td><span title="{{ $report->service_type }}">{{ $report->service_type ?: '-' }}</span></td>
+                                <td class="text-muted">{{ $reports->firstItem() + $loop->iteration }}</td>
+                                <td>
+                                    <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="fw-semibold text-decoration-none" title="{{ $report->invoice_no }}">
+                                        {{ $report->invoice_no }}
+                                    </a>
+                                    @if($report->original_invoice_no)
+                                        <div class="small text-muted">{{ $report->original_invoice_no }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-subtle text-info-emphasis" title="{{ $report->service_type }}">{{ $report->service_type ?: '-' }}</span>
+                                </td>
                                 <td><span class="text-truncate d-block" title="{{ $report->seller_name ?: ($report->user->name ?? '-') }}" style="max-width:120px">{{ $report->seller_name ?: ($report->user->name ?? '-') }}</span></td>
                                 <td><span class="text-truncate d-block" title="{{ $report->branch_name ?? '-' }}" style="max-width:120px">{{ $report->branch_name ?? '-' }}</span></td>
-                                <td><span title="{{ $report->customer_phone ?? '-' }}">{{ $report->customer_phone ?? '-' }}</span></td>
+                                <td>
+                                    @if($report->customer_phone)
+                                        <span class="text-nowrap"><i data-feather="phone" class="icon-sm me-1"></i>{{ $report->customer_phone }}</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 <td><span class="text-truncate d-block" title="{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') }}" style="max-width:150px">{{ $report->lines->pluck('product_name')->filter()->unique()->implode(', ') ?: '-' }}</span></td>
                                 <td><span class="text-truncate d-block" title="{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') }}" style="max-width:130px">{{ $report->lines->pluck('serial_number')->filter()->unique()->implode(', ') ?: '-' }}</span></td>
-                                <td class="text-center">{{ $report->lines_count }}</td>
-                                <td class="text-end">{{ number_format((float) $report->total_amount, 2) }}</td>
-                                <td>{{ optional($report->created_at)->format('Y-m-d H:i') }}</td>
+                                <td class="text-center"><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">{{ $report->lines_count }}</span></td>
+                                <td class="text-end fw-semibold text-success">${{ number_format((float) $report->total_amount, 2) }}</td>
+                                <td><span class="small text-muted">{{ optional($report->created_at)->format('Y-m-d H:i') }}</span></td>
                                 <td class="text-center">
-                                    <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="btn btn-primary btn-xs">{{ __('index.view') }}</a>
-                                    @can('edit_sell_staff_report')
-                                        <a href="{{ route('admin.sell-staff-report.edit', $report->id) }}" class="btn btn-warning btn-xs">{{ __('index.edit') }}</a>
-                                    @endcan
-                                    @can('delete_sell_staff_report')
-                                        <a href="javascript:void(0)" class="btn btn-danger btn-xs deleteSellStaffReport" data-href="{{ route('admin.sell-staff-report.delete', $report->id) }}">{{ __('index.delete') }}</a>
-                                    @endcan
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i data-feather="more-vertical" class="icon-sm"></i>
+                                        </button>
+                                        <div class="dropdown-menu dropdown-menu-end">
+                                            <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="dropdown-item">
+                                                <i data-feather="eye" class="me-2 icon-sm"></i>{{ __('index.view') }}
+                                            </a>
+                                            @can('edit_sell_staff_report')
+                                                <a href="{{ route('admin.sell-staff-report.edit', $report->id) }}" class="dropdown-item">
+                                                    <i data-feather="edit" class="me-2 icon-sm"></i>{{ __('index.edit') }}
+                                                </a>
+                                            @endcan
+                                            @can('view_sell_staff_report')
+                                                <a href="javascript:void(0)" class="dropdown-item resendSellStaffReportTelegram" data-href="{{ route('admin.sell-staff-report.resend-telegram', $report->id) }}">
+                                                    <i data-feather="send" class="me-2 icon-sm"></i>{{ __('index.resend_telegram') }}
+                                                </a>
+                                            @endcan
+                                            @can('delete_sell_staff_report')
+                                                <div class="dropdown-divider"></div>
+                                                <a href="javascript:void(0)" class="dropdown-item text-danger deleteSellStaffReport" data-href="{{ route('admin.sell-staff-report.delete', $report->id) }}">
+                                                    <i data-feather="trash-2" class="me-2 icon-sm"></i>{{ __('index.delete') }}
+                                                </a>
+                                            @endcan
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
@@ -260,6 +294,23 @@
                             window.location.reload();
                         }
                     });
+                }
+            });
+        });
+
+        $(document).on('click', '.resendSellStaffReportTelegram', function (event) {
+            event.preventDefault();
+            let href = $(this).data('href');
+            Swal.fire({
+                title: '{{ __('index.confirm_resend_sell_staff_report') }}',
+                showDenyButton: true,
+                confirmButtonText: `{{ __('index.yes') }}`,
+                denyButtonText: `{{ __('index.no') }}`,
+                padding: '10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
                 }
             });
         });

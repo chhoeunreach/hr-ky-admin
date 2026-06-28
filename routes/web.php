@@ -474,6 +474,7 @@ Route::group([
         Route::get('sell-staff-report/{id}/edit', [SellStaffReportController::class, 'edit'])->name('sell-staff-report.edit');
         Route::put('sell-staff-report/{id}', [SellStaffReportController::class, 'update'])->name('sell-staff-report.update');
         Route::get('sell-staff-report/{id}/delete', [SellStaffReportController::class, 'delete'])->name('sell-staff-report.delete');
+        Route::get('sell-staff-report/{id}/resend-telegram', [SellStaffReportController::class, 'resendTelegram'])->name('sell-staff-report.resend-telegram');
         Route::get('sell-staff-report/{id}', [SellStaffReportController::class, 'show'])->name('sell-staff-report.show');
 
 

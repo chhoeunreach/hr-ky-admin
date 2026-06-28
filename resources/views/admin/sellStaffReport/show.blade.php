@@ -134,7 +134,12 @@
                 <li class="breadcrumb-item"><a href="{{ route('admin.sell-staff-report.index') }}">{{ __('index.sell_staff_report') }}</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ $report->invoice_no }}</li>
             </ol>
-            <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-secondary btn-sm">{{ __('index.button_back') }}</a>
+            <div>
+                @can('view_sell_staff_report')
+                    <a href="javascript:void(0)" class="btn btn-info btn-sm resendSellStaffReportTelegram" data-href="{{ route('admin.sell-staff-report.resend-telegram', $report->id) }}">{{ __('index.resend_telegram') }}</a>
+                @endcan
+                <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-secondary btn-sm">{{ __('index.button_back') }}</a>
+            </div>
         </nav>
 
         <div class="card mb-4">
@@ -307,4 +312,22 @@
 
 @section('scripts')
     <script src="{{ asset('js/sell-out-ocr.js') }}"></script>
+    <script>
+        $(document).on('click', '.resendSellStaffReportTelegram', function (event) {
+            event.preventDefault();
+            let href = $(this).data('href');
+            Swal.fire({
+                title: '{{ __('index.confirm_resend_sell_staff_report') }}',
+                showDenyButton: true,
+                confirmButtonText: `{{ __('index.yes') }}`,
+                denyButtonText: `{{ __('index.no') }}`,
+                padding: '10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+    </script>
 @endsection
