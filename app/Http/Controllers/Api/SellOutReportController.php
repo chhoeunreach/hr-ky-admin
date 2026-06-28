@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SellOutReport;
 use App\Models\SellOutReportLine;
-use App\Models\SellOutReportPhoto;
 use App\Models\TelegramGroup;
 use App\Requests\SellOutReport\StoreSellOutReportRequest;
 use App\Requests\SellOutReport\UpdateSellOutReportRequest;
@@ -14,8 +13,8 @@ use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class SellOutReportController extends Controller
 {
@@ -101,8 +100,11 @@ class SellOutReportController extends Controller
             }
 
             foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
                 $report->photos()->create([
-                    'photo_path' => $this->storeSellOutPhoto($photo),
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -186,8 +188,11 @@ class SellOutReportController extends Controller
             }
 
             foreach ($request->file('photos', []) as $photo) {
+                $photoPath = $photo->store('sell-out-reports', 'public');
+
                 $report->photos()->create([
-                    'photo_path' => $this->storeSellOutPhoto($photo),
+                    'photo_path' => $photoPath,
+                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -219,7 +224,7 @@ class SellOutReportController extends Controller
 
         $photo = $report->photos()->findOrFail($photoId);
 
-        $this->deleteSellOutPhotoFile($photo->photo_path);
+        Storage::disk('public')->delete($photo->photo_path);
         $photo->delete();
 
         return response()->json([
@@ -253,7 +258,7 @@ class SellOutReportController extends Controller
             ->findOrFail($id);
 
         foreach ($report->photos as $photo) {
-            $this->deleteSellOutPhotoFile($photo->photo_path);
+            Storage::disk('public')->delete($photo->photo_path);
         }
 
         $report->delete();
@@ -270,34 +275,14 @@ class SellOutReportController extends Controller
         int $index
     ): void {
         foreach ($request->file("lines.$index.photos", []) as $photo) {
+            $photoPath = $photo->store('sell-out-reports', 'public');
+
             $report->photos()->create([
                 'sell_out_report_line_id' => $line->id,
-                'photo_path' => $this->storeSellOutPhoto($photo),
+                'photo_path' => $photoPath,
+                'photo_url' => Storage::disk('public')->url($photoPath),
                 'original_name' => $photo->getClientOriginalName(),
             ]);
-        }
-    }
-
-    private function storeSellOutPhoto($photo): string
-    {
-        $destination = public_path(SellOutReportPhoto::UPLOAD_PATH);
-
-        if (! is_dir($destination)) {
-            mkdir($destination, 0777, true);
-        }
-
-        $filename = uniqid() . '_' . trim($photo->getClientOriginalName());
-        $photo->move($destination, $filename);
-
-        return $filename;
-    }
-
-    private function deleteSellOutPhotoFile(string $photoPath): void
-    {
-        $path = public_path(SellOutReportPhoto::UPLOAD_PATH . $photoPath);
-
-        if (File::exists($path)) {
-            File::delete($path);
         }
     }
 
@@ -364,7 +349,7 @@ class SellOutReportController extends Controller
         try {
             $message = $this->buildSellOutTelegramMessage($report);
             $photoPaths = $report->photos
-                ->map(fn ($photo) => public_path(SellOutReportPhoto::UPLOAD_PATH . $photo->photo_path))
+                ->map(fn ($photo) => Storage::disk('public')->path($photo->photo_path))
                 ->filter(fn (string $path): bool => is_file($path))
                 ->values()
                 ->all();

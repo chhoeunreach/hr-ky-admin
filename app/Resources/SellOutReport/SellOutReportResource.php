@@ -3,6 +3,7 @@
 namespace App\Resources\SellOutReport;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class SellOutReportResource extends JsonResource
 {
@@ -46,7 +47,7 @@ class SellOutReportResource extends JsonResource
                 ->map(fn ($photo) => [
                     'id' => $photo->id,
                     'photo_path' => $photo->photo_path,
-                    'photo_url' => $photo->photo_url,
+                    'photo_url' => $photo->photo_url ?: Storage::disk('public')->url($photo->photo_path),
                 ])
                 ->values(),
         ])->values();
