@@ -169,7 +169,6 @@ class SellStaffReportController extends Controller
 
                 $report->photos()->create([
                     'photo_path' => $photoPath,
-                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -321,7 +320,6 @@ class SellStaffReportController extends Controller
 
                 $report->photos()->create([
                     'photo_path' => $photoPath,
-                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }

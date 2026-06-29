@@ -104,7 +104,6 @@ class SellOutReportController extends Controller
 
                 $report->photos()->create([
                     'photo_path' => $photoPath,
-                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -192,7 +191,6 @@ class SellOutReportController extends Controller
 
                 $report->photos()->create([
                     'photo_path' => $photoPath,
-                    'photo_url' => Storage::disk('public')->url($photoPath),
                     'original_name' => $photo->getClientOriginalName(),
                 ]);
             }
@@ -280,7 +278,6 @@ class SellOutReportController extends Controller
             $report->photos()->create([
                 'sell_out_report_line_id' => $line->id,
                 'photo_path' => $photoPath,
-                'photo_url' => Storage::disk('public')->url($photoPath),
                 'original_name' => $photo->getClientOriginalName(),
             ]);
         }
