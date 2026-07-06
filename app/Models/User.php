@@ -244,6 +244,11 @@ class User extends Authenticatable
         return $this->hasOne(AttendanceLog::class, 'employee_id','id');
     }
 
+    public function faceProfile(): HasOne
+    {
+        return $this->hasOne(FaceProfile::class, 'user_id', 'id');
+    }
+
     public function supervisor()
     {
         return $this->belongsTo(User::class, 'supervisor_id', 'id');

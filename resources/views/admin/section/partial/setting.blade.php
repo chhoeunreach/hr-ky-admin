@@ -4,11 +4,13 @@
     'list_nfc',
     'list_qr',
     'list_device',
-    'attendance_setting'
+    'attendance_setting',
+    'list_employee'
 ])
     <li class="nav-item  {{
                    request()->routeIs('admin.routers.*') ||
                    request()->routeIs('admin.qr.*')||
+                   request()->routeIs('admin.face-kiosks.*')||
                    request()->routeIs('admin.biometric-devices.*')||
                    request()->routeIs('admin.attendance-settings.*')||
                    request()->routeIs('admin.nfc.*')
@@ -27,6 +29,7 @@
         <div class="{{
                       request()->routeIs('admin.routers.*') ||
                       request()->routeIs('admin.qr.*') ||
+                      request()->routeIs('admin.face-kiosks.*') ||
                       request()->routeIs('admin.biometric-devices.*') ||
                       request()->routeIs('admin.attendance-settings.*') ||
                       request()->routeIs('admin.nfc.*')
@@ -71,6 +74,16 @@
                             class="nav-link {{request()->routeIs('admin.qr.*') ? 'active' : ''}}">{{ __('index.qr') }}</a>
                     </li>
 
+                @endcan
+                @can('list_employee')
+                    <li class="nav-item">
+                        <a
+                            href="{{ route('admin.face-kiosks.index') }}"
+                            data-href="{{ route('admin.face-kiosks.index') }}"
+                            class="nav-link {{ request()->routeIs('admin.face-kiosks.*') ? 'active' : '' }}">
+                            Face attendance
+                        </a>
+                    </li>
                 @endcan
                 @can('attendance_setting')
                     <li class="nav-item">

@@ -68,5 +68,6 @@ class Kernel extends HttpKernel
         'admin.auth' => \App\Http\Middleware\Admin::class,
         'permission' =>   \App\Http\Middleware\SPAuthGateMW::class,
         'superAdmin' =>   \App\Http\Middleware\SuperAdmin::class,
+        'kiosk.device' => \App\Http\Middleware\AuthenticateKioskDevice::class,
     ];
 }

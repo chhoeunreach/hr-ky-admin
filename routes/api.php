@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\EmployeeChatApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
+use App\Http\Controllers\Api\Kiosk\KioskApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
 use App\Http\Controllers\Api\LocationController;
@@ -40,6 +41,23 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
+
+Route::prefix('kiosk/v1')
+    ->middleware(['kiosk.device', 'throttle:120,1'])
+    ->group(function () {
+        Route::post('provision', [KioskApiController::class, 'provision'])
+            ->middleware('throttle:10,1');
+        Route::get('bootstrap', [KioskApiController::class, 'bootstrap']);
+        Route::get('employees', [KioskApiController::class, 'employees']);
+        Route::post('admin/verify-pin', [KioskApiController::class, 'verifyAdminPin'])
+            ->middleware('throttle:10,1');
+        Route::post('employees/{user}/face-profile', [KioskApiController::class, 'storeFaceProfile'])
+            ->middleware('throttle:30,1');
+        Route::delete('employees/{user}/face-profile', [KioskApiController::class, 'destroyFaceProfile'])
+            ->middleware('throttle:30,1');
+        Route::post('attendance', [KioskApiController::class, 'attendance']);
+        Route::get('attendance/recent', [KioskApiController::class, 'recentAttendance']);
+    });
 
 Route::group([
     'middleware' => ['auth:api','permission']

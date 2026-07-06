@@ -8,4 +8,5 @@ enum EmployeeAttendanceTypeEnum:string
     case nfc = 'nfc';
     case qr = 'qr';
     case biometric = 'biometric';
+    case face = 'face';
 }

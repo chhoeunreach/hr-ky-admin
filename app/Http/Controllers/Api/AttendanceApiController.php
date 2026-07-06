@@ -176,6 +176,9 @@ class AttendanceApiController extends Controller
                 $validatedData[$latitudeKey] = (float) $validatedData['latitude'];
                 $validatedData[$longitudeKey] = (float) $validatedData['longitude'];
 
+            } elseif ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::face->value) {
+                // The kiosk middleware has already authenticated the device and
+                // scoped the recognized employee to its company and branch.
             } else {
                 return response()->json(['success' => false, 'message' => __('index.invalid_attendance_type')]);
             }
@@ -341,7 +344,11 @@ class AttendanceApiController extends Controller
      */
     private function processExistingAttendance($userTodayCheckInDetail, $validatedData)
     {
-        $attendanceTypes = [EmployeeAttendanceTypeEnum::qr->value,EmployeeAttendanceTypeEnum::nfc->value];
+        $attendanceTypes = [
+            EmployeeAttendanceTypeEnum::qr->value,
+            EmployeeAttendanceTypeEnum::nfc->value,
+            EmployeeAttendanceTypeEnum::face->value,
+        ];
         if ($userTodayCheckInDetail->check_out_at) {
             if ( (in_array($validatedData['attendance_type'], $attendanceTypes)) || (($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) && ($validatedData['attendance_status_type'] == 'checkIn'))) {
                 $this->processNewCheckIn($validatedData);

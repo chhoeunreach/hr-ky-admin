@@ -29,6 +29,7 @@ use App\Http\Controllers\Web\EmployeeSalaryController;
 use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\FeatureController;
 use App\Http\Controllers\Web\FiscalYearController;
+use App\Http\Controllers\Web\FaceKioskController;
 use App\Http\Controllers\Web\GeneralSettingController;
 use App\Http\Controllers\Web\HolidayController;
 use App\Http\Controllers\Web\iclockController;
@@ -199,6 +200,11 @@ Route::group([
         Route::get('employees/get-all-employees/{departmentId}', [UserController::class, 'getAllEmployeeByDepartmentId'])->name('employees.getAllUsersByDepartmentId');
         Route::post('employees/fetch-employees-by-department', [UserController::class, 'fetchEmployeesByDepartment'])->name('employees.fetchByDepartment');
         Route::post('employees/fetch-employees-by-departments', [UserController::class, 'fetchDepartmentEmployees'])->name('employees.getByDepartment');
+        Route::get('face-kiosks', [FaceKioskController::class, 'index'])->name('face-kiosks.index');
+        Route::post('face-kiosks/devices', [FaceKioskController::class, 'storeDevice'])->name('face-kiosks.devices.store');
+        Route::post('face-kiosks/devices/{device}/rotate-token', [FaceKioskController::class, 'rotateToken'])->name('face-kiosks.devices.rotate');
+        Route::patch('face-kiosks/devices/{device}/pin', [FaceKioskController::class, 'updatePin'])->name('face-kiosks.devices.pin');
+        Route::patch('face-kiosks/devices/{device}/toggle', [FaceKioskController::class, 'toggle'])->name('face-kiosks.devices.toggle');
 
 
         /** Department route */
