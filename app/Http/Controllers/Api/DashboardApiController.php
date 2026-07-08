@@ -89,6 +89,8 @@ class DashboardApiController extends Controller
                 'key' => $advanceSalaryApproveKey,
                 'status' => $canApproveAdvanceSalary ? '1' : '0',
             ]);
+            $homeCards = $this->getHomeCards($features);
+            $features = $this->appendHomeCardFeatureAliases($features);
 
 
             $isAwardFeatured = $features->where('key', 'award')->where('status', 1)->first() !== null;
@@ -116,6 +118,7 @@ class DashboardApiController extends Controller
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
             $dashboard['shift_dates'] = $shiftDates;
             $dashboard['features'] = new FeatureCollection($features);
+            $dashboard['home_cards'] = $homeCards;
             $dashboard['teamMembers'] = new TeamSheetCollection($teamMembers);
             $dashboard['add_nfc'] = AppHelper::checkRoleIdWithGivenPermission($userDetail->role_id, $nfc_key);
             $dashboard['theme'] = new ThemeSettingResource($themeSetting);
@@ -184,5 +187,186 @@ class DashboardApiController extends Controller
         }
     }
 
-}
+    private function getHomeCards(Collection $features): array
+    {
+        $featuresByKey = $features->keyBy('key');
 
+        return collect($this->homeCardDefinitions())
+            ->map(function (array $card) use ($featuresByKey) {
+                $feature = $featuresByKey->get($card['feature_key']);
+
+                return [
+                    'name' => $card['name'],
+                    'key' => $card['key'],
+                    'feature_key' => $card['feature_key'],
+                    'status' => (string) ((int) ($feature->status ?? 0)),
+                    'aliases' => $card['aliases'],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function appendHomeCardFeatureAliases(Collection $features): Collection
+    {
+        $featuresByKey = $features->keyBy('key');
+
+        foreach ($this->homeCardDefinitions() as $card) {
+            $feature = $featuresByKey->get($card['feature_key']);
+
+            if (!$feature) {
+                continue;
+            }
+
+            foreach ($card['aliases'] as $alias) {
+                if ($featuresByKey->has($alias)) {
+                    continue;
+                }
+
+                $aliasFeature = (object) [
+                    'name' => $feature->name,
+                    'key' => $alias,
+                    'status' => (string) ((int) $feature->status),
+                ];
+
+                $features->push($aliasFeature);
+                $featuresByKey->put($alias, $aliasFeature);
+            }
+        }
+
+        return $features;
+    }
+
+    private function homeCardDefinitions(): array
+    {
+        return [
+            [
+                'name' => 'Attendance',
+                'key' => 'attendance',
+                'feature_key' => 'attendance',
+                'aliases' => ['employee-attendance'],
+            ],
+            [
+                'name' => 'Leave Request',
+                'key' => 'leave-request',
+                'feature_key' => 'leave-request',
+                'aliases' => ['leave', 'leave-requests'],
+            ],
+            [
+                'name' => 'Time Leave',
+                'key' => 'time-leave',
+                'feature_key' => 'time-leave',
+                'aliases' => ['time_leave', 'time-leave-request', 'time-leave-requests'],
+            ],
+            [
+                'name' => 'Holiday',
+                'key' => 'holiday',
+                'feature_key' => 'holiday',
+                'aliases' => ['holidays'],
+            ],
+            [
+                'name' => 'Notice',
+                'key' => 'notice',
+                'feature_key' => 'notice',
+                'aliases' => ['notices'],
+            ],
+            [
+                'name' => 'Sell Staff Report',
+                'key' => 'sell-staff-report',
+                'feature_key' => 'sell-staff-report',
+                'aliases' => ['sell-out-report', 'sell-staff', 'service-sell'],
+            ],
+            [
+                'name' => 'NFC & QR',
+                'key' => 'nfc-qr',
+                'feature_key' => 'nfc-qr',
+                'aliases' => ['nfc', 'qr'],
+            ],
+            [
+                'name' => 'Project Management',
+                'key' => 'project-management',
+                'feature_key' => 'project-management',
+                'aliases' => ['project', 'projects'],
+            ],
+            [
+                'name' => 'Meeting',
+                'key' => 'meeting',
+                'feature_key' => 'meeting',
+                'aliases' => ['team-meeting', 'team-meetings'],
+            ],
+            [
+                'name' => 'TADA',
+                'key' => 'tada',
+                'feature_key' => 'tada',
+                'aliases' => [],
+            ],
+            [
+                'name' => 'Payroll Management',
+                'key' => 'payroll-management',
+                'feature_key' => 'payroll-management',
+                'aliases' => ['payroll', 'payslip', 'salary'],
+            ],
+            [
+                'name' => 'Advance Salary',
+                'key' => 'advance-salary',
+                'feature_key' => 'advance-salary',
+                'aliases' => ['advance_salary'],
+            ],
+            [
+                'name' => 'Support',
+                'key' => 'support',
+                'feature_key' => 'support',
+                'aliases' => ['ticket', 'tickets'],
+            ],
+            [
+                'name' => 'Training',
+                'key' => 'training',
+                'feature_key' => 'training',
+                'aliases' => ['trainings'],
+            ],
+            [
+                'name' => 'Award',
+                'key' => 'award',
+                'feature_key' => 'award',
+                'aliases' => ['awards'],
+            ],
+            [
+                'name' => 'Event',
+                'key' => 'event',
+                'feature_key' => 'event',
+                'aliases' => ['events'],
+            ],
+            [
+                'name' => 'Complaint',
+                'key' => 'complaint',
+                'feature_key' => 'complaint',
+                'aliases' => ['complaints'],
+            ],
+            [
+                'name' => 'Warning',
+                'key' => 'warning',
+                'feature_key' => 'warning',
+                'aliases' => ['warnings'],
+            ],
+            [
+                'name' => 'Resignation',
+                'key' => 'resignation',
+                'feature_key' => 'resignation',
+                'aliases' => ['resignations'],
+            ],
+            [
+                'name' => 'Assets',
+                'key' => 'assets',
+                'feature_key' => 'assets',
+                'aliases' => ['asset'],
+            ],
+            [
+                'name' => 'Social Media Marketing',
+                'key' => 'social-media-marketing',
+                'feature_key' => 'social-media-marketing',
+                'aliases' => ['social', 'social-media', 'social-marketing', 'social-media-reward', 'social-reward', 'social-rewards'],
+            ],
+        ];
+    }
+
+}

@@ -80,8 +80,56 @@ class FeatureSeeder extends Seeder
             ],
             [
                 'group' => 'Attendance',
+                'name' => 'Attendance',
+                'key' => Str::slug('Attendance'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Attendance',
                 'name' => 'NFC & QR',
                 'key' => Str::slug('NFC & QR'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Office Desk',
+                'name' => 'Leave Request',
+                'key' => Str::slug('Leave Request'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Office Desk',
+                'name' => 'Time Leave',
+                'key' => Str::slug('Time Leave'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Office Desk',
+                'name' => 'Notice',
+                'key' => Str::slug('Notice'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Office Desk',
+                'name' => 'Holiday',
+                'key' => Str::slug('Holiday'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Office Desk',
+                'name' => 'Sell Staff Report',
+                'key' => Str::slug('Sell Staff Report'),
                 'status' => 1,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now()
@@ -146,6 +194,14 @@ class FeatureSeeder extends Seeder
                 'group' => 'Office Desk',
                 'name' => 'Assets',
                 'key' => Str::slug('assets'),
+                'status' => 0,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
+                'group' => 'Additional',
+                'name' => 'Social Media Marketing',
+                'key' => Str::slug('Social Media Marketing'),
                 'status' => 0,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now()

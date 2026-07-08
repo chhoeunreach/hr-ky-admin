@@ -14,7 +14,7 @@ class FeatureRepository
     }
     public function getAll($select=['*'])
     {
-        return Feature::select($select)->where('key','!=','nfc-qr')->orderBy('group','desc')->orderBy('name')->get();
+        return Feature::select($select)->orderBy('group','desc')->orderBy('name')->get();
     }
 
     public function findFeatureById($id,$select=['*'])
