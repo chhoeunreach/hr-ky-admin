@@ -169,7 +169,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-info-subtle text-info-emphasis" title="{{ $report->service_type }}">{{ $report->service_type ?: '-' }}</span>
+                                    <span class="badge bg-info text-white" title="{{ $report->display_service_type }}">{{ $report->display_service_type }}</span>
                                 </td>
                                 <td><span class="text-truncate d-block" title="{{ $report->seller_name ?: ($report->user->name ?? '-') }}" style="max-width:120px">{{ $report->seller_name ?: ($report->user->name ?? '-') }}</span></td>
                                 <td><span class="text-truncate d-block" title="{{ $report->branch_name ?? '-' }}" style="max-width:120px">{{ $report->branch_name ?? '-' }}</span></td>

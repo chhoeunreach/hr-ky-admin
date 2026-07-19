@@ -52,12 +52,16 @@ class SellStaffReportController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        $sellTypes = SellOutReport::query()
-            ->whereNotNull('service_type')
-            ->where('service_type', '!=', '')
-            ->distinct()
-            ->orderBy('service_type')
-            ->pluck('service_type');
+        $sellTypes = collect(TelegramGroup::sellOutEventOptions())
+            ->merge(SellOutReport::query()
+                ->whereNotNull('service_type')
+                ->where('service_type', '!=', '')
+                ->distinct()
+                ->orderBy('service_type')
+                ->pluck('service_type'))
+            ->filter()
+            ->unique()
+            ->values();
 
         return view($this->view . 'index', compact(
             'reports', 'summary', 'staffSummary', 'filterData',
@@ -435,18 +439,66 @@ class SellStaffReportController extends Controller
                 $query->where('branch_name', 'like', '%' . $branchName . '%');
             })
             ->when($filterData['service_type'], function ($query, $type) {
-                $query->where('service_type', $type);
+                $query->where(function ($query) use ($type) {
+                    $query->where('service_type', $type);
+
+                    if ($type === SellOutReport::DEFAULT_SERVICE_TYPE) {
+                        $query->orWhereNull('service_type')
+                            ->orWhere('service_type', '');
+                    }
+                });
             })
             ->when($filterData['search'], function ($query, $search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('invoice_no', 'like', '%' . $search . '%')
-                        ->orWhere('original_invoice_no', 'like', '%' . $search . '%')
-                        ->orWhere('seller_name', 'like', '%' . $search . '%')
-                        ->orWhere('branch_name', 'like', '%' . $search . '%')
-                        ->orWhere('customer_name', 'like', '%' . $search . '%')
-                        ->orWhere('customer_phone', 'like', '%' . $search . '%')
-                        ->orWhere('payment_method', 'like', '%' . $search . '%')
-                        ->orWhere('note', 'like', '%' . $search . '%');
+                    $likeSearch = '%' . $search . '%';
+
+                    $query->where('invoice_no', 'like', $likeSearch)
+                        ->orWhere('original_invoice_no', 'like', $likeSearch)
+                        ->orWhere('service_type', 'like', $likeSearch)
+                        ->orWhere('seller_name', 'like', $likeSearch)
+                        ->orWhere('branch_name', 'like', $likeSearch)
+                        ->orWhere('customer_name', 'like', $likeSearch)
+                        ->orWhere('customer_phone', 'like', $likeSearch)
+                        ->orWhere('payment_method', 'like', $likeSearch)
+                        ->orWhere('total_amount', 'like', $likeSearch)
+                        ->orWhere('created_at', 'like', $likeSearch)
+                        ->orWhere('note', 'like', $likeSearch)
+                        ->orWhereHas('user', function ($query) use ($likeSearch) {
+                            $query->where('name', 'like', $likeSearch)
+                                ->orWhere('username', 'like', $likeSearch)
+                                ->orWhere('employee_code', 'like', $likeSearch);
+                        })
+                        ->orWhereHas('lines', function ($query) use ($likeSearch) {
+                            $query->where('product_name', 'like', $likeSearch)
+                                ->orWhere('sku', 'like', $likeSearch)
+                                ->orWhere('primary_identifier', 'like', $likeSearch)
+                                ->orWhere('imei', 'like', $likeSearch)
+                                ->orWhere('imei2', 'like', $likeSearch)
+                                ->orWhere('serial_number', 'like', $likeSearch)
+                                ->orWhere('model_number', 'like', $likeSearch)
+                                ->orWhere('color', 'like', $likeSearch)
+                                ->orWhere('storage', 'like', $likeSearch)
+                                ->orWhere('qty', 'like', $likeSearch)
+                                ->orWhere('unit_price', 'like', $likeSearch)
+                                ->orWhere('subtotal', 'like', $likeSearch);
+                        });
+
+                    if (ctype_digit($search)) {
+                        $query->orWhereRaw(
+                            '(select count(*) from sell_out_report_lines where sell_out_report_lines.sell_out_report_id = sell_out_reports.id) = ?',
+                            [(int) $search]
+                        );
+                    }
+
+                    if (mb_strtolower($search) === mb_strtolower(SellOutReport::DEFAULT_SERVICE_TYPE)) {
+                        $query->orWhereNull('service_type')
+                            ->orWhere('service_type', '');
+                    }
+
+                    try {
+                        $query->orWhereDate('created_at', Carbon::parse($search)->toDateString());
+                    } catch (\Throwable) {
+                    }
                 });
             });
     }

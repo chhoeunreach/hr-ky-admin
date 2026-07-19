@@ -3,6 +3,7 @@
 namespace App\Resources\SellOutReport;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class SellOutReportResource extends JsonResource
 {
@@ -16,7 +17,7 @@ class SellOutReportResource extends JsonResource
             'branch_name' => $this->branch_name,
             'customer_name' => $this->customer_name,
             'customer_phone' => $this->customer_phone,
-            'service_type' => $this->service_type,
+            'service_type' => $this->display_service_type,
             'payment_method' => $this->payment_method,
             'note' => $this->note ?? '',
             'extracted_text' => $this->extracted_text ?? '',

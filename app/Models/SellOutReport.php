@@ -11,6 +11,8 @@ class SellOutReport extends Model
 {
     use HasFactory;
 
+    public const DEFAULT_SERVICE_TYPE = 'លក់';
+
     protected $fillable = [
         'invoice_no',
         'original_invoice_no',
@@ -46,5 +48,12 @@ class SellOutReport extends Model
     public function photos(): HasMany
     {
         return $this->hasMany(SellOutReportPhoto::class);
+    }
+
+    public function getDisplayServiceTypeAttribute(): string
+    {
+        return trim((string) $this->service_type) !== ''
+            ? $this->service_type
+            : self::DEFAULT_SERVICE_TYPE;
     }
 }

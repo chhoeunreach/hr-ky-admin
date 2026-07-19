@@ -150,6 +150,7 @@
                 <div class="row">
                     <div class="col-md-3 mb-3"><strong>{{ __('index.internal_invoice_no') }}:</strong><br>{{ $report->invoice_no }}</div>
                     <div class="col-md-3 mb-3"><strong>{{ __('index.original_invoice_no') }}:</strong><br>{{ $report->original_invoice_no ?? '-' }}</div>
+                    <div class="col-md-3 mb-3"><strong>{{ __('index.sell_type') }}:</strong><br>{{ $report->display_service_type }}</div>
                     <div class="col-md-3 mb-3"><strong>{{ __('index.seller_name') }}:</strong><br>{{ $report->seller_name ?: ($report->user->name ?? '-') }}</div>
                     <div class="col-md-3 mb-3"><strong>{{ __('index.branch_name') }}:</strong><br>{{ $report->branch_name ?? '-' }}</div>
                     <div class="col-md-3 mb-3"><strong>{{ __('index.customer_name') }}:</strong><br>{{ $report->customer_name ?? '-' }}</div>
