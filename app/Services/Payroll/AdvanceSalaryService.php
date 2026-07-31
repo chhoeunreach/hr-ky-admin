@@ -96,6 +96,7 @@ class AdvanceSalaryService
             $validatedData['advance_requested_date'] = Carbon::now()->format('Y-m-d H:i:s');
             $validatedData['status'] = $validatedData['status'] ?? 'pending';
             $validatedData['is_settled'] = $validatedData['is_settled'] ?? false;
+            $validatedData['created_by'] = auth('admin')->id() ?? auth()->id();
 
             DB::beginTransaction();
             $advanceSalary = $this->advanceSalaryRepo->store($validatedData);

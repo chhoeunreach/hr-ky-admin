@@ -42,7 +42,7 @@ class AdvanceSalary extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->created_by = Auth::user()->id ?? null;
+            $model->created_by = $model->created_by ?? auth('admin')->id() ?? Auth::id();
         });
 
         static::updating(function ($model) {
@@ -87,4 +87,3 @@ class AdvanceSalary extends Model
 }
 
 ?>
-
