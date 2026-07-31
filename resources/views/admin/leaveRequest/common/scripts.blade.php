@@ -175,8 +175,9 @@
 
                 if (data.data && data.data.length > 0) {
                     data.data.forEach(user => {
+                        const employeeLabel = user.username ? `${user.name} (${user.username})` : user.name;
                         $('#requestedBy').append(
-                            `<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''}>${user.name}</option>`
+                            `<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''}>${employeeLabel}</option>`
                         );
                     });
                 } else {

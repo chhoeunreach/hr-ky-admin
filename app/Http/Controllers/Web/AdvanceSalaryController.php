@@ -8,7 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Exports\AdvanceSalaryExport;
 use App\Repositories\CompanyRepository;
 use App\Repositories\GeneralSettingRepository;
+use App\Repositories\UserRepository;
 use App\Requests\GeneralSetting\GeneralSettingRequest;
+use App\Requests\Payroll\AdvanceSalary\AdvanceSalaryRequest;
 use App\Requests\Payroll\AdvanceSalary\AdvanceSalaryUpdateRequest;
 use App\Services\Payroll\AdvanceSalaryService;
 use App\Services\TelegramService;
@@ -25,7 +27,13 @@ class AdvanceSalaryController extends Controller
     use CustomAuthorizesRequests;
     private $view = 'admin.payroll.advanceSalary.';
 
-    public function __construct(public AdvanceSalaryService $advanceSalaryService, public GeneralSettingRepository $generalSettingRepository, protected CompanyRepository $companyRepository, protected TelegramService $telegramService){}
+    public function __construct(
+        public AdvanceSalaryService $advanceSalaryService,
+        public GeneralSettingRepository $generalSettingRepository,
+        protected CompanyRepository $companyRepository,
+        protected TelegramService $telegramService,
+        protected UserRepository $userRepository
+    ){}
 
     public function index(Request $request)
     {
@@ -49,6 +57,62 @@ class AdvanceSalaryController extends Controller
             return view($this->view . 'index',compact('advanceSalaryRequestLists','filterParameters','months','companyDetail'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function create()
+    {
+        $this->authorize('add_advance_salary');
+
+        try {
+            $companyDetail = $this->companyRepository->getCompanyDetail(['id', 'name'], ['branches:id,name']);
+            $employees = $this->userRepository->getAllVerifiedEmployeesExceptAdminOfCompany(
+                ['id', 'name', 'username', 'branch_id', 'department_id'],
+                ['branch:id,name', 'department:id,dept_name']
+            );
+            $filterParameters = [
+                'branch_id' => null,
+                'department_id' => null,
+                'employee_id' => null,
+            ];
+
+            return view($this->view . 'create', compact('companyDetail', 'employees', 'filterParameters'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function store(AdvanceSalaryRequest $request)
+    {
+        $this->authorize('add_advance_salary');
+
+        try {
+            $validatedData = $request->validated();
+            $employeeId = (int) $validatedData['employee_id'];
+
+            if ($this->advanceSalaryService->checkIfEmployeeUnsettledAdvanceSalaryRequestExists($employeeId)) {
+                throw new Exception(__('index.advance_salary_pending_error'), 400);
+            }
+
+            $advanceDetail = $this->advanceSalaryService->storeByAdmin($validatedData);
+            $advanceDetail->loadMissing('requestedBy:id,name');
+
+            AppHelper::sendNotificationToAuthorizedUser(
+                __('index.advance_salary_request_alert'),
+                __('index.user_submitted_advance_salary_request', [
+                    'name' => $advanceDetail->requestedBy->name ?? __('index.employee'),
+                    'amount' => $validatedData['requested_amount'],
+                ]),
+                'advance_salary_alert'
+            );
+
+            return redirect()
+                ->route('admin.advance-salaries.index')
+                ->with('success', __('index.data_created_successfully'));
+        } catch (Exception $exception) {
+            return redirect()->back()
+                ->with('danger', $exception->getMessage())
+                ->withInput();
         }
     }
 

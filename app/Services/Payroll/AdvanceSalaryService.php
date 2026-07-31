@@ -90,6 +90,32 @@ class AdvanceSalaryService
     /**
      * @throws Exception
      */
+    public function storeByAdmin(array $validatedData)
+    {
+        try {
+            $validatedData['advance_requested_date'] = Carbon::now()->format('Y-m-d H:i:s');
+            $validatedData['status'] = $validatedData['status'] ?? 'pending';
+            $validatedData['is_settled'] = $validatedData['is_settled'] ?? false;
+
+            DB::beginTransaction();
+            $advanceSalary = $this->advanceSalaryRepo->store($validatedData);
+
+            if ($advanceSalary && isset($validatedData['documents'])) {
+                $attachments = $this->prepareAttachmentDataToStore($validatedData['documents']);
+                $this->advanceSalaryRepo->createManyAttachment($advanceSalary, $attachments);
+            }
+
+            DB::commit();
+            return $advanceSalary;
+        } catch (Exception $exception) {
+            DB::rollBack();
+            throw $exception;
+        }
+    }
+
+    /**
+     * @throws Exception
+     */
     public function changeAdvanceSalaryStatus($advanceSalaryDetail, $validatedData)
     {
         return $this->advanceSalaryRepo->changeAdvanceSalaryStatus($advanceSalaryDetail,$validatedData);

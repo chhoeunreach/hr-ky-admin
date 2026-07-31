@@ -88,8 +88,14 @@
             </form>
         </div>
         <div class="card">
-            <div class="card-header">
+            <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="card-title mb-0">{{ __('index.advance_salary_lists') }}</h6>
+                @can('add_advance_salary')
+                    <a href="{{ route('admin.advance-salaries.create') }}" class="btn btn-primary btn-sm">
+                        <i class="link-icon" data-feather="plus"></i>
+                        {{ __('index.add_new') }}
+                    </a>
+                @endcan
             </div>
             <div class="card-body">
                 <div class="table-responsive">

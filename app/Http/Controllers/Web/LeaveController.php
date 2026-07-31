@@ -230,16 +230,21 @@ class LeaveController extends Controller
                 $with = ['branches:id,name'];
                 $select = ['id', 'name'];
                 $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
+                $employees = $this->userRepository->getAllVerifiedEmployeesExceptAdminOfCompany(
+                    ['id', 'name', 'username', 'branch_id', 'department_id'],
+                    ['branch:id,name', 'department:id,dept_name']
+                );
                 $preselectedEmployee = null;
 
                 if ($request->filled('requested_by')) {
                     $preselectedEmployee = $this->userRepository->findUserDetailById(
                         $request->integer('requested_by'),
-                        ['id', 'name', 'branch_id', 'department_id']
+                        ['id', 'name', 'username', 'branch_id', 'department_id'],
+                        ['branch:id,name', 'department:id,dept_name']
                     );
                 }
 
-                return view($this->view . 'add', compact('companyDetail', 'bsEnabled', 'preselectedEmployee'));
+                return view($this->view . 'add', compact('companyDetail', 'bsEnabled', 'preselectedEmployee', 'employees'));
             } catch (Exception $exception) {
                 return redirect()->back()->with('danger', $exception->getMessage());
             }

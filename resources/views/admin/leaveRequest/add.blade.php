@@ -22,35 +22,39 @@
                             @csrf
 
                             <div class="row">
-                                @if(!isset(auth()->user()->branch_id))
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-                                    <select class="form-select" id="branch_id" name="branch_id" required>
-                                        <option selected disabled>{{ __('index.select_branch') }}
-                                        </option>
-                                        @if(isset($companyDetail))
-                                            @foreach($companyDetail->branches()->get() as $key => $branch)
-                                                <option value="{{$branch->id}}">
-                                                    {{ucfirst($branch->name)}}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                </div>
-                                @endif
-                                <!-- Departments Field -->
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <label for="department_id" class="form-label">{{ __('index.department') }} <span style="color: red">*</span></label>
-                                    <select class="form-select" id="department_id" name="department_id" required>
-                                        <option selected disabled>{{ __('index.select_department') }}</option>
-
-                                    </select>
-                                </div>
                                 <div class="col-lg-4 col-md-6 mb-4">
                                     <label for="requestedBy" class="form-label">{{ __('index.requested_for') }}<span style="color: red">*</span></label>
                                     <select class="form-select" id="requestedBy" name="requested_by" required>
                                         <option selected disabled>{{ __('index.select_employee') }}</option>
-
+                                        @foreach($employees ?? [] as $employee)
+                                            <option value="{{ $employee->id }}"
+                                                    data-branch-id="{{ $employee->branch_id }}"
+                                                    data-branch-name="{{ $employee->branch->name ?? '' }}"
+                                                    data-department-id="{{ $employee->department_id }}"
+                                                    data-department-name="{{ $employee->department->dept_name ?? '' }}"
+                                                {{ (old('requested_by') == $employee->id || (($preselectedEmployee->id ?? null) == $employee->id)) ? 'selected' : '' }}>
+                                                {{ ucfirst($employee->name) }}{{ $employee->username ? ' (' . $employee->username . ')' : '' }}
+                                            </option>
+                                        @endforeach
                                     </select>
+                                </div>
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <label for="branch_display" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="branch_display"
+                                           placeholder="{{ __('index.select_branch') }}"
+                                           readonly>
+                                    <input type="hidden" id="branch_id" name="branch_id" value="{{ old('branch_id', $preselectedEmployee->branch_id ?? '') }}">
+                                </div>
+                                <div class="col-lg-4 col-md-6 mb-4">
+                                    <label for="department_display" class="form-label">{{ __('index.department') }} <span style="color: red">*</span></label>
+                                    <input type="text"
+                                           class="form-control"
+                                           id="department_display"
+                                           placeholder="{{ __('index.select_department') }}"
+                                           readonly>
+                                    <input type="hidden" id="department_id" name="department_id" value="{{ old('department_id', $preselectedEmployee->department_id ?? '') }}">
                                 </div>
                                 <div class="col-lg-3 col-md-6 mb-4">
                                     <label for="leaveType" class="form-label">{{ __('index.leave_type') }}<span style="color: red">*</span></label>
@@ -181,86 +185,22 @@
             }
         });
         $(document).ready(function () {
-            const preselectedEmployeeId = "{{ $preselectedEmployee->id ?? '' }}";
-            const preselectedBranchId = "{{ $preselectedEmployee->branch_id ?? (auth()->user()->branch_id ?? '') }}";
-            const preselectedDepartmentId = "{{ $preselectedEmployee->department_id ?? '' }}";
-
-            $("#department_id").select2();
-            $("#branch_id").select2();
             $("#requestedBy").select2();
             $("#leaveType").select2();
 
+            const syncEmployeeBranchAndDepartment = () => {
+                const selectedEmployee = $('#requestedBy').find(':selected');
+                const branchId = selectedEmployee.data('branch-id') || '';
+                const branchName = selectedEmployee.data('branch-name') || '';
+                const departmentId = selectedEmployee.data('department-id') || '';
+                const departmentName = selectedEmployee.data('department-name') || '';
 
-            const loadDepartments = async () => {
-                const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-                const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-                const selectedBranchId = isAdmin ? $('#branch_id').val() : defaultBranchId;
-
-                if (!selectedBranchId) return;
-
-                try {
-                    const response = await $.ajax({
-                        type: 'GET',
-                        url: `{{ url('admin/departments/get-All-Departments') }}/${selectedBranchId}`,
-                    });
-
-                    // Clear existing options
-                    $('#department_id').empty();
-
-                    $('#department_id').append('<option selected disabled>{{ __("index.select_department") }}</option>');
-                    if (response.data && response.data.length > 0) {
-                        response.data.forEach(department => {
-                            $('#department_id').append(
-                                `<option value="${department.id}" ${String(department.id) === String(preselectedDepartmentId) ? 'selected' : ''}>${department.dept_name}</option>`
-                            );
-                        });
-                    } else {
-                        $('#department_id').append('<option disabled>{{ __("index.no_department_found") }}</option>');
-                    }
-
-                    $('#department_id').trigger('change');
-
-                } catch (error) {
-                    $('#department_id').append('<option disabled>{{ __("index.error_loading_department") }}</option>');
-                }
+                $('#branch_id').val(branchId);
+                $('#branch_display').val(branchName);
+                $('#department_id').val(departmentId);
+                $('#department_display').val(departmentName);
             };
 
-            const loadEmployees = async () => {
-                const selectedDepartmentId = $('#department_id').val();
-                if (!selectedDepartmentId) return;
-
-                try {
-                    $('#requestedBy').empty().append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-
-                    const response = await fetch(`{{ url('admin/employees/get-all-employees') }}/${selectedDepartmentId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        }
-                    });
-
-                    const data = await response.json(); // Missing in original code
-                    $('#requestedBy').empty();
-                    $('#requestedBy').append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-
-                    if (data.data && data.data.length > 0) {
-                        // Populate dropdown with employee options
-                        data.data.forEach(user => {
-                            $('#requestedBy').append(`<option value="${user.id}" ${String(user.id) === String(preselectedEmployeeId) ? 'selected' : ''}>${user.name}</option>`);
-                        });
-                    } else {
-                        $('#requestedBy').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
-                    }
-
-                    if (preselectedEmployeeId) {
-                        $('#requestedBy').trigger('change');
-                    }
-
-                } catch (error) {
-                    $('#requestedBy').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
-                }
-            };
             const loadLeaveTypes = async () => {
                 const selectedEmployee = $('#requestedBy').val();
                 if (!selectedEmployee) return;
@@ -293,23 +233,14 @@
                     $('#leaveType').append('<option disabled>{{ __("index.error_loading_leave_types") }}</option>');
                 }
             };
-            // Load data when branch is selected
-            const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-            if (isAdmin) {
-                if (preselectedBranchId) {
-                    $('#branch_id').val(preselectedBranchId).trigger('change');
-                }
-                $('#branch_id').change(loadDepartments).trigger('change');
-                $('#requestedBy').empty();
-                $('#leaveType').empty();
-            } else {
-                loadDepartments(); // Load directly for regular users
-                $('#requestedBy').empty();
-                $('#leaveType').empty();
-            }
-            // Corrected selector and trigger
-            $('#department_id').change(loadEmployees).trigger('change'); // Corrected selector and trigger
-            $('#requestedBy').change(loadLeaveTypes).trigger('change'); // Corrected selector and trigger
+
+            $('#requestedBy').change(function () {
+                syncEmployeeBranchAndDepartment();
+                loadLeaveTypes();
+            });
+
+            syncEmployeeBranchAndDepartment();
+            loadLeaveTypes();
         });
 
     </script>

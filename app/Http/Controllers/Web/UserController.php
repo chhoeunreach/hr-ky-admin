@@ -536,7 +536,7 @@ class UserController extends Controller
     {
         try {
 
-            $select = ['name', 'id'];
+            $select = ['name', 'username', 'id'];
             $users = $this->userRepo->getAllActiveEmployeeOfDepartment($departmentId, $select);
             return response()->json([
                 'data' => $users

@@ -30,6 +30,11 @@ class AdvanceSalaryRequest extends FormRequest
             'documents' => ['nullable', 'array', 'min:1'],
             'documents.*' => ['nullable', 'file', 'mimes:jpeg,png,jpg,docx,doc,xls,pdf', 'max:5048'],
         ];
+
+        if ($this->routeIs('admin.advance-salaries.store')) {
+            $rules['employee_id'] = ['required', Rule::exists('users', 'id')->where('status', 'verified')->where('is_active', 1)];
+        }
+
         $rules['advance_salary_id'] = ['sometimes', Rule::exists('advance_salaries', 'id')->where('status', 'pending')];
 
         return $rules;
