@@ -213,8 +213,12 @@ class TimeLeaveController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
+            $employees = $this->userRepository->getAllVerifiedEmployeesExceptAdminOfCompany(
+                ['id', 'name', 'username', 'branch_id', 'department_id'],
+                ['branch:id,name', 'department:id,dept_name']
+            );
 
-            return view($this->view . 'add', compact('companyDetail'));
+            return view($this->view . 'add', compact('companyDetail', 'employees'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

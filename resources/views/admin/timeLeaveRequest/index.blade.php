@@ -301,7 +301,8 @@
 
                     if (data.data && data.data.length > 0) {
                         data.data.forEach(user => {
-                            $('#requestedBy').append(`<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''}>${user.name}</option>`);
+                            const employeeLabel = user.username ? `${user.name} (${user.username})` : user.name;
+                            $('#requestedBy').append(`<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''}>${employeeLabel}</option>`);
                         });
                     } else {
                         $('#requestedBy').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
@@ -338,7 +339,6 @@
     </script>
 
 @endsection
-
 
 
 
