@@ -633,6 +633,161 @@ class AttendanceController extends Controller
         }
     }
 
+    public function copyExport(Request $request): JsonResponse
+    {
+        $this->authorize('list_attendance');
+
+        try {
+            $appTimeSetting = AppHelper::check24HoursTimeAppSetting();
+            $isBsEnabled = AppHelper::ifDateInBsEnabled();
+            $companyId = AppHelper::getAuthUserCompanyId();
+
+            $filterParameter = [
+                'attendance_date' => $request->attendance_date ?? AppHelper::getCurrentDateInYmdFormat(),
+                'company_id' => $companyId,
+                'branch_id' => $request->branch_id ?? null,
+                'department_id' => $request->department_id ?? null,
+                'search' => trim((string) $request->query('search', '')),
+                'status_filter' => $request->query('status_filter'),
+                'download_excel' => true,
+                'date_in_bs' => false,
+            ];
+
+            if ($isBsEnabled) {
+                $filterParameter['attendance_date'] = $request->attendance_date ?? AppHelper::getCurrentDateInBS();
+                $filterParameter['date_in_bs'] = true;
+            }
+
+            if (!auth('admin')->check() && auth()->check()) {
+                $filterParameter['branch_id'] = auth()->user()->branch_id;
+            }
+
+            $multipleAttendance = AppHelper::getAttendanceLimit();
+            $attendanceDetail = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter);
+            $rows = $this->buildAttendanceDayWiseCopyRows($attendanceDetail, $filterParameter, $multipleAttendance, $appTimeSetting);
+
+            if (count($rows) <= 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('index.no_records_found'),
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'text' => collect($rows)
+                    ->map(fn ($row) => collect($row)->map(fn ($value) => str_replace(["\t", "\r", "\n"], ' ', (string) $value))->implode("\t"))
+                    ->implode("\n"),
+            ]);
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function buildAttendanceDayWiseCopyRows($attendanceDetail, array $filterParameter, int $multipleAttendance, bool $appTimeSetting): array
+    {
+        $rows = [[
+            'ID',
+            __('index.date'),
+            'User',
+            __('index.employee_name'),
+            'Time In',
+            __('index.check_in_at'),
+            'Time Out',
+            __('index.check_out_at'),
+            __('index.total_worked_hours'),
+            __('index.attendance_status'),
+            __('index.leave'),
+            'Month-Year',
+            'Create By',
+            'Create At',
+            'Update By',
+            'Update At',
+        ]];
+
+        foreach ($attendanceDetail->groupBy('user_id') as $userAttendances) {
+            $firstAttendance = $userAttendances->first();
+            $lastAttendance = $userAttendances->last();
+            $selectedAttendanceDate = $firstAttendance->attendance_date ?? $filterParameter['attendance_date'];
+            $displayDate = $selectedAttendanceDate ? date('Y-m-d', strtotime($selectedAttendanceDate)) : '';
+            $nightShift = ($firstAttendance->user_shift_type ?? $firstAttendance->shift) === \App\Enum\ShiftTypeEnum::night->value;
+
+            $timeIn = isset($firstAttendance->office_opening_time)
+                ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_opening_time)
+                : '';
+            $timeOut = isset($firstAttendance->office_closing_time)
+                ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->office_closing_time)
+                : '';
+
+            if ($nightShift) {
+                $checkInAt = isset($firstAttendance->night_checkin)
+                    ? AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $firstAttendance->night_checkin)
+                    : '';
+                $checkOutAt = isset($lastAttendance->night_checkout)
+                    ? AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $lastAttendance->night_checkout)
+                    : '';
+            } else {
+                $checkInAt = isset($firstAttendance->check_in_at)
+                    ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->check_in_at)
+                    : '';
+                $checkOutAt = isset($lastAttendance->check_out_at)
+                    ? AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $lastAttendance->check_out_at)
+                    : '';
+            }
+
+            $totalWorkedMinutes = $userAttendances->sum('worked_hour');
+            $workedHourDisplay = ($multipleAttendance > 1 && !$nightShift)
+                ? AttendanceHelper::getWorkedTimeInHourAndMinute($totalWorkedMinutes)
+                : AttendanceHelper::getWorkedTimeInHourAndMinute($firstAttendance->worked_hour ?? 0);
+
+            $attendanceStatus = !is_null($firstAttendance->attendance_status)
+                ? ($firstAttendance->attendance_status == Attendance::ATTENDANCE_APPROVED
+                    ? __('index.approved')
+                    : __('index.rejected'))
+                : __('index.pending');
+
+            $leaveLabels = [];
+            if ($firstAttendance->leave_request_id) {
+                $leaveRequestType = $firstAttendance->leave_request_type
+                    ? ucfirst($firstAttendance->leave_request_type)
+                    : __('index.leave_request');
+                $leaveLabels[] = $leaveRequestType . ' (' . ucfirst($firstAttendance->leave_request_status) . ')';
+            }
+
+            if ($firstAttendance->time_leave_id) {
+                $leaveLabels[] = __('index.time_leave_request') . ' (' .
+                    AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_start_time) .
+                    ' - ' .
+                    AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) .
+                    ', ' . ucfirst($firstAttendance->time_leave_status) . ')';
+            }
+
+            $rows[] = [
+                $displayDate . $firstAttendance->username,
+                $displayDate,
+                $firstAttendance->username,
+                $firstAttendance->user_name,
+                $timeIn,
+                $checkInAt,
+                $timeOut,
+                $checkOutAt,
+                $workedHourDisplay,
+                $attendanceStatus,
+                implode(' | ', $leaveLabels),
+                $selectedAttendanceDate ? date('m-Y', strtotime($selectedAttendanceDate)) : '',
+                $firstAttendance->created_by ? AppHelper::findUserName($firstAttendance->created_by) : '',
+                $firstAttendance->created_at ? date('Y-m-d H:i:s', strtotime($firstAttendance->created_at)) : '',
+                $firstAttendance->updated_by ? AppHelper::findUserName($firstAttendance->updated_by) : '',
+                $firstAttendance->updated_at ? date('Y-m-d H:i:s', strtotime($firstAttendance->updated_at)) : '',
+            ];
+        }
+
+        return $rows;
+    }
+
     public function show(Request $request, $employeeId)
     {
 

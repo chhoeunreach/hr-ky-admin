@@ -266,6 +266,7 @@ Route::group([
         Route::put('employees/night-attendance/{id}', [AttendanceController::class, 'updateNightAttendance'])->name('night_attendances.update');
 
         Route::get('attendances/leave-details', [AttendanceController::class, 'leaveDetails'])->name('attendances.leave-details');
+        Route::get('attendances/copy-export', [AttendanceController::class, 'copyExport'])->name('attendances.copy-export');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
         Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
         Route::resource('attendances', AttendanceController::class);
@@ -285,6 +286,7 @@ Route::group([
         Route::get('leave-request/create', [LeaveController::class, 'createLeaveRequest'])->name('leave-request.create');
         Route::get('leave-request/add', [LeaveController::class, 'addLeaveRequest'])->name('leave-request.add');
         Route::post('leave-request/add', [LeaveController::class, 'saveLeaveRequest'])->name('leave-request.save');
+        Route::get('leave-request/copy-export', [LeaveController::class, 'copyExport'])->name('leave-request.copy-export');
         Route::get('leave-request/export', [LeaveController::class, 'export'])->name('leave-request.export');
 
         /** Time Leave Route */

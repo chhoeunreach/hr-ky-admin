@@ -297,6 +297,12 @@
                             </div>
 
                             <div class="d-flex align-items-center gap-3 leave-toolbar-controls">
+                                <button type="button"
+                                        id="copy-leave-request-export"
+                                        data-href="{{ route('admin.leave-request.copy-export') }}"
+                                        class="btn leave-export-btn">
+                                    Copy Excel
+                                </button>
                                 <a class="btn leave-export-btn"
                                    href="{{ route('admin.leave-request.export', request()->query()) }}">
                                     Export
@@ -523,6 +529,68 @@
 @section('scripts')
     @include('admin.leaveRequest.common.scripts')
     <script>
+        const copyLeaveRequestTextToClipboard = async (text) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        };
+
+        document.addEventListener('click', async function (event) {
+            const copyButton = event.target.closest('#copy-leave-request-export');
+            if (!copyButton) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const copyUrl = new URL(copyButton.getAttribute('data-href'), window.location.origin);
+            const currentUrl = new URL(window.location.href);
+
+            ['branch_id', 'department_id', 'requested_by', 'leave_type', 'year', 'month', 'status', 'search'].forEach((key) => {
+                const value = currentUrl.searchParams.get(key);
+                if (value) {
+                    copyUrl.searchParams.set(key, value);
+                }
+            });
+
+            const originalHtml = copyButton.innerHTML;
+            copyButton.disabled = true;
+            copyButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Copying';
+
+            try {
+                const response = await fetch(copyUrl.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Unable to copy leave request export data.');
+                }
+
+                await copyLeaveRequestTextToClipboard(data.text);
+                Swal.fire('Copied', 'Export data is ready to paste into Excel.', 'success');
+            } catch (error) {
+                Swal.fire('Copy failed', error.message || 'Unable to copy leave request export data. Please try again.', 'error');
+            } finally {
+                copyButton.disabled = false;
+                copyButton.innerHTML = originalHtml;
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.showLeaveReason').forEach(function (element) {
                 element.addEventListener('click', function (event) {

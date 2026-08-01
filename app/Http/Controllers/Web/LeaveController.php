@@ -20,6 +20,7 @@ use App\Services\Notification\NotificationService;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +92,108 @@ class LeaveController extends Controller
         }
 
         abort(403);
+    }
+
+    public function copyExport(Request $request): JsonResponse
+    {
+        if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave')) {
+            try {
+                $filterParameters = $this->buildLeaveRequestFilters($request);
+
+                if (!$request->filled('month')) {
+                    if (AppHelper::ifDateInBsEnabled()) {
+                        $nepaliDate = AppHelper::getCurrentNepaliYearMonth();
+                        $filterParameters['month'] = $nepaliDate['month'];
+                        $filterParameters['year'] = $request->filled('year') ? $request->year : $nepaliDate['year'];
+                    } else {
+                        $filterParameters['month'] = Carbon::now()->format('m');
+                    }
+                }
+
+                $with = ['leaveType:id,name,leave_allocated', 'leaveRequestedBy:id,name,employee_code,username', 'leaveRequestUpdatedBy:id,name'];
+                $select = ['leave_requests_master.*'];
+                $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequestsForExport($filterParameters, $select, $with);
+                $rows = $this->buildLeaveRequestCopyRows($leaveDetails);
+
+                if (count($rows) <= 1) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('index.no_records_found'),
+                    ], 404);
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'text' => collect($rows)
+                        ->map(fn ($row) => collect($row)->map(fn ($value) => str_replace(["\t", "\r", "\n"], ' ', (string) $value))->implode("\t"))
+                        ->implode("\n"),
+                ]);
+            } catch (Exception $exception) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
+        }
+
+        abort(403);
+    }
+
+    private function buildLeaveRequestCopyRows($leaveDetails): array
+    {
+        $rows = [[
+            'ថ្ងៃខែឆ្នាំ',
+            'លេខសម្គាល់',
+            'ឈ្មោះ',
+            'ប្រភេទឈប់',
+            'Paid/Unpaid',
+            'រយៈពេល (ថ្ងៃ)',
+            'ចាប់ពីថ្ងៃ',
+            'ដលថ្ងៃ',
+            'ផ្សេង',
+            'ស្ថានភាព',
+            'អនុញ្ញាតិដោយ',
+            'ផ្សេងៗ',
+            'ថ្ងៃខែស្នើរ',
+            'ថ្ងៃខែអនុញ្ញាតិ',
+            'ខែ-ឆ្នាំ',
+            'សម្គាល់-ខែ-ឆ្នាំ',
+        ]];
+
+        foreach ($leaveDetails as $leave) {
+            $requestedDate = $leave->leave_requested_date ? date('d-m-Y', strtotime($leave->leave_requested_date)) : '';
+            $username = $leave->leaveRequestedBy?->username ?? '';
+            $employeeName = $leave->leaveRequestedBy?->name ?? 'N/A';
+            $leaveTypeName = $leave->leaveType?->name ?? '';
+            $isPaid = !is_null($leave->leaveType?->leave_allocated);
+            $paidStatus = $leave->status === 'rejected' ? 0 : ($isPaid ? 1 : 2);
+            $approvedBy = $leave->leaveRequestUpdatedBy?->name ?? '';
+            $requestedAt = $leave->leave_requested_date ? date('Y-m-d H:i:s', strtotime($leave->leave_requested_date)) : '';
+            $approvedAt = $leave->updated_at ? date('Y-m-d H:i:s', strtotime($leave->updated_at)) : '';
+            $monthYear = $leave->leave_requested_date ? date('m-Y', strtotime($leave->leave_requested_date)) : '';
+            $monthYearNote = $requestedDate && $username ? $requestedDate . '-' . $username : '';
+
+            $rows[] = [
+                $requestedDate,
+                $username,
+                $employeeName,
+                $leaveTypeName,
+                $paidStatus,
+                $leave->no_of_days,
+                $leave->leave_from,
+                $leave->leave_to,
+                strip_tags($leave->reasons ?? ''),
+                $leave->status,
+                $approvedBy,
+                strip_tags($leave->admin_remark ?? ''),
+                $requestedAt,
+                $approvedAt,
+                $monthYear,
+                $monthYearNote,
+            ];
+        }
+
+        return $rows;
     }
 
     public function show($leaveId)

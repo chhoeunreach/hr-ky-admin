@@ -1530,6 +1530,12 @@
                         <h6 class="card-title mb-0">{{ __('index.attendance_of_the_day') }}</h6>
                     </div>
                     <div class="attendance-toolbar-actions">
+                        <button type="button"
+                                id="copy-daywise-attendance-excel"
+                                data-href="{{ route('admin.attendances.copy-export') }}"
+                                class="btn btn-outline-secondary btn-sm">
+                            Copy Excel
+                        </button>
                         @can('attendance_csv_export')
                             <button type="button"
                                     id="download-daywise-attendance-excel"
@@ -2897,6 +2903,71 @@
                 div.textContent = value ?? '';
                 return div.innerHTML;
             };
+
+            const copyTextToClipboard = async (text) => {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(text);
+                    return;
+                }
+
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                textarea.remove();
+            };
+
+            const copyAttendanceExportForExcel = async (button) => {
+                const copyUrl = new URL(button.getAttribute('data-href'), window.location.origin);
+                const currentUrl = new URL(window.location.href);
+
+                ['attendance_date', 'branch_id', 'department_id', 'search', 'status_filter'].forEach((key) => {
+                    const value = currentUrl.searchParams.get(key);
+                    if (value) {
+                        copyUrl.searchParams.set(key, value);
+                    }
+                });
+
+                const originalHtml = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Copying';
+
+                try {
+                    const response = await fetch(copyUrl.toString(), {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        throw new Error(data.message || 'Unable to copy attendance export data.');
+                    }
+
+                    await copyTextToClipboard(data.text);
+                    Swal.fire('Copied', 'Export data is ready to paste into Excel.', 'success');
+                } catch (error) {
+                    Swal.fire('Copy failed', error.message || 'Unable to copy attendance export data. Please try again.', 'error');
+                } finally {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            };
+
+            document.addEventListener('click', function (event) {
+                const copyButton = event.target.closest('#copy-daywise-attendance-excel');
+                if (!copyButton) {
+                    return;
+                }
+
+                event.preventDefault();
+                copyAttendanceExportForExcel(copyButton);
+            });
 
             const renderAttendanceLeaveDetails = (records) => {
                 if (!attendanceLeaveDetailModalBody) {
