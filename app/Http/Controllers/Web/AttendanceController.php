@@ -666,7 +666,7 @@ class AttendanceController extends Controller
             $attendanceDetail = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter);
             $rows = $this->buildAttendanceDayWiseCopyRows($attendanceDetail, $filterParameter, $multipleAttendance, $appTimeSetting);
 
-            if (count($rows) <= 1) {
+            if (count($rows) === 0) {
                 return response()->json([
                     'success' => false,
                     'message' => __('index.no_records_found'),
@@ -689,24 +689,7 @@ class AttendanceController extends Controller
 
     private function buildAttendanceDayWiseCopyRows($attendanceDetail, array $filterParameter, int $multipleAttendance, bool $appTimeSetting): array
     {
-        $rows = [[
-            'ID',
-            __('index.date'),
-            'User',
-            __('index.employee_name'),
-            'Time In',
-            __('index.check_in_at'),
-            'Time Out',
-            __('index.check_out_at'),
-            __('index.total_worked_hours'),
-            __('index.attendance_status'),
-            __('index.leave'),
-            'Month-Year',
-            'Create By',
-            'Create At',
-            'Update By',
-            'Update At',
-        ]];
+        $rows = [];
 
         foreach ($attendanceDetail->groupBy('user_id') as $userAttendances) {
             $firstAttendance = $userAttendances->first();
