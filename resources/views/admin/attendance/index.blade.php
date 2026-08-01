@@ -2950,7 +2950,19 @@
                     }
 
                     await copyTextToClipboard(data.text);
-                    Swal.fire('Copied', 'Export data is ready to paste into Excel.', 'success');
+                    const copiedRows = data.text
+                        ? data.text.split('\n').filter((row) => row.trim() !== '').length
+                        : 0;
+
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: `${copiedRows} row${copiedRows === 1 ? '' : 's'} copied`,
+                        showConfirmButton: false,
+                        timer: 1600,
+                        timerProgressBar: true,
+                    });
                 } catch (error) {
                     Swal.fire('Copy failed', error.message || 'Unable to copy attendance export data. Please try again.', 'error');
                 } finally {
