@@ -711,96 +711,7 @@
                     </div>
                     <div class="card-body preview-shell">
                         <div id="printArea">
-                            @foreach(collect($employees)->chunk(2) as $pageEmployees)
-                                <div class="a4-page">
-                                    <div class="a4-index">
-                                        <strong>ID</strong>
-                                        @foreach($pageEmployees as $employee)
-                                            <div>{{ $employee['employee_code'] ?? '' }}</div>
-                                        @endforeach
-                                    </div>
-                                    <div class="a4-grid" style="margin-top:10mm;margin-left:16mm;column-gap:10mm;row-gap:10mm;">
-                                        @foreach($pageEmployees as $employee)
-                                            <div class="id-card-wrap">
-                                                <div class="id-card id-card-front" style="width:71mm;height:103mm;">
-                                                    <div class="id-side" style="background:#f59e0b">
-                                                        <span class="side-logo-badge">
-                                                            @if(!empty($employee['branch_logo_url']))
-                                                                <img src="{{ $employee['branch_logo_url'] }}" alt="">
-                                                            @else
-                                                                <span>DHR</span>
-                                                            @endif
-                                                        </span>
-                                                        <span class="side-branch-name">{{ $formatBranchName($employee['branch'] ?? '') }}</span>
-                                                        <span class="side-logo-badge side-logo-badge-bottom">
-                                                            @if(!empty($employee['branch_logo_url']))
-                                                                <img src="{{ $employee['branch_logo_url'] }}" alt="">
-                                                            @else
-                                                                <span>DHR</span>
-                                                            @endif
-                                                        </span>
-                                                    </div>
-                                                    <div class="id-body">
-                                                        <img class="id-photo" src="{{ $employee['photo_url'] ?? asset('assets/images/img.png') }}" alt="">
-                                                        <div class="id-details id-details-khmer">
-                                                            <div>
-                                                                <span>ឈ្មោះ:</span>
-                                                                <strong>
-                                                                    {{ $employee['name'] ?? 'Employee' }}
-                                                                    @if(!empty($employee['english_name']))
-                                                                        <small>{{ $employee['english_name'] }}</small>
-                                                                    @endif
-                                                                </strong>
-                                                            </div>
-                                                            <div><span>មុខតំណែង:</span><strong>{{ $employee['position_khmer'] ?? ($employee['post'] ?? '') }}</strong></div>
-                                                            <div><span>សាខា:</span><strong>{{ $formatBranchName($employee['branch'] ?? '') }}</strong></div>
-                                                            <div><span>ផ្នែក:</span><strong>{{ $employee['department'] ?? '' }}</strong></div>
-                                                        </div>
-                                                        <div class="id-code">
-                                                            <div class="barcode-visual"><svg class="barcode-target" data-value="{{ $employee['employee_code'] ?? '' }}"></svg></div>
-                                                            <small>ID No : <b>{{ $employee['employee_code'] ?? '' }}</b></small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                        @foreach($pageEmployees as $employee)
-                                            <div class="id-card-wrap">
-                                                <div class="id-card id-card-back template-khmer_gold template-kneayerng-amber-back" style="width:71mm;height:103mm;">
-                                                    <div class="back-brand-row {{ !empty($employee['branch_logo_url']) ? '' : 'no-logo' }}">
-                                                        @if(!empty($employee['branch_logo_url']))
-                                                            <img class="id-logo back-branch-logo" src="{{ $employee['branch_logo_url'] }}" alt="">
-                                                        @endif
-                                                        <div class="back-brand-copy">
-                                                            <div class="back-title" style="color:#f59e0b">{{ $formatBranchName($employee['branch'] ?? '') }}</div>
-                                                            <div class="text-muted small">Scan. Pay. Done.</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="payment-grid">
-                                                        <div class="payment-box">
-                                                            <div class="payment-qr-frame">
-                                                                <div class="text-muted small">{{ $employee['khqr_account_id'] ?? ($employee['employee_code'] ?? '') }}</div>
-                                                            </div>
-                                                            <strong>KHQR</strong>
-                                                        </div>
-                                                    </div>
-                                                    <div class="back-contact">
-                                                        <strong class="back-contact-title">Contact Us:</strong>
-                                                        <div class="back-contact-row" style="--contact-color:#10b981"><span class="back-contact-icon">W</span><span>Website: <a href="http://kneayerng.com">http://kneayerng.com</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
-                                                    </div>
-                                                    <div class="back-note">If found, please return this card to គ្នាយើង.<br>Holder: {{ $employee['name'] ?? 'Employee' }}</div>
-                                                    <div class="signature-line">AUTHORIZED STAMP & SIGNATURE</div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            @endforeach
+                            <div class="text-muted p-4">Open A4 Print Studio to generate preview.</div>
                         </div>
                     </div>
                 </div>
@@ -830,95 +741,7 @@
         </div>
 
         <div class="print-only">
-            <div id="printAreaForPaper">
-                @foreach(collect($employees)->chunk(2) as $pageEmployees)
-                    <div class="a4-page">
-                        <div class="a4-index">
-                            <strong>ID</strong>
-                            @foreach($pageEmployees as $employee)
-                                <div>{{ $employee['employee_code'] ?? '' }}</div>
-                            @endforeach
-                        </div>
-                        <div class="a4-grid" style="margin-top:10mm;margin-left:16mm;column-gap:10mm;row-gap:10mm;">
-                            @foreach($pageEmployees as $employee)
-                                <div class="id-card-wrap">
-                                    <div class="id-card id-card-front" style="width:71mm;height:103mm;">
-                                        <div class="id-side" style="background:#f59e0b">
-                                            <span class="side-logo-badge">
-                                                @if(!empty($employee['branch_logo_url']))
-                                                    <img src="{{ $employee['branch_logo_url'] }}" alt="">
-                                                @else
-                                                    <span>DHR</span>
-                                                @endif
-                                            </span>
-                                            <span class="side-branch-name">{{ $formatBranchName($employee['branch'] ?? '') }}</span>
-                                            <span class="side-logo-badge side-logo-badge-bottom">
-                                                @if(!empty($employee['branch_logo_url']))
-                                                    <img src="{{ $employee['branch_logo_url'] }}" alt="">
-                                                @else
-                                                    <span>DHR</span>
-                                                @endif
-                                            </span>
-                                        </div>
-                                        <div class="id-body">
-                                            <img class="id-photo" src="{{ $employee['photo_url'] ?? asset('assets/images/img.png') }}" alt="">
-                                            <div class="id-details id-details-khmer">
-                                                <div>
-                                                    <span>ឈ្មោះ:</span>
-                                                    <strong>
-                                                        {{ $employee['name'] ?? 'Employee' }}
-                                                        @if(!empty($employee['english_name']))
-                                                            <small>{{ $employee['english_name'] }}</small>
-                                                        @endif
-                                                    </strong>
-                                                </div>
-                                                <div><span>មុខតំណែង:</span><strong>{{ $employee['position_khmer'] ?? ($employee['post'] ?? '') }}</strong></div>
-                                                <div><span>សាខា:</span><strong>{{ $formatBranchName($employee['branch'] ?? '') }}</strong></div>
-                                                <div><span>ផ្នែក:</span><strong>{{ $employee['department'] ?? '' }}</strong></div>
-                                            </div>
-                                            <div class="id-code">
-                                                <div class="barcode-visual"><svg class="barcode-target" data-value="{{ $employee['employee_code'] ?? '' }}"></svg></div>
-                                                <small>ID No : <b>{{ $employee['employee_code'] ?? '' }}</b></small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                            @foreach($pageEmployees as $employee)
-                                <div class="id-card-wrap">
-                                    <div class="id-card id-card-back template-khmer_gold template-kneayerng-amber-back" style="width:71mm;height:103mm;">
-                                        <div class="back-brand-row {{ !empty($employee['branch_logo_url']) ? '' : 'no-logo' }}">
-                                            @if(!empty($employee['branch_logo_url']))
-                                                <img class="id-logo back-branch-logo" src="{{ $employee['branch_logo_url'] }}" alt="">
-                                            @endif
-                                            <div class="back-brand-copy">
-                                                <div class="back-title" style="color:#f59e0b">{{ $formatBranchName($employee['branch'] ?? '') }}</div>
-                                                <div class="text-muted small">Scan. Pay. Done.</div>
-                                            </div>
-                                        </div>
-                                        <div class="payment-grid">
-                                            <div class="payment-box">
-                                                <div class="payment-qr-frame"><div class="text-muted small">{{ $employee['khqr_account_id'] ?? ($employee['employee_code'] ?? '') }}</div></div>
-                                                <strong>KHQR</strong>
-                                            </div>
-                                        </div>
-                                        <div class="back-contact">
-                                            <strong class="back-contact-title">Contact Us:</strong>
-                                            <div class="back-contact-row" style="--contact-color:#10b981"><span class="back-contact-icon">W</span><span>Website: <a href="http://kneayerng.com">http://kneayerng.com</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
-                                        </div>
-                                        <div class="back-note">If found, please return this card to គ្នាយើង.<br>Holder: {{ $employee['name'] ?? 'Employee' }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endforeach
-            </div>
+            <div id="printAreaForPaper"></div>
         </div>
     </section>
 @endsection
@@ -4305,6 +4128,12 @@
 
             const renderPages = (fullRender = false) => {
                 const selected = updateEmployeeCounts();
+                if (!selected.length) {
+                    $('#printArea').html('<div class="text-muted p-4">No employees selected.</div>');
+                    $('#printAreaForPaper').empty();
+                    return;
+                }
+
                 const cardsPerPage = parseInt($('#cardsPerPage').val(), 10);
                 const mode = $('#printMode').val();
                 const employeesPerPage = mode === 'front_back' ? Math.max(1, Math.floor(cardsPerPage / 2)) : cardsPerPage;
@@ -4349,6 +4178,7 @@
                 window.clearTimeout(pagesRenderTimer);
                 pagesRenderTimer = null;
                 renderPages(true);
+                return selectedEmployees().length > 0;
             };
 
             const phpOpen = '<' + '?php';
@@ -4812,7 +4642,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#printA4Now').on('click', function () {
-                renderPages(true);
+                if (!prepareFullPrintRender()) {
+                    alert('Please select at least one employee to print.');
+                    return;
+                }
                 window.print();
             });
 
@@ -4907,7 +4740,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             $('body').on('change', '.employee-check', function () {
                 employees[$(this).data('index')].selected = $(this).is(':checked');
                 $(this).closest('.employee-option').toggleClass('is-selected', $(this).is(':checked'));
-                renderBatchRows();
+                updateEmployeeCounts();
                 schedulePagesRender(80);
             });
 
@@ -5053,7 +4886,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 employees = employees.map((employee) => ({ ...employee, selected: true }));
                 renderEmployeePicker();
                 updateEmployeeCounts();
-                renderBatchRows();
                 schedulePagesRender(80);
             });
 
@@ -5061,7 +4893,6 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 employees = employees.map((employee) => ({ ...employee, selected: false }));
                 renderEmployeePicker();
                 updateEmployeeCounts();
-                renderBatchRows();
                 schedulePagesRender(80);
             });
 
@@ -5232,6 +5063,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     renderEmployeePicker();
                     updateEmployeeCounts();
                     schedulePagesRender(60);
+                } else if (tab === 'batch') {
+                    renderBatchRows();
                 }
             });
 
@@ -5309,7 +5142,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#exportPdf').on('click', async function () {
-                prepareFullPrintRender();
+                if (!prepareFullPrintRender()) {
+                    alert('Please select at least one employee to export.');
+                    return;
+                }
 
                 if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) {
                     window.print();
@@ -5350,11 +5186,21 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#printCards').on('click', function () {
-                prepareFullPrintRender();
+                if (!prepareFullPrintRender()) {
+                    alert('Please select at least one employee to print.');
+                    return;
+                }
                 window.print();
             });
 
             window.addEventListener('beforeprint', prepareFullPrintRender);
+            window.addEventListener('afterprint', () => {
+                if ($('#studio-a4print').hasClass('active')) {
+                    schedulePagesRender(80);
+                } else {
+                    $('#printAreaForPaper').empty();
+                }
+            });
 
             refreshStudio();
             window.digitalHrsMainReady = true;
@@ -6147,6 +5993,18 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
                 function renderA4() {
                     var selected = getSelectedFallbackEmployees(employees);
+                    if (!selected.length) {
+                        printArea.innerHTML = '<div class="text-muted p-4">No employees selected.</div>';
+                        paperArea.innerHTML = '';
+                        var emptyTotal = document.getElementById('totalCount');
+                        var emptyCount = document.getElementById('selectedCount');
+                        var emptyBadge = document.getElementById('a4SelectedBadge');
+                        if (emptyTotal) emptyTotal.textContent = employees.length;
+                        if (emptyCount) emptyCount.textContent = '0';
+                        if (emptyBadge) emptyBadge.textContent = '0';
+                        return false;
+                    }
+
                     var mode = readValue('printMode', 'front_back');
                     var cardsPerPage = parseInt(readValue('cardsPerPage', '4'), 10) || 4;
                     var employeesPerPage = mode === 'front_back' ? Math.max(1, Math.floor(cardsPerPage / 2)) : cardsPerPage;
@@ -6209,6 +6067,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     if (total) total.textContent = employees.length;
                     if (count) count.textContent = selected.length;
                     if (badge) badge.textContent = selected.length;
+                    return true;
                 }
 
                 renderFallbackPicker(employees, renderA4);
@@ -6329,7 +6188,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 var printNow = document.getElementById('printA4Now');
                 if (printNow) {
                     printNow.addEventListener('click', function () {
-                        renderA4();
+                        if (!renderA4()) {
+                            alert('Please select at least one employee to print.');
+                            return;
+                        }
                         window.print();
                     });
                 }
@@ -6337,7 +6199,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 var download = document.getElementById('downloadA4Pdf');
                 if (download) {
                     download.addEventListener('click', function () {
-                        renderA4();
+                        if (!renderA4()) {
+                            alert('Please select at least one employee to print.');
+                            return;
+                        }
                         window.print();
                     });
                 }
