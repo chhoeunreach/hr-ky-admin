@@ -227,6 +227,8 @@ return [
     'employee_email' => 'E-mail do funcionário',
     'employee_phone' => 'Telefone do funcionário',
     'full_name' => 'Nome completo',
+    'khmer_name' => 'Nome Khmer',
+    'english_name' => 'Nome Inglês',
     'designation' => 'Designação',
     'role' => 'Função',
     'shift' => 'Turno',

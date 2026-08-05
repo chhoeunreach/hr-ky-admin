@@ -228,6 +228,8 @@ return [
     'employee_email' => 'E-mail de l\'Employé',
     'employee_phone' => 'Numéro de Téléphone de l\'Employé',
     'full_name' => 'Nom Complet',
+    'khmer_name' => 'Nom Khmer',
+    'english_name' => 'Nom Anglais',
     'designation' => 'Désignation',
     'role' => 'Rôle',
     'shift' => 'Shift',

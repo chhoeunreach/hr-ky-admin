@@ -29,6 +29,11 @@ class BranchRequest extends FormRequest
             'name' => 'required|string',
             'address' => 'required|string',
             'phone' => 'required|string',
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'payment_qr_codes' => 'nullable|array',
+            'payment_qr_codes.*.payment_name' => 'nullable|string|max:255|required_with:payment_qr_codes.*.qr_code',
+            'payment_qr_codes.*.qr_code' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'payment_qr_codes.*.existing_qr_code' => 'nullable|string',
             'branch_head_id' => 'nullable|exists:users,id',
             'company_id' => 'required|exists:companies,id',
             'branch_location_latitude' => 'required|numeric',
@@ -39,7 +44,6 @@ class BranchRequest extends FormRequest
     }
 
 }
-
 
 
 

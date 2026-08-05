@@ -230,6 +230,8 @@ return [
     'employee_email' => 'Correo Electrónico del Empleado',
     'employee_phone' => 'Número de Teléfono del Empleado',
     'full_name' => 'Nombre Completo',
+    'khmer_name' => 'Nombre Khmer',
+    'english_name' => 'Nombre Inglés',
     'designation' => 'Designación',
     'role' => 'Rol',
     'shift' => 'Turno',

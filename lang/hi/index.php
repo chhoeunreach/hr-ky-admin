@@ -227,6 +227,8 @@ return [
     'employee_email' => 'कर्मचारी का ईमेल',
     'employee_phone' => 'कर्मचारी का फोन नंबर',
     'full_name' => 'पूरा नाम',
+    'khmer_name' => 'खमेर नाम',
+    'english_name' => 'अंग्रेज़ी नाम',
     'designation' => 'पदनाम',
     'role' => 'भूमिका',
     'shift' => 'शिफ्ट',

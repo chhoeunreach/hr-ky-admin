@@ -39,6 +39,7 @@ class UserUpdateRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:100|min:2',
+            'english_name' => 'nullable|string|max:100',
             'email' => ['required','email', Rule::unique('users')->ignore($this->employee)],
             'username' => ['required','string', Rule::unique('users')->ignore($this->employee)],
             'address' => 'nullable|required_unless:role_id,1',

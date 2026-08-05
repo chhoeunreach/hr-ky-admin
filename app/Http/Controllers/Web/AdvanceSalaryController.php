@@ -17,6 +17,7 @@ use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -45,7 +46,9 @@ class AdvanceSalaryController extends Controller
                 'department_id' => $request->department_id ?? null,
                 'employee_id' => $request->employee_id ?? null,
                 'status' => $request->status ?? null,
-                'month' => $request->month ?? null
+                'month' => $request->month ?? null,
+                'search' => trim((string) $request->query('search', '')),
+                'per_page' => $request->query('per_page', 25),
             ];
             $select = ['*'];
             $with = [];
@@ -287,6 +290,7 @@ class AdvanceSalaryController extends Controller
             'employee_id' => $request->employee_id ?? null,
             'status' => $request->status ?? null,
             'month' => $request->month ?? null,
+            'search' => trim((string) $request->query('search', '')),
         ];
 
         $filterParameters = array_filter($filterParameters, fn ($value) => $value !== null && $value !== '');
@@ -302,6 +306,97 @@ class AdvanceSalaryController extends Controller
         $fileName = 'advance-salary-export-' . date('Y-m-d') . '.xlsx';
 
         return Excel::download(new AdvanceSalaryExport($advanceSalaries), $fileName);
+    }
+
+    public function copyExport(Request $request): JsonResponse
+    {
+        $this->authorize('view_advance_salary_list');
+
+        try {
+            $filterParameters = [
+                'branch_id' => $request->branch_id ?? null,
+                'department_id' => $request->department_id ?? null,
+                'employee_id' => $request->employee_id ?? null,
+                'status' => $request->status ?? null,
+                'month' => $request->month ?? null,
+                'search' => trim((string) $request->query('search', '')),
+            ];
+
+            $filterParameters = array_filter($filterParameters, fn ($value) => $value !== null && $value !== '');
+
+            $with = [
+                'requestedBy:id,name,username,phone,branch_id',
+                'requestedBy.branch:id,name',
+                'verifiedBy:id,name',
+            ];
+
+            $advanceSalaries = $this->advanceSalaryService->getAllAdvanceSalaryDetailForExport($filterParameters, ['*'], $with);
+            $rows = $this->buildAdvanceSalaryCopyRows($advanceSalaries);
+
+            if (count($rows) <= 1) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('index.no_records_found'),
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'row_count' => count($rows) - 1,
+                'text' => collect($rows)
+                    ->map(fn ($row) => collect($row)->map(fn ($value) => str_replace(["\t", "\r", "\n"], ' ', (string) $value))->implode("\t"))
+                    ->implode("\n"),
+            ]);
+        } catch (Exception $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+    }
+
+    private function buildAdvanceSalaryCopyRows($advanceSalaries): array
+    {
+        $rows = [[
+            'Date',
+            'Username+Month-Year',
+            'Username',
+            'Name',
+            'Reason',
+            'Branch',
+            'Phone Number',
+            'Type',
+            'Loan Amount',
+            'Payment',
+            'Approve By',
+            'Remark',
+            'Month-Year',
+        ]];
+
+        foreach ($advanceSalaries as $advanceSalary) {
+            $requestedBy = $advanceSalary->requestedBy;
+            $verifiedBy = $advanceSalary->verifiedBy;
+            $requestedDate = $advanceSalary->advance_requested_date;
+            $monthYear = $requestedDate ? date('m-Y', strtotime($requestedDate)) : '';
+
+            $rows[] = [
+                $requestedDate ? date('Y-m-d', strtotime($requestedDate)) : '',
+                ($requestedBy->username ?? '') . ($monthYear ? '-' . $monthYear : ''),
+                $requestedBy->username ?? '',
+                $requestedBy->name ?? '',
+                trim(strip_tags((string) ($advanceSalary->description ?? ''))),
+                $requestedBy?->branch?->name ?? '',
+                $requestedBy->phone ?? '',
+                'ខ្ចី',
+                $advanceSalary->requested_amount ?? 0,
+                $advanceSalary->released_amount ?? 0,
+                $verifiedBy->name ?? 'Admin',
+                $advanceSalary->remark ?? '',
+                $monthYear,
+            ];
+        }
+
+        return $rows;
     }
 
     /**

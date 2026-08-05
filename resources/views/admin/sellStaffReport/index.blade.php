@@ -4,6 +4,23 @@
 
 @section('action', __('index.sell_staff_report'))
 
+@section('styles')
+    <style>
+        .sell-staff-report-row {
+            cursor: pointer;
+        }
+
+        .sell-staff-report-row:hover {
+            background-color: rgba(13, 110, 253, 0.04);
+        }
+
+        .sell-staff-report-row:focus {
+            outline: 2px solid rgba(13, 110, 253, 0.35);
+            outline-offset: -2px;
+        }
+    </style>
+@endsection
+
 @section('main-content')
     <section class="content">
         @include('admin.section.flash_message')
@@ -158,7 +175,11 @@
                         </thead>
                         <tbody>
                         @forelse($reports as $report)
-                            <tr>
+                            <tr class="sell-staff-report-row"
+                                data-href="{{ route('admin.sell-staff-report.show', $report->id) }}"
+                                tabindex="0"
+                                role="link"
+                                aria-label="{{ __('index.view') }} {{ $report->invoice_no }}">
                                 <td class="text-muted">{{ $reports->firstItem() + $loop->iteration }}</td>
                                 <td>
                                     <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="fw-semibold text-decoration-none" title="{{ $report->invoice_no }}">
@@ -357,6 +378,27 @@
             $('#staffSummaryTable tbody tr').filter(function () {
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
             });
+        });
+
+        $(document).on('click', '.sell-staff-report-row', function (event) {
+            if ($(event.target).closest('a, button, input, select, textarea, label, .dropdown-menu').length) {
+                return;
+            }
+
+            window.location.href = $(this).data('href');
+        });
+
+        $(document).on('keydown', '.sell-staff-report-row', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+
+            if ($(event.target).closest('a, button, input, select, textarea, label, .dropdown-menu').length) {
+                return;
+            }
+
+            event.preventDefault();
+            window.location.href = $(this).data('href');
         });
 
     </script>

@@ -20,6 +20,7 @@ use App\Http\Controllers\Web\ClientController;
 use App\Http\Controllers\Web\CompanyController;
 use App\Http\Controllers\Web\ComplaintController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\DCardPrintController;
 use App\Http\Controllers\Web\DataExportController;
 use App\Http\Controllers\Web\DepartmentController;
 use App\Http\Controllers\Web\DeviceController;
@@ -137,6 +138,10 @@ Route::group([
         Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
         Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');
         Route::post('employee-chat/messages', [EmployeeChatController::class, 'store'])->name('employee-chat.store');
+        Route::get('d-card-print', [DCardPrintController::class, 'index'])->name('d-card-print.index');
+        Route::post('d-card-print/employees', [DCardPrintController::class, 'store'])->name('d-card-print.employees.store');
+        Route::put('d-card-print/employees/{employee}', [DCardPrintController::class, 'update'])->name('d-card-print.employees.update');
+        Route::delete('d-card-print/employees/{employee}', [DCardPrintController::class, 'destroy'])->name('d-card-print.employees.destroy');
 
         Route::group(['middleware' => 'superAdmin'], function () {
 
@@ -459,6 +464,7 @@ Route::group([
         Route::post('advance-salaries/setting/{id}', [AdvanceSalaryController::class, 'updateSetting'])->name('advance-salaries.setting.store');
 
         /** Advance Salary route */
+        Route::get('advance-salaries/copy-export', [AdvanceSalaryController::class, 'copyExport'])->name('advance-salaries.copy-export');
         Route::get('advance-salaries/export', [AdvanceSalaryController::class, 'export'])->name('advance-salaries.export');
         Route::post('advance-salaries/{id}/quick-approve', [AdvanceSalaryController::class, 'quickApprove'])->name('advance-salaries.quick-approve');
         Route::resource('advance-salaries', AdvanceSalaryController::class,[

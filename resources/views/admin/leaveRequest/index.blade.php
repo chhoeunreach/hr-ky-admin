@@ -167,6 +167,10 @@
     <section class="content">
 
         @include('admin.section.flash_message')
+        <div id="leave-request-copy-alert"
+             class="alert alert-success d-none position-fixed"
+             style="top: 20px; right: 20px; z-index: 1080; min-width: 180px;">
+        </div>
 
         @include('admin.leaveRequest.common.breadcrumb')
 
@@ -546,6 +550,21 @@
             textarea.remove();
         };
 
+        const showLeaveRequestCopyAlert = (rowCount) => {
+            const alertBox = document.getElementById('leave-request-copy-alert');
+            if (!alertBox) {
+                return;
+            }
+
+            alertBox.textContent = `${rowCount || 0} row${rowCount === 1 ? '' : 's'} copied`;
+            alertBox.classList.remove('d-none');
+
+            clearTimeout(alertBox.hideTimer);
+            alertBox.hideTimer = setTimeout(() => {
+                alertBox.classList.add('d-none');
+            }, 1600);
+        };
+
         document.addEventListener('click', async function (event) {
             const copyButton = event.target.closest('#copy-leave-request-export');
             if (!copyButton) {
@@ -582,7 +601,10 @@
                 }
 
                 await copyLeaveRequestTextToClipboard(data.text);
-                Swal.fire('Copied', 'Export data is ready to paste into Excel.', 'success');
+                const copiedRows = data.text
+                    ? Math.max(data.text.split('\n').filter((row) => row.trim() !== '').length - 1, 0)
+                    : 0;
+                showLeaveRequestCopyAlert(copiedRows);
             } catch (error) {
                 Swal.fire('Copy failed', error.message || 'Unable to copy leave request export data. Please try again.', 'error');
             } finally {

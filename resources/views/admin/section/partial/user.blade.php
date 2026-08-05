@@ -3,6 +3,7 @@
                            request()->routeIs('admin.employees.*') ||
                            request()->routeIs('admin.employee.log') ||
                            request()->routeIs('admin.live-map*') ||
+                           request()->routeIs('admin.d-card-print*') ||
                            request()->routeIs('admin.employee-chat*') ||
                            request()->routeIs('admin.logout-requests.*')
                         ? 'active' : ''
@@ -23,6 +24,7 @@
                          request()->routeIs('admin.employees.*') ||
                          request()->routeIs('admin.employee.log') ||
                          request()->routeIs('admin.live-map*') ||
+                         request()->routeIs('admin.d-card-print*') ||
                          request()->routeIs('admin.employee-chat*') ||
                          request()->routeIs('admin.logout-requests.*') ? '' : 'collapse'  }}"  id="employee_management">
             <ul class="nav sub-menu">
@@ -41,6 +43,11 @@
                         <a href="{{route('admin.live-map')}}"
                            data-href="{{route('admin.live-map')}}"
                            class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}">{{ __('index.live_map') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{route('admin.d-card-print.index')}}"
+                           data-href="{{route('admin.d-card-print.index')}}"
+                           class="nav-link {{request()->routeIs('admin.d-card-print*') ? 'active' : ''}}">{{ __('index.d_card_print') }}</a>
                     </li>
                 @endcan
                 @can('view_employee_chat')

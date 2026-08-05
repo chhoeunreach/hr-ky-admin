@@ -2,7 +2,8 @@
     <thead>
     <tr>
         <th>Id</th>
-        <th>Name</th>
+        <th>Khmer Name</th>
+        <th>English Name</th>
         <th>Email</th>
         <th>Username</th>
         <th>Address</th>
@@ -27,6 +28,7 @@
         <tr>
             <td>{{ $datum->id }}</td>
             <td>{{ $datum->name }}</td>
+            <td>{{ $datum->english_name }}</td>
             <td>{{ $datum->email }}</td>
             <td>{{ $datum->username }}</td>
             <td>{{ $datum->address }}</td>

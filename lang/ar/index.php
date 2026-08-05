@@ -227,6 +227,8 @@ return [
     'employee_email' => 'البريد الإلكتروني للموظف',
     'employee_phone' => 'رقم هاتف الموظف',
     'full_name' => 'الاسم الكامل',
+    'khmer_name' => 'الاسم الخميري',
+    'english_name' => 'الاسم بالإنجليزية',
     'designation' => 'التعيين',
     'role' => 'الدور',
     'shift' => 'الوردية',

@@ -242,6 +242,7 @@
                     .employee-table .col-icon,
                     .employee-table .col-code,
                     .employee-table .col-name,
+                    .employee-table .col-english-name,
                     .employee-table .col-address,
                     .employee-table .col-email,
                     .employee-table .col-branch,
@@ -265,6 +266,10 @@
 
                     .employee-table .col-name {
                         width: 160px;
+                    }
+
+                    .employee-table .col-english-name {
+                        width: 140px;
                     }
 
                     .employee-table .col-address {
@@ -398,7 +403,8 @@
                                 <th class="col-icon">#</th>
                             @endcan
                             <th class="text-center col-code">{{ __('index.employee_code') }}</th>
-                            <th class="col-name">{{ __('index.full_name') }}</th>
+                            <th class="col-name">{{ __('index.khmer_name') }}</th>
+                            <th class="col-english-name">{{ __('index.english_name') }}</th>
                             <th class="col-address">{{ __('index.address') }}</th>
                             <th class="text-center col-email">{{ __('index.email') }}</th>
                             <th class="text-center col-branch">{{ __('index.branch') }}</th>
@@ -479,6 +485,7 @@
                                         @endcan
                                     </div>
                                 </td>
+                                <td class="col-english-name">{{ $value->english_name ? ucfirst($value->english_name) : 'N/A' }}</td>
                                 @php
                                     $fullAddress = $value->address ? ucfirst($value->address) : 'N/A';
                                     $addressPreview = \Illuminate\Support\Str::limit($fullAddress, 20);

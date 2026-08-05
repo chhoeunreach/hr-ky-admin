@@ -153,12 +153,21 @@
                            placeholder="{{ __('index.employee_code') }}" required>
                 </div>
                 <div class="col-lg-4 col-md-6 mb-3">
-                    <label for="name" class="form-label"> {{ __('index.name') }} <span style="color: red">*</span></label>
+                    <label for="name" class="form-label"> {{ __('index.khmer_name') }} <span style="color: red">*</span></label>
                     <input type="text" class="form-control"
                            id="name"
                            name="name"
                            value="{{ ( isset($userDetail) ? $userDetail->name: old('name') )}}" autocomplete="off"
-                           placeholder="{{ __('index.enter_name') }}" required>
+                           placeholder="{{ __('index.khmer_name') }}" required>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <label for="english_name" class="form-label"> {{ __('index.english_name') }}</label>
+                    <input type="text" class="form-control"
+                           id="english_name"
+                           name="english_name"
+                           value="{{ ( isset($userDetail) ? $userDetail->english_name: old('english_name') )}}" autocomplete="off"
+                           placeholder="{{ __('index.english_name') }}">
                 </div>
 
                 <div class="col-lg-4 col-md-6 mb-3">

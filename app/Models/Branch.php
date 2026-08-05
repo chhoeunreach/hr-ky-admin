@@ -19,6 +19,8 @@ class Branch extends Model
         'name',
         'address',
         'phone',
+        'logo',
+        'payment_qr_codes',
         'branch_head_id',
         'company_id',
         'branch_location_latitude',
@@ -33,6 +35,10 @@ class Branch extends Model
     const UPLOAD_PATH = 'uploads/branch/';
 
     const IS_ACTIVE = 1;
+
+    protected $casts = [
+        'payment_qr_codes' => 'array',
+    ];
 
     public static function boot()
     {

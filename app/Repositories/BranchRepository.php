@@ -4,9 +4,11 @@ namespace App\Repositories;
 
 use App\Helpers\AppHelper;
 use App\Models\Branch;
+use App\Traits\ImageService;
 
 class BranchRepository
 {
+    use ImageService;
 
     /**
      * @param array $select
@@ -30,6 +32,8 @@ class BranchRepository
      */
     public function store($validatedData):mixed
     {
+        $validatedData = $this->prepareBranchUploads($validatedData);
+
         return Branch::create($validatedData)->fresh();
     }
 
@@ -71,11 +75,23 @@ class BranchRepository
 
     public function update($branchDetail, $validatedData)
     {
+        $validatedData = $this->prepareBranchUploads($validatedData, $branchDetail);
+
         return $branchDetail->update($validatedData);
     }
 
     public function delete(Branch $branch)
     {
+        if ($branch->logo) {
+            $this->removeImage(Branch::UPLOAD_PATH, $branch->logo);
+        }
+
+        foreach (($branch->payment_qr_codes ?? []) as $paymentQrCode) {
+            if (!empty($paymentQrCode['qr_code'])) {
+                $this->removeImage(Branch::UPLOAD_PATH, $paymentQrCode['qr_code']);
+            }
+        }
+
         return $branch->delete();
 
 
@@ -91,6 +107,63 @@ class BranchRepository
 
         return  $branch->exists();
 
+    }
+
+    private function prepareBranchUploads(array $validatedData, ?Branch $branch = null): array
+    {
+        if (isset($validatedData['logo'])) {
+            if ($branch?->logo) {
+                $this->removeImage(Branch::UPLOAD_PATH, $branch->logo);
+            }
+
+            $validatedData['logo'] = $this->storeImage($validatedData['logo'], Branch::UPLOAD_PATH, 500, 500);
+        }
+
+        $existingQrCodes = collect($branch?->payment_qr_codes ?? [])
+            ->pluck('qr_code')
+            ->filter()
+            ->all();
+
+        $paymentQrCodes = [];
+
+        foreach (($validatedData['payment_qr_codes'] ?? []) as $paymentQrCode) {
+            $paymentName = trim($paymentQrCode['payment_name'] ?? '');
+            $existingQrCode = $paymentQrCode['existing_qr_code'] ?? null;
+            $uploadedQrCode = $paymentQrCode['qr_code'] ?? null;
+
+            if (!$paymentName && !$existingQrCode && !$uploadedQrCode) {
+                continue;
+            }
+
+            $qrCodeFileName = $existingQrCode;
+
+            if ($uploadedQrCode) {
+                if ($existingQrCode) {
+                    $this->removeImage(Branch::UPLOAD_PATH, $existingQrCode);
+                }
+
+                $qrCodeFileName = $this->storeImage($uploadedQrCode, Branch::UPLOAD_PATH, 500, 500);
+            }
+
+            if ($paymentName && $qrCodeFileName) {
+                $paymentQrCodes[] = [
+                    'payment_name' => $paymentName,
+                    'qr_code' => $qrCodeFileName,
+                ];
+            }
+        }
+
+        if ($branch) {
+            $keptQrCodes = collect($paymentQrCodes)->pluck('qr_code')->filter()->all();
+
+            foreach (array_diff($existingQrCodes, $keptQrCodes) as $removedQrCode) {
+                $this->removeImage(Branch::UPLOAD_PATH, $removedQrCode);
+            }
+        }
+
+        $validatedData['payment_qr_codes'] = $paymentQrCodes ?: null;
+
+        return $validatedData;
     }
 
 }

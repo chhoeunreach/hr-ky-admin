@@ -452,28 +452,36 @@
 
     // branch wise department, office_time etc
     $(document).ready(function () {
-        const loadDepartmentsAndOfficeTime = async () => {
-            const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-            const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-            const selectedBranchId = isAdmin ? $('#branch').val() : defaultBranchId;
-            let departmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
-            let officeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
+        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
+        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
+        const departmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
+        const officeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
+        const supervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
+        const employeeId = "{{ isset($userDetail) ? $userDetail['id'] : '' }}";
+        const postId = "{{ isset($userDetail) ? $userDetail['post_id'] : old('post_id') }}";
 
-            if (!selectedBranchId) return;
+        let branchLoadRequestId = 0;
+
+        const loadDepartmentsAndOfficeTime = async (branchId) => {
+            const requestId = ++branchLoadRequestId;
+
+            if (!branchId) return;
+
+            // Reset dependent dropdowns before loading the new branch data
+            $('#department').empty().append('<option disabled selected>{{ __('index.select_department') }}</option>');
+            $('#officeTime').empty().append('<option value="" selected>{{ __('index.select_office_time') }}</option>');
+            $('#post').empty().append('<option disabled selected>{{ __('index.select_post') }}</option>');
+            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
 
             try {
                 const response = await $.ajax({
                     type: 'GET',
-                    url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${selectedBranchId}`,
+                    url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${branchId}`,
                 });
 
-                $('#department').empty(); // Changed selector to #department
-                $('#officeTime').empty(); // Added for office time
+                if (requestId !== branchLoadRequestId) return;
 
                 // Departments
-                if (!departmentId) {
-                    $('#department').append('<option disabled selected>{{ __('index.select_department') }}</option>');
-                }
                 if (response.departments && response.departments.length > 0) {
                     response.departments.forEach(department => {
                         $('#department').append(`<option ${department.id == departmentId ? 'selected' : ''} value="${department.id}">${department.dept_name}</option>`);
@@ -483,15 +491,17 @@
                 }
 
                 // Office Times
-                if (!officeTimeId) {
-                    $('#officeTime').append('<option value="" selected>{{ __('index.select_office_time') }}</option>');
-                }
                 if (response.officeTimes && response.officeTimes.length > 0) {
                     response.officeTimes.forEach(shift => {
                         $('#officeTime').append(`<option ${shift.id == officeTimeId ? 'selected' : ''} value="${shift.id}">${shift.opening_time} - ${shift.closing_time}</option>`);
                     });
                 } else {
                     $('#officeTime').append('<option disabled>{{ __("index.office_time_not_found") }}</option>');
+                }
+
+                if ($('#post').length) {
+                    $('#department').trigger('change');
+                    $('#officeTime').trigger('change');
                 }
             } catch (error) {
                 $('#department').append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
@@ -500,10 +510,7 @@
         };
 
         const loadSupervisorAndPosts = async () => {
-            const selectedDepartmentId = $('#department').val(); // Changed selector to #department
-            let supervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
-            let employeeId = "{{ isset($userDetail) ? $userDetail['id'] : ''  }}";
-            let postId = "{{ isset($userDetail) ? $userDetail['post_id'] : old('post_id') }}";
+            const selectedDepartmentId = $('#department').val();
 
             if (!selectedDepartmentId) return;
 
@@ -518,8 +525,8 @@
 
                 let data = await response.json();
 
-                $('#supervisor').empty(); // Changed selector to #supervisor
-                $('#post').empty(); // Changed selector to #post
+                $('#supervisor').empty();
+                $('#post').empty();
 
                 // Supervisors
                 if (!supervisorId) {
@@ -529,7 +536,6 @@
                     data.supervisors.forEach(user => {
                         if (employeeId != user.id){
                             $('#supervisor').append(`<option ${user.id == supervisorId ? 'selected' : ''} value="${user.id}">${user.name}</option>`);
-
                         }
                     });
                 } else {
@@ -547,6 +553,9 @@
                 } else {
                     $('#post').append('<option disabled>{{ __("index.no_posts_found") }}</option>');
                 }
+
+                $('#supervisor').trigger('change');
+                $('#post').trigger('change');
             } catch (error) {
                 $('#supervisor').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
                 $('#post').append('<option disabled>{{ __("index.error_loading_posts") }}</option>');
@@ -640,20 +649,19 @@
             return str.charAt(0).toUpperCase() + str.slice(1);
         };
 
-        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
+        $('#department').on('change', loadSupervisorAndPosts);
+        $('#gender').on('change', loadLeaveTypes);
+
         if (isAdmin) {
             $('#branch').on('change', () => {
-                loadDepartmentsAndOfficeTime();
+                loadDepartmentsAndOfficeTime($('#branch').val());
                 loadLeaveTypes();
-            }).trigger('change');
-        } else {
-            // non-admin: load using the default branch id
-            loadDepartmentsAndOfficeTime();
-            loadLeaveTypes();
+            });
         }
 
-        $('#department').on('change', loadSupervisorAndPosts);
-        $('#gender').on('change', loadLeaveTypes).trigger('change');
+        // Initial load for the selected/pre-assigned branch
+        loadDepartmentsAndOfficeTime(isAdmin ? $('#branch').val() : defaultBranchId);
+        loadLeaveTypes();
 
         document.addEventListener('leaveTypesUpdated', attachEventListeners);
 

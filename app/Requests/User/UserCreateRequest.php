@@ -42,6 +42,7 @@ class UserCreateRequest extends FormRequest
         return [
             'employee_code'=>'nullable',
             'name'=>'required|string|max:100|min:2',
+            'english_name'=>'nullable|string|max:100',
             'email'=>'required|email|unique:users',
             'password'=>'required|string|min:4',
             'username'=>'required|string|unique:users',

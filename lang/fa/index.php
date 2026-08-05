@@ -228,6 +228,8 @@ return [
     'employee_email' => 'ایمیل کارمند',
     'employee_phone' => 'شماره تلفن کارمند',
     'full_name' => 'نام کامل',
+    'khmer_name' => 'نام خمری',
+    'english_name' => 'نام انگلیسی',
     'designation' => 'سمت',
     'role' => 'نقش',
     'shift' => 'شیفت',

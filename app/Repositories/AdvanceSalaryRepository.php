@@ -10,52 +10,77 @@ class AdvanceSalaryRepository
 {
     public function getAllAdvanceSalaryRequestLists($filterParameters,$select=['*'],$with=[])
     {
-        if( AppHelper::ifDateInBsEnabled())
-        {
+        $startDate = null;
+        $endDate = null;
+
+        if (!empty($filterParameters['month']) && AppHelper::ifDateInBsEnabled()) {
             $currentNepaliYearMonth = AppHelper::getCurrentYearMonth();
             $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($currentNepaliYearMonth['year'], $filterParameters['month']);
 
             $startDate = date('Y-m-d',strtotime($dateInAD['start_date'])) ?? null;
             $endDate = date('Y-m-d',strtotime($dateInAD['end_date'])) ?? null;
-        }else{
+        } elseif (!empty($filterParameters['month'])) {
             $firstDayOfMonth  = Carbon::create(date('Y'), $filterParameters['month'], 1)->startOfDay();
             $startDate = date('Y-m-d',strtotime($firstDayOfMonth));
             $endDate = date('Y-m-d',strtotime($firstDayOfMonth->endOfMonth()));
         }
 
+        $allowedPerPage = [10, 25, 50, 100, 200];
+        $perPage = (int) ($filterParameters['per_page'] ?? getRecordPerPage());
+
+        if (!in_array($perPage, $allowedPerPage, true)) {
+            $perPage = 25;
+        }
+
 
         return  AdvanceSalary::query()->select($select)->with($with)
-            ->when(isset($filterParameters['status']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['status']), function ($query) use ($filterParameters) {
                 $query->where('status', $filterParameters['status']);
             })
 
-            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->whereHas('requestedBy',function($subQuery) use ($filterParameters){
                     $subQuery->where('branch_id', $filterParameters['branch_id']);
                 });
             })
-              ->when(isset($filterParameters['department_id']), function ($query) use ($filterParameters) {
+              ->when(!empty($filterParameters['department_id']), function ($query) use ($filterParameters) {
                 $query->whereHas('requestedBy',function($subQuery) use ($filterParameters){
                     $subQuery->where('department_id', $filterParameters['department_id']);
                 });
             })
-            ->when(isset($filterParameters['employee_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['employee_id']), function ($query) use ($filterParameters) {
                 $query->where('employee_id',$filterParameters['employee_id'] );
             })
-            ->when(isset($filterParameters['month']), function ($query) use ($startDate, $endDate) {
+            ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = '%' . $filterParameters['search'] . '%';
+
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('description', 'like', $search)
+                        ->orWhere('remark', 'like', $search)
+                        ->orWhere('requested_amount', 'like', $search)
+                        ->orWhere('released_amount', 'like', $search)
+                        ->orWhereHas('requestedBy', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', $search)
+                                ->orWhere('username', 'like', $search)
+                                ->orWhere('employee_code', 'like', $search)
+                                ->orWhere('phone', 'like', $search);
+                        });
+                });
+            })
+            ->when(!empty($filterParameters['month']) && $startDate && $endDate, function ($query) use ($startDate, $endDate) {
                 $query->whereDate('advance_requested_date', '>=', $startDate)
                     ->whereDate('advance_requested_date', '<=', $endDate);
             })
 
             ->latest()
-            ->paginate( getRecordPerPage());
+            ->paginate($perPage);
     }
 
     public function getAllAdvanceSalaryRequestListsForExport($filterParameters, $select = ['*'], $with = [])
     {
         $startDate = null;
         $endDate = null;
-        if (isset($filterParameters['month'])) {
+        if (!empty($filterParameters['month'])) {
             if (AppHelper::ifDateInBsEnabled()) {
                 $currentNepaliYearMonth = AppHelper::getCurrentYearMonth();
                 $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($currentNepaliYearMonth['year'], $filterParameters['month']);
@@ -70,23 +95,39 @@ class AdvanceSalaryRepository
         }
 
         return AdvanceSalary::query()->select($select)->with($with)
-            ->when(isset($filterParameters['status']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['status']), function ($query) use ($filterParameters) {
                 $query->where('status', $filterParameters['status']);
             })
-            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->whereHas('requestedBy', function ($subQuery) use ($filterParameters) {
                     $subQuery->where('branch_id', $filterParameters['branch_id']);
                 });
             })
-            ->when(isset($filterParameters['department_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['department_id']), function ($query) use ($filterParameters) {
                 $query->whereHas('requestedBy', function ($subQuery) use ($filterParameters) {
                     $subQuery->where('department_id', $filterParameters['department_id']);
                 });
             })
-            ->when(isset($filterParameters['employee_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['employee_id']), function ($query) use ($filterParameters) {
                 $query->where('employee_id', $filterParameters['employee_id']);
             })
-            ->when(isset($filterParameters['month']) && $startDate && $endDate, function ($query) use ($startDate, $endDate) {
+            ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = '%' . $filterParameters['search'] . '%';
+
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('description', 'like', $search)
+                        ->orWhere('remark', 'like', $search)
+                        ->orWhere('requested_amount', 'like', $search)
+                        ->orWhere('released_amount', 'like', $search)
+                        ->orWhereHas('requestedBy', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', $search)
+                                ->orWhere('username', 'like', $search)
+                                ->orWhere('employee_code', 'like', $search)
+                                ->orWhere('phone', 'like', $search);
+                        });
+                });
+            })
+            ->when(!empty($filterParameters['month']) && $startDate && $endDate, function ($query) use ($startDate, $endDate) {
                 $query->whereDate('advance_requested_date', '>=', $startDate)
                     ->whereDate('advance_requested_date', '<=', $endDate);
             })

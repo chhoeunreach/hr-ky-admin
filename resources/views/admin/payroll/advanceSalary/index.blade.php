@@ -11,6 +11,10 @@
                 <p class="errorMessageDelete"></p>
             </div>
         </div>
+        <div id="advance-salary-copy-alert"
+             class="alert alert-success d-none position-fixed"
+             style="top: 20px; right: 20px; z-index: 1080; min-width: 180px;">
+        </div>
 
         @include('admin.payroll.advanceSalary.common.breadcrumb')
 
@@ -78,10 +82,6 @@
                                     class="btn btn-block btn-secondary me-2">{{  __('index.filter') }}</button>
                             <a href="{{route('admin.advance-salaries.index')}}"
                                class="btn btn-block btn-primary">{{  __('index.reset') }}</a>
-                            <a href="{{ route('admin.advance-salaries.export', request()->query()) }}"
-                               class="btn btn-block btn-success ms-2">
-                                Export
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -98,6 +98,54 @@
                 @endcan
             </div>
             <div class="card-body">
+                <form class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3"
+                      action="{{ route('admin.advance-salaries.index') }}"
+                      method="get">
+                    @foreach(['branch_id', 'department_id', 'employee_id', 'status', 'month'] as $filterKey)
+                        @if(request()->filled($filterKey))
+                            <input type="hidden" name="{{ $filterKey }}" value="{{ request($filterKey) }}">
+                        @endif
+                    @endforeach
+
+                    <div class="d-flex align-items-center gap-2">
+                        <span>{{ __('index.show') }}</span>
+                        <select class="form-select"
+                                name="per_page"
+                                style="width: 110px;"
+                                onchange="this.form.submit()">
+                            @foreach([10, 25, 50, 100, 200] as $perPageOption)
+                                <option value="{{ $perPageOption }}" {{ (string) ($filterParameters['per_page'] ?? 25) === (string) $perPageOption ? 'selected' : '' }}>
+                                    {{ $perPageOption }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <span>{{ __('index.entries') }}</span>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button"
+                                id="copy-advance-salary-export"
+                                data-href="{{ route('admin.advance-salaries.copy-export') }}"
+                                class="btn btn-outline-secondary btn-sm">
+                            Copy Excel
+                        </button>
+                        <a href="{{ route('admin.advance-salaries.export', request()->query()) }}"
+                           class="btn btn-outline-secondary btn-sm">
+                            Export
+                        </a>
+                    </div>
+
+                    <div>
+                        <input type="search"
+                               id="advance-salary-search-input"
+                               class="form-control"
+                               name="search"
+                               value="{{ $filterParameters['search'] ?? '' }}"
+                               placeholder="Search ..."
+                               style="width: 240px;">
+                    </div>
+                </form>
+
                 <div class="table-responsive">
                     <table id="dataTableExample" class="table">
                         <thead>
@@ -197,8 +245,100 @@
 
 @section('scripts')
     @include('admin.payroll.advanceSalary.common.scripts')
+    <script>
+        const copyAdvanceSalaryTextToClipboard = async (text) => {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+                return;
+            }
+
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            textarea.remove();
+        };
+
+        const showAdvanceSalaryCopyAlert = (rowCount) => {
+            const alertBox = document.getElementById('advance-salary-copy-alert');
+            if (!alertBox) {
+                return;
+            }
+
+            alertBox.textContent = `${rowCount || 0} row${rowCount === 1 ? '' : 's'} copied`;
+            alertBox.classList.remove('d-none');
+
+            clearTimeout(alertBox.hideTimer);
+            alertBox.hideTimer = setTimeout(() => {
+                alertBox.classList.add('d-none');
+            }, 1600);
+        };
+
+        document.addEventListener('click', async function (event) {
+            const copyButton = event.target.closest('#copy-advance-salary-export');
+            if (!copyButton) {
+                return;
+            }
+
+            event.preventDefault();
+
+            const copyUrl = new URL(copyButton.getAttribute('data-href'), window.location.origin);
+            const currentUrl = new URL(window.location.href);
+
+            ['branch_id', 'department_id', 'employee_id', 'status', 'month', 'search'].forEach((key) => {
+                const value = currentUrl.searchParams.get(key);
+                if (value) {
+                    copyUrl.searchParams.set(key, value);
+                }
+            });
+
+            const searchInput = document.getElementById('advance-salary-search-input');
+            if (searchInput && searchInput.value.trim()) {
+                copyUrl.searchParams.set('search', searchInput.value.trim());
+            }
+
+            const originalHtml = copyButton.innerHTML;
+            copyButton.disabled = true;
+            copyButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Copying';
+
+            try {
+                const response = await fetch(copyUrl.toString(), {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Unable to copy advance salary export data.');
+                }
+
+                await copyAdvanceSalaryTextToClipboard(data.text);
+                showAdvanceSalaryCopyAlert(data.row_count || 0);
+            } catch (error) {
+                Swal.fire('Copy failed', error.message || 'Unable to copy advance salary export data. Please try again.', 'error');
+            } finally {
+                copyButton.disabled = false;
+                copyButton.innerHTML = originalHtml;
+            }
+        });
+
+        const advanceSalarySearchInput = document.getElementById('advance-salary-search-input');
+        let advanceSalarySearchTimer = null;
+
+        if (advanceSalarySearchInput) {
+            advanceSalarySearchInput.addEventListener('input', function () {
+                clearTimeout(advanceSalarySearchTimer);
+
+                advanceSalarySearchTimer = setTimeout(() => {
+                    advanceSalarySearchInput.form.submit();
+                }, 650);
+            });
+        }
+    </script>
 @endsection
-
-
-
-

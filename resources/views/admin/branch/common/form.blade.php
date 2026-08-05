@@ -31,6 +31,64 @@
         <label for="phone" class="form-label">{{ __('index.phone_number') }} <span style="color: red">*</span></label>
         <input type="number" class="form-control" id="phone" required name="phone" value="{{ isset($branch) ? $branch->phone : old('phone') }}" autocomplete="off" placeholder="">
     </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
+        <label for="logo" class="form-label">{{ __('index.branch_logo') }}</label>
+        <input class="form-control" type="file" id="logo" name="logo" accept="image/*">
+        @if(isset($branch) && $branch->logo)
+            <img src="{{ asset(\App\Models\Branch::UPLOAD_PATH.$branch->logo) }}"
+                 alt="{{ __('index.branch_logo') }}"
+                 style="object-fit: contain"
+                 class="mt-3 ht-100 wd-100">
+        @endif
+    </div>
+
+    <div class="col-12 mb-4">
+        <label class="form-label">{{ __('index.payment_qr_codes') }}</label>
+        <div id="paymentQrCodeRows">
+            @php
+                $paymentQrCodes = old('payment_qr_codes', isset($branch) ? ($branch->payment_qr_codes ?? []) : []);
+                $paymentQrCodes = count($paymentQrCodes) ? $paymentQrCodes : [['payment_name' => '', 'qr_code' => '']];
+            @endphp
+            @foreach($paymentQrCodes as $qrIndex => $paymentQrCode)
+                <div class="row align-items-end payment-qr-code-row">
+                    <div class="col-lg-4 col-md-5 mb-3">
+                        <label class="form-label">{{ __('index.payment_name') }}</label>
+                        <input type="text"
+                               class="form-control"
+                               name="payment_qr_codes[{{ $qrIndex }}][payment_name]"
+                               value="{{ $paymentQrCode['payment_name'] ?? '' }}"
+                               placeholder="{{ __('index.payment_method_name') }}">
+                    </div>
+                    <div class="col-lg-4 col-md-5 mb-3">
+                        <label class="form-label">{{ __('index.qr_image') }}</label>
+                        <input type="file"
+                               class="form-control"
+                               name="payment_qr_codes[{{ $qrIndex }}][qr_code]"
+                               accept="image/*">
+                        @if(!empty($paymentQrCode['qr_code']))
+                            <input type="hidden"
+                                   name="payment_qr_codes[{{ $qrIndex }}][existing_qr_code]"
+                                   value="{{ $paymentQrCode['qr_code'] }}">
+                            <img src="{{ asset(\App\Models\Branch::UPLOAD_PATH.$paymentQrCode['qr_code']) }}"
+                                 alt="{{ $paymentQrCode['payment_name'] ?? __('index.qr_image') }}"
+                                 style="object-fit: contain"
+                                 class="mt-2 ht-100 wd-100">
+                        @endif
+                    </div>
+                    <div class="col-lg-2 col-md-2 mb-3">
+                        <button type="button" class="btn btn-danger removePaymentQrCode">
+                            <i class="link-icon" data-feather="trash-2"></i>
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        <button type="button" class="btn btn-outline-primary btn-sm" id="addPaymentQrCode">
+            <i class="link-icon" data-feather="plus"></i> {{ __('index.add_payment_qr_code') }}
+        </button>
+    </div>
+
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="branch_location_latitude" class="form-label">{{ __('index.branch_location_latitude') }} <span style="color: red">*</span></label>
         <input type="text" class="form-control" id="branch_location_latitude" required name="branch_location_latitude" value="{{ isset($branch) ? $branch->branch_location_latitude : old('branch_location_latitude') }}" autocomplete="off" placeholder="{{ __('index.enter_branch_location_latitude') }}">
@@ -54,3 +112,49 @@
         <button type="submit" class="btn btn-primary"><i class="link-icon" data-feather="plus"></i> {{ isset($branch) ? __('index.update') : __('index.create') }}</button>
     </div>
 </div>
+
+@section('scripts')
+    <script>
+        $(document).ready(function () {
+            let paymentQrCodeIndex = $('.payment-qr-code-row').length;
+
+            $('#addPaymentQrCode').on('click', function () {
+                $('#paymentQrCodeRows').append(`
+                    <div class="row align-items-end payment-qr-code-row">
+                        <div class="col-lg-4 col-md-5 mb-3">
+                            <label class="form-label">{{ __('index.payment_name') }}</label>
+                            <input type="text"
+                                   class="form-control"
+                                   name="payment_qr_codes[${paymentQrCodeIndex}][payment_name]"
+                                   placeholder="{{ __('index.payment_method_name') }}">
+                        </div>
+                        <div class="col-lg-4 col-md-5 mb-3">
+                            <label class="form-label">{{ __('index.qr_image') }}</label>
+                            <input type="file"
+                                   class="form-control"
+                                   name="payment_qr_codes[${paymentQrCodeIndex}][qr_code]"
+                                   accept="image/*">
+                        </div>
+                        <div class="col-lg-2 col-md-2 mb-3">
+                            <button type="button" class="btn btn-danger removePaymentQrCode">
+                                <i class="link-icon" data-feather="trash-2"></i>
+                            </button>
+                        </div>
+                    </div>
+                `);
+
+                paymentQrCodeIndex++;
+
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            });
+
+            $('body').on('click', '.removePaymentQrCode', function () {
+                if ($('.payment-qr-code-row').length > 1) {
+                    $(this).closest('.payment-qr-code-row').remove();
+                }
+            });
+        });
+    </script>
+@endsection

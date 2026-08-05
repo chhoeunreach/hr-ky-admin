@@ -227,6 +227,8 @@ return [
     'employee_email' => 'Электронная почта сотрудника',
     'employee_phone' => 'Телефон сотрудника',
     'full_name' => 'Полное имя',
+    'khmer_name' => 'Кхмерское имя',
+    'english_name' => 'Имя на английском',
     'designation' => 'Должность',
     'role' => 'Роль',
     'shift' => 'Смена',

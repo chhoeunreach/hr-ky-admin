@@ -53,9 +53,11 @@
                         <thead>
                         <tr>
                             <th>#</th>
+                            <th>{{ __('index.branch_logo') }}</th>
                             <th>{{ __('index.branch_name') }}</th>
                             <th>{{ __('index.address') }}</th>
                             <th class="text-center">{{ __('index.phone') }}</th>
+                            <th class="text-center">{{ __('index.payment_qr_codes') }}</th>
                             <th class="text-center">{{ __('index.total_employee') }}</th>
                             <th class="text-center">{{ __('index.status') }}</th>
                             @can(['edit_branch','delete_branch'])
@@ -68,9 +70,36 @@
                         @forelse($branches as $key => $value)
                             <tr>
                                 <td>{{(($branches->currentPage()- 1 ) * (\App\Models\Branch::RECORDS_PER_PAGE) + (++$key))}}</td>
+                                <td>
+                                    @if($value->logo)
+                                        <img src="{{ asset(\App\Models\Branch::UPLOAD_PATH.$value->logo) }}"
+                                             alt="{{ $value->name }}"
+                                             style="object-fit: contain"
+                                             class="ht-50 wd-50">
+                                    @else
+                                        {{ __('index.not_available') }}
+                                    @endif
+                                </td>
                                 <td>{{ucfirst($value->name)}}</td>
                                 <td>{{$value->address}}</td>
                                 <td class="text-center">{{$value->phone}}</td>
+                                <td class="text-center">
+                                    @if(!empty($value->payment_qr_codes))
+                                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                                            @foreach($value->payment_qr_codes as $paymentQrCode)
+                                                <div>
+                                                    <img src="{{ asset(\App\Models\Branch::UPLOAD_PATH.$paymentQrCode['qr_code']) }}"
+                                                         alt="{{ $paymentQrCode['payment_name'] }}"
+                                                         style="object-fit: contain"
+                                                         class="ht-50 wd-50 d-block mx-auto">
+                                                    <small>{{ $paymentQrCode['payment_name'] }}</small>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        {{ __('index.not_available') }}
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     <p class="btn btn-info btn-sm mb-0" id="showBranchEmployees" data-employee='@json($value->employees)'>
                                         {{ $value->employees_count }}
