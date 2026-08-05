@@ -538,6 +538,10 @@
                                                 <div class="payment-qr-frame"><div class="text-muted small">{{ $previewEmployee['khqr_account_id'] ?? ($previewEmployee['employee_code'] ?? 'KY0540') }}</div></div>
                                                 <strong>KHQR</strong>
                                             </div>
+                                            <div class="payment-box telegram-payment-box">
+                                                <div class="payment-qr-frame"><div class="khqr-generated" data-value="https://t.me/kneayerngofficialbot" data-qr-px="103"></div></div>
+                                                <strong>TELEGRAM QR</strong>
+                                            </div>
                                         </div>
                                         <div class="back-contact">
                                             <strong class="back-contact-title">Contact Us:</strong>
@@ -545,7 +549,7 @@
                                             <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/Kneayerng">https://t.me/Kneayerng</a></span></div>
+                                            <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
                                         </div>
                                         <div class="back-note">If found, please return this card to គ្នាយើង.<br>Holder: {{ $previewEmployee['name'] ?? 'Employee' }}</div>
@@ -782,6 +786,10 @@
                                                             </div>
                                                             <strong>KHQR</strong>
                                                         </div>
+                                                        <div class="payment-box telegram-payment-box">
+                                                            <div class="payment-qr-frame"><div class="khqr-generated" data-value="https://t.me/kneayerngofficialbot" data-qr-px="103"></div></div>
+                                                            <strong>TELEGRAM QR</strong>
+                                                        </div>
                                                     </div>
                                                     <div class="back-contact">
                                                         <strong class="back-contact-title">Contact Us:</strong>
@@ -789,7 +797,7 @@
                                                         <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
                                                         <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
                                                         <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                                                        <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/Kneayerng">https://t.me/Kneayerng</a></span></div>
+                                                        <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
                                                         <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
                                                     </div>
                                                     <div class="back-note">If found, please return this card to គ្នាយើង.<br>Holder: {{ $employee['name'] ?? 'Employee' }}</div>
@@ -900,6 +908,10 @@
                                                 <div class="payment-qr-frame"><div class="text-muted small">{{ $employee['khqr_account_id'] ?? ($employee['employee_code'] ?? '') }}</div></div>
                                                 <strong>KHQR</strong>
                                             </div>
+                                            <div class="payment-box telegram-payment-box">
+                                                <div class="payment-qr-frame"><div class="khqr-generated" data-value="https://t.me/kneayerngofficialbot" data-qr-px="103"></div></div>
+                                                <strong>TELEGRAM QR</strong>
+                                            </div>
                                         </div>
                                         <div class="back-contact">
                                             <strong class="back-contact-title">Contact Us:</strong>
@@ -907,7 +919,7 @@
                                             <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                                            <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/Kneayerng">https://t.me/Kneayerng</a></span></div>
+                                            <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
                                             <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
                                         </div>
                                         <div class="back-note">If found, please return this card to គ្នាយើង.<br>Holder: {{ $employee['name'] ?? 'Employee' }}</div>
@@ -3366,6 +3378,10 @@
             overflow-wrap: anywhere;
         }
 
+        .payment-box.telegram-payment-box strong {
+            color: #0ea5e9;
+        }
+
         .back-contact {
             color: #0f172a;
             font-family: "Kantumruy Pro", Arial, sans-serif;
@@ -3814,7 +3830,7 @@
                     <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>
                     <div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>
                     <div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>
-                    <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/Kneayerng">https://t.me/Kneayerng</a></span></div>
+                    <div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>
                     <div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>
                 </div>
             `;
@@ -3824,7 +3840,7 @@
                 return employee.qr_data || `https://kneayerng.com/verify/${encodeURIComponent(code)}`;
             };
 
-            const telegramQrValue = (employee) => employee.telegram_qr_url || 'https://t.me/kneayerng_phone_shop';
+            const telegramQrValue = (employee) => employee.telegram_qr_url || 'https://t.me/kneayerngofficialbot';
 
             const kyInfoIcon = (name) => {
                 const icons = {
@@ -3930,6 +3946,15 @@
                     </div>
                 `;
 
+                const telegramBox = `
+                    <div class="payment-box telegram-payment-box">
+                        <div class="payment-qr-frame" style="${paymentBoxStyle()}">
+                            <span class="drag-size-frame payment-qr-drag"><div class="khqr-generated" data-value="${escapeHtml(telegramQrValue(employee))}" data-qr-px="${paymentQrPx()}" style="${paymentQrStyle()}"></div>${dragHandle('payment-qr')}</span>
+                        </div>
+                        <strong>TELEGRAM QR</strong>
+                    </div>
+                `;
+
                 return `
                     <div class="id-card-wrap">
                         <div class="id-card id-card-back ${cardClass}" style="${cardDimensionStyle()}">
@@ -3943,7 +3968,7 @@
                                     <div class="text-muted small">${escapeHtml(design().backTagline)}</div>
                                 </div>
                             </div>
-                            ${design().showPaymentQr ? `<div class="payment-grid">${payments}</div>` : ''}
+                            ${design().showPaymentQr ? `<div class="payment-grid">${payments}${telegramBox}</div>` : ''}
                             ${backContactBlock()}
                             <div class="bank-strip">
                                 <span><b>ABA</b> ${escapeHtml(design().bankAccount1 || '')}</span>
@@ -5845,7 +5870,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     '<div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook: <a href="https://www.facebook.com/kystorecambodia">https://www.facebook.com/kystorecambodia</a></span></div>',
                     '<div class="back-contact-row" style="--contact-color:#2563eb"><span class="back-contact-icon">f</span><span>Facebook (Official): <a href="https://www.facebook.com/Knea">https://www.facebook.com/Knea</a></span></div>',
                     '<div class="back-contact-row" style="--contact-color:#ec4899"><span class="back-contact-icon">IG</span><span>Instagram: <a href="https://www.instagram.com/kneayerngvip.official/">https://www.instagram.com/kneayerngvip.official/</a></span></div>',
-                    '<div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/Kneayerng">https://t.me/Kneayerng</a></span></div>',
+                    '<div class="back-contact-row" style="--contact-color:#0ea5e9"><span class="back-contact-icon">T</span><span>Telegram: <a href="https://t.me/kneayerngofficialbot">https://t.me/kneayerngofficialbot</a></span></div>',
                     '<div class="back-contact-row" style="--contact-color:#14b8a6"><span class="back-contact-icon">P</span><span>Phone: <b>16910505</b></span></div>',
                     '</div>'
                 ].join('');
