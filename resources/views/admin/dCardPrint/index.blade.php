@@ -3842,6 +3842,16 @@
 
             const telegramQrValue = (employee) => employee.telegram_qr_url || 'https://t.me/kneayerngofficialbot';
 
+            const isTelegramQrCode = (qrCode) => {
+                const haystack = [
+                    qrCode.payment_name,
+                    qrCode.khqr_value,
+                    qrCode.qr_code_url,
+                ].join(' ').toLowerCase();
+
+                return haystack.includes('telegram') || haystack.includes('t.me/');
+            };
+
             const kyInfoIcon = (name) => {
                 const icons = {
                     user: '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>',
@@ -3927,7 +3937,7 @@
                 const qrCodes = [
                     employee.khqr_account_id ? { payment_name: 'Employee KHQR', khqr_value: employee.khqr_account_id } : null,
                     ...(employee.payment_qr_codes || []),
-                ].filter(Boolean);
+                ].filter((qrCode) => qrCode && !isTelegramQrCode(qrCode));
                 const payments = qrCodes.length ? qrCodes.slice(0, 4).map((qrCode) => `
                     <div class="payment-box">
                         <div class="payment-qr-frame" style="${paymentBoxStyle()}">
@@ -5876,6 +5886,16 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 ].join('');
             }
 
+            function fallbackIsTelegramQrCode(qrCode) {
+                var haystack = [
+                    qrCode && qrCode.payment_name,
+                    qrCode && qrCode.khqr_value,
+                    qrCode && qrCode.qr_code_url
+                ].join(' ').toLowerCase();
+
+                return haystack.indexOf('telegram') !== -1 || haystack.indexOf('t.me/') !== -1;
+            }
+
             function fallbackFrontCard(employee) {
                 var cardColor = readValue('cardColor', '#f59e0b');
                 var accentColor = readValue('accentColor', '#1f2937');
@@ -5924,7 +5944,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
                 var qrCodes = []
                     .concat(khqr ? [{payment_name: 'Employee KHQR', khqr_value: khqr}] : [])
-                    .concat(employee.payment_qr_codes || []);
+                    .concat(employee.payment_qr_codes || [])
+                    .filter(function (qrCode) {
+                        return qrCode && !fallbackIsTelegramQrCode(qrCode);
+                    });
                 var payments = qrCodes.length ? qrCodes.slice(0, 4).map(function (qrCode) {
                     return [
                         '<div class="payment-box">',
