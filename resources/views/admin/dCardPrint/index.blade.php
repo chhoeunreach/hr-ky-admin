@@ -619,19 +619,20 @@
                     <div class="card-body">
                         <input type="text" class="form-control mb-3" id="employeeSearch" placeholder="{{ __('index.search') }}">
                         <div class="collapse mb-3" id="employeeFilterCollapse">
-                            <div class="employee-filter-panel">
-                                <select class="form-select form-select-sm" id="employeeBranchFilter">
-                                    <option value="">All Branches</option>
-                                </select>
-                                <select class="form-select form-select-sm" id="employeeDepartmentFilter">
+                        <div class="employee-filter-panel">
+                            <select class="form-select form-select-sm" id="employeeBranchFilter">
+                                <option value="">All Branches</option>
+                            </select>
+                            <select class="form-select form-select-sm" id="employeeDepartmentFilter">
                                     <option value="">All Departments</option>
-                                </select>
-                                <button type="button" class="btn btn-outline-secondary btn-sm" id="clearEmployeeFilters">{{ __('index.clear') }}</button>
-                            </div>
+                            </select>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="clearEmployeeFilters">{{ __('index.clear') }}</button>
                         </div>
-                        <div class="employee-picker"></div>
                     </div>
+                    <div class="employee-picker"></div>
+                    <div class="employee-picker-pager" id="employeePickerPager"></div>
                 </div>
+            </div>
             </div>
 
             <div class="col-xl-9 col-lg-8">
@@ -1964,6 +1965,40 @@
         .d-card-studio .employee-picker {
             max-height: 620px;
             overflow-y: auto;
+        }
+
+        .d-card-studio .employee-picker-pager {
+            align-items: center;
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .d-card-studio .employee-picker-pager button {
+            align-items: center;
+            background: #fff;
+            border: 1px solid #dbe3ee;
+            border-radius: 7px;
+            color: #334155;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            justify-content: center;
+            min-height: 30px;
+            padding: 4px 9px;
+        }
+
+        .d-card-studio .employee-picker-pager button:disabled {
+            cursor: not-allowed;
+            opacity: .45;
+        }
+
+        .d-card-studio .employee-picker-pager span {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 800;
+            text-align: center;
         }
 
         .d-card-studio .employee-filter-panel {
@@ -3473,27 +3508,32 @@
                 margin: 0;
             }
 
-            body * {
-                visibility: hidden;
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                overflow: visible !important;
             }
 
-            .print-only,
-            .print-only * {
-                visibility: visible;
+            .content.d-card-studio > :not(.print-only) {
+                display: none !important;
             }
 
             .print-only {
-                display: block;
-                position: absolute;
-                inset: 0;
+                display: block !important;
+                position: static;
+                left: 0;
+                top: 0;
+                width: 210mm;
             }
 
             .a4-page {
                 width: 210mm;
-                min-height: 297mm;
+                height: 297mm;
                 margin: 0;
                 box-shadow: none;
                 page-break-after: always;
+                page-break-inside: avoid;
+                overflow: hidden;
             }
 
             .a4-page:last-child {
@@ -3516,6 +3556,9 @@
             let previewIndex = 0;
             let previewZoom = 120;
             let activeCodeTab = 'blade';
+            let employeePickerPage = 1;
+            const employeePickerPageSize = 20;
+            const a4PreviewMaxPages = 2;
 
             employees = employees.map((employee) => ({
                 ...employee,
@@ -3526,6 +3569,25 @@
             const companyValue = (field) => company && company[field] ? company[field] : '';
 
             const selectedEmployees = () => employees.filter((employee) => employee.selected !== false);
+
+            const filteredEmployeeIndexes = () => {
+                const keyword = ($('#employeeSearch').val() || '').toLowerCase();
+                const branchFilter = $('#employeeBranchFilter').val() || '';
+                const departmentFilter = $('#employeeDepartmentFilter').val() || '';
+
+                return employees.reduce((indexes, employee, index) => {
+                    const search = `${employee.employee_code || ''} ${employee.name || ''} ${employee.english_name || ''} ${employee.branch || ''} ${employee.department || ''}`.toLowerCase();
+                    const matchesKeyword = !keyword || search.includes(keyword);
+                    const matchesBranch = !branchFilter || String(employee.branch || '') === branchFilter;
+                    const matchesDepartment = !departmentFilter || String(employee.department || '') === departmentFilter;
+
+                    if (matchesKeyword && matchesBranch && matchesDepartment) {
+                        indexes.push(index);
+                    }
+
+                    return indexes;
+                }, []);
+            };
 
             const activeEmployee = () => employees[previewIndex] || employees[0] || null;
 
@@ -4125,18 +4187,16 @@
             };
 
             const renderEmployeePicker = () => {
-                const keyword = ($('#employeeSearch').val() || '').toLowerCase();
-                const branchFilter = $('#employeeBranchFilter').val() || '';
-                const departmentFilter = $('#employeeDepartmentFilter').val() || '';
-                const html = employees.map((employee, index) => {
-                    const search = `${employee.employee_code || ''} ${employee.name || ''} ${employee.english_name || ''} ${employee.branch || ''} ${employee.department || ''}`.toLowerCase();
-                    const matchesKeyword = !keyword || search.includes(keyword);
-                    const matchesBranch = !branchFilter || String(employee.branch || '') === branchFilter;
-                    const matchesDepartment = !departmentFilter || String(employee.department || '') === departmentFilter;
-                    const hidden = matchesKeyword && matchesBranch && matchesDepartment ? '' : 'display:none';
+                const indexes = filteredEmployeeIndexes();
+                const totalPages = Math.max(1, Math.ceil(indexes.length / employeePickerPageSize));
+                employeePickerPage = Math.max(1, Math.min(employeePickerPage, totalPages));
+                const start = (employeePickerPage - 1) * employeePickerPageSize;
+                const pageIndexes = indexes.slice(start, start + employeePickerPageSize);
+                const html = pageIndexes.map((index) => {
+                    const employee = employees[index];
 
                     return `
-                        <div class="employee-option ${employee.selected !== false ? 'is-selected' : ''}" style="${hidden}" data-index="${index}">
+                        <div class="employee-option ${employee.selected !== false ? 'is-selected' : ''}" data-index="${index}">
                             <input type="checkbox" class="employee-check" data-index="${index}" ${employee.selected !== false ? 'checked' : ''}>
                             <div class="employee-photo-thumb">
                                 <img src="${employee.photo_url}" alt="${escapeHtml(employee.name)}">
@@ -4157,7 +4217,12 @@
                     `;
                 }).join('');
 
-                $('.employee-picker').html(html);
+                $('.employee-picker').html(html || '<div class="text-muted small p-2">No employees found.</div>');
+                $('#employeePickerPager').html(`
+                    <button type="button" class="employee-page-btn" data-page="prev" ${employeePickerPage <= 1 ? 'disabled' : ''}>Prev</button>
+                    <span>${indexes.length ? `${start + 1}-${Math.min(start + employeePickerPageSize, indexes.length)} of ${indexes.length}` : '0 employees'} · Page ${employeePickerPage}/${totalPages}</span>
+                    <button type="button" class="employee-page-btn" data-page="next" ${employeePickerPage >= totalPages ? 'disabled' : ''}>Next</button>
+                `);
                 if (typeof feather !== 'undefined') {
                     feather.replace();
                 }
@@ -4238,16 +4303,17 @@
                 return selected;
             };
 
-            const renderPages = () => {
+            const renderPages = (fullRender = false) => {
                 const selected = updateEmployeeCounts();
                 const cardsPerPage = parseInt($('#cardsPerPage').val(), 10);
                 const mode = $('#printMode').val();
                 const employeesPerPage = mode === 'front_back' ? Math.max(1, Math.floor(cardsPerPage / 2)) : cardsPerPage;
                 const pages = chunk(selected, employeesPerPage);
+                const previewPages = fullRender ? pages : pages.slice(0, a4PreviewMaxPages);
                 const layout = printLayout();
                 const pageClasses = `${layout.showIndex ? '' : ' no-index'}${layout.showCutMarks ? '' : ' no-cut'}`;
 
-                const html = pages.map((pageEmployees) => {
+                const pageHtml = (pageEmployees) => {
                     let items = '';
 
                     if (mode === 'front_back' && layout.pairMode === 'top_bottom') {
@@ -4269,11 +4335,20 @@
                         </div>
                     </div>
                 `;
-                }).join('');
+                };
+
+                const html = previewPages.map(pageHtml).join('');
+                const paperHtml = fullRender ? html : '';
 
                 $('#printArea').html(html);
-                $('#printAreaForPaper').html(html);
-                enhanceCodes('#printArea, #printAreaForPaper');
+                $('#printAreaForPaper').html(paperHtml);
+                enhanceCodes(fullRender ? '#printArea, #printAreaForPaper' : '#printArea');
+            };
+
+            const prepareFullPrintRender = () => {
+                window.clearTimeout(pagesRenderTimer);
+                pagesRenderTimer = null;
+                renderPages(true);
             };
 
             const phpOpen = '<' + '?php';
@@ -4563,11 +4638,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 });
             };
 
-            const schedulePagesRender = (delay = 180) => {
+            const schedulePagesRender = (delay = 180, fullRender = false) => {
                 window.clearTimeout(pagesRenderTimer);
                 pagesRenderTimer = window.setTimeout(() => {
                     pagesRenderTimer = null;
-                    renderPages();
+                    renderPages(fullRender);
                 }, delay);
             };
 
@@ -4595,7 +4670,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 renderBatchRows();
                 renderEditorPreview();
                 if ($('#studio-a4print').hasClass('active')) {
-                    renderPages();
+                    schedulePagesRender(80);
                 } else {
                     updateEmployeeCounts();
                 }
@@ -4695,8 +4770,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 if ($(this).data('a4-pair')) {
                     $('#pairMode').val($(this).data('a4-pair'));
                 }
-                renderPages();
-                renderLaravelCode();
+                schedulePagesRender(80);
+                scheduleLaravelCodeRender();
             });
 
             $('#toggleMarginIndex, #toggleCutMarks').on('click', function () {
@@ -4709,8 +4784,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 if (typeof feather !== 'undefined') {
                     feather.replace();
                 }
-                renderPages();
-                renderLaravelCode();
+                schedulePagesRender(80);
+                scheduleLaravelCodeRender();
             });
 
             $('#a4CardScale').on('input change', function () {
@@ -4737,7 +4812,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#printA4Now').on('click', function () {
-                renderPages();
+                renderPages(true);
                 window.print();
             });
 
@@ -4824,8 +4899,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 $(document).one('pointerup.dragSize pointercancel.dragSize', () => {
                     $(document).off('pointermove.dragSize');
                     renderEditorPreview();
-                    renderPages();
-                    renderLaravelCode();
+                    schedulePagesRender(80);
+                    scheduleLaravelCodeRender();
                 });
             });
 
@@ -4833,7 +4908,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 employees[$(this).data('index')].selected = $(this).is(':checked');
                 $(this).closest('.employee-option').toggleClass('is-selected', $(this).is(':checked'));
                 renderBatchRows();
-                renderPages();
+                schedulePagesRender(80);
             });
 
             $('body').on('click', '.employee-option', function (event) {
@@ -4848,14 +4923,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             $('body').on('change', '.batch-selected', function () {
                 employees[$(this).data('index')].selected = $(this).is(':checked');
                 renderEmployeePicker();
-                renderPages();
+                schedulePagesRender(80);
             });
 
             $('body').on('input', '.batch-edit', function () {
                 employees[$(this).data('index')][$(this).data('field')] = $(this).val();
                 renderEmployeePicker();
                 renderEditorPreview();
-                renderPages();
+                schedulePagesRender(140);
             });
 
             const autoSaveQuickPhoto = (index, file) => {
@@ -4929,7 +5004,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     renderEmployeePicker();
                     renderBatchRows();
                     renderEditorPreview();
-                    renderPages();
+                    schedulePagesRender(80);
                     autoSaveQuickPhoto(index, file);
                 };
                 reader.readAsDataURL(file);
@@ -4976,12 +5051,18 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
             $('#selectAllEmployees').on('click', function () {
                 employees = employees.map((employee) => ({ ...employee, selected: true }));
-                refreshStudio();
+                renderEmployeePicker();
+                updateEmployeeCounts();
+                renderBatchRows();
+                schedulePagesRender(80);
             });
 
             $('#clearEmployees').on('click', function () {
                 employees = employees.map((employee) => ({ ...employee, selected: false }));
-                refreshStudio();
+                renderEmployeePicker();
+                updateEmployeeCounts();
+                renderBatchRows();
+                schedulePagesRender(80);
             });
 
             $('#batchSelectAll').on('click', function () {
@@ -5061,20 +5142,30 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#employeeSearch').on('input', function () {
+                employeePickerPage = 1;
                 renderEmployeePicker();
             });
 
             $('#employeeBranchFilter').on('change', function () {
+                employeePickerPage = 1;
                 renderEmployeeFilters();
                 renderEmployeePicker();
             });
 
             $('#employeeDepartmentFilter').on('change', function () {
+                employeePickerPage = 1;
                 renderEmployeePicker();
             });
 
             $('#clearEmployeeFilters').on('click', function () {
                 $('#employeeBranchFilter, #employeeDepartmentFilter').val('');
+                employeePickerPage = 1;
+                renderEmployeePicker();
+            });
+
+            $('body').on('click', '.employee-page-btn', function () {
+                const direction = $(this).data('page');
+                employeePickerPage += direction === 'next' ? 1 : -1;
                 renderEmployeePicker();
             });
 
@@ -5137,7 +5228,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 $(this).addClass('active');
                 $('.studio-pane').removeClass('active');
                 $(`#studio-${tab}`).addClass('active');
-                renderPages();
+                if (tab === 'a4print') {
+                    renderEmployeePicker();
+                    updateEmployeeCounts();
+                    schedulePagesRender(60);
+                }
             });
 
             $('[data-code-tab]').on('click', function () {
@@ -5214,7 +5309,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#exportPdf').on('click', async function () {
-                renderPages();
+                prepareFullPrintRender();
 
                 if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) {
                     window.print();
@@ -5255,9 +5350,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
             });
 
             $('#printCards').on('click', function () {
-                renderPages();
+                prepareFullPrintRender();
                 window.print();
             });
+
+            window.addEventListener('beforeprint', prepareFullPrintRender);
 
             refreshStudio();
             window.digitalHrsMainReady = true;
