@@ -3325,6 +3325,10 @@
             display: none;
         }
 
+        #dCardPrintPortal {
+            display: none;
+        }
+
         @media print {
             @page {
                 size: A4 portrait;
@@ -3337,16 +3341,20 @@
                 overflow: visible !important;
             }
 
-            .content.d-card-studio > :not(.print-only) {
+            body.d-card-printing > :not(#dCardPrintPortal) {
                 display: none !important;
             }
 
-            .print-only {
+            #dCardPrintPortal {
                 display: block !important;
                 position: static;
                 left: 0;
                 top: 0;
                 width: 210mm;
+            }
+
+            .print-only {
+                display: none !important;
             }
 
             .a4-page {
@@ -3921,24 +3929,57 @@
                     });
                 }
 
-                if (window.QRCode) {
-                    const $qrTargets = $scope.is('.khqr-generated') ? $scope : $scope.find('.khqr-generated');
+                const $qrTargets = $scope.is('.khqr-generated') ? $scope : $scope.find('.khqr-generated');
+                if (!$qrTargets.length) {
+                    return;
+                }
+
+                const fallbackQrImage = (target, value, size) => {
+                    const encoded = encodeURIComponent(value);
+                    $(target).html(`<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=1&data=${encoded}" alt="QR Code">`);
+                };
+
+                const renderQrTargets = (allowRetry = true) => {
+                    if (!window.QRCode && allowRetry) {
+                        window.setTimeout(() => renderQrTargets(false), 220);
+                        return;
+                    }
+
                     $qrTargets.each(function () {
-                        const value = $(this).data('value') || '';
-                        if (!value || $(this).children().length) return;
-                        const size = parseInt($(this).data('qr-px'), 10) || 76;
+                        const value = this.getAttribute('data-value') || '';
+                        if (!value) return;
+
+                        const size = parseInt(this.getAttribute('data-qr-px') || '76', 10) || 76;
+                        const renderedValue = this.getAttribute('data-rendered-value') || '';
+                        if (renderedValue !== value) {
+                            this.innerHTML = '';
+                            this.removeAttribute('data-rendered-value');
+                        }
+
+                        if (this.querySelector('canvas, img')) {
+                            return;
+                        }
+
                         try {
-                            new QRCode(this, {
-                                text: value,
-                                width: size,
-                                height: size,
-                                correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : 0,
-                            });
+                            if (!window.QRCode) {
+                                fallbackQrImage(this, value, size);
+                            } else {
+                                new QRCode(this, {
+                                    text: value,
+                                    width: size,
+                                    height: size,
+                                    correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : 0,
+                                });
+                            }
+                            this.setAttribute('data-rendered-value', value);
                         } catch (error) {
-                            $(this).html(`<small>${escapeHtml(value)}</small>`);
+                            fallbackQrImage(this, value, size);
+                            this.setAttribute('data-rendered-value', value);
                         }
                     });
-                }
+                };
+
+                renderQrTargets();
             };
 
             const frontDetailRows = (employee) => {
@@ -4174,12 +4215,48 @@
                 enhanceCodes(fullRender ? '#printArea, #printAreaForPaper' : '#printArea');
             };
 
+            const resetCopiedQrPlaceholders = (root) => {
+                $(root).find('.khqr-generated').each(function () {
+                    this.innerHTML = '';
+                    this.removeAttribute('data-rendered-value');
+                });
+            };
+
             const prepareFullPrintRender = () => {
                 window.clearTimeout(pagesRenderTimer);
                 pagesRenderTimer = null;
                 renderPages(true);
-                return selectedEmployees().length > 0;
+                if (!selectedEmployees().length) {
+                    return false;
+                }
+
+                let printPortal = document.getElementById('dCardPrintPortal');
+                if (!printPortal) {
+                    printPortal = document.createElement('div');
+                    printPortal.id = 'dCardPrintPortal';
+                    document.body.appendChild(printPortal);
+                }
+                printPortal.innerHTML = document.getElementById('printAreaForPaper').innerHTML;
+                document.body.classList.add('d-card-printing');
+                resetCopiedQrPlaceholders(printPortal);
+                enhanceCodes('#dCardPrintPortal');
+                return true;
             };
+
+            const printPreparedPages = () => {
+                window.requestAnimationFrame(() => {
+                    window.setTimeout(() => window.print(), 60);
+                });
+            };
+
+            const waitForImages = (root) => Promise.all(
+                Array.from(root.querySelectorAll('img'))
+                    .filter((image) => !image.complete)
+                    .map((image) => new Promise((resolve) => {
+                        image.addEventListener('load', resolve, { once: true });
+                        image.addEventListener('error', resolve, { once: true });
+                    }))
+            );
 
             const phpOpen = '<' + '?php';
 
@@ -4646,7 +4723,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     alert('Please select at least one employee to print.');
                     return;
                 }
-                window.print();
+                printPreparedPages();
             });
 
             $('.designer-control, .print-layout-control, #printMode, #cardsPerPage, #cardColor, #accentColor').on('change input', function () {
@@ -5148,7 +5225,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 }
 
                 if (!window.html2canvas || !window.jspdf || !window.jspdf.jsPDF) {
-                    window.print();
+                    printPreparedPages();
                     return;
                 }
 
@@ -5159,8 +5236,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 captureRoot.style.background = '#ffffff';
                 captureRoot.innerHTML = $('#printAreaForPaper').html();
                 document.body.appendChild(captureRoot);
+                resetCopiedQrPlaceholders(captureRoot);
+                enhanceCodes(captureRoot);
 
                 try {
+                    await waitForImages(captureRoot);
                     const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
                     const pages = captureRoot.querySelectorAll('.a4-page');
 
@@ -5190,16 +5270,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     alert('Please select at least one employee to print.');
                     return;
                 }
-                window.print();
+                printPreparedPages();
             });
 
             window.addEventListener('beforeprint', prepareFullPrintRender);
             window.addEventListener('afterprint', () => {
-                if ($('#studio-a4print').hasClass('active')) {
-                    schedulePagesRender(80);
-                } else {
-                    $('#printAreaForPaper').empty();
-                }
+                document.body.classList.remove('d-card-printing');
             });
 
             refreshStudio();
@@ -6049,17 +6125,24 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     printArea.innerHTML = html;
                     paperArea.innerHTML = html;
 
-                    if (window.QRCode) {
-                        each('.khqr-generated', function (qr) {
-                            var value = qr.getAttribute('data-value') || '';
-                            if (!value || qr.children.length) return;
-                            new QRCode(qr, {
-                                text: value,
-                                width: parseInt(qr.getAttribute('data-qr-px') || '76', 10),
-                                height: parseInt(qr.getAttribute('data-qr-px') || '76', 10)
-                            });
-                        });
-                    }
+                    each('.khqr-generated', function (qr) {
+                        var value = qr.getAttribute('data-value') || '';
+                        if (!value || qr.querySelector('canvas, img')) return;
+                        var size = parseInt(qr.getAttribute('data-qr-px') || '76', 10) || 76;
+                        try {
+                            if (window.QRCode) {
+                                new QRCode(qr, {
+                                    text: value,
+                                    width: size,
+                                    height: size
+                                });
+                            } else {
+                                qr.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=1&data=' + encodeURIComponent(value) + '" alt="QR Code">';
+                            }
+                        } catch (error) {
+                            qr.innerHTML = '<img src="https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size + '&margin=1&data=' + encodeURIComponent(value) + '" alt="QR Code">';
+                        }
+                    });
 
                     var total = document.getElementById('totalCount');
                     var count = document.getElementById('selectedCount');
