@@ -16,13 +16,13 @@ class PostRepository
         $query = Post::select($select)
             ->with($with)
             ->withCount('employees')
-            ->when(isset($filterParameters['name']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['name']), function ($query) use ($filterParameters) {
                 $query->where('post_name', 'like', '%' . $filterParameters['name'] . '%');
             })
-            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->where('branch_id', $filterParameters['branch_id']);
             })
-           ->when(isset($filterParameters['department_id']), function ($query) use ($filterParameters) {
+           ->when(!empty($filterParameters['department_id']), function ($query) use ($filterParameters) {
                 $query->where('dept_id', $filterParameters['department_id']);
             })
             ->latest();

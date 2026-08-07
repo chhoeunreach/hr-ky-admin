@@ -3,6 +3,7 @@
 namespace App\Requests\Department;
 
 
+use App\Helpers\AppHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -37,14 +38,18 @@ class DepartmentStoreRequest extends FormRequest
             'address' => 'required|string',
             'phone' => 'required|string',
             'dept_head_id' => 'nullable|exists:users,id',
-            'branch_id' => 'required|exists:branches,id',
+            'branch_id' => [
+                'required',
+                Rule::exists('branches', 'id')->where(function ($query) {
+                    return $query->where('company_id', AppHelper::getAuthUserCompanyId());
+                }),
+            ],
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],
         ];
 
     }
 
 }
-
 
 
 

@@ -357,6 +357,7 @@
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),
             department_id: $('#department').val(),
+            post_id: $('#post').val(),
             is_active: $('#is_active').val(),
             per_page: $('#per_page').val(),
             action: 'export'  // This should match what the controller is checking for
@@ -374,6 +375,7 @@
             phone: $('#phone').val(),
             branch_id: $('#branch').val(),
             department_id: $('#department').val(),
+            post_id: $('#post').val(),
             is_active: $('#is_active').val(),
             per_page: $('#per_page').val()
         };
@@ -454,54 +456,66 @@
     $(document).ready(function () {
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-        const departmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
-        const officeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
-        const supervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
+        let selectedDepartmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
+        let selectedOfficeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
+        let selectedSupervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
         const employeeId = "{{ isset($userDetail) ? $userDetail['id'] : '' }}";
-        const postId = "{{ isset($userDetail) ? $userDetail['post_id'] : old('post_id') }}";
+        let selectedPostId = "{{ $userDetail->post_id ?? $filterParameters['post_id'] ?? old('post_id') }}";
 
         let branchLoadRequestId = 0;
+        let departmentLoadRequestId = 0;
 
         const loadDepartmentsAndOfficeTime = async (branchId) => {
             const requestId = ++branchLoadRequestId;
 
+            // Reset dependent dropdowns before loading the new branch data
+            $('#department').empty().append('<option value="" selected>{{ __('index.select_department') }}</option>').prop('disabled', true);
+            $('#officeTime').empty().append('<option value="" selected>{{ __('index.select_office_time') }}</option>');
+            $('#post').empty().append('<option value="" selected>{{ __('index.select_post') }}</option>').prop('disabled', true);
+            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
+            $('#department, #post').trigger('change.select2');
+
             if (!branchId) return;
 
-            // Reset dependent dropdowns before loading the new branch data
-            $('#department').empty().append('<option disabled selected>{{ __('index.select_department') }}</option>');
-            $('#officeTime').empty().append('<option value="" selected>{{ __('index.select_office_time') }}</option>');
-            $('#post').empty().append('<option disabled selected>{{ __('index.select_post') }}</option>');
-            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
-
             try {
-                const response = await $.ajax({
-                    type: 'GET',
-                    url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${branchId}`,
-                });
+                const [departmentResponse, branchResponse] = await Promise.all([
+                    $.ajax({
+                        type: 'GET',
+                        url: `{{ url('admin/departments/get-All-Departments') }}/${branchId}`,
+                    }),
+                    $.ajax({
+                        type: 'GET',
+                        url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${branchId}`,
+                    })
+                ]);
 
                 if (requestId !== branchLoadRequestId) return;
 
                 // Departments
-                if (response.departments && response.departments.length > 0) {
-                    response.departments.forEach(department => {
-                        $('#department').append(`<option ${department.id == departmentId ? 'selected' : ''} value="${department.id}">${department.dept_name}</option>`);
+                const departments = departmentResponse.data || [];
+                if (departments.length > 0) {
+                    departments.forEach(department => {
+                        $('#department').append(`<option ${department.id == selectedDepartmentId ? 'selected' : ''} value="${department.id}">${department.dept_name}</option>`);
                     });
+                    $('#department').prop('disabled', false);
                 } else {
                     $('#department').append('<option disabled>{{ __("index.no_department_found") }}</option>');
                 }
 
                 // Office Times
-                if (response.officeTimes && response.officeTimes.length > 0) {
-                    response.officeTimes.forEach(shift => {
-                        $('#officeTime').append(`<option ${shift.id == officeTimeId ? 'selected' : ''} value="${shift.id}">${shift.opening_time} - ${shift.closing_time}</option>`);
+                if (branchResponse.officeTimes && branchResponse.officeTimes.length > 0) {
+                    branchResponse.officeTimes.forEach(shift => {
+                        $('#officeTime').append(`<option ${shift.id == selectedOfficeTimeId ? 'selected' : ''} value="${shift.id}">${shift.opening_time} - ${shift.closing_time}</option>`);
                     });
                 } else {
                     $('#officeTime').append('<option disabled>{{ __("index.office_time_not_found") }}</option>');
                 }
 
-                if ($('#post').length) {
+                $('#department').trigger('change.select2');
+                $('#officeTime').trigger('change.select2');
+
+                if ($('#department').val()) {
                     $('#department').trigger('change');
-                    $('#officeTime').trigger('change');
                 }
             } catch (error) {
                 $('#department').append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
@@ -510,32 +524,43 @@
         };
 
         const loadSupervisorAndPosts = async () => {
+            const requestId = ++departmentLoadRequestId;
             const selectedDepartmentId = $('#department').val();
+
+            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
+            $('#post').empty().append('<option value="" selected>{{ __('index.select_post') }}</option>').prop('disabled', true);
+            $('#post').trigger('change.select2');
 
             if (!selectedDepartmentId) return;
 
             try {
-                const response = await fetch(`{{ url('admin/transfer/get-user-transfer-department-data') }}/${selectedDepartmentId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    }
-                });
+                const [supervisorResponse, postResponse] = await Promise.all([
+                    fetch(`{{ url('admin/transfer/get-user-transfer-department-data') }}/${selectedDepartmentId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        }
+                    }),
+                    fetch(`{{ url('admin/posts/get-All-posts') }}/${selectedDepartmentId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        }
+                    })
+                ]);
 
-                let data = await response.json();
+                let supervisorData = await supervisorResponse.json();
+                let postData = await postResponse.json();
 
-                $('#supervisor').empty();
-                $('#post').empty();
+                if (requestId !== departmentLoadRequestId) return;
 
                 // Supervisors
-                if (!supervisorId) {
-                    $('#supervisor').append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
-                }
-                if (data.supervisors && data.supervisors.length > 0) {
-                    data.supervisors.forEach(user => {
+                if (supervisorData.supervisors && supervisorData.supervisors.length > 0) {
+                    supervisorData.supervisors.forEach(user => {
                         if (employeeId != user.id){
-                            $('#supervisor').append(`<option ${user.id == supervisorId ? 'selected' : ''} value="${user.id}">${user.name}</option>`);
+                            $('#supervisor').append(`<option ${user.id == selectedSupervisorId ? 'selected' : ''} value="${user.id}">${user.name}</option>`);
                         }
                     });
                 } else {
@@ -543,19 +568,18 @@
                 }
 
                 // Posts
-                if (!postId) {
-                    $('#post').append('<option value="" selected>{{ __('index.select_option') }}</option>');
-                }
-                if (data.posts && data.posts.length > 0) {
-                    data.posts.forEach(post => {
-                        $('#post').append(`<option ${post.id == postId ? 'selected' : ''} value="${post.id}">${post.post_name}</option>`);
+                const posts = postData.data || [];
+                if (posts.length > 0) {
+                    posts.forEach(post => {
+                        $('#post').append(`<option ${post.id == selectedPostId ? 'selected' : ''} value="${post.id}">${post.post_name}</option>`);
                     });
+                    $('#post').prop('disabled', false);
                 } else {
                     $('#post').append('<option disabled>{{ __("index.no_posts_found") }}</option>');
                 }
 
-                $('#supervisor').trigger('change');
-                $('#post').trigger('change');
+                $('#supervisor').trigger('change.select2');
+                $('#post').trigger('change.select2');
             } catch (error) {
                 $('#supervisor').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
                 $('#post').append('<option disabled>{{ __("index.error_loading_posts") }}</option>');
@@ -649,11 +673,22 @@
             return str.charAt(0).toUpperCase() + str.slice(1);
         };
 
-        $('#department').on('change', loadSupervisorAndPosts);
+        $('#department').on('change', function () {
+            if ($(this).val() != selectedDepartmentId) {
+                selectedSupervisorId = '';
+                selectedPostId = '';
+            }
+
+            loadSupervisorAndPosts();
+        });
         $('#gender').on('change', loadLeaveTypes);
 
         if (isAdmin) {
             $('#branch').on('change', () => {
+                selectedDepartmentId = '';
+                selectedOfficeTimeId = '';
+                selectedSupervisorId = '';
+                selectedPostId = '';
                 loadDepartmentsAndOfficeTime($('#branch').val());
                 loadLeaveTypes();
             });
@@ -673,13 +708,14 @@
         const errorMessage = document.getElementById('error-message');
 
         // Disable HTML5 validation to let JavaScript handle it
-        leaveForm.setAttribute('novalidate', true);
-
         // Check if required elements exist
         if (!leaveForm || !leaveAllocatedInput || !errorMessage || !leaveDaysInputs.length) {
             console.error('Required form elements are missing.');
             return;
         }
+
+        // Disable HTML5 validation to let JavaScript handle it
+        leaveForm.setAttribute('novalidate', true);
 
         function displayError(element, message) {
             if (!element) return;

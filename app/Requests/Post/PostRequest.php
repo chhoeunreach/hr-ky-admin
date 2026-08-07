@@ -2,6 +2,7 @@
 
 namespace App\Requests\Post;
 
+use App\Helpers\AppHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,17 +32,27 @@ class PostRequest extends FormRequest
      */
     public function rules()
     {
+        $branchId = $this->input('branch_id');
+
         return [
             'post_name' => 'required|string|max:50',
-            'branch_id' => 'required|exists:branches,id',
-            'dept_id' => 'required|exists:departments,id',
+            'branch_id' => [
+                'required',
+                Rule::exists('branches', 'id')->where(function ($query) {
+                    return $query->where('company_id', AppHelper::getAuthUserCompanyId());
+                }),
+            ],
+            'dept_id' => [
+                'required',
+                Rule::exists('departments', 'id')->where(function ($query) use ($branchId) {
+                    return $query->where('branch_id', $branchId);
+                }),
+            ],
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],
         ];
     }
 
 }
-
-
 
 
 

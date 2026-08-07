@@ -28,6 +28,7 @@
         @php
             $hasEmployeeFilters = filled($filterParameters['branch_id'] ?? null)
                 || filled($filterParameters['department_id'] ?? null)
+                || filled($filterParameters['post_id'] ?? null)
                 || filled($filterParameters['employee_name'] ?? null)
                 || filled($filterParameters['search'] ?? null)
                 || filled($filterParameters['email'] ?? null)
@@ -58,7 +59,7 @@
                     @if(!isset(auth()->user()->branch_id))
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
                             <select class="form-control" id="branch" name="branch_id">
-                                <option selected disabled>{{ __('index.select_branch') }}</option>
+                                <option value="" {{ empty($filterParameters['branch_id']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
                                 @foreach($branches as $branch)
                                     <option
                                         {{ ($filterParameters['branch_id'] == $branch->id) ? 'selected' : '' }} value="{{ $branch->id }}">{{ $branch->name }}</option>
@@ -69,7 +70,13 @@
 
                     <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
                         <select class="form-control" id="department" name="department_id">
-                            <option selected disabled>{{ __('index.select_department') }}</option>
+                            <option value="" selected>{{ __('index.select_department') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
+                        <select class="form-control" id="post" name="post_id">
+                            <option value="" selected>{{ __('index.select_post') }}</option>
                         </select>
                     </div>
 

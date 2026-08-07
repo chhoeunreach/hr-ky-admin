@@ -2,23 +2,22 @@
     @if(!isset(auth()->user()->branch_id))
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-        <select class="form-select"  name="branch_id" id="branch_id" required>
-            <option {{ !isset($departmentsDetail) ? 'selected' : '' }} disabled>{{ __('index.select_branch') }}</option>
+        <select class="form-select" name="branch_id" id="branch_id" required>
+            <option value="" {{ !isset($departmentsDetail) && !old('branch_id') ? 'selected' : '' }} disabled>{{ __('index.select_branch') }}</option>
 
             @foreach($branches as $key => $branch)
-                <option value="{{ $branch->id }}" {{( isset($departmentsDetail) && $departmentsDetail->branch_id  ==
-                    $branch->id)  ? 'selected' : ''}}>{{ ucfirst($branch->name) }}</option>
+                <option value="{{ $branch->id }}" {{ (old('branch_id', $departmentsDetail->branch_id ?? null) == $branch->id) ? 'selected' : '' }}>{{ ucfirst($branch->name) }}</option>
             @endforeach
 
         </select>
     </div>
     @endif
     @if(!auth('admin')->check() && auth()->check())
-        <input type="hidden" disabled readonly id="branch_id" name="branch_id" value="{{ auth()->user()->branch_id }}">
+        <input type="hidden" readonly id="branch_id" name="branch_id" value="{{ auth()->user()->branch_id }}">
     @endif
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="name" class="form-label">{{ __('index.department_name') }} <span style="color: red">*</span></label>
-        <input type="text" class="form-control" id="dept_name" required name="dept_name" value="{{ isset($departmentsDetail) ? $departmentsDetail->dept_name : '' }}" autocomplete="off" placeholder="">
+        <input type="text" class="form-control" id="dept_name" required name="dept_name" value="{{ old('dept_name', $departmentsDetail->dept_name ?? '') }}" autocomplete="off" placeholder="">
     </div>
 
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
@@ -38,12 +37,12 @@
 
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="address" class="form-label">{{ __('index.address') }} <span style="color: red">*</span></label>
-        <input type="text" class="form-control" id="address" required name="address" value="{{ isset($departmentsDetail) ? $departmentsDetail->address : old('address') }}" autocomplete="off" placeholder="">
+        <input type="text" class="form-control" id="address" required name="address" value="{{ old('address', $departmentsDetail->address ?? '') }}" autocomplete="off" placeholder="">
     </div>
 
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="number" class="form-label">{{ __('index.phone_number') }} <span style="color: red">*</span></label>
-        <input type="number" class="form-control" id="phone" required name="phone" value="{{ isset($departmentsDetail) ? $departmentsDetail->phone : old('phone') }}" autocomplete="off" placeholder="">
+        <input type="number" class="form-control" id="phone" required name="phone" value="{{ old('phone', $departmentsDetail->phone ?? '') }}" autocomplete="off" placeholder="">
     </div>
 
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">

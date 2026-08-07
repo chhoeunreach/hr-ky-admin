@@ -33,7 +33,7 @@
                     @if(!isset(auth()->user()->branch_id))
                         <div class="col-lg-3 col-md-6 mb-4">
                             <select class="form-select" id="branch_id" name="branch_id">
-                                <option  selected  disabled>{{ __('index.select_branch') }}
+                                <option value="" {{ empty($filterParameters['branch_id']) ? 'selected' : '' }}>{{ __('index.select_branch') }}
                                 </option>
                                 @if(isset($companyDetail))
                                     @foreach($companyDetail->branches()->get() as $key => $branch)
@@ -49,7 +49,7 @@
 
                     <div class="col-lg-3 col-md-6 mb-4">
                         <select class="form-select" name="department_id" id="department_id">
-                            <option selected disabled> {{  __('index.select_department') }} </option>
+                            <option value="" selected> {{  __('index.select_department') }} </option>
 
                         </select>
                     </div>

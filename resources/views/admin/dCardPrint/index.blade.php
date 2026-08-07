@@ -3398,6 +3398,8 @@
 
             const escapeHtml = (value) => $('<div>').text(value || '').html();
             const companyValue = (field) => company && company[field] ? company[field] : '';
+            const employeeBranchKey = (employee) => employee.branch_id ? `id:${employee.branch_id}` : (employee.branch ? `name:${employee.branch}` : '');
+            const employeeDepartmentKey = (employee) => employee.department_id ? `id:${employee.department_id}` : (employee.department ? `name:${employee.department}` : '');
 
             const selectedEmployees = () => employees.filter((employee) => employee.selected !== false);
 
@@ -3409,8 +3411,8 @@
                 return employees.reduce((indexes, employee, index) => {
                     const search = `${employee.employee_code || ''} ${employee.name || ''} ${employee.english_name || ''} ${employee.branch || ''} ${employee.department || ''}`.toLowerCase();
                     const matchesKeyword = !keyword || search.includes(keyword);
-                    const matchesBranch = !branchFilter || String(employee.branch || '') === branchFilter;
-                    const matchesDepartment = !departmentFilter || String(employee.department || '') === departmentFilter;
+                    const matchesBranch = !branchFilter || employeeBranchKey(employee) === branchFilter;
+                    const matchesDepartment = !departmentFilter || employeeDepartmentKey(employee) === departmentFilter;
 
                     if (matchesKeyword && matchesBranch && matchesDepartment) {
                         indexes.push(index);
@@ -3422,20 +3424,39 @@
 
             const activeEmployee = () => employees[previewIndex] || employees[0] || null;
 
-            const uniqueEmployeeValues = (field, predicate = () => true) => [...new Set(employees
-                .filter(predicate)
-                .map((employee) => String(employee[field] || '').trim())
-                .filter(Boolean))]
-                .sort((a, b) => a.localeCompare(b));
+            const uniqueEmployeeOptions = (keyResolver, labelResolver, predicate = () => true) => {
+                const options = new Map();
+
+                employees
+                    .filter(predicate)
+                    .forEach((employee) => {
+                        const key = keyResolver(employee);
+                        const label = String(labelResolver(employee) || '').trim();
+
+                        if (key && label && !options.has(key)) {
+                            options.set(key, label);
+                        }
+                    });
+
+                return [...options.entries()]
+                    .map(([value, label]) => ({ value, label }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+            };
 
             const renderEmployeeFilters = () => {
                 const branchValue = $('#employeeBranchFilter').val() || '';
                 const departmentValue = $('#employeeDepartmentFilter').val() || '';
-                const option = (value) => `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`;
-                const departments = uniqueEmployeeValues('department', (employee) => !branchValue || String(employee.branch || '') === branchValue);
-                const nextDepartmentValue = departments.includes(departmentValue) ? departmentValue : '';
+                const option = ({ value, label }) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+                const branches = uniqueEmployeeOptions(employeeBranchKey, (employee) => employee.branch);
+                const nextBranchValue = branches.some((branch) => branch.value === branchValue) ? branchValue : '';
+                const departments = uniqueEmployeeOptions(
+                    employeeDepartmentKey,
+                    (employee) => employee.department,
+                    (employee) => !nextBranchValue || employeeBranchKey(employee) === nextBranchValue
+                );
+                const nextDepartmentValue = departments.some((department) => department.value === departmentValue) ? departmentValue : '';
 
-                $('#employeeBranchFilter').html('<option value="">All Branches</option>' + uniqueEmployeeValues('branch').map(option).join('')).val(branchValue);
+                $('#employeeBranchFilter').html('<option value="">All Branches</option>' + branches.map(option).join('')).val(nextBranchValue);
                 $('#employeeDepartmentFilter').html('<option value="">All Departments</option>' + departments.map(option).join('')).val(nextDepartmentValue);
             };
 
@@ -3864,6 +3885,47 @@
             };
 
             const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+            const compressPhoto = (file, maxSide = 800, quality = 0.82) => new Promise((resolve, reject) => {
+                if (!(file instanceof File)) {
+                    reject(new Error('Not an image file.'));
+                    return;
+                }
+
+                const objectUrl = URL.createObjectURL(file);
+                const image = new Image();
+
+                image.onload = function () {
+                    let { width, height } = image;
+                    const scale = Math.min(1, maxSide / Math.max(width, height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(width * scale));
+                    canvas.height = Math.max(1, Math.round(height * scale));
+                    const context = canvas.getContext('2d');
+                    context.fillStyle = '#ffffff';
+                    context.fillRect(0, 0, canvas.width, canvas.height);
+                    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                    URL.revokeObjectURL(objectUrl);
+
+                    canvas.toBlob((blob) => {
+                        if (!blob) {
+                            reject(new Error('Could not compress photo.'));
+                            return;
+                        }
+
+                        const name = file.name.replace(/\.[^.]+$/, '') + '.jpg';
+                        resolve(new File([blob], name, { type: 'image/jpeg', lastModified: Date.now() }));
+                    }, 'image/jpeg', quality);
+                };
+
+                image.onerror = function () {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('Could not read image.'));
+                };
+
+                image.src = objectUrl;
+            });
 
             const employeePayload = (employee) => ({
                 employee_code: employee.employee_code || '',
@@ -4915,7 +4977,9 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     renderBatchRows();
                     renderEditorPreview();
                     schedulePagesRender(80);
-                    autoSaveQuickPhoto(index, file);
+                    compressPhoto(file)
+                        .then((compressed) => autoSaveQuickPhoto(index, compressed))
+                        .catch(() => autoSaveQuickPhoto(index, file));
                 };
                 reader.readAsDataURL(file);
             });
@@ -5993,8 +6057,8 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     ].join(' ').toLowerCase();
 
                     if ((keyword && search.indexOf(keyword) === -1)
-                        || (branchFilter && String(employee.branch || '') !== branchFilter)
-                        || (departmentFilter && String(employee.department || '') !== departmentFilter)) {
+                        || (branchFilter && fallbackEmployeeBranchKey(employee) !== branchFilter)
+                        || (departmentFilter && fallbackEmployeeDepartmentKey(employee) !== departmentFilter)) {
                         return '';
                     }
 
@@ -6037,6 +6101,14 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 });
             }
 
+            function fallbackEmployeeBranchKey(employee) {
+                return employee.branch_id ? 'id:' + employee.branch_id : (employee.branch ? 'name:' + employee.branch : '');
+            }
+
+            function fallbackEmployeeDepartmentKey(employee) {
+                return employee.department_id ? 'id:' + employee.department_id : (employee.department ? 'name:' + employee.department : '');
+            }
+
             function bootA4PrintFallback() {
                 var printArea = document.getElementById('printArea');
                 var paperArea = document.getElementById('printAreaForPaper');
@@ -6047,25 +6119,30 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     employee.selected = employee.selected !== false;
                 });
 
-                function populateFallbackEmployeeFilter(id, field, defaultLabel, branchName) {
+                function populateFallbackEmployeeFilter(id, keyResolver, labelResolver, defaultLabel, branchKey) {
                     var select = document.getElementById(id);
                     if (!select) return;
                     var selected = select.value || '';
-                    var values = [];
+                    var values = {};
                     employees.forEach(function (employee) {
-                        if (branchName && String(employee.branch || '') !== branchName) return;
-                        var value = String(employee[field] || '').trim();
-                        if (value && values.indexOf(value) === -1) values.push(value);
+                        if (branchKey && fallbackEmployeeBranchKey(employee) !== branchKey) return;
+                        var key = keyResolver(employee);
+                        var label = String(labelResolver(employee) || '').trim();
+                        if (key && label && !values[key]) values[key] = label;
                     });
-                    values.sort();
-                    select.innerHTML = '<option value="">' + defaultLabel + '</option>' + values.map(function (value) {
-                        return '<option value="' + escapeText(value) + '">' + escapeText(value) + '</option>';
+                    var options = Object.keys(values).map(function (key) {
+                        return { value: key, label: values[key] };
+                    }).sort(function (a, b) {
+                        return a.label.localeCompare(b.label);
+                    });
+                    select.innerHTML = '<option value="">' + defaultLabel + '</option>' + options.map(function (option) {
+                        return '<option value="' + escapeText(option.value) + '">' + escapeText(option.label) + '</option>';
                     }).join('');
-                    select.value = values.indexOf(selected) !== -1 ? selected : '';
+                    select.value = options.some(function (option) { return option.value === selected; }) ? selected : '';
                 }
 
-                populateFallbackEmployeeFilter('employeeBranchFilter', 'branch', 'All Branches');
-                populateFallbackEmployeeFilter('employeeDepartmentFilter', 'department', 'All Departments', readValue('employeeBranchFilter', ''));
+                populateFallbackEmployeeFilter('employeeBranchFilter', fallbackEmployeeBranchKey, function (employee) { return employee.branch; }, 'All Branches');
+                populateFallbackEmployeeFilter('employeeDepartmentFilter', fallbackEmployeeDepartmentKey, function (employee) { return employee.department; }, 'All Departments', readValue('employeeBranchFilter', ''));
 
                 function renderA4() {
                     var selected = getSelectedFallbackEmployees(employees);
@@ -6166,7 +6243,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 var branchFilter = document.getElementById('employeeBranchFilter');
                 if (branchFilter) {
                     branchFilter.addEventListener('change', function () {
-                        populateFallbackEmployeeFilter('employeeDepartmentFilter', 'department', 'All Departments', branchFilter.value || '');
+                        populateFallbackEmployeeFilter('employeeDepartmentFilter', fallbackEmployeeDepartmentKey, function (employee) { return employee.department; }, 'All Departments', branchFilter.value || '');
                         renderFallbackPicker(employees, renderA4);
                     });
                 }

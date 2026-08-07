@@ -75,11 +75,21 @@ class UserController extends Controller
                 'is_active' => $request->is_active ?? null,
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
+                'post_id' => $request->post_id ?? null,
                 'per_page' => $request->per_page ?? getRecordPerPage(),
             ];
 
             if(!auth('admin')->check() && auth()->check()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
+            }
+
+            if (empty($filterParameters['branch_id'])) {
+                $filterParameters['department_id'] = null;
+                $filterParameters['post_id'] = null;
+            }
+
+            if (empty($filterParameters['department_id'])) {
+                $filterParameters['post_id'] = null;
             }
 
 

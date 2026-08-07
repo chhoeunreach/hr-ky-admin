@@ -4,7 +4,7 @@
             <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
             <select class="form-select" id="branch_id" name="branch_id">
 
-                <option {{isset($postDetail) ? '' : 'selected'}}  disabled>{{ __('index.select_branch') }}</option>
+                <option value="" {{isset($postDetail) ? '' : 'selected'}} disabled>{{ __('index.select_branch') }}</option>
 
                 @if(isset($companyDetail))
                     @foreach($companyDetail->branches()->get() as $key => $branch)

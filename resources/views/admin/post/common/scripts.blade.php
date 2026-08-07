@@ -82,17 +82,16 @@
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
         const branchId = "{{ $filterParameters['branch_id'] ?? $postDetail->branch_id ?? null }}";
-        const departmentId = "{{ $filterParameters['department_id'] ??  $postDetail->department_id ?? '' }}";
+        const departmentId = "{{ $filterParameters['department_id'] ??  $postDetail->dept_id ?? '' }}";
 
 
         const loadDepartments = async (selectedBranchId) => {
 
+            $('#department_id').empty().append('<option value="" selected>{{ __("index.select_department") }}</option>');
+
             if (!selectedBranchId) return;
 
-
             try {
-                $('#department_id').empty().append('<option selected disabled>{{ __("index.select_department") }}</option>');
-
                 const response = await $.ajax({
                     type: 'GET',
                     url: `{{ url('admin/departments/get-All-Departments') }}/${selectedBranchId}`,

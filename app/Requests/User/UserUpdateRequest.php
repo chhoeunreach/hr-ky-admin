@@ -37,6 +37,9 @@ class UserUpdateRequest extends FormRequest
      */
     public function rules()
     {
+        $branchId = $this->input('branch_id');
+        $departmentId = $this->input('department_id');
+
         return [
             'name' => 'required|string|max:100|min:2',
             'english_name' => 'nullable|string|max:100',
@@ -50,9 +53,27 @@ class UserUpdateRequest extends FormRequest
             'employment_type' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::EMPLOYMENT_TYPE)],
             'joining_date' => 'nullable|date|before_or_equal:today',
             'role_id' => 'required|exists:roles,id',
-            'branch_id' => 'nullable|required_unless:role_id,1|exists:branches,id',
-            'department_id' => 'nullable|required_unless:role_id,1|exists:departments,id',
-            'post_id' => 'nullable|required_unless:role_id,1|exists:posts,id',
+            'branch_id' => [
+                'nullable',
+                'required_unless:role_id,1',
+                Rule::exists('branches', 'id')->where(function ($query) {
+                    return $query->where('company_id', AppHelper::getAuthUserCompanyId());
+                }),
+            ],
+            'department_id' => [
+                'nullable',
+                'required_unless:role_id,1',
+                Rule::exists('departments', 'id')->where(function ($query) use ($branchId) {
+                    return $query->where('branch_id', $branchId);
+                }),
+            ],
+            'post_id' => [
+                'nullable',
+                'required_unless:role_id,1',
+                Rule::exists('posts', 'id')->where(function ($query) use ($departmentId) {
+                    return $query->where('dept_id', $departmentId);
+                }),
+            ],
             'supervisor_id' => 'nullable|exists:users,id',
             'office_time_id' => 'nullable|required_unless:role_id,1|exists:office_times,id',
             'leave_allocated' => 'nullable|numeric|gte:0',
@@ -88,8 +109,6 @@ class UserUpdateRequest extends FormRequest
     }
 
 }
-
-
 
 
 

@@ -78,11 +78,14 @@ class DCardPrintController extends Controller
                     'photo_url' => $employee->avatar
                         ? asset(User::AVATAR_UPLOAD_PATH . $employee->avatar)
                         : asset('assets/images/img.png'),
+                    'branch_id' => $employee->branch_id,
                     'branch' => $employee->branch?->name,
                     'branch_logo_url' => $hasBranchLogo && $employee->branch?->logo
                         ? asset(Branch::UPLOAD_PATH . $employee->branch->logo)
                         : null,
+                    'department_id' => $employee->department_id,
                     'department' => $employee->department?->dept_name,
+                    'post_id' => $employee->post_id,
                     'post' => $employee->post?->post_name,
                     'joining_date' => $this->dateForInput($employee->joining_date),
                     'emergency_contact' => '',
@@ -223,8 +226,11 @@ class DCardPrintController extends Controller
             'position_khmer' => $employee->position_khmer,
             'position_english' => $employee->position_english,
             'post' => $employee->position_khmer ?: $employee->position_english,
+            'branch_id' => null,
             'department' => $employee->department,
+            'department_id' => null,
             'branch' => $employee->branch,
+            'post_id' => null,
             'joining_date' => $this->dateForInput($employee->joining_date),
             'emergency_contact' => $employee->emergency_contact,
             'blood_type' => $employee->blood_type,
@@ -242,6 +248,10 @@ class DCardPrintController extends Controller
 
     private function mergeDCardOverride(array $employee, DCardEmployee $override): array
     {
+        $overrideBranch = $override->branch ?: null;
+        $overrideDepartment = $override->department ?: null;
+        $overridePost = ($override->position_khmer ?: $override->position_english) ?: null;
+
         return [
             ...$employee,
             'id' => 'dcard-' . $override->id,
@@ -252,9 +262,12 @@ class DCardPrintController extends Controller
             'english_name' => $override->name_english ?: $employee['english_name'],
             'position_khmer' => $override->position_khmer ?: $employee['position_khmer'],
             'position_english' => $override->position_english ?: $employee['position_english'],
-            'post' => ($override->position_khmer ?: $override->position_english) ?: $employee['post'],
-            'department' => $override->department ?: $employee['department'],
-            'branch' => $override->branch ?: $employee['branch'],
+            'post_id' => $overridePost && $overridePost !== $employee['post'] ? null : ($employee['post_id'] ?? null),
+            'post' => $overridePost ?: $employee['post'],
+            'department_id' => $overrideDepartment && $overrideDepartment !== $employee['department'] ? null : ($employee['department_id'] ?? null),
+            'department' => $overrideDepartment ?: $employee['department'],
+            'branch_id' => $overrideBranch && $overrideBranch !== $employee['branch'] ? null : ($employee['branch_id'] ?? null),
+            'branch' => $overrideBranch ?: $employee['branch'],
             'joining_date' => $this->dateForInput($override->joining_date) ?: $employee['joining_date'],
             'emergency_contact' => $override->emergency_contact ?: $employee['emergency_contact'],
             'blood_type' => $override->blood_type ?: $employee['blood_type'],

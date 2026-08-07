@@ -24,7 +24,8 @@ class DepartmentRepository
         $query = Department::select($select)
             ->with($with)
             ->withCount('employees')
-            ->when(isset($filterParameters['branch']), function ($query) use ($filterParameters) {
+            ->where('company_id', $filterParameters['company_id'])
+            ->when(!empty($filterParameters['branch']), function ($query) use ($filterParameters) {
                 $query->whereHas('branch',function($subQuery) use ($filterParameters){
                     $subQuery->where('id', $filterParameters['branch']);
                 });
@@ -63,6 +64,8 @@ class DepartmentRepository
             ->select($select)
             ->where('is_active',1)
             ->where('branch_id',$branchId)
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->orderBy('dept_name')
             ->get();
     }
 

@@ -58,11 +58,14 @@ class UserRepository
             ->when($filterParameters['is_active'] !== null && $filterParameters['is_active'] !== '', function ($query) use ($filterParameters) {
                 $query->where('is_active', (int) $filterParameters['is_active']);
             })
-            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->where('branch_id', $filterParameters['branch_id']);
             })
-            ->when(isset($filterParameters['department_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['department_id']), function ($query) use ($filterParameters) {
                 $query->where('department_id', $filterParameters['department_id']);
+            })
+            ->when(!empty($filterParameters['post_id']), function ($query) use ($filterParameters) {
+                $query->where('post_id', $filterParameters['post_id']);
             });
             $userList = $userList
                 ->orderByRaw('CASE WHEN users.employee_code IS NULL OR users.employee_code = "" THEN 1 ELSE 0 END')

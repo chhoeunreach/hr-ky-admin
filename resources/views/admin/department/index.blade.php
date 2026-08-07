@@ -34,7 +34,7 @@
                     @if(!isset(auth()->user()->branch_id))
                     <div class="col-lg-4 col-md-6 mb-4">
                         <select class="form-select form-select-lg" id="branch_id" name="branch">
-                            <option {{ !isset($filterParameters['branch']) ? 'selected' : '' }} disabled>{{ __('index.select_branch') }}</option>
+                            <option value="" {{ empty($filterParameters['branch']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
                             @foreach($branch as $key => $value)
                                 <option value="{{ $value->id }}" {{ (isset($filterParameters['branch']) && $value->id == $filterParameters['branch'] ) ? 'selected' : '' }}>
                                     {{ ucfirst($value->name) }}

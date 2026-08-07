@@ -312,12 +312,12 @@
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="branch_id" class="form-label">{{ __('index.branch') }}</label>
                     <select class="form-select" id="branch" name="branch_id">
-                        <option value="" {{!isset($userDetail) || old('branch_id') ? 'selected': ''}}  disabled>{{ __('index.select_branch') }}
+                        <option value="" {{ !isset($userDetail) && !old('branch_id') ? 'selected': '' }}>{{ __('index.select_branch') }}
                         </option>
                         @if(isset($companyDetail))
                             @foreach($companyDetail->branches()->get() as $key => $branch)
                                 <option value="{{$branch->id}}"
-                                    {{ (isset($userDetail) && ($userDetail->branch_id ) == $branch->id)  ? 'selected': '' }}>
+                                    {{ old('branch_id', $userDetail->branch_id ?? null) == $branch->id ? 'selected': '' }}>
                                     {{ucfirst($branch->name)}}</option>
                             @endforeach
                         @endif
@@ -328,7 +328,7 @@
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="department" class="form-label">{{ __('index.departments') }}</label>
                     <select class="form-select" id="department" name="department_id">
-                        <option selected disabled>{{ __('index.select_department') }}
+                        <option value="" selected>{{ __('index.select_department') }}
                         </option>
                     </select>
                 </div>
@@ -336,15 +336,14 @@
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="post" class="form-label">{{ __('index.post') }}</label>
                     <select class="form-select" id="post" name="post_id">
+                        <option value="" {{ !isset($userDetail) && !old('post_id') ? 'selected' : '' }}>{{ __('index.select_post') }}</option>
                         @if(isset($userDetail))
                             @foreach($filteredPosts as $post)
                                 <option
-                                    value="{{ $post->id }}" {{ $post->id ==  $userDetail->post_id ? 'selected' : '' }}>
+                                    value="{{ $post->id }}" {{ old('post_id', $userDetail->post_id ?? null) == $post->id ? 'selected' : '' }}>
                                     {{ ucfirst($post->post_name) }}
                                 </option>
                             @endforeach
-                        @else
-                            <option selected disabled>{{ __('index.select_post') }}</option>
                         @endif
                     </select>
                 </div>
