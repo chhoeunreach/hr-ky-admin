@@ -234,6 +234,13 @@ class UserController extends Controller
                 . "ថ្ងៃចូលបម្រើការងារ: {$joiningDate}\n\n"
                 . "សូមស្វាគមន៍មកកាន់ក្រុមការងាររបស់យើង។";
 
+            $avatarPath = $user->avatar ? public_path(User::AVATAR_UPLOAD_PATH . $user->avatar) : null;
+
+            if ($avatarPath && is_file($avatarPath)) {
+                $this->telegramService->sendPhotoToAllKnownChats($avatarPath, $message, 'HTML');
+                return;
+            }
+
             $this->telegramService->sendToAllKnownChats($message, 'HTML');
         } catch (Exception $exception) {
             Log::warning('New employee welcome Telegram notification failed.', [

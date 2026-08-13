@@ -86,6 +86,23 @@ class TelegramService
         return $allOk;
     }
 
+    public function sendPhotoToAllKnownChats(string $photoPath, ?string $caption = null, ?string $parseMode = null): bool
+    {
+        $chatIds = $this->getBroadcastChatIds(TelegramGroup::ACTION_NEW_EMPLOYEE);
+
+        if ($chatIds === []) {
+            Log::error('Telegram photo broadcast skipped: no chat IDs available.');
+            return false;
+        }
+
+        $allOk = true;
+        foreach ($chatIds as $chatId) {
+            $allOk = $this->sendPhoto($chatId, $photoPath, $caption, $parseMode) !== null && $allOk;
+        }
+
+        return $allOk;
+    }
+
     public function resolveChatId(string $branchName, string $departmentName): ?string
     {
         $configuredChatIds = $this->resolveConfiguredChatIds(TelegramGroup::ACTION_ATTENDANCE, $branchName, $departmentName);
@@ -127,7 +144,7 @@ class TelegramService
         return $response?->successful() ?? false;
     }
 
-    public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null): ?int
+    public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null, ?string $parseMode = null): ?int
     {
         $botToken = (string) config('services.telegram.bot_token', '');
 
@@ -158,6 +175,10 @@ class TelegramService
 
             if ($caption !== null && $caption !== '') {
                 $payload['caption'] = Str::limit($caption, 1024, '...');
+            }
+
+            if ($parseMode !== null) {
+                $payload['parse_mode'] = $parseMode;
             }
 
             $response = $request->post($url, $payload);
