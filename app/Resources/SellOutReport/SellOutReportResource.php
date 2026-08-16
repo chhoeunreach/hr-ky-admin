@@ -24,6 +24,8 @@ class SellOutReportResource extends JsonResource
             'total_amount' => number_format((float) $this->total_amount, 2, '.', ''),
             'commission' => number_format((float) $this->commission, 2, '.', ''),
             'created_at' => optional($this->created_at)->format('Y-m-d H:i:s'),
+            'department_id' => $this->user?->department_id,
+            'department_name' => $this->user?->department?->dept_name ?? '',
         ];
 
         $data['lines_count'] = $this->lines_count ?? $this->lines->count();

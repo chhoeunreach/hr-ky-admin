@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\SellOutReport;
 use App\Models\SellOutReportLine;
 use App\Models\TelegramGroup;
@@ -12,6 +13,7 @@ use App\Resources\SellOutReport\SellOutReportResource;
 use App\Services\TelegramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -22,19 +24,73 @@ class SellOutReportController extends Controller
     {
     }
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $reports = SellOutReport::query()
             ->where('user_id', auth()->id())
-            ->with(['lines', 'photos'])
+            ->when($request->filled('date_from'), function ($query) use ($request) {
+                $query->whereDate('created_at', '>=', Carbon::parse($request->query('date_from'))->toDateString());
+            })
+            ->when($request->filled('date_to'), function ($query) use ($request) {
+                $query->whereDate('created_at', '<=', Carbon::parse($request->query('date_to'))->toDateString());
+            })
+            ->when($request->filled('branch_name'), function ($query) use ($request) {
+                $query->where('branch_name', 'like', '%' . trim((string) $request->query('branch_name')) . '%');
+            })
+            ->when($request->filled('department_id'), function ($query) use ($request) {
+                $query->whereHas('user', function ($query) use ($request) {
+                    $query->where('department_id', $request->query('department_id'));
+                });
+            })
+            ->when($request->filled('service_type'), function ($query) use ($request) {
+                $query->where('service_type', $request->query('service_type'));
+            })
+            ->when($request->filled('seller_name'), function ($query) use ($request) {
+                $query->where('seller_name', 'like', '%' . trim((string) $request->query('seller_name')) . '%');
+            })
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = trim((string) $request->query('search'));
+                $likeSearch = '%' . $search . '%';
+
+                $query->where(function ($query) use ($likeSearch) {
+                    $query->where('invoice_no', 'like', $likeSearch)
+                        ->orWhere('original_invoice_no', 'like', $likeSearch)
+                        ->orWhere('seller_name', 'like', $likeSearch)
+                        ->orWhere('branch_name', 'like', $likeSearch)
+                        ->orWhere('customer_name', 'like', $likeSearch)
+                        ->orWhere('customer_phone', 'like', $likeSearch)
+                        ->orWhere('service_type', 'like', $likeSearch)
+                        ->orWhereHas('lines', function ($query) use ($likeSearch) {
+                            $query->where('product_name', 'like', $likeSearch)
+                                ->orWhere('sku', 'like', $likeSearch)
+                                ->orWhere('imei', 'like', $likeSearch)
+                                ->orWhere('imei2', 'like', $likeSearch)
+                                ->orWhere('serial_number', 'like', $likeSearch)
+                                ->orWhere('model_number', 'like', $likeSearch);
+                        })
+                        ->orWhereHas('user.department', function ($query) use ($likeSearch) {
+                            $query->where('dept_name', 'like', $likeSearch);
+                        });
+                });
+            })
+            ->with(['lines', 'photos', 'user.department:id,dept_name'])
             ->withCount(['lines', 'photos'])
             ->latest()
-            ->get()
-            ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->toArray(request()));
+            ->get();
+
+        $summary = [
+            'total_reports' => $reports->count(),
+            'total_qty' => $reports->sum(fn (SellOutReport $report) => $report->lines->sum('qty')),
+            'total_amount' => number_format((float) $reports->sum('total_amount'), 2, '.', ''),
+            'total_commission' => number_format((float) $reports->sum('commission'), 2, '.', ''),
+        ];
 
         return response()->json([
             'status' => true,
-            'data' => $reports,
+            'data' => $reports
+                ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->toArray(request()))
+                ->values(),
+            'summary' => $summary,
         ]);
     }
 
@@ -48,6 +104,37 @@ class SellOutReportController extends Controller
         return response()->json([
             'status' => true,
             'data' => (new SellOutReportResource($report))->toArray(request()),
+        ]);
+    }
+
+    public function departments(Request $request): JsonResponse
+    {
+        $departments = DB::table('departments')
+            ->when($request->filled('branch_id'), function ($query) use ($request) {
+                $query->where('branch_id', $request->query('branch_id'));
+            })
+            ->when($request->filled('branch_name'), function ($query) use ($request) {
+                $query->whereIn('branch_id', function ($query) use ($request) {
+                    $query->select('id')
+                        ->from('branches')
+                        ->where('name', trim((string) $request->query('branch_name')));
+                });
+            })
+            ->where('is_active', Department::IS_ACTIVE)
+            ->whereNotNull('dept_name')
+            ->where('dept_name', '!=', '')
+            ->orderBy('dept_name')
+            ->get(['id', 'dept_name', 'branch_id'])
+            ->map(fn ($department) => [
+                'id' => $department->id,
+                'name' => $department->dept_name,
+                'dept_name' => $department->dept_name,
+                'branch_id' => $department->branch_id,
+            ]);
+
+        return response()->json([
+            'status' => true,
+            'data' => $departments,
         ]);
     }
 

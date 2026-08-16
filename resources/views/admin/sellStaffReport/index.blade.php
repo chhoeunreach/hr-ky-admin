@@ -124,7 +124,8 @@
                             </thead>
                             <tbody>
                             @forelse($staffSummary as $staff)
-                                <tr>
+                                <tr data-total-reports="{{ (int) $staff->total_reports }}"
+                                    data-total-amount="{{ (float) $staff->total_amount }}">
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $staff->seller_name }}</td>
                                     <td class="text-center">{{ number_format((int) $staff->total_reports) }}</td>
@@ -136,6 +137,15 @@
                                 </tr>
                             @endforelse
                             </tbody>
+                            @if($staffSummary->count())
+                                <tfoot>
+                                <tr class="fw-bold">
+                                    <td colspan="2">{{ __('index.total') }}</td>
+                                    <td class="text-center" id="staffSummaryTotalReports">{{ number_format((int) $staffSummary->sum('total_reports')) }}</td>
+                                    <td class="text-end" id="staffSummaryTotalAmount">{{ number_format((float) $staffSummary->sum('total_amount'), 2) }}</td>
+                                </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </div>
@@ -247,8 +257,8 @@
                                 <tr class="fw-bold">
                                     <td colspan="7"></td>
                                     <td>{{ __('index.total') }}</td>
-                                    <td class="text-center">{{ $reports->sum(fn($r) => $r->lines->sum('qty')) }}</td>
-                                    <td class="text-end">{{ number_format((float) $reports->sum('total_amount'), 2) }}</td>
+                                    <td class="text-center">{{ number_format((int) ($totalQty ?? 0)) }}</td>
+                                    <td class="text-end">{{ number_format((float) ($summary->total_amount ?? 0), 2) }}</td>
                                     <td colspan="2"></td>
                                 </tr>
                             </tfoot>
@@ -380,11 +390,28 @@
             }
         });
 
+        const updateStaffSummaryFooter = () => {
+            let totalReports = 0;
+            let totalAmount = 0;
+
+            $('#staffSummaryTable tbody tr:visible').each(function () {
+                totalReports += Number($(this).data('total-reports')) || 0;
+                totalAmount += Number($(this).data('total-amount')) || 0;
+            });
+
+            $('#staffSummaryTotalReports').text(totalReports.toLocaleString());
+            $('#staffSummaryTotalAmount').text(totalAmount.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }));
+        };
+
         $(document).on('keyup', '#staffSummarySearch', function () {
             let value = $(this).val().toLowerCase();
             $('#staffSummaryTable tbody tr').filter(function () {
                 $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
             });
+            updateStaffSummaryFooter();
         });
 
         $(document).on('click', '.sell-staff-report-row', function (event) {

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\SellOutReport;
+use App\Models\SellOutReportLine;
 use App\Models\TelegramGroup;
 use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
@@ -45,6 +46,7 @@ class SellStaffReportController extends Controller
 
         $reports = $query->paginate(25)->withQueryString();
         $summary = $this->summaryQuery($filterData)->first();
+        $totalQty = $this->totalQtyQuery($filterData);
         $staffSummary = $this->staffSummaryQuery($filterData)->get();
         $branches = Branch::query()
             ->where('company_id', app(\App\Helpers\AppHelper::class)::getAuthUserCompanyId())
@@ -65,7 +67,7 @@ class SellStaffReportController extends Controller
 
         return view($this->view . 'index', compact(
             'reports', 'summary', 'staffSummary', 'filterData',
-            'branches', 'sellTypes'
+            'branches', 'sellTypes', 'totalQty'
         ));
     }
 
@@ -518,6 +520,13 @@ class SellStaffReportController extends Controller
             ->selectRaw('COALESCE(SUM(total_amount), 0) as total_amount');
     }
 
+    private function totalQtyQuery(array $filterData): int
+    {
+        return (int) SellOutReportLine::query()
+            ->whereIn('sell_out_report_id', $this->baseReportQuery($filterData)->select('id'))
+            ->sum('qty');
+    }
+
     private function staffSummaryQuery(array $filterData)
     {
         $branchName = null;
@@ -535,6 +544,11 @@ class SellStaffReportController extends Controller
             })
             ->when($branchName, function ($query, $name) {
                 $query->where('branch_name', $name);
+            })
+            ->when($filterData['ss_department_id'], function ($query, $departmentId) {
+                $query->whereHas('user', function ($query) use ($departmentId) {
+                    $query->where('department_id', $departmentId);
+                });
             })
             ->selectRaw("COALESCE(NULLIF(seller_name, ''), 'Unknown') as seller_name")
             ->selectRaw('COUNT(*) as total_reports')
