@@ -149,6 +149,7 @@
                     <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
                     <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
                     <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
+                    <input type="hidden" name="department_id" value="{{ $filterData['department_id'] ?? '' }}">
                     <input type="hidden" name="service_type" value="{{ $filterData['service_type'] ?? '' }}">
                     <input type="text" name="search" class="form-control" value="{{ $filterData['search'] ?? '' }}" placeholder="{{ __('index.search') }}">
                     <button type="submit" class="btn btn-primary">{{ __('index.search') }}</button>
@@ -343,6 +344,7 @@
             let form = $(this).closest('form');
             form.find('input[name="branch_name"]').val(branchName);
             let deptSelect = form.find('select[name="department_id"]');
+            let selectedDepartmentId = @json((string) ($filterData['department_id'] ?? ''));
             deptSelect.html('<option value="">{{ __('index.select_department') }}</option>');
             if (branchId) {
                 $.ajax({
@@ -351,13 +353,18 @@
                     success: function (response) {
                         if (response.data) {
                             $.each(response.data, function (idx, dept) {
-                                deptSelect.append('<option value="' + dept.id + '">' + dept.dept_name + '</option>');
+                                let isSelected = String(dept.id) === selectedDepartmentId ? ' selected' : '';
+                                deptSelect.append('<option value="' + dept.id + '"' + isSelected + '>' + dept.dept_name + '</option>');
                             });
                         }
                     }
                 });
             }
         });
+
+        if ($('#top_filter_branch').val()) {
+            $('#top_filter_branch').trigger('change');
+        }
 
         $('#staffSummaryCollapse').on('show.bs.collapse', function () {
             let icon = $(this).parent().find('.collapse-icon');

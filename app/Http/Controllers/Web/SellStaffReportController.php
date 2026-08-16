@@ -406,6 +406,7 @@ class SellStaffReportController extends Controller
             'date_to' => $request->query('date_to'),
             'seller_name' => trim((string) $request->query('seller_name', '')),
             'branch_name' => trim((string) $request->query('branch_name', '')),
+            'department_id' => $request->query('department_id'),
             'search' => trim((string) $request->query('search', '')),
             'ss_date_from' => $request->query('ss_date_from'),
             'ss_date_to' => $request->query('ss_date_to'),
@@ -437,6 +438,11 @@ class SellStaffReportController extends Controller
             })
             ->when($filterData['branch_name'], function ($query, $branchName) {
                 $query->where('branch_name', 'like', '%' . $branchName . '%');
+            })
+            ->when($filterData['department_id'], function ($query, $departmentId) {
+                $query->whereHas('user', function ($query) use ($departmentId) {
+                    $query->where('department_id', $departmentId);
+                });
             })
             ->when($filterData['service_type'], function ($query, $type) {
                 $query->where(function ($query) use ($type) {
