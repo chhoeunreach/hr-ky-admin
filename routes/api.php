@@ -123,6 +123,8 @@ Route::group([
 
     /** Team Meeting Routes **/
     Route::get('team-meetings', [TeamMeetingApiController::class, 'getAllAssignedTeamMeetingDetail']);
+    Route::get('team-meetings/attendance/status', [TeamMeetingApiController::class, 'meetingAttendanceStatus']);
+    Route::post('team-meetings/attendance/scan', [TeamMeetingApiController::class, 'scanMeetingAttendance']);
     Route::get('team-meetings/{id}', [TeamMeetingApiController::class, 'findTeamMeetingDetail']);
 
     /** Holiday route */

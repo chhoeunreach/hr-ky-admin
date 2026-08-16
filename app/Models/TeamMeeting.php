@@ -91,4 +91,9 @@ class TeamMeeting extends Model
         return $this->hasMany(MeetingDepartment::class,'team_meeting_id','id');
     }
 
+    public function meetingAttendances()
+    {
+        return $this->hasMany(MeetingAttendance::class, 'team_meeting_id', 'id');
+    }
+
 }

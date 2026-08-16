@@ -96,6 +96,7 @@
                             <th class="text-center">{{__('index.meeting_date')}}</th>
                             <th class="text-center">{{__('index.start_time')}}</th>
                             <th>{{__('index.participators')}}</th>
+                            <th class="text-center">Meeting QR</th>
 
                             @can('show_team_meeting')
                                 <th class="text-center">{{__('index.description')}}</th>
@@ -121,6 +122,12 @@
                                             <li>{{ $datum->participator ? ucfirst($datum->participator->name) : 'N/A'}}</li>
                                         @endforeach
                                     </ul>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-inline-block bg-white p-2 rounded border">
+                                        {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(82)->generate('meeting:' . $value->id) !!}
+                                    </div>
+                                    <div class="small text-muted mt-1">meeting:{{ $value->id }}</div>
                                 </td>
                                 @can('show_team_meeting')
                                     <td class="text-center">
