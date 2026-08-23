@@ -50,7 +50,7 @@ class DashboardApiController extends Controller
             $nfc_key = 'create_nfc';
             $userId = getAuthUserCode();
             $with = [
-                'branch:id,name',
+                'branch:id,name,payment_qr_codes',
                 'company:id,name,weekend',
                 'post:id,post_name',
                 'department:id,dept_name',
