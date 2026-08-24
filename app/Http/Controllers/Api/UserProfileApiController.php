@@ -6,7 +6,9 @@ use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Branch;
 use App\Models\ChatConversation;
+use App\Models\DCardEmployee;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -58,6 +60,34 @@ class UserProfileApiController extends Controller
             $user = $this->userRepo->findUserDetailById(getAuthUserCode(), $select, $with);
             $userDetail = new UserResource($user);
             return AppHelper::sendSuccessResponse(__('index.data_found'), $userDetail);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), 400);
+        }
+    }
+
+    public function dCardProfile(): JsonResponse
+    {
+        try {
+            $this->authorize('view_profile');
+
+            $with = [
+                'branch:id,name,logo,payment_qr_codes',
+                'company:id,name,logo,address,phone,website_url',
+                'post:id,post_name',
+                'department:id,dept_name',
+            ];
+            $select = ['users.*', 'branch_id', 'company_id', 'department_id', 'post_id'];
+            $user = $this->userRepo->findUserDetailById(getAuthUserCode(), $select, $with);
+            $card = $this->transformUserDCard($user);
+
+            if (Schema::hasTable('d_card_employees') && ! empty($card['employee_code'])) {
+                $override = DCardEmployee::where('employee_code', $card['employee_code'])->first();
+                if ($override) {
+                    $card = $this->mergeDCardOverride($card, $override);
+                }
+            }
+
+            return AppHelper::sendSuccessResponse(__('index.data_found'), $card);
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
@@ -167,6 +197,106 @@ class UserProfileApiController extends Controller
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
+    }
+
+    private function transformUserDCard(User $user): array
+    {
+        $paymentQrCodes = collect(Schema::hasColumn('branches', 'payment_qr_codes') ? ($user->branch?->payment_qr_codes ?? []) : [])
+            ->map(fn ($qrCode) => [
+                'payment_name' => $qrCode['payment_name'] ?? '',
+                'qr_code_url' => ! empty($qrCode['qr_code'])
+                    ? asset(Branch::UPLOAD_PATH . $qrCode['qr_code'])
+                    : null,
+            ])
+            ->filter(fn ($qrCode) => $qrCode['payment_name'] && $qrCode['qr_code_url'])
+            ->values()
+            ->all();
+
+        return [
+            'id' => 'user-' . $user->id,
+            'record_id' => $user->id,
+            'source' => 'user',
+            'employee_code' => $user->employee_code ?: sprintf('KY-%05d', $user->id),
+            'name' => $user->name,
+            'english_name' => $user->english_name,
+            'position_khmer' => $user->post?->post_name,
+            'position_english' => $user->post?->post_name,
+            'post' => $user->post?->post_name,
+            'department' => $user->department?->dept_name,
+            'branch' => $user->branch?->name,
+            'joining_date' => $this->dateForCard($user->joining_date),
+            'emergency_contact' => '',
+            'blood_type' => '',
+            'khqr_account_id' => '',
+            'phone' => $user->phone,
+            'email' => $user->email,
+            'photo_url' => $user->avatar
+                ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
+                : asset('assets/images/img.png'),
+            'branch_logo_url' => Schema::hasColumn('branches', 'logo') && $user->branch?->logo
+                ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
+                : null,
+            'company' => $user->company?->name,
+            'company_address' => $user->company?->address,
+            'company_phone' => $user->company?->phone,
+            'company_website' => $user->company?->website_url,
+            'payment_qr_codes' => $paymentQrCodes,
+            'website_qr_url' => $this->qrCodeUrl($user->company?->website_url ?: 'https://www.kneayerng.com'),
+            'telegram_qr_url' => $this->qrCodeUrl('https://t.me/kneayerng'),
+        ];
+    }
+
+    private function mergeDCardOverride(array $card, DCardEmployee $override): array
+    {
+        $post = ($override->position_khmer ?: $override->position_english) ?: null;
+
+        return [
+            ...$card,
+            'id' => 'dcard-' . $override->id,
+            'record_id' => $override->id,
+            'source' => 'dcard',
+            'employee_code' => $override->employee_code ?: $card['employee_code'],
+            'name' => $override->name_khmer ?: $card['name'],
+            'english_name' => $override->name_english ?: $card['english_name'],
+            'position_khmer' => $override->position_khmer ?: $card['position_khmer'],
+            'position_english' => $override->position_english ?: $card['position_english'],
+            'post' => $post ?: $card['post'],
+            'department' => $override->department ?: $card['department'],
+            'branch' => $override->branch ?: $card['branch'],
+            'joining_date' => $this->dateForCard($override->joining_date) ?: $card['joining_date'],
+            'emergency_contact' => $override->emergency_contact ?: $card['emergency_contact'],
+            'blood_type' => $override->blood_type ?: $card['blood_type'],
+            'khqr_account_id' => $override->khqr_account_id ?: $card['khqr_account_id'],
+            'phone' => $override->phone ?: $card['phone'],
+            'email' => $override->email ?: $card['email'],
+            'photo_url' => $override->profile_photo_url ?: $card['photo_url'],
+            'branch_logo_url' => $this->branchLogoUrl($override->branch) ?: $card['branch_logo_url'],
+        ];
+    }
+
+    private function dateForCard(mixed $date): ?string
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        return \Illuminate\Support\Carbon::parse($date)->format('Y-m-d');
+    }
+
+    private function branchLogoUrl(?string $branchName): ?string
+    {
+        if (empty($branchName) || ! Schema::hasColumn('branches', 'logo')) {
+            return null;
+        }
+
+        $logo = Branch::where('name', $branchName)->value('logo');
+
+        return $logo ? asset(Branch::UPLOAD_PATH . $logo) : null;
+    }
+
+    private function qrCodeUrl(string $data): string
+    {
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($data);
     }
 
     private function getAdminDirectoryEntries(?int $userId = null): array

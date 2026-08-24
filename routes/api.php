@@ -69,6 +69,7 @@ Route::group([
 
     /** Users Routes **/
     Route::get('users/profile', [UserProfileApiController::class, 'userProfileDetail']);
+    Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile']);
     Route::post('users/change-password', [UserProfileApiController::class, 'changePassword']);
     Route::post('users/update-profile', [UserProfileApiController::class, 'updateUserProfile']);
     Route::post('users/update-fcm-token', [UserProfileApiController::class, 'updateFcmToken']);
