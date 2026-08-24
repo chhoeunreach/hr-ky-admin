@@ -201,6 +201,8 @@ class UserProfileApiController extends Controller
 
     private function transformUserDCard(User $user): array
     {
+        $companyWebsite = $user->company?->website_url ?: 'https://www.kneayerng.com';
+        $telegramUrl = 'https://t.me/kneayerng';
         $paymentQrCodes = collect(Schema::hasColumn('branches', 'payment_qr_codes') ? ($user->branch?->payment_qr_codes ?? []) : [])
             ->map(fn ($qrCode) => [
                 'payment_name' => $qrCode['payment_name'] ?? '',
@@ -233,16 +235,21 @@ class UserProfileApiController extends Controller
             'photo_url' => $user->avatar
                 ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
                 : asset('assets/images/img.png'),
+            'profile_photo_url' => $user->avatar
+                ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
+                : asset('assets/images/img.png'),
             'branch_logo_url' => Schema::hasColumn('branches', 'logo') && $user->branch?->logo
                 ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
                 : null,
             'company' => $user->company?->name,
             'company_address' => $user->company?->address,
             'company_phone' => $user->company?->phone,
-            'company_website' => $user->company?->website_url,
+            'company_website' => $companyWebsite,
             'payment_qr_codes' => $paymentQrCodes,
-            'website_qr_url' => $this->qrCodeUrl($user->company?->website_url ?: 'https://www.kneayerng.com'),
-            'telegram_qr_url' => $this->qrCodeUrl('https://t.me/kneayerng'),
+            'website_qr_data' => $companyWebsite,
+            'telegram_qr_data' => $telegramUrl,
+            'website_qr_url' => $this->qrCodeUrl($companyWebsite),
+            'telegram_qr_url' => $this->qrCodeUrl($telegramUrl),
         ];
     }
 
@@ -270,6 +277,7 @@ class UserProfileApiController extends Controller
             'phone' => $override->phone ?: $card['phone'],
             'email' => $override->email ?: $card['email'],
             'photo_url' => $override->profile_photo_url ?: $card['photo_url'],
+            'profile_photo_url' => $override->profile_photo_url ?: ($card['profile_photo_url'] ?? $card['photo_url']),
             'branch_logo_url' => $this->branchLogoUrl($override->branch) ?: $card['branch_logo_url'],
         ];
     }
