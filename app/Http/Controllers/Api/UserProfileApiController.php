@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Admin;
 use App\Models\Branch;
 use App\Models\ChatConversation;
+use App\Models\Company;
 use App\Models\DCardEmployee;
 use App\Models\User;
 use App\Repositories\BranchRepository;
@@ -238,9 +239,13 @@ class UserProfileApiController extends Controller
             'profile_photo_url' => $user->avatar
                 ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
                 : asset('assets/images/img.png'),
+            'branch_name' => $user->branch?->name,
             'branch_logo_url' => Schema::hasColumn('branches', 'logo') && $user->branch?->logo
                 ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
                 : null,
+            'company_logo_url' => $user->company?->logo
+                ? asset(Company::UPLOAD_PATH . $user->company->logo)
+                : asset('assets/images/img.png'),
             'company' => $user->company?->name,
             'company_address' => $user->company?->address,
             'company_phone' => $user->company?->phone,
@@ -278,6 +283,7 @@ class UserProfileApiController extends Controller
             'email' => $override->email ?: $card['email'],
             'photo_url' => $override->profile_photo_url ?: $card['photo_url'],
             'profile_photo_url' => $override->profile_photo_url ?: ($card['profile_photo_url'] ?? $card['photo_url']),
+            'branch_name' => $override->branch ?: ($card['branch_name'] ?? $card['branch']),
             'branch_logo_url' => $this->branchLogoUrl($override->branch) ?: $card['branch_logo_url'],
         ];
     }
@@ -297,7 +303,10 @@ class UserProfileApiController extends Controller
             return null;
         }
 
-        $logo = Branch::where('name', $branchName)->value('logo');
+        $cleanBranchName = trim($branchName);
+        $logo = Branch::withoutGlobalScopes()
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($cleanBranchName)])
+            ->value('logo');
 
         return $logo ? asset(Branch::UPLOAD_PATH . $logo) : null;
     }
