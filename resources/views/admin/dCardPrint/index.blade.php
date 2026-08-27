@@ -2288,8 +2288,10 @@
         }
 
         .template-kneayerng_gold .ky-name-block {
+            box-sizing: border-box;
             margin-top: var(--ky-name-top, 1.25mm);
             min-width: 0;
+            padding: var(--ky-name-pad-y, .25mm) var(--ky-name-pad-x, 1.8mm) 0;
             text-align: center;
             width: 100%;
         }
@@ -2300,7 +2302,7 @@
             font-family: var(--employee-khmer-font, "Khmer OS Muol Light", "Moul", "Noto Serif Khmer", "Kantumruy Pro", Arial, sans-serif);
             font-size: calc(var(--employee-khmer-size, 18px) * var(--card-text-scale));
             font-weight: 900;
-            line-height: 1.05;
+            line-height: 1.16;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -2312,8 +2314,9 @@
             font-family: var(--employee-english-font, Arial, sans-serif);
             font-size: calc(var(--employee-english-size, 8.8px) * var(--card-text-scale));
             font-weight: 900;
-            letter-spacing: .08em;
-            margin-top: var(--ky-english-top, .5mm);
+            letter-spacing: .11em;
+            line-height: 1.2;
+            margin-top: var(--ky-english-top, .85mm);
             overflow: hidden;
             text-overflow: ellipsis;
             text-transform: uppercase;
@@ -3610,7 +3613,9 @@
                     `--ky-photo-shadow-y:${mm(2)}`,
                     `--ky-photo-shadow-blur:${mm(5)}`,
                     `--ky-name-top:${mm(1.25)}`,
-                    `--ky-english-top:${mm(.5)}`,
+                    `--ky-name-pad-y:${mm(.25)}`,
+                    `--ky-name-pad-x:${mm(1.8)}`,
+                    `--ky-english-top:${mm(.85)}`,
                     `--ky-pill-width:${pillWidth.toFixed(3)}mm`,
                     `--ky-pill-gap:${mm(1.7)}`,
                     `--ky-pill-top:${mm(1.05)}`,

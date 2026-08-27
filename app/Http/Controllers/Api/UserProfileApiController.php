@@ -202,6 +202,7 @@ class UserProfileApiController extends Controller
     {
         $companyWebsite = $user->company?->website_url ?: 'https://www.kneayerng.com';
         $telegramUrl = 'https://t.me/kneayerng';
+        $employeeFullName = $this->employeeFullName($user);
         $companyLogoUrl = $user->company?->logo
             ? asset(Company::UPLOAD_PATH . $user->company->logo)
             : asset('assets/images/img.png');
@@ -224,8 +225,9 @@ class UserProfileApiController extends Controller
             'record_id' => $user->id,
             'source' => 'user',
             'employee_code' => $user->employee_code ?: sprintf('KY-%05d', $user->id),
-            'name' => $user->name,
-            'name_khmer' => $user->name,
+            'name' => $employeeFullName,
+            'fullname' => $employeeFullName,
+            'name_khmer' => $employeeFullName,
             'english_name' => $user->english_name,
             'name_english' => $user->english_name,
             'position_khmer' => $user->post?->post_name,
@@ -275,12 +277,10 @@ class UserProfileApiController extends Controller
 
         return [
             ...$card,
-            'id' => 'dcard-' . $override->id,
-            'record_id' => $override->id,
-            'source' => 'dcard',
-            'employee_code' => $override->employee_code ?: $card['employee_code'],
-            'name' => $override->name_khmer ?: $card['name'],
-            'name_khmer' => $override->name_khmer ?: ($card['name_khmer'] ?? $card['name']),
+            'd_card_record_id' => $override->id,
+            'employee_code' => $card['employee_code'],
+            'name' => $card['fullname'] ?? $card['name'],
+            'name_khmer' => $card['fullname'] ?? ($card['name_khmer'] ?? $card['name']),
             'english_name' => $override->name_english ?: $card['english_name'],
             'name_english' => $override->name_english ?: ($card['name_english'] ?? $card['english_name']),
             'position_khmer' => $override->position_khmer ?: $card['position_khmer'],
@@ -307,23 +307,20 @@ class UserProfileApiController extends Controller
 
     private function findDCardOverride(User $user, array $card): ?DCardEmployee
     {
-        $codes = collect([
-            $card['employee_code'] ?? null,
-            $user->employee_code ?? null,
-            $user->username ?? null,
-            sprintf('KY-%05d', $user->id),
-            sprintf('EMP-%04d', $user->id),
-        ])
-            ->filter(fn ($code) => filled($code))
-            ->map(fn ($code) => trim((string) $code))
-            ->unique()
-            ->values();
+        $employeeCode = trim((string) ($user->employee_code ?: ($card['employee_code'] ?? '')));
 
-        if ($codes->isEmpty()) {
+        if ($employeeCode === '') {
             return null;
         }
 
-        return DCardEmployee::whereIn('employee_code', $codes)->first();
+        return DCardEmployee::where('employee_code', $employeeCode)->first();
+    }
+
+    private function employeeFullName(User $user): string
+    {
+        $fullname = $user->getAttribute('fullname');
+
+        return filled($fullname) ? (string) $fullname : (string) $user->name;
     }
 
     private function dateForCard(mixed $date): ?string

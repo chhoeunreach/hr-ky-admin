@@ -65,6 +65,7 @@ class DCardProfileApiTest extends TestCase
 
         $loggedInUser = User::factory()->create([
             'name' => 'Reach',
+            'fullname' => 'ឈឿន រីច',
             'english_name' => 'CHHOEUN REACH',
             'employee_code' => 'KY-00021',
             'username' => 'reach',
@@ -104,7 +105,9 @@ class DCardProfileApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('status', true)
             ->assertJsonPath('data.employee_code', 'KY-00021')
-            ->assertJsonPath('data.name', 'រេច')
+            ->assertJsonPath('data.name', 'ឈឿន រីច')
+            ->assertJsonPath('data.fullname', 'ឈឿន រីច')
+            ->assertJsonPath('data.name_khmer', 'ឈឿន រីច')
             ->assertJsonPath('data.english_name', 'CHHOEUN REACH')
             ->assertJsonPath('data.position_khmer', 'បុគ្គលិក')
             ->assertJsonPath('data.position_english', 'Employee')
@@ -143,10 +146,45 @@ class DCardProfileApiTest extends TestCase
         $this->assertStringContainsString(urlencode('https://t.me/kneayerng'), $response->json('data.telegram_qr_url'));
     }
 
+    public function test_d_card_profile_does_not_merge_another_employee_card(): void
+    {
+        $role = Role::create([
+            'name' => 'Employee',
+            'slug' => 'employee',
+            'is_active' => 1,
+        ]);
+
+        $loggedInUser = User::factory()->create([
+            'name' => 'Wrong Source Name',
+            'fullname' => 'បុគ្គលិក KY 0191',
+            'employee_code' => 'KY-0191',
+            'username' => 'KY-0192',
+            'role_id' => $role->id,
+        ]);
+
+        DCardEmployee::create([
+            'employee_code' => 'KY-0192',
+            'name_khmer' => 'បុគ្គលិក KY 0192',
+            'name_english' => 'WRONG EMPLOYEE',
+            'profile_photo_url' => 'https://example.test/d-card/wrong-user.png',
+        ]);
+
+        Passport::actingAs($loggedInUser);
+
+        $response = $this->getJson('/api/hr-ky-admin/d-card/me');
+
+        $response->assertOk()
+            ->assertJsonPath('data.employee_code', 'KY-0191')
+            ->assertJsonPath('data.name', 'បុគ្គលិក KY 0191')
+            ->assertJsonPath('data.name_khmer', 'បុគ្គលិក KY 0191')
+            ->assertJsonPath('data.photo_url', asset('assets/images/img.png'));
+    }
+
     private function createDCardSupportSchema(): void
     {
         Schema::table('users', function (Blueprint $table) {
             $table->string('english_name')->nullable();
+            $table->string('fullname')->nullable();
             $table->string('employee_code')->nullable();
             $table->string('avatar')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
