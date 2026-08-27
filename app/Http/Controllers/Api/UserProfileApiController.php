@@ -69,8 +69,6 @@ class UserProfileApiController extends Controller
     public function dCardProfile(): JsonResponse
     {
         try {
-            $this->authorize('view_profile');
-
             $with = [
                 'branch:id,name,logo,payment_qr_codes',
                 'company:id,name,logo,address,phone,website_url',
@@ -82,7 +80,7 @@ class UserProfileApiController extends Controller
             $card = $this->transformUserDCard($user);
 
             if (Schema::hasTable('d_card_employees') && ! empty($card['employee_code'])) {
-                $override = DCardEmployee::where('employee_code', $card['employee_code'])->first();
+                $override = $this->findDCardOverride($user, $card);
                 if ($override) {
                     $card = $this->mergeDCardOverride($card, $override);
                 }
@@ -204,6 +202,12 @@ class UserProfileApiController extends Controller
     {
         $companyWebsite = $user->company?->website_url ?: 'https://www.kneayerng.com';
         $telegramUrl = 'https://t.me/kneayerng';
+        $companyLogoUrl = $user->company?->logo
+            ? asset(Company::UPLOAD_PATH . $user->company->logo)
+            : asset('assets/images/img.png');
+        $branchLogoUrl = Schema::hasColumn('branches', 'logo') && $user->branch?->logo
+            ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
+            : null;
         $paymentQrCodes = collect(Schema::hasColumn('branches', 'payment_qr_codes') ? ($user->branch?->payment_qr_codes ?? []) : [])
             ->map(fn ($qrCode) => [
                 'payment_name' => $qrCode['payment_name'] ?? '',
@@ -221,17 +225,22 @@ class UserProfileApiController extends Controller
             'source' => 'user',
             'employee_code' => $user->employee_code ?: sprintf('KY-%05d', $user->id),
             'name' => $user->name,
+            'name_khmer' => $user->name,
             'english_name' => $user->english_name,
+            'name_english' => $user->english_name,
             'position_khmer' => $user->post?->post_name,
             'position_english' => $user->post?->post_name,
             'post' => $user->post?->post_name,
             'department' => $user->department?->dept_name,
+            'department_name' => $user->department?->dept_name,
             'branch' => $user->branch?->name,
+            'branchName' => $user->branch?->name,
             'joining_date' => $this->dateForCard($user->joining_date),
             'emergency_contact' => '',
             'blood_type' => '',
             'khqr_account_id' => '',
             'phone' => $user->phone,
+            'phone_number' => $user->phone,
             'email' => $user->email,
             'photo_url' => $user->avatar
                 ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
@@ -240,12 +249,10 @@ class UserProfileApiController extends Controller
                 ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
                 : asset('assets/images/img.png'),
             'branch_name' => $user->branch?->name,
-            'branch_logo_url' => Schema::hasColumn('branches', 'logo') && $user->branch?->logo
-                ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
-                : null,
-            'company_logo_url' => $user->company?->logo
-                ? asset(Company::UPLOAD_PATH . $user->company->logo)
-                : asset('assets/images/img.png'),
+            'branch_logo_url' => $branchLogoUrl ?: $companyLogoUrl,
+            'branchLogoUrl' => $branchLogoUrl ?: $companyLogoUrl,
+            'company_logo_url' => $companyLogoUrl,
+            'companyLogoUrl' => $companyLogoUrl,
             'company' => $user->company?->name,
             'company_address' => $user->company?->address,
             'company_phone' => $user->company?->phone,
@@ -261,6 +268,10 @@ class UserProfileApiController extends Controller
     private function mergeDCardOverride(array $card, DCardEmployee $override): array
     {
         $post = ($override->position_khmer ?: $override->position_english) ?: null;
+        $overridePhotoUrl = $this->publicUrl($override->profile_photo_url);
+        $branchLogoUrl = $this->branchLogoUrl($override->branch)
+            ?: ($card['branch_logo_url'] ?? null)
+            ?: ($card['company_logo_url'] ?? null);
 
         return [
             ...$card,
@@ -269,23 +280,50 @@ class UserProfileApiController extends Controller
             'source' => 'dcard',
             'employee_code' => $override->employee_code ?: $card['employee_code'],
             'name' => $override->name_khmer ?: $card['name'],
+            'name_khmer' => $override->name_khmer ?: ($card['name_khmer'] ?? $card['name']),
             'english_name' => $override->name_english ?: $card['english_name'],
+            'name_english' => $override->name_english ?: ($card['name_english'] ?? $card['english_name']),
             'position_khmer' => $override->position_khmer ?: $card['position_khmer'],
             'position_english' => $override->position_english ?: $card['position_english'],
             'post' => $post ?: $card['post'],
             'department' => $override->department ?: $card['department'],
+            'department_name' => $override->department ?: ($card['department_name'] ?? $card['department']),
             'branch' => $override->branch ?: $card['branch'],
+            'branchName' => $override->branch ?: ($card['branchName'] ?? $card['branch']),
             'joining_date' => $this->dateForCard($override->joining_date) ?: $card['joining_date'],
             'emergency_contact' => $override->emergency_contact ?: $card['emergency_contact'],
             'blood_type' => $override->blood_type ?: $card['blood_type'],
             'khqr_account_id' => $override->khqr_account_id ?: $card['khqr_account_id'],
             'phone' => $override->phone ?: $card['phone'],
+            'phone_number' => $override->phone ?: ($card['phone_number'] ?? $card['phone']),
             'email' => $override->email ?: $card['email'],
-            'photo_url' => $override->profile_photo_url ?: $card['photo_url'],
-            'profile_photo_url' => $override->profile_photo_url ?: ($card['profile_photo_url'] ?? $card['photo_url']),
+            'photo_url' => $overridePhotoUrl ?: $card['photo_url'],
+            'profile_photo_url' => $overridePhotoUrl ?: ($card['profile_photo_url'] ?? $card['photo_url']),
             'branch_name' => $override->branch ?: ($card['branch_name'] ?? $card['branch']),
-            'branch_logo_url' => $this->branchLogoUrl($override->branch) ?: $card['branch_logo_url'],
+            'branch_logo_url' => $branchLogoUrl,
+            'branchLogoUrl' => $branchLogoUrl,
         ];
+    }
+
+    private function findDCardOverride(User $user, array $card): ?DCardEmployee
+    {
+        $codes = collect([
+            $card['employee_code'] ?? null,
+            $user->employee_code ?? null,
+            $user->username ?? null,
+            sprintf('KY-%05d', $user->id),
+            sprintf('EMP-%04d', $user->id),
+        ])
+            ->filter(fn ($code) => filled($code))
+            ->map(fn ($code) => trim((string) $code))
+            ->unique()
+            ->values();
+
+        if ($codes->isEmpty()) {
+            return null;
+        }
+
+        return DCardEmployee::whereIn('employee_code', $codes)->first();
     }
 
     private function dateForCard(mixed $date): ?string
@@ -309,6 +347,20 @@ class UserProfileApiController extends Controller
             ->value('logo');
 
         return $logo ? asset(Branch::UPLOAD_PATH . $logo) : null;
+    }
+
+    private function publicUrl(?string $value): ?string
+    {
+        $cleanValue = trim((string) $value);
+        if ($cleanValue === '') {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $cleanValue)) {
+            return $cleanValue;
+        }
+
+        return asset(ltrim($cleanValue, '/'));
     }
 
     private function qrCodeUrl(string $data): string

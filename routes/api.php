@@ -42,6 +42,8 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
+Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
+    ->middleware('auth:api');
 
 Route::prefix('kiosk/v1')
     ->middleware(['kiosk.device', 'throttle:120,1'])
@@ -69,7 +71,6 @@ Route::group([
 
     /** Users Routes **/
     Route::get('users/profile', [UserProfileApiController::class, 'userProfileDetail']);
-    Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile']);
     Route::post('users/change-password', [UserProfileApiController::class, 'changePassword']);
     Route::post('users/update-profile', [UserProfileApiController::class, 'updateUserProfile']);
     Route::post('users/update-fcm-token', [UserProfileApiController::class, 'updateFcmToken']);
