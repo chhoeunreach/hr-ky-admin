@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ProjectManagementDashboardApiController;
 use App\Http\Controllers\Api\PushNotificationController;
 use App\Http\Controllers\Api\ResignationApiController;
 use App\Http\Controllers\Api\SellOutReportController;
+use App\Http\Controllers\Api\SocialRewardApiController;
 use App\Http\Controllers\Api\StaticPageContentApiController;
 use App\Http\Controllers\Api\SupportApiController;
 use App\Http\Controllers\Api\TadaApiController;
@@ -42,6 +43,8 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
+Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
+    ->middleware('auth:api');
 
 Route::prefix('kiosk/v1')
     ->middleware(['kiosk.device', 'throttle:120,1'])
@@ -243,6 +246,18 @@ Route::group([
 
     /** Telegram Notification */
     Route::post('telegram/notify', [TelegramNotificationApiController::class, 'send']);
+
+    /** Social Rewards */
+    Route::get('hr-ky-admin/social-rewards', [SocialRewardApiController::class, 'index']);
+    Route::post('hr-ky-admin/social-rewards', [SocialRewardApiController::class, 'store']);
+    Route::post('hr-ky-admin/social-rewards/override', [SocialRewardApiController::class, 'override']);
+    Route::get('hr-ky-admin/social-rewards/today', [SocialRewardApiController::class, 'today']);
+    Route::post('hr-ky-admin/social-rewards/submit', [SocialRewardApiController::class, 'submit']);
+    Route::post('hr-ky-admin/social-rewards/update/{id}', [SocialRewardApiController::class, 'update']);
+    Route::get('v1/hr-ky-admin/social-rewards', [SocialRewardApiController::class, 'index']);
+    Route::get('v1/hr-ky-admin/social-rewards/today', [SocialRewardApiController::class, 'today']);
+    Route::post('v1/hr-ky-admin/social-rewards/submit', [SocialRewardApiController::class, 'submit']);
+    Route::post('v1/hr-ky-admin/social-rewards/update/{id}', [SocialRewardApiController::class, 'update']);
 
     /** Sell Out Report */
     Route::get('sell-out-reports', [SellOutReportController::class, 'index']);

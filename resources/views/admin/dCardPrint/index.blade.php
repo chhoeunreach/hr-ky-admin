@@ -2257,6 +2257,7 @@
             display: flex;
             flex-direction: column;
             left: var(--ky-left-width, 14.2mm);
+            overflow: hidden;
             padding: var(--ky-front-pad-top, 2.8mm) var(--ky-front-pad-x, 2.3mm) var(--ky-front-pad-bottom, 1.5mm);
             position: absolute;
             right: var(--ky-front-right, 1.8mm);
@@ -2287,7 +2288,10 @@
         }
 
         .template-kneayerng_gold .ky-name-block {
+            box-sizing: border-box;
             margin-top: var(--ky-name-top, 1.25mm);
+            min-width: 0;
+            padding: var(--ky-name-pad-y, .25mm) var(--ky-name-pad-x, 1.8mm) 0;
             text-align: center;
             width: 100%;
         }
@@ -2298,7 +2302,10 @@
             font-family: var(--employee-khmer-font, "Khmer OS Muol Light", "Moul", "Noto Serif Khmer", "Kantumruy Pro", Arial, sans-serif);
             font-size: calc(var(--employee-khmer-size, 18px) * var(--card-text-scale));
             font-weight: 900;
-            line-height: 1.05;
+            line-height: 1.16;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .template-kneayerng_gold .ky-name-block small {
@@ -2307,9 +2314,13 @@
             font-family: var(--employee-english-font, Arial, sans-serif);
             font-size: calc(var(--employee-english-size, 8.8px) * var(--card-text-scale));
             font-weight: 900;
-            letter-spacing: .08em;
-            margin-top: var(--ky-english-top, .5mm);
+            letter-spacing: .11em;
+            line-height: 1.2;
+            margin-top: var(--ky-english-top, .85mm);
+            overflow: hidden;
+            text-overflow: ellipsis;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .template-kneayerng_gold .ky-position-pill {
@@ -2318,12 +2329,15 @@
             border: .35mm solid var(--ky-gold);
             border-radius: 999px;
             box-shadow: 0 1mm 2mm rgba(15, 23, 42, .16);
+            box-sizing: border-box;
             color: var(--ky-light-gold);
             display: flex;
             gap: var(--ky-pill-gap, 1.7mm);
             justify-content: center;
             margin-top: var(--ky-pill-top, 1.05mm);
             min-height: var(--ky-pill-height, 4.1mm);
+            min-width: 0;
+            overflow: hidden;
             padding: var(--ky-pill-pad-y, .35mm) var(--ky-pill-pad-x, 2.2mm);
             width: var(--ky-pill-width, 34mm);
         }
@@ -2332,17 +2346,26 @@
             font-family: "Battambang", "Noto Sans Khmer", Arial, sans-serif;
             font-size: calc(7.4px * var(--card-text-scale));
             font-weight: 900;
+            flex: 0 0 auto;
+            line-height: 1;
+            white-space: nowrap;
         }
 
         .template-kneayerng_gold .ky-position-pill b {
             border-left: 1px solid var(--ky-gold);
             color: var(--ky-light-gold);
+            flex: 1 1 auto;
             font-family: Arial, sans-serif;
             font-size: calc(7.8px * var(--card-text-scale));
             font-weight: 900;
             letter-spacing: .06em;
+            line-height: 1;
+            min-width: 0;
+            overflow: hidden;
             padding-left: var(--ky-pill-divider-pad, 2mm);
+            text-overflow: ellipsis;
             text-transform: uppercase;
+            white-space: nowrap;
         }
 
         .template-kneayerng_gold .ky-info-list {
@@ -2351,6 +2374,7 @@
             flex-direction: column;
             gap: var(--ky-info-gap, .65mm);
             margin-top: var(--ky-info-top, 1.05mm);
+            min-width: 0;
             width: var(--ky-info-width, 36mm);
         }
 
@@ -2361,6 +2385,7 @@
             gap: var(--ky-info-row-gap, 1mm);
             grid-template-columns: var(--ky-info-icon-col, 4.2mm) var(--ky-info-label-col, 11mm) minmax(0, 1fr);
             min-height: var(--ky-info-row-height, 4.05mm);
+            min-width: 0;
             padding-bottom: var(--ky-info-row-pad-bottom, .45mm);
         }
 
@@ -2404,9 +2429,12 @@
             font-weight: 900;
             line-height: 1.1;
             min-width: 0;
+            overflow: hidden;
             overflow-wrap: anywhere;
             padding-left: var(--ky-info-value-pad, 1.2mm);
             text-align: right;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .template-kneayerng_gold .ky-front-footer {
@@ -2427,6 +2455,7 @@
             gap: var(--ky-qr-gap, 3.4mm);
             justify-content: flex-start;
             left: var(--ky-qr-left, -11.4mm);
+            max-width: calc(100% + (var(--ky-left-width, 14.2mm) - var(--ky-front-pad-x, 2.3mm)));
             padding-right: 0;
             position: absolute;
             right: auto;
@@ -2527,6 +2556,7 @@
             justify-content: center;
             margin: 0 auto;
             min-height: var(--ky-website-height, 3.5mm);
+            overflow: hidden;
             position: absolute;
             bottom: var(--ky-website-bottom, 3.3mm);
             left: var(--ky-website-left, 16.6mm);
@@ -3542,9 +3572,16 @@
                 const cardHeight = config.height * scale;
                 const usableWidth = Math.max(28, cardWidth - (14.2 * layoutScale) - (4.6 * layoutScale));
                 const footerReserve = Math.max(18, 19.5 * layoutScale);
-                const employeePhotoWidth = Math.max(24, Math.min(usableWidth, cardWidth * 0.48));
+                const requestedPhotoWidth = config.templateStyle === 'kneayerng_gold'
+                    ? config.photoWidth
+                    : cardWidth * 0.48;
+                const employeePhotoWidth = Math.max(24, Math.min(usableWidth, requestedPhotoWidth * layoutScale));
                 const detailsReserve = 34 * layoutScale;
-                const employeePhotoHeight = Math.max(26, Math.min(cardHeight - footerReserve - detailsReserve, (cardHeight * 0.39) + 5));
+                const requestedPhotoHeight = config.templateStyle === 'kneayerng_gold'
+                    ? config.photoHeight
+                    : (cardHeight * 0.39) + 5;
+                const maxPhotoHeight = Math.max(26, cardHeight - footerReserve - detailsReserve);
+                const employeePhotoHeight = Math.max(26, Math.min(maxPhotoHeight, requestedPhotoHeight * layoutScale));
                 const infoWidth = Math.max(28, Math.min(usableWidth, 36 * layoutScale));
                 const pillWidth = Math.max(27, Math.min(usableWidth, 34 * layoutScale));
                 return [
@@ -3576,7 +3613,9 @@
                     `--ky-photo-shadow-y:${mm(2)}`,
                     `--ky-photo-shadow-blur:${mm(5)}`,
                     `--ky-name-top:${mm(1.25)}`,
-                    `--ky-english-top:${mm(.5)}`,
+                    `--ky-name-pad-y:${mm(.25)}`,
+                    `--ky-name-pad-x:${mm(1.8)}`,
+                    `--ky-english-top:${mm(.85)}`,
                     `--ky-pill-width:${pillWidth.toFixed(3)}mm`,
                     `--ky-pill-gap:${mm(1.7)}`,
                     `--ky-pill-top:${mm(1.05)}`,

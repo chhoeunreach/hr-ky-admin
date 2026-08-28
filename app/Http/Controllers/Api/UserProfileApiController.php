@@ -6,7 +6,10 @@ use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Branch;
 use App\Models\ChatConversation;
+use App\Models\Company;
+use App\Models\DCardEmployee;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -58,6 +61,32 @@ class UserProfileApiController extends Controller
             $user = $this->userRepo->findUserDetailById(getAuthUserCode(), $select, $with);
             $userDetail = new UserResource($user);
             return AppHelper::sendSuccessResponse(__('index.data_found'), $userDetail);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), 400);
+        }
+    }
+
+    public function dCardProfile(): JsonResponse
+    {
+        try {
+            $with = [
+                'branch:id,name,logo,payment_qr_codes',
+                'company:id,name,logo,address,phone,website_url',
+                'post:id,post_name',
+                'department:id,dept_name',
+            ];
+            $select = ['users.*', 'branch_id', 'company_id', 'department_id', 'post_id'];
+            $user = $this->userRepo->findUserDetailById(getAuthUserCode(), $select, $with);
+            $card = $this->transformUserDCard($user);
+
+            if (Schema::hasTable('d_card_employees') && ! empty($card['employee_code'])) {
+                $override = $this->findDCardOverride($user, $card);
+                if ($override) {
+                    $card = $this->mergeDCardOverride($card, $override);
+                }
+            }
+
+            return AppHelper::sendSuccessResponse(__('index.data_found'), $card);
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
@@ -167,6 +196,173 @@ class UserProfileApiController extends Controller
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
+    }
+
+    private function transformUserDCard(User $user): array
+    {
+        $companyWebsite = $user->company?->website_url ?: 'https://www.kneayerng.com';
+        $telegramUrl = 'https://t.me/kneayerng';
+        $employeeFullName = $this->employeeFullName($user);
+        $companyLogoUrl = $user->company?->logo
+            ? asset(Company::UPLOAD_PATH . $user->company->logo)
+            : asset('assets/images/img.png');
+        $branchLogoUrl = Schema::hasColumn('branches', 'logo') && $user->branch?->logo
+            ? asset(Branch::UPLOAD_PATH . $user->branch->logo)
+            : null;
+        $paymentQrCodes = collect(Schema::hasColumn('branches', 'payment_qr_codes') ? ($user->branch?->payment_qr_codes ?? []) : [])
+            ->map(fn ($qrCode) => [
+                'payment_name' => $qrCode['payment_name'] ?? '',
+                'qr_code_url' => ! empty($qrCode['qr_code'])
+                    ? asset(Branch::UPLOAD_PATH . $qrCode['qr_code'])
+                    : null,
+            ])
+            ->filter(fn ($qrCode) => $qrCode['payment_name'] && $qrCode['qr_code_url'])
+            ->values()
+            ->all();
+
+        return [
+            'id' => 'user-' . $user->id,
+            'record_id' => $user->id,
+            'source' => 'user',
+            'employee_code' => $user->employee_code ?: sprintf('KY-%05d', $user->id),
+            'name' => $employeeFullName,
+            'fullname' => $employeeFullName,
+            'name_khmer' => $employeeFullName,
+            'english_name' => $user->english_name,
+            'name_english' => $user->english_name,
+            'position_khmer' => $user->post?->post_name,
+            'position_english' => $user->post?->post_name,
+            'post' => $user->post?->post_name,
+            'department' => $user->department?->dept_name,
+            'department_name' => $user->department?->dept_name,
+            'branch' => $user->branch?->name,
+            'branchName' => $user->branch?->name,
+            'joining_date' => $this->dateForCard($user->joining_date),
+            'emergency_contact' => '',
+            'blood_type' => '',
+            'khqr_account_id' => '',
+            'phone' => $user->phone,
+            'phone_number' => $user->phone,
+            'email' => $user->email,
+            'photo_url' => $user->avatar
+                ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
+                : asset('assets/images/img.png'),
+            'profile_photo_url' => $user->avatar
+                ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar)
+                : asset('assets/images/img.png'),
+            'branch_name' => $user->branch?->name,
+            'branch_logo_url' => $branchLogoUrl ?: $companyLogoUrl,
+            'branchLogoUrl' => $branchLogoUrl ?: $companyLogoUrl,
+            'company_logo_url' => $companyLogoUrl,
+            'companyLogoUrl' => $companyLogoUrl,
+            'company' => $user->company?->name,
+            'company_address' => $user->company?->address,
+            'company_phone' => $user->company?->phone,
+            'company_website' => $companyWebsite,
+            'payment_qr_codes' => $paymentQrCodes,
+            'website_qr_data' => $companyWebsite,
+            'telegram_qr_data' => $telegramUrl,
+            'website_qr_url' => $this->qrCodeUrl($companyWebsite),
+            'telegram_qr_url' => $this->qrCodeUrl($telegramUrl),
+        ];
+    }
+
+    private function mergeDCardOverride(array $card, DCardEmployee $override): array
+    {
+        $post = ($override->position_khmer ?: $override->position_english) ?: null;
+        $overridePhotoUrl = $this->publicUrl($override->profile_photo_url);
+        $branchLogoUrl = $this->branchLogoUrl($override->branch)
+            ?: ($card['branch_logo_url'] ?? null)
+            ?: ($card['company_logo_url'] ?? null);
+
+        return [
+            ...$card,
+            'd_card_record_id' => $override->id,
+            'employee_code' => $card['employee_code'],
+            'name' => $card['fullname'] ?? $card['name'],
+            'name_khmer' => $card['fullname'] ?? ($card['name_khmer'] ?? $card['name']),
+            'english_name' => $override->name_english ?: $card['english_name'],
+            'name_english' => $override->name_english ?: ($card['name_english'] ?? $card['english_name']),
+            'position_khmer' => $override->position_khmer ?: $card['position_khmer'],
+            'position_english' => $override->position_english ?: $card['position_english'],
+            'post' => $post ?: $card['post'],
+            'department' => $override->department ?: $card['department'],
+            'department_name' => $override->department ?: ($card['department_name'] ?? $card['department']),
+            'branch' => $override->branch ?: $card['branch'],
+            'branchName' => $override->branch ?: ($card['branchName'] ?? $card['branch']),
+            'joining_date' => $this->dateForCard($override->joining_date) ?: $card['joining_date'],
+            'emergency_contact' => $override->emergency_contact ?: $card['emergency_contact'],
+            'blood_type' => $override->blood_type ?: $card['blood_type'],
+            'khqr_account_id' => $override->khqr_account_id ?: $card['khqr_account_id'],
+            'phone' => $override->phone ?: $card['phone'],
+            'phone_number' => $override->phone ?: ($card['phone_number'] ?? $card['phone']),
+            'email' => $override->email ?: $card['email'],
+            'photo_url' => $overridePhotoUrl ?: $card['photo_url'],
+            'profile_photo_url' => $overridePhotoUrl ?: ($card['profile_photo_url'] ?? $card['photo_url']),
+            'branch_name' => $override->branch ?: ($card['branch_name'] ?? $card['branch']),
+            'branch_logo_url' => $branchLogoUrl,
+            'branchLogoUrl' => $branchLogoUrl,
+        ];
+    }
+
+    private function findDCardOverride(User $user, array $card): ?DCardEmployee
+    {
+        $employeeCode = trim((string) ($user->employee_code ?: ($card['employee_code'] ?? '')));
+
+        if ($employeeCode === '') {
+            return null;
+        }
+
+        return DCardEmployee::where('employee_code', $employeeCode)->first();
+    }
+
+    private function employeeFullName(User $user): string
+    {
+        $fullname = $user->getAttribute('fullname');
+
+        return filled($fullname) ? (string) $fullname : (string) $user->name;
+    }
+
+    private function dateForCard(mixed $date): ?string
+    {
+        if (empty($date)) {
+            return null;
+        }
+
+        return \Illuminate\Support\Carbon::parse($date)->format('Y-m-d');
+    }
+
+    private function branchLogoUrl(?string $branchName): ?string
+    {
+        if (empty($branchName) || ! Schema::hasColumn('branches', 'logo')) {
+            return null;
+        }
+
+        $cleanBranchName = trim($branchName);
+        $logo = Branch::withoutGlobalScopes()
+            ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($cleanBranchName)])
+            ->value('logo');
+
+        return $logo ? asset(Branch::UPLOAD_PATH . $logo) : null;
+    }
+
+    private function publicUrl(?string $value): ?string
+    {
+        $cleanValue = trim((string) $value);
+        if ($cleanValue === '') {
+            return null;
+        }
+
+        if (preg_match('/^https?:\/\//i', $cleanValue)) {
+            return $cleanValue;
+        }
+
+        return asset(ltrim($cleanValue, '/'));
+    }
+
+    private function qrCodeUrl(string $data): string
+    {
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' . urlencode($data);
     }
 
     private function getAdminDirectoryEntries(?int $userId = null): array

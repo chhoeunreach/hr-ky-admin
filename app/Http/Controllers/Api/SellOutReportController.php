@@ -170,7 +170,8 @@ class SellOutReportController extends Controller
                 return round((int) $line['qty'] * (float) $line['unit_price'], 2);
             });
             $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
-            $commission = $validated['commission'] ?? ($totalQty * 0.25);
+            $serviceType = $this->filledString($validated['service_type'] ?? null, 'Sale');
+            $commission = $validated['commission'] ?? $this->calculateCommission($totalQty, $serviceType);
 
             $report = SellOutReport::create([
                 'user_id' => auth()->id(),
@@ -180,7 +181,7 @@ class SellOutReportController extends Controller
                 'branch_name' => $validated['branch_name'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
-                'service_type' => $this->filledString($validated['service_type'] ?? null, 'Sale'),
+                'service_type' => $serviceType,
                 'payment_method' => $this->filledString($validated['payment_method'] ?? null, 'Cash'),
                 'note' => $validated['note'] ?? null,
                 'extracted_text' => $validated['extracted_text'] ?? null,
@@ -258,14 +259,15 @@ class SellOutReportController extends Controller
                 return round((int) $line['qty'] * (float) $line['unit_price'], 2);
             });
             $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
-            $commission = $validated['commission'] ?? ($totalQty * 0.25);
+            $serviceType = $this->filledString($validated['service_type'] ?? null, 'Sale');
+            $commission = $validated['commission'] ?? $this->calculateCommission($totalQty, $serviceType);
 
             $report->update([
                 'seller_name' => $validated['seller_name'],
                 'branch_name' => $validated['branch_name'] ?? null,
                 'customer_name' => $validated['customer_name'] ?? null,
                 'customer_phone' => $validated['customer_phone'] ?? null,
-                'service_type' => $this->filledString($validated['service_type'] ?? null, 'Sale'),
+                'service_type' => $serviceType,
                 'payment_method' => $this->filledString($validated['payment_method'] ?? null, 'Cash'),
                 'note' => $validated['note'] ?? null,
                 'extracted_text' => $validated['extracted_text'] ?? null,
@@ -449,6 +451,16 @@ class SellOutReportController extends Controller
         $value = trim((string) $value);
 
         return $value !== '' ? $value : $default;
+    }
+
+    private function calculateCommission(int $totalQty, string $serviceType): float
+    {
+        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+    }
+
+    private function isIronServiceType(string $serviceType): bool
+    {
+        return in_array(trim($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool
