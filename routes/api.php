@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ComplaintApiController;
 use App\Http\Controllers\Api\DashboardApiController;
 use App\Http\Controllers\Api\EmployeePayrollApiController;
 use App\Http\Controllers\Api\EmployeeChatApiController;
+use App\Http\Controllers\Api\EmployeeProfileApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
@@ -103,6 +104,39 @@ Route::group([
     Route::post('employees/check-out', [AttendanceApiController::class, 'employeeCheckOut']);
     Route::get('employees/attendance-detail', [AttendanceApiController::class, 'getEmployeeAllAttendanceDetailOfTheMonth']);
     Route::post('employees/attendance',[AttendanceApiController::class, 'employeeAttendance']);
+
+    /** Employee 360 Profile Routes */
+    Route::get('employees/{employee}/profile', [EmployeeProfileApiController::class, 'profile']);
+    Route::match(['PUT', 'POST'], 'employees/{employee}/profile', [EmployeeProfileApiController::class, 'updateProfile']);
+    Route::get('employees/{employee}/employment-history', [EmployeeProfileApiController::class, 'employmentHistory']);
+    Route::post('employees/{employee}/employment-history', [EmployeeProfileApiController::class, 'storeEmploymentHistory']);
+    Route::get('employees/{employee}/salary', [EmployeeProfileApiController::class, 'salary']);
+    Route::get('employees/{employee}/salary-history', [EmployeeProfileApiController::class, 'salaryHistory']);
+    Route::post('employees/{employee}/salary-adjustments', [EmployeeProfileApiController::class, 'storeSalaryAdjustment']);
+    Route::match(['PUT', 'POST'], 'salary-adjustments/{salaryAdjustment}', [EmployeeProfileApiController::class, 'updateSalaryAdjustment']);
+    Route::post('salary-adjustments/{salaryAdjustment}/approve', [EmployeeProfileApiController::class, 'approveSalaryAdjustment']);
+    Route::post('salary-adjustments/{salaryAdjustment}/reject', [EmployeeProfileApiController::class, 'rejectSalaryAdjustment']);
+    Route::get('employees/{employee}/interviews', [EmployeeProfileApiController::class, 'interviews']);
+    Route::post('employees/{employee}/interviews', [EmployeeProfileApiController::class, 'storeInterview']);
+    Route::get('employees/{employee}/responsibilities', [EmployeeProfileApiController::class, 'responsibilities']);
+    Route::post('employees/{employee}/responsibilities', [EmployeeProfileApiController::class, 'storeResponsibility']);
+    Route::get('employees/{employee}/kpis', [EmployeeProfileApiController::class, 'kpis']);
+    Route::get('employees/{employee}/performance-reviews', [EmployeeProfileApiController::class, 'performanceReviews']);
+    Route::post('employees/{employee}/performance-reviews', [EmployeeProfileApiController::class, 'storePerformanceReview']);
+    Route::get('performance-reviews/{review}', [EmployeeProfileApiController::class, 'performanceReview']);
+    Route::match(['PUT', 'POST'], 'performance-reviews/{review}', [EmployeeProfileApiController::class, 'updatePerformanceReview']);
+    Route::post('performance-reviews/{review}/submit', [EmployeeProfileApiController::class, 'submitPerformanceReview']);
+    Route::post('performance-reviews/{review}/acknowledge', [EmployeeProfileApiController::class, 'acknowledgePerformanceReview']);
+    Route::post('performance-reviews/{review}/approve', [EmployeeProfileApiController::class, 'approvePerformanceReview']);
+    Route::post('performance-reviews/{review}/hr-approve', [EmployeeProfileApiController::class, 'hrApprovePerformanceReview']);
+    Route::get('employees/{employee}/attendance-summary', [EmployeeProfileApiController::class, 'attendanceSummary']);
+    Route::get('employees/{employee}/training', [EmployeeProfileApiController::class, 'training']);
+    Route::get('employees/{employee}/rewards', [EmployeeProfileApiController::class, 'rewards']);
+    Route::get('employees/{employee}/disciplinary-records', [EmployeeProfileApiController::class, 'disciplinaryRecords']);
+    Route::get('employees/{employee}/goals', [EmployeeProfileApiController::class, 'goals']);
+    Route::get('employees/{employee}/improvement-plans', [EmployeeProfileApiController::class, 'improvementPlans']);
+    Route::get('employees/{employee}/documents', [EmployeeProfileApiController::class, 'documents']);
+    Route::get('employees/{employee}/audit-history', [EmployeeProfileApiController::class, 'auditHistory']);
 
     /** Leave Request Routes **/
     Route::get('leave-types', [LeaveTypeApiController::class, 'getAllLeaveTypeWithEmployeeLeaveRecord']);

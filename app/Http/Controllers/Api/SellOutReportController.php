@@ -80,10 +80,32 @@ class SellOutReportController extends Controller
 
         $summary = [
             'total_reports' => $reports->count(),
+            'total_lines' => $reports->sum(fn (SellOutReport $report) => $report->lines->count()),
             'total_qty' => $reports->sum(fn (SellOutReport $report) => $report->lines->sum('qty')),
             'total_amount' => number_format((float) $reports->sum('total_amount'), 2, '.', ''),
             'total_commission' => number_format((float) $reports->sum('commission'), 2, '.', ''),
         ];
+
+        $staffSummary = $reports
+            ->groupBy(fn (SellOutReport $report) => trim((string) $report->seller_name) !== '' ? $report->seller_name : 'Unknown')
+            ->map(function ($staffReports, string $sellerName) {
+                $sales = $staffReports->count();
+                $lines = $staffReports->sum(fn (SellOutReport $report) => $report->lines->count());
+                $qty = $staffReports->sum(fn (SellOutReport $report) => $report->lines->sum('qty'));
+
+                return [
+                    'seller_name' => $sellerName,
+                    'sales' => $sales,
+                    'total_sales' => $sales,
+                    'lines' => $lines,
+                    'total_lines' => $lines,
+                    'qty' => $qty,
+                    'total_qty' => $qty,
+                    'total_amount' => number_format((float) $staffReports->sum('total_amount'), 2, '.', ''),
+                ];
+            })
+            ->sortByDesc('total_sales')
+            ->values();
 
         return response()->json([
             'status' => true,
@@ -91,6 +113,7 @@ class SellOutReportController extends Controller
                 ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->toArray(request()))
                 ->values(),
             'summary' => $summary,
+            'staff_summary' => $staffSummary,
         ]);
     }
 
