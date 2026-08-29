@@ -259,6 +259,76 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeSalary::class, 'employee_id', 'id');
     }
 
+    public function employee360Profile(): HasOne
+    {
+        return $this->hasOne(EmployeeProfile::class, 'employee_id', 'id');
+    }
+
+    public function employmentHistory(): HasMany
+    {
+        return $this->hasMany(EmployeeEmploymentHistory::class, 'employee_id', 'id');
+    }
+
+    public function employeeSalaryHistory(): HasMany
+    {
+        return $this->hasMany(EmployeeSalaryHistory::class, 'employee_id', 'id');
+    }
+
+    public function employeeInterviews(): HasMany
+    {
+        return $this->hasMany(EmployeeInterview::class, 'employee_id', 'id');
+    }
+
+    public function jobResponsibilities(): HasMany
+    {
+        return $this->hasMany(EmployeeJobResponsibility::class, 'employee_id', 'id');
+    }
+
+    public function employeeKpis(): HasMany
+    {
+        return $this->hasMany(EmployeeKpi::class, 'employee_id', 'id');
+    }
+
+    public function performanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class, 'employee_id', 'id');
+    }
+
+    public function employeeTrainingHistory(): HasMany
+    {
+        return $this->hasMany(EmployeeTrainingHistory::class, 'employee_id', 'id');
+    }
+
+    public function employeeRewards360(): HasMany
+    {
+        return $this->hasMany(EmployeeReward::class, 'employee_id', 'id');
+    }
+
+    public function disciplinaryRecords(): HasMany
+    {
+        return $this->hasMany(EmployeeDisciplinaryRecord::class, 'employee_id', 'id');
+    }
+
+    public function employeeGoals(): HasMany
+    {
+        return $this->hasMany(EmployeeGoal::class, 'employee_id', 'id');
+    }
+
+    public function improvementPlans(): HasMany
+    {
+        return $this->hasMany(EmployeeImprovementPlan::class, 'employee_id', 'id');
+    }
+
+    public function employeeDocuments(): HasMany
+    {
+        return $this->hasMany(EmployeeDocument::class, 'employee_id', 'id');
+    }
+
+    public function employeeProfileAuditLogs(): HasMany
+    {
+        return $this->hasMany(EmployeeProfileAuditLog::class, 'employee_id', 'id');
+    }
+
     public function hasAdminIdentity(): bool
     {
         $roleName = Str::lower((string) $this->role?->name);

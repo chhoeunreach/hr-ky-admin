@@ -26,7 +26,12 @@ use App\Http\Controllers\Web\DepartmentController;
 use App\Http\Controllers\Web\DeviceController;
 use App\Http\Controllers\Web\EmployeeChatController;
 use App\Http\Controllers\Web\EmployeeLogOutRequestController;
+use App\Http\Controllers\Web\EmployeeEvaluationController;
+use App\Http\Controllers\Web\EmployeeEvaluationModuleController;
+use App\Http\Controllers\Web\EmployeeProfileController;
 use App\Http\Controllers\Web\EmployeeSalaryController;
+use App\Http\Controllers\Web\EvaluationAIController;
+use App\Http\Controllers\Web\EvaluationInterviewController;
 use App\Http\Controllers\Web\EventController;
 use App\Http\Controllers\Web\FeatureController;
 use App\Http\Controllers\Web\FiscalYearController;
@@ -112,6 +117,9 @@ Route::any('/iclock/cdata', [BioAttendanceController::class, 'handleDevice']);
 
 /** app privacy policy route */
 Route::get('privacy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
+Route::get('staff-evaluations/ai-create', function () {
+    return redirect()->route('admin.staff-evaluations.ai-create');
+});
 
 /** Telegram Notification (web) */
 Route::post('telegram/notify', [TelegramNotificationController::class, 'send'])->name('telegram.notify');
@@ -135,6 +143,30 @@ Route::group([
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::post('dashboard/summary-detail', [DashboardController::class, 'summaryDetail'])->name('dashboard.summary-detail');
         Route::get('showQR', [DashboardController::class, 'showQR'])->name('showQR');
+        Route::prefix('staff-evaluations')->name('staff-evaluations.')->group(function () {
+            Route::get('/', [EmployeeEvaluationModuleController::class, 'dashboard'])->name('dashboard');
+            Route::get('ai-create', [EvaluationInterviewController::class, 'create'])->name('ai-create');
+            Route::post('ai-create', [EvaluationInterviewController::class, 'store'])->name('ai-create.store');
+            Route::get('job-descriptions', [EmployeeEvaluationModuleController::class, 'jobDescriptions'])->name('job-descriptions.index');
+            Route::get('interviews/{interview}', [EvaluationInterviewController::class, 'show'])->name('interviews.show');
+            Route::post('interviews/{interview}/answer', [EvaluationInterviewController::class, 'answer'])->name('interviews.answer');
+            Route::get('interviews/{interview}/summary', [EvaluationInterviewController::class, 'summary'])->name('interviews.summary');
+            Route::put('interviews/{interview}/summary', [EvaluationInterviewController::class, 'updateSummary'])->name('interviews.summary.update');
+            Route::post('interviews/{interview}/confirm', [EvaluationInterviewController::class, 'confirm'])->name('interviews.confirm');
+            Route::get('job-descriptions/{jobDescription}/generate-template', [EvaluationAIController::class, 'generate'])->name('templates.generate');
+            Route::get('templates', [EmployeeEvaluationModuleController::class, 'templates'])->name('templates.index');
+            Route::get('templates/{template}', [EmployeeEvaluationController::class, 'showTemplate'])->name('templates.show');
+            Route::put('templates/{template}', [EmployeeEvaluationController::class, 'updateTemplate'])->name('templates.update');
+            Route::get('templates/{template}/print-blank', [EmployeeEvaluationController::class, 'printTemplate'])->name('templates.print-blank');
+            Route::post('templates/{template}/start', [EmployeeEvaluationController::class, 'start'])->name('templates.start');
+            Route::get('history', [EmployeeEvaluationModuleController::class, 'history'])->name('history');
+            Route::get('reports', [EmployeeEvaluationModuleController::class, 'reports'])->name('reports');
+            Route::get('settings', [EmployeeEvaluationModuleController::class, 'settings'])->name('settings');
+            Route::get('evaluations/{evaluation}', [EmployeeEvaluationController::class, 'show'])->name('evaluations.show');
+            Route::post('evaluations/{evaluation}', [EmployeeEvaluationController::class, 'submit'])->name('evaluations.submit');
+            Route::post('evaluations/{evaluation}/ai-summary', [EmployeeEvaluationController::class, 'summary'])->name('evaluations.ai-summary');
+            Route::get('{evaluation}/print', [EmployeeEvaluationController::class, 'print'])->name('print');
+        });
         Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
         Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');
         Route::post('employee-chat/messages', [EmployeeChatController::class, 'store'])->name('employee-chat.store');
@@ -193,6 +225,24 @@ Route::group([
         Route::get('live-map', [LiveMapController::class, 'index'])->name('live-map');
         Route::get('live-map/locations', [LiveMapController::class, 'locations'])->name('live-map.locations');
         /** Employees route */
+        Route::get('employees/profile-directory', [EmployeeProfileController::class, 'index'])->name('employees.profile.index');
+        Route::prefix('employees/{employee}/profile')->name('employees.profile.')->group(function () {
+            Route::get('/', [EmployeeProfileController::class, 'show'])->name('show');
+            Route::put('/', [EmployeeProfileController::class, 'updateProfile'])->name('update');
+            Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
+            Route::post('salary-history', [EmployeeProfileController::class, 'storeSalary'])->name('salary.store');
+            Route::post('interviews', [EmployeeProfileController::class, 'storeInterview'])->name('interviews.store');
+            Route::post('responsibilities', [EmployeeProfileController::class, 'storeResponsibility'])->name('responsibilities.store');
+            Route::post('kpis', [EmployeeProfileController::class, 'storeKpi'])->name('kpis.store');
+            Route::post('performance-reviews', [EmployeeProfileController::class, 'storeReview'])->name('reviews.store');
+            Route::post('training', [EmployeeProfileController::class, 'storeTraining'])->name('training.store');
+            Route::post('rewards', [EmployeeProfileController::class, 'storeReward'])->name('rewards.store');
+            Route::post('discipline', [EmployeeProfileController::class, 'storeDiscipline'])->name('discipline.store');
+            Route::post('goals', [EmployeeProfileController::class, 'storeGoal'])->name('goals.store');
+            Route::post('improvement-plans', [EmployeeProfileController::class, 'storeImprovementPlan'])->name('improvement-plans.store');
+            Route::post('documents', [EmployeeProfileController::class, 'storeDocument'])->name('documents.store');
+            Route::get('documents/{document}/download', [EmployeeProfileController::class, 'downloadDocument'])->name('documents.download');
+        });
         Route::resource('employees', UserController::class);
         Route::get('employees/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('employees.toggle-status');
         Route::get('employees/toggle-holiday-checkin/{id}', [UserController::class, 'toggleHolidayCheckIn'])->name('employees.toggle-holiday-checkin');

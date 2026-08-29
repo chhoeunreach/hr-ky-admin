@@ -422,7 +422,7 @@
                             <th class="text-center col-boolean">{{ __('index.holiday_check_in') }}</th>
                             <th class="text-center col-workplace">{{ __('index.workplace') }}</th>
                             <th class="text-center col-boolean">{{ __('index.is_active') }}</th>
-                            @canany(['edit_employee','delete_employee','change_password','force_logout'])
+                            @canany(['employee.profile.view','edit_employee','delete_employee','change_password','force_logout'])
                                 <th class="text-center col-action">{{ __('index.action') }}</th>
                             @endcanany
                         </tr>
@@ -528,7 +528,7 @@
                                     </label>
                                 </td>
 
-                                @canany(['edit_employee','delete_employee','change_password','force_logout'])
+                                @canany(['employee.profile.view','edit_employee','delete_employee','change_password','force_logout'])
                                     <td class="text-center col-action">
                                         <a class="nav-link dropdown-toggle" href="#" id="profileDropdown"
                                            role="button"
@@ -541,6 +541,14 @@
 
                                         <div class="dropdown-menu p-0" aria-labelledby="profileDropdown">
                                             <ul class="list-unstyled p-1 mb-0">
+                                                @can('employee.profile.view')
+                                                    <li class="dropdown-item py-2">
+                                                        <a href="{{ route('admin.employees.profile.show', $value->id) }}">
+                                                            <button class="btn btn-primary btn-xs">Employee 360</button>
+                                                        </a>
+                                                    </li>
+                                                @endcan
+
                                                 @can('edit_employee')
                                                     <li class="dropdown-item py-2">
                                                         <a href="{{ route('admin.employees.edit', $value->id) }}"

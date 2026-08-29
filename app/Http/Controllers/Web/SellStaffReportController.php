@@ -536,25 +536,28 @@ class SellStaffReportController extends Controller
         }
 
         return SellOutReport::query()
+            ->leftJoin('sell_out_report_lines', 'sell_out_report_lines.sell_out_report_id', '=', 'sell_out_reports.id')
             ->when($filterData['ss_date_from'], function ($query, $date) {
-                $query->whereDate('created_at', '>=', Carbon::parse($date)->toDateString());
+                $query->whereDate('sell_out_reports.created_at', '>=', Carbon::parse($date)->toDateString());
             })
             ->when($filterData['ss_date_to'], function ($query, $date) {
-                $query->whereDate('created_at', '<=', Carbon::parse($date)->toDateString());
+                $query->whereDate('sell_out_reports.created_at', '<=', Carbon::parse($date)->toDateString());
             })
             ->when($branchName, function ($query, $name) {
-                $query->where('branch_name', $name);
+                $query->where('sell_out_reports.branch_name', $name);
             })
             ->when($filterData['ss_department_id'], function ($query, $departmentId) {
                 $query->whereHas('user', function ($query) use ($departmentId) {
                     $query->where('department_id', $departmentId);
                 });
             })
-            ->selectRaw("COALESCE(NULLIF(seller_name, ''), 'Unknown') as seller_name")
-            ->selectRaw('COUNT(*) as total_reports')
-            ->selectRaw('COALESCE(SUM(total_amount), 0) as total_amount')
-            ->groupByRaw("COALESCE(NULLIF(seller_name, ''), 'Unknown')")
-            ->orderByDesc('total_amount');
+            ->selectRaw("COALESCE(NULLIF(sell_out_reports.seller_name, ''), 'Unknown') as seller_name")
+            ->selectRaw('COUNT(DISTINCT sell_out_reports.id) as total_sales')
+            ->selectRaw('COUNT(sell_out_report_lines.id) as total_lines')
+            ->selectRaw('COALESCE(SUM(sell_out_report_lines.qty), 0) as total_qty')
+            ->groupByRaw("COALESCE(NULLIF(sell_out_reports.seller_name, ''), 'Unknown')")
+            ->orderByDesc('total_sales')
+            ->orderByDesc('total_qty');
     }
 
     private function generateInvoiceNo(): string

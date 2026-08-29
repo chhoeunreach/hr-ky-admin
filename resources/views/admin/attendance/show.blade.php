@@ -184,6 +184,14 @@
             margin: 2px 0 10px;
         }
 
+        .employee-attendance-dashboard-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
         .employee-attendance-dashboard-title h6 {
             margin: 0;
             color: #0f172a;
@@ -260,6 +268,17 @@
         .employee-attendance-card.is-danger .employee-attendance-card-icon { background: #fef2f2; color: #dc2626; }
         .employee-attendance-card.is-highlight .employee-attendance-card-icon { background: #dbeafe; color: #2563eb; }
 
+        .employee-attendance-dashboard-print-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 32px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
         .attendance-filter-card,
         .attendance-table-card {
             border: 1px solid #e6ebf2;
@@ -314,7 +333,7 @@
         }
 
         .attendance-detail-table thead th {
-            padding: 11px 12px;
+            padding: 7px 12px;
             background: #f8fafc;
             color: #334155;
             border-bottom: 1px solid #e6ebf2;
@@ -326,15 +345,21 @@
         }
 
         .attendance-detail-table tbody td {
-            padding: 9px 12px;
+            padding: 5px 12px;
             border-color: #e8edf4;
             color: #1f2937;
             vertical-align: middle;
         }
 
+        .attendance-detail-table td:nth-child(2),
+        .attendance-detail-table td:nth-child(3) {
+            padding-left: 6px;
+            padding-right: 6px;
+        }
+
         .attendance-detail-table .btn-xs {
-            min-height: 27px;
-            padding: 4px 10px;
+            min-height: 22px;
+            padding: 2px 8px;
             border-radius: 8px;
             font-size: 12px;
             font-weight: 700;
@@ -345,6 +370,15 @@
             color: #64748b;
             border-color: #8fa1bf;
             background: #ffffff;
+        }
+
+        .attendance-detail-table td:nth-child(2) .checkLocation,
+        .attendance-detail-table td:nth-child(3) .checkLocation {
+            min-height: 22px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
         }
 
         .attendance-detail-table .checkLocation:hover {
@@ -383,6 +417,171 @@
         @media (max-width: 575.98px) {
             .employee-attendance-dashboard {
                 grid-template-columns: 1fr;
+            }
+
+            .employee-attendance-dashboard-title,
+            .employee-attendance-dashboard-actions {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 6mm;
+            }
+
+            body * {
+                visibility: hidden;
+            }
+
+            .employee-attendance-print-area,
+            .employee-attendance-print-area * {
+                visibility: visible;
+            }
+
+            .employee-attendance-print-area {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                padding: 0;
+                background: #ffffff;
+            }
+
+            .employee-attendance-dashboard-print-button,
+            .attendance-print-hide,
+            .employee-attendance-print-area .quickApproveLeaveTrigger,
+            .employee-attendance-print-area .quickApproveTimeLeaveTrigger {
+                display: none !important;
+            }
+
+            .employee-attendance-dashboard-title {
+                border-bottom: 1px solid #dbe3ee;
+                padding-bottom: 6px;
+                margin-bottom: 7px;
+            }
+
+            .employee-attendance-dashboard {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 3px;
+                margin-bottom: 7px;
+            }
+
+            .employee-attendance-card {
+                min-height: 36px;
+                padding: 4px 5px;
+                break-inside: avoid;
+                box-shadow: none;
+            }
+
+            .employee-attendance-card-icon {
+                width: 19px;
+                height: 19px;
+                flex-basis: 19px;
+                font-size: 6px;
+            }
+
+            .employee-attendance-card-title {
+                font-size: 6.5px;
+            }
+
+            .employee-attendance-card-value {
+                font-size: 10px;
+            }
+
+            .employee-attendance-card-note {
+                font-size: 6px;
+            }
+
+            .attendance-detail-legend {
+                gap: 4px 7px;
+                padding: 5px 6px;
+                margin-bottom: 7px !important;
+                box-shadow: none;
+            }
+
+            .attendance-detail-legend span {
+                font-size: 8px;
+            }
+
+            .attendance-detail-legend-badge {
+                min-width: 14px;
+                height: 14px;
+                font-size: 6px;
+            }
+
+            .attendance-table-card {
+                border: 0;
+                box-shadow: none;
+                overflow: visible;
+            }
+
+            .attendance-table-card .card-header {
+                padding: 5px 0;
+                border-bottom: 1px solid #dbe3ee;
+            }
+
+            .attendance-table-card .card-title {
+                font-size: 10px;
+            }
+
+            .attendance-table-card .card-body,
+            .attendance-table-card .table-responsive {
+                padding: 0;
+                overflow: visible;
+            }
+
+            .attendance-detail-table {
+                width: 100% !important;
+                table-layout: fixed;
+                border-collapse: collapse;
+                font-size: 7px;
+            }
+
+            .attendance-detail-table thead th,
+            .attendance-detail-table tbody td {
+                padding: 2px;
+                white-space: normal;
+                word-break: break-word;
+            }
+
+            .attendance-detail-table td:nth-child(2),
+            .attendance-detail-table td:nth-child(3) {
+                padding: 1px;
+                font-size: 6px;
+            }
+
+            .attendance-detail-table th:nth-child(5),
+            .attendance-detail-table th:nth-child(6),
+            .attendance-detail-table td:nth-child(5),
+            .attendance-detail-table td:nth-child(6) {
+                display: none !important;
+            }
+
+            .attendance-detail-table .btn-xs {
+                min-height: 16px;
+                padding: 1px 3px;
+                border-radius: 4px;
+                font-size: 6px;
+                line-height: 1.2;
+            }
+
+            .attendance-detail-table .checkLocation {
+                min-width: 0;
+            }
+
+            .attendance-status-pill {
+                min-width: 16px;
+                height: 14px;
+                padding: 0 3px;
+                font-size: 6px;
+            }
+
+            .attendance-overlay-badge {
+                top: 0;
+                right: 1px;
             }
         }
     </style>
@@ -581,49 +780,57 @@
             };
         @endphp
 
-        <div class="employee-attendance-dashboard-title">
-            <div>
-                <h6>Employee Attendance Dashboard</h6>
-                <p>{{ $userDetail->name }} - {{ $monthName }} {{ $filterParameter['year'] }}</p>
+        <div class="employee-attendance-print-area">
+            <div class="employee-attendance-dashboard-title">
+                <div>
+                    <h6>Employee Attendance Dashboard</h6>
+                    <p>{{ $userDetail->name }} - {{ $monthName }} {{ $filterParameter['year'] }}</p>
+                </div>
+                <div class="employee-attendance-dashboard-actions">
+                    <span class="text-muted small">
+                        Working {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}
+                    </span>
+                    <button type="button"
+                            id="print-employee-attendance-dashboard"
+                            class="btn btn-sm btn-outline-secondary employee-attendance-dashboard-print-button">
+                        <i class="link-icon" data-feather="printer"></i> Print Dashboard
+                    </button>
+                </div>
             </div>
-            <div class="text-muted small">
-                Working {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}
-            </div>
-        </div>
 
-        <div class="employee-attendance-dashboard">
-            @foreach($detailCards as $card)
-                <div class="employee-attendance-card {{ $card['class'] }}">
-                    <span class="employee-attendance-card-icon">{{ $card['icon'] }}</span>
+            <div class="employee-attendance-dashboard">
+                @foreach($detailCards as $card)
+                    <div class="employee-attendance-card {{ $card['class'] }}">
+                        <span class="employee-attendance-card-icon">{{ $card['icon'] }}</span>
+                        <div>
+                            <p class="employee-attendance-card-title">{{ $card['title'] }}</p>
+                            <p class="employee-attendance-card-value">{{ number_format($detailCardStats[$card['key']] ?? 0) }}</p>
+                            <p class="employee-attendance-card-note">{{ $card['note'] }}</p>
+                        </div>
+                    </div>
+                @endforeach
+                <div class="employee-attendance-card is-total">
+                    <span class="employee-attendance-card-icon"><i data-feather="clock"></i></span>
                     <div>
-                        <p class="employee-attendance-card-title">{{ $card['title'] }}</p>
-                        <p class="employee-attendance-card-value">{{ number_format($detailCardStats[$card['key']] ?? 0) }}</p>
-                        <p class="employee-attendance-card-note">{{ $card['note'] }}</p>
+                        <p class="employee-attendance-card-title">Worked Hours</p>
+                        <p class="employee-attendance-card-value" style="font-size: 16px;">{{ $attendanceSummary ? $attendanceSummary['totalWorkedHours'] : '-' }}</p>
+                        <p class="employee-attendance-card-note">of {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}</p>
                     </div>
                 </div>
-            @endforeach
-            <div class="employee-attendance-card is-total">
-                <span class="employee-attendance-card-icon"><i data-feather="clock"></i></span>
-                <div>
-                    <p class="employee-attendance-card-title">Worked Hours</p>
-                    <p class="employee-attendance-card-value" style="font-size: 16px;">{{ $attendanceSummary ? $attendanceSummary['totalWorkedHours'] : '-' }}</p>
-                    <p class="employee-attendance-card-note">of {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}</p>
-                </div>
             </div>
-        </div>
 
-        <div class="attendance-detail-legend mb-3">
-            <span><i class="attendance-detail-legend-badge attendance-legend-present">P</i> Present</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-late">L</i> Late</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-absent">A</i> Absent</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-off">O</i> Day Off</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-leave">LV</i> ច្បាប់ផ្សេង</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PO</i> Pending Day Off</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-pending">PL</i> Pending Leave</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-time">TL</i> Time Leave</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-pending">TR</i> Time Leave Request</span>
-            <span><i class="attendance-detail-legend-badge attendance-legend-danger">NC</i> No Checkout</span>
-        </div>
+            <div class="attendance-detail-legend mb-3">
+                <span><i class="attendance-detail-legend-badge attendance-legend-present">P</i> Present</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-late">L</i> Late</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-absent">A</i> Absent</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-off">O</i> Day Off</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-leave">LV</i> ច្បាប់ផ្សេង</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-pending">PO</i> Pending Day Off</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-pending">PL</i> Pending Leave</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-time">TL</i> Time Leave</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-pending">TR</i> Time Leave Request</span>
+                <span><i class="attendance-detail-legend-badge attendance-legend-danger">NC</i> No Checkout</span>
+            </div>
 
         <div class="card attendance-table-card">
             <div class="card-header">
@@ -641,7 +848,7 @@
                             <th style="text-align: center;">{{ __('index.status') }}</th>
                             <th style="text-align: center;">{{ __('index.shift') }}</th>
                             @can('attendance_update')
-                                <th style="text-align: center;">{{ __('index.action') }}</th>
+                                <th class="attendance-print-hide" style="text-align: center;">{{ __('index.action') }}</th>
                             @endcan
                         </tr>
                         </thead>
@@ -927,7 +1134,7 @@
                                                 <td></td>
                                             @endif
                                             @can('attendance_update')
-                                                <td class="text-center">
+                                                <td class="text-center attendance-print-hide">
 
                                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                                         @if(isset($attendance['shift'])  && ($attendance['shift'] == \App\Enum\ShiftTypeEnum::night->value))
@@ -1196,7 +1403,7 @@
                                          @endif
                                      </td>
                                     <td  class="text-center"><i class="link-icon" data-feather="x"></i></td>
-                                    <td  class="text-center">
+                                    <td  class="text-center attendance-print-hide">
                                         @if(!$leaveRequest && !$timeLeave && isset($reason) && $reason == 'Absent')
                                             <a href=""
                                                 class="addEmployeeAttendance"
@@ -1225,6 +1432,7 @@
                     </table>
                 </div>
             </div>
+        </div>
         </div>
 
         <div class="attendance-detail-legend mt-3 mb-4">
@@ -1412,6 +1620,7 @@
     @include('admin.attendance.common.scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const printEmployeeAttendanceDashboard = document.getElementById('print-employee-attendance-dashboard');
             const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
             const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
             const attendanceQuickLeaveUserId = document.getElementById('attendanceQuickLeaveUserId');
@@ -1443,6 +1652,12 @@
                 createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
                 createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
             };
+
+            if (printEmployeeAttendanceDashboard) {
+                printEmployeeAttendanceDashboard.addEventListener('click', function () {
+                    window.print();
+                });
+            }
 
             const resetQuickLeaveOptions = (message = attendanceI18n.loadingLeaveTypes) => {
                 if (!attendanceQuickLeaveType) {

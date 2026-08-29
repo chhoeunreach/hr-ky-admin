@@ -18,11 +18,79 @@
             outline: 2px solid rgba(13, 110, 253, 0.35);
             outline-offset: -2px;
         }
+
+        .sell-staff-print-title {
+            display: none;
+        }
+
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 10mm;
+            }
+
+            body * {
+                visibility: hidden !important;
+            }
+
+            #sellStaffReportPrintArea,
+            #sellStaffReportPrintArea * {
+                visibility: visible !important;
+            }
+
+            #sellStaffReportPrintArea {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+
+            .no-print,
+            .print-hidden,
+            #staffSummarySearch,
+            .pagination {
+                display: none !important;
+            }
+
+            .sell-staff-print-title {
+                display: block;
+                margin-bottom: 12px;
+                text-align: center;
+            }
+
+            #staffSummaryCollapse {
+                display: block !important;
+                height: auto !important;
+            }
+
+            .card {
+                border: 0 !important;
+                box-shadow: none !important;
+                margin-bottom: 12px !important;
+            }
+
+            .card-header,
+            .card-body {
+                padding: 6px 0 !important;
+            }
+
+            .table-responsive {
+                overflow: visible !important;
+            }
+
+            table {
+                font-size: 10px;
+            }
+
+            a[href]::after {
+                content: "" !important;
+            }
+        }
     </style>
 @endsection
 
 @section('main-content')
-    <section class="content">
+    <section class="content no-print">
         @include('admin.section.flash_message')
 
         <nav class="page-breadcrumb d-flex align-items-center justify-content-between">
@@ -30,7 +98,12 @@
                 <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">{{ __('index.dashboard') }}</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ __('index.sell_staff_report') }}</li>
             </ol>
-            <a href="{{ route('admin.sell-staff-report.create') }}" class="btn btn-primary btn-sm">{{ __('index.add_new') }}</a>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="printSellStaffReport">
+                    <i data-feather="printer" class="icon-sm me-1"></i> Print Report
+                </button>
+                <a href="{{ route('admin.sell-staff-report.create') }}" class="btn btn-primary btn-sm">{{ __('index.add_new') }}</a>
+            </div>
         </nav>
 
         <div class="card mb-4">
@@ -80,7 +153,14 @@
         </div>
     </section>
 
-    <section>
+    <section id="sellStaffReportPrintArea">
+        <div class="sell-staff-print-title">
+            <h3 class="mb-1">{{ __('index.sell_staff_report') }}</h3>
+            <div>
+                {{ ($filterData['date_from'] ?? '') && ($filterData['date_to'] ?? '') ? $filterData['date_from'] . ' - ' . $filterData['date_to'] : now()->format('Y-m-d') }}
+            </div>
+        </div>
+
         <div class="row mb-4">
             <div class="col-md-6 mb-3">
                 <div class="card h-100">
@@ -103,13 +183,13 @@
         <div class="card mb-4">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h6 class="card-title mb-0">{{ __('index.staff_summary') }}</h6>
-                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#staffSummaryCollapse" aria-expanded="false" aria-controls="staffSummaryCollapse">
+                <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none no-print" data-bs-toggle="collapse" data-bs-target="#staffSummaryCollapse" aria-expanded="false" aria-controls="staffSummaryCollapse">
                     <i data-feather="chevron-down" class="collapse-icon"></i>
                 </button>
             </div>
             <div class="collapse" id="staffSummaryCollapse">
                 <div class="card-body">
-                    <div class="mb-3">
+                    <div class="mb-3 no-print">
                         <input type="text" id="staffSummarySearch" class="form-control" placeholder="{{ __('index.search') }}...">
                     </div>
                     <div class="table-responsive">
@@ -118,22 +198,25 @@
                             <tr>
                                 <th>#</th>
                                 <th>{{ __('index.seller_name') }}</th>
-                                <th class="text-center">{{ __('index.total_reports') }}</th>
-                                <th class="text-end">{{ __('index.total_amount') }}</th>
+                                <th class="text-center">Sales</th>
+                                <th class="text-center">Lines</th>
+                                <th class="text-center">Qty</th>
                             </tr>
                             </thead>
                             <tbody>
                             @forelse($staffSummary as $staff)
-                                <tr data-total-reports="{{ (int) $staff->total_reports }}"
-                                    data-total-amount="{{ (float) $staff->total_amount }}">
+                                <tr data-total-sales="{{ (int) ($staff->total_sales ?? 0) }}"
+                                    data-total-lines="{{ (int) ($staff->total_lines ?? 0) }}"
+                                    data-total-qty="{{ (float) ($staff->total_qty ?? 0) }}">
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $staff->seller_name }}</td>
-                                    <td class="text-center">{{ number_format((int) $staff->total_reports) }}</td>
-                                    <td class="text-end">{{ number_format((float) $staff->total_amount, 2) }}</td>
+                                    <td class="text-center">{{ number_format((int) ($staff->total_sales ?? 0)) }}</td>
+                                    <td class="text-center">{{ number_format((int) ($staff->total_lines ?? 0)) }}</td>
+                                    <td class="text-center">{{ number_format((float) ($staff->total_qty ?? 0)) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
+                                    <td colspan="5" class="text-center"><b>{{ __('index.no_records_found') }}</b></td>
                                 </tr>
                             @endforelse
                             </tbody>
@@ -141,8 +224,9 @@
                                 <tfoot>
                                 <tr class="fw-bold">
                                     <td colspan="2">{{ __('index.total') }}</td>
-                                    <td class="text-center" id="staffSummaryTotalReports">{{ number_format((int) $staffSummary->sum('total_reports')) }}</td>
-                                    <td class="text-end" id="staffSummaryTotalAmount">{{ number_format((float) $staffSummary->sum('total_amount'), 2) }}</td>
+                                    <td class="text-center" id="staffSummaryTotalSales">{{ number_format((int) $staffSummary->sum('total_sales')) }}</td>
+                                    <td class="text-center" id="staffSummaryTotalLines">{{ number_format((int) $staffSummary->sum('total_lines')) }}</td>
+                                    <td class="text-center" id="staffSummaryTotalQty">{{ number_format((float) $staffSummary->sum('total_qty')) }}</td>
                                 </tr>
                                 </tfoot>
                             @endif
@@ -155,7 +239,7 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
                 <h6 class="card-title mb-0">{{ __('index.sell_staff_report') }}</h6>
-                <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="d-flex gap-2">
+                <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="d-flex gap-2 no-print">
                     <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
                     <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
                     <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
@@ -181,7 +265,7 @@
                             <th class="text-center">{{ __('index.items') }}</th>
                             <th class="text-end">{{ __('index.total_amount') }}</th>
                             <th>{{ __('index.created_at') }}</th>
-                            <th class="text-center">{{ __('index.action') }}</th>
+                            <th class="text-center print-hidden">{{ __('index.action') }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -217,7 +301,7 @@
                                 <td class="text-center"><span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">{{ $report->lines_count }}</span></td>
                                 <td class="text-end fw-semibold text-success">${{ number_format((float) $report->total_amount, 2) }}</td>
                                 <td><span class="small text-muted">{{ optional($report->created_at)->format('Y-m-d H:i') }}</span></td>
-                                <td class="text-center">
+                                <td class="text-center print-hidden">
                                     <div class="btn-group">
                                         <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                             <i data-feather="more-vertical" class="icon-sm"></i>
@@ -265,7 +349,7 @@
                         @endif
                     </table>
                 </div>
-                <div class="mt-3">
+                <div class="mt-3 no-print">
                     {{ $reports->links() }}
                 </div>
             </div>
@@ -376,6 +460,11 @@
             $('#top_filter_branch').trigger('change');
         }
 
+        $(document).on('click', '#printSellStaffReport', function () {
+            updateStaffSummaryFooter();
+            window.print();
+        });
+
         $('#staffSummaryCollapse').on('show.bs.collapse', function () {
             let icon = $(this).parent().find('.collapse-icon');
             icon.removeClass('feather-chevron-down').addClass('feather-chevron-up');
@@ -391,19 +480,19 @@
         });
 
         const updateStaffSummaryFooter = () => {
-            let totalReports = 0;
-            let totalAmount = 0;
+            let totalSales = 0;
+            let totalLines = 0;
+            let totalQty = 0;
 
             $('#staffSummaryTable tbody tr:visible').each(function () {
-                totalReports += Number($(this).data('total-reports')) || 0;
-                totalAmount += Number($(this).data('total-amount')) || 0;
+                totalSales += Number($(this).data('total-sales')) || 0;
+                totalLines += Number($(this).data('total-lines')) || 0;
+                totalQty += Number($(this).data('total-qty')) || 0;
             });
 
-            $('#staffSummaryTotalReports').text(totalReports.toLocaleString());
-            $('#staffSummaryTotalAmount').text(totalAmount.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }));
+            $('#staffSummaryTotalSales').text(totalSales.toLocaleString());
+            $('#staffSummaryTotalLines').text(totalLines.toLocaleString());
+            $('#staffSummaryTotalQty').text(totalQty.toLocaleString());
         };
 
         $(document).on('keyup', '#staffSummarySearch', function () {

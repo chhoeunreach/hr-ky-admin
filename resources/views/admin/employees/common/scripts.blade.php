@@ -348,25 +348,16 @@
     $(document).on('click', '#export_employee', function (e) {
         e.preventDefault();
         let route = $(this).data('href');
-
-        // Create a form data object with all current filter values
-        let filtered_params = {
-            employee_name: $('#employeeName').val(),
-            search: $('#search').val(),
-            email: $('#email').val(),
-            phone: $('#phone').val(),
-            branch_id: $('#branch').val(),
-            department_id: $('#department').val(),
-            post_id: $('#post').val(),
-            is_active: $('#is_active').val(),
-            per_page: $('#per_page').val(),
-            action: 'export'  // This should match what the controller is checking for
-        };
-
-        let queryString = $.param(filtered_params);
-        let url = route + '?' + queryString;
-        window.open(url, '_blank');
+        window.open(buildEmployeeExportUrl(route), '_blank');
     });
+
+    function buildEmployeeExportUrl(route) {
+        let filtered_params = getEmployeeFilterParam();
+        filtered_params.action = 'export';
+
+        return route + '?' + $.param(filtered_params);
+    }
+
     function getEmployeeFilterParam() {
         return {
             employee_name: $('#employeeName').val(),

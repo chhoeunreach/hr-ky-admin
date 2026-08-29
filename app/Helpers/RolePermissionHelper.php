@@ -381,6 +381,151 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Employee 360 Profile View",
+                "permission_key" => "employee.profile.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee 360 Profile Edit",
+                "permission_key" => "employee.profile.edit",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Employment View",
+                "permission_key" => "employee.employment.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Employment Manage",
+                "permission_key" => "employee.employment.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Salary View",
+                "permission_key" => "employee.salary.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Salary Manage",
+                "permission_key" => "employee.salary.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Salary History View",
+                "permission_key" => "employee.salary.history.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Salary History Manage",
+                "permission_key" => "employee.salary.history.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Interview View",
+                "permission_key" => "employee.interview.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Interview Manage",
+                "permission_key" => "employee.interview.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee KPI View",
+                "permission_key" => "employee.kpi.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee KPI Manage",
+                "permission_key" => "employee.kpi.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance View",
+                "permission_key" => "employee.performance.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance Create",
+                "permission_key" => "employee.performance.create",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance Edit",
+                "permission_key" => "employee.performance.edit",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance Submit",
+                "permission_key" => "employee.performance.submit",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance Approve",
+                "permission_key" => "employee.performance.approve",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Performance HR Approve",
+                "permission_key" => "employee.performance.hr_approve",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Training View",
+                "permission_key" => "employee.training.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Training Manage",
+                "permission_key" => "employee.training.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Reward View",
+                "permission_key" => "employee.reward.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Reward Manage",
+                "permission_key" => "employee.reward.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Discipline View",
+                "permission_key" => "employee.discipline.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Discipline Manage",
+                "permission_key" => "employee.discipline.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Goal View",
+                "permission_key" => "employee.goal.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Goal Manage",
+                "permission_key" => "employee.goal.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Document View",
+                "permission_key" => "employee.document.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Document Manage",
+                "permission_key" => "employee.document.manage",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Audit View",
+                "permission_key" => "employee.audit.view",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Edit Employee",
                 "permission_key" => "edit_employee",
                 "permission_groups_id" => 5
