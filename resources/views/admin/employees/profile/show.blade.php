@@ -166,10 +166,13 @@
                 display: none;
             }
             .employee-complete-paper {
+                --employee-complete-accent: var(--primary-color, #0f766e);
+                --employee-complete-accent-soft: color-mix(in srgb, var(--employee-complete-accent) 7%, #ffffff);
+                --employee-complete-accent-rail: color-mix(in srgb, var(--employee-complete-accent) 16%, transparent);
                 background: #fff;
                 background-image:
-                    linear-gradient(180deg, rgba(15, 118, 110, .045), transparent 170px),
-                    linear-gradient(90deg, rgba(15, 118, 110, .12) 0, rgba(15, 118, 110, .12) 5px, transparent 5px);
+                    linear-gradient(180deg, var(--employee-complete-accent-soft), transparent 170px),
+                    linear-gradient(90deg, var(--employee-complete-accent-rail) 0, var(--employee-complete-accent-rail) 5px, transparent 5px);
                 border: 1px solid #cbd5e1;
                 border-radius: 6px;
                 box-sizing: border-box;
@@ -190,29 +193,45 @@
                 box-sizing: border-box;
             }
             .employee-complete-header {
-                border-bottom: 2px solid #0f766e;
+                border-bottom: 2px solid var(--employee-complete-accent);
                 margin-bottom: 11px;
                 padding-bottom: 10px;
                 position: relative;
                 text-align: center;
             }
             .employee-complete-logo {
+                background: #ffffff;
+                border: 1px solid #e2e8f0;
+                border-radius: 50%;
+                box-shadow: 0 6px 16px rgba(15, 23, 42, .08);
                 height: 24mm;
                 object-fit: contain;
+                padding: 2mm;
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 24mm;
+                z-index: 1;
+            }
+            .employee-complete-header::before {
+                background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, .92) 58%, rgba(255, 255, 255, 0) 100%);
+                content: "";
+                height: 28mm;
+                left: -2mm;
+                pointer-events: none;
+                position: absolute;
+                top: -2mm;
+                width: 42mm;
             }
             .employee-complete-khmer-brand {
-                color: #0f766e;
+                color: var(--employee-complete-accent);
                 font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
                 font-size: 21px;
                 font-weight: 800;
                 margin-bottom: 2px;
             }
             .employee-complete-brand {
-                color: #0f766e;
+                color: var(--employee-complete-accent);
                 font-size: 14px;
                 font-weight: 800;
                 letter-spacing: 1.8px;
@@ -264,8 +283,8 @@
             }
             .employee-complete-section h6 {
                 align-items: center;
-                background: linear-gradient(90deg, #e7f5f0, #f8fafc);
-                border-left: 4px solid #0f766e;
+                background: linear-gradient(90deg, var(--employee-complete-accent-soft), #f8fafc);
+                border-left: 4px solid var(--employee-complete-accent);
                 border-radius: 4px;
                 color: #0f172a;
                 display: flex;
@@ -328,7 +347,7 @@
                 padding: 8px;
             }
             .employee-complete-signature strong {
-                color: #0f766e;
+                color: var(--employee-complete-accent);
             }
             @media (max-width: 575.98px) {
                 .employee-360-hero {
@@ -438,8 +457,8 @@
                 .employee-complete-paper {
                     background: #fff;
                     background-image:
-                        linear-gradient(180deg, rgba(15, 118, 110, .045), transparent 170px),
-                        linear-gradient(90deg, rgba(15, 118, 110, .12) 0, rgba(15, 118, 110, .12) 5px, transparent 5px);
+                        linear-gradient(180deg, var(--employee-complete-accent-soft), transparent 170px),
+                        linear-gradient(90deg, var(--employee-complete-accent-rail) 0, var(--employee-complete-accent-rail) 5px, transparent 5px);
                     border: 0;
                     border-radius: 0;
                     box-shadow: none;
@@ -455,6 +474,10 @@
                 .employee-complete-logo {
                     height: 22mm;
                     width: 22mm;
+                }
+                .employee-complete-header::before {
+                    height: 26mm;
+                    width: 39mm;
                 }
                 .employee-complete-header {
                     margin-top: 0 !important;
