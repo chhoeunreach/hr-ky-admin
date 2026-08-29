@@ -350,6 +350,13 @@
                     -webkit-print-color-adjust: exact;
                     print-color-adjust: exact;
                 }
+                body * {
+                    visibility: hidden !important;
+                }
+                #complete-form,
+                #complete-form * {
+                    visibility: visible !important;
+                }
                 .employee-360-hero,
                 .employee-360 > .breadcrumb,
                 .employee-360 > .alert,
@@ -371,14 +378,15 @@
                 }
                 #complete-form {
                     background: transparent;
+                    box-sizing: border-box;
                     display: block !important;
                     opacity: 1 !important;
-                    left: auto;
+                    left: 0;
                     margin: 0;
                     min-height: 297mm;
                     padding: 12mm 16mm;
-                    position: static;
-                    top: auto;
+                    position: absolute;
+                    top: 0;
                     visibility: visible !important;
                     width: 210mm;
                 }
