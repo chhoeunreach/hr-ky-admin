@@ -396,14 +396,14 @@
                     box-sizing: border-box;
                     display: block !important;
                     opacity: 1 !important;
-                    left: 0;
-                    margin: 0;
-                    min-height: auto;
-                    padding: 0;
-                    position: absolute;
-                    top: 0;
+                    left: 0 !important;
+                    margin: 0 !important;
+                    min-height: auto !important;
+                    padding: 0 !important;
+                    position: fixed !important;
+                    top: 0 !important;
                     visibility: visible !important;
-                    width: 100%;
+                    width: 100% !important;
                 }
                 .employee-complete-toolbar,
                 .employee-360-tabs {
@@ -419,15 +419,22 @@
                     box-shadow: none;
                     font-size: 10px;
                     line-height: 1.35;
-                    margin: 0;
+                    left: 0 !important;
+                    margin: 0 !important;
                     max-width: none;
                     min-height: auto;
                     padding: 0 6mm 5mm;
+                    position: absolute;
+                    top: 0 !important;
                     width: 100%;
                 }
                 .employee-complete-logo {
                     height: 22mm;
                     width: 22mm;
+                }
+                .employee-complete-header {
+                    margin-top: 0 !important;
+                    padding-top: 0 !important;
                 }
                 .employee-complete-section {
                     page-break-inside: avoid;
