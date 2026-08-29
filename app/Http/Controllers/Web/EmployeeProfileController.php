@@ -59,7 +59,7 @@ class EmployeeProfileController extends Controller
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
 
         $employee->load([
-            'branch:id,name',
+            'branch:id,name,logo',
             'department:id,dept_name',
             'post:id,post_name',
             'supervisor:id,name',

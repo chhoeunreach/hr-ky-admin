@@ -422,7 +422,7 @@
                     margin: 0;
                     max-width: none;
                     min-height: auto;
-                    padding: 5mm 6mm;
+                    padding: 0 6mm 5mm;
                     width: 100%;
                 }
                 .employee-complete-logo {
