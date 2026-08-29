@@ -15,7 +15,7 @@
 @endphp
 
 <div class="employee-complete-toolbar">
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
+    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmployeeCompleteForm()">
         <i class="link-icon" data-feather="printer"></i> Print
     </button>
 </div>

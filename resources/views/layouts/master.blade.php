@@ -14,6 +14,9 @@
     <meta name="keywords" content="Digital HR">
 
     <title>@yield('title')</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: {{ $themeColor->primary_color ?? '#0F766E' }};
@@ -27,7 +30,7 @@
         html.locale-km input,
         html.locale-km select,
         html.locale-km textarea {
-            font-family: 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
+            font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
         }
 
         .sidebar .sidebar-body .nav .nav-item .nav-link {

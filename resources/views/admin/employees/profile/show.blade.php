@@ -162,6 +162,9 @@
                 margin: -6px;
                 padding: 18px 8px;
             }
+            #employeeCompletePrintRoot {
+                display: none;
+            }
             .employee-complete-paper {
                 background: #fff;
                 background-image:
@@ -172,6 +175,7 @@
                 box-sizing: border-box;
                 box-shadow: 0 18px 42px rgba(15, 23, 42, .12);
                 color: #111827;
+                font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
                 font-size: 10px;
                 line-height: 1.35;
                 margin: 0 auto;
@@ -202,6 +206,7 @@
             }
             .employee-complete-khmer-brand {
                 color: #0f766e;
+                font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
                 font-size: 21px;
                 font-weight: 800;
                 margin-bottom: 2px;
@@ -369,10 +374,29 @@
                     visibility: hidden !important;
                 }
                 #complete-form,
-                #complete-form * {
+                #complete-form *,
+                #employeeCompletePrintRoot,
+                #employeeCompletePrintRoot * {
                     visibility: visible !important;
                 }
+                body.printing-complete-form .main-wrapper {
+                    display: none !important;
+                }
+                body.printing-complete-form #employeeCompletePrintRoot {
+                    background: #ffffff !important;
+                    display: block !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    position: static !important;
+                    visibility: visible !important;
+                    width: 100% !important;
+                }
                 .employee-360-hero,
+                #preloader,
+                .sidebar,
+                .navbar,
+                .footer,
+                .page-content > :not(.employee-360),
                 .employee-360 > .breadcrumb,
                 .employee-360 > .alert,
                 .employee-360 .card > .card-header,
@@ -630,6 +654,33 @@
 
 @section('scripts')
     <script>
+        function cleanupEmployeeCompletePrintRoot() {
+            document.body.classList.remove('printing-complete-form');
+            document.getElementById('employeeCompletePrintRoot')?.remove();
+        }
+
+        function printEmployeeCompleteForm() {
+            cleanupEmployeeCompletePrintRoot();
+
+            const paper = document.querySelector('#complete-form .employee-complete-paper');
+            if (!paper) {
+                window.print();
+                return;
+            }
+
+            const printRoot = document.createElement('div');
+            printRoot.id = 'employeeCompletePrintRoot';
+            printRoot.appendChild(paper.cloneNode(true));
+            document.body.appendChild(printRoot);
+            document.body.classList.add('printing-complete-form');
+
+            window.setTimeout(function () {
+                window.print();
+            }, 50);
+        }
+
+        window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);
+
         document.querySelectorAll('[data-review-score]').forEach((input) => {
             input.addEventListener('input', function () {
                 const max = Number(this.dataset.maxScore || 0);
