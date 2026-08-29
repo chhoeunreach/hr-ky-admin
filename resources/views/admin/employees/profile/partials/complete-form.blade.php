@@ -5,6 +5,9 @@
         return '<div class="employee-complete-field"><span>' . e($label) . '</span><strong>' . e($valueOrLine($value)) . '</strong></div>';
     };
     $latestReviewItems = $latestReview?->items ?? collect();
+    $companyLogo = \App\Helpers\AppHelper::getCompanyLogo()
+        ? asset(\App\Models\Company::UPLOAD_PATH . \App\Helpers\AppHelper::getCompanyLogo())
+        : asset('assets/images/img.png');
 @endphp
 
 <div class="employee-complete-toolbar">
@@ -15,7 +18,9 @@
 
 <div class="employee-complete-paper">
     <div class="employee-complete-header">
-        <div class="employee-complete-brand">KNEAYERNG</div>
+        <img class="employee-complete-logo" src="{{ $companyLogo }}" alt="Kneayerng Phone Shop Logo">
+        <div class="employee-complete-khmer-brand">ហាងទូរសព្ទដៃគ្នាយើង</div>
+        <div class="employee-complete-brand">KNEAYERNG PHONE SHOP</div>
         <h4>ឯកសារប្រវត្តិបុគ្គលិក និងការវាយតម្លៃសមត្ថភាពពេញលេញ</h4>
         <div class="employee-complete-subtitle">COMPLETE EMPLOYEE PROFILE &amp; PERFORMANCE EVALUATION</div>
         <small class="employee-complete-confidential">ឯកសារផ្ទៃក្នុង - Confidential HR Record</small>

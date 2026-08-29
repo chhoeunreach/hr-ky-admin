@@ -189,7 +189,22 @@
                 border-bottom: 2px solid #0f766e;
                 margin-bottom: 11px;
                 padding-bottom: 10px;
+                position: relative;
                 text-align: center;
+            }
+            .employee-complete-logo {
+                height: 20mm;
+                object-fit: contain;
+                position: absolute;
+                right: 0;
+                top: 0;
+                width: 20mm;
+            }
+            .employee-complete-khmer-brand {
+                color: #0f766e;
+                font-size: 14px;
+                font-weight: 800;
+                margin-bottom: 2px;
             }
             .employee-complete-brand {
                 color: #0f766e;
@@ -344,7 +359,7 @@
                     height: auto !important;
                     margin: 0 !important;
                     padding: 0 !important;
-                    width: 210mm !important;
+                    width: 100% !important;
                 }
                 body {
                     -webkit-print-color-adjust: exact;
@@ -374,7 +389,7 @@
                     display: block !important;
                     margin: 0 !important;
                     padding: 0 !important;
-                    width: 210mm !important;
+                    width: 100% !important;
                 }
                 #complete-form {
                     background: transparent;
@@ -383,12 +398,12 @@
                     opacity: 1 !important;
                     left: 0;
                     margin: 0;
-                    min-height: 297mm;
-                    padding: 12mm 16mm;
+                    min-height: auto;
+                    padding: 0;
                     position: absolute;
                     top: 0;
                     visibility: visible !important;
-                    width: 210mm;
+                    width: 100%;
                 }
                 .employee-complete-toolbar,
                 .employee-360-tabs {
@@ -399,16 +414,20 @@
                     background-image:
                         linear-gradient(180deg, rgba(15, 118, 110, .045), transparent 170px),
                         linear-gradient(90deg, rgba(15, 118, 110, .12) 0, rgba(15, 118, 110, .12) 5px, transparent 5px);
-                    border: 1px solid #cbd5e1;
-                    border-radius: 6px;
+                    border: 0;
+                    border-radius: 0;
                     box-shadow: none;
                     font-size: 10px;
                     line-height: 1.35;
-                    margin: 0 auto;
+                    margin: 0;
                     max-width: none;
-                    min-height: 273mm;
-                    padding: 10mm 9mm;
-                    width: 178mm;
+                    min-height: auto;
+                    padding: 5mm 6mm;
+                    width: 100%;
+                }
+                .employee-complete-logo {
+                    height: 17mm;
+                    width: 17mm;
                 }
                 .employee-complete-section {
                     page-break-inside: avoid;
