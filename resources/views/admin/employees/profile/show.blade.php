@@ -193,22 +193,22 @@
                 text-align: center;
             }
             .employee-complete-logo {
-                height: 20mm;
+                height: 24mm;
                 object-fit: contain;
                 position: absolute;
-                right: 0;
+                left: 0;
                 top: 0;
-                width: 20mm;
+                width: 24mm;
             }
             .employee-complete-khmer-brand {
                 color: #0f766e;
-                font-size: 14px;
+                font-size: 21px;
                 font-weight: 800;
                 margin-bottom: 2px;
             }
             .employee-complete-brand {
                 color: #0f766e;
-                font-size: 18px;
+                font-size: 14px;
                 font-weight: 800;
                 letter-spacing: 1.8px;
                 margin-bottom: 4px;
@@ -426,8 +426,8 @@
                     width: 100%;
                 }
                 .employee-complete-logo {
-                    height: 17mm;
-                    width: 17mm;
+                    height: 22mm;
+                    width: 22mm;
                 }
                 .employee-complete-section {
                     page-break-inside: avoid;

@@ -7,7 +7,11 @@
     $latestReviewItems = $latestReview?->items ?? collect();
     $companyLogo = \App\Helpers\AppHelper::getCompanyLogo()
         ? asset(\App\Models\Company::UPLOAD_PATH . \App\Helpers\AppHelper::getCompanyLogo())
-        : asset('assets/images/img.png');
+        : null;
+    $branchLogo = $employee->branch?->logo
+        ? asset(\App\Models\Branch::UPLOAD_PATH . $employee->branch->logo)
+        : null;
+    $formLogo = $branchLogo ?: ($companyLogo ?: asset('assets/images/img.png'));
 @endphp
 
 <div class="employee-complete-toolbar">
@@ -18,7 +22,7 @@
 
 <div class="employee-complete-paper">
     <div class="employee-complete-header">
-        <img class="employee-complete-logo" src="{{ $companyLogo }}" alt="Kneayerng Phone Shop Logo">
+        <img class="employee-complete-logo" src="{{ $formLogo }}" alt="Kneayerng Phone Shop Logo">
         <div class="employee-complete-khmer-brand">ហាងទូរសព្ទដៃគ្នាយើង</div>
         <div class="employee-complete-brand">KNEAYERNG PHONE SHOP</div>
         <h4>ឯកសារប្រវត្តិបុគ្គលិក និងការវាយតម្លៃសមត្ថភាពពេញលេញ</h4>
