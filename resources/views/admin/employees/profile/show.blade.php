@@ -380,6 +380,9 @@
                     display: none !important;
                 }
                 .employee-360,
+                .main-wrapper,
+                .page-wrapper,
+                .page-content,
                 .employee-360 .card,
                 .employee-360 .card-body,
                 .employee-360 .tab-content {
@@ -396,12 +399,11 @@
                     box-sizing: border-box;
                     display: block !important;
                     opacity: 1 !important;
-                    left: 0 !important;
                     margin: 0 !important;
                     min-height: auto !important;
                     padding: 0 !important;
-                    position: fixed !important;
-                    top: 0 !important;
+                    position: static !important;
+                    transform: none !important;
                     visibility: visible !important;
                     width: 100% !important;
                 }
@@ -419,13 +421,11 @@
                     box-shadow: none;
                     font-size: 10px;
                     line-height: 1.35;
-                    left: 0 !important;
                     margin: 0 !important;
                     max-width: none;
                     min-height: auto;
                     padding: 0 6mm 5mm;
-                    position: absolute;
-                    top: 0 !important;
+                    position: static !important;
                     width: 100%;
                 }
                 .employee-complete-logo {
