@@ -785,7 +785,19 @@ class EmployeeProfileController extends Controller
         $unapprovedLeaves = (float) $leaveRequests->whereIn('status', ['pending', 'rejected'])->sum('no_of_days');
         $presentDays = $attendance->where('attendance_status', 1)->count();
         $workingDays = Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1;
-        $lateCount = $attendance->filter(function ($record) use ($employee) {
+        $lateCount = $attendance->filter(function ($record) use ($employee, $leaveRequests, $isDayOff) {
+            if ((int) $record->attendance_status !== Attendance::ATTENDANCE_APPROVED) {
+                return false;
+            }
+            $onLeave = $leaveRequests->contains(
+                fn ($leave) => $leave->status === 'approved'
+                    && !$isDayOff($leave)
+                    && Carbon::parse($record->attendance_date)->gte(Carbon::parse($leave->leave_from))
+                    && Carbon::parse($record->attendance_date)->lte(Carbon::parse($leave->leave_to))
+            );
+            if ($onLeave) {
+                return false;
+            }
             $checkIn = $record->check_in_at ?: $record->night_checkin;
             $officeTime = $record->officeTime ?: $employee->officeTime;
             if (!$checkIn || !$officeTime?->opening_time) {
