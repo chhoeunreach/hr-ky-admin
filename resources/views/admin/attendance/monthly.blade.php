@@ -21,7 +21,7 @@
                 <i class="link-icon" data-feather="download"></i> {{ __('index.export') }}
             </a>
         @endcanany
-        <button type="button" class="btn btn-outline-primary btn-sm" id="monthlyPrintButton">
+        <button type="button" class="btn btn-outline-primary btn-sm monthly-print-trigger" id="monthlyPrintButton">
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
         </button>
     </div>
@@ -2152,6 +2152,10 @@
                         <input type="hidden" name="shift_id" value="{{ $filter['shift_id'] }}">
                     @endif
 
+                    <button type="button" class="btn btn-outline-primary btn-sm monthly-print-trigger">
+                        <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
+                    </button>
+
                     @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
                         <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}">
                             <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
@@ -2697,12 +2701,12 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const monthlyPrintButton = document.getElementById('monthlyPrintButton');
-            if (monthlyPrintButton) {
-                monthlyPrintButton.addEventListener('click', function () {
+            const monthlyPrintTriggers = document.querySelectorAll('.monthly-print-trigger');
+            monthlyPrintTriggers.forEach(function (printButton) {
+                printButton.addEventListener('click', function () {
                     window.print();
                 });
-            }
+            });
 
             const modal = document.getElementById('monthlyAttendanceDetailModal');
             const detailModal = modal ? new bootstrap.Modal(modal) : null;
