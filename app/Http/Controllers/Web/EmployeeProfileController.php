@@ -114,7 +114,7 @@ class EmployeeProfileController extends Controller
             'department:id,dept_name',
             'post:id,post_name',
             'supervisor:id,name',
-            'officeTime:id,shift,opening_time,closing_time,checkin_after',
+            'officeTime:id,shift,opening_time,closing_time,is_late_check_in,checkin_after',
             'employee360Profile',
             'employeeSalary',
         ]);
@@ -765,7 +765,10 @@ class EmployeeProfileController extends Controller
     {
         $from = $from ?: ($employee->joining_date ?: now()->startOfMonth()->toDateString());
         $to = $to ?: now()->endOfMonth()->toDateString();
-        $attendance = Attendance::where('user_id', $employee->id)->whereBetween('attendance_date', [$from, $to])->get();
+        $attendance = Attendance::with('officeTime:id,opening_time,closing_time,is_late_check_in,checkin_after')
+            ->where('user_id', $employee->id)
+            ->whereBetween('attendance_date', [$from, $to])
+            ->get();
         $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
             ->where('requested_by', $employee->id)
             ->whereDate('leave_from', '<=', $to)
@@ -802,6 +805,14 @@ class EmployeeProfileController extends Controller
         $officeTime = $employee->officeTime
             ? trim(($employee->officeTime->shift ? $employee->officeTime->shift . ' ' : '') . '(' . $employee->officeTime->opening_time . ' - ' . $employee->officeTime->closing_time . ')')
             : null;
+        $notLateUntil = null;
+        if ($employee->officeTime?->opening_time) {
+            $notLateUntilTime = Carbon::parse($employee->officeTime->opening_time);
+            if ((int) $employee->officeTime->is_late_check_in === 1 && $employee->officeTime->checkin_after !== null) {
+                $notLateUntilTime->addMinutes((int) $employee->officeTime->checkin_after);
+            }
+            $notLateUntil = $notLateUntilTime->format('H:i');
+        }
 
         return [
             'from' => $from,
@@ -825,7 +836,7 @@ class EmployeeProfileController extends Controller
             'pending_time_leave_requests' => $timeLeavePending,
             'no_checkout_days' => $noCheckout,
             'worked_hours' => $workedHours,
-            'not_late_until' => $employee->officeTime?->checkin_after !== null ? $employee->officeTime->checkin_after . ' minutes after start' : null,
+            'not_late_until' => $notLateUntil,
             'office_time' => $officeTime,
             'attendance_score' => min(10, max(0, $presentDays)),
         ];
