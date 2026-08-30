@@ -806,7 +806,7 @@ class EmployeeProfileController extends Controller
             if (!$checkIn || !$officeTime?->opening_time) {
                 return false;
             }
-            $allowed = Carbon::parse($record->attendance_date . ' ' . $officeTime->opening_time)->addMinutes($manualLateGraceMinutes);
+            $allowed = Carbon::parse($officeTime->opening_time)->addMinutes($manualLateGraceMinutes);
 
             return Carbon::parse($checkIn)->gt($allowed);
         })->count();
