@@ -782,6 +782,13 @@
 
                 return str_contains($leaveTypeName, 'day off') || str_contains($leaveTypeName, 'ឈប់សម្រាក');
             };
+            $isApprovedLeaveDate = static function (string $date) use ($leaveRequestsByDate, $isDayOffLeave): bool {
+                $leaveRequest = $leaveRequestsByDate[$date] ?? null;
+
+                return $leaveRequest
+                    && strtolower((string) $leaveRequest->status) === 'approved'
+                    && !$isDayOffLeave($leaveRequest);
+            };
 
             $detailCardStats = [
                 'total' => (int) ($attendanceSummary['totalDays'] ?? 0),
@@ -867,6 +874,7 @@
                         if (
                             \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
                             && $attendanceApproved
+                            && !$isApprovedLeaveDate($dayData['attendance_date'])
                         ) {
                             $lateDates[$dayData['attendance_date']] = true;
                         }
@@ -1077,7 +1085,7 @@
                                         $manualLateGraceMinutes = 16;
                                         $earlyCheckoutEnabled = (int) ($attendance['is_early_check_out'] ?? $userDetail->officeTime?->is_early_check_out ?? 0) === 1;
 
-                                        if ($attendanceCheckIn && $shiftOpening) {
+                                        if ($attendanceCheckIn && $shiftOpening && !$isApprovedLeaveDate($dayData['attendance_date'])) {
                                             $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
                                             $actualCheckIn = \Carbon\Carbon::parse($attendanceCheckIn);
                                             $allowedCheckInLabel = $allowedCheckIn->format('H:i');
