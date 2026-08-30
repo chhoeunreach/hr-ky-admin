@@ -181,12 +181,12 @@
                                     @endphp
                                     <div class="d-flex align-items-center gap-2">
                                         <img src="{{ $employeeAvatar }}"
-                                             alt="{{ $employee->english_name ?: $employee->name }}"
+                                             alt="{{ $employee->name ?: $employee->english_name }}"
                                              class="rounded-circle"
                                              style="width: 38px; height: 38px; object-fit: cover;">
                                         <div>
-                                            <div class="fw-semibold">{{ $employee->english_name ?: $employee->name }}</div>
-                                            <div class="text-muted small">{{ $employee->employee_code ?: $employee->username }}</div>
+                                            <div class="fw-semibold">{{ $employee->name ?: $employee->english_name }}</div>
+                                            <div class="text-muted small">{{ $employee->employee_code ?: $employee->username }}{{ $employee->english_name ? ' · ' . $employee->english_name : '' }}</div>
                                         </div>
                                     </div>
                                 </td>
