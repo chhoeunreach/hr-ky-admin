@@ -763,7 +763,7 @@ class EmployeeProfileController extends Controller
 
     private function attendanceSummary(User $employee, ?string $from = null, ?string $to = null): array
     {
-        $from = $from ?: now()->startOfMonth()->toDateString();
+        $from = $from ?: ($employee->joining_date ?: now()->startOfMonth()->toDateString());
         $to = $to ?: now()->endOfMonth()->toDateString();
         $attendance = Attendance::where('user_id', $employee->id)->whereBetween('attendance_date', [$from, $to])->get();
         $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
