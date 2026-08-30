@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $groupId = DB::table('permissions')->where('permission_key', 'list_employee')->value('permission_groups_id');
+        $groupId = DB::table('permissions')->where('permission_key', 'list_employee')->value('permission_groups_id') ?: 5;
 
         DB::table('permissions')->updateOrInsert(
             ['permission_key' => 'd_card_print'],

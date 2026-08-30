@@ -7,7 +7,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $groupId = DB::table('permissions')->where('permission_key', 'list_employee')->value('permission_groups_id');
+        $groupId = DB::table('permissions')->where('permission_key', 'list_employee')->value('permission_groups_id') ?: 5;
         $permissions = [
             'employee.profile.print' => 'Employee Profile Directory Print',
             'employee.complete_form.print' => 'Employee Complete Form Print',
@@ -23,22 +23,7 @@ return new class extends Migration
             );
         }
 
-        $sourcePermissionId = DB::table('permissions')->where('permission_key', 'show_detail_employee')->value('id');
-        if (!$sourcePermissionId) {
-            return;
-        }
-
-        $roleIds = DB::table('permission_roles')->where('permission_id', $sourcePermissionId)->pluck('role_id');
-        $permissionIds = DB::table('permissions')->whereIn('permission_key', array_keys($permissions))->pluck('id');
-
-        foreach ($roleIds as $roleId) {
-            foreach ($permissionIds as $permissionId) {
-                DB::table('permission_roles')->updateOrInsert([
-                    'permission_id' => $permissionId,
-                    'role_id' => $roleId,
-                ]);
-            }
-        }
+        // Keep these permissions unassigned by default so admins can enable each print feature per role.
     }
 
     public function down(): void
