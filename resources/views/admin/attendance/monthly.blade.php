@@ -1884,6 +1884,12 @@
                 display: block !important;
             }
 
+            #monthlyResultsBlock #monthlyAttendanceSummary .row > [class*="col-"] {
+                flex: 0 0 auto;
+                width: 16.6666667%;
+                max-width: 16.6666667%;
+            }
+
             #monthlyResultsBlock .monthly-filter-shell,
             #monthlyResultsBlock .monthly-table-shell {
                 box-shadow: none;
