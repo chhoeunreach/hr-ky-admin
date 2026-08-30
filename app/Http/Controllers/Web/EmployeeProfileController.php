@@ -785,7 +785,8 @@ class EmployeeProfileController extends Controller
         $unapprovedLeaves = (float) $leaveRequests->whereIn('status', ['pending', 'rejected'])->sum('no_of_days');
         $presentDays = $attendance->where('attendance_status', 1)->count();
         $workingDays = Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1;
-        $lateCount = $attendance->filter(function ($record) use ($employee, $leaveRequests, $isDayOff) {
+        $manualLateGraceMinutes = 16;
+        $lateCount = $attendance->filter(function ($record) use ($employee, $leaveRequests, $isDayOff, $manualLateGraceMinutes) {
             if ((int) $record->attendance_status !== Attendance::ATTENDANCE_APPROVED) {
                 return false;
             }
@@ -803,10 +804,7 @@ class EmployeeProfileController extends Controller
             if (!$checkIn || !$officeTime?->opening_time) {
                 return false;
             }
-            $allowed = Carbon::parse($record->attendance_date . ' ' . $officeTime->opening_time);
-            if ($officeTime->checkin_after !== null) {
-                $allowed->addMinutes((int) $officeTime->checkin_after);
-            }
+            $allowed = Carbon::parse($record->attendance_date . ' ' . $officeTime->opening_time)->addMinutes($manualLateGraceMinutes);
 
             return Carbon::parse($checkIn)->gt($allowed);
         })->count();
@@ -819,11 +817,9 @@ class EmployeeProfileController extends Controller
             : null;
         $notLateUntil = null;
         if ($employee->officeTime?->opening_time) {
-            $notLateUntilTime = Carbon::parse($employee->officeTime->opening_time);
-            if ((int) $employee->officeTime->is_late_check_in === 1 && $employee->officeTime->checkin_after !== null) {
-                $notLateUntilTime->addMinutes((int) $employee->officeTime->checkin_after);
-            }
-            $notLateUntil = $notLateUntilTime->format('H:i');
+            $notLateUntil = Carbon::parse($employee->officeTime->opening_time)
+                ->addMinutes($manualLateGraceMinutes)
+                ->format('H:i');
         }
 
         return [

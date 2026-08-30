@@ -128,7 +128,7 @@
             <tr>
                 <td><strong>No Checkout</strong><br>{{ $attendanceSummary['no_checkout_days'] ?? 0 }}</td>
                 <td><strong>Worked Hours</strong><br>{{ $attendanceSummary['worked_hours'] ?? 0 }}</td>
-                <td><strong>Not Late Until</strong><br>{{ $attendanceSummary['not_late_until'] ? \Illuminate\Support\Carbon::parse($attendanceSummary['not_late_until'])->addMinutes(16)->format('H:i') : 'N/A' }}</td>
+                <td><strong>Not Late Until</strong><br>{{ $attendanceSummary['not_late_until'] ?? 'N/A' }}</td>
                 <td colspan="2"><strong>Office Time</strong><br>{{ $attendanceSummary['office_time'] ?? 'N/A' }}</td>
             </tr>
             </tbody>
