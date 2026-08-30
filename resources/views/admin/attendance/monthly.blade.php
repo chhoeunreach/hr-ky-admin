@@ -21,6 +21,9 @@
                 <i class="link-icon" data-feather="download"></i> {{ __('index.export') }}
             </a>
         @endcanany
+        <button type="button" class="btn btn-outline-primary btn-sm" id="monthlyPrintButton">
+            <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
+        </button>
     </div>
 @endsection
 
@@ -1841,6 +1844,80 @@
                 bottom: 14px;
             }
         }
+
+        @media print {
+            @page {
+                size: landscape;
+                margin: 6mm;
+            }
+
+            body * {
+                visibility: hidden;
+            }
+
+            #monthlyResultsBlock,
+            #monthlyResultsBlock * {
+                visibility: visible;
+            }
+
+            #monthlyResultsBlock {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                padding: 0;
+                background: #ffffff;
+            }
+
+            #monthlyResultsBlock .monthly-results-reload,
+            #monthlyResultsBlock .monthly-filter-toggle,
+            #monthlyResultsBlock #monthlyAttendanceFilters,
+            #monthlyResultsBlock .monthly-table-controls,
+            #monthlyResultsBlock .monthly-signal-toggle,
+            #monthlyResultsBlock .monthly-scroll-shortcuts,
+            #monthlyResultsBlock .modal,
+            #monthlyResultsBlock .monthly-pagination-wrap {
+                display: none !important;
+            }
+
+            #monthlyResultsBlock #monthlyAttendanceSummary {
+                display: block !important;
+            }
+
+            #monthlyResultsBlock .monthly-filter-shell,
+            #monthlyResultsBlock .monthly-table-shell {
+                box-shadow: none;
+                border-color: #d0d5dd;
+            }
+
+            #monthlyResultsBlock .monthly-filter-shell {
+                margin-bottom: 6px !important;
+            }
+
+            #monthlyResultsBlock .monthly-table-wrap {
+                overflow: visible !important;
+            }
+
+            #monthlyResultsBlock .monthly-attendance-table {
+                min-width: 0 !important;
+                --monthly-table-font-size: 0.5rem;
+                --monthly-table-header-size: 0.5rem;
+                --monthly-table-small-size: 0.4rem;
+            }
+
+            #monthlyResultsBlock .monthly-attendance-table thead th,
+            #monthlyResultsBlock .monthly-attendance-table .sticky-number,
+            #monthlyResultsBlock .monthly-attendance-table .sticky-employee {
+                position: static !important;
+            }
+
+            #monthlyResultsBlock .monthly-attendance-table th,
+            #monthlyResultsBlock .monthly-attendance-table td {
+                background: #fff !important;
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+        }
     </style>
 @endsection
 
@@ -2348,7 +2425,7 @@
                     <span><i class="monthly-cell-indicator indicator-time-leave-request">TR</i> {{ __('index.time_leave_request') }}</span>
                     <span><i class="monthly-cell-indicator indicator-open-checkout">NC</i> {{ __('index.no_checkout') }}</span>
                 </div>
-                <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 monthly-pagination-wrap">
                     {{ $monthlyRows->links() }}
                     <span class="text-muted small">
                         {{ __('index.showing_entries', ['from' => $monthlyRows->firstItem() ?? 0, 'to' => $monthlyRows->lastItem() ?? 0, 'total' => $monthlyRows->total()]) }}
@@ -2620,6 +2697,13 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const monthlyPrintButton = document.getElementById('monthlyPrintButton');
+            if (monthlyPrintButton) {
+                monthlyPrintButton.addEventListener('click', function () {
+                    window.print();
+                });
+            }
+
             const modal = document.getElementById('monthlyAttendanceDetailModal');
             const detailModal = modal ? new bootstrap.Modal(modal) : null;
             const quickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
