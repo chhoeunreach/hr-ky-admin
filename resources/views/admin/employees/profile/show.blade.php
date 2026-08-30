@@ -93,7 +93,7 @@
             $tabs = [
                 'overview' => 'Overview',
                 'complete-form' => 'Complete Form',
-                'personal' => 'Personal',
+                'personal' => 'Personal & Documents',
                 'attendance' => 'Attendance',
             ];
             if ($canViewDocument) {
@@ -128,9 +128,6 @@
             }
             if ($canViewGoal) {
                 $tabs['goals'] = 'Goals';
-            }
-            if ($canViewDocument) {
-                $tabs['documents'] = 'Documents';
             }
             if ($canViewAudit) {
                 $tabs['history'] = 'History';
@@ -946,6 +943,10 @@
                                 <button class="btn btn-primary">Save Profile</button>
                             @endcan
                         </form>
+
+                        @if($canViewDocument)
+                            @include('admin.employees.profile.partials.documents')
+                        @endif
                     </div>
 
                     @if($canViewEmployment)
@@ -1012,12 +1013,6 @@
                     @if($canViewGoal)
                         <div class="tab-pane fade" id="goals" role="tabpanel">
                             @include('admin.employees.profile.partials.goals')
-                        </div>
-                    @endif
-
-                    @if($canViewDocument)
-                        <div class="tab-pane fade" id="documents" role="tabpanel">
-                            @include('admin.employees.profile.partials.documents')
                         </div>
                     @endif
 
@@ -1107,7 +1102,7 @@
         window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);
 
         const profileParams = new URLSearchParams(window.location.search);
-        const requestedTab = profileParams.get('tab');
+        const requestedTab = profileParams.get('tab') === 'documents' ? 'personal' : profileParams.get('tab');
         if (requestedTab) {
             const tabButton = document.querySelector(`[data-bs-target="#${CSS.escape(requestedTab)}"]`);
             if (tabButton && window.bootstrap?.Tab) {
