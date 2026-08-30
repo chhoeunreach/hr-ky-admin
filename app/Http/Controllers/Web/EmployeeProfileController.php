@@ -787,7 +787,9 @@ class EmployeeProfileController extends Controller
         $workingDays = Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1;
         $manualLateGraceMinutes = 16;
         $lateCount = $attendance->filter(function ($record) use ($employee, $leaveRequests, $isDayOff, $manualLateGraceMinutes) {
-            if ((int) $record->attendance_status !== Attendance::ATTENDANCE_APPROVED) {
+            $attendanceApproved = $record->attendance_status === null
+                || (int) $record->attendance_status === Attendance::ATTENDANCE_APPROVED;
+            if (!$attendanceApproved) {
                 return false;
             }
             $onLeave = $leaveRequests->contains(
