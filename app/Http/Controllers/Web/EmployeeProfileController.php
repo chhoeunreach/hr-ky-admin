@@ -25,6 +25,7 @@ use App\Models\EmployeeTrainingHistory;
 use App\Models\LeaveRequestMaster;
 use App\Models\PerformanceReview;
 use App\Models\Post;
+use App\Models\TimeLeave;
 use App\Models\User;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -113,7 +114,7 @@ class EmployeeProfileController extends Controller
             'department:id,dept_name',
             'post:id,post_name',
             'supervisor:id,name',
-            'officeTime:id,shift,opening_time,closing_time',
+            'officeTime:id,shift,opening_time,closing_time,checkin_after',
             'employee360Profile',
             'employeeSalary',
         ]);
@@ -153,6 +154,19 @@ class EmployeeProfileController extends Controller
         $canViewGoal = $this->can('employee.goal.view') || $isOwnProfile;
         $canViewDocument = $this->can('employee.document.view');
         $canViewAudit = $this->can('employee.audit.view');
+        $warningOverviewRecords = $canViewDiscipline
+            ? EmployeeDisciplinaryRecord::with([
+                'employee:id,name,english_name,employee_code,username,branch_id,department_id',
+                'employee.branch:id,name',
+                'employee.department:id,dept_name',
+            ])
+                ->when(auth()->user()?->branch_id && auth()->id() !== 1, function ($query) {
+                    $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('branch_id', auth()->user()->branch_id));
+                })
+                ->latest('incident_date')
+                ->latest('id')
+                ->get()
+            : collect();
 
         return view('admin.employees.profile.show', compact(
             'employee',
@@ -175,6 +189,7 @@ class EmployeeProfileController extends Controller
             'contract',
             'contractHistories',
             'auditLogs',
+            'warningOverviewRecords',
             'canViewEmployment',
             'canViewSalary',
             'canViewInterview',
@@ -751,31 +766,68 @@ class EmployeeProfileController extends Controller
         $from = $from ?: now()->startOfMonth()->toDateString();
         $to = $to ?: now()->endOfMonth()->toDateString();
         $attendance = Attendance::where('user_id', $employee->id)->whereBetween('attendance_date', [$from, $to])->get();
-        $approvedLeaves = LeaveRequestMaster::where('requested_by', $employee->id)
-            ->where('status', 'approved')
+        $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
+            ->where('requested_by', $employee->id)
             ->whereDate('leave_from', '<=', $to)
             ->whereDate('leave_to', '>=', $from)
-            ->sum('no_of_days');
-        $unapprovedLeaves = LeaveRequestMaster::where('requested_by', $employee->id)
-            ->whereIn('status', ['pending', 'rejected'])
-            ->whereDate('leave_from', '<=', $to)
-            ->whereDate('leave_to', '>=', $from)
-            ->sum('no_of_days');
+            ->get();
+        $timeLeaveRequests = TimeLeave::where('requested_by', $employee->id)
+            ->whereBetween('issue_date', [$from, $to])
+            ->get();
+        $isDayOff = fn ($leave) => str_contains(strtolower((string) $leave->leaveType?->name), 'day off');
+        $approvedLeaves = (float) $leaveRequests->filter(fn ($leave) => $leave->status === 'approved' && !$isDayOff($leave))->sum('no_of_days');
+        $approvedDayOff = (float) $leaveRequests->filter(fn ($leave) => $leave->status === 'approved' && $isDayOff($leave))->sum('no_of_days');
+        $pendingLeaves = (float) $leaveRequests->filter(fn ($leave) => $leave->status === 'pending' && !$isDayOff($leave))->sum('no_of_days');
+        $pendingDayOff = (float) $leaveRequests->filter(fn ($leave) => $leave->status === 'pending' && $isDayOff($leave))->sum('no_of_days');
+        $unapprovedLeaves = (float) $leaveRequests->whereIn('status', ['pending', 'rejected'])->sum('no_of_days');
+        $presentDays = $attendance->where('attendance_status', 1)->count();
+        $workingDays = Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1;
+        $lateCount = $attendance->filter(function ($record) use ($employee) {
+            $checkIn = $record->check_in_at ?: $record->night_checkin;
+            $officeTime = $record->officeTime ?: $employee->officeTime;
+            if (!$checkIn || !$officeTime?->opening_time) {
+                return false;
+            }
+            $allowed = Carbon::parse($record->attendance_date . ' ' . $officeTime->opening_time);
+            if ($officeTime->checkin_after !== null) {
+                $allowed->addMinutes((int) $officeTime->checkin_after);
+            }
+
+            return Carbon::parse($checkIn)->gt($allowed);
+        })->count();
+        $noCheckout = $attendance->filter(fn ($record) => ($record->check_in_at || $record->night_checkin) && !$record->check_out_at && !$record->night_checkout)->count();
+        $workedHours = (float) $attendance->sum('worked_hour');
+        $timeLeaveApproved = $timeLeaveRequests->where('status', 'approved')->count();
+        $timeLeavePending = $timeLeaveRequests->where('status', 'pending')->count();
+        $officeTime = $employee->officeTime
+            ? trim(($employee->officeTime->shift ? $employee->officeTime->shift . ' ' : '') . '(' . $employee->officeTime->opening_time . ' - ' . $employee->officeTime->closing_time . ')')
+            : null;
 
         return [
             'from' => $from,
             'to' => $to,
-            'working_days' => Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1,
-            'present_days' => $attendance->where('attendance_status', 1)->count(),
-            'absent_days' => max(0, Carbon::parse($from)->diffInWeekdays(Carbon::parse($to)) + 1 - $attendance->where('attendance_status', 1)->count() - (float) $approvedLeaves),
-            'approved_leave_days' => (float) $approvedLeaves,
-            'unapproved_leave_days' => (float) $unapprovedLeaves,
-            'late_count' => 0,
+            'working_days' => $workingDays,
+            'present_days' => $presentDays,
+            'absent_days' => max(0, $workingDays - $presentDays - $approvedLeaves - $approvedDayOff),
+            'approved_leave_days' => $approvedLeaves,
+            'leave_days' => $approvedLeaves,
+            'off_day_days' => $approvedDayOff,
+            'pending_day_off_days' => $pendingDayOff,
+            'pending_leave_days' => $pendingLeaves,
+            'unapproved_leave_days' => $unapprovedLeaves,
+            'late_count' => $lateCount,
             'late_minutes' => 0,
             'early_leave_count' => 0,
             'early_leave_minutes' => 0,
             'overtime_hours' => (float) $attendance->sum('overtime'),
-            'attendance_score' => min(10, max(0, $attendance->where('attendance_status', 1)->count())),
+            'time_leave_days' => $timeLeaveApproved,
+            'time_leave_requests' => $timeLeaveRequests->count(),
+            'pending_time_leave_requests' => $timeLeavePending,
+            'no_checkout_days' => $noCheckout,
+            'worked_hours' => $workedHours,
+            'not_late_until' => $employee->officeTime?->checkin_after !== null ? $employee->officeTime->checkin_after . ' minutes after start' : null,
+            'office_time' => $officeTime,
+            'attendance_score' => min(10, max(0, $presentDays)),
         ];
     }
 

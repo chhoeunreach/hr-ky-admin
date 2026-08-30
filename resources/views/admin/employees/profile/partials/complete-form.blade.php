@@ -260,7 +260,16 @@
             {!! $field('អវត្តមាន', $attendanceSummary['absent_days'] ?? null) !!}
             {!! $field('មកយឺត', $attendanceSummary['late_count'] ?? null) !!}
             {!! $field('ចេញមុន', $attendanceSummary['early_leave_count'] ?? null) !!}
-            {!! $field('ឈប់មានច្បាប់', $attendanceSummary['approved_leave_days'] ?? null) !!}
+            {!! $field('ឈប់មានច្បាប់', $attendanceSummary['leave_days'] ?? null) !!}
+            {!! $field('ថ្ងៃឈប់សម្រាក', $attendanceSummary['off_day_days'] ?? null) !!}
+            {!! $field('រង់ចាំ Day Off', $attendanceSummary['pending_day_off_days'] ?? null) !!}
+            {!! $field('រង់ចាំ Leave', $attendanceSummary['pending_leave_days'] ?? null) !!}
+            {!! $field('Time Leave', $attendanceSummary['time_leave_days'] ?? null) !!}
+            {!! $field('Time Leave Request', $attendanceSummary['time_leave_requests'] ?? null) !!}
+            {!! $field('No Checkout', $attendanceSummary['no_checkout_days'] ?? null) !!}
+            {!! $field('Worked Hours', $attendanceSummary['worked_hours'] ?? null) !!}
+            {!! $field('Not Late Until', $attendanceSummary['not_late_until'] ?? null) !!}
+            {!! $field('Office Time', $attendanceSummary['office_time'] ?? null) !!}
             {!! $field('ឈប់គ្មានច្បាប់', $attendanceSummary['unapproved_leave_days'] ?? null) !!}
             {!! $field('OT', $attendanceSummary['overtime_hours'] ?? null) !!}
         </div>

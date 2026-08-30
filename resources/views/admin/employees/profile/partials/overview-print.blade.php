@@ -1,7 +1,7 @@
 @php
     $formatDate = fn ($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') : '____/____/________';
     $line = fn ($value) => filled($value) ? $value : '____________';
-    $warningRecords = $discipline ?? collect();
+    $warningRecords = ($warningOverviewRecords ?? collect())->isNotEmpty() ? $warningOverviewRecords : ($discipline ?? collect());
     $generatedDate = now()->format('Y-m-d');
     $monthStart = now()->startOfMonth();
     $monthEnd = now()->endOfMonth();
@@ -22,7 +22,37 @@
     ];
     $typeCounts = $warningRecords->groupBy(fn ($record) => $record->record_type ?: 'other')->map->count();
     $severityCounts = $warningRecords->groupBy(fn ($record) => $record->severity ?: 'Other / ផ្សេងៗ')->map->count();
-    $recentWarnings = $warningRecords->take(8);
+    $departmentBranchGroups = $warningRecords
+        ->groupBy(fn ($record) => $line($record->employee?->department?->dept_name) . ' / ' . $line($record->employee?->branch?->name))
+        ->map(function ($records, $label) use ($monthStart, $monthEnd) {
+            return [
+                'label' => $label,
+                'total' => $records->count(),
+                'this_month' => $records->filter(fn ($record) => $record->incident_date && $record->incident_date->between($monthStart, $monthEnd))->count(),
+                'open' => $records->whereNotIn('status', ['resolved', 'cancelled'])->count(),
+                'resolved' => $records->where('status', 'resolved')->count(),
+            ];
+        })
+        ->sortByDesc('total')
+        ->values();
+    $repeatedEmployees = $warningRecords
+        ->groupBy('employee_id')
+        ->map(function ($records) {
+            $latest = $records->sortByDesc(fn ($record) => optional($record->incident_date)->timestamp ?: 0)->first();
+            return [
+                'employee' => $latest?->employee,
+                'count' => $records->count(),
+                'latest' => $latest,
+            ];
+        })
+        ->filter(fn ($item) => $item['count'] > 1)
+        ->sortByDesc('count')
+        ->values();
+    $openFollowUps = $warningRecords
+        ->whereNotIn('status', ['resolved', 'cancelled'])
+        ->sortBy(fn ($record) => optional($record->incident_date)->timestamp ?: PHP_INT_MAX)
+        ->values();
+    $recentWarnings = $warningRecords;
 @endphp
 
 <div class="employee-complete-toolbar mt-3">
@@ -46,23 +76,23 @@
         </div>
         <div>
             <small>Branch / សាខា</small>
-            <strong>{{ $line($employee->branch?->name) }}</strong>
+            <strong>All Available Branches</strong>
         </div>
         <div>
             <small>Generated Date / កាលបរិច្ឆេទ</small>
             <strong>{{ $generatedDate }}</strong>
         </div>
         <div>
-            <small>Employee / បុគ្គលិក</small>
-            <strong>{{ $line($employee->name) }}</strong>
+            <small>Employees / បុគ្គលិក</small>
+            <strong>{{ $warningRecords->pluck('employee_id')->unique()->count() }}</strong>
         </div>
         <div>
             <small>Department / ផ្នែក</small>
-            <strong>{{ $line($employee->department?->dept_name) }}</strong>
+            <strong>All Available Departments</strong>
         </div>
         <div>
-            <small>Employee ID</small>
-            <strong>{{ $line($employee->employee_code ?: $employee->username) }}</strong>
+            <small>Records / ឯកសារ</small>
+            <strong>{{ $totalWarnings }}</strong>
         </div>
     </div>
 
@@ -75,6 +105,34 @@
             <div><small>Final<br>ចុងក្រោយ</small><strong>{{ $finalWarnings }}</strong></div>
             <div><small>Pending Follow-up<br>រង់ចាំតាមដាន</small><strong>{{ $pendingFollowUp }}</strong></div>
         </div>
+    </div>
+
+    <div class="employee-complete-section">
+        <h6>ATTENDANCE SUMMARY / សង្ខេបវត្តមាន</h6>
+        <table class="table table-sm employee-overview-table mb-0">
+            <tbody>
+            <tr>
+                <td><strong>Working Life</strong><br>{{ $summary['years_of_service'] ?? 'N/A' }}</td>
+                <td><strong>Present</strong><br>{{ $attendanceSummary['present_days'] ?? 0 }}</td>
+                <td><strong>Late</strong><br>{{ $attendanceSummary['late_count'] ?? 0 }}</td>
+                <td><strong>Absent</strong><br>{{ $attendanceSummary['absent_days'] ?? 0 }}</td>
+                <td><strong>Leave</strong><br>{{ $attendanceSummary['leave_days'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <td><strong>Off Day</strong><br>{{ $attendanceSummary['off_day_days'] ?? 0 }}</td>
+                <td><strong>Pending Day Off</strong><br>{{ $attendanceSummary['pending_day_off_days'] ?? 0 }}</td>
+                <td><strong>Pending Leave</strong><br>{{ $attendanceSummary['pending_leave_days'] ?? 0 }}</td>
+                <td><strong>Time Leave</strong><br>{{ $attendanceSummary['time_leave_days'] ?? 0 }}</td>
+                <td><strong>Time Leave Request</strong><br>{{ $attendanceSummary['time_leave_requests'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <td><strong>No Checkout</strong><br>{{ $attendanceSummary['no_checkout_days'] ?? 0 }}</td>
+                <td><strong>Worked Hours</strong><br>{{ $attendanceSummary['worked_hours'] ?? 0 }}</td>
+                <td><strong>Not Late Until</strong><br>{{ $attendanceSummary['not_late_until'] ?? 'N/A' }}</td>
+                <td colspan="2"><strong>Office Time</strong><br>{{ $attendanceSummary['office_time'] ?? 'N/A' }}</td>
+            </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="employee-complete-section">
@@ -134,16 +192,17 @@
         <table class="table table-sm employee-overview-table mb-0">
             <thead><tr><th>Department / Branch</th><th>Total</th><th>This Month</th><th>Open</th><th>Resolved</th></tr></thead>
             <tbody>
-            <tr>
-                <td>{{ $line($employee->department?->dept_name) }} / {{ $line($employee->branch?->name) }}</td>
-                <td>{{ $totalWarnings }}</td>
-                <td>{{ $thisMonthWarnings }}</td>
-                <td>{{ $pendingFollowUp }}</td>
-                <td>{{ $statusCounts->get('resolved', 0) }}</td>
-            </tr>
-            @for($i = 0; $i < 3; $i++)
-                <tr><td>________________</td><td>___</td><td>___</td><td>___</td><td>___</td></tr>
-            @endfor
+            @forelse($departmentBranchGroups as $group)
+                <tr>
+                    <td>{{ $group['label'] }}</td>
+                    <td>{{ $group['total'] }}</td>
+                    <td>{{ $group['this_month'] }}</td>
+                    <td>{{ $group['open'] }}</td>
+                    <td>{{ $group['resolved'] }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center">No warning records found</td></tr>
+            @endforelse
             </tbody>
         </table>
     </div>
@@ -153,16 +212,17 @@
         <table class="table table-sm employee-overview-table mb-0">
             <thead><tr><th>Employee</th><th>Department</th><th>Warnings</th><th>Latest Warning</th><th>Status</th></tr></thead>
             <tbody>
-            <tr>
-                <td>{{ $line($employee->name) }}</td>
-                <td>{{ $line($employee->department?->dept_name) }}</td>
-                <td>{{ $totalWarnings }}</td>
-                <td>{{ $formatDate($warningRecords->first()?->incident_date) }}</td>
-                <td>{{ $line($warningRecords->first()?->status) }}</td>
-            </tr>
-            @for($i = 0; $i < 3; $i++)
-                <tr><td>____________</td><td>____________</td><td>___</td><td>____/____/____</td><td>____________</td></tr>
-            @endfor
+            @forelse($repeatedEmployees as $item)
+                <tr>
+                    <td>{{ $line($item['employee']?->name) }}</td>
+                    <td>{{ $line($item['employee']?->department?->dept_name) }}</td>
+                    <td>{{ $item['count'] }}</td>
+                    <td>{{ $formatDate($item['latest']?->incident_date) }}</td>
+                    <td>{{ $line($item['latest']?->status) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center">No repeated warning employees found</td></tr>
+            @endforelse
             </tbody>
         </table>
     </div>
@@ -172,9 +232,17 @@
         <table class="table table-sm employee-overview-table mb-0">
             <thead><tr><th>Employee</th><th>Warning</th><th>Follow-up Date</th><th>Responsible</th><th>Status</th></tr></thead>
             <tbody>
-            @for($i = 0; $i < 4; $i++)
-                <tr><td>____________</td><td>____________</td><td>____/____/____</td><td>____________</td><td>____________</td></tr>
-            @endfor
+            @forelse($openFollowUps as $record)
+                <tr>
+                    <td>{{ $line($record->employee?->name) }}</td>
+                    <td>{{ $line($record->title) }}</td>
+                    <td>{{ $formatDate($record->incident_date) }}</td>
+                    <td>{{ $line($record->issued_by) }}</td>
+                    <td>{{ $line($record->status) }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center">No open follow-up records found</td></tr>
+            @endforelse
             </tbody>
         </table>
     </div>
@@ -182,20 +250,22 @@
     <div class="employee-complete-section">
         <h6>8. RECENT WARNINGS / ការព្រមានថ្មីៗ</h6>
         <table class="table table-sm employee-overview-table mb-0">
-            <thead><tr><th>Warning No.</th><th>Employee</th><th>Type</th><th>Category</th><th>Date</th><th>Status</th></tr></thead>
+            <thead><tr><th>Warning No.</th><th>Employee</th><th>Type</th><th>Category</th><th>Title</th><th>Action</th><th>Date</th><th>Status</th></tr></thead>
             <tbody>
             @forelse($recentWarnings as $record)
                 <tr>
                     <td>W-{{ str_pad((string) $record->id, 4, '0', STR_PAD_LEFT) }}</td>
-                    <td>{{ $employee->name }}</td>
+                    <td>{{ $line($record->employee?->name) }}</td>
                     <td>{{ ucfirst(str_replace('_', ' ', $record->record_type)) }}</td>
                     <td>{{ $line($record->severity) }}</td>
+                    <td>{{ $line($record->title) }}</td>
+                    <td>{{ $line($record->action_taken) }}</td>
                     <td>{{ $formatDate($record->incident_date) }}</td>
                     <td>{{ $line($record->status) }}</td>
                 </tr>
             @empty
                 @for($i = 0; $i < 5; $i++)
-                    <tr><td>W-_____</td><td>____________</td><td>____________</td><td>____________</td><td>____/____/____</td><td>____________</td></tr>
+                    <tr><td>W-_____</td><td>____________</td><td>____________</td><td>____________</td><td>____________</td><td>____________</td><td>____/____/____</td><td>____________</td></tr>
                 @endfor
             @endforelse
             </tbody>
