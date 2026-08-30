@@ -155,9 +155,11 @@
                         Filter
                     </button>
                     <h6 class="card-title mb-0">Employee Profile</h6>
-                    <button type="button" class="btn btn-outline-primary btn-sm ms-auto" onclick="window.print()">
-                        Print
-                    </button>
+                    @can('employee.profile.print')
+                        <button type="button" class="btn btn-outline-primary btn-sm ms-auto" onclick="window.print()">
+                            Print
+                        </button>
+                    @endcan
                 </div>
                 <h6 class="employee-profile-print-title d-none">Employee Profile</h6>
                 <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">

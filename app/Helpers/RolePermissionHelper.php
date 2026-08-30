@@ -391,6 +391,31 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Employee Profile Directory Print",
+                "permission_key" => "employee.profile.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Complete Form Print",
+                "permission_key" => "employee.complete_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Warning Overview Print",
+                "permission_key" => "employee.warning_overview.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Staff Warning Form Print",
+                "permission_key" => "employee.warning_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Contract Form Print",
+                "permission_key" => "employee.contract_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Employee Employment View",
                 "permission_key" => "employee.employment.view",
                 "permission_groups_id" => 5

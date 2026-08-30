@@ -238,11 +238,13 @@
     </div>
 @endcan
 
-<div class="employee-complete-toolbar">
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printContractForm()">
-        <i class="link-icon" data-feather="printer"></i> Print Saved Contract
-    </button>
-</div>
+@can('employee.contract_form.print')
+    <div class="employee-complete-toolbar">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printContractForm()">
+            <i class="link-icon" data-feather="printer"></i> Print Saved Contract
+        </button>
+    </div>
+@endcan
 
 <div class="employee-complete-paper employee-contract-paper">
     <div class="employee-complete-header">

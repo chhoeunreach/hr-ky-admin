@@ -908,6 +908,10 @@
                     @endif
 
                     <div class="tab-pane fade" id="personal" role="tabpanel">
+                        @if($canViewDocument)
+                            @include('admin.employees.profile.partials.documents')
+                        @endif
+
                         <form method="post" action="{{ route('admin.employees.profile.update', $employee->id) }}">
                             @csrf
                             @method('PUT')
@@ -943,10 +947,6 @@
                                 <button class="btn btn-primary">Save Profile</button>
                             @endcan
                         </form>
-
-                        @if($canViewDocument)
-                            @include('admin.employees.profile.partials.documents')
-                        @endif
                     </div>
 
                     @if($canViewEmployment)
@@ -1063,7 +1063,18 @@
             document.getElementById('employeeContractPrintRoot')?.remove();
         }
 
-        function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass) {
+        const employeeProfilePrintPermissions = {
+            complete: @can('employee.complete_form.print') true @else false @endcan,
+            overview: @can('employee.warning_overview.print') true @else false @endcan,
+            warning: @can('employee.warning_form.print') true @else false @endcan,
+            contract: @can('employee.contract_form.print') true @else false @endcan,
+        };
+
+        function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
+            if (!employeeProfilePrintPermissions[printType]) {
+                return;
+            }
+
             cleanupEmployeeCompletePrintRoot();
 
             const paper = document.querySelector(sourceSelector);
@@ -1084,19 +1095,19 @@
         }
 
         function printEmployeeCompleteForm() {
-            printEmployeeProfilePaper('#complete-form .employee-complete-paper', 'employeeCompletePrintRoot', 'printing-complete-form');
+            printEmployeeProfilePaper('#complete-form .employee-complete-paper', 'employeeCompletePrintRoot', 'printing-complete-form', 'complete');
         }
 
         function printOverviewForm() {
-            printEmployeeProfilePaper('#overview .employee-overview-paper', 'employeeOverviewPrintRoot', 'printing-overview-form');
+            printEmployeeProfilePaper('#overview .employee-overview-paper', 'employeeOverviewPrintRoot', 'printing-overview-form', 'overview');
         }
 
         function printStaffWarningForm() {
-            printEmployeeProfilePaper('#staff-warning-form .employee-warning-paper', 'employeeWarningPrintRoot', 'printing-warning-form');
+            printEmployeeProfilePaper('#staff-warning-form .employee-warning-paper', 'employeeWarningPrintRoot', 'printing-warning-form', 'warning');
         }
 
         function printContractForm() {
-            printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form');
+            printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form', 'contract');
         }
 
         window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);

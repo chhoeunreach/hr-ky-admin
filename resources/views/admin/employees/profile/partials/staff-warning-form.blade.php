@@ -33,11 +33,13 @@
     ];
 @endphp
 
-<div class="employee-complete-toolbar">
-    <button type="button" class="btn btn-outline-danger btn-sm" onclick="printStaffWarningForm()">
-        <i class="link-icon" data-feather="printer"></i> Print Staff Warning
-    </button>
-</div>
+@can('employee.warning_form.print')
+    <div class="employee-complete-toolbar">
+        <button type="button" class="btn btn-outline-danger btn-sm" onclick="printStaffWarningForm()">
+            <i class="link-icon" data-feather="printer"></i> Print Staff Warning
+        </button>
+    </div>
+@endcan
 
 <div class="employee-complete-paper employee-warning-paper">
     <div class="employee-complete-header">

@@ -20,9 +20,11 @@
             Update Before Print
         </button>
     @endcan
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmployeeCompleteForm()">
-        <i class="link-icon" data-feather="printer"></i> Print
-    </button>
+    @can('employee.complete_form.print')
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmployeeCompleteForm()">
+            <i class="link-icon" data-feather="printer"></i> Print
+        </button>
+    @endcan
 </div>
 
 @can('employee.profile.edit')

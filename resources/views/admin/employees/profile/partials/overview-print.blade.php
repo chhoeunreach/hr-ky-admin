@@ -55,11 +55,13 @@
     $recentWarnings = $warningRecords;
 @endphp
 
-<div class="employee-complete-toolbar mt-3">
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printOverviewForm()">
-        <i class="link-icon" data-feather="printer"></i> Overview On Print
-    </button>
-</div>
+@can('employee.warning_overview.print')
+    <div class="employee-complete-toolbar mt-3">
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printOverviewForm()">
+            <i class="link-icon" data-feather="printer"></i> Overview On Print
+        </button>
+    </div>
+@endcan
 
 <div class="employee-complete-paper employee-overview-paper mt-3">
     <div class="employee-complete-header">
