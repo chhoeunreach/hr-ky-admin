@@ -14,6 +14,7 @@
             'probation_end_date' => 'Probation End Date',
             'contract_start_date' => 'Contract Start Date',
             'contract_end_date' => 'Contract End Date',
+            'last_working_date' => 'Last Working Date',
             'weekly_day_off' => 'Weekly Day Off',
         ] as $field => $label)
             <div class="col-lg-3 col-md-6 mb-3">
@@ -21,6 +22,10 @@
                 <input class="form-control" name="{{ $field }}" type="{{ str_contains($field, 'date') ? 'date' : 'text' }}" value="{{ old($field, optional($profile->{$field})->format('Y-m-d') ?: $profile->{$field}) }}">
             </div>
         @endforeach
+        <div class="col-md-12 mb-3">
+            <label class="form-label">Employment End Reason</label>
+            <textarea class="form-control" name="employment_end_reason" rows="2">{{ old('employment_end_reason', $profile->employment_end_reason) }}</textarea>
+        </div>
     </div>
 </div>
 

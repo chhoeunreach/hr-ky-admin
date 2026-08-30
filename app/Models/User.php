@@ -264,6 +264,11 @@ class User extends Authenticatable
         return $this->hasOne(EmployeeProfile::class, 'employee_id', 'id');
     }
 
+    public function employeeContract(): HasOne
+    {
+        return $this->hasOne(EmployeeContract::class, 'employee_id', 'id');
+    }
+
     public function employmentHistory(): HasMany
     {
         return $this->hasMany(EmployeeEmploymentHistory::class, 'employee_id', 'id');
@@ -272,6 +277,11 @@ class User extends Authenticatable
     public function employeeSalaryHistory(): HasMany
     {
         return $this->hasMany(EmployeeSalaryHistory::class, 'employee_id', 'id');
+    }
+
+    public function employeePerformanceReviews(): HasMany
+    {
+        return $this->hasMany(PerformanceReview::class, 'employee_id', 'id');
     }
 
     public function employeeInterviews(): HasMany

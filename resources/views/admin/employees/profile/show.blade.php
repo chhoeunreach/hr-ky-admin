@@ -42,15 +42,23 @@
                 $metric('Years of Service', $summary['years_of_service'] ?? null),
                 $metric('Employment Status', ucfirst($summary['employment_status'] ?? '')),
                 $metric('Probation Status', $summary['probation_status'] ?? null),
-                $metric('Evaluation Score', $summary['last_evaluation_score'] ?? null),
-                $metric('Evaluation Grade', $summary['evaluation_grade'] ?? null),
-                $metric('Next Evaluation', $summary['next_evaluation_date'] ?? null),
                 $metric('Attendance Score', $attendanceSummary['attendance_score'] ?? null),
                 $metric('Leave Balance', $leaveBalance),
-                $metric('Total Warnings', $summary['total_warnings'] ?? 0),
-                $metric('Total Rewards', $summary['total_rewards'] ?? 0),
-                $metric('Training Completed', $summary['training_completed'] ?? 0),
             ];
+            if ($canViewPerformance) {
+                $overviewMetrics[] = $metric('Evaluation Score', $summary['last_evaluation_score'] ?? null);
+                $overviewMetrics[] = $metric('Evaluation Grade', $summary['evaluation_grade'] ?? null);
+                $overviewMetrics[] = $metric('Next Evaluation', $summary['next_evaluation_date'] ?? null);
+            }
+            if ($canViewDiscipline) {
+                $overviewMetrics[] = $metric('Total Warnings', $summary['total_warnings'] ?? 0);
+            }
+            if ($canViewReward) {
+                $overviewMetrics[] = $metric('Total Rewards', $summary['total_rewards'] ?? 0);
+            }
+            if ($canViewTraining) {
+                $overviewMetrics[] = $metric('Training Completed', $summary['training_completed'] ?? 0);
+            }
             if ($canViewSalary) {
                 $overviewMetrics[] = $metric('Current Base Salary', $summary['current_base_salary'] ?? null);
                 $overviewMetrics[] = $metric('Last Salary Increase', $summary['last_salary_increase'] ?? null);
@@ -69,6 +77,51 @@
                 ['Learning / Training', 'Learn new skills and technical methods quickly', 5],
                 ['Communication & Initiative', 'Communicate well and seek ways to improve work', 5],
             ];
+            $tabs = [
+                'overview' => 'Overview',
+                'complete-form' => 'Complete Form',
+                'personal' => 'Personal',
+                'attendance' => 'Attendance',
+            ];
+            if ($canViewDocument) {
+                $tabs['contract-form'] = 'Contract Form';
+            }
+            if ($canViewDiscipline) {
+                $tabs['staff-warning-form'] = 'Staff Warning';
+            }
+            if ($canViewEmployment) {
+                $tabs['employment'] = 'Employment';
+            }
+            if ($canViewSalary) {
+                $tabs['salary'] = 'Salary';
+            }
+            if ($canViewInterview) {
+                $tabs['interview'] = 'Interview';
+            }
+            if ($canViewKpi) {
+                $tabs['kpi'] = 'KPI';
+            }
+            if ($canViewPerformance) {
+                $tabs['evaluation'] = 'Evaluation';
+            }
+            if ($canViewTraining) {
+                $tabs['training'] = 'Training';
+            }
+            if ($canViewReward) {
+                $tabs['rewards'] = 'Rewards';
+            }
+            if ($canViewDiscipline) {
+                $tabs['discipline'] = 'Discipline';
+            }
+            if ($canViewGoal) {
+                $tabs['goals'] = 'Goals';
+            }
+            if ($canViewDocument) {
+                $tabs['documents'] = 'Documents';
+            }
+            if ($canViewAudit) {
+                $tabs['history'] = 'History';
+            }
         @endphp
 
         <style>
@@ -162,7 +215,22 @@
                 margin: -6px;
                 padding: 18px 8px;
             }
-            #employeeCompletePrintRoot {
+            #staff-warning-form {
+                background: #eef2f7;
+                border-radius: 6px;
+                margin: -6px;
+                padding: 18px 8px;
+            }
+            #contract-form {
+                background: #eef2f7;
+                border-radius: 6px;
+                margin: -6px;
+                padding: 18px 8px;
+            }
+            #employeeOverviewPrintRoot,
+            #employeeCompletePrintRoot,
+            #employeeWarningPrintRoot,
+            #employeeContractPrintRoot {
                 display: none;
             }
             .employee-complete-paper {
@@ -349,6 +417,227 @@
             .employee-complete-signature strong {
                 color: var(--employee-complete-accent);
             }
+            .employee-warning-paper {
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 12mm 12mm;
+            }
+            .employee-warning-title {
+                color: #991b1b;
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: .7px;
+                margin-bottom: 4px;
+                text-transform: uppercase;
+            }
+            .employee-warning-paper .employee-complete-header {
+                border-bottom-color: #991b1b;
+            }
+            .employee-warning-section h6 {
+                background: linear-gradient(90deg, #fee2e2, #f8fafc);
+                border-left-color: #991b1b;
+            }
+            .employee-warning-checks {
+                display: grid;
+                gap: 8px 14px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                margin-top: 8px;
+            }
+            .employee-warning-check {
+                align-items: center;
+                display: flex;
+                gap: 8px;
+                min-height: 24px;
+            }
+            .employee-warning-box {
+                border: 1.5px solid #334155;
+                display: inline-block;
+                height: 13px;
+                width: 13px;
+            }
+            .employee-warning-lines {
+                border: 1px solid #dbe3ef;
+                min-height: 72px;
+                padding: 8px;
+            }
+            .employee-warning-lines.tall {
+                min-height: 96px;
+            }
+            .employee-warning-footer {
+                border-top: 2px solid #991b1b;
+                color: #64748b;
+                font-size: 10px;
+                font-weight: 700;
+                margin-top: 12px;
+                padding-top: 8px;
+                text-align: center;
+                text-transform: uppercase;
+            }
+            .employee-warning-signatures {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .employee-contract-paper {
+                --employee-complete-accent: #1d4ed8;
+                --employee-complete-accent-soft: #eff6ff;
+                --employee-complete-accent-rail: rgba(29, 78, 216, .13);
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 11mm 12mm;
+            }
+            .employee-contract-title {
+                color: #1d4ed8;
+                font-size: 20px;
+                font-weight: 800;
+                margin-bottom: 3px;
+            }
+            .employee-contract-paper .employee-complete-header {
+                border-bottom-color: #1d4ed8;
+            }
+            .employee-contract-meta {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .employee-contract-party-title {
+                color: #1e3a8a;
+                font-size: 11px;
+                font-weight: 800;
+                margin: 7px 0 5px;
+            }
+            .employee-contract-article {
+                border: 1px solid #dbe3ef;
+                border-radius: 5px;
+                margin-bottom: 7px;
+                padding: 7px 9px;
+            }
+            .employee-contract-article h6 {
+                background: transparent;
+                border-left: 0;
+                color: #1e3a8a;
+                display: block;
+                font-size: 11px;
+                margin: 0 0 4px;
+                padding: 0;
+            }
+            .employee-contract-article p,
+            .employee-contract-article li {
+                margin-bottom: 3px;
+            }
+            .employee-contract-article ul {
+                margin-bottom: 0;
+                padding-left: 18px;
+            }
+            .employee-contract-rule-box {
+                border: 1px solid #111827;
+                margin: 6px 0;
+                padding: 7px 10px;
+            }
+            .employee-contract-diamond-list {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .employee-contract-diamond-list li {
+                color: #111827;
+                font-size: 10.5px;
+                line-height: 1.55;
+                margin-bottom: 4px;
+                padding-left: 18px;
+                position: relative;
+            }
+            .employee-contract-diamond-list li::before {
+                color: #111827;
+                content: "❖";
+                font-size: 10px;
+                font-weight: 700;
+                left: 0;
+                position: absolute;
+                top: 0;
+            }
+            .employee-contract-red {
+                color: #dc2626;
+                font-weight: 800;
+            }
+            .employee-contract-signatures {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .employee-contract-attachments {
+                border-top: 1px solid #dbe3ef;
+                margin-top: 8px;
+                padding-top: 7px;
+            }
+            .employee-overview-paper {
+                --employee-complete-accent: #0f766e;
+                --employee-complete-accent-soft: #ecfdf5;
+                --employee-complete-accent-rail: rgba(15, 118, 110, .13);
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 10mm 10mm 8mm;
+            }
+            .employee-overview-title {
+                color: #0f766e;
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: .7px;
+                text-transform: uppercase;
+            }
+            .employee-overview-subtitle {
+                color: #334155;
+                font-size: 12px;
+                font-weight: 700;
+                margin-top: 3px;
+            }
+            .employee-overview-summary {
+                display: grid;
+                gap: 6px;
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+                margin-bottom: 10px;
+            }
+            .employee-overview-summary div {
+                border: 1px solid #dbe3ef;
+                border-radius: 5px;
+                min-height: 44px;
+                padding: 6px;
+                text-align: center;
+            }
+            .employee-overview-summary small {
+                color: #64748b;
+                display: block;
+                font-size: 8.5px;
+                font-weight: 700;
+                line-height: 1.2;
+                margin-bottom: 3px;
+            }
+            .employee-overview-summary strong {
+                color: #0f172a;
+                font-size: 13px;
+                font-weight: 800;
+            }
+            .employee-overview-table th,
+            .employee-overview-table td {
+                border: 1px solid #dbe3ef !important;
+                font-size: 8.8px;
+                padding: 3px 4px !important;
+                vertical-align: top;
+            }
+            .employee-overview-table th {
+                background: #f1f5f9;
+                color: #334155;
+                font-weight: 800;
+            }
+            .employee-overview-signatures {
+                display: grid;
+                gap: 8px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .employee-overview-footer {
+                border-top: 2px solid #0f766e;
+                color: #64748b;
+                font-size: 9px;
+                font-weight: 800;
+                margin-top: 10px;
+                padding-top: 7px;
+                text-align: center;
+                text-transform: uppercase;
+            }
             @media (max-width: 575.98px) {
                 .employee-360-hero {
                     grid-template-columns: 1fr;
@@ -358,7 +647,10 @@
                     justify-content: center;
                 }
                 .employee-complete-list,
-                .employee-complete-signatures {
+                .employee-complete-signatures,
+                .employee-warning-signatures,
+                .employee-contract-signatures,
+                .employee-contract-meta {
                     grid-template-columns: 1fr;
                 }
                 .employee-complete-field {
@@ -394,14 +686,30 @@
                 }
                 #complete-form,
                 #complete-form *,
+                #staff-warning-form,
+                #staff-warning-form *,
+                #contract-form,
+                #contract-form *,
+                #employeeOverviewPrintRoot,
+                #employeeOverviewPrintRoot *,
                 #employeeCompletePrintRoot,
-                #employeeCompletePrintRoot * {
+                #employeeCompletePrintRoot *,
+                #employeeWarningPrintRoot,
+                #employeeWarningPrintRoot *,
+                #employeeContractPrintRoot,
+                #employeeContractPrintRoot * {
                     visibility: visible !important;
                 }
-                body.printing-complete-form .main-wrapper {
+                body.printing-overview-form .main-wrapper,
+                body.printing-complete-form .main-wrapper,
+                body.printing-warning-form .main-wrapper,
+                body.printing-contract-form .main-wrapper {
                     display: none !important;
                 }
-                body.printing-complete-form #employeeCompletePrintRoot {
+                body.printing-overview-form #employeeOverviewPrintRoot,
+                body.printing-complete-form #employeeCompletePrintRoot,
+                body.printing-warning-form #employeeWarningPrintRoot,
+                body.printing-contract-form #employeeContractPrintRoot {
                     background: #ffffff !important;
                     display: block !important;
                     margin: 0 !important;
@@ -438,6 +746,32 @@
                     width: 100% !important;
                 }
                 #complete-form {
+                    background: transparent;
+                    box-sizing: border-box;
+                    display: block !important;
+                    opacity: 1 !important;
+                    margin: 0 !important;
+                    min-height: auto !important;
+                    padding: 0 !important;
+                    position: static !important;
+                    transform: none !important;
+                    visibility: visible !important;
+                    width: 100% !important;
+                }
+                #staff-warning-form {
+                    background: transparent;
+                    box-sizing: border-box;
+                    display: block !important;
+                    opacity: 1 !important;
+                    margin: 0 !important;
+                    min-height: auto !important;
+                    padding: 0 !important;
+                    position: static !important;
+                    transform: none !important;
+                    visibility: visible !important;
+                    width: 100% !important;
+                }
+                #contract-form {
                     background: transparent;
                     box-sizing: border-box;
                     display: block !important;
@@ -490,6 +824,18 @@
                 .employee-complete-table td {
                     font-size: 9.5px;
                 }
+                .employee-warning-paper {
+                    min-height: 277mm;
+                    padding: 8mm 8mm 6mm;
+                }
+                .employee-contract-paper {
+                    min-height: 277mm;
+                    padding: 8mm 8mm 6mm;
+                }
+                .employee-overview-paper {
+                    min-height: 277mm;
+                    padding: 8mm 8mm 6mm;
+                }
             }
         </style>
 
@@ -507,23 +853,7 @@
         <div class="card">
             <div class="card-header pb-0">
                 <ul class="nav nav-tabs employee-360-tabs" id="employee360Tabs" role="tablist">
-                    @foreach([
-                        'overview' => 'Overview',
-                        'complete-form' => 'Complete Form',
-                        'personal' => 'Personal',
-                        'employment' => 'Employment',
-                        'salary' => 'Salary',
-                        'interview' => 'Interview',
-                        'kpi' => 'KPI',
-                        'evaluation' => 'Evaluation',
-                        'attendance' => 'Attendance',
-                        'training' => 'Training',
-                        'rewards' => 'Rewards',
-                        'discipline' => 'Discipline',
-                        'goals' => 'Goals',
-                        'documents' => 'Documents',
-                        'history' => 'History',
-                    ] as $tab => $label)
+                    @foreach($tabs as $tab => $label)
                         <li class="nav-item" role="presentation">
                             <button class="nav-link {{ $loop->first ? 'active' : '' }}"
                                     id="{{ $tab }}-tab"
@@ -546,11 +876,26 @@
                                 </div>
                             @endforeach
                         </div>
+                        @if($canViewDiscipline)
+                            @include('admin.employees.profile.partials.overview-print')
+                        @endif
                     </div>
 
                     <div class="tab-pane fade" id="complete-form" role="tabpanel">
                         @include('admin.employees.profile.partials.complete-form')
                     </div>
+
+                    @if($canViewDocument)
+                        <div class="tab-pane fade" id="contract-form" role="tabpanel">
+                            @include('admin.employees.profile.partials.contract-form')
+                        </div>
+                    @endif
+
+                    @if($canViewDiscipline)
+                        <div class="tab-pane fade" id="staff-warning-form" role="tabpanel">
+                            @include('admin.employees.profile.partials.staff-warning-form')
+                        </div>
+                    @endif
 
                     <div class="tab-pane fade" id="personal" role="tabpanel">
                         <form method="post" action="{{ route('admin.employees.profile.update', $employee->id) }}">
@@ -590,25 +935,35 @@
                         </form>
                     </div>
 
-                    <div class="tab-pane fade" id="employment" role="tabpanel">
-                        @include('admin.employees.profile.partials.employment')
-                    </div>
+                    @if($canViewEmployment)
+                        <div class="tab-pane fade" id="employment" role="tabpanel">
+                            @include('admin.employees.profile.partials.employment')
+                        </div>
+                    @endif
 
-                    <div class="tab-pane fade" id="salary" role="tabpanel">
-                        @include('admin.employees.profile.partials.salary')
-                    </div>
+                    @if($canViewSalary)
+                        <div class="tab-pane fade" id="salary" role="tabpanel">
+                            @include('admin.employees.profile.partials.salary')
+                        </div>
+                    @endif
 
-                    <div class="tab-pane fade" id="interview" role="tabpanel">
-                        @include('admin.employees.profile.partials.interview')
-                    </div>
+                    @if($canViewInterview)
+                        <div class="tab-pane fade" id="interview" role="tabpanel">
+                            @include('admin.employees.profile.partials.interview')
+                        </div>
+                    @endif
 
-                    <div class="tab-pane fade" id="kpi" role="tabpanel">
-                        @include('admin.employees.profile.partials.kpi')
-                    </div>
+                    @if($canViewKpi)
+                        <div class="tab-pane fade" id="kpi" role="tabpanel">
+                            @include('admin.employees.profile.partials.kpi')
+                        </div>
+                    @endif
 
-                    <div class="tab-pane fade" id="evaluation" role="tabpanel">
-                        @include('admin.employees.profile.partials.evaluation')
-                    </div>
+                    @if($canViewPerformance)
+                        <div class="tab-pane fade" id="evaluation" role="tabpanel">
+                            @include('admin.employees.profile.partials.evaluation')
+                        </div>
+                    @endif
 
                     <div class="tab-pane fade" id="attendance" role="tabpanel">
                         <div class="employee-360-grid">
@@ -623,52 +978,64 @@
                         </div>
                     </div>
 
-                    <div class="tab-pane fade" id="training" role="tabpanel">
-                        @include('admin.employees.profile.partials.training')
-                    </div>
-
-                    <div class="tab-pane fade" id="rewards" role="tabpanel">
-                        @include('admin.employees.profile.partials.rewards')
-                    </div>
-
-                    <div class="tab-pane fade" id="discipline" role="tabpanel">
-                        @include('admin.employees.profile.partials.discipline')
-                    </div>
-
-                    <div class="tab-pane fade" id="goals" role="tabpanel">
-                        @include('admin.employees.profile.partials.goals')
-                    </div>
-
-                    <div class="tab-pane fade" id="documents" role="tabpanel">
-                        @include('admin.employees.profile.partials.documents')
-                    </div>
-
-                    <div class="tab-pane fade" id="history" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-sm employee-360-table">
-                                <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Module</th>
-                                    <th>Action</th>
-                                    <th>Record</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                @forelse($auditLogs as $log)
-                                    <tr>
-                                        <td>{{ $log->created_at }}</td>
-                                        <td>{{ ucfirst($log->module) }}</td>
-                                        <td>{{ ucfirst($log->action) }}</td>
-                                        <td>{{ $log->record_id }}</td>
-                                    </tr>
-                                @empty
-                                    <tr><td colspan="4" class="text-center">No records found</td></tr>
-                                @endforelse
-                                </tbody>
-                            </table>
+                    @if($canViewTraining)
+                        <div class="tab-pane fade" id="training" role="tabpanel">
+                            @include('admin.employees.profile.partials.training')
                         </div>
-                    </div>
+                    @endif
+
+                    @if($canViewReward)
+                        <div class="tab-pane fade" id="rewards" role="tabpanel">
+                            @include('admin.employees.profile.partials.rewards')
+                        </div>
+                    @endif
+
+                    @if($canViewDiscipline)
+                        <div class="tab-pane fade" id="discipline" role="tabpanel">
+                            @include('admin.employees.profile.partials.discipline')
+                        </div>
+                    @endif
+
+                    @if($canViewGoal)
+                        <div class="tab-pane fade" id="goals" role="tabpanel">
+                            @include('admin.employees.profile.partials.goals')
+                        </div>
+                    @endif
+
+                    @if($canViewDocument)
+                        <div class="tab-pane fade" id="documents" role="tabpanel">
+                            @include('admin.employees.profile.partials.documents')
+                        </div>
+                    @endif
+
+                    @if($canViewAudit)
+                        <div class="tab-pane fade" id="history" role="tabpanel">
+                            <div class="table-responsive">
+                                <table class="table table-sm employee-360-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Module</th>
+                                        <th>Action</th>
+                                        <th>Record</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @forelse($auditLogs as $log)
+                                        <tr>
+                                            <td>{{ $log->created_at }}</td>
+                                            <td>{{ ucfirst($log->module) }}</td>
+                                            <td>{{ ucfirst($log->action) }}</td>
+                                            <td>{{ $log->record_id }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="4" class="text-center">No records found</td></tr>
+                                    @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -679,30 +1046,72 @@
     <script>
         function cleanupEmployeeCompletePrintRoot() {
             document.body.classList.remove('printing-complete-form');
+            document.body.classList.remove('printing-overview-form');
+            document.body.classList.remove('printing-warning-form');
+            document.body.classList.remove('printing-contract-form');
+            document.getElementById('employeeOverviewPrintRoot')?.remove();
             document.getElementById('employeeCompletePrintRoot')?.remove();
+            document.getElementById('employeeWarningPrintRoot')?.remove();
+            document.getElementById('employeeContractPrintRoot')?.remove();
         }
 
-        function printEmployeeCompleteForm() {
+        function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass) {
             cleanupEmployeeCompletePrintRoot();
 
-            const paper = document.querySelector('#complete-form .employee-complete-paper');
+            const paper = document.querySelector(sourceSelector);
             if (!paper) {
                 window.print();
                 return;
             }
 
             const printRoot = document.createElement('div');
-            printRoot.id = 'employeeCompletePrintRoot';
+            printRoot.id = rootId;
             printRoot.appendChild(paper.cloneNode(true));
             document.body.appendChild(printRoot);
-            document.body.classList.add('printing-complete-form');
+            document.body.classList.add(bodyClass);
 
             window.setTimeout(function () {
                 window.print();
             }, 50);
         }
 
+        function printEmployeeCompleteForm() {
+            printEmployeeProfilePaper('#complete-form .employee-complete-paper', 'employeeCompletePrintRoot', 'printing-complete-form');
+        }
+
+        function printOverviewForm() {
+            printEmployeeProfilePaper('#overview .employee-overview-paper', 'employeeOverviewPrintRoot', 'printing-overview-form');
+        }
+
+        function printStaffWarningForm() {
+            printEmployeeProfilePaper('#staff-warning-form .employee-warning-paper', 'employeeWarningPrintRoot', 'printing-warning-form');
+        }
+
+        function printContractForm() {
+            printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form');
+        }
+
         window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);
+
+        const profileParams = new URLSearchParams(window.location.search);
+        const requestedTab = profileParams.get('tab');
+        if (requestedTab) {
+            const tabButton = document.querySelector(`[data-bs-target="#${CSS.escape(requestedTab)}"]`);
+            if (tabButton && window.bootstrap?.Tab) {
+                bootstrap.Tab.getOrCreateInstance(tabButton).show();
+            }
+        }
+
+        @if(old('complete_profile_modal'))
+            const completeTabButton = document.querySelector('[data-bs-target="#complete-form"]');
+            if (completeTabButton && window.bootstrap?.Tab) {
+                bootstrap.Tab.getOrCreateInstance(completeTabButton).show();
+            }
+            const completeFormUpdateModal = document.getElementById('completeFormUpdateModal');
+            if (completeFormUpdateModal && window.bootstrap?.Modal) {
+                bootstrap.Modal.getOrCreateInstance(completeFormUpdateModal).show();
+            }
+        @endif
 
         document.querySelectorAll('[data-review-score]').forEach((input) => {
             input.addEventListener('input', function () {

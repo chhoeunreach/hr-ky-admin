@@ -162,11 +162,12 @@
         }
 
         .attendance-overlay-badge .attendance-status-pill {
-            min-width: 21px;
-            height: 19px;
-            padding: 0 5px;
-            border: 2px solid #ffffff;
-            box-shadow: 0 3px 8px rgba(15, 23, 42, 0.22);
+            min-width: 17px;
+            height: 16px;
+            padding: 0 4px;
+            border: 1px solid #ffffff;
+            font-size: 7px;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.18);
         }
 
         .employee-attendance-dashboard {
@@ -352,7 +353,7 @@
         }
 
         .attendance-detail-table td:nth-child(2),
-        .attendance-detail-table td:nth-child(3) {
+        .attendance-detail-table td:nth-child(4) {
             padding-left: 6px;
             padding-right: 6px;
         }
@@ -373,12 +374,28 @@
         }
 
         .attendance-detail-table td:nth-child(2) .checkLocation,
-        .attendance-detail-table td:nth-child(3) .checkLocation {
+        .attendance-detail-table td:nth-child(4) .checkLocation {
             min-height: 22px;
             padding: 2px 8px;
             font-size: 11px;
             font-weight: 600;
             line-height: 1.2;
+        }
+
+        .attendance-print-only {
+            display: none;
+        }
+
+        .attendance-print-signatures {
+            display: none;
+        }
+
+        .attendance-remark-cell {
+            max-width: 180px;
+            color: #334155;
+            font-size: 12px;
+            line-height: 1.25;
+            word-break: break-word;
         }
 
         .attendance-detail-table .checkLocation:hover {
@@ -429,7 +446,7 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 6mm;
+                margin: 4mm;
             }
 
             body * {
@@ -459,57 +476,65 @@
 
             .employee-attendance-dashboard-title {
                 border-bottom: 1px solid #dbe3ee;
-                padding-bottom: 6px;
-                margin-bottom: 7px;
+                padding-bottom: 3px;
+                margin: 0 0 4px;
             }
 
             .employee-attendance-dashboard {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 3px;
-                margin-bottom: 7px;
+                display: grid !important;
+                grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+                gap: 2px;
+                margin-bottom: 4px;
+                width: 100%;
             }
 
             .employee-attendance-card {
-                min-height: 36px;
-                padding: 4px 5px;
+                width: auto;
+                min-width: 0;
+                min-height: 28px;
+                padding: 2px 3px;
                 break-inside: avoid;
                 box-shadow: none;
+                gap: 3px;
             }
 
             .employee-attendance-card-icon {
-                width: 19px;
-                height: 19px;
-                flex-basis: 19px;
-                font-size: 6px;
+                width: 15px;
+                height: 15px;
+                flex-basis: 15px;
+                font-size: 5px;
             }
 
             .employee-attendance-card-title {
-                font-size: 6.5px;
+                font-size: 6px;
+                white-space: normal;
             }
 
             .employee-attendance-card-value {
-                font-size: 10px;
+                font-size: 9px;
+                white-space: nowrap;
             }
 
             .employee-attendance-card-note {
-                font-size: 6px;
+                font-size: 5.5px;
+                white-space: normal;
             }
 
             .attendance-detail-legend {
-                gap: 4px 7px;
-                padding: 5px 6px;
-                margin-bottom: 7px !important;
+                gap: 2px 5px;
+                padding: 2px 0;
+                margin-bottom: 4px !important;
                 box-shadow: none;
             }
 
             .attendance-detail-legend span {
-                font-size: 8px;
+                font-size: 6.5px;
             }
 
             .attendance-detail-legend-badge {
-                min-width: 14px;
-                height: 14px;
-                font-size: 6px;
+                min-width: 11px;
+                height: 11px;
+                font-size: 5px;
             }
 
             .attendance-table-card {
@@ -519,12 +544,12 @@
             }
 
             .attendance-table-card .card-header {
-                padding: 5px 0;
+                padding: 3px 0;
                 border-bottom: 1px solid #dbe3ee;
             }
 
             .attendance-table-card .card-title {
-                font-size: 10px;
+                font-size: 9px;
             }
 
             .attendance-table-card .card-body,
@@ -537,51 +562,136 @@
                 width: 100% !important;
                 table-layout: fixed;
                 border-collapse: collapse;
-                font-size: 7px;
+                font-size: 7.5px;
             }
 
             .attendance-detail-table thead th,
             .attendance-detail-table tbody td {
-                padding: 2px;
+                padding: 0 1px;
                 white-space: normal;
                 word-break: break-word;
             }
 
             .attendance-detail-table td:nth-child(2),
-            .attendance-detail-table td:nth-child(3) {
-                padding: 1px;
-                font-size: 6px;
+            .attendance-detail-table td:nth-child(4) {
+                padding: 0 1px;
+                font-size: 7.5px;
             }
 
-            .attendance-detail-table th:nth-child(5),
-            .attendance-detail-table th:nth-child(6),
-            .attendance-detail-table td:nth-child(5),
-            .attendance-detail-table td:nth-child(6) {
+            .attendance-detail-table th:nth-child(9),
+            .attendance-detail-table th:nth-child(10),
+            .attendance-detail-table td:nth-child(9),
+            .attendance-detail-table td:nth-child(10) {
                 display: none !important;
             }
 
+            .attendance-print-only {
+                display: table-cell !important;
+            }
+
+            .attendance-print-status {
+                color: #15803d;
+                font-size: 7.5px;
+                font-weight: 800;
+                line-height: 1.15;
+            }
+
+            .attendance-print-status.is-alert {
+                color: #dc2626;
+            }
+
+            .attendance-print-day-status {
+                display: block;
+                color: #7c3aed;
+                font-size: 7.5px;
+                font-weight: 800;
+                line-height: 1.15;
+            }
+
+            .attendance-print-day-status.is-off {
+                color: #64748b;
+            }
+
+            .attendance-print-day-status.is-pending {
+                color: #d97706;
+            }
+
+            .attendance-print-day-status.is-time {
+                color: #0891b2;
+            }
+
+            .attendance-print-signatures {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10mm;
+                margin-top: 10mm;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .attendance-print-signature {
+                min-height: 18mm;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+                color: #111827;
+                font-size: 8px;
+                font-weight: 800;
+                text-align: center;
+            }
+
+            .attendance-print-signature-line {
+                width: 100%;
+                border-top: 1px solid #111827;
+                padding-top: 3px;
+            }
+
             .attendance-detail-table .btn-xs {
-                min-height: 16px;
-                padding: 1px 3px;
-                border-radius: 4px;
-                font-size: 6px;
+                min-height: 12px;
+                padding: 0 2px;
+                border-radius: 3px;
+                font-size: 5.5px;
                 line-height: 1.2;
             }
 
             .attendance-detail-table .checkLocation {
                 min-width: 0;
+                min-height: 0;
+                padding: 0;
+                border: 0;
+                background: transparent;
+                color: #15803d;
+                box-shadow: none;
+                font-size: 7.5px !important;
+                font-weight: 800;
+                line-height: 1.15;
+            }
+
+            .attendance-remark-cell {
+                max-width: none;
+                font-size: 6.5px;
+                line-height: 1.15;
             }
 
             .attendance-status-pill {
-                min-width: 16px;
-                height: 14px;
-                padding: 0 3px;
-                font-size: 6px;
+                min-width: 13px;
+                height: 11px;
+                padding: 0 2px;
+                font-size: 5px;
             }
 
             .attendance-overlay-badge {
                 top: 0;
                 right: 1px;
+            }
+
+            .attendance-overlay-badge .attendance-status-pill {
+                min-width: 11px;
+                height: 10px;
+                padding: 0 2px;
+                border-width: 1px;
+                font-size: 4.5px;
+                box-shadow: none;
             }
         }
     </style>
@@ -690,6 +800,18 @@
             $lateDates = [];
             $noCheckoutDates = [];
             $presentCheckInDates = [];
+            $manualLateGraceMinutes = 16;
+            $officeOpeningTime = $userDetail->officeTime?->opening_time;
+            $lateAllowedUntil = $officeOpeningTime
+                ? \Carbon\Carbon::parse($officeOpeningTime)->addMinutes($manualLateGraceMinutes)->format('h:i A')
+                : null;
+            $officeOpeningLabel = $officeOpeningTime
+                ? \Carbon\Carbon::parse($officeOpeningTime)->format('h:i A')
+                : null;
+            $officeClosingTime = $userDetail->officeTime?->closing_time;
+            $officeClosingLabel = $officeClosingTime
+                ? \Carbon\Carbon::parse($officeClosingTime)->format('h:i A')
+                : null;
 
             foreach ($leaveRequestsByDate ?? [] as $leaveRequest) {
                 $status = strtolower((string) $leaveRequest->status);
@@ -739,8 +861,6 @@
                     }
 
                     $shiftOpening = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time ?? null;
-                    $manualLateGraceMinutes = 16;
-
                     if ($checkIn && $shiftOpening) {
                         $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
 
@@ -777,6 +897,17 @@
                 $title = $title ?: $label;
 
                 return '<span class="attendance-status-pill '.$class.'" title="'.e($title).'">'.e($code).'</span>';
+            };
+
+            $formatRuleMinutes = static function (int $minutes): string {
+                if ($minutes <= 0) {
+                    return 'Ok';
+                }
+
+                $hours = intdiv($minutes, 60);
+                $remainingMinutes = $minutes % 60;
+
+                return trim(($hours ? $hours.'h ' : '').($remainingMinutes ? $remainingMinutes.'m' : ''));
             };
         @endphp
 
@@ -817,6 +948,26 @@
                         <p class="employee-attendance-card-note">of {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}</p>
                     </div>
                 </div>
+                <div class="employee-attendance-card is-late">
+                    <span class="employee-attendance-card-icon">OK</span>
+                    <div>
+                        <p class="employee-attendance-card-title">Not Late Until</p>
+                        <p class="employee-attendance-card-value">{{ $lateAllowedUntil ?: '-' }}</p>
+                        <p class="employee-attendance-card-note">
+                            {{ $officeOpeningLabel ? $officeOpeningLabel.' + '.$manualLateGraceMinutes.' min' : 'Office time not set' }}
+                        </p>
+                    </div>
+                </div>
+                <div class="employee-attendance-card is-time">
+                    <span class="employee-attendance-card-icon">OT</span>
+                    <div>
+                        <p class="employee-attendance-card-title">Office Time</p>
+                        <p class="employee-attendance-card-value">
+                            {{ $officeOpeningLabel && $officeClosingLabel ? $officeOpeningLabel.' - '.$officeClosingLabel : '-' }}
+                        </p>
+                        <p class="employee-attendance-card-note">Employee shift rule</p>
+                    </div>
+                </div>
             </div>
 
             <div class="attendance-detail-legend mb-3">
@@ -843,8 +994,12 @@
                         <tr>
                             <th>{{ __('index.date') }}</th>
                             <th style="text-align: center;">{{ __('index.check_in_at') }}</th>
+                            <th class="attendance-print-only" style="text-align: center;">In Status</th>
                             <th style="text-align: center;">{{ __('index.check_out_at') }}</th>
+                            <th class="attendance-print-only" style="text-align: center;">Out Status</th>
                             <th style="text-align: center;">{{ __('index.worked_hour') }}</th>
+                            <th class="attendance-print-only" style="text-align: center;">Warning</th>
+                            <th class="attendance-print-only" style="text-align: center;">Remark</th>
                             <th style="text-align: center;">{{ __('index.status') }}</th>
                             <th style="text-align: center;">{{ __('index.shift') }}</th>
                             @can('attendance_update')
@@ -874,6 +1029,30 @@
                                 $isFirstIteration = true;
                                 $leaveRequest = $leaveRequestsByDate[$dayData['attendance_date']] ?? null;
                                 $timeLeave = $timeLeavesByDate[$dayData['attendance_date']] ?? null;
+                                $printDayStatus = null;
+                                $printRemark = null;
+
+                                if ($leaveRequest) {
+                                    $leaveStatus = strtolower((string) $leaveRequest->status);
+                                    $leaveIsDayOff = $isDayOffLeave($leaveRequest);
+                                    $leaveName = $leaveRequest->leaveType ? ucfirst($leaveRequest->leaveType->name) : __('index.leave_request');
+                                    $leaveReason = trim(strip_tags((string) $leaveRequest->reasons));
+                                    $leaveAdminRemark = trim(strip_tags((string) $leaveRequest->admin_remark));
+                                    $printDayStatus = [
+                                        'label' => $leaveName.' ('.ucfirst($leaveStatus).')',
+                                        'class' => $leaveStatus === 'pending' ? 'is-pending' : ($leaveIsDayOff ? 'is-off' : 'is-leave'),
+                                    ];
+                                    $printRemark = $leaveReason ?: $leaveAdminRemark;
+                                } elseif ($timeLeave) {
+                                    $timeLeaveStatus = strtolower((string) $timeLeave->status);
+                                    $timeLeaveReason = trim(strip_tags((string) $timeLeave->reasons));
+                                    $timeLeaveAdminRemark = trim(strip_tags((string) $timeLeave->admin_remark));
+                                    $printDayStatus = [
+                                        'label' => ($timeLeaveStatus === 'approved' ? 'Time Leave' : 'Time Leave Request').' ('.ucfirst($timeLeaveStatus).')',
+                                        'class' => $timeLeaveStatus === 'approved' ? 'is-time' : 'is-pending',
+                                    ];
+                                    $printRemark = $timeLeaveReason ?: $timeLeaveAdminRemark;
+                                }
 
                             @endphp
                         <tbody>
@@ -887,6 +1066,8 @@
                                         $attendanceNoCheckout = $attendanceCheckIn && !$attendanceCheckOut;
                                         $attendanceLate = false;
                                         $attendanceEarlyCheckout = false;
+                                        $checkInLateMinutes = 0;
+                                        $checkOutEarlyMinutes = 0;
                                         $attendanceRejected = $attendance['attendance_status'] !== null && $attendance['attendance_status'] != \App\Models\Attendance::ATTENDANCE_APPROVED;
                                         $allowedCheckInLabel = null;
                                         $allowedCheckOutLabel = null;
@@ -898,8 +1079,10 @@
 
                                         if ($attendanceCheckIn && $shiftOpening) {
                                             $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
+                                            $actualCheckIn = \Carbon\Carbon::parse($attendanceCheckIn);
                                             $allowedCheckInLabel = $allowedCheckIn->format('H:i');
-                                            $attendanceLate = \Carbon\Carbon::parse($attendanceCheckIn)->gt($allowedCheckIn);
+                                            $attendanceLate = $actualCheckIn->gt($allowedCheckIn);
+                                            $checkInLateMinutes = $attendanceLate ? $allowedCheckIn->diffInMinutes($actualCheckIn) : 0;
                                         }
 
                                         if ($attendanceCheckOut && $shiftClosing && $earlyCheckoutEnabled) {
@@ -907,14 +1090,32 @@
                                             if ($checkoutBefore !== null) {
                                                 $allowedCheckOut = $allowedCheckOut->subMinutes((int) $checkoutBefore);
                                             }
+                                            $actualCheckOut = \Carbon\Carbon::parse($attendanceCheckOut);
                                             $allowedCheckOutLabel = $allowedCheckOut->format('H:i');
-                                            $attendanceEarlyCheckout = \Carbon\Carbon::parse($attendanceCheckOut)->lt($allowedCheckOut);
+                                            $attendanceEarlyCheckout = $actualCheckOut->lt($allowedCheckOut);
+                                            $checkOutEarlyMinutes = $attendanceEarlyCheckout ? $actualCheckOut->diffInMinutes($allowedCheckOut) : 0;
                                         }
 
                                         $attendanceStatusTitle = trim(
                                             ($attendanceCheckIn ? 'In '.$attendanceCheckIn : '').
                                             ($attendanceCheckOut ? ' Out '.$attendanceCheckOut : '')
                                         );
+                                        $attendancePrintRemark = trim(strip_tags((string) ($attendance['edit_remark'] ?? ''))) ?: $printRemark;
+                                        $attendanceWarnings = [];
+                                        if ($attendanceRejected) {
+                                            $attendanceWarnings[] = 'Rejected';
+                                        } else {
+                                            if ($attendanceLate) {
+                                                $attendanceWarnings[] = 'Late '.$formatRuleMinutes($checkInLateMinutes);
+                                            }
+                                            if ($attendanceEarlyCheckout) {
+                                                $attendanceWarnings[] = 'Early '.$formatRuleMinutes($checkOutEarlyMinutes);
+                                            }
+                                            if ($attendanceNoCheckout) {
+                                                $attendanceWarnings[] = 'No Checkout';
+                                            }
+                                        }
+                                        $attendancePrintWarning = $attendanceWarnings ? implode(', ', $attendanceWarnings) : 'Ok';
                                         $lateBadgeTitle = trim(($attendanceStatusTitle ?: 'Late') . ($allowedCheckInLabel ? ' | Allowed ' . $allowedCheckInLabel : ''));
                                         $earlyBadgeTitle = trim(($attendanceStatusTitle ?: 'Early Checkout') . ($allowedCheckOutLabel ? ' | Allowed ' . $allowedCheckOutLabel : ''));
                                     @endphp
@@ -945,6 +1146,15 @@
                                                 @else
                                                     <td class="text-center attendance-time-cell"></td>
                                                 @endif
+                                                <td class="text-center attendance-print-only">
+                                                    @if($attendanceCheckIn && !$attendanceRejected)
+                                                        <span class="attendance-print-status {{ $attendanceLate ? 'is-alert' : '' }}">
+                                                            {{ $attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok' }}
+                                                        </span>
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
                                                 @if(isset($attendance['night_checkout']))
                                                     <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
@@ -965,6 +1175,26 @@
                                                         @endif
                                                     </td>
                                                 @endif
+                                                <td class="text-center attendance-print-only">
+                                                    @if($attendanceCheckOut && !$attendanceRejected)
+                                                        <span class="attendance-print-status {{ $attendanceEarlyCheckout ? 'is-alert' : '' }}">
+                                                            {{ $attendanceEarlyCheckout ? 'Early '.$formatRuleMinutes($checkOutEarlyMinutes) : 'Ok' }}
+                                                        </span>
+                                                        @if($printDayStatus)
+                                                            <span class="attendance-print-day-status {{ $printDayStatus['class'] }}">
+                                                                {{ $printDayStatus['label'] }}
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        @if($printDayStatus)
+                                                            <span class="attendance-print-day-status {{ $printDayStatus['class'] }}">
+                                                                {{ $printDayStatus['label'] }}
+                                                            </span>
+                                                        @else
+                                                            -
+                                                        @endif
+                                                    @endif
+                                                </td>
                                             @else
                                                 @if(isset($attendance['check_in_at']))
                                                     <td class="text-center attendance-time-cell">
@@ -982,6 +1212,15 @@
                                                 @else
                                                     <td class="text-center attendance-time-cell"></td>
                                                 @endif
+                                                <td class="text-center attendance-print-only">
+                                                    @if($attendanceCheckIn && !$attendanceRejected)
+                                                        <span class="attendance-print-status {{ $attendanceLate ? 'is-alert' : '' }}">
+                                                            {{ $attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok' }}
+                                                        </span>
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
                                                 @if(isset($attendance['check_out_at']))
                                                     <td class="text-center attendance-time-cell">
                                                         <span class="btn btn-outline-secondary btn-xs checkLocation"
@@ -1002,9 +1241,37 @@
                                                         @endif
                                                     </td>
                                                 @endif
+                                                <td class="text-center attendance-print-only">
+                                                    @if($attendanceCheckOut && !$attendanceRejected)
+                                                        <span class="attendance-print-status {{ $attendanceEarlyCheckout ? 'is-alert' : '' }}">
+                                                            {{ $attendanceEarlyCheckout ? 'Early '.$formatRuleMinutes($checkOutEarlyMinutes) : 'Ok' }}
+                                                        </span>
+                                                        @if($printDayStatus)
+                                                            <span class="attendance-print-day-status {{ $printDayStatus['class'] }}">
+                                                                {{ $printDayStatus['label'] }}
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        @if($printDayStatus)
+                                                            <span class="attendance-print-day-status {{ $printDayStatus['class'] }}">
+                                                                {{ $printDayStatus['label'] }}
+                                                            </span>
+                                                        @else
+                                                            -
+                                                        @endif
+                                                    @endif
+                                                </td>
                                             @endif
                                         <td  class="text-center">
                                             {{ \App\Helpers\AttendanceHelper::getWorkedTimeInHourAndMinute($attendance['worked_hour']) }}
+                                        </td>
+                                        <td class="text-center attendance-print-only">
+                                            <span class="attendance-print-status {{ $attendancePrintWarning === 'Ok' ? '' : 'is-alert' }}">
+                                                {{ $attendancePrintWarning }}
+                                            </span>
+                                        </td>
+                                        <td class="attendance-print-only attendance-remark-cell">
+                                            {{ $attendancePrintRemark ?: '-' }}
                                         </td>
                                           @if(!is_null($attendance['attendance_status']))
                                               <td class="text-center">
@@ -1200,7 +1467,9 @@
                                     <tr class="bg-light">
                                         <th></th>
                                         <th></th>
+                                        <th class="attendance-print-only"></th>
                                         <th></th>
+                                        <th class="attendance-print-only"></th>
                                         @php
                                             $hours = floor($totalMinutes / 60);
                                             $minutes = $totalMinutes % 60;
@@ -1215,9 +1484,13 @@
                                             }
                                         @endphp
                                         <th class="text-center">{{ $worked_hours }}</th>
+                                        <th class="attendance-print-only"></th>
+                                        <th class="attendance-print-only"></th>
                                         <th></th>
                                         <th></th>
-                                        <th></th>
+                                        @can('attendance_update')
+                                            <th class="attendance-print-hide"></th>
+                                        @endcan
 
                                     </tr>
                                 @endif
@@ -1251,12 +1524,34 @@
                                             'class' => $reasonCode === 'A' ? 'is-absent' : ($reasonCode === 'LV' ? 'is-leave' : 'is-off'),
                                         ];
                                     }
+
+                                    $nonAttendanceRemark = $printRemark ?: ((isset($reason) && $reason) ? (string) $reason : '-');
+                                    $nonAttendanceWarning = $printDayStatus['label'] ?? ((isset($reason) && $reason) ? (string) $reason : 'No Attendance');
+                                    $nonAttendanceWarningClass = $printDayStatus['class'] ?? 'is-alert';
                                 @endphp
                                 <tr class="attendance-detail-row">
                                     <td>{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}</td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
+                                    <td class="text-center attendance-print-only">
+                                        @if($printDayStatus)
+                                            <span class="attendance-print-day-status {{ $printDayStatus['class'] }}">
+                                                {{ $printDayStatus['label'] }}
+                                            </span>
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
+                                    <td class="text-center attendance-print-only">-</td>
                                     <td class="text-center"><i class="link-icon" data-feather="x"></i></td>
+                                    <td class="text-center attendance-print-only">
+                                        <span class="{{ $printDayStatus ? 'attendance-print-day-status' : 'attendance-print-status' }} {{ $nonAttendanceWarningClass }}">
+                                            {{ $nonAttendanceWarning }}
+                                        </span>
+                                    </td>
+                                    <td class="attendance-print-only attendance-remark-cell">
+                                        {{ $nonAttendanceRemark }}
+                                    </td>
                                      <td class="text-center">
                                          @if($leaveRequest)
                                              @php
@@ -1431,6 +1726,17 @@
                         @endforelse
                     </table>
                 </div>
+            </div>
+        </div>
+        <div class="attendance-print-signatures">
+            <div class="attendance-print-signature">
+                <div class="attendance-print-signature-line">Staff</div>
+            </div>
+            <div class="attendance-print-signature">
+                <div class="attendance-print-signature-line">Head Department</div>
+            </div>
+            <div class="attendance-print-signature">
+                <div class="attendance-print-signature-line">Admin</div>
             </div>
         </div>
         </div>

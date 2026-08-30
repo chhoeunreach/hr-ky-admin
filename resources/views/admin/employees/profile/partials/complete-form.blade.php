@@ -15,10 +15,66 @@
 @endphp
 
 <div class="employee-complete-toolbar">
+    @can('employee.profile.edit')
+        <button type="button" class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#completeFormUpdateModal">
+            Update Before Print
+        </button>
+    @endcan
     <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmployeeCompleteForm()">
         <i class="link-icon" data-feather="printer"></i> Print
     </button>
 </div>
+
+@can('employee.profile.edit')
+    <div class="modal fade" id="completeFormUpdateModal" tabindex="-1" aria-labelledby="completeFormUpdateModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <form method="post" action="{{ route('admin.employees.profile.update', $employee->id) }}" class="modal-content">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="complete_profile_modal" value="1">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="completeFormUpdateModalLabel">Update Complete Form Data Before Print</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="employee-360-section">
+                        <h6>Personal Information</h6>
+                        <div class="row">
+                            @foreach([
+                                'national_id' => 'National ID',
+                                'nationality' => 'Nationality',
+                                'education_level' => 'Education Level',
+                                'telegram' => 'Telegram',
+                                'emergency_contact_name' => 'Emergency Contact',
+                                'emergency_contact_relationship' => 'Relationship',
+                                'emergency_contact_phone' => 'Emergency Phone',
+                            ] as $profileField => $label)
+                                <div class="col-lg-3 col-md-6 mb-3">
+                                    <label class="form-label">{{ $label }}</label>
+                                    <input class="form-control" name="{{ $profileField }}" value="{{ old($profileField, $profile->{$profileField}) }}">
+                                </div>
+                            @endforeach
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Current Address</label>
+                                <textarea class="form-control" name="current_address" rows="3">{{ old('current_address', $profile->current_address ?: $employee->address) }}</textarea>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Permanent Address</label>
+                                <textarea class="form-control" name="permanent_address" rows="3">{{ old('permanent_address', $profile->permanent_address) }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    @include('admin.employees.profile.partials.profile-employment-salary-fields')
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Complete Form Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endcan
 
 <div class="employee-complete-paper">
     <div class="employee-complete-header">
@@ -79,6 +135,8 @@
             {!! $field('មេក្រុម / អ្នកគ្រប់គ្រងផ្ទាល់', $employee->supervisor?->name) !!}
             {!! $field('ប្រភេទការងារ', $employee->employment_type) !!}
             {!! $field('ស្ថានភាព', $profile->employment_status ?: ($employee->is_active ? 'active' : 'inactive')) !!}
+            {!! $field('ថ្ងៃឈប់ធ្វើការចុងក្រោយ', $formatDate($profile->last_working_date)) !!}
+            {!! $field('មូលហេតុបញ្ចប់ការងារ', $profile->employment_end_reason) !!}
             {!! $field('ម៉ោងការងារ', $employee->officeTime?->shift) !!}
             {!! $field('ថ្ងៃឈប់ប្រចាំសប្តាហ៍', $profile->weekly_day_off) !!}
             {!! $field('រយៈពេលសាកល្បង', $profile->probation_period) !!}
@@ -88,21 +146,23 @@
         </div>
     </div>
 
-    <div class="employee-complete-section">
-        <h6>3. ប្រវត្តិជ្រើសរើស និងសម្ភាសន៍ (Recruitment &amp; Interview Record)</h6>
-        <div class="table-responsive">
-            <table class="table table-sm employee-complete-table">
-                <thead><tr><th>កាលបរិច្ឆេទ</th><th>ដំណាក់កាល</th><th>អ្នកសម្ភាសន៍</th><th>តួនាទី</th><th>លទ្ធផល</th><th>មតិ</th></tr></thead>
-                <tbody>
-                @forelse($interviews as $record)
-                    <tr><td>{{ $formatDate($record->interview_date) }}</td><td>{{ $record->interview_stage }}</td><td>{{ $record->interviewer_name }}</td><td>{{ $record->interviewer_position }}</td><td>{{ $record->result }}</td><td>{{ $record->comments }}</td></tr>
-                @empty
-                    <tr><td colspan="6" class="text-center">No records found</td></tr>
-                @endforelse
-                </tbody>
-            </table>
+    @if($canViewInterview)
+        <div class="employee-complete-section">
+            <h6>3. ប្រវត្តិជ្រើសរើស និងសម្ភាសន៍ (Recruitment &amp; Interview Record)</h6>
+            <div class="table-responsive">
+                <table class="table table-sm employee-complete-table">
+                    <thead><tr><th>កាលបរិច្ឆេទ</th><th>ដំណាក់កាល</th><th>អ្នកសម្ភាសន៍</th><th>តួនាទី</th><th>លទ្ធផល</th><th>មតិ</th></tr></thead>
+                    <tbody>
+                    @forelse($interviews as $record)
+                        <tr><td>{{ $formatDate($record->interview_date) }}</td><td>{{ $record->interview_stage }}</td><td>{{ $record->interviewer_name }}</td><td>{{ $record->interviewer_position }}</td><td>{{ $record->result }}</td><td>{{ $record->comments }}</td></tr>
+                    @empty
+                        <tr><td colspan="6" class="text-center">No records found</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    @endif
 
     @if($canViewSalary)
         <div class="employee-complete-section">
@@ -129,54 +189,68 @@
         </div>
     @endif
 
-    <div class="employee-complete-section">
-        <h6>6. ប្រវត្តិប្តូរតួនាទី/ផ្នែក/សាខា (Position &amp; Transfer History)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $employmentHistory, 'columns' => ['effective_date' => 'កាលបរិច្ឆេទ', 'change_type' => 'ប្រភេទ', 'reason' => 'មូលហេតុ', 'note' => 'សម្គាល់']])
-    </div>
-
-    <div class="employee-complete-section">
-        <h6>7. ភារកិច្ចការងារបច្ចុប្បន្ន (Current Job Responsibilities)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $responsibilities, 'columns' => ['title' => 'ភារកិច្ច', 'kpi_target' => 'KPI/ស្តង់ដារ', 'status' => 'ស្ថានភាព']])
-    </div>
-
-    <div class="employee-complete-section">
-        <h6>8. វាយតម្លៃសមត្ថភាព និងលទ្ធផលការងារ (Performance Evaluation - 100 Points)</h6>
-        <div class="table-responsive">
-            <table class="table table-sm employee-complete-table">
-                <thead><tr><th>ល.រ</th><th>លក្ខណៈវាយតម្លៃ</th><th>ស្តង់ដារ</th><th>ពិន្ទុអតិបរមា</th><th>ពិន្ទុទទួលបាន</th><th>មតិ</th></tr></thead>
-                <tbody>
-                @forelse($latestReviewItems as $item)
-                    <tr><td>{{ $loop->iteration }}</td><td>{{ $item->criteria }}</td><td>{{ $item->description }}</td><td>{{ $item->max_score }}</td><td>{{ $item->score }}</td><td>{{ $item->comment }}</td></tr>
-                @empty
-                    @foreach($defaultItems as [$criteria, $description, $max])
-                        <tr><td>{{ $loop->iteration }}</td><td>{{ $criteria }}</td><td>{{ $description }}</td><td>{{ $max }}</td><td>_______</td><td></td></tr>
-                    @endforeach
-                @endforelse
-                <tr><th colspan="3">សរុប</th><th>100</th><th>{{ $latestReview?->total_score ?? '_______' }}</th><th>{{ $latestReview?->grade }}</th></tr>
-                </tbody>
-            </table>
+    @if($canViewEmployment)
+        <div class="employee-complete-section">
+            <h6>6. ប្រវត្តិប្តូរតួនាទី/ផ្នែក/សាខា (Position &amp; Transfer History)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $employmentHistory, 'columns' => ['effective_date' => 'កាលបរិច្ឆេទ', 'change_type' => 'ប្រភេទ', 'reason' => 'មូលហេតុ', 'note' => 'សម្គាល់']])
         </div>
-    </div>
+    @endif
 
-    <div class="employee-complete-section">
-        <h6>9. ប្រវត្តិវាយតម្លៃការងារ (Performance Review History)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $reviews, 'columns' => ['review_date' => 'រយៈពេល', 'total_score' => 'ពិន្ទុ', 'grade' => 'កម្រិត', 'strengths' => 'ចំណុចខ្លាំង', 'areas_for_improvement' => 'ចំណុចកែលម្អ', 'final_recommendation' => 'អនុសាសន៍']])
-    </div>
+    @if($canViewKpi)
+        <div class="employee-complete-section">
+            <h6>7. ភារកិច្ចការងារបច្ចុប្បន្ន (Current Job Responsibilities)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $responsibilities, 'columns' => ['title' => 'ភារកិច្ច', 'kpi_target' => 'KPI/ស្តង់ដារ', 'status' => 'ស្ថានភាព']])
+        </div>
+    @endif
 
-    <div class="employee-complete-section">
-        <h6>10. ប្រវត្តិបណ្តុះបណ្តាល (Training &amp; Development History)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $training, 'columns' => ['training_date' => 'កាលបរិច្ឆេទ', 'training_title' => 'វគ្គ/ប្រធានបទ', 'trainer_name' => 'អ្នកបណ្តុះបណ្តាល', 'objective' => 'គោលបំណង', 'result' => 'លទ្ធផល', 'note' => 'សម្គាល់']])
-    </div>
+    @if($canViewPerformance)
+        <div class="employee-complete-section">
+            <h6>8. វាយតម្លៃសមត្ថភាព និងលទ្ធផលការងារ (Performance Evaluation - 100 Points)</h6>
+            <div class="table-responsive">
+                <table class="table table-sm employee-complete-table">
+                    <thead><tr><th>ល.រ</th><th>លក្ខណៈវាយតម្លៃ</th><th>ស្តង់ដារ</th><th>ពិន្ទុអតិបរមា</th><th>ពិន្ទុទទួលបាន</th><th>មតិ</th></tr></thead>
+                    <tbody>
+                    @forelse($latestReviewItems as $item)
+                        <tr><td>{{ $loop->iteration }}</td><td>{{ $item->criteria }}</td><td>{{ $item->description }}</td><td>{{ $item->max_score }}</td><td>{{ $item->score }}</td><td>{{ $item->comment }}</td></tr>
+                    @empty
+                        @foreach($defaultItems as [$criteria, $description, $max])
+                            <tr><td>{{ $loop->iteration }}</td><td>{{ $criteria }}</td><td>{{ $description }}</td><td>{{ $max }}</td><td>_______</td><td></td></tr>
+                        @endforeach
+                    @endforelse
+                    <tr><th colspan="3">សរុប</th><th>100</th><th>{{ $latestReview?->total_score ?? '_______' }}</th><th>{{ $latestReview?->grade }}</th></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
 
-    <div class="employee-complete-section">
-        <h6>11. ការសរសើរ រង្វាន់ និងការទទួលស្គាល់ (Recognition &amp; Rewards)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $rewards, 'columns' => ['reward_date' => 'កាលបរិច្ឆេទ', 'reward_type' => 'ប្រភេទ', 'title' => 'មូលហេតុ/សមិទ្ធផល', 'reward_amount' => 'រង្វាន់', 'description' => 'សម្គាល់']])
-    </div>
+    @if($canViewPerformance)
+        <div class="employee-complete-section">
+            <h6>9. ប្រវត្តិវាយតម្លៃការងារ (Performance Review History)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $reviews, 'columns' => ['review_date' => 'រយៈពេល', 'total_score' => 'ពិន្ទុ', 'grade' => 'កម្រិត', 'strengths' => 'ចំណុចខ្លាំង', 'areas_for_improvement' => 'ចំណុចកែលម្អ', 'final_recommendation' => 'អនុសាសន៍']])
+        </div>
+    @endif
 
-    <div class="employee-complete-section">
-        <h6>12. ប្រវត្តិវិន័យ/ការព្រមាន (Disciplinary &amp; Warning Record)</h6>
-        @include('admin.employees.profile.partials.complete-table', ['records' => $discipline, 'columns' => ['incident_date' => 'កាលបរិច្ឆេទ', 'record_type' => 'ប្រភេទ', 'title' => 'បញ្ហា', 'action_taken' => 'វិធានការ', 'status' => 'ស្ថានភាព']])
-    </div>
+    @if($canViewTraining)
+        <div class="employee-complete-section">
+            <h6>10. ប្រវត្តិបណ្តុះបណ្តាល (Training &amp; Development History)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $training, 'columns' => ['training_date' => 'កាលបរិច្ឆេទ', 'training_title' => 'វគ្គ/ប្រធានបទ', 'trainer_name' => 'អ្នកបណ្តុះបណ្តាល', 'objective' => 'គោលបំណង', 'result' => 'លទ្ធផល', 'note' => 'សម្គាល់']])
+        </div>
+    @endif
+
+    @if($canViewReward)
+        <div class="employee-complete-section">
+            <h6>11. ការសរសើរ រង្វាន់ និងការទទួលស្គាល់ (Recognition &amp; Rewards)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $rewards, 'columns' => ['reward_date' => 'កាលបរិច្ឆេទ', 'reward_type' => 'ប្រភេទ', 'title' => 'មូលហេតុ/សមិទ្ធផល', 'reward_amount' => 'រង្វាន់', 'description' => 'សម្គាល់']])
+        </div>
+    @endif
+
+    @if($canViewDiscipline)
+        <div class="employee-complete-section">
+            <h6>12. ប្រវត្តិវិន័យ/ការព្រមាន (Disciplinary &amp; Warning Record)</h6>
+            @include('admin.employees.profile.partials.complete-table', ['records' => $discipline, 'columns' => ['incident_date' => 'កាលបរិច្ឆេទ', 'record_type' => 'ប្រភេទ', 'title' => 'បញ្ហា', 'action_taken' => 'វិធានការ', 'status' => 'ស្ថានភាព']])
+        </div>
+    @endif
 
     <div class="employee-complete-section">
         <h6>13. វត្តមាន និងការឈប់សម្រាក (Attendance &amp; Leave Summary)</h6>
@@ -192,23 +266,31 @@
         </div>
     </div>
 
-    <div class="employee-complete-section">
-        <h6>14. ចំណុចខ្លាំង / ចំណុចត្រូវកែលម្អ / គោលដៅ</h6>
-        <div class="employee-complete-list">
-            {!! $field('ចំណុចខ្លាំង (Strengths)', $latestReview?->strengths) !!}
-            {!! $field('ចំណុចត្រូវកែលម្អ', $latestReview?->areas_for_improvement) !!}
-            {!! $field('គោលដៅរយៈពេលបន្ទាប់', $goals->pluck('title')->join(', ')) !!}
-            {!! $field('ការគាំទ្រដែលត្រូវការ', $improvementPlans->pluck('support_required')->filter()->join(', ')) !!}
+    @if($canViewPerformance || $canViewGoal)
+        <div class="employee-complete-section">
+            <h6>14. ចំណុចខ្លាំង / ចំណុចត្រូវកែលម្អ / គោលដៅ</h6>
+            <div class="employee-complete-list">
+                @if($canViewPerformance)
+                    {!! $field('ចំណុចខ្លាំង (Strengths)', $latestReview?->strengths) !!}
+                    {!! $field('ចំណុចត្រូវកែលម្អ', $latestReview?->areas_for_improvement) !!}
+                @endif
+                @if($canViewGoal)
+                    {!! $field('គោលដៅរយៈពេលបន្ទាប់', $goals->pluck('title')->join(', ')) !!}
+                    {!! $field('ការគាំទ្រដែលត្រូវការ', $improvementPlans->pluck('support_required')->filter()->join(', ')) !!}
+                @endif
+            </div>
         </div>
-    </div>
+    @endif
 
-    <div class="employee-complete-section">
-        <h6>15. សេចក្តីសម្រេច និងអនុសាសន៍ (Final Decision)</h6>
-        <div class="employee-complete-list">
-            {!! $field('សេចក្តីសម្រេច', $latestReview?->final_recommendation) !!}
-            {!! $field('មូលហេតុ/អនុសាសន៍', $latestReview?->manager_comment) !!}
+    @if($canViewPerformance)
+        <div class="employee-complete-section">
+            <h6>15. សេចក្តីសម្រេច និងអនុសាសន៍ (Final Decision)</h6>
+            <div class="employee-complete-list">
+                {!! $field('សេចក្តីសម្រេច', $latestReview?->final_recommendation) !!}
+                {!! $field('មូលហេតុ/អនុសាសន៍', $latestReview?->manager_comment) !!}
+            </div>
         </div>
-    </div>
+    @endif
 
     <div class="employee-complete-section">
         <h6>16. ការទទួលស្គាល់ និងហត្ថលេខា (Acknowledgement &amp; Approval)</h6>
@@ -232,7 +314,7 @@
             {!! $field('អ្នករៀបចំ', auth('admin')->user()?->name ?: auth()->user()?->name) !!}
             {!! $field('អ្នកត្រួតពិនិត្យ', '') !!}
             {!! $field('ថ្ងៃ Update ចុងក្រោយ', $formatDate($profile->updated_at ?: $employee->updated_at)) !!}
-            {!! $field('ថ្ងៃវាយតម្លៃបន្ទាប់', $formatDate($latestReview?->next_review_date)) !!}
+            {!! $field('ថ្ងៃវាយតម្លៃបន្ទាប់', $canViewPerformance ? $formatDate($latestReview?->next_review_date) : null) !!}
             {!! $field('ទីតាំងរក្សាទុកឯកសារ', '') !!}
             {!! $field('ស្ថានភាពឯកសារ', 'Active') !!}
         </div>

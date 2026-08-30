@@ -241,6 +241,7 @@ Route::group([
             Route::post('goals', [EmployeeProfileController::class, 'storeGoal'])->name('goals.store');
             Route::post('improvement-plans', [EmployeeProfileController::class, 'storeImprovementPlan'])->name('improvement-plans.store');
             Route::post('documents', [EmployeeProfileController::class, 'storeDocument'])->name('documents.store');
+            Route::post('contract', [EmployeeProfileController::class, 'saveContract'])->name('contract.save');
             Route::get('documents/{document}/download', [EmployeeProfileController::class, 'downloadDocument'])->name('documents.download');
         });
         Route::resource('employees', UserController::class);

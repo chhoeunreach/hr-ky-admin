@@ -7,6 +7,7 @@ use App\Exports\UserExport;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
+use App\Models\EmployeeProfile;
 use App\Models\User;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
@@ -363,6 +364,16 @@ class UserController extends Controller
             DB::beginTransaction();
             $this->userRepo->toggleIsActiveStatus($id);
             $userDetail = $this->userRepo->findUserDetailById($id, ['id', 'is_active']);
+            $profile = EmployeeProfile::firstOrNew(['employee_id' => $userDetail->id]);
+            if ((int) $userDetail->is_active === 0) {
+                $profile->employment_status = 'inactive';
+                $profile->last_working_date = $profile->last_working_date ?: now()->toDateString();
+            } else {
+                $profile->employment_status = 'active';
+                $profile->last_working_date = null;
+                $profile->employment_end_reason = null;
+            }
+            $profile->save();
             DB::commit();
 
             if ($request->ajax()) {

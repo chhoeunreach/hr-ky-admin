@@ -4,7 +4,11 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Branch;
+use App\Models\Department;
 use App\Models\EmployeeDisciplinaryRecord;
+use App\Models\EmployeeContract;
+use App\Models\EmployeeContractHistory;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeEmploymentHistory;
 use App\Models\EmployeeGoal;
@@ -20,6 +24,7 @@ use App\Models\EmployeeSalaryHistory;
 use App\Models\EmployeeTrainingHistory;
 use App\Models\LeaveRequestMaster;
 use App\Models\PerformanceReview;
+use App\Models\Post;
 use App\Models\User;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -37,8 +42,15 @@ class EmployeeProfileController extends Controller
     public function index(Request $request)
     {
         $this->authorize('employee.profile.view');
+        $employmentStatus = $request->input('employment_status', 'active');
 
-        $employees = User::with(['branch:id,name', 'department:id,dept_name', 'post:id,post_name'])
+        $employeeQuery = User::with([
+                'branch:id,name',
+                'department:id,dept_name',
+                'post:id,post_name',
+                'employee360Profile:id,employee_id,employment_status,last_working_date',
+                'employeePerformanceReviews:id,employee_id,review_type,review_date,next_review_date,status',
+            ])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
@@ -48,10 +60,43 @@ class EmployeeProfileController extends Controller
                         ->orWhere('email', 'like', "%{$search}%");
                 });
             })
+            ->when($request->branch_id, fn ($query, $branchId) => $query->where('branch_id', $branchId))
+            ->when($request->department_id, fn ($query, $departmentId) => $query->where('department_id', $departmentId))
+            ->when($request->post_id, fn ($query, $postId) => $query->where('post_id', $postId))
+            ->when($employmentStatus, function ($query, $status) {
+                $query->where(function ($query) use ($status) {
+                    $query->whereHas('employee360Profile', fn ($profileQuery) => $profileQuery->where('employment_status', $status));
+
+                    if (in_array($status, ['active', 'inactive'], true)) {
+                        $query->orWhere(function ($fallbackQuery) use ($status) {
+                            $fallbackQuery->doesntHave('employee360Profile')
+                                ->where('is_active', $status === 'active' ? 1 : 0);
+                        });
+                    }
+                });
+            });
+
+        if ($request->review_status) {
+            $matchingEmployeeIds = (clone $employeeQuery)
+                ->get()
+                ->filter(function ($employee) use ($request) {
+                    return collect($this->employeeReviewMilestones($employee))
+                        ->contains(fn ($milestone) => $milestone['status'] === $request->review_status);
+                })
+                ->pluck('id');
+
+            $employeeQuery->whereIn('id', $matchingEmployeeIds->isNotEmpty() ? $matchingEmployeeIds : [0]);
+        }
+
+        $employees = $employeeQuery
             ->latest('id')
             ->paginate(25);
 
-        return view('admin.employees.profile.index', compact('employees'));
+        $branches = Branch::select('id', 'name')->orderBy('name')->get();
+        $departments = Department::select('id', 'dept_name')->orderBy('dept_name')->get();
+        $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
+
+        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus'));
     }
 
     public function show(User $employee)
@@ -87,9 +132,22 @@ class EmployeeProfileController extends Controller
         $goals = EmployeeGoal::where('employee_id', $employee->id)->latest('due_date')->latest('id')->get();
         $improvementPlans = EmployeeImprovementPlan::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
+        $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
+        $contractHistories = EmployeeContractHistory::where('employee_id', $employee->id)->latest('created_at')->limit(20)->get();
         $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)->latest('created_at')->limit(100)->get();
 
+        $isOwnProfile = auth()->check() && auth()->id() === $employee->id;
+        $canViewEmployment = $this->can('employee.employment.view');
         $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view');
+        $canViewInterview = $this->can('employee.interview.view');
+        $canViewKpi = $this->can('employee.kpi.view');
+        $canViewPerformance = $this->can('employee.performance.view') || $isOwnProfile;
+        $canViewTraining = $this->can('employee.training.view') || $isOwnProfile;
+        $canViewReward = $this->can('employee.reward.view');
+        $canViewDiscipline = $this->can('employee.discipline.view');
+        $canViewGoal = $this->can('employee.goal.view') || $isOwnProfile;
+        $canViewDocument = $this->can('employee.document.view');
+        $canViewAudit = $this->can('employee.audit.view');
 
         return view('admin.employees.profile.show', compact(
             'employee',
@@ -109,8 +167,20 @@ class EmployeeProfileController extends Controller
             'goals',
             'improvementPlans',
             'documents',
+            'contract',
+            'contractHistories',
             'auditLogs',
+            'canViewEmployment',
             'canViewSalary',
+            'canViewInterview',
+            'canViewKpi',
+            'canViewPerformance',
+            'canViewTraining',
+            'canViewReward',
+            'canViewDiscipline',
+            'canViewGoal',
+            'canViewDocument',
+            'canViewAudit',
             'latestSalary',
             'latestReview'
         ));
@@ -131,6 +201,8 @@ class EmployeeProfileController extends Controller
             'emergency_contact_relationship' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:255'],
             'employment_status' => ['nullable', Rule::in(['active', 'probation', 'suspended', 'resigned', 'terminated', 'inactive'])],
+            'last_working_date' => ['nullable', 'date'],
+            'employment_end_reason' => ['nullable', 'string'],
             'probation_period' => ['nullable', 'integer', 'min:0'],
             'probation_end_date' => ['nullable', 'date'],
             'contract_start_date' => ['nullable', 'date'],
@@ -161,6 +233,15 @@ class EmployeeProfileController extends Controller
                 'payment_method',
                 'salary_payment_date',
             ])->all();
+        }
+
+        if (in_array($data['employment_status'] ?? null, ['resigned', 'terminated', 'inactive'], true) && empty($data['last_working_date'])) {
+            $data['last_working_date'] = now()->toDateString();
+        }
+
+        if (in_array($data['employment_status'] ?? null, ['active', 'probation'], true)) {
+            $data['last_working_date'] = null;
+            $data['employment_end_reason'] = null;
         }
 
         $profile = EmployeeProfile::firstOrNew(['employee_id' => $employee->id]);
@@ -491,6 +572,76 @@ class EmployeeProfileController extends Controller
         return back()->with('success', 'Document added.');
     }
 
+    public function saveContract(Request $request, User $employee): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.document.manage');
+
+        $data = $request->validate([
+            'contract_no' => ['nullable', 'string', 'max:255'],
+            'contract_date' => ['nullable', 'date'],
+            'shop_name' => ['nullable', 'string', 'max:255'],
+            'shop_address' => ['nullable', 'string'],
+            'shop_representative' => ['nullable', 'string', 'max:255'],
+            'birth_address' => ['nullable', 'string', 'max:255'],
+            'guardian_phone' => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'main_responsibilities' => ['nullable', 'string'],
+            'additional_responsibilities' => ['nullable', 'string'],
+            'asset_responsibilities' => ['nullable', 'string'],
+            'probation_salary' => ['nullable', 'numeric', 'min:0'],
+            'extra_salary' => ['nullable', 'numeric', 'min:0'],
+            'monthly_salary' => ['nullable', 'numeric', 'min:0'],
+            'salary_currency' => ['nullable', Rule::in(['USD', 'KHR'])],
+            'probation_period_text' => ['nullable', 'string', 'max:255'],
+            'main_contract_period' => ['nullable', 'string', 'max:255'],
+            'contract_start_date' => ['nullable', 'date'],
+            'contract_end_date' => ['nullable', 'date'],
+            'payment_date_text' => ['nullable', 'string', 'max:255'],
+            'benefits' => ['nullable', 'string'],
+            'working_time' => ['nullable', 'string', 'max:255'],
+            'working_days' => ['nullable', 'string', 'max:255'],
+            'holiday_text' => ['nullable', 'string', 'max:255'],
+            'discipline_rules' => ['nullable', 'string'],
+            'confidentiality' => ['nullable', 'string'],
+            'termination_terms' => ['nullable', 'string'],
+            'general_duties' => ['nullable', 'string'],
+            'party_a_signature_name' => ['nullable', 'string', 'max:255'],
+            'party_b_signature_name' => ['nullable', 'string', 'max:255'],
+            'party_a_signed_date' => ['nullable', 'date'],
+            'party_b_signed_date' => ['nullable', 'date'],
+            'attachments' => ['nullable', 'array'],
+            'attachments.*' => ['nullable', 'string', 'max:255'],
+            'status' => ['required', Rule::in(['draft', 'active', 'expired', 'terminated', 'cancelled'])],
+        ]);
+
+        if (!$this->can('employee.salary.manage')) {
+            $data = collect($data)->except([
+                'probation_salary',
+                'extra_salary',
+                'monthly_salary',
+                'salary_currency',
+                'payment_date_text',
+                'benefits',
+            ])->all();
+        }
+
+        $data['attachments'] = array_values(array_filter($data['attachments'] ?? []));
+
+        $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
+        $old = $contract->exists ? $contract->getOriginal() : null;
+        if ($contract->exists) {
+            $this->recordContractHistory($contract, 'updated');
+        }
+        $data[$contract->exists ? 'updated_by' : 'created_by'] = auth()->id();
+        $contract->fill($data);
+        $contract->employee_id = $employee->id;
+        $contract->save();
+
+        $this->audit($employee, 'document', $old ? 'update_contract' : 'create_contract', $contract->id, $old, $contract->fresh()->toArray(), $request);
+
+        return back()->with('success', 'Employee contract saved.');
+    }
+
     public function downloadDocument(User $employee, EmployeeDocument $document)
     {
         $this->authorizeEmployeeProfile($employee, 'employee.document.view');
@@ -504,6 +655,7 @@ class EmployeeProfileController extends Controller
     private function buildSummary(User $employee, EmployeeProfile $profile, ?EmployeeSalaryHistory $latestSalary, ?PerformanceReview $latestReview): array
     {
         $joiningDate = $employee->joining_date ? Carbon::parse($employee->joining_date) : null;
+        $serviceEndDate = $profile->last_working_date ? Carbon::parse($profile->last_working_date) : now();
 
         return [
             'employee_id' => $employee->employee_code ?: $employee->username,
@@ -513,7 +665,7 @@ class EmployeeProfileController extends Controller
             'branch' => $employee->branch?->name,
             'manager' => $employee->supervisor?->name,
             'join_date' => $employee->joining_date,
-            'years_of_service' => $joiningDate ? $joiningDate->diffForHumans(null, true) : null,
+            'years_of_service' => $joiningDate ? $joiningDate->diffForHumans($serviceEndDate, true) : null,
             'employment_status' => $profile->employment_status ?: ($employee->is_active ? 'active' : 'inactive'),
             'probation_status' => $profile->probation_end_date && Carbon::parse($profile->probation_end_date)->isFuture() ? 'Probation' : 'Completed',
             'current_base_salary' => $profile->current_base_salary,
@@ -525,6 +677,68 @@ class EmployeeProfileController extends Controller
             'total_rewards' => EmployeeReward::where('employee_id', $employee->id)->count(),
             'training_completed' => EmployeeTrainingHistory::where('employee_id', $employee->id)->count(),
         ];
+    }
+
+    private function recordContractHistory(EmployeeContract $contract, string $action): void
+    {
+        EmployeeContractHistory::create([
+            'employee_id' => $contract->employee_id,
+            'employee_contract_id' => $contract->id,
+            'action' => $action,
+            'snapshot' => $contract->toArray(),
+            'created_by' => auth()->id(),
+        ]);
+    }
+
+    private function employeeReviewMilestones(User $employee): array
+    {
+        return [
+            $this->employeeReviewMilestone($employee, '3M', ['quarterly', 'probation'], 'quarterly', 3),
+            $this->employeeReviewMilestone($employee, '6M', ['six_month'], 'six_month', 6),
+            $this->employeeReviewMilestone($employee, '12M', ['annual'], 'annual', 12),
+            $this->employeeReviewMilestone($employee, 'Yearly', ['annual'], 'annual'),
+        ];
+    }
+
+    private function employeeReviewMilestone(User $employee, string $label, array $reviewTypes, string $reviewType, ?int $months = null): array
+    {
+        if (!$employee->joining_date) {
+            return ['label' => $label, 'status' => 'N/A', 'date' => null, 'review_type' => $reviewType, 'period_start' => null, 'period_end' => null];
+        }
+
+        $joinDate = Carbon::parse($employee->joining_date)->startOfDay();
+        $today = now()->startOfDay();
+        $dueDate = $months ? $joinDate->copy()->addMonthsNoOverflow($months) : $joinDate->copy()->addYearNoOverflow();
+
+        if (!$months && $today->greaterThanOrEqualTo($dueDate)) {
+            $years = max(1, $joinDate->diffInYears($today));
+            $dueDate = $joinDate->copy()->addYearsNoOverflow($years);
+            if ($dueDate->isFuture()) {
+                $dueDate->subYearNoOverflow();
+            }
+        }
+
+        $done = $employee->employeePerformanceReviews
+            ->filter(fn ($review) => in_array($review->review_type, $reviewTypes, true))
+            ->contains(fn ($review) => $review->review_date && Carbon::parse($review->review_date)->greaterThanOrEqualTo($dueDate->copy()->subDays(30)));
+
+        $base = [
+            'label' => $label,
+            'date' => $dueDate->format('Y-m-d'),
+            'review_type' => $reviewType,
+            'period_start' => $joinDate->format('Y-m-d'),
+            'period_end' => $dueDate->format('Y-m-d'),
+        ];
+
+        if ($done) {
+            return $base + ['status' => 'Done'];
+        }
+
+        if ($today->lt($dueDate)) {
+            return $base + ['status' => 'Upcoming'];
+        }
+
+        return $base + ['status' => $today->diffInDays($dueDate) <= 14 ? 'Due' : 'Overdue'];
     }
 
     private function attendanceSummary(User $employee, ?string $from = null, ?string $to = null): array

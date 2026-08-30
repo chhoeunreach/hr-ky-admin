@@ -21,6 +21,8 @@ class EmployeeProfile extends Model
         'emergency_contact_relationship',
         'emergency_contact_phone',
         'employment_status',
+        'last_working_date',
+        'employment_end_reason',
         'probation_period',
         'probation_end_date',
         'contract_start_date',
@@ -42,6 +44,7 @@ class EmployeeProfile extends Model
 
     protected $casts = [
         'probation_end_date' => 'date',
+        'last_working_date' => 'date',
         'contract_start_date' => 'date',
         'contract_end_date' => 'date',
     ];
