@@ -2257,7 +2257,7 @@
             display: flex;
             flex-direction: column;
             left: var(--ky-left-width, 14.2mm);
-            overflow: hidden;
+            overflow: visible;
             padding: var(--ky-front-pad-top, 2.8mm) var(--ky-front-pad-x, 2.3mm) var(--ky-front-pad-bottom, 1.5mm);
             position: absolute;
             right: var(--ky-front-right, 1.8mm);
@@ -2452,9 +2452,9 @@
         .template-kneayerng_gold .ky-qr-pair {
             bottom: var(--ky-qr-bottom, 1.6mm);
             display: flex;
-            gap: var(--ky-qr-gap, 3.4mm);
+            gap: var(--ky-qr-gap, 1.7mm);
             justify-content: flex-start;
-            left: var(--ky-qr-left, -11.4mm);
+            left: var(--ky-qr-left, .6mm);
             max-width: calc(100% + (var(--ky-left-width, 14.2mm) - var(--ky-front-pad-x, 2.3mm)));
             padding-right: 0;
             position: absolute;
@@ -2531,7 +2531,7 @@
             font-size: calc(7.2px * var(--card-text-scale));
             font-weight: 900;
             letter-spacing: .08em;
-            left: var(--ky-id-left, 16.6mm);
+            left: var(--ky-id-left, 32.4mm);
             margin-top: 0;
             position: absolute;
             right: var(--ky-id-right, 1mm);
@@ -2559,7 +2559,7 @@
             overflow: hidden;
             position: absolute;
             bottom: var(--ky-website-bottom, 3.3mm);
-            left: var(--ky-website-left, 16.6mm);
+            left: var(--ky-website-left, 32.4mm);
             right: var(--ky-website-right, 1mm);
             width: auto;
         }
@@ -3636,9 +3636,9 @@
                     `--ky-info-value-pad:${mm(1.2)}`,
                     `--ky-footer-bottom:${mm(.8)}`,
                     `--ky-footer-height:${mm(24)}`,
-                    `--ky-qr-left:${mm(-11.4)}`,
+                    `--ky-qr-left:${mm(.6)}`,
                     `--ky-qr-bottom:${mm(7.35)}`,
-                    `--ky-qr-gap:${mm(2.8)}`,
+                    `--ky-qr-gap:${mm(1.7)}`,
                     `--ky-qr-label-gap:${mm(.38)}`,
                     `--ky-qr-box:${mm(13.8)}`,
                     `--ky-qr-pad:${mm(.75)}`,
@@ -3647,10 +3647,10 @@
                     `--ky-send-size:${mm(3)}`,
                     `--ky-send-offset:${mm(-1.1)}`,
                     `--ky-id-bottom:${mm(8.2)}`,
-                    `--ky-id-left:${mm(20.2)}`,
+                    `--ky-id-left:${mm(32.4)}`,
                     `--ky-id-right:${mm(1)}`,
                     `--ky-website-bottom:${mm(3.3)}`,
-                    `--ky-website-left:${mm(20.2)}`,
+                    `--ky-website-left:${mm(32.4)}`,
                     `--ky-website-right:${mm(1)}`,
                     `--ky-website-height:${mm(3.5)}`,
                     `--ky-website-gap:${mm(1.5)}`,

@@ -25,7 +25,7 @@ class DCardPrintController extends Controller
 
     public function index(Request $request): Factory|View|Application
     {
-        $this->authorize('d_card_print');
+        $this->authorize('list_employee');
 
         $branchColumns = ['id', 'name'];
         $hasBranchLogo = Schema::hasColumn('branches', 'logo');
@@ -139,7 +139,7 @@ class DCardPrintController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $this->authorize('d_card_print');
+        $this->authorize('list_employee');
 
         $employee = DCardEmployee::where('employee_code', $request->input('employee_code'))->first();
 
@@ -156,7 +156,7 @@ class DCardPrintController extends Controller
 
     public function update(Request $request, DCardEmployee $employee): JsonResponse
     {
-        $this->authorize('d_card_print');
+        $this->authorize('list_employee');
 
         $employee->update($this->validatedData($request, $employee));
 
@@ -167,7 +167,7 @@ class DCardPrintController extends Controller
 
     public function destroy(DCardEmployee $employee): JsonResponse
     {
-        $this->authorize('d_card_print');
+        $this->authorize('list_employee');
 
         $employee->delete();
 

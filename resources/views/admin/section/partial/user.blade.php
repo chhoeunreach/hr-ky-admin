@@ -1,4 +1,4 @@
-@canany(['list_employee','d_card_print','employee.profile.view','employee.performance.create','view_employee_chat','list_logout_request'])
+@canany(['list_employee','employee.profile.view','employee.performance.create','view_employee_chat','list_logout_request'])
     <li class="nav-item  {{
                            request()->routeIs('admin.employees.*') ||
                            request()->routeIs('admin.employee.log') ||
@@ -92,8 +92,6 @@
                            data-href="{{route('admin.live-map')}}"
                            class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}">{{ __('index.live_map') }}</a>
                     </li>
-                @endcan
-                @can('d_card_print')
                     <li class="nav-item">
                         <a href="{{route('admin.d-card-print.index')}}"
                            data-href="{{route('admin.d-card-print.index')}}"

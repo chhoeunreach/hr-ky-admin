@@ -361,11 +361,6 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
-                "name" => "D Card Print",
-                "permission_key" => "d_card_print",
-                "permission_groups_id" => 5
-            ],
-            [
                 "name" => "View Employee Chat",
                 "permission_key" => "view_employee_chat",
                 "permission_groups_id" => 5
