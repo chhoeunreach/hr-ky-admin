@@ -80,22 +80,89 @@
             };
         @endphp
 
+        <style>
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 8mm;
+                }
+                body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .sidebar,
+                .navbar,
+                .footer,
+                #preloader,
+                .breadcrumb,
+                .no-print,
+                .pagination {
+                    display: none !important;
+                }
+                .main-wrapper,
+                .page-wrapper,
+                .page-content,
+                .content,
+                .card,
+                .card-body,
+                .table-responsive {
+                    border: 0 !important;
+                    box-shadow: none !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    width: 100% !important;
+                }
+                .card-header {
+                    border: 0 !important;
+                    padding: 0 0 6px !important;
+                }
+                .employee-profile-print-title {
+                    display: block !important;
+                    font-size: 16px;
+                    font-weight: 800;
+                    margin-bottom: 6px;
+                }
+                .table {
+                    font-size: 8.5px;
+                    width: 100% !important;
+                }
+                .table th,
+                .table td {
+                    border: 1px solid #cbd5e1 !important;
+                    padding: 3px 4px !important;
+                    vertical-align: top !important;
+                }
+                .table img {
+                    height: 26px !important;
+                    width: 26px !important;
+                }
+                .badge {
+                    border: 1px solid #94a3b8;
+                    color: #111827 !important;
+                }
+            }
+        </style>
+
         <div class="card">
             <div class="card-header">
-                <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                <div class="d-flex flex-wrap align-items-center gap-3 mb-3 no-print">
                     <button class="btn btn-outline-secondary btn-sm"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#employeeProfileFilters"
-                            aria-expanded="{{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status']) ? 'true' : 'false' }}"
+                            aria-expanded="{{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
                             aria-controls="employeeProfileFilters">
                         Filter
                     </button>
                     <h6 class="card-title mb-0">Employee Profile</h6>
+                    <button type="button" class="btn btn-outline-primary btn-sm ms-auto" onclick="window.print()">
+                        Print
+                    </button>
                 </div>
-                <form method="get" id="employeeProfileFilters" class="collapse {{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status']) ? 'show' : '' }}">
+                <h6 class="employee-profile-print-title d-none">Employee Profile</h6>
+                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
                     <div class="row g-2">
-                        <div class="col-lg-3 col-md-6">
+                        <div class="col-lg-2 col-md-6">
                             <input class="form-control" name="search" value="{{ request('search') }}" placeholder="Search employee">
                         </div>
                         <div class="col-lg-2 col-md-6">
@@ -138,6 +205,14 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-lg-1 col-md-6">
+                            <select class="form-select" name="per_page">
+                                @foreach([10, 25, 50, 100] as $size)
+                                    <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>
+                                @endforeach
+                                <option value="all" @selected($perPage === 'all')>All</option>
+                            </select>
+                        </div>
                         <div class="col-lg-1 col-md-6 d-flex gap-2">
                             <button class="btn btn-primary w-100">Apply</button>
                             <a class="btn btn-outline-secondary" href="{{ route('admin.employees.profile.index') }}">Reset</a>
@@ -150,7 +225,7 @@
                     <table class="table table-sm">
                         <thead>
                         <tr>
-                            <th>Action</th>
+                            <th class="no-print">Action</th>
                             <th>Employee</th>
                             <th>Branch</th>
                             <th>Department</th>
@@ -170,7 +245,7 @@
                                 ];
                             @endphp
                             <tr>
-                                <td>
+                                <td class="no-print">
                                     <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">Employee 360</a>
                                 </td>
                                 <td>
@@ -247,7 +322,9 @@
                         </tbody>
                     </table>
                 </div>
-                {{ $employees->appends(request()->query())->links() }}
+                @if(method_exists($employees, 'appends'))
+                    {{ $employees->appends(request()->query())->links() }}
+                @endif
             </div>
         </div>
     </section>

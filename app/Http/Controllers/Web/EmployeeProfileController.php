@@ -43,6 +43,10 @@ class EmployeeProfileController extends Controller
     {
         $this->authorize('employee.profile.view');
         $employmentStatus = $request->input('employment_status', 'active');
+        $requestedPerPage = $request->input('per_page', 25);
+        $perPage = $requestedPerPage === 'all'
+            ? 'all'
+            : (in_array((int) $requestedPerPage, [10, 25, 50, 100], true) ? (int) $requestedPerPage : 25);
 
         $employeeQuery = User::with([
                 'branch:id,name',
@@ -88,15 +92,16 @@ class EmployeeProfileController extends Controller
             $employeeQuery->whereIn('id', $matchingEmployeeIds->isNotEmpty() ? $matchingEmployeeIds : [0]);
         }
 
-        $employees = $employeeQuery
-            ->latest('id')
-            ->paginate(25);
+        $employeeQuery->latest('id');
+        $employees = $perPage === 'all'
+            ? $employeeQuery->get()
+            : $employeeQuery->paginate($perPage);
 
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
         $departments = Department::select('id', 'dept_name')->orderBy('dept_name')->get();
         $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
 
-        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus'));
+        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus', 'perPage'));
     }
 
     public function show(User $employee)
