@@ -72,7 +72,7 @@
     <div class="employee-complete-meta">
         <div>
             <small>Report Period / រយៈពេល</small>
-            <strong>{{ now()->startOfMonth()->format('Y-m-d') }} → {{ now()->endOfMonth()->format('Y-m-d') }}</strong>
+            <strong>{{ $attendanceSummary['from'] ?? ($employee->joining_date ?: now()->startOfMonth()->format('Y-m-d')) }} → {{ $attendanceSummary['to'] ?? now()->endOfMonth()->format('Y-m-d') }}</strong>
         </div>
         <div>
             <small>Branch / សាខា</small>
