@@ -163,6 +163,8 @@ class TelegramWebhookController extends Controller
      */
     private function persistMessageToThreads(int $employeeId, string $type, string $text, ?string $mediaUrl, ?float $latitude, ?float $longitude, string $chatId): void
     {
+        @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." START persistMessageToThreads emp=$employeeId type=$type chat=$chatId\n", FILE_APPEND);
+
         $existingAdminIds = ChatConversation::query()
             ->where('user_id', $employeeId)
             ->whereNotNull('admin_id')
@@ -172,9 +174,13 @@ class TelegramWebhookController extends Controller
             ->values()
             ->all();
 
+        @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." existingAdminIds=".json_encode($existingAdminIds)."\n", FILE_APPEND);
+
         $adminIds = $existingAdminIds !== []
             ? $existingAdminIds
             : \App\Models\Admin::query()->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+
+        @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." adminIds=".json_encode($adminIds)."\n", FILE_APPEND);
 
         $saved = false;
 
@@ -184,6 +190,8 @@ class TelegramWebhookController extends Controller
                     'user_id' => $employeeId,
                     'admin_id' => $adminId,
                 ]);
+
+                @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." conviction=$conversation->id admin=$adminId\n", FILE_APPEND);
 
                 $meta = [
                     'admin_id' => $adminId,
@@ -195,11 +203,14 @@ class TelegramWebhookController extends Controller
 
                 $message = $this->createInboundMessage($conversation, $employeeId, $type, $text, $mediaUrl, $latitude, $longitude, array_filter($meta, fn ($value) => $value !== null));
 
+                @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." message=".($message?->id ?? 'NULL')."\n", FILE_APPEND);
+
                 if ($message) {
                     $conversation->update(['last_message_at' => $message->created_at]);
                     $saved = true;
                 }
             } catch (\Throwable $throwable) {
+                @file_put_contents('D:/htdocs/hr-ky-admin1 - Copy/_dbg.log', date('c')." EXC admin=$adminId ".$throwable->getMessage()."\n".$throwable->getTraceAsString()."\n", FILE_APPEND);
                 Log::error('Failed to persist inbound Telegram message.', [
                     'chat_id' => $chatId,
                     'employee_id' => $employeeId,
