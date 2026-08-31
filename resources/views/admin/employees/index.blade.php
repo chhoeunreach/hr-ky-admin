@@ -788,5 +788,42 @@
                 button.text(originalText);
             }, 1500);
         });
+
+        var telegramConnectSyncTimer = null;
+        var telegramConnectSyncAttempts = 0;
+
+        function syncTelegramStartsFromEmployeeModal() {
+            fetch('{{ route('admin.telegram-employees.sync-starts') }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            }).then(function (response) {
+                return response.json();
+            }).then(function (data) {
+                if (data.linked && Number(data.linked) > 0) {
+                    window.location.reload();
+                }
+            }).catch(function () {});
+        }
+
+        $(document).on('shown.bs.modal', '[id^="telegramConnectModal"]', function () {
+            telegramConnectSyncAttempts = 0;
+            clearInterval(telegramConnectSyncTimer);
+            telegramConnectSyncTimer = setInterval(function () {
+                telegramConnectSyncAttempts++;
+                syncTelegramStartsFromEmployeeModal();
+
+                if (telegramConnectSyncAttempts >= 12) {
+                    clearInterval(telegramConnectSyncTimer);
+                }
+            }, 5000);
+        });
+
+        $(document).on('hidden.bs.modal', '[id^="telegramConnectModal"]', function () {
+            clearInterval(telegramConnectSyncTimer);
+        });
     </script>
 @endsection

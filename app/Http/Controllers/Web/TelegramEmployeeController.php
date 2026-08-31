@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\User;
 use App\Services\TelegramService;
 use App\Support\TelegramBotSettings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -148,7 +149,7 @@ class TelegramEmployeeController extends Controller
         return back()->with('success', "Telegram broadcast complete. Sent: {$result['sent']}, Failed: {$result['failed']}, Skipped: {$result['skipped']}.");
     }
 
-    public function syncStarts(TelegramService $telegramService): RedirectResponse
+    public function syncStarts(TelegramService $telegramService): JsonResponse|RedirectResponse
     {
         $updates = $telegramService->getUpdates();
 
@@ -158,6 +159,13 @@ class TelegramEmployeeController extends Controller
         }
 
         if (! is_array($updates) || ($updates['ok'] ?? false) !== true) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to sync Telegram starts. ' . ($telegramService->lastError() ?: 'Check bot token and Telegram webhook settings.'),
+                ], 422);
+            }
+
             return back()->with(
                 'danger',
                 'Unable to sync Telegram starts. ' . ($telegramService->lastError() ?: 'Check bot token and Telegram webhook settings.')
@@ -201,7 +209,25 @@ class TelegramEmployeeController extends Controller
         }
 
         if ($linked === 0) {
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'linked' => 0,
+                    'ignored' => $ignored,
+                    'message' => "No employee connect starts found. Scan the QR code, press Start in Telegram, then sync again. Ignored: {$ignored}.",
+                ]);
+            }
+
             return back()->with('warning', "No employee connect starts found. Scan the QR code, press Start in Telegram, then click Sync Telegram Starts again. Ignored: {$ignored}.");
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'linked' => $linked,
+                'ignored' => $ignored,
+                'message' => "Telegram employee sync complete. Linked: {$linked}, Ignored: {$ignored}.",
+            ]);
         }
 
         return back()->with('success', "Telegram employee sync complete. Linked: {$linked}, Ignored: {$ignored}.");

@@ -412,6 +412,33 @@
                 navigator.clipboard?.writeText(target.value).catch(function () { document.execCommand('copy'); });
             });
 
+            function syncTelegramStarts() {
+                return fetch('{{ route('admin.telegram-employees.sync-starts') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                }).then(function (response) {
+                    return response.json();
+                }).then(function (data) {
+                    if (data.linked && Number(data.linked) > 0) {
+                        window.location.reload();
+                    }
+                }).catch(function () {});
+            }
+
+            var syncAttempts = 0;
+            var syncTimer = setInterval(function () {
+                syncAttempts++;
+                syncTelegramStarts();
+
+                if (syncAttempts >= 12) {
+                    clearInterval(syncTimer);
+                }
+            }, 5000);
+
             var selected = rows.filter('.active').first();
             if (selected.length) { activateRow(selected); } else { rows.first().trigger('click'); }
         });
