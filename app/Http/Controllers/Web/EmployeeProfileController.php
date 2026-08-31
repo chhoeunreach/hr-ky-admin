@@ -510,18 +510,7 @@ class EmployeeProfileController extends Controller
     public function storeDiscipline(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
-        $data = $request->validate([
-            'incident_date' => ['nullable', 'date'],
-            'record_type' => ['required', Rule::in(['verbal_warning', 'written_warning', 'final_warning', 'suspension', 'disciplinary_action', 'other'])],
-            'severity' => ['nullable', 'string', 'max:255'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'action_taken' => ['nullable', 'string'],
-            'warning_level' => ['nullable', 'string', 'max:255'],
-            'approved_by' => ['nullable', 'exists:users,id'],
-            'status' => ['required', Rule::in(['draft', 'active', 'resolved', 'cancelled'])],
-            'attachment' => ['nullable', 'file', 'max:10240'],
-        ]);
+        $data = $this->validatedDisciplineData($request);
         if ($request->hasFile('attachment')) {
             $data['attachment'] = $request->file('attachment')->store('employee-discipline', 'local');
         }
@@ -529,6 +518,42 @@ class EmployeeProfileController extends Controller
         $this->audit($employee, 'discipline', 'create', $record->id, null, $record->toArray(), $request);
 
         return back()->with('success', 'Discipline record added.');
+    }
+
+    public function updateDiscipline(Request $request, User $employee, EmployeeDisciplinaryRecord $discipline): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless($discipline->employee_id === $employee->id, 404);
+
+        $data = $this->validatedDisciplineData($request);
+        if ($request->hasFile('attachment')) {
+            if ($discipline->attachment && Storage::disk('local')->exists($discipline->attachment)) {
+                Storage::disk('local')->delete($discipline->attachment);
+            }
+            $data['attachment'] = $request->file('attachment')->store('employee-discipline', 'local');
+        }
+
+        $old = $discipline->getOriginal();
+        $discipline->update($data);
+        $this->audit($employee, 'discipline', 'update', $discipline->id, $old, $discipline->fresh()->toArray(), $request);
+
+        return back()->with('success', 'Discipline record updated.');
+    }
+
+    public function destroyDiscipline(Request $request, User $employee, EmployeeDisciplinaryRecord $discipline): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless($discipline->employee_id === $employee->id, 404);
+
+        $old = $discipline->toArray();
+        if ($discipline->attachment && Storage::disk('local')->exists($discipline->attachment)) {
+            Storage::disk('local')->delete($discipline->attachment);
+        }
+        $disciplineId = $discipline->id;
+        $discipline->delete();
+        $this->audit($employee, 'discipline', 'delete', $disciplineId, $old, null, $request);
+
+        return back()->with('success', 'Discipline record deleted.');
     }
 
     public function storeGoal(Request $request, User $employee): RedirectResponse
@@ -858,6 +883,22 @@ class EmployeeProfileController extends Controller
         $used = (float) LeaveRequestMaster::where('requested_by', $employee->id)->where('status', 'approved')->sum('no_of_days');
 
         return max(0, $allocated - $used);
+    }
+
+    private function validatedDisciplineData(Request $request): array
+    {
+        return $request->validate([
+            'incident_date' => ['nullable', 'date'],
+            'record_type' => ['required', Rule::in(['verbal_warning', 'written_warning', 'final_warning', 'suspension', 'disciplinary_action', 'other'])],
+            'severity' => ['nullable', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'action_taken' => ['nullable', 'string'],
+            'warning_level' => ['nullable', 'string', 'max:255'],
+            'approved_by' => ['nullable', 'exists:users,id'],
+            'status' => ['required', Rule::in(['draft', 'active', 'resolved', 'cancelled'])],
+            'attachment' => ['nullable', 'file', 'max:10240'],
+        ]);
     }
 
     private function grade(float $score): string

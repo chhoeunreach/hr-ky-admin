@@ -238,6 +238,8 @@ Route::group([
             Route::post('training', [EmployeeProfileController::class, 'storeTraining'])->name('training.store');
             Route::post('rewards', [EmployeeProfileController::class, 'storeReward'])->name('rewards.store');
             Route::post('discipline', [EmployeeProfileController::class, 'storeDiscipline'])->name('discipline.store');
+            Route::put('discipline/{discipline}', [EmployeeProfileController::class, 'updateDiscipline'])->name('discipline.update');
+            Route::delete('discipline/{discipline}', [EmployeeProfileController::class, 'destroyDiscipline'])->name('discipline.destroy');
             Route::post('goals', [EmployeeProfileController::class, 'storeGoal'])->name('goals.store');
             Route::post('improvement-plans', [EmployeeProfileController::class, 'storeImprovementPlan'])->name('improvement-plans.store');
             Route::post('documents', [EmployeeProfileController::class, 'storeDocument'])->name('documents.store');
