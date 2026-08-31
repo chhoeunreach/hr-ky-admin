@@ -31,6 +31,10 @@ class TelegramBotSettings
             self::WEBHOOK_REGISTERED_URL => self::get(self::WEBHOOK_REGISTERED_URL, ''),
             'webhook_url' => self::webhookUrl(),
             'bot_token_saved' => $botToken !== '',
+            'env_bot_token_saved' => self::envBotToken() !== '',
+            'bot_token_masked' => self::maskSecret($botToken),
+            'env_bot_token_masked' => self::maskSecret(self::envBotToken()),
+            'bot_token_matches_env' => $botToken !== '' && hash_equals($botToken, self::envBotToken()),
         ];
     }
 
@@ -64,13 +68,33 @@ class TelegramBotSettings
     {
         self::ensureBotTokenExists();
 
-        return trim((string) self::get(self::BOT_TOKEN, config('services.telegram.bot_token', '')));
+        return trim((string) self::get(self::BOT_TOKEN, self::envBotToken()));
+    }
+
+    public static function envBotToken(): string
+    {
+        return trim((string) config('services.telegram.bot_token', ''));
+    }
+
+    public static function importEnvBotToken(): bool
+    {
+        $envToken = self::envBotToken();
+
+        if ($envToken === '') {
+            return false;
+        }
+
+        self::putMany([
+            self::BOT_TOKEN => $envToken,
+        ]);
+
+        return true;
     }
 
     public static function ensureDefaultsExist(): void
     {
         $defaults = [
-            self::BOT_TOKEN => (string) config('services.telegram.bot_token', ''),
+            self::BOT_TOKEN => self::envBotToken(),
             self::BOT_USERNAME => '',
             self::WEBHOOK_SECRET => (string) config('services.telegram.webhook_secret', ''),
             self::CONNECT_LINK_VALIDITY_MINUTES => '60',
@@ -101,7 +125,7 @@ class TelegramBotSettings
             return;
         }
 
-        $envToken = trim((string) config('services.telegram.bot_token', ''));
+        $envToken = self::envBotToken();
 
         if ($envToken === '') {
             return;
@@ -115,6 +139,17 @@ class TelegramBotSettings
                 'value' => $envToken,
             ]
         );
+    }
+
+    public static function maskSecret(string $value): string
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return '';
+        }
+
+        return Str::substr($value, 0, 4) . '...' . Str::substr($value, -4);
     }
 
     public static function connectLinkValidityMinutes(): int

@@ -147,6 +147,27 @@
             text-overflow: ellipsis;
         }
 
+        .chat-channel-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: max-content;
+            max-width: 100%;
+            min-height: 24px;
+            margin-top: 6px;
+            padding: 0 9px;
+            border-radius: 999px;
+            color: #0369a1;
+            background: #e0f2fe;
+            font-size: .75rem;
+            font-weight: 800;
+        }
+
+        .chat-channel-badge.off {
+            color: #64748b;
+            background: #f1f5f9;
+        }
+
         .chat-main {
             display: flex;
             flex-direction: column;
@@ -187,7 +208,7 @@
             gap: 10px;
         }
 
-        .chat-main-actions span {
+        .chat-main-actions span:not(.chat-delivery-pill) {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -196,6 +217,29 @@
             justify-content: center;
             background: #f5f3ff;
             color: #7c3aed;
+        }
+
+        .chat-main-actions a {
+            text-decoration: none;
+        }
+
+        .chat-delivery-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: auto;
+            height: 38px;
+            min-height: 38px;
+            padding: 0 13px;
+            border-radius: 999px;
+            color: #0369a1;
+            background: #e0f2fe;
+            font-weight: 800;
+        }
+
+        .chat-delivery-pill.off {
+            color: #92400e;
+            background: #fef3c7;
         }
 
         .chat-thread {
@@ -349,6 +393,18 @@
             font-size: .86rem;
         }
 
+        .chat-helper-text.success {
+            color: #15803d;
+        }
+
+        .chat-helper-text.warning {
+            color: #b45309;
+        }
+
+        .chat-helper-text.danger {
+            color: #b91c1c;
+        }
+
         .chat-info {
             padding: 20px;
         }
@@ -469,6 +525,10 @@
                                     <span class="chat-staff-time">{{ $latestTime }}</span>
                                 </div>
                                 <p class="chat-staff-preview">{{ $preview }}</p>
+                                <span class="chat-channel-badge {{ $staff->telegram_chat_id ? '' : 'off' }}">
+                                    <i data-feather="{{ $staff->telegram_chat_id ? 'send' : 'wifi-off' }}"></i>
+                                    {{ $staff->telegram_chat_id ? 'System + Telegram' : 'System only' }}
+                                </span>
                             </div>
                         </a>
                     @empty
@@ -494,9 +554,14 @@
                         </div>
 
                         <div class="chat-main-actions">
-                            <span><i data-feather="phone"></i></span>
-                            <span><i data-feather="video"></i></span>
-                            <span><i data-feather="info"></i></span>
+                            <span class="chat-delivery-pill {{ $selectedStaff->telegram_chat_id ? '' : 'off' }}">
+                                <i data-feather="{{ $selectedStaff->telegram_chat_id ? 'send' : 'wifi-off' }}"></i>
+                                {{ $selectedStaff->telegram_chat_id ? 'System + Telegram' : 'System only' }}
+                            </span>
+                            <a href="{{ route('admin.telegram-employees.index', ['active_employee' => $selectedStaff->id]) }}" class="chat-delivery-pill" title="Telegram employee setup">
+                                <i data-feather="settings"></i>
+                                Telegram
+                            </a>
                         </div>
                     </div>
 
@@ -527,7 +592,9 @@
                                 <input class="chat-composer-input" type="text" name="message" placeholder="{{ __('index.type_your_message') }}">
                                 <button class="chat-send-btn" type="submit">{{ __('index.send') }}</button>
                             </form>
-                            <div class="chat-helper-text" id="chat-status-text">{{ __('index.send_chat_hint') }}</div>
+                            <div class="chat-helper-text" id="chat-status-text">
+                                {{ $selectedStaff->telegram_chat_id ? 'Messages send to system chat and Telegram.' : 'Messages send to system chat only until Telegram is connected.' }}
+                            </div>
                         @else
                             <div class="chat-helper-text" id="chat-status-text">{{ __('index.chat_read_only') }}</div>
                         @endcan
@@ -542,6 +609,17 @@
                     <img src="{{ $selectedStaff && $selectedStaff->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $selectedStaff->avatar) : asset('assets/images/img.png') }}" alt="{{ $selectedStaff?->name ?? 'Employee' }}" class="chat-avatar">
                     <h4 class="mt-3 mb-1">{{ $selectedStaff?->name ?? 'Employee' }}</h4>
                     <p>{{ $selectedStaff?->branch?->name ?? 'Staff profile' }}</p>
+                    @if($selectedStaff)
+                        <div class="mt-3">
+                            <span class="chat-channel-badge {{ $selectedStaff->telegram_chat_id ? '' : 'off' }}">
+                                <i data-feather="{{ $selectedStaff->telegram_chat_id ? 'check-circle' : 'alert-circle' }}"></i>
+                                {{ $selectedStaff->telegram_chat_id ? 'Telegram connected' : 'Telegram not connected' }}
+                            </span>
+                        </div>
+                        @if($selectedStaff->telegram_chat_id)
+                            <p class="mt-2 mb-0">{{ $selectedStaff->telegram_username ? '@' . $selectedStaff->telegram_username : $selectedStaff->telegram_chat_id }}</p>
+                        @endif
+                    @endif
                 </div>
 
                 @foreach($infoSections as $section)
@@ -696,6 +774,7 @@
 
                 form.addEventListener('submit', async function (event) {
                     event.preventDefault();
+                    statusText.classList.remove('success', 'warning', 'danger');
                     statusText.textContent = 'Sending message...';
 
                     try {
@@ -710,6 +789,7 @@
                         const data = await response.json();
 
                         if (!response.ok || !data.success) {
+                            statusText.classList.add('danger');
                             statusText.textContent = data.message || 'Unable to send message.';
                             return;
                         }
@@ -717,12 +797,14 @@
                         thread.innerHTML = data.html;
                         form.reset();
                         clearAttachmentPreview();
-                        statusText.textContent = 'Message sent successfully.';
+                        statusText.classList.add(data.telegram_status === 'failed' ? 'warning' : 'success');
+                        statusText.textContent = data.telegram_message || 'Message sent successfully.';
                         scrollThreadToBottom();
                         if (window.feather) {
                             feather.replace();
                         }
                     } catch (error) {
+                        statusText.classList.add('danger');
                         statusText.textContent = 'Unable to send message right now.';
                     }
                 });

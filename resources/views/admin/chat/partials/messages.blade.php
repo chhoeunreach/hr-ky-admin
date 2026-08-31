@@ -2,6 +2,8 @@
     @php
         $isOutgoing = $message->sender_type === \App\Models\ChatMessage::SENDER_ADMIN;
         $mediaUrl = $message->resolvedMediaUrl();
+        $telegramStatus = $message->meta['telegram_status'] ?? null;
+        $telegramError = $message->meta['telegram_error'] ?? null;
     @endphp
     <div class="chat-bubble-row {{ $isOutgoing ? 'outgoing' : '' }}">
         <div class="chat-bubble {{ $isOutgoing ? 'outgoing' : '' }}">
@@ -42,6 +44,16 @@
 
             <div class="chat-bubble-meta">
                 {{ $message->senderName() }} &bull; {{ $message->created_at->format('M d, h:i A') }}
+                @if($isOutgoing && $telegramStatus)
+                    &bull;
+                    @if($telegramStatus === 'sent')
+                        Telegram delivered
+                    @elseif($telegramStatus === 'skipped')
+                        Telegram skipped
+                    @else
+                        Telegram failed{{ $telegramError ? ': ' . $telegramError : '' }}
+                    @endif
+                @endif
             </div>
         </div>
     </div>

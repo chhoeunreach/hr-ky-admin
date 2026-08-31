@@ -203,9 +203,11 @@ Route::group([
             /** Telegram group route */
             Route::get('telegram-bot', [TelegramBotController::class, 'index'])->name('telegram-bot.index');
             Route::put('telegram-bot', [TelegramBotController::class, 'update'])->name('telegram-bot.update');
+            Route::post('telegram-bot/import-env-token', [TelegramBotController::class, 'importEnvToken'])->name('telegram-bot.import-env-token');
             Route::post('telegram-bot/test-connection', [TelegramBotController::class, 'testConnection'])->name('telegram-bot.test-connection');
             Route::post('telegram-bot/register-webhook', [TelegramBotController::class, 'registerWebhook'])->name('telegram-bot.register-webhook');
             Route::get('telegram-employees', [TelegramEmployeeController::class, 'index'])->name('telegram-employees.index');
+            Route::post('telegram-employees/sync-starts', [TelegramEmployeeController::class, 'syncStarts'])->name('telegram-employees.sync-starts');
             Route::put('telegram-employees/{employee}', [TelegramEmployeeController::class, 'update'])->name('telegram-employees.update');
             Route::post('telegram-employees/{employee}/send', [TelegramEmployeeController::class, 'send'])->name('telegram-employees.send');
             Route::post('telegram-employees/broadcast', [TelegramEmployeeController::class, 'broadcast'])->name('telegram-employees.broadcast');

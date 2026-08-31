@@ -42,6 +42,15 @@ class TelegramBotController extends Controller
         return back()->with('success', 'Telegram bot settings saved.');
     }
 
+    public function importEnvToken(): RedirectResponse
+    {
+        if (! TelegramBotSettings::importEnvBotToken()) {
+            return back()->with('danger', 'TELEGRAM_BOT_TOKEN is missing from .env.');
+        }
+
+        return back()->with('success', 'TELEGRAM_BOT_TOKEN imported into Telegram Bot settings.');
+    }
+
     public function testConnection(TelegramService $telegramService): RedirectResponse
     {
         $response = $telegramService->getMe();
@@ -55,6 +64,12 @@ class TelegramBotController extends Controller
 
         $bot = $response['result'] ?? [];
         $username = $bot['username'] ?? 'unknown';
+
+        if ($username !== 'unknown') {
+            TelegramBotSettings::putMany([
+                TelegramBotSettings::BOT_USERNAME => $username,
+            ]);
+        }
 
         return back()->with('success', "Telegram bot token is working. Bot: @{$username}");
     }

@@ -159,6 +159,21 @@ class TelegramService
         return $this->get('getMe')?->json();
     }
 
+    public function getUpdates(?int $offset = null, int $limit = 100, int $timeout = 0): ?array
+    {
+        $query = [
+            'limit' => $limit,
+            'timeout' => $timeout,
+            'allowed_updates' => json_encode(['message']),
+        ];
+
+        if ($offset !== null) {
+            $query['offset'] = $offset;
+        }
+
+        return $this->get('getUpdates', $query)?->json();
+    }
+
     public function setWebhook(string $url, ?string $secret = null, bool $dropPendingUpdates = false): bool
     {
         $payload = [
@@ -328,6 +343,68 @@ class TelegramService
                 'exception' => $e->getMessage(),
             ]);
             return null;
+        }
+    }
+
+    public function sendDocument(string $chatId, string $documentPath, ?string $fileName = null, ?string $caption = null, ?string $parseMode = null): bool
+    {
+        $botToken = TelegramBotSettings::botToken();
+
+        if ($botToken === '') {
+            $this->lastError = 'Telegram bot token is missing. Save the bot token first.';
+            Log::error('Telegram document skipped: bot token missing.', [
+                'chatId' => $chatId,
+            ]);
+            return false;
+        }
+
+        if (! is_file($documentPath)) {
+            $this->lastError = 'Telegram document file was not found.';
+            Log::error('Telegram document skipped: file not found.', [
+                'chatId' => $chatId,
+                'documentPath' => $documentPath,
+            ]);
+            return false;
+        }
+
+        $url = rtrim(self::TELEGRAM_API_BASE, '/') . '/bot' . $botToken . '/sendDocument';
+
+        try {
+            $request = Http::timeout(30)
+                ->retry(2, 200)
+                ->acceptJson()
+                ->attach('document', file_get_contents($documentPath), $fileName ?: basename($documentPath));
+
+            $payload = ['chat_id' => $chatId];
+
+            if ($caption !== null && $caption !== '') {
+                $payload['caption'] = Str::limit($caption, 1024, '...');
+            }
+
+            if ($parseMode !== null) {
+                $payload['parse_mode'] = $parseMode;
+            }
+
+            $response = $request->post($url, $payload);
+
+            if (! $response->successful()) {
+                $this->lastError = $this->formatTelegramError('sendDocument', $this->telegramErrorFromResponse($response), $chatId);
+                Log::error('Telegram sendDocument failed.', [
+                    'chatId' => $chatId,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            $this->lastError = $this->formatTelegramError('sendDocument', $e->getMessage(), $chatId);
+            Log::error('Telegram sendDocument exception.', [
+                'chatId' => $chatId,
+                'exception' => $e->getMessage(),
+            ]);
+            return false;
         }
     }
 

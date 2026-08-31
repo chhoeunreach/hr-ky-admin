@@ -6,6 +6,7 @@
                            request()->routeIs('admin.live-map*') ||
                            request()->routeIs('admin.d-card-print*') ||
                            request()->routeIs('admin.employee-chat*') ||
+                           request()->routeIs('admin.telegram-employees.*') ||
                            request()->routeIs('admin.logout-requests.*')
                         ? 'active' : ''
                         }}   ">
@@ -28,6 +29,7 @@
                          request()->routeIs('admin.live-map*') ||
                          request()->routeIs('admin.d-card-print*') ||
                          request()->routeIs('admin.employee-chat*') ||
+                         request()->routeIs('admin.telegram-employees.*') ||
                          request()->routeIs('admin.logout-requests.*') ? '' : 'collapse'  }}"  id="employee_management">
             <ul class="nav sub-menu">
                 @can('list_employee')
@@ -91,6 +93,11 @@
                         <a href="{{route('admin.live-map')}}"
                            data-href="{{route('admin.live-map')}}"
                            class="nav-link {{request()->routeIs('admin.live-map*') ? 'active' : ''}}">{{ __('index.live_map') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{route('admin.telegram-employees.index')}}"
+                           data-href="{{route('admin.telegram-employees.index')}}"
+                           class="nav-link {{request()->routeIs('admin.telegram-employees.*') ? 'active' : ''}}">Telegram Employees</a>
                     </li>
                 @endcan
                 @can('d_card_print')

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatConversation;
 use App\Models\ChatMessage;
 use App\Models\User;
+use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,7 +72,7 @@ class EmployeeChatController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, TelegramService $telegramService): JsonResponse
     {
         $this->authorize('send_employee_chat');
 
@@ -117,7 +118,7 @@ class EmployeeChatController extends Controller
         $admin = auth('admin')->user();
         $conversation = $this->getOrCreateConversation($employee->id, $admin->id);
 
-        DB::transaction(function () use ($request, $conversation, $admin, $employee) {
+        $message = DB::transaction(function () use ($request, $conversation, $admin, $employee) {
             $messageType = $request->input('message_type', ChatMessage::TYPE_TEXT);
             $mediaUrl = $request->input('media_url');
             $storedMediaPath = null;
@@ -183,13 +184,19 @@ class EmployeeChatController extends Controller
                 'admin_thread',
                 (string) $conversation->id
             );
+
+            return $message;
         });
+
+        $telegramResult = $this->mirrorMessageToTelegram($message, $employee, $telegramService);
 
         $messages = $this->loadThreadMessages($conversation, $admin->id);
 
         return response()->json([
             'success' => true,
             'html' => view('admin.chat.partials.messages', compact('messages'))->render(),
+            'telegram_status' => $telegramResult['status'],
+            'telegram_message' => $telegramResult['message'],
         ]);
     }
 
@@ -199,7 +206,7 @@ class EmployeeChatController extends Controller
         $supportsPerAdminConversation = $this->supportsPerAdminConversation();
 
         return User::query()
-            ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status'])
+            ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status', 'telegram_chat_id', 'telegram_username', 'telegram_linked_at'])
             ->with([
                 'department:id,dept_name',
                 'branch:id,name',
@@ -309,9 +316,103 @@ class EmployeeChatController extends Controller
             return [ChatMessage::TYPE_IMAGE, Storage::disk('public')->url($path), $path, $originalName];
         }
 
-        $path = $file->store('chat/voice', 'public');
+        if (str_starts_with($mimeType, 'audio/')) {
+            $path = $file->store('chat/voice', 'public');
 
-        return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path), $path, $originalName];
+            return [ChatMessage::TYPE_VOICE, Storage::disk('public')->url($path), $path, $originalName];
+        }
+
+        $path = $file->store('chat/files', 'public');
+
+        return [ChatMessage::TYPE_FILE, Storage::disk('public')->url($path), $path, $originalName];
+    }
+
+    private function mirrorMessageToTelegram(ChatMessage $message, User $employee, TelegramService $telegramService): array
+    {
+        $chatId = trim((string) $employee->telegram_chat_id);
+
+        if ($chatId === '') {
+            $this->markTelegramStatus($message, 'skipped', null);
+
+            return [
+                'status' => 'skipped',
+                'message' => 'System chat sent. Telegram skipped because this employee is not connected.',
+            ];
+        }
+
+        $ok = match ($message->message_type) {
+            ChatMessage::TYPE_IMAGE => $this->sendTelegramImage($message, $telegramService, $chatId),
+            ChatMessage::TYPE_FILE, ChatMessage::TYPE_VOICE => $this->sendTelegramDocument($message, $telegramService, $chatId),
+            ChatMessage::TYPE_LOCATION => $this->sendTelegramLocation($message, $telegramService, $chatId),
+            default => $telegramService->sendMessage($chatId, (string) ($message->message ?: 'New HR chat message')),
+        };
+
+        $error = $ok ? null : $telegramService->lastError();
+        $this->markTelegramStatus($message, $ok ? 'sent' : 'failed', $error);
+
+        return [
+            'status' => $ok ? 'sent' : 'failed',
+            'message' => $ok
+                ? 'System chat sent and Telegram delivered.'
+                : 'System chat sent, but Telegram failed. ' . ($error ?: 'Check employee chat ID and bot token.'),
+        ];
+    }
+
+    private function sendTelegramImage(ChatMessage $message, TelegramService $telegramService, string $chatId): bool
+    {
+        $mediaPath = $message->resolvedMediaPath();
+
+        if ($mediaPath === null) {
+            return $telegramService->sendMessage($chatId, (string) ($message->message ?: 'Sent a photo'));
+        }
+
+        return $telegramService->sendPhoto(
+            $chatId,
+            Storage::disk('public')->path($mediaPath),
+            $message->message ?: null
+        ) !== null;
+    }
+
+    private function sendTelegramDocument(ChatMessage $message, TelegramService $telegramService, string $chatId): bool
+    {
+        $mediaPath = $message->resolvedMediaPath();
+
+        if ($mediaPath === null) {
+            return $telegramService->sendMessage($chatId, (string) ($message->message ?: 'Sent a file'));
+        }
+
+        return $telegramService->sendDocument(
+            $chatId,
+            Storage::disk('public')->path($mediaPath),
+            $message->meta['file_name'] ?? basename($mediaPath),
+            $message->message ?: null
+        );
+    }
+
+    private function sendTelegramLocation(ChatMessage $message, TelegramService $telegramService, string $chatId): bool
+    {
+        if ($message->latitude === null || $message->longitude === null) {
+            return $telegramService->sendMessage($chatId, (string) ($message->message ?: $message->map_url ?: 'Sent a location'));
+        }
+
+        $locationSent = $telegramService->sendLocation($chatId, (float) $message->latitude, (float) $message->longitude);
+
+        if ($locationSent && trim((string) $message->message) !== '') {
+            $telegramService->sendMessage($chatId, (string) $message->message);
+        }
+
+        return $locationSent;
+    }
+
+    private function markTelegramStatus(ChatMessage $message, string $status, ?string $error): void
+    {
+        $meta = $message->meta ?? [];
+        $meta['telegram_status'] = $status;
+        $meta['telegram_error'] = $error;
+        $meta['telegram_checked_at'] = now()->toDateTimeString();
+
+        $message->update(['meta' => $meta]);
+        $message->meta = $meta;
     }
 
     private function loadThreadMessages(ChatConversation $conversation, int $adminId)

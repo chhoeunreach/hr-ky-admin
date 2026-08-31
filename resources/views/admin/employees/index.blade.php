@@ -366,6 +366,45 @@
                         margin-bottom: 0;
                     }
 
+                    .telegram-connect-card {
+                        text-align: center;
+                    }
+
+                    .telegram-connect-qr {
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        width: 220px;
+                        height: 220px;
+                        max-width: 100%;
+                        margin: 0 auto 18px;
+                        padding: 14px;
+                        border: 1px solid #d8e0e7;
+                        border-radius: 12px;
+                        background: #ffffff;
+                    }
+
+                    .telegram-connect-qr svg {
+                        width: 100%;
+                        height: 100%;
+                    }
+
+                    .telegram-connect-link {
+                        font-size: 12px;
+                    }
+
+                    .telegram-connect-status {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-bottom: 14px;
+                        padding: 8px 14px;
+                        border-radius: 999px;
+                        color: #0f7a3b;
+                        background: #dcfce7;
+                        font-weight: 700;
+                    }
+
                     @media (max-width: 767.98px) {
                         .employee-toolbar {
                             grid-template-columns: 1fr;
@@ -568,13 +607,13 @@
                                                     <li class="dropdown-item py-2">
                                                         @php $telegramConnectUrl = $telegramBotUsername ? TelegramBotSettings::connectUrl($value) : null; @endphp
                                                         @if($telegramConnectUrl)
-                                                            <a href="{{ $telegramConnectUrl }}"
-                                                               target="_blank"
-                                                               rel="noopener noreferrer">
-                                                                <button class="btn btn-primary btn-xs">
-                                                                    <i class="link-icon" data-feather="send"></i> Connect to Telegram
-                                                                </button>
-                                                            </a>
+                                                            <button type="button"
+                                                                    class="btn {{ $value->telegram_chat_id ? 'btn-success' : 'btn-primary' }} btn-xs"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#telegramConnectModal{{ $value->id }}">
+                                                                <i class="link-icon" data-feather="{{ $value->telegram_chat_id ? 'check-circle' : 'send' }}"></i>
+                                                                {{ $value->telegram_chat_id ? 'Has been connected' : 'Connect to Telegram' }}
+                                                            </button>
                                                         @else
                                                             <button class="btn btn-secondary btn-xs" disabled title="Save Bot Username in Telegram Bot settings first">
                                                                 <i class="link-icon" data-feather="send"></i> Connect to Telegram
@@ -616,6 +655,86 @@
                                                 @endcan
                                             </ul>
                                         </div>
+
+                                        @can('edit_employee')
+                                            @if($telegramConnectUrl)
+                                                <div class="modal fade" id="telegramConnectModal{{ $value->id }}" tabindex="-1"
+                                                     aria-labelledby="telegramConnectModalLabel{{ $value->id }}" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="telegramConnectModalLabel{{ $value->id }}">
+                                                                    {{ $value->telegram_chat_id ? ucfirst($value->name) . ' has been connected' : 'Connect ' . ucfirst($value->name) . ' to Telegram' }}
+                                                                </h5>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <div class="telegram-connect-card">
+                                                                    @if($value->telegram_chat_id)
+                                                                        <div class="telegram-connect-status">
+                                                                            <i class="link-icon" data-feather="check-circle"></i>
+                                                                            Has been connected
+                                                                        </div>
+
+                                                                        <p class="mb-2">
+                                                                            This employee is already connected to Telegram.
+                                                                        </p>
+
+                                                                        <div class="text-muted mb-3">
+                                                                            Chat ID: {{ $value->telegram_chat_id }}
+                                                                            @if($value->telegram_username)
+                                                                                <br>Username: {{ '@' . $value->telegram_username }}
+                                                                            @endif
+                                                                            @if($value->telegram_linked_at)
+                                                                                <br>Linked at: {{ optional($value->telegram_linked_at)->format('Y-m-d H:i') }}
+                                                                            @endif
+                                                                        </div>
+                                                                    @else
+                                                                        <div class="telegram-connect-qr">
+                                                                            {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(190)->margin(1)->generate($telegramConnectUrl) !!}
+                                                                        </div>
+
+                                                                        <p class="mb-2">
+                                                                            Scan this QR code or open the link to connect this employee with the Telegram bot.
+                                                                        </p>
+                                                                    @endif
+
+                                                                    <div class="input-group input-group-sm">
+                                                                        <input type="text"
+                                                                               class="form-control telegram-connect-link"
+                                                                               id="telegramConnectLink{{ $value->id }}"
+                                                                               value="{{ $telegramConnectUrl }}"
+                                                                               readonly>
+                                                                        <button type="button"
+                                                                                class="btn btn-outline-secondary copyTelegramConnectLink"
+                                                                                data-target="telegramConnectLink{{ $value->id }}">
+                                                                            Copy
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <form method="POST" action="{{ route('admin.telegram-employees.sync-starts') }}" class="m-0">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-outline-success">
+                                                                        <i class="link-icon" data-feather="download-cloud"></i>
+                                                                        Sync Telegram Starts
+                                                                    </button>
+                                                                </form>
+                                                                <a href="{{ $telegramConnectUrl }}"
+                                                                   target="_blank"
+                                                                   rel="noopener noreferrer"
+                                                                   class="btn {{ $value->telegram_chat_id ? 'btn-outline-primary' : 'btn-primary' }}">
+                                                                    <i class="link-icon" data-feather="send"></i>
+                                                                    {{ $value->telegram_chat_id ? 'Open Connect Link Again' : 'Open Telegram' }}
+                                                                </a>
+                                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        @endcan
                                     </td>
                                 @endcanany
                             </tr>
@@ -644,4 +763,30 @@
 
 @section('scripts')
     @include('admin.employees.common.scripts')
+    <script>
+        $(document).on('click', '.copyTelegramConnectLink', function () {
+            var button = $(this);
+            var input = document.getElementById(button.data('target'));
+
+            if (!input) {
+                return;
+            }
+
+            input.select();
+            input.setSelectionRange(0, input.value.length);
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(input.value);
+            } else {
+                document.execCommand('copy');
+            }
+
+            var originalText = button.text();
+            button.text('Copied');
+
+            setTimeout(function () {
+                button.text(originalText);
+            }, 1500);
+        });
+    </script>
 @endsection

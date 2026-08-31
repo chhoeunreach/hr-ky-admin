@@ -118,7 +118,6 @@
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
                       request()->routeIs('admin.telegram-bot.*') ||
-                      request()->routeIs('admin.telegram-employees.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
@@ -140,7 +139,6 @@
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
                       request()->routeIs('admin.telegram-bot.*') ||
-                      request()->routeIs('admin.telegram-employees.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
@@ -190,7 +188,7 @@
                         <a
                             href="{{route('admin.telegram-bot.index')}}"
                             data-href="{{route('admin.telegram-bot.index')}}"
-                            class="nav-link {{request()->routeIs('admin.telegram-bot.*') || request()->routeIs('admin.telegram-employees.*') ? 'active' : ''}}">Telegram Bot</a>
+                            class="nav-link {{request()->routeIs('admin.telegram-bot.*') ? 'active' : ''}}">Telegram Bot</a>
                     </li>
                 @endif
 
