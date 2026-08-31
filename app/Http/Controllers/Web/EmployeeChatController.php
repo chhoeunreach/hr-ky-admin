@@ -29,7 +29,8 @@ class EmployeeChatController extends Controller
         $this->authorize('view_employee_chat');
         $admin = auth('admin')->user();
 
-        $staffList = $this->getStaffList();
+        $filters = $this->staffFilters($request);
+        $staffList = $this->getStaffList($filters);
         $selectedStaff = $this->resolveSelectedStaff($staffList, $request->integer('employee_id'));
         $conversation = $selectedStaff ? $this->getOrCreateConversation($selectedStaff->id, $admin->id) : null;
         $messages = collect();
@@ -39,12 +40,34 @@ class EmployeeChatController extends Controller
             $this->markMessagesAsReadByAdmin($messages);
         }
 
+        $branches = \App\Models\Branch::select('id', 'name')->orderBy('name')->get();
+        $departments = \App\Models\Department::select('id', 'dept_name')->orderBy('dept_name')->get();
+        $botSettings = \App\Support\TelegramBotSettings::all();
+
         return view('admin.employee-chat', compact(
             'staffList',
             'selectedStaff',
             'conversation',
-            'messages'
+            'messages',
+            'filters',
+            'branches',
+            'departments',
+            'botSettings'
         ));
+    }
+
+    public function staff(Request $request): JsonResponse
+    {
+        $this->authorize('view_employee_chat');
+
+        $filters = $this->staffFilters($request);
+        $staffList = $this->getStaffList($filters);
+        $selectedStaff = $staffList->firstWhere('id', $request->integer('employee_id'));
+
+        return response()->json([
+            'success' => true,
+            'html' => view('admin.chat.partials.staff', compact('staffList', 'selectedStaff'))->render(),
+        ]);
     }
 
     public function messages(Request $request): JsonResponse
@@ -200,12 +223,22 @@ class EmployeeChatController extends Controller
         ]);
     }
 
-    private function getStaffList()
+    private function staffFilters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->input('search')),
+            'branch_id' => $request->input('branch_id'),
+            'department_id' => $request->input('department_id'),
+            'linked' => $request->input('linked'),
+        ];
+    }
+
+    private function getStaffList(array $filters = [])
     {
         $adminId = auth('admin')->id();
         $supportsPerAdminConversation = $this->supportsPerAdminConversation();
 
-        return User::query()
+        $query = User::query()
             ->select(['id', 'name', 'username', 'avatar', 'phone', 'department_id', 'branch_id', 'online_status', 'telegram_chat_id', 'telegram_username', 'telegram_linked_at'])
             ->with([
                 'department:id,dept_name',
@@ -221,9 +254,38 @@ class EmployeeChatController extends Controller
                 },
             ])
             ->where('status', 'verified')
-            ->where('is_active', 1)
-            ->orderBy('name')
-            ->get();
+            ->where('is_active', 1);
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('english_name', 'like', "%{$search}%")
+                    ->orWhere('employee_code', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('telegram_chat_id', 'like', "%{$search}%")
+                    ->orWhere('telegram_username', 'like', "%{$search}%");
+            });
+        }
+
+        if (! empty($filters['branch_id'])) {
+            $query->where('branch_id', $filters['branch_id']);
+        }
+
+        if (! empty($filters['department_id'])) {
+            $query->where('department_id', $filters['department_id']);
+        }
+
+        if (($filters['linked'] ?? '') === 'yes') {
+            $query->whereNotNull('telegram_chat_id')->where('telegram_chat_id', '!=', '');
+        } elseif (($filters['linked'] ?? '') === 'no') {
+            $query->where(function ($query) {
+                $query->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', '');
+            });
+        }
+
+        return $query->orderBy('name')->get();
     }
 
     private function resolveSelectedStaff($staffList, ?int $employeeId): ?User

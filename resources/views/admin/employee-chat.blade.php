@@ -301,6 +301,16 @@
             color: #94a3b8;
         }
 
+        .chat-bubble-meta .chat-telegram-badge {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 999px;
+            color: #0369a1;
+            background: #e0f2fe;
+            font-weight: 800;
+            font-size: .7rem;
+        }
+
         .chat-composer {
             border-top: 1px solid #edf2f7;
             padding: 16px;
@@ -444,6 +454,158 @@
             color: #6b7280;
         }
 
+        .chat-filters {
+            margin-bottom: 16px;
+        }
+
+        .chat-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .chat-filter-grid:last-child {
+            margin-bottom: 0;
+        }
+
+        .chat-filter-grid .form-select,
+        .chat-filter-grid .btn {
+            min-height: 38px;
+            font-size: .85rem;
+            border-radius: 10px;
+        }
+
+        .chat-telegram-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1080;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .18s ease;
+        }
+
+        .chat-telegram-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .chat-telegram-modal {
+            position: relative;
+            width: min(520px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+            padding: 28px 26px;
+            border-radius: 20px;
+            background: #fff;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+            transform: translateY(12px) scale(.98);
+            transition: transform .18s ease;
+        }
+
+        .chat-telegram-overlay.show .chat-telegram-modal {
+            transform: translateY(0) scale(1);
+        }
+
+        .chat-telegram-close {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            border: 0;
+            border-radius: 50%;
+            color: #6b7280;
+            background: #f1f5f9;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .chat-telegram-close:hover {
+            background: #e2e8f0;
+        }
+
+        .chat-telegram-head {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+
+        .chat-telegram-head h4 {
+            margin: 0 0 6px;
+            font-weight: 700;
+        }
+
+        .chat-telegram-head p {
+            margin: 0;
+            color: #6b7280;
+            font-size: .9rem;
+        }
+
+        .chat-telegram-qr {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            background: #fff;
+            width: max-content;
+        }
+
+        .chat-telegram-qr svg,
+        .chat-telegram-qr img {
+            display: block;
+        }
+
+        .chat-telegram-link-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .chat-telegram-link-row input {
+            min-width: 0;
+            flex: 1;
+            font-size: .85rem;
+            border-color: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        .chat-telegram-note {
+            margin-top: 12px;
+            color: #6b7280;
+            font-size: .83rem;
+            text-align: center;
+        }
+
+        .chat-telegram-bot-missing {
+            padding: 24px;
+            text-align: center;
+            color: #b45309;
+            background: #fef3c7;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .chat-telegram-linked-note {
+            margin-top: 14px;
+            padding: 10px 12px;
+            color: #15803d;
+            background: #e6f4ea;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            font-size: .85rem;
+        }
+
         @media (max-width: 1399px) {
             .chat-layout {
                 grid-template-columns: 320px minmax(0, 1fr);
@@ -476,6 +638,11 @@
             'Media, files and links',
             'Privacy and support',
         ];
+        $botUsername = trim((string) ($botSettings[\App\Support\TelegramBotSettings::BOT_USERNAME] ?? ''));
+        $botReady = ! empty($botSettings['bot_token_saved']) && $botUsername !== '';
+        $connectUrl = $selectedStaff ? \App\Support\TelegramBotSettings::connectUrl($selectedStaff) : null;
+        $connectValidity = \App\Support\TelegramBotSettings::connectLinkValidityMinutes();
+        $connectQrHtml = $connectUrl ? \SimpleSoftwareIO\QrCode\Facades\QrCode::size(200)->margin(1)->generate($connectUrl) : '';
     @endphp
 
     <section class="content">
@@ -491,49 +658,36 @@
 
                 <div class="chat-search-box">
                     <i data-feather="search"></i>
-                    <input id="chat-staff-search" type="text" placeholder="Search staff">
+                    <input id="chat-staff-search" type="text" placeholder="Search staff" value="{{ $filters['search'] }}">
+                </div>
+
+                <div class="chat-filters">
+                    <div class="chat-filter-grid">
+                        <select id="chat-filter-branch" class="form-select form-select-sm">
+                            <option value="">All Branches</option>
+                            @foreach($branches as $branch)
+                                <option value="{{ $branch->id }}" {{ (string) $filters['branch_id'] === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                        <select id="chat-filter-department" class="form-select form-select-sm">
+                            <option value="">All Departments</option>
+                            @foreach($departments as $department)
+                                <option value="{{ $department->id }}" {{ (string) $filters['department_id'] === (string) $department->id ? 'selected' : '' }}>{{ $department->dept_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="chat-filter-grid">
+                        <select id="chat-filter-linked" class="form-select form-select-sm">
+                            <option value="">All Status</option>
+                            <option value="yes" {{ $filters['linked'] === 'yes' ? 'selected' : '' }}>Linked</option>
+                            <option value="no" {{ $filters['linked'] === 'no' ? 'selected' : '' }}>Not Linked</option>
+                        </select>
+                        <button type="button" id="chat-filter-reset" class="btn btn-outline-secondary btn-sm"><i data-feather="rotate-ccw"></i> Reset</button>
+                    </div>
                 </div>
 
                 <div class="chat-staff-list" id="chat-staff-list">
-                        @forelse($staffList as $staff)
-                            @php
-                                $latestConversation = $staff->chatConversations->first();
-                                $latestMessage = $latestConversation?->latestMessage;
-                                $preview = $latestMessage?->message
-                                ?: ($latestMessage?->message_type === \App\Models\ChatMessage::TYPE_IMAGE
-                                    ? 'Sent a photo'
-                                    : ($latestMessage?->message_type === \App\Models\ChatMessage::TYPE_VOICE
-                                        ? 'Sent a voice message'
-                                        : ($latestMessage?->message_type === \App\Models\ChatMessage::TYPE_LOCATION
-                                            ? 'Sent a location'
-                                            : ($staff->department?->dept_name ?? ($staff->phone ?: ($staff->username ?: 'Employee'))))));
-                            $latestTime = $latestMessage?->created_at?->diffForHumans() ?? ($staff->branch?->name ?? 'Staff');
-                        @endphp
-                        <a href="{{ route('admin.employee-chat', ['employee_id' => $staff->id]) }}"
-                           class="chat-staff-link {{ $selectedStaff && $selectedStaff->id === $staff->id ? 'active' : '' }}"
-                           data-staff-name="{{ strtolower($staff->name) }}"
-                           data-staff-preview="{{ strtolower($preview) }}">
-                            <div class="chat-avatar-wrap">
-                                <img src="{{ $staff->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $staff->avatar) : asset('assets/images/img.png') }}" alt="{{ $staff->name }}" class="chat-avatar">
-                                @if((int) $staff->online_status === \App\Models\User::ONLINE)
-                                    <span class="chat-status-dot"></span>
-                                @endif
-                            </div>
-                            <div class="chat-staff-meta">
-                                <div class="chat-staff-name-row">
-                                    <p class="chat-staff-name">{{ $staff->name }}</p>
-                                    <span class="chat-staff-time">{{ $latestTime }}</span>
-                                </div>
-                                <p class="chat-staff-preview">{{ $preview }}</p>
-                                <span class="chat-channel-badge {{ $staff->telegram_chat_id ? '' : 'off' }}">
-                                    <i data-feather="{{ $staff->telegram_chat_id ? 'send' : 'wifi-off' }}"></i>
-                                    {{ $staff->telegram_chat_id ? 'System + Telegram' : 'System only' }}
-                                </span>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="chat-empty">No staff found.</div>
-                    @endforelse
+                    @include('admin.chat.partials.staff', ['staffList' => $staffList, 'selectedStaff' => $selectedStaff])
                 </div>
             </aside>
 
@@ -558,8 +712,8 @@
                                 <i data-feather="{{ $selectedStaff->telegram_chat_id ? 'send' : 'wifi-off' }}"></i>
                                 {{ $selectedStaff->telegram_chat_id ? 'System + Telegram' : 'System only' }}
                             </span>
-                            <a href="{{ route('admin.telegram-employees.index', ['active_employee' => $selectedStaff->id]) }}" class="chat-delivery-pill" title="Telegram employee setup">
-                                <i data-feather="settings"></i>
+                            <a href="javascript:void(0)" class="chat-delivery-pill" id="chat-telegram-connect" title="Show Telegram connect QR / link">
+                                <i data-feather="send"></i>
                                 Telegram
                             </a>
                         </div>
@@ -633,6 +787,44 @@
             </aside>
         </div>
     </section>
+
+    <div class="chat-telegram-overlay" id="chat-telegram-overlay">
+        <div class="chat-telegram-modal" role="dialog" aria-modal="true">
+            <button type="button" class="chat-telegram-close" id="chat-telegram-close" aria-label="Close"><i data-feather="x"></i></button>
+            <div id="chat-telegram-modal-body">
+                @if($botReady && $connectUrl)
+                    <div class="chat-telegram-head">
+                        <h4>Connect to Telegram</h4>
+                        <p>Share this QR code or link with the employee. After they open Telegram and press Start, the bot will save their chat ID automatically.</p>
+                    </div>
+                    <div class="chat-telegram-qr">
+                        {!! $connectQrHtml !!}
+                    </div>
+                    <div class="chat-telegram-link-row">
+                        <input type="text" id="chat-telegram-connect-link" class="form-control" value="{{ $connectUrl }}" readonly>
+                        <button type="button" class="btn btn-primary" id="chat-telegram-copy-btn"><i data-feather="copy"></i> Copy</button>
+                        <a href="{{ $connectUrl }}" target="_blank" rel="noopener" class="btn btn-outline-primary"><i data-feather="external-link"></i></a>
+                    </div>
+                    @if($selectedStaff && $selectedStaff->telegram_chat_id)
+                        <p class="chat-telegram-linked-note">This employee is already connected to Telegram.</p>
+                    @endif
+                    <p class="chat-telegram-note">Connect link expires after {{ $connectValidity }} minutes.</p>
+                @elseif(!$botReady)
+                    <div class="chat-telegram-head">
+                        <h4>Telegram connection</h4>
+                        <p>Configure the Telegram bot first.</p>
+                    </div>
+                    <div class="chat-telegram-bot-missing">The Telegram bot is not set up yet. Open the bot settings, test the token and save the bot username, then come back here to get the employee connect link.</div>
+                @else
+                    <div class="chat-telegram-head">
+                        <h4>Telegram connection</h4>
+                        <p>Please select an employee first.</p>
+                    </div>
+                    <div class="chat-telegram-bot-missing">No employee selected.</div>
+                @endif
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -647,13 +839,86 @@
             const pastePreviewImage = document.getElementById('chat-paste-preview-image');
             const pastePreviewRemove = document.getElementById('chat-paste-preview-remove');
 
+            const staffList = document.getElementById('chat-staff-list');
+            const filterBranch = document.getElementById('chat-filter-branch');
+            const filterDepartment = document.getElementById('chat-filter-department');
+            const filterLinked = document.getElementById('chat-filter-linked');
+            const filterReset = document.getElementById('chat-filter-reset');
+
+            let selectedEmployeeId = {{ $selectedStaff?->id ?? 'null' }};
+
+            const filterUrl = '{{ route('admin.employee-chat.staff') }}';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            let filterRequest = 0;
+            const applyFilters = () => {
+                if (!staffList) {
+                    return;
+                }
+                const current = ++filterRequest;
+                const params = new URLSearchParams();
+                if (searchInput.value.trim()) {
+                    params.set('search', searchInput.value.trim());
+                }
+                if (filterBranch.value) {
+                    params.set('branch_id', filterBranch.value);
+                }
+                if (filterDepartment.value) {
+                    params.set('department_id', filterDepartment.value);
+                }
+                if (filterLinked.value) {
+                    params.set('linked', filterLinked.value);
+                }
+                if (selectedEmployeeId) {
+                    params.set('employee_id', selectedEmployeeId);
+                }
+
+                staffList.style.opacity = '0.5';
+                fetch(filterUrl + '?' + params.toString(), {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then((response) => response.json()).then((data) => {
+                    if (current !== filterRequest) {
+                        return;
+                    }
+                    if (data.success) {
+                        staffList.innerHTML = data.html;
+                    }
+                    staffList.style.opacity = '1';
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                }).catch(() => {
+                    if (current === filterRequest) {
+                        staffList.style.opacity = '1';
+                    }
+                });
+            };
+
             if (searchInput) {
+                let searchTimer = null;
                 searchInput.addEventListener('input', function () {
-                    const query = this.value.trim().toLowerCase();
-                    document.querySelectorAll('#chat-staff-list .chat-staff-link').forEach((item) => {
-                        const haystack = `${item.dataset.staffName} ${item.dataset.staffPreview}`;
-                        item.style.display = haystack.includes(query) ? '' : 'none';
-                    });
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(applyFilters, 300);
+                });
+            }
+
+            if (filterBranch) {
+                filterBranch.addEventListener('change', applyFilters);
+            }
+            if (filterDepartment) {
+                filterDepartment.addEventListener('change', applyFilters);
+            }
+            if (filterLinked) {
+                filterLinked.addEventListener('change', applyFilters);
+            }
+            if (filterReset) {
+                filterReset.addEventListener('click', function () {
+                    if (searchInput) { searchInput.value = ''; }
+                    if (filterBranch) { filterBranch.value = ''; }
+                    if (filterDepartment) { filterDepartment.value = ''; }
+                    if (filterLinked) { filterLinked.value = ''; }
+                    applyFilters();
+                    if (window.feather) { feather.replace(); }
                 });
             }
 
@@ -812,6 +1077,71 @@
 
             scrollThreadToBottom();
             setInterval(refreshMessages, 5000);
+
+            /* ---------------- Telegram connect modal ---------------- */
+            const telegramOverlay = document.getElementById('chat-telegram-overlay');
+            const telegramConnect = document.getElementById('chat-telegram-connect');
+
+            const closeTelegramModal = () => {
+                if (telegramOverlay) {
+                    telegramOverlay.classList.remove('show');
+                    telegramOverlay.style.pointerEvents = 'none';
+                }
+            };
+
+            const showTelegramModal = () => {
+                if (!telegramOverlay) {
+                    return;
+                }
+                telegramOverlay.classList.add('show');
+                telegramOverlay.style.pointerEvents = 'auto';
+                if (window.feather) {
+                    feather.replace();
+                }
+            };
+
+            if (telegramConnect) {
+                telegramConnect.addEventListener('click', showTelegramModal);
+            }
+
+            const copyBtn = document.getElementById('chat-telegram-copy-btn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', function () {
+                    const inputEl = document.getElementById('chat-telegram-connect-link');
+                    if (!inputEl) {
+                        return;
+                    }
+                    inputEl.select();
+                    inputEl.setSelectionRange(0, inputEl.value.length);
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(inputEl.value).catch(() => {
+                            document.execCommand('copy');
+                        });
+                    } else {
+                        document.execCommand('copy');
+                    }
+                    const note = document.querySelector('.chat-telegram-note');
+                    if (note) {
+                        note.textContent = 'Link copied to clipboard!';
+                    }
+                });
+            }
+
+            document.getElementById('chat-telegram-close')?.addEventListener('click', closeTelegramModal);
+
+            if (telegramOverlay) {
+                telegramOverlay.addEventListener('click', function (event) {
+                    if (event.target === telegramOverlay) {
+                        closeTelegramModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeTelegramModal();
+                }
+            });
         })();
     </script>
 @endsection

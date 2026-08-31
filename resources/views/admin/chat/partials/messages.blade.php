@@ -44,6 +44,9 @@
 
             <div class="chat-bubble-meta">
                 {{ $message->senderName() }} &bull; {{ $message->created_at->format('M d, h:i A') }}
+                @if(($message->meta['channel'] ?? null) === 'telegram' || ($message->meta['telegram_status'] ?? null) === 'received')
+                    &bull; <span class="chat-telegram-badge">via Telegram</span>
+                @endif
                 @if($isOutgoing && $telegramStatus)
                     &bull;
                     @if($telegramStatus === 'sent')

@@ -14,6 +14,9 @@
         .telegram-status-strip { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
         .telegram-metric { display: inline-flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 13px; border: 1px solid #d9e1ea; border-radius: 6px; color: #334155; background: #f8fafc; font-weight: 800; }
         .telegram-metric strong { color: #0f172a; }
+        button.telegram-metric { cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s; }
+        button.telegram-metric:hover { border-color: #3e9fe0; background: #eef6fd; box-shadow: 0 1px 4px rgba(62,159,224,.25); }
+        button.telegram-metric:focus { outline: none; box-shadow: 0 0 0 3px rgba(62,159,224,.28); }
         .telegram-desk-shell { display: grid; grid-template-columns: minmax(330px, 420px) minmax(0, 1fr); height: calc(100% - 74px); min-height: 0; }
         .telegram-sidebar { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; border-right: 1px solid #d9e1ea; background: #f8fafc; }
         .telegram-search { padding: 20px 20px 14px; border-bottom: 1px solid #e3e9f0; }
@@ -40,6 +43,30 @@
         .telegram-state.warn { background: #ef4444; }
         .telegram-sidebar-footer { padding: 12px 14px; border-top: 1px solid #e3e9f0; background: #fff; }
         .telegram-sidebar-footer .pagination { margin-bottom: 0; }
+        .telegram-load-more { display: none; padding: 14px 0; text-align: center; color: #64748b; font-size: 13px; font-weight: 700; }
+        .telegram-load-more .spinner { display: inline-block; width: 18px; height: 18px; margin-right: 8px; border: 2px solid #3e9fe0; border-top-color: transparent; border-radius: 50%; vertical-align: middle; animation: telegram-spin .7s linear infinite; }
+        @keyframes telegram-spin { to { transform: rotate(360deg); } }
+        .telegram-list-end { display: none; padding: 10px 0; text-align: center; color: #94a3b8; font-size: 12px; font-weight: 700; }
+        .telegram-detail-modal-overlay { position: fixed; inset: 0; z-index: 1060; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(15,23,42,.45); opacity: 0; pointer-events: none; transition: opacity .18s; }
+        .telegram-detail-modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .telegram-detail-modal { width: min(680px, 100%); max-height: 85vh; overflow: auto; padding: 0; border-radius: 12px; background: #fff; box-shadow: 0 18px 50px rgba(15,23,42,.28); transform: translateY(10px); transition: transform .18s; }
+        .telegram-detail-modal-overlay.show .telegram-detail-modal { transform: translateY(0); }
+        .telegram-detail-modal-header { display: flex; align-items: center; gap: 14px; padding: 18px 20px; color: #fff; background: #3e9fe0; border-radius: 12px 12px 0 0; }
+        .telegram-detail-modal-header h5 { margin: 0; color: #fff; font-size: 18px; font-weight: 800; }
+        .telegram-detail-modal-header p { margin: 3px 0 0; color: rgba(255,255,255,.9); font-size: 13px; font-weight: 700; }
+        .telegram-detail-modal-close { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; margin-left: auto; border: 0; border-radius: 50%; color: #fff; background: rgba(255,255,255,.18); cursor: pointer; }
+        .telegram-detail-modal-close:hover { background: rgba(255,255,255,.3); }
+        .telegram-detail-modal-body { padding: 20px; }
+        .telegram-detail-empty { padding: 30px; text-align: center; color: #64748b; font-weight: 700; }
+        .telegram-detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border-bottom: 1px solid #eef2f6; }
+        .telegram-detail-row:last-child { border-bottom: 0; }
+        .telegram-detail-row-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .telegram-detail-row .telegram-avatar { width: 40px; height: 40px; flex: 0 0 40px; }
+        .telegram-detail-row .telegram-avatar img, .telegram-detail-row .telegram-avatar-fallback { width: 40px; height: 40px; }
+        .telegram-detail-row-name { display: block; overflow: hidden; color: #0f172a; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+        .telegram-detail-row-sub { display: block; overflow: hidden; color: #64748b; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .telegram-detail-row-badge { flex: 0 0 auto; padding: 4px 10px; border-radius: 999px; background: #e6f4ea; color: #15803d; font-size: 11px; font-weight: 800; }
+        .telegram-detail-row-badge.off { background: #fee2e2; color: #b91c1c; }
         .telegram-main { display: grid; grid-template-rows: auto 1fr auto; min-width: 0; background: radial-gradient(#d9e9f7 1px, transparent 1px), linear-gradient(180deg, #f8fbff 0%, #eef6fb 100%); background-size: 22px 22px, 100% 100%; }
         .telegram-chat-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 76px; padding: 14px 22px; color: #fff; background: #3e9fe0; }
         .telegram-chat-person { display: flex; align-items: center; gap: 13px; min-width: 0; }
@@ -109,9 +136,9 @@
                 <p>Direct Telegram chat, employee linking, and broadcast alerts</p>
             </div>
             <div class="telegram-status-strip">
-                <span class="telegram-metric"><i data-feather="users"></i> <strong>{{ $stats['total'] ?? 0 }}</strong> Employees</span>
-                <span class="telegram-metric"><i data-feather="check-circle"></i> <strong>{{ $stats['linked'] ?? 0 }}</strong> Linked</span>
-                <span class="telegram-metric"><i data-feather="alert-circle"></i> <strong>{{ $stats['unlinked'] ?? 0 }}</strong> Not Linked</span>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="all" title="View all employees"><i data-feather="users"></i> <strong>{{ $stats['total'] ?? 0 }}</strong> Employees</button>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="linked" title="View linked employees"><i data-feather="check-circle"></i> <strong>{{ $stats['linked'] ?? 0 }}</strong> Linked</button>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="unlinked" title="View not linked employees"><i data-feather="alert-circle"></i> <strong>{{ $stats['unlinked'] ?? 0 }}</strong> Not Linked</button>
                 <form method="POST" action="{{ route('admin.telegram-employees.sync-starts') }}" class="m-0">
                     @csrf
                     <button type="submit" class="btn btn-outline-success">
@@ -157,7 +184,8 @@
                     </div>
                 </form>
 
-                <div class="telegram-list">
+                <div class="telegram-list" id="telegramList">
+                    <div id="telegramEmployeeRows">
                     @forelse($employees as $employee)
                         @php
                             $isActive = (int) $employee->id === $activeEmployeeId;
@@ -187,9 +215,12 @@
                     @empty
                         <div class="p-4 text-center text-muted"><strong>{{ __('index.no_records_found') }}</strong></div>
                     @endforelse
+                    </div>
+                    <div class="telegram-load-more" id="telegramLoadMore"><span class="spinner"></span> Loading more...</div>
+                    <div class="telegram-list-end" id="telegramListEnd">End of list</div>
                 </div>
 
-                <div class="telegram-sidebar-footer">
+                <div class="telegram-sidebar-footer" id="telegramSidebarFooter" @if($employees->hasMorePages() || $employees->isEmpty()) style="display: none;"@endif>
                     {{ $employees->appends(request()->query())->links() }}
                 </div>
             </aside>
@@ -352,6 +383,19 @@
             </div>
         </div>
     </section>
+
+    <div class="telegram-detail-modal-overlay" id="telegramDetailModal">
+        <div class="telegram-detail-modal" role="dialog" aria-modal="true">
+            <div class="telegram-detail-modal-header">
+                <div class="min-width-0">
+                    <h5 id="telegramDetailTitle">Employees</h5>
+                    <p id="telegramDetailSubtitle"></p>
+                </div>
+                <button type="button" class="telegram-detail-modal-close" id="telegramDetailClose" title="Close"><i data-feather="x"></i></button>
+            </div>
+            <div class="telegram-detail-modal-body" id="telegramDetailBody"></div>
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
@@ -364,6 +408,10 @@
             var activeInitial = $('#activeEmployeeInitial');
             var activeAvatar = $('#activeEmployeeAvatar');
             var chatBody = $('#telegramChatBody');
+            var employeeRowsContainer = $('#telegramEmployeeRows');
+            var loadMoreEl = $('#telegramLoadMore');
+            var listEndEl = $('#telegramListEnd');
+            var listEl = document.getElementById('telegramList');
 
             function activateRow(row) {
                 var target = row.data('chat-target');
@@ -375,7 +423,7 @@
                 var initial = row.data('initial') || String(name).trim().charAt(0) || 'U';
                 var url = new URL(window.location.href);
 
-                rows.removeClass('active');
+                $('.telegram-row').removeClass('active');
                 row.addClass('active');
                 emptyState.hide();
                 $('.telegram-panel').removeClass('active');
@@ -397,9 +445,16 @@
                 url.searchParams.set('active_employee', employeeId);
                 window.history.replaceState({}, '', url.toString());
                 chatBody.scrollTop(chatBody[0].scrollHeight);
+
+                window.dispatchEvent(new Event('telegram:feathers'));
             }
 
-            rows.on('click', function () { activateRow($(this)); });
+            $(document).on('click', '.telegram-row', function () {
+                var $row = $(this);
+                var isModalRow = $row.closest('#telegramDetailBody').length > 0;
+                activateRow($row);
+                if (isModalRow) { detailModal.removeClass('show'); }
+            });
 
             $('.telegram-template').on('click', function () {
                 var composer = $(this).closest('.telegram-composer');
@@ -425,6 +480,151 @@
                 }
             });
 
+            /* ---------------- Infinite scroll ---------------- */
+            var isLoading = false;
+            var hasMore = @json($employees->hasMorePages());
+
+            function buildRowHtml(emp) {
+                var avatarHtml = emp.has_avatar
+                    ? '<img src="' + emp.avatar + '" alt="' + emp.name + '">'
+                    : '<span class="telegram-avatar-fallback">' + emp.initial + '</span>';
+                var presence = emp.has_chat ? '' : ' off';
+                var state = emp.has_chat ? 'OK' : 'Link';
+                var stateClass = emp.has_chat ? '' : ' warn';
+
+                return '<button type="button" class="telegram-row" data-chat-target="employee-chat-' + emp.id + '" data-employee-id="' + emp.id + '"' +
+                    ' data-name="' + $('<div>').text(emp.name).html() + '"' +
+                    ' data-status="' + $('<div>').text(emp.header_status).html() + '"' +
+                    ' data-avatar="' + emp.avatar + '" data-has-avatar="' + (emp.has_avatar ? '1' : '0') + '"' +
+                    ' data-initial="' + emp.initial + '">' +
+                    '<span class="telegram-avatar">' + avatarHtml + '<span class="telegram-presence' + presence + '"></span></span>' +
+                    '<span class="min-width-0"><span class="telegram-row-name">' + $('<div>').text(emp.name).html() + '</span>' +
+                    '<span class="telegram-row-preview">' + $('<div>').text(emp.preview).html() + '</span></span>' +
+                    '<span class="telegram-row-meta">' + $('<div>').text(emp.linked_at).html() +
+                    '<span class="telegram-state' + stateClass + '">' + state + '</span></span>' +
+                    '</button>';
+            }
+
+            function buildDetailHtml(emp) {
+                var avatarHtml = emp.has_avatar
+                    ? '<img src="' + emp.avatar + '" alt="' + emp.name + '">'
+                    : '<span class="telegram-avatar-fallback">' + emp.initial + '</span>';
+                return '<button type="button" class="telegram-detail-row telegram-row" data-chat-target="employee-chat-' + emp.id + '" data-employee-id="' + emp.id + '"' +
+                    ' data-name="' + $('<div>').text(emp.name).html() + '"' +
+                    ' data-status="' + $('<div>').text(emp.header_status).html() + '"' +
+                    ' data-avatar="' + emp.avatar + '" data-has-avatar="' + (emp.has_avatar ? '1' : '0') + '"' +
+                    ' data-initial="' + emp.initial + '" style="width:100%;border:0;border-bottom:1px solid #eef2f6;background:transparent;text-align:left;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;">' +
+                    '<span class="telegram-detail-row-main"><span class="telegram-avatar">' + avatarHtml + '</span>' +
+                    '<span class="min-width-0"><span class="telegram-detail-row-name">' + $('<div>').text(emp.name).html() + '</span>' +
+                    '<span class="telegram-detail-row-sub">' + $('<div>').text((emp.employee_code ? emp.employee_code : '') + (emp.phone ? ' · ' + emp.phone : '')).html() + '</span></span></span>' +
+                    '<span class="telegram-detail-row-badge' + (emp.has_chat ? '' : ' off') + '">' + (emp.has_chat ? 'Linked' : 'Not Linked') + '</span>' +
+                    '</button>';
+            }
+
+            function loadMore() {
+                if (isLoading || !hasMore) { return; }
+                isLoading = true;
+                loadMoreEl.show();
+                listEndEl.hide();
+
+                var params = new URLSearchParams(window.location.search);
+                var nextPage = Number(params.get('page') || 1) + 1;
+                params.set('page', nextPage);
+
+                fetch('{{ route('admin.telegram-employees.index') }}?' + params.toString(), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function (response) {
+                    if (!response.ok) { throw new Error('request failed'); }
+                    return response.json();
+                }).then(function (data) {
+                    data.employees.forEach(function (emp) {
+                        employeeRowsContainer.append(buildRowHtml(emp));
+                    });
+                    hasMore = data.has_more;
+                    window.dispatchEvent(new Event('telegram:feathers'));
+                    if (hasMore) { window.dispatchEvent(new CustomEvent('telegram:page', { detail: data.next_page })); } else {
+                        listEndEl.show();
+                    }
+                }).catch(function () {
+                    listEndEl.text('Failed to load more. Scroll again to retry.').show();
+                    hasMore = true;
+                }).finally(function () {
+                    isLoading = false;
+                    loadMoreEl.hide();
+                });
+            }
+
+            function onScrollCheck() {
+                if (!listEl) { return; }
+                var buffer = 160;
+                if (listEl.scrollTop + listEl.clientHeight >= listEl.scrollHeight - buffer) {
+                    loadMore();
+                }
+            }
+
+            if (listEl) {
+                listEl.addEventListener('scroll', onScrollCheck);
+                setInterval(onScrollCheck, 1200);
+            }
+
+            /* ---------------- Clickable stats + detail modal ---------------- */
+            var detailModal = $('#telegramDetailModal');
+            var detailTitle = $('#telegramDetailTitle');
+            var detailSubtitle = $('#telegramDetailSubtitle');
+            var detailBody = $('#telegramDetailBody');
+
+            function openDetailModal(type) {
+                detailBody.html('<div class="telegram-detail-empty">Loading...</div>');
+                detailTitle.text('Employees');
+                detailSubtitle.text('');
+                detailModal.addClass('show');
+
+                var params = new URLSearchParams(window.location.search);
+                params.delete('linked');
+                params.delete('page');
+
+                fetch('{{ route('admin.telegram-employees.detail', '__TYPE__') }}'.replace('__TYPE__', type) + '?' + params.toString(), {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function (response) {
+                    if (!response.ok) { throw new Error('request failed'); }
+                    return response.json();
+                }).then(function (data) {
+                    detailTitle.text(data.label);
+                    detailSubtitle.text(data.count + ' employee' + (data.count === 1 ? '' : 's'));
+                    if (!data.employees.length) {
+                        detailBody.html('<div class="telegram-detail-empty">No employees found.</div>');
+                    } else {
+                        detailBody.empty();
+                        data.employees.forEach(function (emp) {
+                            detailBody.append(buildDetailHtml(emp));
+                        });
+                    }
+                    window.dispatchEvent(new Event('telegram:feathers'));
+                }).catch(function () {
+                    detailBody.html('<div class="telegram-detail-empty">Failed to load. Please try again.</div>');
+                });
+            }
+
+            $('.telegram-stats-trigger').on('click', function () {
+                openDetailModal($(this).data('type'));
+            });
+
+            $('#telegramDetailClose').on('click', function () {
+                detailModal.removeClass('show');
+            });
+            detailModal.on('click', function (event) {
+                if (event.target === this) { detailModal.removeClass('show'); }
+            });
+            $(document).on('keydown', function (event) {
+                if (event.key === 'Escape') { detailModal.removeClass('show'); }
+            });
+
+            /* Re-init feather icons on dynamically added content */
+            window.addEventListener('telegram:feathers', function () {
+                if (window.feather && typeof window.feather.replace === 'function') { window.feather.replace(); }
+            });
+
+            /* ---------------- Sync starts ---------------- */
             function syncTelegramStarts() {
                 return fetch('{{ route('admin.telegram-employees.sync-starts') }}', {
                     method: 'POST',

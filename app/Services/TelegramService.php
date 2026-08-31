@@ -174,6 +174,78 @@ class TelegramService
         return $this->get('getUpdates', $query)?->json();
     }
 
+    /**
+     * Resolve a file_id to its Telegram file_path (or null on failure).
+     */
+    public function getFilePath(string $fileId): ?string
+    {
+        $response = $this->get('getFile', ['file_id' => $fileId], ['file_id' => $fileId]);
+
+        if (! $response || ! $response->successful()) {
+            return null;
+        }
+
+        $path = $response->json('result.file_path');
+
+        return is_string($path) && $path !== '' ? $path : null;
+    }
+
+    /**
+     * Full HTTPS download URL for a Telegram file_path.
+     */
+    public function fileDownloadUrl(string $filePath): ?string
+    {
+        $botToken = TelegramBotSettings::botToken();
+
+        if ($botToken === '') {
+            return null;
+        }
+
+        return 'https://api.telegram.org/file/bot' . $botToken . '/' . ltrim($filePath, '/');
+    }
+
+    /**
+     * Download a Telegram file (by file_id) into the given storage path.
+     * Returns the stored path relative to the public disk, or null on failure.
+     */
+    public function downloadInboundFile(string $fileId, string $targetPath): ?string
+    {
+        $filePath = $this->getFilePath($fileId);
+
+        if ($filePath === null) {
+            return null;
+        }
+
+        $url = $this->fileDownloadUrl($filePath);
+
+        if ($url === null) {
+            return null;
+        }
+
+        try {
+            $response = Http::timeout(30)->retry(2, 300)->get($url);
+
+            if (! $response->successful()) {
+                $this->lastError = "Failed to download Telegram file: {$filePath}";
+                Log::error('Telegram file download failed.', ['file_path' => $filePath]);
+
+                return null;
+            }
+
+            \Illuminate\Support\Facades\Storage::disk('public')->put($targetPath, $response->body());
+
+            return $targetPath;
+        } catch (\Throwable $e) {
+            $this->lastError = "Telegram file download exception: {$e->getMessage()}";
+            Log::error('Telegram file download exception.', [
+                'file_path' => $filePath,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     public function setWebhook(string $url, ?string $secret = null, bool $dropPendingUpdates = false): bool
     {
         $payload = [

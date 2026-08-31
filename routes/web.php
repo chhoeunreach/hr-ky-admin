@@ -171,9 +171,10 @@ Route::group([
             Route::post('evaluations/{evaluation}/ai-summary', [EmployeeEvaluationController::class, 'summary'])->name('evaluations.ai-summary');
             Route::get('{evaluation}/print', [EmployeeEvaluationController::class, 'print'])->name('print');
         });
-        Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
-        Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');
-        Route::post('employee-chat/messages', [EmployeeChatController::class, 'store'])->name('employee-chat.store');
+            Route::get('employee-chat', [EmployeeChatController::class, 'index'])->name('employee-chat');
+            Route::get('employee-chat/staff', [EmployeeChatController::class, 'staff'])->name('employee-chat.staff');
+            Route::get('employee-chat/messages', [EmployeeChatController::class, 'messages'])->name('employee-chat.messages');
+            Route::post('employee-chat/messages', [EmployeeChatController::class, 'store'])->name('employee-chat.store');
         Route::get('d-card-print', [DCardPrintController::class, 'index'])->name('d-card-print.index');
         Route::post('d-card-print/employees', [DCardPrintController::class, 'store'])->name('d-card-print.employees.store');
         Route::put('d-card-print/employees/{employee}', [DCardPrintController::class, 'update'])->name('d-card-print.employees.update');
@@ -207,6 +208,7 @@ Route::group([
             Route::post('telegram-bot/test-connection', [TelegramBotController::class, 'testConnection'])->name('telegram-bot.test-connection');
             Route::post('telegram-bot/register-webhook', [TelegramBotController::class, 'registerWebhook'])->name('telegram-bot.register-webhook');
             Route::get('telegram-employees', [TelegramEmployeeController::class, 'index'])->name('telegram-employees.index');
+            Route::get('telegram-employees/detail/{type}', [TelegramEmployeeController::class, 'detail'])->name('telegram-employees.detail');
             Route::post('telegram-employees/sync-starts', [TelegramEmployeeController::class, 'syncStarts'])->name('telegram-employees.sync-starts');
             Route::put('telegram-employees/{employee}', [TelegramEmployeeController::class, 'update'])->name('telegram-employees.update');
             Route::delete('telegram-employees/{employee}/unlink', [TelegramEmployeeController::class, 'unlink'])->name('telegram-employees.unlink');

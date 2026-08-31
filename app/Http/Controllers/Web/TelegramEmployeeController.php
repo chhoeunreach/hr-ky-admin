@@ -25,32 +25,18 @@ class TelegramEmployeeController extends Controller
             'active_employee' => $request->input('active_employee'),
         ];
 
-        $employeeQuery = User::with(['branch:id,name', 'department:id,dept_name'])
-            ->where('status', 'verified')
-            ->when($filters['search'], function ($query, string $search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('english_name', 'like', "%{$search}%")
-                        ->orWhere('employee_code', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%")
-                        ->orWhere('telegram_chat_id', 'like', "%{$search}%")
-                        ->orWhere('telegram_username', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['branch_id'], fn ($query, $branchId) => $query->where('branch_id', $branchId))
-            ->when($filters['department_id'], fn ($query, $departmentId) => $query->where('department_id', $departmentId))
-            ->when($filters['linked'] === 'yes', fn ($query) => $query->whereNotNull('telegram_chat_id')->where('telegram_chat_id', '!=', ''))
-            ->when($filters['linked'] === 'no', fn ($query) => $query->where(function ($query) {
-                $query->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', '');
-            }));
+        $employeeQuery = $this->buildEmployeeQuery($filters);
 
-        $statsQuery = clone $employeeQuery;
+        $statsQuery = $this->buildEmployeeQuery($filters);
+
+        $perPage = 25;
+        $page = max(1, (int) $request->input('page', 1));
 
         $employees = $employeeQuery
             ->orderByRaw('CASE WHEN users.employee_code IS NULL OR users.employee_code = "" THEN 1 ELSE 0 END')
             ->orderBy('employee_code')
             ->orderBy('name')
-            ->paginate(25);
+            ->paginate($perPage);
 
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
         $departments = Department::select('id', 'dept_name')->orderBy('dept_name')->get();
@@ -68,6 +54,46 @@ class TelegramEmployeeController extends Controller
             $activeEmployeeId = (int) optional($employees->first())->id;
         }
 
+        if ($request->expectsJson()) {
+            $employeeData = $employees->map(function ($employee) {
+                $avatar = $employee->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar) : asset('assets/images/img.png');
+                $initial = mb_substr(trim($employee->name ?: $employee->username ?: 'U'), 0, 1);
+                $preview = $employee->telegram_chat_id ? ($employee->telegram_username ? '@' . $employee->telegram_username : 'Chat ID ' . $employee->telegram_chat_id) : 'Waiting for Telegram link';
+                $headerStatus = trim(implode(' · ', array_filter([$employee->phone, $employee->employee_code ?: $employee->username, $employee->branch?->name, $employee->telegram_chat_id ? 'connected via Telegram' : 'not connected'])));
+                $connectUrl = \App\Support\TelegramBotSettings::connectUrl($employee);
+                $username = $employee->telegram_username ? '@' . $employee->telegram_username : 'Not saved';
+
+                return [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'avatar' => $avatar,
+                    'has_avatar' => (bool) $employee->avatar,
+                    'initial' => $initial,
+                    'preview' => $preview,
+                    'header_status' => $headerStatus,
+                    'linked_at' => $employee->telegram_linked_at ? optional($employee->telegram_linked_at)->format('M d') : 'New',
+                    'has_chat' => (bool) $employee->telegram_chat_id,
+                    'employee_code' => $employee->employee_code ?: $employee->username ?: 'No employee code',
+                    'phone' => $employee->phone ?: 'N/A',
+                    'branch_name' => $employee->branch?->name ?: 'N/A',
+                    'department_name' => $employee->department?->dept_name ?: 'N/A',
+                    'telegram_chat_id' => $employee->telegram_chat_id,
+                    'telegram_username' => $username,
+                    'telegram_linked_at_full' => $employee->telegram_linked_at ? optional($employee->telegram_linked_at)->format('Y-m-d H:i') : null,
+                    'connect_url' => $connectUrl,
+                    'connect_url_validity' => \App\Support\TelegramBotSettings::connectLinkValidityMinutes(),
+                    'employee_code_for_link' => $employee->employee_code ?: $employee->username ?: 'EMPLOYEE_CODE',
+                ];
+            });
+
+            return response()->json([
+                'employees' => $employeeData,
+                'has_more' => $employees->hasMorePages(),
+                'next_page' => $employees->currentPage() + 1,
+                'active_employee_id' => $activeEmployeeId,
+            ]);
+        }
+
         return view('admin.telegramEmployee.index', compact(
             'employees',
             'branches',
@@ -77,6 +103,88 @@ class TelegramEmployeeController extends Controller
             'stats',
             'activeEmployeeId'
         ));
+    }
+
+    public function detail(Request $request, string $type): JsonResponse
+    {
+        $filters = [
+            'search' => $request->input('search'),
+            'branch_id' => $request->input('branch_id'),
+            'department_id' => $request->input('department_id'),
+        ];
+
+        $employeeQuery = $this->buildEmployeeQuery($filters);
+
+        if ($type === 'linked') {
+            $employeeQuery->whereNotNull('telegram_chat_id')->where('telegram_chat_id', '!=', '');
+        } elseif ($type === 'unlinked') {
+            $employeeQuery->where(function ($query) {
+                $query->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', '');
+            });
+        }
+
+        $employees = $employeeQuery
+            ->orderByRaw('CASE WHEN users.employee_code IS NULL OR users.employee_code = "" THEN 1 ELSE 0 END')
+            ->orderBy('employee_code')
+            ->orderBy('name')
+            ->limit(100)
+            ->get()
+            ->map(function ($employee) {
+                $avatar = $employee->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar) : asset('assets/images/img.png');
+                $initial = mb_substr(trim($employee->name ?: $employee->username ?: 'U'), 0, 1);
+                $hasChat = ! empty($employee->telegram_chat_id);
+
+                return [
+                    'id' => $employee->id,
+                    'name' => $employee->name,
+                    'avatar' => $avatar,
+                    'has_avatar' => (bool) $employee->avatar,
+                    'initial' => $initial,
+                    'has_chat' => $hasChat,
+                    'employee_code' => $employee->employee_code ?: 'N/A',
+                    'phone' => $employee->phone ?: 'N/A',
+                    'branch' => $employee->branch?->name ?: 'N/A',
+                    'department' => $employee->department?->dept_name ?: 'N/A',
+                    'telegram_chat_id' => $employee->telegram_chat_id,
+                    'telegram_username' => $employee->telegram_username ? '@' . $employee->telegram_username : null,
+                    'linked_at' => $employee->telegram_linked_at ? optional($employee->telegram_linked_at)->format('Y-m-d H:i') : null,
+                ];
+            });
+
+        $labels = [
+            'all' => 'All Employees',
+            'linked' => 'Linked Employees',
+            'unlinked' => 'Not Linked Employees',
+        ];
+
+        return response()->json([
+            'type' => $type,
+            'label' => $labels[$type] ?? 'Employees',
+            'employees' => $employees,
+            'count' => $employees->count(),
+        ]);
+    }
+
+    private function buildEmployeeQuery(array $filters): \Illuminate\Database\Eloquent\Builder
+    {
+        return User::with(['branch:id,name', 'department:id,dept_name'])
+            ->where('status', 'verified')
+            ->when($filters['search'] ?? null, function ($query, string $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('english_name', 'like', "%{$search}%")
+                        ->orWhere('employee_code', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%")
+                        ->orWhere('telegram_chat_id', 'like', "%{$search}%")
+                        ->orWhere('telegram_username', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['branch_id'] ?? null, fn ($query, $branchId) => $query->where('branch_id', $branchId))
+            ->when($filters['department_id'] ?? null, fn ($query, $departmentId) => $query->where('department_id', $departmentId))
+            ->when(($filters['linked'] ?? null) === 'yes', fn ($query) => $query->whereNotNull('telegram_chat_id')->where('telegram_chat_id', '!=', ''))
+            ->when(($filters['linked'] ?? null) === 'no', fn ($query) => $query->where(function ($query) {
+                $query->whereNull('telegram_chat_id')->orWhere('telegram_chat_id', '');
+            }));
     }
 
     public function update(Request $request, User $employee): RedirectResponse
