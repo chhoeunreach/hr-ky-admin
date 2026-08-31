@@ -95,9 +95,12 @@
                         <form method="POST" action="{{ route('admin.telegram-bot.test-connection') }}">
                             @csrf
                             <button type="submit" class="btn btn-outline-secondary" {{ $settings['bot_token_saved'] ? '' : 'disabled' }}>
-                                Test Connection
+                                Test Bot Token
                             </button>
                         </form>
+                        <p class="text-muted mt-2 mb-0">
+                            This checks the bot token only. Telegram group tests also require the bot to be a member of each saved chat ID.
+                        </p>
                     </div>
 
                     <div class="col-lg-6 mb-4">

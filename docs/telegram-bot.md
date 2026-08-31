@@ -1,10 +1,16 @@
 # Telegram Bot Setup
 
-This project reads Telegram settings from server-side environment variables only.
+This project reads Telegram bot credentials from the database settings saved in the admin panel.
 
 ## Environment Variables
 
-Add these values to `.env`:
+The bot token is managed here:
+
+```text
+Settings > Telegram Bot
+```
+
+You can keep these values in `.env` as legacy defaults, but the saved database token is used first:
 
 ```dotenv
 TELEGRAM_BOT_TOKEN=123456789:ABC_your_bot_token_here
@@ -19,7 +25,7 @@ TELEGRAM_WEBHOOK_SECRET=your_random_secret_here
 1. Open Telegram and message `@BotFather`.
 2. Send `/newbot`.
 3. Follow BotFather instructions.
-4. Copy the bot token into `TELEGRAM_BOT_TOKEN`.
+4. Copy the bot token into Settings > Telegram Bot.
 
 ## Get The Chat ID
 
@@ -52,7 +58,7 @@ Use Telegram Bot to:
 - Save the webhook secret.
 - Set connect link validity in minutes.
 - Copy the webhook URL.
-- Test the saved `TELEGRAM_BOT_TOKEN`.
+- Test the saved bot token.
 - Save each employee's personal Telegram chat ID.
 - Send a private Telegram message to one employee.
 - Broadcast an alert to all linked employees, optionally filtered by branch or department.
@@ -83,7 +89,7 @@ To test an HTML-formatted message:
 php artisan telegram:test --html
 ```
 
-The command sends to `TELEGRAM_CHAT_ID`. If it fails, check `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `storage/logs/laravel.log`.
+The command sends to the configured default chat. If it fails, check the saved bot token, chat routing, and `storage/logs/laravel.log`.
 
 To test a specific chat ID:
 

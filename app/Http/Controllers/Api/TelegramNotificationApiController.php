@@ -32,7 +32,7 @@ class TelegramNotificationApiController extends Controller
 
         return response()->json([
             'status' => $ok,
-            'message' => $ok ? 'Telegram notification sent.' : 'Telegram notification failed. Check server logs.',
+            'message' => $ok ? 'Telegram notification sent.' : ($telegramService->lastError() ?: 'Telegram notification failed. Check server logs.'),
         ], $ok ? 200 : 500);
     }
 }

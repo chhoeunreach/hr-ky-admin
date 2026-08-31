@@ -47,13 +47,16 @@ class TelegramBotController extends Controller
         $response = $telegramService->getMe();
 
         if (! is_array($response) || ($response['ok'] ?? false) !== true) {
-            return back()->with('danger', 'Telegram bot token test failed. Check the saved token and server logs.');
+            return back()->with(
+                'danger',
+                'Telegram bot token test failed. ' . ($telegramService->lastError() ?: 'Check the saved token and server logs.')
+            );
         }
 
         $bot = $response['result'] ?? [];
         $username = $bot['username'] ?? 'unknown';
 
-        return back()->with('success', "Telegram connection is working. Bot: @{$username}");
+        return back()->with('success', "Telegram bot token is working. Bot: @{$username}");
     }
 
     public function registerWebhook(TelegramService $telegramService): RedirectResponse
@@ -65,7 +68,10 @@ class TelegramBotController extends Controller
         }
 
         if (! $telegramService->setWebhook($url, TelegramBotSettings::webhookSecret())) {
-            return back()->with('danger', 'Webhook registration failed. Check the saved bot token and server logs.');
+            return back()->with(
+                'danger',
+                'Webhook registration failed. ' . ($telegramService->lastError() ?: 'Check the saved bot token and server logs.')
+            );
         }
 
         TelegramBotSettings::putMany([

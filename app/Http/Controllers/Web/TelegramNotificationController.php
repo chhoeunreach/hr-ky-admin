@@ -31,15 +31,17 @@ class TelegramNotificationController extends Controller
             array_key_exists('longitude', $validated) ? (float) $validated['longitude'] : null,
         );
 
+        $error = $telegramService->lastError() ?: 'Telegram notification failed. Check server logs.';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'status' => $ok,
-                'message' => $ok ? 'Telegram notification sent.' : 'Telegram notification failed. Check server logs.',
+                'message' => $ok ? 'Telegram notification sent.' : $error,
             ], $ok ? 200 : 500);
         }
 
         if (! $ok) {
-            return back()->withErrors(['telegram' => 'Telegram notification failed. Check server logs.']);
+            return back()->withErrors(['telegram' => $error]);
         }
 
         return back()->with('status', 'Telegram notification sent.');

@@ -41,7 +41,7 @@ class TestTelegramBot extends Command
         }
 
         if (! $ok) {
-            $this->error('Telegram test failed. Check TELEGRAM_BOT_TOKEN, chat routing, and storage/logs/laravel.log.');
+            $this->error('Telegram test failed. ' . ($telegramService->lastError() ?: 'Check the saved bot token, chat routing, and storage/logs/laravel.log.'));
 
             return self::FAILURE;
         }

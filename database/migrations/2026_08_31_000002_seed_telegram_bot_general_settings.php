@@ -18,16 +18,16 @@ return new class extends Migration
             TelegramBotSettings::WEBHOOK_REGISTERED_AT => '',
             TelegramBotSettings::WEBHOOK_REGISTERED_URL => '',
         ] as $key => $value) {
-            DB::table('general_settings')->updateOrInsert(
-                ['key' => $key],
-                [
+            if (! DB::table('general_settings')->where('key', $key)->exists()) {
+                DB::table('general_settings')->insert([
                     'name' => ucwords(str_replace('_', ' ', str_replace('telegram_', '', $key))),
+                    'key' => $key,
                     'type' => 'telegram',
                     'value' => $value,
                     'updated_at' => $now,
                     'created_at' => $now,
-                ]
-            );
+                ]);
+            }
         }
     }
 

@@ -43,7 +43,7 @@ class ManageTelegramWebhook extends Command
         );
 
         if (! $ok) {
-            return $this->failWithMessage('Telegram webhook setup failed. Check TELEGRAM_BOT_TOKEN and storage/logs/laravel.log.');
+            return $this->failWithMessage('Telegram webhook setup failed. ' . ($telegramService->lastError() ?: 'Check the saved bot token and storage/logs/laravel.log.'));
         }
 
         $this->info('Telegram webhook set successfully.');
@@ -55,7 +55,7 @@ class ManageTelegramWebhook extends Command
     private function deleteWebhook(TelegramService $telegramService, bool $dropPendingUpdates): int
     {
         if (! $telegramService->deleteWebhook($dropPendingUpdates)) {
-            return $this->failWithMessage('Telegram webhook delete failed. Check TELEGRAM_BOT_TOKEN and storage/logs/laravel.log.');
+            return $this->failWithMessage('Telegram webhook delete failed. ' . ($telegramService->lastError() ?: 'Check the saved bot token and storage/logs/laravel.log.'));
         }
 
         $this->info('Telegram webhook deleted successfully.');
@@ -68,7 +68,7 @@ class ManageTelegramWebhook extends Command
         $info = $telegramService->getWebhookInfo();
 
         if (! is_array($info)) {
-            return $this->failWithMessage('Unable to read Telegram webhook info. Check TELEGRAM_BOT_TOKEN and storage/logs/laravel.log.');
+            return $this->failWithMessage('Unable to read Telegram webhook info. ' . ($telegramService->lastError() ?: 'Check the saved bot token and storage/logs/laravel.log.'));
         }
 
         $result = $info['result'] ?? [];

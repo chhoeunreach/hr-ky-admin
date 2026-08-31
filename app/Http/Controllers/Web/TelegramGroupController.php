@@ -151,17 +151,33 @@ class TelegramGroupController extends Controller
             }
 
             $ok = true;
+            $errors = [];
             $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id];
 
             foreach (array_filter($chatIds) as $chatId) {
-                $ok = $telegramService->sendMessage(
+                $sent = $telegramService->sendMessage(
                     $chatId,
                     'Telegram group test from HR Admin: ' . $telegramGroup->name
-                ) && $ok;
+                );
+
+                if (! $sent) {
+                    $errors[] = $telegramService->lastError() ?: 'Failed to send to chat ID ' . $chatId . '.';
+                }
+
+                $ok = $sent && $ok;
             }
 
             if (! $ok) {
-                return redirect()->back()->with('danger', 'Telegram test failed. Please check bot token, chat ID, and server logs.');
+                $message = 'Telegram test failed. ' . implode(' ', array_unique($errors));
+
+                if (str_contains($message, 'chat not found')) {
+                    $message .= ' Add this bot to the Telegram group/channel, then send /chatid there and update this Telegram Group chat ID.';
+                }
+
+                return redirect()->back()->with(
+                    'danger',
+                    $message
+                );
             }
 
             return redirect()->back()->with('success', 'Telegram test sent successfully.');

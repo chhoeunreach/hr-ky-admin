@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\TelegramGroup;
 use App\Models\User;
 use App\Services\TelegramService;
+use App\Support\TelegramBotSettings;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -24,7 +25,7 @@ class AttendanceTelegramNotifier
             return;
         }
 
-        $token = (string) config('attendance_telegram.bot_token');
+        $token = TelegramBotSettings::botToken();
         if ($token === '') {
             return;
         }

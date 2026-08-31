@@ -18,6 +18,8 @@ class TelegramBotSettings
 
     public static function all(): array
     {
+        self::ensureDefaultsExist();
+
         $botToken = self::botToken();
 
         return [
@@ -60,7 +62,59 @@ class TelegramBotSettings
 
     public static function botToken(): string
     {
+        self::ensureBotTokenExists();
+
         return trim((string) self::get(self::BOT_TOKEN, config('services.telegram.bot_token', '')));
+    }
+
+    public static function ensureDefaultsExist(): void
+    {
+        $defaults = [
+            self::BOT_TOKEN => (string) config('services.telegram.bot_token', ''),
+            self::BOT_USERNAME => '',
+            self::WEBHOOK_SECRET => (string) config('services.telegram.webhook_secret', ''),
+            self::CONNECT_LINK_VALIDITY_MINUTES => '60',
+            self::WEBHOOK_REGISTERED_AT => '',
+            self::WEBHOOK_REGISTERED_URL => '',
+        ];
+
+        foreach ($defaults as $key => $default) {
+            if (GeneralSetting::query()->where('key', $key)->exists()) {
+                continue;
+            }
+
+            GeneralSetting::query()->create([
+                'name' => Str::headline(str_replace('telegram_', '', $key)),
+                'type' => 'telegram',
+                'value' => $default,
+            ]);
+        }
+    }
+
+    public static function ensureBotTokenExists(): void
+    {
+        $savedToken = trim((string) GeneralSetting::query()
+            ->where('key', self::BOT_TOKEN)
+            ->value('value'));
+
+        if ($savedToken !== '') {
+            return;
+        }
+
+        $envToken = trim((string) config('services.telegram.bot_token', ''));
+
+        if ($envToken === '') {
+            return;
+        }
+
+        GeneralSetting::query()->updateOrCreate(
+            ['key' => self::BOT_TOKEN],
+            [
+                'name' => Str::headline(str_replace('telegram_', '', self::BOT_TOKEN)),
+                'type' => 'telegram',
+                'value' => $envToken,
+            ]
+        );
     }
 
     public static function connectLinkValidityMinutes(): int

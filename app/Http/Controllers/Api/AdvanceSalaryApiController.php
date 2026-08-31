@@ -12,6 +12,7 @@ use App\Resources\Payroll\AdvanceSalary\AdvanceSalaryCollection;
 use App\Resources\Payroll\AdvanceSalary\AdvanceSalaryResource;
 use App\Services\Payroll\AdvanceSalaryService;
 use App\Services\TelegramService;
+use App\Support\TelegramBotSettings;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Http\Request;
@@ -276,11 +277,11 @@ class AdvanceSalaryApiController extends Controller
             return;
         }
 
-        $botToken = (string) config('services.telegram.bot_token', '');
+        $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
             Log::warning('Advance salary Telegram notification skipped due to missing Telegram configuration.', [
-                'bot_token_configured' => $botToken !== '',
+                'bot_token_saved' => false,
                 'advance_salary_id' => $advanceSalaryRequestDetail->id ?? null,
             ]);
             return;
@@ -319,11 +320,11 @@ class AdvanceSalaryApiController extends Controller
 
     private function sendAdvanceSalaryRequestTelegramNotification($advanceSalaryRequestDetail): void
     {
-        $botToken = (string) config('services.telegram.bot_token', '');
+        $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
             Log::warning('Advance salary request Telegram notification skipped due to missing Telegram configuration.', [
-                'bot_token_configured' => $botToken !== '',
+                'bot_token_saved' => false,
                 'advance_salary_id' => $advanceSalaryRequestDetail->id ?? null,
             ]);
             return;

@@ -6,6 +6,7 @@ use App\Models\TelegramGroup;
 use App\Models\User;
 use App\Support\TelegramBotSettings;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -14,6 +15,13 @@ use Illuminate\Support\Str;
 class TelegramService
 {
     private const TELEGRAM_API_BASE = 'https://api.telegram.org';
+
+    private ?string $lastError = null;
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     public function sendNotification(
         string $branchName,
@@ -49,6 +57,7 @@ class TelegramService
         $chatIds = $this->getActionChatIds($actionKey, $branchName, $departmentName);
 
         if ($chatIds === []) {
+            $this->lastError = 'No active Telegram chat IDs match this action, branch, and department.';
             Log::error('Telegram notification skipped: no chat_id available.', [
                 'actionKey' => $actionKey,
                 'branchName' => $branchName,
@@ -76,6 +85,7 @@ class TelegramService
         $chatIds = $this->getBroadcastChatIds(TelegramGroup::ACTION_NEW_EMPLOYEE);
 
         if ($chatIds === []) {
+            $this->lastError = 'No active Telegram chat IDs are available for broadcast.';
             Log::error('Telegram broadcast skipped: no chat IDs available.');
             return false;
         }
@@ -93,6 +103,7 @@ class TelegramService
         $chatIds = $this->getBroadcastChatIds(TelegramGroup::ACTION_NEW_EMPLOYEE);
 
         if ($chatIds === []) {
+            $this->lastError = 'No active Telegram chat IDs are available for photo broadcast.';
             Log::error('Telegram photo broadcast skipped: no chat IDs available.');
             return false;
         }
@@ -214,7 +225,8 @@ class TelegramService
         $chatId = $this->configuredChatId();
 
         if ($chatId === null) {
-            Log::error('Telegram notification skipped: TELEGRAM_CHAT_ID is missing.');
+            $this->lastError = 'No default Telegram chat ID is configured. Add TELEGRAM_CHAT_ID or create an active Telegram group for General.';
+            Log::error('Telegram notification skipped: no default chat ID is available.');
             return false;
         }
 
@@ -262,13 +274,15 @@ class TelegramService
         $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
-            Log::error('Telegram photo skipped: bot token missing (services.telegram.bot_token).', [
+            $this->lastError = 'Telegram bot token is missing. Save the bot token first.';
+            Log::error('Telegram photo skipped: bot token missing.', [
                 'chatId' => $chatId,
             ]);
             return null;
         }
 
         if (! is_file($photoPath)) {
+            $this->lastError = 'Telegram photo file was not found.';
             Log::error('Telegram photo skipped: file not found.', [
                 'chatId' => $chatId,
                 'photoPath' => $photoPath,
@@ -297,6 +311,7 @@ class TelegramService
             $response = $request->post($url, $payload);
 
             if (! $response->successful()) {
+                $this->lastError = $this->formatTelegramError('sendPhoto', $this->telegramErrorFromResponse($response), $chatId);
                 Log::error('Telegram sendPhoto failed.', [
                     'chatId' => $chatId,
                     'status' => $response->status(),
@@ -307,6 +322,7 @@ class TelegramService
 
             return $response->json('result.message_id');
         } catch (\Throwable $e) {
+            $this->lastError = $this->formatTelegramError('sendPhoto', $e->getMessage(), $chatId);
             Log::error('Telegram sendPhoto exception.', [
                 'chatId' => $chatId,
                 'exception' => $e->getMessage(),
@@ -320,7 +336,8 @@ class TelegramService
         $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
-            Log::error('Telegram media group skipped: bot token missing (services.telegram.bot_token).', [
+            $this->lastError = 'Telegram bot token is missing. Save the bot token first.';
+            Log::error('Telegram media group skipped: bot token missing.', [
                 'chatId' => $chatId,
             ]);
             return null;
@@ -329,6 +346,7 @@ class TelegramService
         $photoPaths = array_values(array_filter($photoPaths, fn (string $path): bool => is_file($path)));
 
         if ($photoPaths === []) {
+            $this->lastError = 'Telegram media group has no valid photo files.';
             Log::error('Telegram media group skipped: no valid photo files.', [
                 'chatId' => $chatId,
             ]);
@@ -364,6 +382,7 @@ class TelegramService
             ]);
 
             if (! $response->successful()) {
+                $this->lastError = $this->formatTelegramError('sendMediaGroup', $this->telegramErrorFromResponse($response), $chatId);
                 Log::error('Telegram sendMediaGroup failed.', [
                     'chatId' => $chatId,
                     'status' => $response->status(),
@@ -374,6 +393,7 @@ class TelegramService
 
             return $response->json('result');
         } catch (\Throwable $e) {
+            $this->lastError = $this->formatTelegramError('sendMediaGroup', $e->getMessage(), $chatId);
             Log::error('Telegram sendMediaGroup exception.', [
                 'chatId' => $chatId,
                 'exception' => $e->getMessage(),
@@ -539,7 +559,11 @@ class TelegramService
     {
         $chatId = trim((string) config('services.telegram.chat_id', ''));
 
-        return $chatId !== '' ? $chatId : null;
+        if ($chatId !== '') {
+            return $chatId;
+        }
+
+        return $this->getBroadcastChatIds(TelegramGroup::ACTION_GENERAL)[0] ?? null;
     }
 
     private function escapeHtml(string $value): string
@@ -552,7 +576,8 @@ class TelegramService
         $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
-            Log::error('Telegram bot token missing (services.telegram.bot_token).', $context);
+            $this->lastError = 'Telegram bot token is missing. Save the bot token first.';
+            Log::error('Telegram bot token missing.', $context);
             return null;
         }
 
@@ -565,6 +590,7 @@ class TelegramService
                 ->post($url, $payload);
 
             if (! $response->successful()) {
+                $this->lastError = $this->formatTelegramError($method, $this->telegramErrorFromResponse($response), $payload['chat_id'] ?? null);
                 Log::error('Telegram API request failed.', $context + [
                     'method' => $method,
                     'status' => $response->status(),
@@ -573,7 +599,22 @@ class TelegramService
             }
 
             return $response;
+        } catch (RequestException $e) {
+            $response = $e->response;
+            $this->lastError = $this->formatTelegramError(
+                $method,
+                $response ? $this->telegramErrorFromResponse($response) : $e->getMessage(),
+                $payload['chat_id'] ?? null
+            );
+            Log::error('Telegram API request exception.', $context + [
+                'method' => $method,
+                'status' => $response?->status(),
+                'body' => $response?->body(),
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
         } catch (\Throwable $e) {
+            $this->lastError = $this->formatTelegramError($method, $e->getMessage(), $payload['chat_id'] ?? null);
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
                 'exception' => $e->getMessage(),
@@ -587,7 +628,8 @@ class TelegramService
         $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
-            Log::error('Telegram bot token missing (services.telegram.bot_token).', $context);
+            $this->lastError = 'Telegram bot token is missing. Save the bot token first.';
+            Log::error('Telegram bot token missing.', $context);
             return null;
         }
 
@@ -600,6 +642,7 @@ class TelegramService
                 ->get($url, $query);
 
             if (! $response->successful()) {
+                $this->lastError = $this->formatTelegramError($method, $this->telegramErrorFromResponse($response));
                 Log::error('Telegram API request failed.', $context + [
                     'method' => $method,
                     'status' => $response->status(),
@@ -608,12 +651,55 @@ class TelegramService
             }
 
             return $response;
+        } catch (RequestException $e) {
+            $response = $e->response;
+            $this->lastError = $this->formatTelegramError(
+                $method,
+                $response ? $this->telegramErrorFromResponse($response) : $e->getMessage()
+            );
+            Log::error('Telegram API request exception.', $context + [
+                'method' => $method,
+                'status' => $response?->status(),
+                'body' => $response?->body(),
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
         } catch (\Throwable $e) {
+            $this->lastError = $this->formatTelegramError($method, $e->getMessage());
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
                 'exception' => $e->getMessage(),
             ]);
             return null;
         }
+    }
+
+    private function telegramErrorFromResponse(Response $response): string
+    {
+        $description = $response->json('description') ?: $response->json('message');
+
+        if (is_string($description) && trim($description) !== '') {
+            return trim($description);
+        }
+
+        $body = trim($response->body());
+
+        return $body !== '' ? Str::limit($body, 300) : 'HTTP ' . $response->status();
+    }
+
+    private function formatTelegramError(string $method, string $detail, mixed $chatId = null): string
+    {
+        if (strtolower(trim($detail)) === 'unauthorized') {
+            return 'Telegram bot token is invalid or unauthorized. Save a fresh bot token from @BotFather, then test again.';
+        }
+
+        $message = 'Telegram ' . $method . ' failed';
+        $chatId = trim((string) $chatId);
+
+        if ($chatId !== '') {
+            $message .= ' for chat ID ' . $chatId;
+        }
+
+        return $message . ': ' . $detail;
     }
 }
