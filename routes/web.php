@@ -81,8 +81,11 @@ use App\Http\Controllers\Web\ThemeController;
 use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
 use App\Http\Controllers\Web\TrackLocationController;
+use App\Http\Controllers\Web\TelegramBotController;
+use App\Http\Controllers\Web\TelegramEmployeeController;
 use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TelegramGroupController;
+use App\Http\Controllers\Web\TelegramWebhookController;
 use App\Http\Controllers\Web\TrainerController;
 use App\Http\Controllers\Web\TrainingController;
 use App\Http\Controllers\Web\TrainingTypeController;
@@ -122,6 +125,7 @@ Route::get('staff-evaluations/ai-create', function () {
 });
 
 /** Telegram Notification (web) */
+Route::post('telegram/webhook', TelegramWebhookController::class)->name('telegram.webhook');
 Route::post('telegram/notify', [TelegramNotificationController::class, 'send'])->name('telegram.notify');
 Route::get('telegram/test', function () {
     return view('telegram-test');
@@ -197,6 +201,14 @@ Route::group([
             Route::get('app-settings/toggle-status/{id}', [AppSettingController::class, 'toggleStatus'])->name('app-settings.toggle-status');
 
             /** Telegram group route */
+            Route::get('telegram-bot', [TelegramBotController::class, 'index'])->name('telegram-bot.index');
+            Route::put('telegram-bot', [TelegramBotController::class, 'update'])->name('telegram-bot.update');
+            Route::post('telegram-bot/test-connection', [TelegramBotController::class, 'testConnection'])->name('telegram-bot.test-connection');
+            Route::post('telegram-bot/register-webhook', [TelegramBotController::class, 'registerWebhook'])->name('telegram-bot.register-webhook');
+            Route::get('telegram-employees', [TelegramEmployeeController::class, 'index'])->name('telegram-employees.index');
+            Route::put('telegram-employees/{employee}', [TelegramEmployeeController::class, 'update'])->name('telegram-employees.update');
+            Route::post('telegram-employees/{employee}/send', [TelegramEmployeeController::class, 'send'])->name('telegram-employees.send');
+            Route::post('telegram-employees/broadcast', [TelegramEmployeeController::class, 'broadcast'])->name('telegram-employees.broadcast');
             Route::resource('telegram-groups', TelegramGroupController::class)->except(['show', 'destroy']);
             Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
             Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');

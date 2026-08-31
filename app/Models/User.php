@@ -90,6 +90,9 @@ class User extends Authenticatable
         'remarks',
         'uuid',
         'fcm_token',
+        'telegram_chat_id',
+        'telegram_username',
+        'telegram_linked_at',
         'device_type',
         'logout_status',
         'company_id',
@@ -116,6 +119,7 @@ class User extends Authenticatable
     ];
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'telegram_linked_at' => 'datetime',
         'app_theme_mode' => 'string',
     ];
 

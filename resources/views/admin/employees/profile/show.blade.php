@@ -100,7 +100,8 @@
                 $tabs['contract-form'] = 'Contract Form';
             }
             if ($canViewDiscipline) {
-                $tabs['staff-warning-form'] = 'Staff Warning';
+                $tabs['discipline'] = 'Staff Warning Records';
+                $tabs['staff-warning-form'] = 'Staff Warning Form';
             }
             if ($canViewEmployment) {
                 $tabs['employment'] = 'Employment';
@@ -122,9 +123,6 @@
             }
             if ($canViewReward) {
                 $tabs['rewards'] = 'Rewards';
-            }
-            if ($canViewDiscipline) {
-                $tabs['discipline'] = 'Discipline';
             }
             if ($canViewGoal) {
                 $tabs['goals'] = 'Goals';
@@ -902,6 +900,10 @@
                     @endif
 
                     @if($canViewDiscipline)
+                        <div class="tab-pane fade" id="discipline" role="tabpanel">
+                            @include('admin.employees.profile.partials.discipline')
+                        </div>
+
                         <div class="tab-pane fade" id="staff-warning-form" role="tabpanel">
                             @include('admin.employees.profile.partials.staff-warning-form')
                         </div>
@@ -1001,12 +1003,6 @@
                     @if($canViewReward)
                         <div class="tab-pane fade" id="rewards" role="tabpanel">
                             @include('admin.employees.profile.partials.rewards')
-                        </div>
-                    @endif
-
-                    @if($canViewDiscipline)
-                        <div class="tab-pane fade" id="discipline" role="tabpanel">
-                            @include('admin.employees.profile.partials.discipline')
                         </div>
                     @endif
 

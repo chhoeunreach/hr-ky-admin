@@ -195,6 +195,25 @@
                 </div>
 
                 <div class="col-lg-4 col-md-6 mb-3">
+                    <label for="telegram_chat_id" class="form-label">Telegram Bot Chat ID</label>
+                    <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id"
+                           value="{{ old('telegram_chat_id', $userDetail->telegram_chat_id ?? '') }}"
+                           autocomplete="off" placeholder="Example: 123456789">
+                    @if(isset($userDetail) && $userDetail->telegram_linked_at)
+                        <small class="text-success">Linked {{ $userDetail->telegram_linked_at->format('Y-m-d H:i') }}</small>
+                    @else
+                        <small class="text-muted">Employee can send /link {{ $userDetail->employee_code ?? 'EMPLOYEE_CODE' }} to the bot.</small>
+                    @endif
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <label for="telegram_username" class="form-label">Telegram Username</label>
+                    <input type="text" class="form-control" id="telegram_username" name="telegram_username"
+                           value="{{ old('telegram_username', $userDetail->telegram_username ?? '') }}"
+                           autocomplete="off" placeholder="@username">
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-3">
                     <label for="dob" class="form-label"> {{ __('index.dob') }} </label>
                     @if($bsEnabled)
                         <input type="text" class="form-control birthDate" id="dob" name="dob"

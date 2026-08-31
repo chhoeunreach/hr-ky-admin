@@ -48,6 +48,8 @@ class UserUpdateRequest extends FormRequest
             'address' => 'nullable|required_unless:role_id,1',
             'dob' => 'nullable|required_unless:role_id,1|date|before:today',
             'phone' => 'nullable|required_unless:role_id,1|numeric',
+            'telegram_chat_id' => ['nullable', 'string', 'max:255'],
+            'telegram_username' => ['nullable', 'string', 'max:255'],
             'gender' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::GENDER)],
             'marital_status' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::MARITAL_STATUS)],
             'employment_type' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::EMPLOYMENT_TYPE)],
@@ -109,7 +111,6 @@ class UserUpdateRequest extends FormRequest
     }
 
 }
-
 
 
 

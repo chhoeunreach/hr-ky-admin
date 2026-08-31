@@ -102,7 +102,7 @@
 @endcanany
 
 
-@canany([
+@if(AppHelper::checkSuperAdmin() || auth()->user()?->canAny([
     'role_permission',
     'general_setting',
     'app_setting',
@@ -112,11 +112,13 @@
     'notification',
     'list_telegram_group',
     'theme_setting'
-])
+]))
     <li class="nav-item  {{
                    request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
+                      request()->routeIs('admin.telegram-bot.*') ||
+                      request()->routeIs('admin.telegram-employees.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
@@ -137,6 +139,8 @@
         <div class="{{ request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
+                      request()->routeIs('admin.telegram-bot.*') ||
+                      request()->routeIs('admin.telegram-employees.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
@@ -175,14 +179,20 @@
                     </li>
                 @endif
 
-                @can('list_telegram_group')
+                @if(AppHelper::checkSuperAdmin() || auth()->user()?->can('list_telegram_group'))
                     <li class="nav-item">
                         <a
                             href="{{route('admin.telegram-groups.index')}}"
                             data-href="{{route('admin.telegram-groups.index')}}"
                             class="nav-link {{request()->routeIs('admin.telegram-groups.*') ? 'active' : ''}}">Telegram Groups</a>
                     </li>
-                @endcan
+                    <li class="nav-item">
+                        <a
+                            href="{{route('admin.telegram-bot.index')}}"
+                            data-href="{{route('admin.telegram-bot.index')}}"
+                            class="nav-link {{request()->routeIs('admin.telegram-bot.*') || request()->routeIs('admin.telegram-employees.*') ? 'active' : ''}}">Telegram Bot</a>
+                    </li>
+                @endif
 
                 @can('notification')
                     <li class="nav-item">
@@ -232,4 +242,4 @@
             </ul>
         </div>
     </li>
-@endcanany
+@endif

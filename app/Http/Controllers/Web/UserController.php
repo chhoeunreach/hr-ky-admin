@@ -154,6 +154,12 @@ class UserController extends Controller
             $validatedData['status'] = 'verified';
             $validatedData['company_id'] = AppHelper::getAuthUserCompanyId();
             $validatedData['allow_holiday_check_in'] = isset($validatedData['allow_holiday_check_in']) ? 1 : 0;
+            if (isset($validatedData['telegram_username'])) {
+                $validatedData['telegram_username'] = ltrim(trim((string) $validatedData['telegram_username']), '@');
+            }
+            if (! empty($validatedData['telegram_chat_id'])) {
+                $validatedData['telegram_linked_at'] = now();
+            }
 
             DB::beginTransaction();
             $user = $this->userRepo->store($validatedData);
@@ -318,6 +324,14 @@ class UserController extends Controller
                 throw new Exception(__('message.user_not_found'), 404);
             }
             $validatedData['allow_holiday_check_in'] = isset($validatedData['allow_holiday_check_in']) ? 1 : 0;
+            if (isset($validatedData['telegram_username'])) {
+                $validatedData['telegram_username'] = ltrim(trim((string) $validatedData['telegram_username']), '@');
+            }
+            if (! empty($validatedData['telegram_chat_id']) && empty($userDetail->telegram_linked_at)) {
+                $validatedData['telegram_linked_at'] = now();
+            } elseif (empty($validatedData['telegram_chat_id'])) {
+                $validatedData['telegram_linked_at'] = null;
+            }
             DB::beginTransaction();
             $this->userRepo->update($userDetail, $validatedData);
             $this->accountRepo->createOrUpdate($userDetail, $accountValidatedData);

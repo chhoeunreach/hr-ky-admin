@@ -52,6 +52,8 @@ class UserCreateRequest extends FormRequest
             'address'=>'nullable',
             'dob' => 'nullable|date|before:today',
             'phone'=>'nullable|numeric',
+            'telegram_chat_id' => ['nullable', 'string', 'max:255'],
+            'telegram_username' => ['nullable', 'string', 'max:255'],
             'gender' => ['nullable', 'required_unless:role_id,1', 'string', Rule::in(User::GENDER)],
             'marital_status' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::MARITAL_STATUS)],
             'employment_type' => ['nullable','required_unless:role_id,1', 'string', Rule::in(User::EMPLOYMENT_TYPE)],
@@ -111,7 +113,6 @@ class UserCreateRequest extends FormRequest
 
 
 }
-
 
 
 

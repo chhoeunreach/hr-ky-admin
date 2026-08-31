@@ -1,4 +1,7 @@
-@php use App\Models\User; @endphp
+@php
+    use App\Models\User;
+    use App\Support\TelegramBotSettings;
+@endphp
 @extends('layouts.master')
 
 @section('title', __('index.employees_title'))
@@ -26,6 +29,7 @@
         @include('admin.employees.common.breadcrumb')
 
         @php
+            $telegramBotUsername = TelegramBotSettings::get(TelegramBotSettings::BOT_USERNAME, '');
             $hasEmployeeFilters = filled($filterParameters['branch_id'] ?? null)
                 || filled($filterParameters['department_id'] ?? null)
                 || filled($filterParameters['post_id'] ?? null)
@@ -557,6 +561,25 @@
                                                             <button
                                                                 class="btn btn-primary btn-xs">{{ __('index.edit_detail') }}</button>
                                                         </a>
+                                                    </li>
+                                                @endcan
+
+                                                @can('edit_employee')
+                                                    <li class="dropdown-item py-2">
+                                                        @php $telegramConnectUrl = $telegramBotUsername ? TelegramBotSettings::connectUrl($value) : null; @endphp
+                                                        @if($telegramConnectUrl)
+                                                            <a href="{{ $telegramConnectUrl }}"
+                                                               target="_blank"
+                                                               rel="noopener noreferrer">
+                                                                <button class="btn btn-primary btn-xs">
+                                                                    <i class="link-icon" data-feather="send"></i> Connect to Telegram
+                                                                </button>
+                                                            </a>
+                                                        @else
+                                                            <button class="btn btn-secondary btn-xs" disabled title="Save Bot Username in Telegram Bot settings first">
+                                                                <i class="link-icon" data-feather="send"></i> Connect to Telegram
+                                                            </button>
+                                                        @endif
                                                     </li>
                                                 @endcan
 

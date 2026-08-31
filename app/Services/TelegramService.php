@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\TelegramGroup;
+use App\Models\User;
+use App\Support\TelegramBotSettings;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -131,6 +133,117 @@ class TelegramService
         return $response?->successful() ?? false;
     }
 
+    public function sendHtmlMessage(string $chatId, string $messageText): bool
+    {
+        return $this->sendMessage($chatId, $messageText, 'HTML');
+    }
+
+    public function getWebhookInfo(): ?array
+    {
+        return $this->get('getWebhookInfo')?->json();
+    }
+
+    public function getMe(): ?array
+    {
+        return $this->get('getMe')?->json();
+    }
+
+    public function setWebhook(string $url, ?string $secret = null, bool $dropPendingUpdates = false): bool
+    {
+        $payload = [
+            'url' => $url,
+            'drop_pending_updates' => $dropPendingUpdates,
+        ];
+
+        if ($secret !== null && trim($secret) !== '') {
+            $payload['secret_token'] = trim($secret);
+        }
+
+        $response = $this->post('setWebhook', $payload, ['url' => $url]);
+
+        return $response?->successful() ?? false;
+    }
+
+    public function deleteWebhook(bool $dropPendingUpdates = false): bool
+    {
+        $response = $this->post('deleteWebhook', [
+            'drop_pending_updates' => $dropPendingUpdates,
+        ]);
+
+        return $response?->successful() ?? false;
+    }
+
+    public function sendToEmployee(User $employee, string $messageText, ?string $parseMode = null): bool
+    {
+        $chatId = trim((string) $employee->telegram_chat_id);
+
+        if ($chatId === '') {
+            Log::warning('Telegram employee notification skipped: employee has no Telegram chat ID.', [
+                'employee_id' => $employee->id,
+            ]);
+            return false;
+        }
+
+        return $this->sendMessage($chatId, $messageText, $parseMode);
+    }
+
+    public function sendToEmployees(iterable $employees, string $messageText, ?string $parseMode = null): array
+    {
+        $sent = 0;
+        $failed = 0;
+        $skipped = 0;
+
+        foreach ($employees as $employee) {
+            if (! $employee instanceof User) {
+                continue;
+            }
+
+            if (trim((string) $employee->telegram_chat_id) === '') {
+                $skipped++;
+                continue;
+            }
+
+            $this->sendToEmployee($employee, $messageText, $parseMode) ? $sent++ : $failed++;
+        }
+
+        return compact('sent', 'failed', 'skipped');
+    }
+
+    public function sendConfiguredMessage(string $messageText, ?string $parseMode = null): bool
+    {
+        $chatId = $this->configuredChatId();
+
+        if ($chatId === null) {
+            Log::error('Telegram notification skipped: TELEGRAM_CHAT_ID is missing.');
+            return false;
+        }
+
+        return $this->sendMessage($chatId, $messageText, $parseMode);
+    }
+
+    public function sendNewOrderCreated(array $orderData = []): bool
+    {
+        return $this->sendCommonNotification('New order created', $orderData);
+    }
+
+    public function sendPaymentCompleted(array $paymentData = []): bool
+    {
+        return $this->sendCommonNotification('Payment completed', $paymentData);
+    }
+
+    public function sendUserRegistered(array $userData = []): bool
+    {
+        $message = $this->buildCommonNotificationMessage('User registered', $userData);
+
+        return $this->sendToAction(TelegramGroup::ACTION_NEW_EMPLOYEE, $message, 'HTML')
+            || $this->sendConfiguredMessage($message, 'HTML');
+    }
+
+    public function sendSystemAlert(string $messageText, array $context = []): bool
+    {
+        return $this->sendCommonNotification('Admin/System alert', ['message' => $messageText] + $context);
+    }
+
     public function sendLocation(string $chatId, float $latitude, float $longitude): bool
     {
         $payload = [
@@ -146,7 +259,7 @@ class TelegramService
 
     public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null, ?string $parseMode = null): ?int
     {
-        $botToken = (string) config('services.telegram.bot_token', '');
+        $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
             Log::error('Telegram photo skipped: bot token missing (services.telegram.bot_token).', [
@@ -204,7 +317,7 @@ class TelegramService
 
     public function sendMediaGroup(string $chatId, array $photoPaths, ?string $caption = null, ?string $parseMode = null): ?array
     {
-        $botToken = (string) config('services.telegram.bot_token', '');
+        $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
             Log::error('Telegram media group skipped: bot token missing (services.telegram.bot_token).', [
@@ -397,9 +510,46 @@ class TelegramService
             ->toArray();
     }
 
+    private function sendCommonNotification(string $title, array $data = []): bool
+    {
+        return $this->sendConfiguredMessage($this->buildCommonNotificationMessage($title, $data), 'HTML');
+    }
+
+    private function buildCommonNotificationMessage(string $title, array $data = []): string
+    {
+        $lines = ['<b>' . $this->escapeHtml($title) . '</b>'];
+
+        foreach ($data as $key => $value) {
+            if (is_array($value) || is_object($value)) {
+                $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $label = Str::headline((string) $key);
+            $lines[] = $this->escapeHtml($label) . ': ' . $this->escapeHtml((string) $value);
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function configuredChatId(): ?string
+    {
+        $chatId = trim((string) config('services.telegram.chat_id', ''));
+
+        return $chatId !== '' ? $chatId : null;
+    }
+
+    private function escapeHtml(string $value): string
+    {
+        return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
     private function post(string $method, array $payload, array $context = []): ?Response
     {
-        $botToken = (string) config('services.telegram.bot_token', '');
+        $botToken = TelegramBotSettings::botToken();
 
         if ($botToken === '') {
             Log::error('Telegram bot token missing (services.telegram.bot_token).', $context);
@@ -413,6 +563,41 @@ class TelegramService
                 ->retry(2, 200)
                 ->acceptJson()
                 ->post($url, $payload);
+
+            if (! $response->successful()) {
+                Log::error('Telegram API request failed.', $context + [
+                    'method' => $method,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+            }
+
+            return $response;
+        } catch (\Throwable $e) {
+            Log::error('Telegram API request exception.', $context + [
+                'method' => $method,
+                'exception' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private function get(string $method, array $query = [], array $context = []): ?Response
+    {
+        $botToken = TelegramBotSettings::botToken();
+
+        if ($botToken === '') {
+            Log::error('Telegram bot token missing (services.telegram.bot_token).', $context);
+            return null;
+        }
+
+        $url = rtrim(self::TELEGRAM_API_BASE, '/') . '/bot' . $botToken . '/' . ltrim($method, '/');
+
+        try {
+            $response = Http::timeout(10)
+                ->retry(2, 200)
+                ->acceptJson()
+                ->get($url, $query);
 
             if (! $response->successful()) {
                 Log::error('Telegram API request failed.', $context + [

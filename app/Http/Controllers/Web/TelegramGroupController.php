@@ -226,7 +226,11 @@ class TelegramGroupController extends Controller
     private function chatOptions(): array
     {
         return TelegramGroup::query()
-            ->pluck('chat_id')
+            ->get(['chat_id', 'chat_ids'])
+            ->flatMap(function (TelegramGroup $telegramGroup) {
+                return $telegramGroup->chat_ids ?: [$telegramGroup->chat_id];
+            })
+            ->map(fn ($chatId) => trim((string) $chatId))
             ->filter()
             ->unique()
             ->values()
