@@ -95,6 +95,17 @@ class TelegramEmployeeController extends Controller
         return back()->with('success', 'Employee Telegram link updated.');
     }
 
+    public function unlink(User $employee): RedirectResponse
+    {
+        $employee->update([
+            'telegram_chat_id' => null,
+            'telegram_username' => null,
+            'telegram_linked_at' => null,
+        ]);
+
+        return back()->with('success', $employee->name . ' has been unlinked from Telegram.');
+    }
+
     public function send(Request $request, User $employee, TelegramService $telegramService): RedirectResponse
     {
         $data = $request->validate([

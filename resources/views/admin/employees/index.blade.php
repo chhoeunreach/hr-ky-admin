@@ -714,6 +714,16 @@
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer">
+                                                                @if($value->telegram_chat_id)
+                                                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', $value->id) }}" class="m-0 telegram-unlink-form">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="btn btn-outline-danger">
+                                                                            <i class="link-icon" data-feather="unlink"></i>
+                                                                            Unlink Telegram
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
                                                                 <form method="POST" action="{{ route('admin.telegram-employees.sync-starts') }}" class="m-0">
                                                                     @csrf
                                                                     <button type="submit" class="btn btn-outline-success">
@@ -824,6 +834,12 @@
 
         $(document).on('hidden.bs.modal', '[id^="telegramConnectModal"]', function () {
             clearInterval(telegramConnectSyncTimer);
+        });
+
+        $(document).on('submit', '.telegram-unlink-form', function (event) {
+            if (!confirm('Unlink this employee from Telegram?')) {
+                event.preventDefault();
+            }
         });
     </script>
 @endsection

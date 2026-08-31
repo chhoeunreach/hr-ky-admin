@@ -246,6 +246,13 @@
                                     @if($employee->telegram_linked_at)
                                         <small>Linked at {{ optional($employee->telegram_linked_at)->format('Y-m-d H:i') }}</small>
                                     @endif
+                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', ['employee' => $employee->id, 'active_employee' => $employee->id]) }}" class="mt-3 telegram-unlink-form">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i data-feather="unlink"></i> Unlink Telegram
+                                        </button>
+                                    </form>
                                 @else
                                     <p>Share the QR code or link with the employee. After they open Telegram, the bot will save their chat ID automatically.</p>
                                     @if($connectUrl)
@@ -410,6 +417,12 @@
                 target.select();
                 target.setSelectionRange(0, target.value.length);
                 navigator.clipboard?.writeText(target.value).catch(function () { document.execCommand('copy'); });
+            });
+
+            $('.telegram-unlink-form').on('submit', function (event) {
+                if (!confirm('Unlink this employee from Telegram?')) {
+                    event.preventDefault();
+                }
             });
 
             function syncTelegramStarts() {
