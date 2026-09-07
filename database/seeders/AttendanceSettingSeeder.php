@@ -43,6 +43,48 @@ class AttendanceSettingSeeder extends Seeder
                 'status' => 1,
 //                'description' => 'Note: for wifi=> This setting will not affect field type users. Those type of users will still be able to perform check in checkout via mobile app.'
             ],
+            [
+                'name' => 'Monthly Attendance Bonus Amount',
+                'slug' => 'monthly_attendance_bonus_amount',
+                'value' => 20,
+                'values' => null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Require Check In',
+                'slug' => 'monthly_attendance_require_check_in',
+                'value' => null,
+                'values' => null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Require Check Out',
+                'slug' => 'monthly_attendance_require_check_out',
+                'value' => null,
+                'values' => null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Control Late Check In',
+                'slug' => 'monthly_attendance_require_no_late_check_in',
+                'value' => null,
+                'values' => null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Control Check Out Before Time Out',
+                'slug' => 'monthly_attendance_require_no_early_check_out',
+                'value' => null,
+                'values' => null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Control Check In Before Time Start',
+                'slug' => 'monthly_attendance_require_no_early_check_in',
+                'value' => null,
+                'values' => null,
+                'status' => 1,
+            ],
         ];
 
         foreach ($attendanceSetting as $setting) {

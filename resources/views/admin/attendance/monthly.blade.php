@@ -501,6 +501,28 @@
             padding: 8px 10px;
         }
 
+        button.monthly-stat-card {
+            width: 100%;
+            text-align: left;
+        }
+
+        button.monthly-stat-card:hover,
+        button.monthly-stat-card:focus {
+            border-color: #bfdbfe;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.10);
+        }
+
+        button.monthly-stat-card.is-active {
+            border-color: #2563eb;
+            box-shadow: inset 0 0 0 1px #2563eb, 0 8px 18px rgba(37, 99, 235, 0.12);
+        }
+
+        button.monthly-stat-card:disabled {
+            cursor: default;
+            opacity: 0.62;
+            box-shadow: none;
+        }
+
         .monthly-stat-icon {
             width: 30px;
             height: 30px;
@@ -523,6 +545,12 @@
         .stat-leave .monthly-stat-icon { color: #7c3aed; background: #f5f3ff; }
         .stat-off .monthly-stat-icon { color: #64748b; background: #f1f5f9; }
         .stat-bonus .monthly-stat-icon { color: #15803d; background: #ecfdf3; }
+        .stat-not-in .monthly-stat-icon { color: #dc2626; background: #fef2f2; }
+        .stat-not-out .monthly-stat-icon { color: #b45309; background: #fffbeb; }
+        .stat-leave-request .monthly-stat-icon { color: #7c3aed; background: #f5f3ff; }
+        .stat-time-leave-request .monthly-stat-icon { color: #0891b2; background: #ecfeff; }
+        .stat-late-more .monthly-stat-icon { color: #be123c; background: #fff1f2; }
+        .stat-off-more .monthly-stat-icon { color: #475569; background: #f8fafc; }
 
         .monthly-stat-title {
             margin: 0;
@@ -588,6 +616,39 @@
 
         .monthly-attendance-table thead small {
             font-size: var(--monthly-table-small-size);
+        }
+
+        .monthly-sort-header {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            width: 100%;
+            min-height: 18px;
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            font-weight: 900;
+            line-height: 1.15;
+        }
+
+        .monthly-sort-header:hover,
+        .monthly-sort-header:focus {
+            color: #2563eb;
+        }
+
+        .monthly-sort-icon {
+            display: inline-flex;
+            width: 9px;
+            color: #94a3b8;
+            font-size: 8px;
+            line-height: 1;
+        }
+
+        .monthly-sort-header.is-active .monthly-sort-icon {
+            color: #2563eb;
         }
 
         .monthly-attendance-table .sticky-number {
@@ -1110,6 +1171,14 @@
         .monthly-bonus-amount.has-value {
             background: #ecfdf3;
             color: #15803d;
+        }
+
+        .monthly-bonus-mission {
+            color: #475569;
+            font-size: 8px;
+            font-weight: 900;
+            line-height: 1.1;
+            white-space: nowrap;
         }
 
         .monthly-bonus-link {
@@ -2063,74 +2132,160 @@
 
                 <div class="row g-2">
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-employees">
+                        <button type="button"
+                                class="monthly-stat-card stat-employees"
+                                data-table-filter="all">
                             <span class="monthly-stat-icon"><i data-feather="users"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.total_employees') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['employees']) }}</p>
                                 <p class="monthly-stat-subtitle">{{ __('index.all_employees') }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-present">
+                        <button type="button"
+                                class="monthly-stat-card stat-present"
+                                data-table-filter="present">
                             <span class="monthly-stat-icon"><i data-feather="check"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.present') }}</p>
-                                <p class="monthly-stat-value">{{ number_format($summary['present']) }}</p>
-                                <p class="monthly-stat-subtitle">{{ number_format($summary['present_rate'], 2) }}%</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['present_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.spend_cost') }} ${{ number_format($summary['present_spend_amount'] ?? 0, 0) }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-late">
+                        <button type="button"
+                                class="monthly-stat-card stat-late"
+                                data-table-filter="late">
                             <span class="monthly-stat-icon"><i data-feather="clock"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.late') }}</p>
-                                <p class="monthly-stat-value">{{ number_format($summary['late']) }}</p>
-                                <p class="monthly-stat-subtitle">{{ number_format($summary['late_rate'], 2) }}%</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['late_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-absent">
+                        <button type="button"
+                                class="monthly-stat-card stat-absent"
+                                data-table-filter="absent">
                             <span class="monthly-stat-icon"><i data-feather="x"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.absent') }}</p>
-                                <p class="monthly-stat-value">{{ number_format($summary['absent']) }}</p>
-                                <p class="monthly-stat-subtitle">{{ number_format($summary['absent_rate'], 2) }}%</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['absent_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-leave">
+                        <button type="button"
+                                class="monthly-stat-card stat-leave"
+                                data-table-filter="leave">
                             <span class="monthly-stat-icon"><i data-feather="umbrella"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.on_leave') }}</p>
-                                <p class="monthly-stat-value">{{ number_format($summary['leave']) }}</p>
-                                <p class="monthly-stat-subtitle">{{ number_format($summary['leave_rate'], 2) }}%</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['leave_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-off">
+                        <button type="button"
+                                class="monthly-stat-card stat-off"
+                                data-table-filter="off_day">
                             <span class="monthly-stat-icon"><i data-feather="calendar"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.off_day') }}</p>
-                                <p class="monthly-stat-value">{{ number_format($summary['off_day']) }}</p>
-                                <p class="monthly-stat-subtitle">{{ __('index.monthly_off') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['off_day_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
                             </div>
-                        </div>
+                        </button>
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
-                        <div class="monthly-stat-card stat-bonus">
+                        <button type="button"
+                                class="monthly-stat-card stat-bonus"
+                                data-table-filter="bonus">
                             <span class="monthly-stat-icon"><i data-feather="dollar-sign"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.bonus') }}</p>
                                 <p class="monthly-stat-value">${{ number_format($summary['bonus_amount'] ?? 0, 0) }}</p>
                                 <p class="monthly-stat-subtitle">{{ number_format($summary['bonus_employees'] ?? 0) }} {{ __('index.employees') }}</p>
                             </div>
-                        </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-not-in"
+                                data-table-filter="not_yet_check_in">
+                            <span class="monthly-stat-icon"><i data-feather="log-in"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.not_yet_check_in') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['not_yet_check_in_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-not-out"
+                                data-table-filter="not_yet_check_out">
+                            <span class="monthly-stat-icon"><i data-feather="log-out"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.not_yet_check_out') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['not_yet_check_out_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-leave-request"
+                                data-table-filter="leave_requests">
+                            <span class="monthly-stat-icon"><i data-feather="file-text"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.leave_request') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['leave_requests'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.pending') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-time-leave-request"
+                                data-table-filter="time_leave_requests">
+                            <span class="monthly-stat-icon"><i data-feather="clock"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.time_leave_request') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['time_leave_requests'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.pending') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-late-more"
+                                data-table-filter="late_more_than_three">
+                            <span class="monthly-stat-icon"><i data-feather="alert-triangle"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.late_three_or_more') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['late_more_than_three'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
+                                class="monthly-stat-card stat-off-more"
+                                data-table-filter="off_day_more_than_two">
+                            <span class="monthly-stat-icon"><i data-feather="calendar-x"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.off_day_more_than_two') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['off_day_more_than_two'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -2190,29 +2345,40 @@
             </div>
 
             <div class="monthly-table-wrap">
-                <table class="monthly-attendance-table">
+                <table class="monthly-attendance-table" data-row-start="{{ $monthlyRows->firstItem() ?? 1 }}">
                     <thead>
                     <tr>
                         <th class="sticky-number">#</th>
-                        <th class="sticky-employee">{{ __('index.employee') }}</th>
+                        <th class="sticky-employee">
+                            <button type="button" class="monthly-sort-header" data-sort-column="1" data-sort-type="text" title="Sort">
+                                <span>{{ __('index.employee') }}</span>
+                                <span class="monthly-sort-icon">&varr;</span>
+                            </button>
+                        </th>
                         @foreach($calendarDays as $day)
                             <th class="{{ $day['is_weekend'] ? 'monthly-weekend' : '' }}">
-                                <div>{{ $day['day'] }}</div>
-                                <small>{{ $day['weekday'] }}</small>
+                                <button type="button" class="monthly-sort-header" data-sort-column="{{ 2 + $loop->index }}" data-sort-type="status" title="Sort">
+                                    <span>
+                                        <span class="d-block">{{ $day['day'] }}</span>
+                                        <small>{{ $day['weekday'] }}</small>
+                                    </span>
+                                    <span class="monthly-sort-icon">&varr;</span>
+                                </button>
                             </th>
                         @endforeach
-                        <th>{{ __('index.present') }}</th>
-                        <th>{{ __('index.late') }}</th>
-                        <th>{{ __('index.absent') }}</th>
-                        <th>{{ __('index.leave') }}</th>
-                        <th>{{ __('index.off_day') }}</th>
-                        <th>{{ __('index.total') }}</th>
-                        <th>{{ __('index.bonus') }}</th>
-                        <th class="monthly-signal-column">{{ __('index.pending_day_off') }}</th>
-                        <th class="monthly-signal-column">{{ __('index.pending_leave') }}</th>
-                        <th class="monthly-signal-column">{{ __('index.time_leave') }}</th>
-                        <th class="monthly-signal-column">{{ __('index.time_leave_request') }}</th>
-                        <th class="monthly-signal-column">{{ __('index.no_checkout') }}</th>
+                        @php $summaryColumnStart = 2 + count($calendarDays); @endphp
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart }}" data-sort-type="number" title="Sort"><span>{{ __('index.present') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 1 }}" data-sort-type="number" title="Sort"><span>{{ __('index.late') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 2 }}" data-sort-type="number" title="Sort"><span>{{ __('index.absent') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 3 }}" data-sort-type="number" title="Sort"><span>{{ __('index.leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 4 }}" data-sort-type="number" title="Sort"><span>{{ __('index.off_day') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 5 }}" data-sort-type="number" title="Sort"><span>{{ __('index.total') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 6 }}" data-sort-type="number" title="Sort"><span>{{ __('index.bonus') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 7 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_day_off') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 8 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 9 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 10 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave_request') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 11 }}" data-sort-type="number" title="Sort"><span>{{ __('index.no_checkout') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -2222,7 +2388,19 @@
                             $avatar = $employee->avatar ? asset(User::AVATAR_UPLOAD_PATH . $employee->avatar) : asset('assets/images/img.png');
                             $shiftLabel = $employee->officeTime?->shift ?: trim(($employee->officeTime?->opening_time ?: '') . ' - ' . ($employee->officeTime?->closing_time ?: ''));
                         @endphp
-                        <tr data-monthly-employee-row="{{ $employee->id }}">
+                        <tr data-monthly-employee-row="{{ $employee->id }}"
+                            data-filter-present="{{ ($row['is_complete_present'] ?? false) ? 1 : 0 }}"
+                            data-filter-late="{{ $row['totals']['late'] ?? 0 }}"
+                            data-filter-absent="{{ $row['totals']['absent'] ?? 0 }}"
+                            data-filter-leave="{{ $row['totals']['leave'] ?? 0 }}"
+                            data-filter-off_day="{{ $row['totals']['off_day'] ?? 0 }}"
+                            data-filter-bonus="{{ $row['bonus_amount'] ?? 0 }}"
+                            data-filter-not_yet_check_in="{{ $row['totals']['absent'] ?? 0 }}"
+                            data-filter-not_yet_check_out="{{ $row['signal_totals']['no_checkout'] ?? 0 }}"
+                            data-filter-leave_requests="{{ $row['signal_totals']['pending_leave'] ?? 0 }}"
+                            data-filter-time_leave_requests="{{ $row['signal_totals']['time_leave_request'] ?? 0 }}"
+                            data-filter-late_more_than_three="{{ ($row['totals']['late'] ?? 0) >= 3 ? 1 : 0 }}"
+                            data-filter-off_day_more_than_two="{{ ($row['employee_day_off_days'] ?? 0) > 2 ? 1 : 0 }}">
                             <td class="sticky-number">
                                 <span class="monthly-row-number">
                                     <span class="monthly-row-number-value">{{ $monthlyRows->firstItem() + $loop->index }}</span>
@@ -2241,7 +2419,7 @@
                                     @endif
                                 </span>
                             </td>
-                            <td class="sticky-employee">
+                            <td class="sticky-employee" data-sort-value="{{ strtolower($employee->name . ' ' . ($employee->username ?: '') . ' ' . ($employee->employee_code ?: '')) }}">
                                 <div class="monthly-employee">
                                     <div class="monthly-avatar-wrap">
                                         <img class="monthly-avatar" src="{{ $avatar }}" alt="{{ $employee->name }}">
@@ -2285,7 +2463,7 @@
                                 </div>
                             </td>
                             @foreach($row['days'] as $day)
-                                <td class="monthly-day-cell {{ $day['is_weekend'] ? 'monthly-weekend' : '' }}">
+                                <td class="monthly-day-cell {{ $day['is_weekend'] ? 'monthly-weekend' : '' }}" data-sort-value="{{ $day['status'] }}">
                                     <button type="button"
                                             class="monthly-day-link border-0 w-100"
                                             data-bs-toggle="modal"
@@ -2326,12 +2504,12 @@
                                     </button>
                                 </td>
                                             @endforeach
-                            <td class="monthly-total total-present">
+                            <td class="monthly-total total-present" data-sort-value="{{ $row['totals']['present'] ?? 0 }}">
                                 <button type="button" class="monthly-total-button" data-total-status="present" data-total-title="Present" @disabled(($row['totals']['present'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['present'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['present'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total total-late">
+                            <td class="monthly-total total-late" data-sort-value="{{ $row['totals']['late'] ?? 0 }}">
                                 <button type="button"
                                         class="monthly-total-button"
                                         data-total-status="late"
@@ -2348,27 +2526,27 @@
                                     <span class="monthly-total-value {{ ($row['totals']['late'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['late'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total total-absent">
+                            <td class="monthly-total total-absent" data-sort-value="{{ $row['totals']['absent'] ?? 0 }}">
                                 <button type="button" class="monthly-total-button" data-total-status="absent" data-total-title="Absent" @disabled(($row['totals']['absent'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['absent'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['absent'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total total-leave">
+                            <td class="monthly-total total-leave" data-sort-value="{{ $row['totals']['leave'] ?? 0 }}">
                                 <button type="button" class="monthly-total-button" data-total-status="leave" data-total-title="Leave" @disabled(($row['totals']['leave'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['leave'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['leave'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total">
+                            <td class="monthly-total" data-sort-value="{{ $row['totals']['off_day'] ?? 0 }}">
                                 <button type="button" class="monthly-total-button" data-total-status="off_day" data-total-title="Off Day" @disabled(($row['totals']['off_day'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['off_day'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['off_day'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total">
+                            <td class="monthly-total" data-sort-value="{{ $row['total_days'] ?? 0 }}">
                                 <button type="button" class="monthly-total-button" data-total-status="all" data-total-title="Total" @disabled(($row['total_days'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['total_days'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['total_days'] }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-total monthly-bonus-cell">
+                            <td class="monthly-total monthly-bonus-cell" data-sort-value="{{ $row['bonus_eligible_days'] ?? 0 }}">
                                 <button type="button"
                                         class="monthly-bonus-button"
                                         data-employee="{{ $employee->name }}"
@@ -2379,30 +2557,32 @@
                                     <span class="monthly-bonus-amount {{ ($row['bonus_amount'] ?? 0) > 0 ? 'has-value' : '' }}">
                                         ${{ number_format($row['bonus_amount'] ?? 0, 0) }}
                                     </span>
-                                    <span class="monthly-bonus-link">{{ __('index.view_detail') }}</span>
+                                    <span class="monthly-bonus-mission">
+                                        {{ number_format($row['bonus_eligible_days'] ?? 0) }}/{{ number_format($row['bonus_working_days'] ?? 0) }}
+                                    </span>
                                 </button>
                             </td>
-                            <td class="monthly-signal-column">
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['pending_day_off'] ?? 0 }}">
                                 <button type="button" class="monthly-signal-button" data-signal="PO" data-signal-title="{{ __('index.pending_day_off') }}" @disabled(($row['signal_totals']['pending_day_off'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['pending_day_off'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['pending_day_off'] ?? 0 }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-signal-column">
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['pending_leave'] ?? 0 }}">
                                 <button type="button" class="monthly-signal-button" data-signal="PL" data-signal-title="{{ __('index.pending_leave') }}" @disabled(($row['signal_totals']['pending_leave'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['pending_leave'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['pending_leave'] ?? 0 }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-signal-column">
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['time_leave'] ?? 0 }}">
                                 <button type="button" class="monthly-signal-button" data-signal="TL" data-signal-title="{{ __('index.time_leave') }}" @disabled(($row['signal_totals']['time_leave'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['time_leave'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['time_leave'] ?? 0 }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-signal-column">
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['time_leave_request'] ?? 0 }}">
                                 <button type="button" class="monthly-signal-button" data-signal="TR" data-signal-title="{{ __('index.time_leave_request') }}" @disabled(($row['signal_totals']['time_leave_request'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['time_leave_request'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['time_leave_request'] ?? 0 }}</span>
                                 </button>
                             </td>
-                            <td class="monthly-signal-column">
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['no_checkout'] ?? 0 }}">
                                 <button type="button" class="monthly-signal-button" data-signal="NC" data-signal-title="{{ __('index.no_checkout') }}" @disabled(($row['signal_totals']['no_checkout'] ?? 0) <= 0)>
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['no_checkout'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['no_checkout'] ?? 0 }}</span>
                                 </button>
@@ -2731,6 +2911,14 @@
             const chatModalElement = document.getElementById('attendanceChatModal');
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const monthlyStatusSortRank = {
+                present: 1,
+                late: 2,
+                leave: 3,
+                off_day: 4,
+                absent: 5,
+                empty: 6
+            };
             const i18n = {
                 signalDetail: @json(__('index.signal_detail')),
                 attendanceDetail: @json(__('index.attendance_detail')),
@@ -2785,6 +2973,173 @@
                 workingDays: 'Working days',
                 monthlyBonus: 'Monthly bonus',
             };
+
+            const initMonthlyTableSorting = () => {
+                const table = document.querySelector('.monthly-attendance-table');
+                if (!table) {
+                    return;
+                }
+
+                const tbody = table.querySelector('tbody');
+                const sortButtons = table.querySelectorAll('.monthly-sort-header');
+                if (!tbody || sortButtons.length === 0 || table.dataset.sortInitialized === '1') {
+                    return;
+                }
+                table.dataset.sortInitialized = '1';
+
+                const getSortValue = (row, columnIndex, sortType) => {
+                    const cell = row.children[columnIndex];
+                    const rawValue = (cell?.dataset.sortValue ?? cell?.textContent ?? '').trim();
+
+                    if (sortType === 'number') {
+                        const number = Number(String(rawValue).replace(/[^0-9.-]/g, ''));
+                        return Number.isFinite(number) ? number : 0;
+                    }
+
+                    if (sortType === 'status') {
+                        return monthlyStatusSortRank[rawValue] ?? 99;
+                    }
+
+                    return rawValue.toLowerCase();
+                };
+
+                const refreshRowNumbers = () => {
+                    const start = Number(table.dataset.rowStart || 1);
+                    let visibleIndex = 0;
+                    tbody.querySelectorAll('tr[data-monthly-employee-row]').forEach((row) => {
+                        const number = row.querySelector('.monthly-row-number-value');
+                        if (!row.hidden && number) {
+                            number.textContent = start + visibleIndex;
+                            visibleIndex++;
+                        }
+                    });
+                };
+
+                sortButtons.forEach((button) => {
+                    button.addEventListener('click', () => {
+                        const columnIndex = Number(button.dataset.sortColumn);
+                        const sortType = button.dataset.sortType || 'text';
+                        const currentDirection = button.dataset.sortDirection || 'none';
+                        const nextDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                        const rows = Array.from(tbody.querySelectorAll('tr[data-monthly-employee-row]'));
+
+                        rows.sort((leftRow, rightRow) => {
+                            const left = getSortValue(leftRow, columnIndex, sortType);
+                            const right = getSortValue(rightRow, columnIndex, sortType);
+
+                            if (left < right) {
+                                return nextDirection === 'asc' ? -1 : 1;
+                            }
+
+                            if (left > right) {
+                                return nextDirection === 'asc' ? 1 : -1;
+                            }
+
+                            return 0;
+                        });
+
+                        rows.forEach((row) => tbody.appendChild(row));
+                        sortButtons.forEach((otherButton) => {
+                            otherButton.classList.remove('is-active');
+                            otherButton.dataset.sortDirection = 'none';
+                            const icon = otherButton.querySelector('.monthly-sort-icon');
+                            if (icon) {
+                                icon.innerHTML = '&varr;';
+                            }
+                        });
+
+                        button.classList.add('is-active');
+                        button.dataset.sortDirection = nextDirection;
+                        const icon = button.querySelector('.monthly-sort-icon');
+                        if (icon) {
+                            icon.innerHTML = nextDirection === 'asc' ? '&uarr;' : '&darr;';
+                        }
+                        refreshRowNumbers();
+                    });
+                });
+            };
+
+            initMonthlyTableSorting();
+
+            const initMonthlyCardFiltering = () => {
+                const cards = document.querySelectorAll('[data-table-filter]');
+                const table = document.querySelector('.monthly-attendance-table');
+                const tbody = table?.querySelector('tbody');
+                if (!table || !tbody || cards.length === 0) {
+                    return;
+                }
+
+                const refreshVisibleRowNumbers = () => {
+                    const start = Number(table.dataset.rowStart || 1);
+                    let visibleIndex = 0;
+                    tbody.querySelectorAll('tr[data-monthly-employee-row]').forEach((row) => {
+                        const number = row.querySelector('.monthly-row-number-value');
+                        if (!row.hidden && number) {
+                            number.textContent = start + visibleIndex;
+                            visibleIndex++;
+                        }
+                    });
+                };
+
+                const removeEmptyRow = () => {
+                    tbody.querySelector('.monthly-filter-empty-row')?.remove();
+                };
+
+                const showEmptyRow = () => {
+                    removeEmptyRow();
+                    const row = document.createElement('tr');
+                    row.className = 'monthly-filter-empty-row';
+                    const cell = document.createElement('td');
+                    cell.colSpan = table.querySelectorAll('thead th').length || 1;
+                    cell.className = 'text-center text-muted py-3';
+                    cell.textContent = i18n.noMatchingDaysFound;
+                    row.appendChild(cell);
+                    tbody.appendChild(row);
+                };
+
+                const applyFilter = (filterKey, clickedCard) => {
+                    const isClearing = filterKey === 'all' || clickedCard.classList.contains('is-active');
+                    let visibleRows = 0;
+
+                    removeEmptyRow();
+                    tbody.querySelectorAll('tr[data-monthly-employee-row]').forEach((row) => {
+                        const value = Number(row.getAttribute(`data-filter-${filterKey}`) || 0);
+                        const shouldShow = isClearing || value > 0;
+                        row.hidden = !shouldShow;
+                        if (shouldShow) {
+                            visibleRows++;
+                        }
+                    });
+
+                    cards.forEach((card) => card.classList.remove('is-active'));
+                    if (!isClearing) {
+                        clickedCard.classList.add('is-active');
+                    }
+
+                    if (!visibleRows) {
+                        showEmptyRow();
+                    }
+
+                    refreshVisibleRowNumbers();
+                };
+
+                cards.forEach((card) => {
+                    if (card.dataset.filterInitialized === '1') {
+                        return;
+                    }
+
+                    card.dataset.filterInitialized = '1';
+                    card.addEventListener('click', () => {
+                        if (card.disabled) {
+                            return;
+                        }
+
+                        applyFilter(card.dataset.tableFilter || 'all', card);
+                    });
+                });
+            };
+
+            initMonthlyCardFiltering();
             const monthlyScrollShortcuts = document.getElementById('monthlyScrollShortcuts');
             const monthlyScrollTopButton = document.getElementById('monthlyScrollTop');
             const monthlyScrollBottomButton = document.getElementById('monthlyScrollBottom');
@@ -2991,6 +3346,8 @@
                     }
 
                     bindMonthlySignalToggle();
+                    initMonthlyTableSorting();
+                    initMonthlyCardFiltering();
                     updateMonthlyScrollShortcuts();
 
                     if (window.feather) {

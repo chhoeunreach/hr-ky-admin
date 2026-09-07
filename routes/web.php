@@ -344,6 +344,8 @@ Route::group([
         Route::get('attendances/copy-export', [AttendanceController::class, 'copyExport'])->name('attendances.copy-export');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
         Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
+        Route::get('attendance-monthly/controls', [AttendanceSettingController::class, 'monthlyControls'])->name('attendance-monthly.controls');
+        Route::put('attendance-monthly/controls', [AttendanceSettingController::class, 'updateMonthlyControls'])->name('attendance-monthly.controls.update');
         Route::resource('attendances', AttendanceController::class);
         Route::get('employees/attendance/check-in/{companyId}/{userId}', [AttendanceController::class, 'checkInEmployee'])->name('employees.check-in');
         Route::get('employees/attendance/check-out/{companyId}/{userId}', [AttendanceController::class, 'checkOutEmployee'])->name('employees.check-out');

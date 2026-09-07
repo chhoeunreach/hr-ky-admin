@@ -46,9 +46,9 @@
                                                 @if($datum->key == 'attendance_method')
                                                 <td>
                                                     <select class="form-select" id="value" name="value">
-                                                        <option {{ isset($generalSettingDetail) ? '':'selected'}} disabled>Select Attendance Type</option>
+                                                        <option {{ isset($generalSettingDetail) ? '':'selected'}} disabled>@lang('index.select_attendance_type')</option>
                                                         @foreach(\App\Enum\EmployeeAttendanceTypeEnum::cases() as $key => $enum)
-                                                            <option value="{{$enum->value}}" {{ $datum->value == $enum->value ? 'selected':''}} > {{$enum->name}}</option>
+                                                            <option value="{{$enum->value}}" {{ $datum->value == $enum->value ? 'selected':''}} > {{ __('index.'.$enum->value) }}</option>
                                                         @endforeach
                                                     </select>
 
@@ -95,8 +95,6 @@
         </div>
     </section>
 @endsection
-
-
 
 
 

@@ -1112,12 +1112,25 @@ return [
     'assign'=>'Assign',
 
     /** General Setting */
-    'general_setting_section'=>'General Setting section',
+    'general_setting_section'=>'General Settings',
     'general_setting'=>'General Setting',
+    'create_general_setting' => 'Create General Setting',
+    'edit_general_setting' => 'Edit General Setting',
+    'update_general_setting' => 'Update General Setting',
+    'select_general_setting_key' => 'Select General Setting Key',
+    'select_attendance_type' => 'Select Attendance Type',
+    'key' => 'Key',
+    'telegram_groups' => 'Telegram Groups',
+    'telegram_bot' => 'Telegram Bot',
 
     /** App Setting */
     'export_database_data'=>'Export Database Data',
     'check_router_bssid' =>'Check Router BSSID',
+    'configuration' => 'Configuration',
+    'normal' => 'Normal',
+    'wifi' => 'WiFi',
+    'biometric' => 'Biometric',
+    'face' => 'Face',
 
     /** Fiscal Years */
     'fiscal_years'=>'Fiscal Years',
@@ -1629,6 +1642,16 @@ return [
     'enable_tax_exemption'=>'Enable SSF-Linked Exemption for First Tax Bracket',
 
     'attendance_settings'=>'Attendance Setting',
+    'face_attendance' => 'Face Attendance',
+    'monthly_attendance_controls' => 'Monthly Attendance Controls',
+    'monthly_attendance_bonus_amount' => 'Complete Target Bonus',
+    'spend_cost' => 'Spend Cost',
+    'target_rule' => 'Target Rule',
+    'require_check_in' => 'Not check in is not allowed',
+    'require_check_out' => 'Not check out is not allowed',
+    'control_late_check_in' => 'Control check in late',
+    'control_check_out_before_time_out' => 'Control check out before time out',
+    'control_check_in_before_time_start' => 'Control check in before time start',
 
     'manual_logs'=>'Manual Logs',
     'biometric_logs'=>'Biometric Logs',
@@ -1748,6 +1771,8 @@ return [
     'minutes_total' => 'minutes total',
     'checkin_late_rule' => 'Check-in from opening time + 16 minutes will be considered as Late.',
     'late_more_than' => 'Late More Than',
+    'late_three_or_more' => 'Late 3 or More',
+    'off_day_more_than_two' => 'Off Day More Than 2',
     'late_time_range' => 'Late Time Range',
     'count' => 'Count',
     'payment' => 'Payment',

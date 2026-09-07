@@ -81,7 +81,7 @@
                             href="{{ route('admin.face-kiosks.index') }}"
                             data-href="{{ route('admin.face-kiosks.index') }}"
                             class="nav-link {{ request()->routeIs('admin.face-kiosks.*') ? 'active' : '' }}">
-                            Face attendance
+                            {{ __('index.face_attendance') }}
                         </a>
                     </li>
                 @endcan
@@ -109,10 +109,11 @@
     'feature_control',
     'fiscal_year',
     'payment_currency',
-    'notification',
-    'list_telegram_group',
-    'theme_setting'
-]))
+	    'notification',
+	    'list_telegram_group',
+	    'theme_setting',
+	    'attendance_setting'
+	]))
     <li class="nav-item  {{
                    request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
@@ -121,9 +122,10 @@
                       request()->routeIs('admin.telegram-groups.*') ||
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
-                      request()->routeIs('admin.fiscal_year.*')||
-                      request()->routeIs('admin.theme-color-setting.*')||
-                      request()->routeIs('admin.feature.index')
+	                      request()->routeIs('admin.fiscal_year.*')||
+	                      request()->routeIs('admin.theme-color-setting.*')||
+	                      request()->routeIs('admin.attendance-monthly.controls*')||
+	                      request()->routeIs('admin.feature.index')
                 ? 'active' : ''
             }}"
     >
@@ -143,9 +145,10 @@
                       request()->routeIs('admin.notifications.*')||
                       request()->routeIs('admin.payment-currency.*')||
 
-                      request()->routeIs('admin.fiscal_year.*')||
-                      request()->routeIs('admin.theme-color-setting.*')||
-                      request()->routeIs('admin.feature.index')
+	                      request()->routeIs('admin.fiscal_year.*')||
+	                      request()->routeIs('admin.theme-color-setting.*')||
+	                      request()->routeIs('admin.attendance-monthly.controls*')||
+	                      request()->routeIs('admin.feature.index')
 
                        ? '' : 'collapse'  }} " id="setting">
 
@@ -159,16 +162,25 @@
                     </li>
                 @endif
 
-                @if(AppHelper::checkSuperAdmin())
-                    <li class="nav-item">
-                        <a
-                            href="{{route('admin.general-settings.index')}}"
-                            data-href="{{route('admin.general-settings.index')}}"
-                            class="nav-link {{request()->routeIs('admin.general-settings.*') ? 'active' : ''}}">{{ __('index.general_settings') }}</a>
-                    </li>
-                @endif
+	                @if(AppHelper::checkSuperAdmin())
+	                    <li class="nav-item">
+	                        <a
+	                            href="{{route('admin.general-settings.index')}}"
+	                            data-href="{{route('admin.general-settings.index')}}"
+	                            class="nav-link {{request()->routeIs('admin.general-settings.*') ? 'active' : ''}}">{{ __('index.general_settings') }}</a>
+	                    </li>
+	                @endif
 
-                @if(AppHelper::checkSuperAdmin())
+	                @can('attendance_setting')
+	                    <li class="nav-item">
+	                        <a
+	                            href="{{route('admin.attendance-monthly.controls')}}"
+	                            data-href="{{route('admin.attendance-monthly.controls')}}"
+	                            class="nav-link {{request()->routeIs('admin.attendance-monthly.controls*') ? 'active' : ''}}">{{ __('index.monthly_attendance_controls') }}</a>
+	                    </li>
+	                @endcan
+
+	                @if(AppHelper::checkSuperAdmin())
                     <li class="nav-item">
                         <a
                             href="{{route('admin.app-settings.index')}}"
@@ -182,13 +194,13 @@
                         <a
                             href="{{route('admin.telegram-groups.index')}}"
                             data-href="{{route('admin.telegram-groups.index')}}"
-                            class="nav-link {{request()->routeIs('admin.telegram-groups.*') ? 'active' : ''}}">Telegram Groups</a>
+                            class="nav-link {{request()->routeIs('admin.telegram-groups.*') ? 'active' : ''}}">{{ __('index.telegram_groups') }}</a>
                     </li>
                     <li class="nav-item">
                         <a
                             href="{{route('admin.telegram-bot.index')}}"
                             data-href="{{route('admin.telegram-bot.index')}}"
-                            class="nav-link {{request()->routeIs('admin.telegram-bot.*') ? 'active' : ''}}">Telegram Bot</a>
+                            class="nav-link {{request()->routeIs('admin.telegram-bot.*') ? 'active' : ''}}">{{ __('index.telegram_bot') }}</a>
                     </li>
                 @endif
 

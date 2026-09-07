@@ -7,6 +7,7 @@ use App\Exports\MonthlyAttendanceBonusExport;
 use App\Exports\MonthlyAttendanceReductionExport;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\AttendanceSetting;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Department;
@@ -27,6 +28,14 @@ class AttendanceMonthlyController extends Controller
 {
     public const LATE_CHECK_IN_GRACE_MINUTES = 16;
     private const LATE_WARNING_THRESHOLD = 4;
+    private const MONTHLY_BONUS_AMOUNT_SETTING = 'monthly_attendance_bonus_amount';
+    private const MONTHLY_BONUS_RULE_SETTINGS = [
+        'require_check_in' => 'monthly_attendance_require_check_in',
+        'require_check_out' => 'monthly_attendance_require_check_out',
+        'require_no_late_check_in' => 'monthly_attendance_require_no_late_check_in',
+        'require_no_early_check_out' => 'monthly_attendance_require_no_early_check_out',
+        'require_no_early_check_in' => 'monthly_attendance_require_no_early_check_in',
+    ];
     private const LATE_REDUCTION_RATES = [
         self::LATE_CHECK_IN_GRACE_MINUTES => 0.10,
         20 => 0.20,
@@ -226,6 +235,7 @@ class AttendanceMonthlyController extends Controller
         $endDate = $month->copy()->endOfMonth();
         $userIds = $employees->pluck('id')->all();
         $calendarDays = $this->calendarDays($month);
+        $monthlyBonusControls = $this->monthlyBonusControls();
 
         $attendanceByUserDate = Attendance::query()
             ->whereIn('user_id', $userIds)
@@ -248,7 +258,7 @@ class AttendanceMonthlyController extends Controller
             ->groupBy('requested_by')
             ->map(fn (Collection $requests) => $requests->count());
 
-        return $employees->map(function (User $employee) use ($calendarDays, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons) {
+        return $employees->map(function (User $employee) use ($calendarDays, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons, $monthlyBonusControls) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
@@ -256,6 +266,8 @@ class AttendanceMonthlyController extends Controller
             $bonusDays = [];
             $bonusEligibleDays = 0;
             $bonusWorkingDays = 0;
+            $completePresentDays = 0;
+            $employeeDayOffDays = 0;
             $signalTotals = [
                 'pending_day_off' => 0,
                 'pending_leave' => 0,
@@ -267,12 +279,13 @@ class AttendanceMonthlyController extends Controller
             foreach ($calendarDays as $day) {
                 $key = $employee->id . '|' . $day['date'];
                 $dayAttendances = $attendanceByUserDate->get($key, collect());
+                $dayLeaveRequests = $leaveByUserDate[$key] ?? null;
                 $dayTimeLeaves = $timeLeaveByUserDate->get($key, collect());
                 $cell = $this->statusCell(
                     $employee,
                     $day['date'],
                     $dayAttendances,
-                    $leaveByUserDate[$key] ?? null,
+                    $dayLeaveRequests,
                     $dayTimeLeaves,
                     $nonAttendanceReasons[$day['date']] ?? null
                 );
@@ -280,7 +293,7 @@ class AttendanceMonthlyController extends Controller
                     $employee,
                     $day['date'],
                     $dayAttendances,
-                    $leaveByUserDate[$key] ?? null,
+                    $dayLeaveRequests,
                     $dayTimeLeaves,
                     $nonAttendanceReasons[$day['date']] ?? null
                 );
@@ -292,6 +305,10 @@ class AttendanceMonthlyController extends Controller
                 if ($bonusDay['working_day']) {
                     $bonusWorkingDays++;
                     $bonusEligibleDays += $bonusDay['value'];
+
+                    if ($bonusDay['check_in'] !== 'N/A' && $bonusDay['check_out'] !== 'N/A') {
+                        $completePresentDays++;
+                    }
                 }
 
                 if (isset($totals[$cell['status']])) {
@@ -300,6 +317,10 @@ class AttendanceMonthlyController extends Controller
 
                 if ($cell['status'] === 'late') {
                     $totals['present']++;
+                }
+
+                if (collect($dayLeaveRequests ?? [])->contains(fn ($leave) => ($leave['status'] ?? null) === 'approved' && ($leave['type'] ?? null) === 'off_day')) {
+                    $employeeDayOffDays++;
                 }
 
                 if ($dayAttendances->isNotEmpty()) {
@@ -332,6 +353,7 @@ class AttendanceMonthlyController extends Controller
 
             $totalLateRecords = array_sum($lateBreakdown);
             $approvedLateRequests = (int) ($approvedLateRequestCounts[$employee->id] ?? 0);
+            $isCompletePresent = $bonusWorkingDays > 0 && $completePresentDays === $bonusWorkingDays;
 
             return [
                 'employee' => $employee,
@@ -343,11 +365,15 @@ class AttendanceMonthlyController extends Controller
                 'approved_late_requests' => $approvedLateRequests,
                 'effective_late_count' => max($totalLateRecords - $approvedLateRequests, 0),
                 'signal_totals' => $signalTotals,
+                'employee_day_off_days' => $employeeDayOffDays,
                 'total_days' => count($days),
                 'bonus_days' => $bonusDays,
+                'is_complete_present' => $isCompletePresent,
+                'complete_present_days' => $completePresentDays,
                 'bonus_eligible_days' => $bonusEligibleDays,
                 'bonus_working_days' => $bonusWorkingDays,
-                'bonus_amount' => ($bonusWorkingDays > 0 && $bonusEligibleDays === $bonusWorkingDays) ? 15 : 0,
+                'present_spend_amount' => $isCompletePresent ? $monthlyBonusControls['amount'] : 0,
+                'bonus_amount' => ($bonusWorkingDays > 0 && $bonusEligibleDays === $bonusWorkingDays) ? $monthlyBonusControls['amount'] : 0,
             ];
         });
     }
@@ -357,7 +383,8 @@ class AttendanceMonthlyController extends Controller
         $leaveRequests = $leaveRequests ?? [];
         $approvedLeave = collect($leaveRequests)->firstWhere('status', 'approved');
         $approvedTimeLeave = $timeLeaves->firstWhere('status', 'approved');
-        $hasLeave = $approvedLeave || $approvedTimeLeave;
+        $hasLeave = collect($leaveRequests)->isNotEmpty();
+        $hasTimeLeave = $timeLeaves->isNotEmpty();
         $workingDay = !$nonAttendanceReason && !Carbon::parse($date)->isFuture();
         $validAttendances = $attendances->reject(fn (Attendance $attendance) => !is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED);
         $firstAttendance = $validAttendances->first();
@@ -383,7 +410,9 @@ class AttendanceMonthlyController extends Controller
         if (!$workingDay) {
             $reason = $nonAttendanceReason ?: 'Upcoming';
         } elseif ($hasLeave) {
-            $reason = 'Leave taken';
+            $reason = $approvedLeave ? 'Leave taken' : 'Leave request';
+        } elseif ($hasTimeLeave) {
+            $reason = $approvedTimeLeave ? 'Time leave taken' : 'Time leave request';
         } elseif (!$firstAttendance) {
             $reason = 'No approved attendance';
         } elseif (!$checkIn) {
@@ -418,9 +447,12 @@ class AttendanceMonthlyController extends Controller
 
         $eligible = $workingDay
             && !$hasLeave
+            && !$hasTimeLeave
             && $firstAttendance
             && $checkIn
             && $checkOut
+            && $shift?->opening_time
+            && $shift?->closing_time
             && $checkInOnTime
             && $notEarlyCheckout;
 
@@ -429,10 +461,28 @@ class AttendanceMonthlyController extends Controller
             'working_day' => $workingDay,
             'check_in' => $checkIn ? Carbon::parse($checkIn)->format('H:i') : 'N/A',
             'check_out' => $checkOut ? Carbon::parse($checkOut)->format('H:i') : 'N/A',
-            'leave_status' => $hasLeave ? 'Leave' : 'No leave',
+            'leave_status' => $hasTimeLeave ? 'Time leave' : ($hasLeave ? 'Leave' : 'No leave'),
             'late_status' => $lateStatus,
             'checkout_status' => $checkoutStatus,
             'reason' => $eligible ? 'Eligible' : ($reason ?: 'Not eligible'),
+        ];
+    }
+
+    private function monthlyBonusControls(): array
+    {
+        $settings = AttendanceSetting::query()
+            ->whereIn('slug', array_merge([self::MONTHLY_BONUS_AMOUNT_SETTING], array_values(self::MONTHLY_BONUS_RULE_SETTINGS)))
+            ->get(['slug', 'value', 'status'])
+            ->keyBy('slug');
+
+        $rules = [];
+        foreach (self::MONTHLY_BONUS_RULE_SETTINGS as $rule => $slug) {
+            $rules[$rule] = (bool) ($settings[$slug]->status ?? true);
+        }
+
+        return [
+            'amount' => (float) ($settings[self::MONTHLY_BONUS_AMOUNT_SETTING]->value ?? 20),
+            'rules' => $rules,
         ];
     }
 
@@ -909,10 +959,24 @@ class AttendanceMonthlyController extends Controller
         $totals = [
             'employees' => $employeeCount ?? $rows->count(),
             'present' => $rows->sum(fn ($row) => $row['totals']['present']),
+            'present_employees' => $rows->where('is_complete_present', true)->count(),
+            'present_spend_amount' => $rows->sum(fn ($row) => $row['present_spend_amount'] ?? 0),
             'late' => $rows->sum(fn ($row) => $row['totals']['late']),
+            'late_employees' => $rows->filter(fn ($row) => ($row['totals']['late'] ?? 0) > 0)->count(),
             'absent' => $rows->sum(fn ($row) => $row['totals']['absent']),
+            'absent_employees' => $rows->filter(fn ($row) => ($row['totals']['absent'] ?? 0) > 0)->count(),
             'leave' => $rows->sum(fn ($row) => $row['totals']['leave']),
+            'leave_employees' => $rows->filter(fn ($row) => ($row['totals']['leave'] ?? 0) > 0)->count(),
             'off_day' => $rows->sum(fn ($row) => $row['totals']['off_day']),
+            'off_day_employees' => $rows->filter(fn ($row) => ($row['totals']['off_day'] ?? 0) > 0)->count(),
+            'not_yet_check_in' => $rows->sum(fn ($row) => $row['totals']['absent']),
+            'not_yet_check_in_employees' => $rows->filter(fn ($row) => ($row['totals']['absent'] ?? 0) > 0)->count(),
+            'not_yet_check_out' => $rows->sum(fn ($row) => $row['signal_totals']['no_checkout'] ?? 0),
+            'not_yet_check_out_employees' => $rows->filter(fn ($row) => ($row['signal_totals']['no_checkout'] ?? 0) > 0)->count(),
+            'leave_requests' => $rows->sum(fn ($row) => $row['signal_totals']['pending_leave'] ?? 0),
+            'time_leave_requests' => $rows->sum(fn ($row) => $row['signal_totals']['time_leave_request'] ?? 0),
+            'late_more_than_three' => $rows->filter(fn ($row) => ($row['totals']['late'] ?? 0) >= 3)->count(),
+            'off_day_more_than_two' => $rows->filter(fn ($row) => ($row['employee_day_off_days'] ?? 0) > 2)->count(),
             'bonus_employees' => $rows->where('bonus_amount', '>', 0)->count(),
             'bonus_amount' => $rows->sum(fn ($row) => $row['bonus_amount'] ?? 0),
         ];

@@ -10,6 +10,7 @@ use App\Repositories\PaymentCurrencyRepository;
 use App\Requests\GeneralSetting\GeneralSettingRequest;
 use App\Services\FiscalYear\FiscalYearService;
 use App\Traits\CustomAuthorizesRequests;
+use App\Models\AttendanceSetting;
 use Database\Seeders\EmployeeCodeSeeder;
 use Exception;
 use Illuminate\Http\Request;
@@ -23,6 +24,38 @@ class AttendanceSettingController extends Controller
 {
     use CustomAuthorizesRequests;
     private $view = 'admin.attendanceSetting.';
+    private const MONTHLY_CONTROL_SETTINGS = [
+        'monthly_attendance_bonus_amount' => [
+            'name' => 'Monthly Attendance Bonus Amount',
+            'value' => 20,
+            'status' => 1,
+        ],
+        'monthly_attendance_require_check_in' => [
+            'name' => 'Require Check In',
+            'value' => null,
+            'status' => 1,
+        ],
+        'monthly_attendance_require_check_out' => [
+            'name' => 'Require Check Out',
+            'value' => null,
+            'status' => 1,
+        ],
+        'monthly_attendance_require_no_late_check_in' => [
+            'name' => 'Control Late Check In',
+            'value' => null,
+            'status' => 1,
+        ],
+        'monthly_attendance_require_no_early_check_out' => [
+            'name' => 'Control Check Out Before Time Out',
+            'value' => null,
+            'status' => 1,
+        ],
+        'monthly_attendance_require_no_early_check_in' => [
+            'name' => 'Control Check In Before Time Start',
+            'value' => null,
+            'status' => 1,
+        ],
+    ];
 
 
     public function __construct(protected AttendanceSettingRepository $attendanceSettingRepository
@@ -32,8 +65,9 @@ class AttendanceSettingController extends Controller
     public function index()
     {
         try {
-            $select=['*'];
-            $attendanceSettings = $this->attendanceSettingRepository->getAll($select);
+            $attendanceSettings = AttendanceSetting::query()
+                ->whereIn('slug', ['attendance_note', 'attendance_limit', 'attendance_method'])
+                ->get();
 
             return view($this->view . 'index', compact('attendanceSettings'));
         } catch (Exception $exception) {
@@ -131,6 +165,87 @@ class AttendanceSettingController extends Controller
 
             return response()->json(['success' => false, 'message' => $exception->getMessage()], 500);
         }
+    }
+
+    public function monthlyControls()
+    {
+        $this->authorize('attendance_setting');
+
+        try {
+            $settings = $this->monthlyControlSettings();
+
+            return view($this->view . 'monthly-controls', compact('settings'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function updateMonthlyControls(Request $request)
+    {
+        $this->authorize('attendance_setting');
+
+        $validated = $request->validate([
+            'bonus_amount' => ['required', 'numeric', 'min:0', 'max:9999'],
+            'require_check_in' => ['nullable', 'boolean'],
+            'require_check_out' => ['nullable', 'boolean'],
+            'require_no_late_check_in' => ['nullable', 'boolean'],
+            'require_no_early_check_out' => ['nullable', 'boolean'],
+            'require_no_early_check_in' => ['nullable', 'boolean'],
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $this->monthlyControlSettings();
+
+            AttendanceSetting::query()
+                ->where('slug', 'monthly_attendance_bonus_amount')
+                ->update(['value' => (int) round((float) $validated['bonus_amount'])]);
+
+            $ruleSlugByInput = [
+                'require_check_in' => 'monthly_attendance_require_check_in',
+                'require_check_out' => 'monthly_attendance_require_check_out',
+                'require_no_late_check_in' => 'monthly_attendance_require_no_late_check_in',
+                'require_no_early_check_out' => 'monthly_attendance_require_no_early_check_out',
+                'require_no_early_check_in' => 'monthly_attendance_require_no_early_check_in',
+            ];
+
+            foreach ($ruleSlugByInput as $input => $slug) {
+                AttendanceSetting::query()
+                    ->where('slug', $slug)
+                    ->update(['status' => (bool) ($validated[$input] ?? false)]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.attendance-monthly.controls')
+                ->with('success', __('message.attendance_setting_update'));
+        } catch (Exception $exception) {
+            DB::rollBack();
+
+            return redirect()->back()->withInput()->with('danger', $exception->getMessage());
+        }
+    }
+
+    private function monthlyControlSettings()
+    {
+        foreach (self::MONTHLY_CONTROL_SETTINGS as $slug => $setting) {
+            AttendanceSetting::query()->firstOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $setting['name'],
+                    'value' => $setting['value'],
+                    'values' => null,
+                    'status' => $setting['status'],
+                ]
+            );
+        }
+
+        return AttendanceSetting::query()
+            ->whereIn('slug', array_keys(self::MONTHLY_CONTROL_SETTINGS))
+            ->get()
+            ->keyBy('slug');
     }
 
 

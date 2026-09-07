@@ -1,9 +1,9 @@
 
 @extends('layouts.master')
 
-@section('title','Create New Setting')
+@section('title', __('index.create_general_setting'))
 
-@section('action','Create General Setting')
+@section('action', __('index.create_general_setting'))
 
 @section('main-content')
 
@@ -23,5 +23,4 @@
         </div>
     </section>
 @endsection
-
 
