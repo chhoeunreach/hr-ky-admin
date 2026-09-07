@@ -2397,7 +2397,7 @@
                             data-filter-bonus="{{ $row['bonus_amount'] ?? 0 }}"
                             data-filter-not_yet_check_in="{{ $row['totals']['absent'] ?? 0 }}"
                             data-filter-not_yet_check_out="{{ $row['signal_totals']['no_checkout'] ?? 0 }}"
-                            data-filter-leave_requests="{{ $row['signal_totals']['pending_leave'] ?? 0 }}"
+                            data-filter-leave_requests="{{ ($row['signal_totals']['pending_leave'] ?? 0) + ($row['signal_totals']['pending_day_off'] ?? 0) }}"
                             data-filter-time_leave_requests="{{ $row['signal_totals']['time_leave_request'] ?? 0 }}"
                             data-filter-late_more_than_three="{{ ($row['totals']['late'] ?? 0) >= 3 ? 1 : 0 }}"
                             data-filter-off_day_more_than_two="{{ ($row['employee_day_off_days'] ?? 0) > 2 ? 1 : 0 }}">

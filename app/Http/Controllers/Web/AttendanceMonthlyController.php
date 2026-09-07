@@ -973,7 +973,7 @@ class AttendanceMonthlyController extends Controller
             'not_yet_check_in_employees' => $rows->filter(fn ($row) => ($row['totals']['absent'] ?? 0) > 0)->count(),
             'not_yet_check_out' => $rows->sum(fn ($row) => $row['signal_totals']['no_checkout'] ?? 0),
             'not_yet_check_out_employees' => $rows->filter(fn ($row) => ($row['signal_totals']['no_checkout'] ?? 0) > 0)->count(),
-            'leave_requests' => $rows->sum(fn ($row) => $row['signal_totals']['pending_leave'] ?? 0),
+            'leave_requests' => $rows->sum(fn ($row) => ($row['signal_totals']['pending_leave'] ?? 0) + ($row['signal_totals']['pending_day_off'] ?? 0)),
             'time_leave_requests' => $rows->sum(fn ($row) => $row['signal_totals']['time_leave_request'] ?? 0),
             'late_more_than_three' => $rows->filter(fn ($row) => ($row['totals']['late'] ?? 0) >= 3)->count(),
             'off_day_more_than_two' => $rows->filter(fn ($row) => ($row['employee_day_off_days'] ?? 0) > 2)->count(),
