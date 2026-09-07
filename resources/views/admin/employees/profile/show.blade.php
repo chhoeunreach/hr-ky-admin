@@ -29,53 +29,6 @@
             $avatar = $employee->avatar
                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar)
                 : asset('assets/images/img.png');
-            $metric = function ($label, $value) {
-                return ['label' => $label, 'value' => filled($value) ? $value : 'N/A'];
-            };
-            $overviewMetrics = [
-                $metric('Employee ID', $summary['employee_id'] ?? null),
-                $metric('Position', $summary['position'] ?? null),
-                $metric('Department', $summary['department'] ?? null),
-                $metric('Branch', $summary['branch'] ?? null),
-                $metric('Direct Manager', $summary['manager'] ?? null),
-                $metric('Join Date', $summary['join_date'] ?? null),
-                $metric('Years of Service', $summary['years_of_service'] ?? null),
-                $metric('Employment Status', ucfirst($summary['employment_status'] ?? '')),
-                $metric('Probation Status', $summary['probation_status'] ?? null),
-                $metric('Present', $attendanceSummary['present_days'] ?? null),
-                $metric('Late', $attendanceSummary['late_count'] ?? null),
-                $metric('Absent', $attendanceSummary['absent_days'] ?? null),
-                $metric('Leave', $attendanceSummary['leave_days'] ?? null),
-                $metric('Off Day', $attendanceSummary['off_day_days'] ?? null),
-                $metric('Pending Day Off', $attendanceSummary['pending_day_off_days'] ?? null),
-                $metric('Pending Leave', $attendanceSummary['pending_leave_days'] ?? null),
-                $metric('Time Leave', $attendanceSummary['time_leave_days'] ?? null),
-                $metric('Time Leave Request', $attendanceSummary['time_leave_requests'] ?? null),
-                $metric('No Checkout', $attendanceSummary['no_checkout_days'] ?? null),
-                $metric('Worked Hours', $attendanceSummary['worked_hours'] ?? null),
-                $metric('Not Late Until', $attendanceSummary['not_late_until'] ?? null),
-                $metric('Office Time', $attendanceSummary['office_time'] ?? null),
-                $metric('Attendance Score', $attendanceSummary['attendance_score'] ?? null),
-                $metric('Leave Balance', $leaveBalance),
-            ];
-            if ($canViewPerformance) {
-                $overviewMetrics[] = $metric('Evaluation Score', $summary['last_evaluation_score'] ?? null);
-                $overviewMetrics[] = $metric('Evaluation Grade', $summary['evaluation_grade'] ?? null);
-                $overviewMetrics[] = $metric('Next Evaluation', $summary['next_evaluation_date'] ?? null);
-            }
-            if ($canViewDiscipline) {
-                $overviewMetrics[] = $metric('Total Warnings', $summary['total_warnings'] ?? 0);
-            }
-            if ($canViewReward) {
-                $overviewMetrics[] = $metric('Total Rewards', $summary['total_rewards'] ?? 0);
-            }
-            if ($canViewTraining) {
-                $overviewMetrics[] = $metric('Training Completed', $summary['training_completed'] ?? 0);
-            }
-            if ($canViewSalary) {
-                $overviewMetrics[] = $metric('Current Base Salary', $summary['current_base_salary'] ?? null);
-                $overviewMetrics[] = $metric('Last Salary Increase', $summary['last_salary_increase'] ?? null);
-            }
             $defaultItems = [
                 ['Work Quality - Graphic Design', 'Clean, accurate design aligned with brand standards', 15],
                 ['Task Completion', 'Complete assigned thumbnails, posters, and tasks on schedule', 10],
@@ -646,6 +599,60 @@
                 text-align: center;
                 text-transform: uppercase;
             }
+            .employee-overview-notes {
+                border-top: 1px dashed #cbd5e1;
+                margin-top: 10px;
+                padding-top: 6px;
+            }
+            .employee-overview-notes-header {
+                align-items: center;
+                display: flex;
+                gap: 8px;
+                justify-content: space-between;
+                margin-bottom: 4px;
+            }
+            .employee-overview-notes-header span {
+                color: #0f766e;
+                font-size: 9px;
+                text-transform: uppercase;
+            }
+            .employee-overview-note-item {
+                border: 1px solid #e2e8f0;
+                border-radius: 4px;
+                margin-bottom: 5px;
+                padding: 5px 8px;
+            }
+            .employee-overview-note-text {
+                color: #0f172a;
+                font-size: 9.5px;
+                line-height: 1.45;
+                white-space: pre-wrap;
+            }
+            .employee-overview-note-meta {
+                align-items: center;
+                display: flex;
+                justify-content: space-between;
+                margin-top: 3px;
+            }
+            .employee-overview-note-meta small {
+                color: #94a3b8;
+                font-size: 8px;
+            }
+            .employee-overview-note-suggestions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .employee-overview-note-suggestions .btn {
+                white-space: normal;
+            }
+            @media print {
+                .employee-overview-notes-header .btn,
+                .employee-overview-note-meta .btn,
+                .employee-overview-note-meta form {
+                    display: none !important;
+                }
+            }
             @media (max-width: 575.98px) {
                 .employee-360-hero {
                     grid-template-columns: 1fr;
@@ -845,18 +852,500 @@
                     padding: 8mm 8mm 6mm;
                 }
             }
+
+            .employee-360-hero-v2 {
+                grid-template-columns: auto minmax(0, 1fr) auto;
+                gap: 18px;
+                align-items: start;
+            }
+            .employee-360-hero-main {
+                min-width: 0;
+            }
+            .employee-360-hero-ids {
+                overflow-wrap: anywhere;
+            }
+            .employee-360-hero-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px 14px;
+                margin-top: 8px;
+                font-size: 12.5px;
+                color: #6c757d;
+            }
+            .employee-360-hero-meta span {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+            .employee-360-hero-actions {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 8px;
+            }
+            .employee-360-hero-nav {
+                display: flex;
+                gap: 4px;
+            }
+            .employee-360-hero-buttons .dropdown-item {
+                font-size: 12.5px;
+            }
+            .employee-360-hero-buttons .link-icon,
+            .employee-360-hero-nav .link-icon {
+                width: 14px;
+                height: 14px;
+            }
+
+            .emp-kpi-row {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                gap: 14px;
+                margin-bottom: 16px;
+            }
+            .emp-kpi-card {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                background: #fff;
+                border: 1px solid #e3e8ef;
+                border-radius: 8px;
+                padding: 14px 16px;
+            }
+            .emp-kpi-icon {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 42px;
+                height: 42px;
+                border-radius: 10px;
+                flex-shrink: 0;
+            }
+            .emp-kpi-icon .link-icon {
+                width: 20px;
+                height: 20px;
+            }
+            .emp-kpi-teal { background: #e6f7f2; color: #1a8a6f; }
+            .emp-kpi-blue { background: #e8f1fd; color: #2b6cb0; }
+            .emp-kpi-amber { background: #fdf3e3; color: #d6973b; }
+            .emp-kpi-green { background: #e9f7e9; color: #2e9e44; }
+            .emp-kpi-purple { background: #efeafb; color: #6d4fc4; }
+            .emp-kpi-body {
+                min-width: 0;
+            }
+            .emp-kpi-label {
+                font-size: 11.5px;
+                text-transform: uppercase;
+                letter-spacing: 0.4px;
+                color: #8a94a6;
+            }
+            .emp-kpi-value {
+                font-size: 20px;
+                font-weight: 700;
+                color: #2f3542;
+                line-height: 1.3;
+            }
+            .emp-kpi-value small {
+                font-size: 12px;
+                font-weight: 500;
+                color: #8a94a6;
+            }
+            .emp-kpi-sub {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 10px;
+                font-size: 12px;
+                color: #6c757d;
+            }
+            .emp-kpi-sub span {
+                white-space: nowrap;
+            }
+
+            .emp-overview-grid2 {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+                gap: 16px;
+                margin-bottom: 16px;
+            }
+            .emp-overview-grid2-bottom {
+                margin-bottom: 0;
+            }
+            .emp-overview-card {
+                background: #fff;
+                border: 1px solid #e3e8ef;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .emp-card-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 12px 16px;
+                border-bottom: 1px solid #eef1f5;
+                background: #fafbfc;
+            }
+            .emp-card-head h6 {
+                margin: 0;
+                font-size: 14px;
+                font-weight: 600;
+                color: #2f3542;
+                display: inline-flex;
+                align-items: center;
+                gap: 7px;
+            }
+            .emp-card-head .link-icon {
+                width: 16px;
+                height: 16px;
+                color: #7356bf;
+            }
+            .emp-card-body {
+                padding: 14px 16px;
+            }
+            .btn-xs {
+                padding: 2px 8px;
+                font-size: 11.5px;
+            }
+
+            .emp-info-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px 16px;
+            }
+            .emp-info-grid > div {
+                min-width: 0;
+            }
+            .emp-info-grid label {
+                display: block;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                color: #8a94a6;
+                margin-bottom: 2px;
+            }
+            .emp-info-grid span {
+                display: block;
+                font-size: 13px;
+                font-weight: 500;
+                color: #2f3542;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .emp-chart-block {
+                position: relative;
+                height: 175px;
+                margin-bottom: 12px;
+            }
+            .emp-stat-row {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .emp-stat {
+                background: #f7f8fa;
+                border: 1px solid #edf0f4;
+                border-radius: 6px;
+                text-align: center;
+                padding: 10px 6px;
+            }
+            .emp-stat-value {
+                display: block;
+                font-size: 17px;
+                font-weight: 700;
+                color: #2f3542;
+            }
+            .emp-stat-label {
+                display: block;
+                font-size: 11px;
+                color: #8a94a6;
+            }
+
+            .emp-progress {
+                height: 8px;
+                border-radius: 4px;
+                background: #eef1f5;
+            }
+            .emp-leave-summary {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                margin-bottom: 14px;
+            }
+            .emp-leave-balance {
+                text-align: center;
+                flex-shrink: 0;
+            }
+            .emp-leave-balance-value {
+                font-size: 26px;
+                font-weight: 700;
+                color: #2b6cb0;
+                line-height: 1.1;
+            }
+            .emp-leave-balance-label {
+                font-size: 11px;
+                color: #8a94a6;
+            }
+            .emp-leave-bar {
+                flex: 1;
+            }
+            .emp-leave-bar-labels {
+                display: flex;
+                justify-content: space-between;
+                font-size: 11.5px;
+                color: #8a94a6;
+                margin-top: 5px;
+            }
+
+            .emp-score-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+            .emp-score-main {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .emp-score-value {
+                font-size: 26px;
+                font-weight: 700;
+                color: #2f3542;
+            }
+            .emp-score-grade {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            .emp-score-meta {
+                font-size: 12px;
+                text-align: right;
+                color: #6c757d;
+            }
+            .emp-score-meta div {
+                margin-bottom: 2px;
+            }
+            .emp-score-meta label {
+                color: #8a94a6;
+                margin-right: 4px;
+            }
+
+            .emp-goal-list,
+            .emp-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                max-height: 190px;
+                overflow-y: auto;
+            }
+            .emp-goal-item {
+                border-bottom: 1px solid #eef1f5;
+                padding-bottom: 8px;
+            }
+            .emp-goal-top {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                font-size: 13px;
+                margin-bottom: 5px;
+            }
+            .emp-goal-title {
+                font-weight: 500;
+                color: #2f3542;
+            }
+            .emp-goal-pct {
+                font-weight: 600;
+                color: #7356bf;
+            }
+            .emp-goal-meta {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                font-size: 11.5px;
+                color: #8a94a6;
+                margin-top: 4px;
+            }
+            .emp-list-item {
+                border: 1px solid #edf0f4;
+                border-radius: 6px;
+                padding: 8px 10px;
+                background: #fafbfc;
+            }
+            .emp-list-title {
+                font-size: 13px;
+                font-weight: 500;
+                color: #2f3542;
+            }
+            .emp-list-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 5px 10px;
+                font-size: 11.5px;
+                color: #8a94a6;
+                margin-top: 3px;
+            }
+            .emp-list-meta .link-icon {
+                width: 12px;
+                height: 12px;
+            }
+
+            .emp-doc-alert {
+                margin-top: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .emp-doc-alert-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12.5px;
+            }
+            .emp-doc-alert-item .link-icon {
+                width: 14px;
+                height: 14px;
+                flex-shrink: 0;
+            }
+            .emp-doc-alert-item em {
+                margin-left: auto;
+                font-style: normal;
+                font-size: 11.5px;
+            }
+
+            .emp-empty {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 7px;
+                padding: 18px 10px;
+                color: #8a94a6;
+                font-size: 13px;
+                text-align: center;
+                border: 1px dashed #dde3ea;
+                border-radius: 6px;
+            }
+            .emp-empty .link-icon {
+                width: 18px;
+                height: 18px;
+            }
+
+            .emp-timeline {
+                list-style: none;
+                margin: 0;
+                padding: 0;
+            }
+            .emp-timeline li {
+                position: relative;
+                padding-left: 22px;
+                padding-bottom: 14px;
+            }
+            .emp-timeline li:last-child {
+                padding-bottom: 0;
+            }
+            .emp-timeline li::before {
+                content: "";
+                position: absolute;
+                left: 6px;
+                top: 8px;
+                bottom: 0;
+                width: 1px;
+                background: #e3e8ef;
+            }
+            .emp-timeline li:last-child::before {
+                display: none;
+            }
+            .emp-timeline-dot {
+                position: absolute;
+                left: 2px;
+                top: 5px;
+                width: 9px;
+                height: 9px;
+                border-radius: 50%;
+                background: #7356bf;
+                border: 2px solid #fff;
+                box-shadow: 0 0 0 1px #7356bf;
+            }
+            .emp-timeline-title {
+                font-size: 13px;
+                font-weight: 500;
+                color: #2f3542;
+            }
+            .emp-timeline-meta {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px 12px;
+                font-size: 11.5px;
+                color: #8a94a6;
+                margin-top: 2px;
+            }
+            .emp-timeline-meta .link-icon {
+                width: 12px;
+                height: 12px;
+            }
+
+            .emp-360-summary {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+            .emp-360-summary-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border: 1px solid #edf0f4;
+                border-radius: 6px;
+                padding: 10px 12px;
+                background: #fafbfc;
+            }
+            .emp-360-summary-item > .link-icon {
+                width: 20px;
+                height: 20px;
+                flex-shrink: 0;
+            }
+            .emp-360-summary-status {
+                display: block;
+                font-size: 13.5px;
+                font-weight: 600;
+                color: #2f3542;
+            }
+            .emp-360-summary-label {
+                display: block;
+                font-size: 11px;
+                color: #8a94a6;
+            }
+
+            .emp-quick-actions-card {
+                margin-top: 16px;
+            }
+            .emp-quick-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .emp-quick-actions .link-icon {
+                width: 14px;
+                height: 14px;
+            }
+
+            @media (max-width: 767px) {
+                .employee-360-hero-v2 {
+                    grid-template-columns: auto minmax(0, 1fr);
+                }
+                .employee-360-hero-actions {
+                    grid-column: 1 / -1;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .emp-info-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
         </style>
 
-        <div class="employee-360-hero">
-            <img class="rounded-circle" src="{{ $avatar }}" alt="{{ $employee->name }}">
-            <div>
-                <div class="employee-360-title">
-                    <h4 class="mb-0">{{ $employee->english_name ?: $employee->name }}</h4>
-                    <span class="badge bg-{{ $employee->is_active ? 'success' : 'secondary' }}">{{ $employee->is_active ? 'Active' : 'Inactive' }}</span>
-                </div>
-                <p class="text-muted mb-0">{{ $employee->employee_code ?: $employee->username }} · {{ $employee->post?->post_name ?: 'N/A' }} · {{ $employee->department?->dept_name ?: 'N/A' }}</p>
-            </div>
-        </div>
+        @include('admin.employees.profile.partials.overview-header')
 
         <div class="card">
             <div class="card-header pb-0">
@@ -876,17 +1365,10 @@
             <div class="card-body">
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="overview" role="tabpanel">
-                        <div class="employee-360-grid">
-                            @foreach($overviewMetrics as $item)
-                                <div class="employee-360-metric">
-                                    <small>{{ $item['label'] }}</small>
-                                    <strong>{{ $item['value'] }}</strong>
-                                </div>
-                            @endforeach
-                        </div>
-                        @if($canViewDiscipline)
-                            @include('admin.employees.profile.partials.overview-print')
-                        @endif
+                        @include('admin.employees.profile.partials.overview-kpi')
+                        @include('admin.employees.profile.partials.overview-summaries')
+                        @include('admin.employees.profile.partials.overview-activity')
+                        @include('admin.employees.profile.partials.overview-quick-actions')
                     </div>
 
                     <div class="tab-pane fade" id="complete-form" role="tabpanel">
@@ -901,6 +1383,7 @@
 
                     @if($canViewDiscipline)
                         <div class="tab-pane fade" id="discipline" role="tabpanel">
+                            @include('admin.employees.profile.partials.overview-print')
                             @include('admin.employees.profile.partials.discipline')
                         </div>
 
@@ -1095,7 +1578,7 @@
         }
 
         function printOverviewForm() {
-            printEmployeeProfilePaper('#overview .employee-overview-paper', 'employeeOverviewPrintRoot', 'printing-overview-form', 'overview');
+            printEmployeeProfilePaper('#discipline .employee-overview-paper', 'employeeOverviewPrintRoot', 'printing-overview-form', 'overview');
         }
 
         function printStaffWarningForm() {
@@ -1105,6 +1588,88 @@
         function printContractForm() {
             printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form', 'contract');
         }
+
+        function fillOverviewNote(textareaId, text) {
+            const el = document.getElementById(textareaId);
+            if (!el) {
+                return;
+            }
+            el.value = text;
+            el.focus();
+        }
+
+        function employeeGotoTab(tabId) {
+            const tabButton = document.querySelector(`[data-bs-target="#${CSS.escape(tabId)}"]`);
+            if (tabButton && window.bootstrap?.Tab) {
+                bootstrap.Tab.getOrCreateInstance(tabButton).show();
+            } else {
+                window.location.href = `${window.location.pathname}?tab=${encodeURIComponent(tabId)}`;
+                return;
+            }
+            const activePane = document.querySelector('.tab-content .tab-pane.active');
+            if (activePane && tabId === activePane.id) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function initOverviewCharts() {
+            if (!window.Chart) {
+                return;
+            }
+            const attendanceData = @json($overview['attendance']['chart']);
+            const attendanceCanvas = document.getElementById('attendanceChart');
+            if (attendanceCanvas && attendanceData) {
+                new Chart(attendanceCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: attendanceData.labels,
+                        datasets: [{
+                            data: attendanceData.values,
+                            backgroundColor: ['#27ae60', '#f39c12', '#e74c3c', '#3498db'],
+                            borderWidth: 0,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '62%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                        },
+                    },
+                });
+            }
+            const performanceData = @json($overview['performance']['chart']);
+            const performanceCanvas = document.getElementById('performanceChart');
+            if (performanceCanvas && performanceData && performanceData.labels.length) {
+                new Chart(performanceCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: performanceData.labels,
+                        datasets: [{
+                            data: performanceData.scores,
+                            label: 'Score',
+                            borderColor: '#7356bf',
+                            backgroundColor: 'rgba(115, 86, 191, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#7356bf',
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, suggestedMax: 100 },
+                        },
+                    },
+                });
+            }
+        }
+
+        initOverviewCharts();
 
         window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);
 

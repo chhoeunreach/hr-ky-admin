@@ -45,6 +45,11 @@ class PerformanceReview extends Model
         return $this->belongsTo(User::class, 'employee_id', 'id');
     }
 
+    public function evaluator()
+    {
+        return $this->belongsTo(User::class, 'evaluator_id', 'id');
+    }
+
     public function items()
     {
         return $this->hasMany(PerformanceReviewItem::class)->orderBy('sort_order');

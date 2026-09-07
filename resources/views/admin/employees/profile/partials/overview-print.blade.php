@@ -107,6 +107,7 @@
             <div><small>Final<br>ចុងក្រោយ</small><strong>{{ $finalWarnings }}</strong></div>
             <div><small>Pending Follow-up<br>រង់ចាំតាមដាន</small><strong>{{ $pendingFollowUp }}</strong></div>
         </div>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'key_summary', 'sectionLabel' => 'Key Summary'])
     </div>
 
     <div class="employee-complete-section">
@@ -135,6 +136,7 @@
             </tr>
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'attendance_summary', 'sectionLabel' => 'Attendance Summary'])
     </div>
 
     <div class="employee-complete-section">
@@ -155,6 +157,7 @@
             </tr>
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'warning_status', 'sectionLabel' => 'Warning Status'])
     </div>
 
     <div class="employee-complete-section">
@@ -171,6 +174,7 @@
             @endforeach
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'warning_type', 'sectionLabel' => 'Warning Type'])
     </div>
 
     <div class="employee-complete-section">
@@ -187,6 +191,7 @@
             @endforelse
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'violation_category', 'sectionLabel' => 'Violation Category'])
     </div>
 
     <div class="employee-complete-section">
@@ -207,6 +212,7 @@
             @endforelse
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'department_branch', 'sectionLabel' => 'Department / Branch Analysis'])
     </div>
 
     <div class="employee-complete-section">
@@ -227,6 +233,7 @@
             @endforelse
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'repeated_employees', 'sectionLabel' => 'Repeated Warning Employees'])
     </div>
 
     <div class="employee-complete-section">
@@ -247,6 +254,7 @@
             @endforelse
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'upcoming_follow_up', 'sectionLabel' => 'Upcoming Follow-up'])
     </div>
 
     <div class="employee-complete-section">
@@ -272,11 +280,13 @@
             @endforelse
             </tbody>
         </table>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'recent_warnings', 'sectionLabel' => 'Recent Warnings'])
     </div>
 
     <div class="employee-complete-section">
         <h6>9. MANAGEMENT NOTES / កំណត់សម្គាល់</h6>
         <div class="employee-warning-lines">_________________________________________________________________________________________________________<br>_________________________________________________________________________________________________________<br>_________________________________________________________________________________________________________</div>
+        @include('admin.employees.profile.partials.overview-section-notes', ['sectionKey' => 'management_notes', 'sectionLabel' => 'Management Notes'])
     </div>
 
     <div class="employee-overview-signatures">

@@ -22,6 +22,7 @@ use App\Models\EmployeeProfileAuditLog;
 use App\Models\EmployeeReward;
 use App\Models\EmployeeSalaryHistory;
 use App\Models\EmployeeTrainingHistory;
+use App\Models\EmployeeWarningOverviewNote;
 use App\Models\LeaveRequestMaster;
 use App\Models\PerformanceReview;
 use App\Models\Post;
@@ -121,7 +122,7 @@ class EmployeeProfileController extends Controller
 
         $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
         $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->first();
-        $latestReview = PerformanceReview::with('items')->where('employee_id', $employee->id)->latest('review_date')->latest('id')->first();
+        $latestReview = PerformanceReview::with(['items', 'evaluator:id,name,employee_code'])->where('employee_id', $employee->id)->latest('review_date')->latest('id')->first();
         $summary = $this->buildSummary($employee, $profile, $latestSalary, $latestReview);
         $attendanceSummary = $this->attendanceSummary($employee, request('from'), request('to'));
         $leaveBalance = $this->leaveBalance($employee);
@@ -168,6 +169,33 @@ class EmployeeProfileController extends Controller
                 ->get()
             : collect();
 
+        $overviewNotes = $canViewDiscipline
+            ? EmployeeWarningOverviewNote::with('creator:id,name')
+                ->where('employee_id', $employee->id)
+                ->orderBy('section_key')
+                ->latest('id')
+                ->get()
+            : collect();
+
+        $previousEmployee = User::where('id', '<', $employee->id)->latest('id')->first();
+        $nextEmployee = User::where('id', '>', $employee->id)->oldest('id')->first();
+
+        $overview = $this->buildOverview(
+            $employee,
+            $profile,
+            $summary,
+            $attendanceSummary,
+            $latestReview,
+            $reviews,
+            $goals,
+            $documents,
+            $training,
+            $discipline,
+            $salaryHistory,
+            $latestSalary,
+            $auditLogs
+        );
+
         return view('admin.employees.profile.show', compact(
             'employee',
             'profile',
@@ -190,6 +218,10 @@ class EmployeeProfileController extends Controller
             'contractHistories',
             'auditLogs',
             'warningOverviewRecords',
+            'overviewNotes',
+            'overview',
+            'previousEmployee',
+            'nextEmployee',
             'canViewEmployment',
             'canViewSalary',
             'canViewInterview',
@@ -556,6 +588,56 @@ class EmployeeProfileController extends Controller
         return back()->with('success', 'Discipline record deleted.');
     }
 
+    public function storeOverviewNote(Request $request, User $employee): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+
+        $data = $request->validate([
+            'section_key' => ['required', 'string', 'max:255'],
+            'content' => ['required', 'string'],
+        ]);
+
+        $record = EmployeeWarningOverviewNote::create([
+            'employee_id' => $employee->id,
+            'section_key' => $data['section_key'],
+            'content' => $data['content'],
+            'created_by' => auth()->id(),
+        ]);
+        $this->audit($employee, 'warning_overview', 'create', $record->id, null, $record->toArray(), $request);
+
+        return back()->with('success', 'Overview note added.');
+    }
+
+    public function updateOverviewNote(Request $request, User $employee, EmployeeWarningOverviewNote $overviewNote): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless($overviewNote->employee_id === $employee->id, 404);
+
+        $data = $request->validate([
+            'section_key' => ['required', 'string', 'max:255'],
+            'content' => ['required', 'string'],
+        ]);
+
+        $old = $overviewNote->getOriginal();
+        $overviewNote->update($data);
+        $this->audit($employee, 'warning_overview', 'update', $overviewNote->id, $old, $overviewNote->fresh()->toArray(), $request);
+
+        return back()->with('success', 'Overview note updated.');
+    }
+
+    public function destroyOverviewNote(Request $request, User $employee, EmployeeWarningOverviewNote $overviewNote): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless($overviewNote->employee_id === $employee->id, 404);
+
+        $old = $overviewNote->toArray();
+        $id = $overviewNote->id;
+        $overviewNote->delete();
+        $this->audit($employee, 'warning_overview', 'delete', $id, $old, null, $request);
+
+        return back()->with('success', 'Overview note deleted.');
+    }
+
     public function storeGoal(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.goal.manage');
@@ -695,6 +777,173 @@ class EmployeeProfileController extends Controller
         abort_unless(Storage::disk('local')->exists($document->file_path), 404);
 
         return Storage::disk('local')->download($document->file_path);
+    }
+
+    private function buildOverview(
+        User $employee,
+        EmployeeProfile $profile,
+        array $summary,
+        array $attendanceSummary,
+        ?PerformanceReview $latestReview,
+        $reviews,
+        $goals,
+        $documents,
+        $training,
+        $discipline,
+        $salaryHistory,
+        ?EmployeeSalaryHistory $latestSalary,
+        $auditLogs
+    ): array {
+        $workingDays = (int) ($attendanceSummary['working_days'] ?? 0);
+        $presentDays = (int) ($attendanceSummary['present_days'] ?? 0);
+        $attendanceRate = $workingDays > 0 ? round(($presentDays / $workingDays) * 100) : 0;
+
+        $leaveAllocated = (float) ($employee->leave_allocated ?? EmployeeLeaveType::where('employee_id', $employee->id)->sum('days'));
+        $leaveUsed = (float) LeaveRequestMaster::where('requested_by', $employee->id)->where('status', 'approved')->sum('no_of_days');
+        $leaveBalance = max(0, $leaveAllocated - $leaveUsed);
+        $pendingLeave = LeaveRequestMaster::where('requested_by', $employee->id)->where('status', 'pending')->count();
+
+        $previousReview = $reviews
+            ->when($latestReview, fn ($collection) => $collection->reject(fn ($review) => $review->id === $latestReview->id))
+            ->first();
+        $trend = 'N/A';
+        if ($latestReview && $previousReview) {
+            $trend = $latestReview->total_score > $previousReview->total_score
+                ? 'improving'
+                : ($latestReview->total_score < $previousReview->total_score ? 'declining' : 'stable');
+        }
+        $scoredReviews = $reviews->sortBy('review_date');
+
+        $goalsActive = $goals->whereIn('status', ['in_progress', 'not_started'])->count();
+        $goalsCompleted = $goals->where('status', 'completed')->count();
+        $goalsOverdue = $goals->where('status', 'overdue')->count();
+        $avgGoalProgress = $goals->isNotEmpty() ? round((float) $goals->avg('progress')) : 0;
+
+        $now = now();
+        $documentCount = $documents->count();
+        $expiringDocuments = $documents->filter(fn ($document) => $document->expiry_date && $document->expiry_date->gte($now) && $document->expiry_date->lte($now->copy()->addDays(30)))->values();
+        $expiredDocuments = $documents->filter(fn ($document) => $document->expiry_date && $document->expiry_date->lt($now))->values();
+
+        $trainingCount = $training->count();
+        $trainingCertificates = $training->filter(fn ($item) => filled($item->certificate))->count();
+
+        $activeWarnings = $discipline->whereNotIn('status', ['resolved', 'cancelled'])->count();
+        $totalWarnings = $discipline->count();
+
+        $currentBaseSalary = $profile->current_base_salary ?: ($latestSalary?->new_base_salary ?? null);
+        $allowances = $profile->allowances ?: ($latestSalary?->allowance_after ?? null);
+
+        $activity = $auditLogs->take(8)->map(function ($log) {
+            return [
+                'title' => ucwords(str_replace('_', ' ', (string) $log->module)) . ' · ' . ucfirst((string) $log->action),
+                'date' => $log->created_at,
+                'by' => $log->performed_by,
+            ];
+        })->values();
+
+        return [
+            'attendance' => [
+                'rate' => $attendanceRate,
+                'working_days' => $workingDays,
+                'present' => $presentDays,
+                'late' => (int) ($attendanceSummary['late_count'] ?? 0),
+                'absent' => (int) ($attendanceSummary['absent_days'] ?? 0),
+                'early_leave' => (int) ($attendanceSummary['early_leave_count'] ?? 0),
+                'overtime_hours' => (float) ($attendanceSummary['overtime_hours'] ?? 0),
+                'worked_hours' => (float) ($attendanceSummary['worked_hours'] ?? 0),
+                'from' => $attendanceSummary['from'] ?? null,
+                'to' => $attendanceSummary['to'] ?? null,
+                'chart' => [
+                    'labels' => ['Present', 'Late', 'Absent', 'Leave'],
+                    'values' => [
+                        $presentDays,
+                        (int) ($attendanceSummary['late_count'] ?? 0),
+                        (int) ($attendanceSummary['absent_days'] ?? 0),
+                        (int) ($attendanceSummary['leave_days'] ?? 0),
+                    ],
+                ],
+            ],
+            'leave' => [
+                'allocated' => $leaveAllocated,
+                'used' => $leaveUsed,
+                'balance' => $leaveBalance,
+                'pending' => $pendingLeave,
+            ],
+            'performance' => [
+                'score' => $latestReview ? (float) $latestReview->total_score : null,
+                'grade' => $latestReview?->grade,
+                'review_date' => $latestReview?->review_date,
+                'period' => $latestReview ? trim(($latestReview->period_start ? $latestReview->period_start->format('Y-m-d') : '') . ' → ' . ($latestReview->period_end ? $latestReview->period_end->format('Y-m-d') : '')) : null,
+                'reviewer' => $latestReview?->evaluator?->name,
+                'previous_score' => $previousReview ? (float) $previousReview->total_score : null,
+                'trend' => $trend,
+                'chart' => $reviews->isNotEmpty() ? [
+                    'labels' => $scoredReviews->map(fn ($review) => $review->review_date ? $review->review_date->format('M Y') : '')->values()->all(),
+                    'scores' => $scoredReviews->map(fn ($review) => (float) $review->total_score)->values()->all(),
+                ] : null,
+            ],
+            'goals' => [
+                'active' => $goalsActive,
+                'completed' => $goalsCompleted,
+                'overdue' => $goalsOverdue,
+                'avg_progress' => $avgGoalProgress,
+                'top' => $goals->sortByDesc('progress')->take(3)->values(),
+            ],
+            'documents' => [
+                'total' => $documentCount,
+                'expiring' => $expiringDocuments,
+                'expired' => $expiredDocuments,
+                'recent' => $documents->take(3)->values(),
+            ],
+            'training' => [
+                'total' => $trainingCount,
+                'certificates' => $trainingCertificates,
+                'recent' => $training->take(3)->values(),
+            ],
+            'discipline' => [
+                'active' => $activeWarnings,
+                'total' => $totalWarnings,
+                'latest' => $discipline->first(),
+            ],
+            'payroll' => [
+                'base_salary' => $currentBaseSalary,
+                'allowances' => $allowances,
+                'last_adjustment' => $salaryHistory->first(),
+            ],
+            'employment' => [
+                'years_of_service' => $summary['years_of_service'] ?? null,
+                'employment_type' => $employee->employment_type ?: ($employee->workspace_type ?: 'N/A'),
+                'status' => $summary['employment_status'] ?? ($employee->is_active ? 'active' : 'inactive'),
+                'joining_date' => $summary['join_date'] ?? null,
+                'probation_end_date' => $profile->probation_end_date,
+                'position' => $summary['position'] ?? null,
+                'department' => $summary['department'] ?? null,
+                'branch' => $summary['branch'] ?? null,
+                'manager' => $summary['manager'] ?? null,
+            ],
+            'personal' => [
+                'name' => $employee->name,
+                'english_name' => $employee->english_name,
+                'gender' => $employee->gender,
+                'dob' => $employee->dob,
+                'phone' => $employee->phone,
+                'email' => $employee->email,
+                'address' => $employee->address ?: $profile->current_address,
+                'emergency_contact' => $profile->emergency_contact_name
+                    ? trim($profile->emergency_contact_name . ($profile->emergency_contact_phone ? ' · ' . $profile->emergency_contact_phone : ''))
+                    : null,
+            ],
+            'activity' => $activity,
+            'summary360' => [
+                'employment' => ucfirst($summary['employment_status'] ?? 'N/A') . ' / ' . ($employee->employment_type ?: 'N/A'),
+                'attendance' => $attendanceRate . '%',
+                'performance' => $latestReview ? round((float) $latestReview->total_score) . '%' : 'N/A',
+                'leave' => $leaveBalance . ' ' . ($leaveBalance == 1 ? 'Day' : 'Days'),
+                'goals' => $avgGoalProgress . '%',
+                'training' => $trainingCount . ' ' . ($trainingCount == 1 ? 'Record' : 'Records'),
+                'discipline' => $activeWarnings > 0 ? 'Active Warning' : 'No Active Warning',
+            ],
+        ];
     }
 
     private function buildSummary(User $employee, EmployeeProfile $profile, ?EmployeeSalaryHistory $latestSalary, ?PerformanceReview $latestReview): array
