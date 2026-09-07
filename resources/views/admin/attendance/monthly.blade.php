@@ -2279,7 +2279,7 @@
                         <button type="button"
                                 class="monthly-stat-card stat-off-more"
                                 data-table-filter="off_day_more_than_two">
-                            <span class="monthly-stat-icon"><i data-feather="calendar-x"></i></span>
+                            <span class="monthly-stat-icon"><i data-feather="calendar"></i></span>
                             <div>
                                 <p class="monthly-stat-title">{{ __('index.off_day_more_than_two') }}</p>
                                 <p class="monthly-stat-value">{{ number_format($summary['off_day_more_than_two'] ?? 0) }}</p>
@@ -2911,6 +2911,20 @@
             const chatModalElement = document.getElementById('attendanceChatModal');
             const chatModal = chatModalElement ? new bootstrap.Modal(chatModalElement) : null;
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+            const safeFeatherReplace = () => {
+                if (!window.feather?.icons) {
+                    return;
+                }
+
+                document.querySelectorAll('[data-feather]').forEach((element) => {
+                    const icon = element.getAttribute('data-feather');
+                    if (icon && !window.feather.icons[icon]) {
+                        element.setAttribute('data-feather', 'circle');
+                    }
+                });
+
+                feather.replace();
+            };
             const monthlyStatusSortRank = {
                 present: 1,
                 late: 2,
@@ -3350,9 +3364,7 @@
                     initMonthlyCardFiltering();
                     updateMonthlyScrollShortcuts();
 
-                    if (window.feather) {
-                        feather.replace();
-                    }
+                    safeFeatherReplace();
 
                     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
                         bootstrap.Tooltip.getOrCreateInstance(element);
@@ -3475,9 +3487,7 @@
                 applyStoredSignalColumnsVisibility();
                 updateMonthlyScrollShortcuts();
 
-                if (window.feather) {
-                    feather.replace();
-                }
+                safeFeatherReplace();
 
                 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((element) => {
                     bootstrap.Tooltip.getOrCreateInstance(element);
@@ -3867,7 +3877,7 @@
                             </div>
                         </div>
                         <div class="late-dashboard-card">
-                            <span class="late-dashboard-icon is-amber"><i data-feather="watch"></i></span>
+                            <span class="late-dashboard-icon is-amber"><i data-feather="clock"></i></span>
                             <div>
                                 <p class="late-dashboard-card-label">${escapeHtml(i18n.gracePeriod)}</p>
                                 <p class="late-dashboard-card-value">16 Minutes</p>
@@ -3951,9 +3961,7 @@
                 `;
 
                 list.appendChild(report);
-                if (window.feather) {
-                    feather.replace();
-                }
+                safeFeatherReplace();
             };
 
             const openMonthlyDayDetail = (trigger, showModal = true) => {
