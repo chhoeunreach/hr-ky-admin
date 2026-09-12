@@ -3365,6 +3365,16 @@
                     }
                     currentBlock.replaceWith(nextBlock);
 
+                    if (!quiet) {
+                        const tableShell = nextBlock.querySelector('.monthly-table-shell') || nextBlock;
+                        if (tableShell) {
+                            const tableTop = tableShell.getBoundingClientRect().top + window.scrollY - 80;
+                            if (window.scrollY > tableTop) {
+                                window.scrollTo({ top: Math.max(0, tableTop), behavior: 'smooth' });
+                            }
+                        }
+                    }
+
                     if (pushState) {
                         window.history.pushState({}, '', url.toString());
                     }
@@ -3774,32 +3784,64 @@
             });
 
             document.addEventListener('click', (event) => {
-                const paginationLink = event.target.closest('#monthlyResultsBlock .pagination a');
+                const paginationLink = event.target.closest('#monthlyResultsBlock .pagination a, #monthlyResultsBlock .page-link[href]');
 
                 if (!paginationLink) {
                     return;
                 }
 
+                const rawHref = paginationLink.getAttribute('href');
+                if (!rawHref || rawHref === '#' || paginationLink.closest('.disabled') || paginationLink.getAttribute('aria-disabled') === 'true') {
+                    return;
+                }
+
                 event.preventDefault();
-                refreshMonthlyResultsBlock(new URL(paginationLink.href, window.location.origin));
+
+                try {
+                    const targetUrl = new URL(paginationLink.href, window.location.href);
+                    const url = new URL(window.location.href);
+                    targetUrl.searchParams.forEach((value, key) => {
+                        url.searchParams.set(key, value);
+                    });
+                    refreshMonthlyResultsBlock(url);
+                } catch (e) {
+                    window.location.href = paginationLink.href;
+                }
             });
 
             document.addEventListener('click', (event) => {
                 const link = event.target.closest('#monthlyResultsBlock a[href]');
 
-                if (!link || link.closest('.pagination') || link.closest('[data-bs-toggle]') || link.getAttribute('href') === '#') {
+                if (!link || link.closest('.pagination') || link.closest('.page-link') || link.closest('[data-bs-toggle]') || link.getAttribute('href') === '#') {
                     return;
                 }
 
-                const url = new URL(link.href, window.location.origin);
-                if (url.origin !== window.location.origin || !url.pathname.includes('/attendance-monthly') || url.searchParams.has('export')) {
-                    return;
-                }
+                try {
+                    const targetUrl = new URL(link.href, window.location.href);
+                    if (!targetUrl.pathname.includes('/attendance-monthly') || targetUrl.searchParams.has('export')) {
+                        return;
+                    }
 
-                event.preventDefault();
-                clearTimeout(monthlySearchTimer);
-                refreshMonthlyResultsBlock(url);
+                    const url = new URL(window.location.href);
+                    url.pathname = targetUrl.pathname;
+                    url.search = targetUrl.search;
+
+                    event.preventDefault();
+                    clearTimeout(monthlySearchTimer);
+                    refreshMonthlyResultsBlock(url);
+                } catch (e) {
+                    // Fall back to native link click
+                }
             });
+
+            if (window.jQuery) {
+                $(document).on('change', '#table_per_page', function () {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('per_page', this.value);
+                    url.searchParams.delete('page');
+                    refreshMonthlyResultsBlock(url);
+                });
+            }
 
             window.addEventListener('popstate', () => {
                 refreshMonthlyResultsBlock(new URL(window.location.href), false);

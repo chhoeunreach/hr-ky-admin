@@ -1052,27 +1052,36 @@ class AttendanceMonthlyController extends Controller
     private function paginateRows(Collection $rows, int|string $perPage): LengthAwarePaginator
     {
         if ($perPage === 'all') {
-            return new LengthAwarePaginator($rows->values(), $rows->count(), max($rows->count(), 1), 1, [
+            $paginator = new LengthAwarePaginator($rows->values(), $rows->count(), max($rows->count(), 1), 1, [
                 'path' => request()->url(),
-                'query' => request()->query(),
             ]);
+
+            return $paginator->withQueryString();
         }
 
         $page = LengthAwarePaginator::resolveCurrentPage();
         $items = $rows->slice(($page - 1) * $perPage, $perPage)->values();
 
-        return new LengthAwarePaginator($items, $rows->count(), $perPage, $page, [
+        $paginator = new LengthAwarePaginator($items, $rows->count(), $perPage, $page, [
             'path' => request()->url(),
-            'query' => request()->query(),
         ]);
+
+        return $paginator->withQueryString();
     }
 
     private function paginateRowsForEmployees(Collection $rows, LengthAwarePaginator $employees): LengthAwarePaginator
     {
-        return new LengthAwarePaginator($rows->values(), $employees->total(), $employees->perPage(), $employees->currentPage(), [
-            'path' => request()->url(),
-            'query' => request()->query(),
-        ]);
+        $paginator = new LengthAwarePaginator(
+            $rows->values(),
+            $employees->total(),
+            $employees->perPage(),
+            $employees->currentPage(),
+            [
+                'path' => $employees->path() ?: request()->url(),
+            ]
+        );
+
+        return $paginator->withQueryString();
     }
 
     private function exportReductionXlsx(Collection $rows, Carbon $month)
