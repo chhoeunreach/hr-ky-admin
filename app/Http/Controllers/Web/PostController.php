@@ -54,8 +54,23 @@ class PostController extends Controller
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
 
+            $companyId = AppHelper::getAuthUserCompanyId();
+            $basePostQuery = Post::query()->whereHas('branch', fn ($q) => $q->where('company_id', $companyId));
+            $totalDistinctPosts = (clone $basePostQuery)->distinct()->count('post_name');
+            $activePostsCount = (clone $basePostQuery)->where('is_active', 1)->distinct()->count('post_name');
+            $totalEmployeesInPosts = (clone $basePostQuery)->withCount('employees')->get()->sum('employees_count');
+            $coveredBranchesCount = (clone $basePostQuery)->distinct()->count('branch_id');
+
+            $stats = [
+                'total_posts' => $totalDistinctPosts,
+                'active_posts' => $activePostsCount,
+                'inactive_posts' => max(0, $totalDistinctPosts - $activePostsCount),
+                'total_employees' => $totalEmployeesInPosts,
+                'total_branches' => $coveredBranchesCount,
+            ];
+
             return view($this->view . 'index', compact('posts',
-                'filterParameters','companyDetail'));
+                'filterParameters','companyDetail', 'stats'));
         } catch (\Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -139,15 +154,23 @@ class PostController extends Controller
         $this->authorize('edit_post');
         try{
             $postDetail = $this->postRepo->getPostById($id);
+            if (!$postDetail) {
+                return redirect()->route('admin.posts.index')->with('danger', __('message.post_not_found'));
+            }
             $with = [];
             $select = ['id', 'dept_name'];
             $departmentDetail = $this->departmentRepo->getAllActiveDepartments($with, $select);
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            $relatedPosts = Post::query()
+            $companyId = AppHelper::getAuthUserCompanyId();
+            $relatedPosts = Post::withoutGlobalScopes()
                 ->where('post_name', $postDetail->post_name)
-                ->whereHas('branch', fn ($query) => $query->where('company_id', AppHelper::getAuthUserCompanyId()))
+                ->where(function ($query) use ($companyId) {
+                    $query->whereHas('branch', fn ($b) => $b->where('company_id', $companyId))
+                          ->orWhereHas('department', fn ($d) => $d->where('company_id', $companyId))
+                          ->orWhereNull('branch_id');
+                })
                 ->get(['id', 'branch_id', 'dept_id']);
             $selectedBranchIds = $relatedPosts->pluck('branch_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
             $selectedDepartmentIds = $relatedPosts->pluck('dept_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
@@ -167,41 +190,62 @@ class PostController extends Controller
             $validatedData = $request->validated();
             $postDetail = $this->postRepo->getPostById($id);
             if(!$postDetail){
-                throw new \Exception('Post Detail Not Found',404);
+                throw new \Exception(__('message.post_not_found'), 404);
             }
             DB::beginTransaction();
             $oldPostName = $postDetail->post_name;
+            $newPostName = $validatedData['post_name'];
+            $targetDeptIds = collect($validatedData['dept_id'])->unique()->values()->all();
+
             $departments = Department::query()
-                ->whereIn('id', collect($validatedData['dept_id'])->unique()->values()->all())
+                ->whereIn('id', $targetDeptIds)
                 ->get(['id', 'branch_id']);
 
-            $departments->each(function (Department $department) use ($validatedData, $oldPostName, $postDetail) {
-                $post = $department->id == $postDetail->dept_id
-                    ? $postDetail
-                    : Post::query()
-                        ->where('dept_id', $department->id)
-                        ->whereIn('post_name', [$oldPostName, $validatedData['post_name']])
-                        ->first();
+            $companyId = AppHelper::getAuthUserCompanyId();
+            $existingPosts = Post::withoutGlobalScopes()
+                ->where('post_name', $oldPostName)
+                ->where(function ($query) use ($companyId) {
+                    $query->whereHas('branch', fn ($b) => $b->where('company_id', $companyId))
+                          ->orWhereHas('department', fn ($d) => $d->where('company_id', $companyId))
+                          ->orWhereNull('branch_id');
+                })
+                ->with('hasEmployee')
+                ->get();
+
+            $departments->each(function (Department $department) use ($validatedData, $oldPostName, $newPostName) {
+                $post = Post::withoutGlobalScopes()
+                    ->where('dept_id', $department->id)
+                    ->whereIn('post_name', [$oldPostName, $newPostName])
+                    ->first();
 
                 if (!$post) {
                     $post = new Post();
                 }
 
                 $post->fill([
-                    'post_name' => $validatedData['post_name'],
+                    'post_name' => $newPostName,
                     'branch_id' => $department->branch_id,
                     'dept_id' => $department->id,
                     'is_active' => $validatedData['is_active'] ?? Post::IS_ACTIVE,
                 ]);
                 $post->save();
             });
+
+            foreach ($existingPosts as $existing) {
+                if (!in_array($existing->dept_id, $targetDeptIds)) {
+                    if ($existing->hasEmployee->isEmpty()) {
+                        $this->postRepo->delete($existing);
+                    }
+                }
+            }
+
             DB::commit();
             return redirect()->route('admin.posts.index')->with('success', __('message.post_update'));
         }catch(\Exception $exception){
+            DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage())
                 ->withInput();
         }
-
     }
 
     public function toggleStatus($id)
@@ -209,7 +253,21 @@ class PostController extends Controller
         $this->authorize('edit_post');
         try {
             DB::beginTransaction();
-            $this->postRepo->toggleStatus($id);
+            $post = Post::withoutGlobalScopes()->find($id);
+            if ($post) {
+                $newStatus = ((int)$post->is_active === 1) ? 0 : 1;
+                $companyId = AppHelper::getAuthUserCompanyId();
+                Post::withoutGlobalScopes()
+                    ->where('post_name', $post->post_name)
+                    ->where(function ($q) use ($companyId) {
+                        $q->whereHas('branch', fn ($b) => $b->where('company_id', $companyId))
+                          ->orWhereHas('department', fn ($d) => $d->where('company_id', $companyId))
+                          ->orWhereNull('branch_id');
+                    })
+                    ->update(['is_active' => $newStatus]);
+            } else {
+                $this->postRepo->toggleStatus($id);
+            }
             DB::commit();
             return redirect()->back()->with('success', __('message.status_changed'));
         } catch (\Exception $exception) {
@@ -226,11 +284,38 @@ class PostController extends Controller
             if (!$postDetail) {
                 throw new \Exception(__('message.post_not_found'), 404);
             }
-            if(!($postDetail->hasEmployee->isEmpty())){
-                throw new Exception(__('message.post_delete_error'),400);
+
+            $companyId = AppHelper::getAuthUserCompanyId();
+            $allRelated = Post::withoutGlobalScopes()
+                ->where('post_name', $postDetail->post_name)
+                ->where(function ($q) use ($companyId) {
+                    $q->whereHas('branch', fn ($b) => $b->where('company_id', $companyId))
+                      ->orWhereHas('department', fn ($d) => $d->where('company_id', $companyId))
+                      ->orWhereNull('branch_id');
+                })
+                ->with(['hasEmployee', 'employees'])
+                ->get();
+
+            if ($allRelated->isEmpty()) {
+                $allRelated = collect([$postDetail]);
             }
+
+            $assignedEmployeesCount = $allRelated->sum(function ($item) {
+                return $item->hasEmployee ? $item->hasEmployee->count() : 0;
+            });
+
+            if ($assignedEmployeesCount > 0) {
+                $errorMsg = __('message.post_delete_error');
+                if (empty($errorMsg) || $errorMsg === 'message.post_delete_error') {
+                    $errorMsg = "Post with assigned employees cannot be deleted.";
+                }
+                throw new Exception($errorMsg . " ({$assignedEmployeesCount} " . ($assignedEmployeesCount === 1 ? 'employee' : 'employees') . " assigned)", 400);
+            }
+
             DB::beginTransaction();
-                $this->postRepo->delete($postDetail);
+            foreach ($allRelated as $item) {
+                $this->postRepo->delete($item);
+            }
             DB::commit();
             return redirect()->back()->with('success', __('message.post_delete'));
         } catch (\Exception $exception) {

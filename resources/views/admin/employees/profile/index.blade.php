@@ -252,15 +252,15 @@
                                 </td>
                                 <td>
                                     @php
-                                        $employeeAvatar = $employee->avatar
-                                            ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar)
-                                            : asset('assets/images/img.png');
+                                        $employeeAvatar = $employee->avatar_url;
                                     @endphp
                                     <div class="d-flex align-items-center gap-2">
                                         <img src="{{ $employeeAvatar }}"
                                              alt="{{ $employee->name ?: $employee->english_name }}"
                                              class="rounded-circle"
-                                             style="width: 38px; height: 38px; object-fit: cover;">
+                                             style="width: 38px; height: 38px; object-fit: cover; border: 2px solid #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                                             loading="lazy"
+                                             onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
                                         <div>
                                             <div class="fw-semibold">{{ $employee->name ?: $employee->english_name }}</div>
                                             <div class="text-muted small">{{ $employee->employee_code ?: $employee->username }}{{ $employee->english_name ? ' · ' . $employee->english_name : '' }}</div>

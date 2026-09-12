@@ -20,7 +20,7 @@ class PostRequest extends FormRequest
 
     public function prepareForValidation()
     {
-        if (!auth('admin')->check() && auth()->check()) {
+        if (!auth('admin')->check() && auth()->check() && filled(auth()->user()->branch_id)) {
             $this->merge([
                 'branch_id' => [auth()->user()->branch_id],
             ]);

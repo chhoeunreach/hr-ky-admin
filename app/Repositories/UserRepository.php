@@ -59,13 +59,44 @@ class UserRepository
                 $query->where('is_active', (int) $filterParameters['is_active']);
             })
             ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
-                $query->where('branch_id', $filterParameters['branch_id']);
+                if (is_array($filterParameters['branch_id'])) {
+                    $branchIds = array_values(array_filter($filterParameters['branch_id']));
+                    if (!empty($branchIds)) {
+                        $query->whereIn('branch_id', $branchIds);
+                    }
+                } else {
+                    $query->where('branch_id', $filterParameters['branch_id']);
+                }
             })
             ->when(!empty($filterParameters['department_id']), function ($query) use ($filterParameters) {
-                $query->where('department_id', $filterParameters['department_id']);
+                if (is_array($filterParameters['department_id'])) {
+                    $deptIds = array_values(array_filter($filterParameters['department_id']));
+                    if (!empty($deptIds)) {
+                        $query->whereIn('department_id', $deptIds);
+                    }
+                } else {
+                    $query->where('department_id', $filterParameters['department_id']);
+                }
             })
             ->when(!empty($filterParameters['post_id']), function ($query) use ($filterParameters) {
-                $query->where('post_id', $filterParameters['post_id']);
+                if (is_array($filterParameters['post_id'])) {
+                    $postIds = array_values(array_filter($filterParameters['post_id']));
+                    if (!empty($postIds)) {
+                        $query->whereIn('post_id', $postIds);
+                    }
+                } else {
+                    $query->where('post_id', $filterParameters['post_id']);
+                }
+            })
+            ->when(!empty($filterParameters['role_id']), function ($query) use ($filterParameters) {
+                if (is_array($filterParameters['role_id'])) {
+                    $roleIds = array_values(array_filter($filterParameters['role_id']));
+                    if (!empty($roleIds)) {
+                        $query->whereIn('role_id', $roleIds);
+                    }
+                } else {
+                    $query->where('role_id', $filterParameters['role_id']);
+                }
             });
             $userList = $userList
                 ->orderByRaw('CASE WHEN users.employee_code IS NULL OR users.employee_code = "" THEN 1 ELSE 0 END')

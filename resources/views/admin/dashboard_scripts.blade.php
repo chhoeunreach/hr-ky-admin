@@ -316,6 +316,7 @@
             $("#loader").hide();
         }
 
+        drawClock();
         setInterval(drawClock, 1000);
 
         function drawClock(){
@@ -326,116 +327,163 @@
             let hr_rotation = 30 * hr + min / 2;
             let min_rotation = 6 * min;
             let sec_rotation = 6 * sec;
-            hour.style.transform = `rotate(${hr_rotation}deg)`;
-            minute.style.transform = `rotate(${min_rotation}deg)`;
-            second.style.transform = `rotate(${sec_rotation}deg)`;
 
-            // display weekday and date
-            // const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-            // const weekday = weekdays[now.getDay()];
-            // const date = now.toLocaleDateString();
-            //
-            // const dateDiv = document.getElementById('date');
-            // dateDiv.innerText = `${weekday}, ${date}`;
-        }
+            const hourEl = document.getElementById('hour');
+            const minuteEl = document.getElementById('minute');
+            const secondEl = document.getElementById('second');
+            if (hourEl) hourEl.style.transform = `rotate(${hr_rotation}deg)`;
+            if (minuteEl) minuteEl.style.transform = `rotate(${min_rotation}deg)`;
+            if (secondEl) secondEl.style.transform = `rotate(${sec_rotation}deg)`;
 
-        let tasksChart = new Chart(document.getElementById("tasksChart"), {
-            type: 'pie',
-            data: {
-                labels: [ translatedStrings.pending,
-                    translatedStrings.on_hold,
-                    translatedStrings.in_progress,
-                    translatedStrings.completed,
-                    translatedStrings.cancelled
-                ],
-                datasets: [{
-                    label: 'Task state',
-                    type: 'doughnut',
-                    backgroundColor: ["#7ee5e5","#f77eb9","#4d8af0","#00ff00","#FF0000"],
-                    borderColor: [
-                        'rgba(256, 256, 256, 1)',
-                        'rgba(256, 256, 256, 1)',
-                        'rgba(256, 256, 256, 1)',
-                        'rgba(256, 256, 256, 1)',
-                        'rgba(256, 256, 256, 1)'
-                    ],
-
-                    data: [
-                        {{$taskPieChartData['not_started']}},
-                        {{$taskPieChartData['on_hold']}},
-                        {{$taskPieChartData['in_progress']}},
-                        {{$taskPieChartData['completed']}},
-                        {{$taskPieChartData['cancelled']}}
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    },
-                    title: {
-                        display: false,
-                        text: 'Task Pie Chart'
-                    }
+            const digitalTimeEl = document.getElementById('digitalClockTime');
+            const digitalAmPmEl = document.getElementById('digitalClockAmPm');
+            if (digitalTimeEl) {
+                let h = hr % 12 || 12;
+                let m = min < 10 ? '0' + min : min;
+                let s = sec < 10 ? '0' + sec : sec;
+                digitalTimeEl.textContent = `${h < 10 ? '0' + h : h}:${m}:${s}`;
+                if (digitalAmPmEl) {
+                    digitalAmPmEl.textContent = hr >= 12 ? 'PM' : 'AM';
                 }
             }
-        });
+        }
 
-        let ctx = document.getElementById('projectChart')?.getContext('2d');
-        let labels = [
-            translatedStrings.pending,
-            translatedStrings.on_hold,
-            translatedStrings.in_progress,
-            translatedStrings.completed,
-            translatedStrings.cancelled
-        ];
-        let barColors = ["#7ee5e5","#f77eb9","#4d8af0","green",'red'];
-        let barData = [
-            {{$projectCardDetail['not_started']}},
-            {{$projectCardDetail['on_hold']}},
-            {{$projectCardDetail['in_progress']}},
-            {{$projectCardDetail['completed']}},
-            {{$projectCardDetail['cancelled']}}
-        ];
-        let myChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels ,
-                datasets: [{
-                    label: 'Project',
-                    backgroundColor: barColors,
-                    data: barData,
-                    borderWidth: 1,
-                    borderRadius: 10,
-                    borderSkipped: true,
-                }],
+        const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--dash-brand').trim() ||
+            getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() ||
+            '#f5510a';
 
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                    }
+        const tasksChartEl = document.getElementById("tasksChart");
+        if (tasksChartEl) {
+            new Chart(tasksChartEl, {
+                type: 'doughnut',
+                data: {
+                    labels: [
+                        translatedStrings.pending || 'Pending',
+                        translatedStrings.on_hold || 'On Hold',
+                        translatedStrings.in_progress || 'In Progress',
+                        translatedStrings.completed || 'Completed',
+                        translatedStrings.cancelled || 'Cancelled'
+                    ],
+                    datasets: [{
+                        label: 'Tasks',
+                        data: [
+                            {{ $taskPieChartData['not_started'] ?? 0 }},
+                            {{ $taskPieChartData['on_hold'] ?? 0 }},
+                            {{ $taskPieChartData['in_progress'] ?? 0 }},
+                            {{ $taskPieChartData['completed'] ?? 0 }},
+                            {{ $taskPieChartData['cancelled'] ?? 0 }}
+                        ],
+                        backgroundColor: [
+                            '#f59e0b',
+                            '#8b5cf6',
+                            themeColor,
+                            '#10b981',
+                            '#ef4444'
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        position: 'none',
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '72%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 10,
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        const projectChartCanvas = document.getElementById('projectChart');
+        if (projectChartCanvas) {
+            const ctx = projectChartCanvas.getContext('2d');
+            const labels = [
+                translatedStrings.pending || 'Pending',
+                translatedStrings.on_hold || 'On Hold',
+                translatedStrings.in_progress || 'In Progress',
+                translatedStrings.completed || 'Completed',
+                translatedStrings.cancelled || 'Cancelled'
+            ];
+            const barColors = [
+                '#f59e0b',
+                '#8b5cf6',
+                themeColor,
+                '#10b981',
+                '#ef4444'
+            ];
+            const barData = [
+                {{ $projectCardDetail['not_started'] ?? 0 }},
+                {{ $projectCardDetail['on_hold'] ?? 0 }},
+                {{ $projectCardDetail['in_progress'] ?? 0 }},
+                {{ $projectCardDetail['completed'] ?? 0 }},
+                {{ $projectCardDetail['cancelled'] ?? 0 }}
+            ];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Projects',
+                        backgroundColor: barColors,
+                        data: barData,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        maxBarThickness: 42
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f1f5f9'
+                            },
+                            ticks: {
+                                precision: 0,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    weight: '600'
+                                }
+                            }
+                        }
                     },
-                    title: {
-                        display: false,
-                        text: 'Project Bar Chart'
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            padding: 10,
+                            cornerRadius: 8
+                        }
                     }
-                },
-                barThickness: 50,
-
-            }
-        });
+                }
+            });
+        }
 
         $("#startWorkingBtn").click(function(e) {
             e.preventDefault();

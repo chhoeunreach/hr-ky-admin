@@ -382,6 +382,16 @@ class User extends Authenticatable
         return $userType !== '' && !Str::contains($userType, 'admin') ? $userType : 'employee';
     }
 
+    public function getAvatarUrlAttribute(): string
+    {
+        if (!empty($this->avatar)) {
+            $path = public_path(self::AVATAR_UPLOAD_PATH . $this->avatar);
+            if (file_exists($path)) {
+                return asset(self::AVATAR_UPLOAD_PATH . $this->avatar);
+            }
+        }
 
-
+        return asset('assets/images/img.png');
+    }
 }
+

@@ -54,10 +54,15 @@
 
                     @if(!isset(auth()->user()->branch_id))
                     <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
-                        <select class="form-control" id="branch_id" name="branch">
-                            <option value="" {{ empty($filterParameters['branch']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
+                        @php
+                            $selectedBranches = collect(is_array($filterParameters['branch'] ?? []) ? $filterParameters['branch'] : [$filterParameters['branch'] ?? null])
+                                ->filter(fn ($id) => $id !== null && $id !== '')
+                                ->map(fn ($id) => (string) $id)
+                                ->all();
+                        @endphp
+                        <select class="form-control" id="branch_id" name="branch[]" multiple data-placeholder="{{ __('index.select_branch') }}">
                             @foreach($branch as $key => $value)
-                                <option value="{{ $value->id }}" {{ (isset($filterParameters['branch']) && $value->id == $filterParameters['branch'] ) ? 'selected' : '' }}>
+                                <option value="{{ $value->id }}" {{ in_array((string) $value->id, $selectedBranches, true) ? 'selected' : '' }}>
                                     {{ ucfirst($value->name) }}
                                 </option>
                             @endforeach
@@ -189,7 +194,6 @@
                             <th>{{ __('index.department_head') }}</th>
                             <th class="text-center">{{ __('index.total_employees') }}</th>
                             <th>{{ __('index.address') }}</th>
-                            <th>{{ __('index.phone') }}</th>
                             <th class="text-center">{{ __('index.branch_name') }}</th>
                             <th class="text-center">{{ __('index.status') }}</th>
 
@@ -210,8 +214,23 @@
                                     </p>
                                 </td>
                                 <td>{{ $value->address }}</td>
-                                <td>{{ $value->phone }}</td>
-                                <td class="text-center">{{ $value->branch->name }}</td>
+                                <td class="text-center">
+                                    @if(isset($value->branches) && $value->branches->count() > 0)
+                                        <div class="d-flex flex-wrap gap-1 justify-content-center">
+                                            @foreach($value->branches as $branchItem)
+                                                <span class="badge bg-light text-primary border px-2 py-1" style="font-size: 11px; font-weight: 500;">
+                                                    {{ $branchItem->name }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @elseif($value->branch)
+                                        <span class="badge bg-light text-primary border px-2 py-1" style="font-size: 11px; font-weight: 500;">
+                                            {{ $value->branch->name }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">{{ __('index.not_available') }}</span>
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     <label class="switch">
                                         <input class="toggleStatus" href="{{ route('admin.departments.toggle-status', $value->id) }}"
@@ -284,7 +303,9 @@
         $(document).ready(function () {
 
             $("#branch_id").select2({
-                placeholder: @json(__('index.select_branch'))
+                placeholder: $("#branch_id").data('placeholder') || @json(__('index.select_branch')),
+                allowClear: true,
+                width: '100%'
             });
             $("#is_active").select2({});
             $("#per_page").select2({minimumResultsForSearch: Infinity});

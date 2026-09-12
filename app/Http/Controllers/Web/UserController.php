@@ -73,32 +73,40 @@ class UserController extends Controller
         try {
 
 
+            $branchIds = $request->query('branch_id', []);
+            if (!is_array($branchIds)) {
+                $branchIds = filled($branchIds) ? [$branchIds] : [];
+            }
+            $branchIds = array_values(array_filter($branchIds));
+
+            $departmentIds = $request->query('department_id', []);
+            if (!is_array($departmentIds)) {
+                $departmentIds = filled($departmentIds) ? [$departmentIds] : [];
+            }
+            $departmentIds = array_values(array_filter($departmentIds));
+
+            $postIds = $request->query('post_id', []);
+            if (!is_array($postIds)) {
+                $postIds = filled($postIds) ? [$postIds] : [];
+            }
+            $postIds = array_values(array_filter($postIds));
+
             $filterParameters = [
                 'employee_name' => $request->employee_name ?? null,
                 'search' => $request->search ?? null,
                 'email' => $request->email ?? null,
                 'phone' => $request->phone ?? null,
                 'is_active' => $request->is_active ?? null,
-                'branch_id' => $request->branch_id ?? null,
-                'department_id' => $request->department_id ?? null,
-                'post_id' => $request->post_id ?? null,
+                'branch_id' => $branchIds,
+                'department_id' => $departmentIds,
+                'post_id' => $postIds,
+                'role_id' => $request->role_id ?? null,
                 'per_page' => $request->per_page ?? getRecordPerPage(),
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+            if(!auth('admin')->check() && auth()->check() && filled(auth()->user()->branch_id)){
+                $filterParameters['branch_id'] = [auth()->user()->branch_id];
             }
-
-            if (empty($filterParameters['branch_id'])) {
-                $filterParameters['department_id'] = null;
-                $filterParameters['post_id'] = null;
-            }
-
-            if (empty($filterParameters['department_id'])) {
-                $filterParameters['post_id'] = null;
-            }
-
-
 
             $with = ['branch:id,name', 'company:id,name', 'post:id,post_name', 'department:id,dept_name', 'role:id,name','officeTime:id,shift,opening_time,closing_time','supervisor:id,name'];
 
@@ -107,13 +115,29 @@ class UserController extends Controller
 
             $company = $this->companyRepository->getCompanyDetail(['id']);
             $branches = $this->branchRepository->getLoggedInUserCompanyBranches($company->id, ['id', 'name']);
+            $roles = \App\Models\Role::get(['id', 'name']);
+
+            $userCounts = User::where('company_id', $company->id)
+                ->where('status', 'verified')
+                ->selectRaw('
+                    COUNT(*) as total,
+                    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive
+                ')->first();
+
+            $stats = [
+                'total' => (int) ($userCounts->total ?? 0),
+                'active' => (int) ($userCounts->active ?? 0),
+                'inactive' => (int) ($userCounts->inactive ?? 0),
+                'branches' => $branches->count(),
+            ];
 
             if ($request->input('action') == 'export') {
                 $fileName = 'users.xlsx';
                 return \Maatwebsite\Excel\Facades\Excel::download(new UserExport($users), $fileName);
             }
 
-            return view($this->view . 'index', compact('users', 'filterParameters', 'branches'));
+            return view($this->view . 'index', compact('users', 'filterParameters', 'branches', 'roles', 'stats'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

@@ -6,18 +6,50 @@
 <script>
     $(document).ready(function () {
 
-        $("#department").select2({});
-        $("#branch").select2({});
-        $("#post").select2({});
-        $("#supervisor").select2({});
-        $("#employment_type").select2({});
-        $("#officeTime").select2({});
+        $("#department").select2({
+            placeholder: $("#department").data('placeholder') || "{{ __('index.select_department') }}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#branch").select2({
+            placeholder: $("#branch").data('placeholder') || "{{ __('index.select_branch') }}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#post").select2({
+            placeholder: $("#post").data('placeholder') || "{{ __('index.select_post') }}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#supervisor").select2({
+            placeholder: "{{ __('index.select_supervisor') }}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#role_id").select2({
+            placeholder: "{{ __('index.select_role') }}",
+            allowClear: true,
+            width: '100%'
+        });
+        $("#employment_type").select2({ width: '100%' });
+        $("#officeTime").select2({ width: '100%' });
         $("#per_page").select2({minimumResultsForSearch: Infinity});
         $.ajaxSetup({
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
+
+        window.filterByStatus = function(status) {
+            $('#is_active').val(status).trigger('change');
+            if (status !== '') {
+                const filterCollapse = document.getElementById('employeeFilterCollapse');
+                if (filterCollapse && !filterCollapse.classList.contains('show')) {
+                    new bootstrap.Collapse(filterCollapse, { toggle: true });
+                }
+            }
+            refreshEmployeeList();
+        };
 
         $(document).on('click', '.changePassword', function (event) {
             event.preventDefault();
@@ -175,6 +207,8 @@
         const replaceEmployeeResults = (doc) => {
             const currentTableBody = document.querySelector('#employeeTable tbody');
             const nextTableBody = doc.querySelector('#employeeTable tbody');
+            const currentFooter = document.querySelector('#employeeTableFooter');
+            const nextFooter = doc.querySelector('#employeeTableFooter');
             const currentPagination = document.querySelector('#employeeListSection .dataTables_paginate');
             const nextPagination = doc.querySelector('#employeeListSection .dataTables_paginate');
             const currentCalendar = document.querySelector('#employeeCalendarSection');
@@ -190,8 +224,16 @@
                 currentCalendar.outerHTML = nextCalendar.outerHTML;
             }
 
-            if (currentPagination && nextPagination) {
+            if (currentFooter && nextFooter) {
+                currentFooter.innerHTML = nextFooter.innerHTML;
+            } else if (currentPagination && nextPagination) {
                 currentPagination.innerHTML = nextPagination.innerHTML;
+            }
+
+            const currentKpis = document.querySelector('.employee-kpi-container');
+            const nextKpis = doc.querySelector('.employee-kpi-container');
+            if (currentKpis && nextKpis) {
+                currentKpis.innerHTML = nextKpis.innerHTML;
             }
 
             if (window.feather) {
@@ -273,10 +315,23 @@
             refreshEmployeeList();
         });
 
+        $(document).on('click', '#employeeSearchClear', function () {
+            const searchInput = $('#employeeListSearch');
+            searchInput.val('');
+            $('#search').val('');
+            $(this).hide();
+            refreshEmployeeList({focusSearch: true});
+        });
+
         $(document).on('input', '#employeeListSearch', function () {
             const searchInput = document.getElementById('search');
             if (searchInput) {
                 searchInput.value = this.value;
+            }
+
+            const clearBtn = document.getElementById('employeeSearchClear');
+            if (clearBtn) {
+                clearBtn.style.display = this.value.trim().length > 0 ? 'flex' : 'none';
             }
 
             clearTimeout(employeeSearchTimer);
@@ -388,6 +443,7 @@
             branch_id: $('#branch').val(),
             department_id: $('#department').val(),
             post_id: $('#post').val(),
+            role_id: $('#role_id').val(),
             is_active: $('#is_active').val(),
             per_page: $('#per_page').val()
         };
@@ -468,16 +524,16 @@
     $(document).ready(function () {
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-        let selectedDepartmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
+        let selectedDepartmentId = @json(isset($userDetail) ? $userDetail->department_id : ($filterParameters['department_id'] ?? old('department_id')));
         let selectedOfficeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
         let selectedSupervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
         const employeeId = "{{ isset($userDetail) ? $userDetail['id'] : '' }}";
-        let selectedPostId = "{{ $userDetail->post_id ?? $filterParameters['post_id'] ?? old('post_id') }}";
+        let selectedPostId = @json(isset($userDetail) ? $userDetail->post_id : ($filterParameters['post_id'] ?? old('post_id')));
 
         let branchLoadRequestId = 0;
         let departmentLoadRequestId = 0;
 
-        const loadDepartmentsAndOfficeTime = async (branchId) => {
+        const loadDepartmentsAndOfficeTime = async (branchValue) => {
             const requestId = ++branchLoadRequestId;
 
             // Reset dependent dropdowns before loading the new branch data
@@ -487,40 +543,64 @@
             $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
             $('#department, #post').trigger('change.select2');
 
-            if (!branchId) return;
+            const selectedBranchIds = Array.isArray(branchValue)
+                ? branchValue.filter(Boolean)
+                : (branchValue ? [branchValue] : []);
+
+            if (selectedBranchIds.length === 0) return;
 
             try {
-                const [departmentResponse, branchResponse] = await Promise.all([
-                    $.ajax({
+                const branchResponses = await Promise.all(selectedBranchIds.map(async (selectedId) => {
+                    const response = await $.ajax({
                         type: 'GET',
-                        url: `{{ url('admin/departments/get-All-Departments') }}/${branchId}`,
-                    }),
-                    $.ajax({
-                        type: 'GET',
-                        url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${branchId}`,
-                    })
-                ]);
+                        url: `{{ url('admin/departments/get-All-Departments') }}/${selectedId}`,
+                    });
+                    const branchName = $(`#branch option[value="${selectedId}"]`).text().trim();
+                    return (response.data || []).map(dept => ({
+                        ...dept,
+                        branch_name: branchName
+                    }));
+                }));
 
                 if (requestId !== branchLoadRequestId) return;
 
-                // Departments
-                const departments = departmentResponse.data || [];
+                const departments = branchResponses.flat();
                 if (departments.length > 0) {
+                    const nameCounts = departments.reduce((acc, d) => {
+                        const n = String(d.dept_name || '').trim().toLowerCase();
+                        acc[n] = (acc[n] || 0) + 1;
+                        return acc;
+                    }, {});
+
                     departments.forEach(department => {
-                        $('#department').append(`<option ${department.id == selectedDepartmentId ? 'selected' : ''} value="${department.id}">${department.dept_name}</option>`);
+                        const normalized = String(department.dept_name || '').trim().toLowerCase();
+                        let label = department.dept_name;
+                        if ((nameCounts[normalized] > 1 || selectedBranchIds.length > 1) && department.branch_name) {
+                            label = `${department.dept_name} - ${department.branch_name}`;
+                        }
+                        const isSelected = selectedDepartmentId && String(selectedDepartmentId) === String(department.id);
+                        $('#department').append(`<option ${isSelected ? 'selected' : ''} value="${department.id}">${label}</option>`);
                     });
                     $('#department').prop('disabled', false);
                 } else {
                     $('#department').append('<option disabled>{{ __("index.no_department_found") }}</option>');
                 }
 
-                // Office Times
-                if (branchResponse.officeTimes && branchResponse.officeTimes.length > 0) {
-                    branchResponse.officeTimes.forEach(shift => {
-                        $('#officeTime').append(`<option ${shift.id == selectedOfficeTimeId ? 'selected' : ''} value="${shift.id}">${shift.opening_time} - ${shift.closing_time}</option>`);
-                    });
-                } else {
-                    $('#officeTime').append('<option disabled>{{ __("index.office_time_not_found") }}</option>');
+                // If on employee create/edit form, also load office times for the single branch
+                if ($('#officeTime').length && selectedBranchIds.length === 1) {
+                    try {
+                        const branchResponse = await $.ajax({
+                            type: 'GET',
+                            url: `{{ url('admin/transfer/get-user-transfer-branch-data') }}/${selectedBranchIds[0]}`,
+                        });
+                        if (branchResponse.officeTimes && branchResponse.officeTimes.length > 0) {
+                            branchResponse.officeTimes.forEach(shift => {
+                                $('#officeTime').append(`<option ${shift.id == selectedOfficeTimeId ? 'selected' : ''} value="${shift.id}">${shift.opening_time} - ${shift.closing_time}</option>`);
+                            });
+                        } else {
+                            $('#officeTime').append('<option disabled>{{ __("index.office_time_not_found") }}</option>');
+                        }
+                    } catch (e) {}
                 }
 
                 $('#department').trigger('change.select2');
@@ -535,59 +615,74 @@
             }
         };
 
-        const loadSupervisorAndPosts = async () => {
+        const loadSupervisorAndPosts = async (departmentValue) => {
             const requestId = ++departmentLoadRequestId;
-            const selectedDepartmentId = $('#department').val();
+            const deptVal = departmentValue !== undefined ? departmentValue : $('#department').val();
+            const selectedDeptIds = Array.isArray(deptVal)
+                ? deptVal.filter(Boolean)
+                : (deptVal ? [deptVal] : []);
 
             $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
             $('#post').empty().append('<option value="" selected>{{ __('index.select_post') }}</option>').prop('disabled', true);
             $('#post').trigger('change.select2');
 
-            if (!selectedDepartmentId) return;
+            if (selectedDeptIds.length === 0) return;
 
             try {
-                const [supervisorResponse, postResponse] = await Promise.all([
-                    fetch(`{{ url('admin/transfer/get-user-transfer-department-data') }}/${selectedDepartmentId}`, {
+                const postResponses = await Promise.all(selectedDeptIds.map(async (selectedId) => {
+                    const res = await fetch(`{{ url('admin/posts/get-All-posts') }}/${selectedId}`, {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
                         }
-                    }),
-                    fetch(`{{ url('admin/posts/get-All-posts') }}/${selectedDepartmentId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        }
-                    })
-                ]);
-
-                let supervisorData = await supervisorResponse.json();
-                let postData = await postResponse.json();
+                    });
+                    return await res.json();
+                }));
 
                 if (requestId !== departmentLoadRequestId) return;
 
-                // Supervisors
-                if (supervisorData.supervisors && supervisorData.supervisors.length > 0) {
-                    supervisorData.supervisors.forEach(user => {
-                        if (employeeId != user.id){
-                            $('#supervisor').append(`<option ${user.id == selectedSupervisorId ? 'selected' : ''} value="${user.id}">${user.name}</option>`);
-                        }
-                    });
-                } else {
-                    $('#supervisor').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
-                }
+                const allPosts = postResponses.flatMap(r => r.data || []);
+                const uniquePosts = [];
+                const seenNames = new Set();
+                allPosts.forEach(p => {
+                    if (p.post_name && !seenNames.has(p.post_name)) {
+                        seenNames.add(p.post_name);
+                        uniquePosts.push(p);
+                    }
+                });
 
-                // Posts
-                const posts = postData.data || [];
-                if (posts.length > 0) {
-                    posts.forEach(post => {
-                        $('#post').append(`<option ${post.id == selectedPostId ? 'selected' : ''} value="${post.id}">${post.post_name}</option>`);
+                if (uniquePosts.length > 0) {
+                    uniquePosts.forEach(post => {
+                        const isSelected = selectedPostId && (Array.isArray(selectedPostId) ? selectedPostId.includes(String(post.id)) : String(selectedPostId) === String(post.id));
+                        $('#post').append(`<option ${isSelected ? 'selected' : ''} value="${post.id}">${post.post_name}</option>`);
                     });
                     $('#post').prop('disabled', false);
                 } else {
                     $('#post').append('<option disabled>{{ __("index.no_posts_found") }}</option>');
+                }
+
+                // If on employee create/edit form, load supervisors for single department
+                if ($('#supervisor').length && selectedDeptIds.length === 1) {
+                    try {
+                        const supervisorRes = await fetch(`{{ url('admin/transfer/get-user-transfer-department-data') }}/${selectedDeptIds[0]}`, {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            }
+                        });
+                        const supervisorData = await supervisorRes.json();
+                        if (supervisorData.supervisors && supervisorData.supervisors.length > 0) {
+                            supervisorData.supervisors.forEach(user => {
+                                if (employeeId != user.id) {
+                                    $('#supervisor').append(`<option ${user.id == selectedSupervisorId ? 'selected' : ''} value="${user.id}">${user.name}</option>`);
+                                }
+                            });
+                        } else {
+                            $('#supervisor').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
+                        }
+                    } catch (e) {}
                 }
 
                 $('#supervisor').trigger('change.select2');
@@ -691,7 +786,7 @@
                 selectedPostId = '';
             }
 
-            loadSupervisorAndPosts();
+            loadSupervisorAndPosts($(this).val());
         });
         $('#gender').on('change', loadLeaveTypes);
 
@@ -702,13 +797,20 @@
                 selectedSupervisorId = '';
                 selectedPostId = '';
                 loadDepartmentsAndOfficeTime($('#branch').val());
-                loadLeaveTypes();
+                if ($('#leave-types-table').length) {
+                    loadLeaveTypes();
+                }
             });
         }
 
         // Initial load for the selected/pre-assigned branch
-        loadDepartmentsAndOfficeTime(isAdmin ? $('#branch').val() : defaultBranchId);
-        loadLeaveTypes();
+        const initialBranchVal = isAdmin ? $('#branch').val() : defaultBranchId;
+        if (initialBranchVal && (Array.isArray(initialBranchVal) ? initialBranchVal.length > 0 : true)) {
+            loadDepartmentsAndOfficeTime(initialBranchVal);
+        }
+        if ($('#leave-types-table').length) {
+            loadLeaveTypes();
+        }
 
         document.addEventListener('leaveTypesUpdated', attachEventListeners);
 

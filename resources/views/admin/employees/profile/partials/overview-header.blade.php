@@ -15,7 +15,11 @@
 @endphp
 
 <div class="employee-360-hero employee-360-hero-v2">
-    <img class="rounded-circle" src="{{ $avatar }}" alt="{{ $employee->name }}">
+    <img class="rounded-circle"
+         src="{{ $employee->avatar_url }}"
+         alt="{{ $employee->name }}"
+         style="object-fit: cover;"
+         onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
 
     <div class="employee-360-hero-main">
         <div class="employee-360-title">

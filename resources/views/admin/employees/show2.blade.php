@@ -30,7 +30,9 @@
 
         <div class="d-md-flex align-items-center text-md-start text-center mb-md-4 mb-2">
             <img class="wd-100 ht-100 rounded-circle" style="object-fit: cover"
-                 src="{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH . $userDetail->avatar) }}" alt="profile">
+                 src="{{ $userDetail->avatar_url }}"
+                 alt="profile"
+                 onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
             <div class="ms-md-3 mt-md-0 mt-2">
                 <span class="fw-bold">{{ ucfirst($userDetail->name) }}</span>
                 <p class="fw-bold">{{ $userDetail->employee_code }}</p>

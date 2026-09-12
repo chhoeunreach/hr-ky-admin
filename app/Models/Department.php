@@ -98,5 +98,18 @@ class Department extends Model
             ]);
     }
 
+    public function getDisplayNameAttribute(): string
+    {
+        $deptName = (string) $this->dept_name;
+        $branchName = $this->relationLoaded('branch')
+            ? $this->branch?->name
+            : ($this->branch()->value('name') ?? null);
+
+        if (str_contains($deptName, 'អ្នកទទួលភ្ញៀវ') && $branchName && !str_contains($deptName, $branchName)) {
+            return rtrim($deptName, ' -') . ' - ' . $branchName;
+        }
+
+        return $deptName;
+    }
 }
 

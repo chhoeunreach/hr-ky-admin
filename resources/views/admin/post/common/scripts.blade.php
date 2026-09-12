@@ -60,38 +60,101 @@
             });
         });
 
-        // Show employee list in modal
-        $('body').on('click', '#showEmployee', function (e) {
+        // Show employee list in modal with modern UI and live search
+        let currentModalEmployees = [];
+
+        $(document).on('click', '.showEmployeeBtn, #showEmployee', function (e) {
             e.preventDefault();
-            let employee = $(this).data('employee');
-            $('.employee').remove();
-            $('.modal-title').html('{{ __("index.employee_list_title") }}');
-            if (employee.length > 0) {
-                $('.postEmptyCase').addClass('d-none');
-                employee.forEach(function (data) {
-                    let avatar = data.avatar ? '{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH) }}' + '/' + data.avatar : '{{ asset('assets/images/img.png') }}';
-                    $('.employeeList').append(
-                        '<div class="col-lg-6 d-flex align-items-center mb-3 employee">' +
-                        '<img class="rounded-circle w-25 me-2 employeeImage" ' + 'style="object-fit: cover" ' +
-                        'src="' + avatar + '" ' +
-                        'alt="profile">' +
-                        '<span class="employeeName">' + data.name + '</span>' +
-                        '</div>'
-                    );
-                });
-            } else {
-                $('.postEmptyCase').removeClass('d-none');
+            const postName = $(this).data('post-name') || 'Post';
+            let employeeData = $(this).data('employee');
+
+            if (typeof employeeData === 'string') {
+                try {
+                    employeeData = JSON.parse(employeeData);
+                } catch (err) {
+                    employeeData = [];
+                }
             }
+
+            currentModalEmployees = Array.isArray(employeeData) ? employeeData : [];
+            $('.modal-post-subtitle').text(`Position: ${postName}`);
+            $('.modal-employee-count').text(`${currentModalEmployees.length} ${currentModalEmployees.length === 1 ? 'Employee' : 'Employees'}`);
+            $('#modalEmployeeSearch').val('');
+            renderModalEmployees(currentModalEmployees);
             $('#showEmployees').modal('show');
-        }).trigger("change");
+        });
+
+        const renderModalEmployees = (list) => {
+            const container = $('.employeeList');
+            container.empty();
+
+            if (!currentModalEmployees || currentModalEmployees.length === 0) {
+                $('.postEmptyCase').removeClass('d-none');
+                $('.modalSearchEmpty').addClass('d-none');
+                return;
+            }
+
+            $('.postEmptyCase').addClass('d-none');
+
+            if (!list || list.length === 0) {
+                $('.modalSearchEmpty').removeClass('d-none');
+                return;
+            }
+
+            $('.modalSearchEmpty').addClass('d-none');
+
+            list.forEach(function (data) {
+                const avatar = data.avatar
+                    ? '{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH) }}/' + data.avatar
+                    : '{{ asset("assets/images/img.png") }}';
+                const profileUrl = data.id ? `{{ url("admin/users") }}/${data.id}` : '#';
+
+                const cardHtml = `
+                    <div class="col-md-6 col-12 employee-item" data-name="${String(data.name || '').toLowerCase()}">
+                        <div class="card h-100 border shadow-sm p-3 bg-white" style="border-radius: 12px; transition: all 0.2s ease;">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="position-relative flex-shrink-0">
+                                    <img src="${avatar}" alt="${data.name}" class="rounded-circle border" style="width: 48px; height: 48px; object-fit: cover;">
+                                    <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-white rounded-circle"></span>
+                                </div>
+                                <div class="flex-grow-1 min-w-0">
+                                    <h6 class="mb-1 text-truncate fw-semibold text-dark">${data.name || 'Unknown'}</h6>
+                                    <span class="badge bg-light text-secondary border" style="font-size: 11px;">Employee ID: #${data.id || 'N/A'}</span>
+                                </div>
+                                <a href="${profileUrl}" class="btn btn-sm btn-outline-secondary rounded-circle p-1 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="View Profile">
+                                    <i class="link-icon" data-feather="external-link" style="width: 14px; height: 14px;"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.append(cardHtml);
+            });
+
+            if (window.feather) {
+                feather.replace();
+            }
+        };
+
+        $('#modalEmployeeSearch').on('input', function () {
+            const query = $(this).val().trim().toLowerCase();
+            if (!query) {
+                renderModalEmployees(currentModalEmployees);
+                return;
+            }
+
+            const filtered = currentModalEmployees.filter(emp =>
+                String(emp.name || '').toLowerCase().includes(query)
+            );
+            renderModalEmployees(filtered);
+        });
 
 
 
-        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
+        const branchSelect = $('#branch_id');
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
         const branchId = @json($filterParameters['branch_id'] ?? ($selectedBranchIds ?? (isset($postDetail) ? [$postDetail->branch_id] : [])));
         const selectedDepartmentIds = @json(collect(old('dept_id', $selectedDepartmentIds ?? (isset($postDetail) ? [$postDetail->dept_id] : ($filterParameters['department_id'] ?? []))))->filter()->map(fn ($id) => (string) $id)->all());
-
 
         const loadDepartments = async (selectedBranchValue) => {
             const selectedBranchIds = Array.isArray(selectedBranchValue)
@@ -133,9 +196,13 @@
 
                 departments.forEach(data => {
                     const normalizedName = String(data.dept_name || '').trim().toLowerCase();
-                    const label = nameCounts[normalizedName] > 1 && data.branch_name
-                        ? `${data.dept_name} - ${data.branch_name}`
-                        : data.dept_name;
+                    const isReceptionist = data.dept_name && data.dept_name.includes('អ្នកទទួលភ្ញៀវ');
+                    let label = data.dept_name;
+
+                    if ((isReceptionist || nameCounts[normalizedName] > 1) && data.branch_name && !data.dept_name.includes(data.branch_name)) {
+                        label = `${data.dept_name.replace(/\s*-\s*$/, '')} - ${data.branch_name}`;
+                    }
+
                     $('#department_id').append(`<option value="${data.id}" ${selectedDepartmentIds.includes(String(data.id)) ? 'selected' : ''}>${label}</option>`);
                 });
 
@@ -146,31 +213,23 @@
             }
         };
 
-
         const initializeDropdowns = async () => {
-            let selectedBranchId;
-
-            if (isAdmin) {
-                selectedBranchId = $('#branch_id').val() || branchId || defaultBranchId;
-
-                $('#branch_id').on('change', async () => {
-                    const newBranchId = $('#branch_id').val();
+            if (branchSelect.is('select')) {
+                branchSelect.on('change', async () => {
+                    const newBranchId = branchSelect.val();
                     await loadDepartments(newBranchId);
-
                 });
 
-                // Trigger initial load if branch is selected
-                if (selectedBranchId) {
-                    $('#branch_id').trigger('change');
+                const initialBranches = branchSelect.val() || branchId || (defaultBranchId ? [String(defaultBranchId)] : []);
+                if (initialBranches && initialBranches.length > 0) {
+                    await loadDepartments(initialBranches);
                 }
             } else {
-                selectedBranchId = defaultBranchId;
-                if (selectedBranchId) {
-                    await loadDepartments(selectedBranchId);
-
+                const hiddenVal = branchSelect.val() || defaultBranchId;
+                if (hiddenVal) {
+                    await loadDepartments([String(hiddenVal)]);
                 }
             }
-
         };
 
         // Initialize everything
@@ -348,6 +407,45 @@
                         postListController = null;
                     }
                 });
+        });
+
+        // CSV Export handler
+        $(document).on('click', '#exportPostCsvBtn', function () {
+            const rows = $('#postTable tbody tr[data-post-name]');
+            if (!rows.length) {
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'No Data',
+                        text: 'There are no position records to export.',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    alert('There are no position records to export.');
+                }
+                return;
+            }
+
+            let csvContent = 'Position Name,Departments,Branches,Total Employees,Status\n';
+            rows.each(function () {
+                const clean = (val) => `"${(val || '').toString().replace(/"/g, '""')}"`;
+                const postName = clean($(this).data('post-name'));
+                const depts = clean($(this).data('departments'));
+                const branches = clean($(this).data('branches'));
+                const employees = clean($(this).data('employees'));
+                const status = clean($(this).data('status'));
+                csvContent += `${postName},${depts},${branches},${employees},${status}\n`;
+            });
+
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `Positions_Export_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         });
 
         initPostListControls();

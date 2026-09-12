@@ -68,9 +68,15 @@ if (!function_exists('removeSpecialChar')) {
 if (!function_exists('getRecordPerPage')) {
     function getRecordPerPage()
     {
+        static $recordsPerPage = null;
+        if ($recordsPerPage !== null) {
+            return $recordsPerPage;
+        }
+
         $key = 'records_per_page';
-        $limit = \App\Models\GeneralSetting::query()->where('key',$key)->first();
-        return $limit->value ?? 15;
+        $limit = \App\Models\GeneralSetting::query()->where('key', $key)->first();
+
+        return $recordsPerPage = ($limit->value ?? 15);
     }
 }
 
