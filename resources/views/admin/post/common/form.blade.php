@@ -2,14 +2,19 @@
     @if(!isset(auth()->user()->branch_id))
         <div class="col-lg-4 col-md-6 mb-4">
             <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-            <select class="form-select" id="branch_id" name="branch_id">
+            <select class="form-select" id="branch_id" name="branch_id[]" multiple required>
 
-                <option value="" {{isset($postDetail) ? '' : 'selected'}} disabled>{{ __('index.select_branch') }}</option>
+                <option value="" disabled>{{ __('index.select_branch') }}</option>
 
                 @if(isset($companyDetail))
                     @foreach($companyDetail->branches()->get() as $key => $branch)
+                        @php
+                            $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($postDetail) ? [$postDetail->branch_id] : [])))
+                                ->map(fn ($id) => (string) $id)
+                                ->all();
+                        @endphp
                         <option value="{{$branch->id}}"
-                            {{ (isset($postDetail) && ($postDetail->branch_id ) == $branch->id) ? 'selected': '' }}>
+                            {{ in_array((string) $branch->id, $selectedBranchIds, true) ? 'selected': '' }}>
                             {{ucfirst($branch->name)}}</option>
                     @endforeach
                 @endif
@@ -18,7 +23,7 @@
     @endif
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="department_id" class="form-label">{{ __('index.department_label') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="department_id" name="dept_id" required>
+        <select class="form-select" id="department_id" name="dept_id[]" multiple required>
             <option selected disabled>{{ __('index.select_department') }}</option>
 
         </select>

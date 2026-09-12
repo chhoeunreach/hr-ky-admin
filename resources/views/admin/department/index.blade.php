@@ -24,16 +24,37 @@
             @endcan
         </nav>
 
+        @php
+            $hasDepartmentFilters = filled($filterParameters['branch'] ?? null)
+                || filled($filterParameters['name'] ?? null)
+                || filled($filterParameters['search'] ?? null)
+                || (($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null)
+                || (($filterParameters['per_page'] ?? '25') !== '25');
+        @endphp
+
         <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.department_lists') }}</h6>
+            <div class="card-header d-flex align-items-center justify-content-between gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#departmentFilterCollapse"
+                            aria-expanded="{{ $hasDepartmentFilters ? 'true' : 'false' }}"
+                            aria-controls="departmentFilterCollapse">
+                        <i class="link-icon" data-feather="filter"></i>
+                        {{ __('index.filter') }}
+                    </button>
+                    <h6 class="card-title mb-0">{{ __('index.department_lists') }}</h6>
+                </div>
             </div>
-            <form class="forms-sample card-body pb-0" action="{{route('admin.departments.index')}}" method="get">
+            <div id="departmentFilterCollapse" class="collapse{{ $hasDepartmentFilters ? ' show' : '' }}">
+            <form class="forms-sample card-body pb-0" action="{{ route('admin.departments.index') }}" id="departmentFilterForm" method="get">
+                <input type="hidden" id="departmentSearch" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                 <div class="row align-items-center">
 
                     @if(!isset(auth()->user()->branch_id))
-                    <div class="col-lg-4 col-md-6 mb-4">
-                        <select class="form-select form-select-lg" id="branch_id" name="branch">
+                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
+                        <select class="form-control" id="branch_id" name="branch">
                             <option value="" {{ empty($filterParameters['branch']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
                             @foreach($branch as $key => $value)
                                 <option value="{{ $value->id }}" {{ (isset($filterParameters['branch']) && $value->id == $filterParameters['branch'] ) ? 'selected' : '' }}>
@@ -43,35 +64,124 @@
                         </select>
                     </div>
                     @endif
-                    <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
                         <input type="text" placeholder="{{ __('index.search_by_department_name') }}" name="name" value="{{$filterParameters['name']}}" class="form-control">
                     </div>
 
-                    <div class="col-lg-2 col-md-6 mb-4">
-                        <select class="form-select form-select-lg" name="per_page">
-                            <option value="25" {{ (string) ($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ (string) ($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
-                            <option value="10" {{ (string) ($filterParameters['per_page'] ?? '') === '10' ? 'selected' : '' }}>10</option>
-                            <option value="all" {{ (string) ($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>All</option>
+                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
+                        <select class="form-control" id="is_active" name="is_active">
+                            <option value="">{{ __('index.all') }} {{ __('index.status') }}</option>
+                            <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
+                            <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
                         </select>
                     </div>
 
-                    <div class="col-lg-2 col-md-6 d-md-flex">
-                        <button type="submit" class="btn btn-block btn-success me-md-2 mb-4">{{ __('index.filter') }}</button>
-
-                        <a class="btn btn-block btn-primary me-md-2 me-0 mb-4" href="{{ route('admin.departments.index') }}">{{ __('index.reset') }}</a>
+                    <div class="col-xxl-4 col-xl-4 col-md-6">
+                        <div class="d-md-flex align-items-center gap-2">
+                            <button type="submit" class="btn btn-block btn-success mb-4">{{ __('index.filter') }}</button>
+                            <a class="btn btn-block btn-primary mb-4" href="{{ route('admin.departments.index') }}">{{ __('index.reset') }}</a>
+                        </div>
                     </div>
                 </div>
             </form>
+            </div>
         </div>
 
+        <div id="departmentListSection">
         <div class="card">
             <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.department_lists') }}</h6>
+                <div class="department-toolbar">
+                    <div class="department-toolbar-left">
+                        <h6 class="card-title mb-0">{{ __('index.department_lists') }}</h6>
+                        <div class="department-entry-control">
+                            <span>Show</span>
+                            <select class="form-control department-entry-select" id="per_page" name="per_page" form="departmentFilterForm">
+                                <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
+                                <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
+                                <option value="100" {{ (string)($filterParameters['per_page'] ?? '') === '100' ? 'selected' : '' }}>100</option>
+                                <option value="200" {{ (string)($filterParameters['per_page'] ?? '') === '200' ? 'selected' : '' }}>200</option>
+                                <option value="500" {{ (string)($filterParameters['per_page'] ?? '') === '500' ? 'selected' : '' }}>500</option>
+                                <option value="1000" {{ (string)($filterParameters['per_page'] ?? '') === '1000' ? 'selected' : '' }}>1,000</option>
+                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>{{ __('index.all') }}</option>
+                            </select>
+                            <span>entries</span>
+                        </div>
+                    </div>
+                    <div class="department-toolbar-search">
+                        <input type="text"
+                               id="departmentListSearch"
+                               class="department-list-search"
+                               value="{{ $filterParameters['search'] ?? '' }}"
+                               placeholder="Search ...">
+                    </div>
+                </div>
             </div>
             <div class="card-body">
+                <style>
+                    .department-toolbar {
+                        display: grid;
+                        grid-template-columns: auto 1fr;
+                        align-items: center;
+                        gap: 16px;
+                    }
+
+                    .department-toolbar-left {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        flex-wrap: wrap;
+                    }
+
+                    .department-toolbar-search {
+                        display: flex;
+                        justify-content: flex-end;
+                    }
+
+                    .department-entry-control {
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                        color: #111827;
+                        font-weight: 500;
+                    }
+
+                    .department-entry-select {
+                        min-width: 120px;
+                    }
+
+                    .department-list-search {
+                        width: min(100%, 250px);
+                        border: 1px solid #d7dfeb;
+                        border-radius: 14px;
+                        min-height: 44px;
+                        padding: 0 14px;
+                        color: #111827;
+                        background: #f8fbff;
+                        box-shadow: none;
+                    }
+
+                    .department-list-search:focus {
+                        outline: none;
+                        border-color: #93c5fd;
+                        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+                    }
+
+                    @media (max-width: 767.98px) {
+                        .department-toolbar {
+                            grid-template-columns: 1fr;
+                        }
+
+                        .department-toolbar-search {
+                            justify-content: stretch;
+                        }
+
+                        .department-list-search {
+                            width: 100%;
+                        }
+                    }
+                </style>
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="departmentTable" class="table">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -149,6 +259,7 @@
         <div class="dataTables_paginate mt-3">
             {{ $departments->appends($_GET)->links() }}
         </div>
+        </div>
 
         <div class="modal fade" id="showEmployees" tabindex="-1" aria-labelledby="addslider" aria-hidden="true">
             <div class="modal-dialog">
@@ -175,6 +286,8 @@
             $("#branch_id").select2({
                 placeholder: @json(__('index.select_branch'))
             });
+            $("#is_active").select2({});
+            $("#per_page").select2({minimumResultsForSearch: Infinity});
 
             $.ajaxSetup({
                 headers: {
@@ -182,7 +295,7 @@
                 }
             });
 
-            $('.toggleStatus').change(function (event) {
+            $(document).on('change', '.toggleStatus', function (event) {
                 event.preventDefault();
                 var status = $(this).prop('checked') === true ? 1 : 0;
                 var href = $(this).attr('href');
@@ -203,7 +316,7 @@
                 })
             })
 
-            $('.deleteBranch').click(function (event) {
+            $(document).on('click', '.deleteBranch', function (event) {
                 event.preventDefault();
                 let href = $(this).data('href');
                 Swal.fire({
@@ -244,6 +357,189 @@
 
                 $('#showEmployees').modal('show');
             });
+
+            let departmentSearchTimer = null;
+            let departmentListController = null;
+            let departmentListRequestId = 0;
+
+            const initDepartmentListControls = () => {
+                const perPage = $('#per_page');
+
+                if (perPage.length && !perPage.hasClass('select2-hidden-accessible')) {
+                    perPage.select2({minimumResultsForSearch: Infinity});
+                }
+            };
+
+            const replaceDepartmentResults = (doc) => {
+                const currentTableBody = document.querySelector('#departmentTable tbody');
+                const nextTableBody = doc.querySelector('#departmentTable tbody');
+                const currentPagination = document.querySelector('#departmentListSection .dataTables_paginate');
+                const nextPagination = doc.querySelector('#departmentListSection .dataTables_paginate');
+
+                if (!currentTableBody || !nextTableBody) {
+                    return false;
+                }
+
+                currentTableBody.innerHTML = nextTableBody.innerHTML;
+
+                if (currentPagination && nextPagination) {
+                    currentPagination.innerHTML = nextPagination.innerHTML;
+                }
+
+                if (window.feather) {
+                    feather.replace();
+                }
+
+                return true;
+            };
+
+            const refreshDepartmentList = () => {
+                const form = document.getElementById('departmentFilterForm');
+                const listSection = document.getElementById('departmentListSection');
+                const tableBody = document.querySelector('#departmentTable tbody');
+
+                if (!form || !listSection) {
+                    form?.submit();
+                    return;
+                }
+
+                const params = new URLSearchParams(new FormData(form));
+                const requestUrl = `${form.action}?${params.toString()}`;
+                const requestId = ++departmentListRequestId;
+
+                if (departmentListController) {
+                    departmentListController.abort();
+                }
+
+                departmentListController = new AbortController();
+
+                if (tableBody) {
+                    tableBody.style.opacity = '0.6';
+                }
+
+                fetch(requestUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    signal: departmentListController.signal
+                })
+                    .then((response) => response.text())
+                    .then((html) => {
+                        if (requestId !== departmentListRequestId) {
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        if (!replaceDepartmentResults(doc)) {
+                            window.location.href = requestUrl;
+                            return;
+                        }
+
+                        window.history.replaceState({}, '', requestUrl);
+                    })
+                    .catch((error) => {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+
+                        form.submit();
+                    })
+                    .finally(() => {
+                        if (requestId === departmentListRequestId) {
+                            if (tableBody) {
+                                tableBody.style.opacity = '1';
+                            }
+                            departmentListController = null;
+                        }
+                    });
+            };
+
+            $(document).on('submit', '#departmentFilterForm', function (event) {
+                event.preventDefault();
+                refreshDepartmentList();
+            });
+
+            $(document).on('change', '#per_page', function () {
+                refreshDepartmentList();
+            });
+
+            $(document).on('input', '#departmentListSearch', function () {
+                const searchInput = document.getElementById('departmentSearch');
+                if (searchInput) {
+                    searchInput.value = this.value;
+                }
+
+                clearTimeout(departmentSearchTimer);
+                departmentSearchTimer = setTimeout(() => {
+                    refreshDepartmentList();
+                }, 300);
+            });
+
+            $(document).on('click', '#departmentListSection .pagination a', function (event) {
+                event.preventDefault();
+
+                const form = document.getElementById('departmentFilterForm');
+                const tableBody = document.querySelector('#departmentTable tbody');
+                const requestUrl = this.href;
+                const requestId = ++departmentListRequestId;
+
+                if (!form) {
+                    window.location.href = requestUrl;
+                    return;
+                }
+
+                if (departmentListController) {
+                    departmentListController.abort();
+                }
+
+                departmentListController = new AbortController();
+
+                if (tableBody) {
+                    tableBody.style.opacity = '0.6';
+                }
+
+                fetch(requestUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    signal: departmentListController.signal
+                })
+                    .then((response) => response.text())
+                    .then((html) => {
+                        if (requestId !== departmentListRequestId) {
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        if (!replaceDepartmentResults(doc)) {
+                            window.location.href = requestUrl;
+                            return;
+                        }
+
+                        window.history.replaceState({}, '', requestUrl);
+                    })
+                    .catch((error) => {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+
+                        window.location.href = requestUrl;
+                    })
+                    .finally(() => {
+                        if (requestId === departmentListRequestId) {
+                            if (tableBody) {
+                                tableBody.style.opacity = '1';
+                            }
+                            departmentListController = null;
+                        }
+                    });
+            });
+
+            initDepartmentListControls();
         });
     </script>
 @endsection

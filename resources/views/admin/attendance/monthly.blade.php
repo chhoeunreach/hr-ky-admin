@@ -5,6 +5,13 @@
     $canViewEmployeeChat = auth('admin')->check() || Gate::allows('view_employee_chat');
     $canSendEmployeeChat = auth('admin')->check() || Gate::allows('send_employee_chat');
     $canViewAttendanceDetail = auth('admin')->check() || Gate::allows('attendance_show');
+    $duplicateDepartmentNames = isset($departments)
+        ? $departments
+            ->groupBy(fn ($department) => strtolower(trim((string) $department->dept_name)))
+            ->filter(fn ($group, $name) => $name !== '' && $group->count() > 1)
+            ->keys()
+            ->all()
+        : [];
 @endphp
 @extends('layouts.master')
 
@@ -2058,10 +2065,9 @@
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="branch_id">{{ __('index.branch') }}</label>
-                        <select class="form-select" id="branch_id" name="branch_id">
-                            <option value="">{{ __('index.all_branches') }}</option>
+                        <select class="form-select" id="branch_id" name="branch_id[]" multiple data-placeholder="{{ __('index.all_branches') }}">
                             @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" @selected((string) $filter['branch_id'] === (string) $branch->id)>{{ ucfirst($branch->name) }}</option>
+                                <option value="{{ $branch->id }}" @selected(in_array((string) $branch->id, $filter['branch_id'], true))>{{ ucfirst($branch->name) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -2070,10 +2076,15 @@
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="department_id">{{ __('index.department') }}</label>
-                        <select class="form-select" id="department_id" name="department_id">
-                            <option value="">{{ __('index.all_departments') }}</option>
+                        <select class="form-select" id="department_id" name="department_id[]" multiple data-placeholder="{{ __('index.all_departments') }}">
                             @foreach($departments as $department)
-                                <option value="{{ $department->id }}" @selected((string) $filter['department_id'] === (string) $department->id)>{{ ucfirst($department->dept_name) }}</option>
+                                @php
+                                    $departmentName = ucfirst((string) $department->dept_name);
+                                    $departmentLabel = in_array(strtolower(trim((string) $department->dept_name)), $duplicateDepartmentNames, true) && $department->branch?->name
+                                        ? $departmentName . ' - ' . ucfirst((string) $department->branch->name)
+                                        : $departmentName;
+                                @endphp
+                                <option value="{{ $department->id }}" @selected(in_array((string) $department->id, $filter['department_id'], true))>{{ $departmentLabel }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -2082,13 +2093,12 @@
                 <div class="monthly-filter-select">
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="shift_id">{{ __('index.shift') }}</label>
-                        <select class="form-select" id="shift_id" name="shift_id">
-                            <option value="">{{ __('index.all_shifts') }}</option>
+                        <select class="form-select" id="shift_id" name="shift_id[]" multiple data-placeholder="{{ __('index.all_shifts') }}">
                             @foreach($shifts as $shift)
                                 @php
                                     $shiftText = $shift->shift ?: trim(($shift->opening_time ?: '') . ' - ' . ($shift->closing_time ?: ''));
                                 @endphp
-                                <option value="{{ $shift->id }}" @selected((string) $filter['shift_id'] === (string) $shift->id)>{{ $shiftText ?: __('index.shift') . ' #' . $shift->id }}</option>
+                                <option value="{{ $shift->id }}" @selected(in_array((string) $shift->id, $filter['shift_id'], true))>{{ $shiftText ?: __('index.shift') . ' #' . $shift->id }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -2303,15 +2313,15 @@
                 </div>
                 <form action="{{ route('admin.attendance-monthly.index') }}" method="get" class="monthly-table-controls">
                     <input type="hidden" name="month" value="{{ $filter['month'] }}">
-                    @if($filter['branch_id'])
-                        <input type="hidden" name="branch_id" value="{{ $filter['branch_id'] }}">
-                    @endif
-                    @if($filter['department_id'])
-                        <input type="hidden" name="department_id" value="{{ $filter['department_id'] }}">
-                    @endif
-                    @if($filter['shift_id'])
-                        <input type="hidden" name="shift_id" value="{{ $filter['shift_id'] }}">
-                    @endif
+                    @foreach($filter['branch_id'] as $branchId)
+                        <input type="hidden" name="branch_id[]" value="{{ $branchId }}">
+                    @endforeach
+                    @foreach($filter['department_id'] as $departmentId)
+                        <input type="hidden" name="department_id[]" value="{{ $departmentId }}">
+                    @endforeach
+                    @foreach($filter['shift_id'] as $shiftId)
+                        <input type="hidden" name="shift_id[]" value="{{ $shiftId }}">
+                    @endforeach
 
                     <button type="button" class="btn btn-outline-primary btn-sm monthly-print-trigger">
                         <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
@@ -3360,6 +3370,7 @@
                     }
 
                     bindMonthlySignalToggle();
+                    initializeMonthlySelect2();
                     initMonthlyTableSorting();
                     initMonthlyCardFiltering();
                     updateMonthlyScrollShortcuts();
@@ -3539,7 +3550,7 @@
 
                 formData.forEach((value, key) => {
                     if (value !== null && String(value).trim() !== '') {
-                        url.searchParams.set(key, value);
+                        url.searchParams.append(key, value);
                     }
                 });
 
@@ -3555,19 +3566,65 @@
                 errorLoadingShifts: @json(__('index.error_loading_shifts')),
             };
 
+            const selectedSelectValues = (select) => {
+                if (!select) {
+                    return [];
+                }
+
+                return Array.from(select.selectedOptions)
+                    .map((option) => option.value)
+                    .filter((value) => String(value).trim() !== '');
+            };
+
+            const refreshSelect2 = (select) => {
+                if (window.jQuery && $(select).data('select2')) {
+                    $(select).trigger('change.select2');
+                }
+            };
+
+            const initializeMonthlySelect2 = () => {
+                if (!window.jQuery || !$.fn.select2) {
+                    return;
+                }
+
+                $('#table_per_page').each(function () {
+                    if (!$(this).data('select2')) {
+                        $(this).select2();
+                    }
+                });
+
+                $('#branch_id, #department_id, #shift_id').each(function () {
+                    if (!$(this).data('select2')) {
+                        $(this).select2({
+                            placeholder: $(this).data('placeholder') || '',
+                            allowClear: true,
+                            width: '100%',
+                        });
+                    }
+                });
+            };
+
             const replaceSelectOptions = (select, placeholder, items, selectedValue = '') => {
                 if (!select) {
                     return;
                 }
 
+                const selectedValues = Array.isArray(selectedValue)
+                    ? selectedValue.map(String)
+                    : [String(selectedValue || '')];
+
                 select.innerHTML = '';
-                select.append(new Option(placeholder, ''));
+                if (!select.multiple) {
+                    select.append(new Option(placeholder, ''));
+                }
 
                 items.forEach((item) => {
                     const option = new Option(item.name, item.id);
-                    option.selected = String(selectedValue || '') === String(item.id);
+                    option.selected = selectedValues.includes(String(item.id));
                     select.append(option);
                 });
+
+                refreshSelect2(select);
             };
 
             const setSelectLoading = (select, placeholder) => {
@@ -3576,10 +3633,18 @@
                 }
 
                 select.innerHTML = '';
-                select.append(new Option(placeholder, ''));
+                if (select.multiple) {
+                    const option = new Option(placeholder, '');
+                    option.disabled = true;
+                    select.append(option);
+                } else {
+                    select.append(new Option(placeholder, ''));
+                }
+
+                refreshSelect2(select);
             };
 
-            const loadMonthlyFilterOptions = async ({ resetDepartment = false, resetShift = true } = {}) => {
+            const loadMonthlyFilterOptions = async ({ resetDepartment = false, resetShift = true, refreshDepartments = true } = {}) => {
                 const branchSelect = document.getElementById('branch_id');
                 const departmentSelect = document.getElementById('department_id');
                 const shiftSelect = document.getElementById('shift_id');
@@ -3588,20 +3653,22 @@
                     return;
                 }
 
-                const branchId = branchSelect.value;
-                const departmentId = resetDepartment ? '' : departmentSelect.value;
-                const selectedShiftId = resetShift ? '' : shiftSelect.value;
+                const branchIds = selectedSelectValues(branchSelect);
+                const departmentIds = resetDepartment ? [] : selectedSelectValues(departmentSelect);
+                const selectedShiftIds = resetShift ? [] : selectedSelectValues(shiftSelect);
 
-                setSelectLoading(departmentSelect, monthlyFilterLabels.loading);
+                if (refreshDepartments) {
+                    setSelectLoading(departmentSelect, monthlyFilterLabels.loading);
+                }
                 setSelectLoading(shiftSelect, monthlyFilterLabels.loading);
 
                 const url = new URL(@json(route('admin.attendance-monthly.filter-options')), window.location.origin);
-                if (branchId) {
-                    url.searchParams.set('branch_id', branchId);
-                }
-                if (departmentId) {
-                    url.searchParams.set('department_id', departmentId);
-                }
+                branchIds.forEach((branchId) => {
+                    url.searchParams.append('branch_id[]', branchId);
+                });
+                departmentIds.forEach((departmentId) => {
+                    url.searchParams.append('department_id[]', departmentId);
+                });
 
                 try {
                     const response = await fetch(url.toString(), {
@@ -3616,15 +3683,20 @@
                     }
 
                     const data = await response.json();
-                    replaceSelectOptions(departmentSelect, monthlyFilterLabels.allDepartments, data.departments || [], departmentId);
-                    replaceSelectOptions(shiftSelect, monthlyFilterLabels.allShifts, data.shifts || [], selectedShiftId);
+                    if (refreshDepartments) {
+                        replaceSelectOptions(departmentSelect, monthlyFilterLabels.allDepartments, data.departments || [], departmentIds);
+                    }
+                    replaceSelectOptions(shiftSelect, monthlyFilterLabels.allShifts, data.shifts || [], selectedShiftIds);
                 } catch (error) {
                     console.error(error);
-                    replaceSelectOptions(departmentSelect, monthlyFilterLabels.errorLoadingDepartments, [], '');
+                    if (refreshDepartments) {
+                        replaceSelectOptions(departmentSelect, monthlyFilterLabels.errorLoadingDepartments, [], '');
+                    }
                     replaceSelectOptions(shiftSelect, monthlyFilterLabels.errorLoadingShifts, [], '');
                 }
             };
 
+            initializeMonthlySelect2();
             bindMonthlySignalToggle();
 
             document.addEventListener('submit', (event) => {
@@ -3666,7 +3738,7 @@
                 }
 
                 if (event.target?.id === 'department_id') {
-                    loadMonthlyFilterOptions({ resetDepartment: false, resetShift: true });
+                    loadMonthlyFilterOptions({ resetDepartment: false, resetShift: true, refreshDepartments: false });
                     return;
                 }
 

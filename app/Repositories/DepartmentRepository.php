@@ -18,8 +18,8 @@ class DepartmentRepository
      */
     public function getAllPaginatedDepartments($filterParameters, array $with=[], array $select=['*'])
     {
-        $allowedPerPage = [10, 25, 50];
-        $requestedPerPage = $filterParameters['per_page'] ?? Department::RECORDS_PER_PAGE;
+        $allowedPerPage = [10, 25, 50, 100, 200, 500, 1000];
+        $requestedPerPage = $filterParameters['per_page'] ?? 25;
 
         $query = Department::select($select)
             ->with($with)
@@ -32,6 +32,23 @@ class DepartmentRepository
             })
             ->when(isset($filterParameters['name']), function ($query) use ($filterParameters) {
                 $query->where('dept_name', 'like', '%' . $filterParameters['name'] . '%');
+            })
+            ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = '%' . $filterParameters['search'] . '%';
+                $query->where(function ($query) use ($search) {
+                    $query->where('dept_name', 'like', $search)
+                        ->orWhere('address', 'like', $search)
+                        ->orWhere('phone', 'like', $search)
+                        ->orWhereHas('branch', function ($branchQuery) use ($search) {
+                            $branchQuery->where('name', 'like', $search);
+                        })
+                        ->orWhereHas('departmentHead', function ($headQuery) use ($search) {
+                            $headQuery->where('name', 'like', $search);
+                        });
+                });
+            })
+            ->when(($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null, function ($query) use ($filterParameters) {
+                $query->where('is_active', $filterParameters['is_active']);
             })->latest();
 
         if ($requestedPerPage === 'all') {
@@ -41,7 +58,7 @@ class DepartmentRepository
 
         $perPage = in_array((int) $requestedPerPage, $allowedPerPage, true)
             ? (int) $requestedPerPage
-            : Department::RECORDS_PER_PAGE;
+            : 25;
 
         return $query->paginate($perPage);
     }

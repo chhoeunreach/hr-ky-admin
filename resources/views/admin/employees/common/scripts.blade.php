@@ -177,12 +177,18 @@
             const nextTableBody = doc.querySelector('#employeeTable tbody');
             const currentPagination = document.querySelector('#employeeListSection .dataTables_paginate');
             const nextPagination = doc.querySelector('#employeeListSection .dataTables_paginate');
+            const currentCalendar = document.querySelector('#employeeCalendarSection');
+            const nextCalendar = doc.querySelector('#employeeCalendarSection');
 
             if (!currentTableBody || !nextTableBody) {
                 return false;
             }
 
             currentTableBody.innerHTML = nextTableBody.innerHTML;
+
+            if (currentCalendar && nextCalendar) {
+                currentCalendar.outerHTML = nextCalendar.outerHTML;
+            }
 
             if (currentPagination && nextPagination) {
                 currentPagination.innerHTML = nextPagination.innerHTML;
@@ -339,6 +345,21 @@
                         employeeListController = null;
                     }
                 });
+        });
+
+        $(document).on('change', '#employeeCalendarMonthPicker', function () {
+            const form = document.getElementById('employeeFilterForm');
+            const calendarMonth = document.getElementById('calendarMonth');
+
+            if (!form || !this.value) {
+                return;
+            }
+
+            if (calendarMonth) {
+                calendarMonth.value = this.value;
+            }
+
+            form.submit();
         });
 
         initEmployeeListControls();

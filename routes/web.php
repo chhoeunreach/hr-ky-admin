@@ -266,6 +266,7 @@ Route::group([
             Route::post('contract', [EmployeeProfileController::class, 'saveContract'])->name('contract.save');
             Route::get('documents/{document}/download', [EmployeeProfileController::class, 'downloadDocument'])->name('documents.download');
         });
+        Route::get('employees/calendar', [UserController::class, 'calendar'])->name('employees.calendar');
         Route::resource('employees', UserController::class);
         Route::get('employees/toggle-status/{id}', [UserController::class, 'toggleStatus'])->name('employees.toggle-status');
         Route::get('employees/toggle-holiday-checkin/{id}', [UserController::class, 'toggleHolidayCheckIn'])->name('employees.toggle-holiday-checkin');

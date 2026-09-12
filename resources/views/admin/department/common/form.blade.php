@@ -2,18 +2,23 @@
     @if(!isset(auth()->user()->branch_id))
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-        <select class="form-select" name="branch_id" id="branch_id" required>
-            <option value="" {{ !isset($departmentsDetail) && !old('branch_id') ? 'selected' : '' }} disabled>{{ __('index.select_branch') }}</option>
+        <select class="form-select" name="branch_id[]" id="branch_id" multiple required>
+            <option value="" disabled>{{ __('index.select_branch') }}</option>
 
             @foreach($branches as $key => $branch)
-                <option value="{{ $branch->id }}" {{ (old('branch_id', $departmentsDetail->branch_id ?? null) == $branch->id) ? 'selected' : '' }}>{{ ucfirst($branch->name) }}</option>
+                @php
+                    $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($departmentsDetail) ? [$departmentsDetail->branch_id] : [])))
+                        ->map(fn ($id) => (string) $id)
+                        ->all();
+                @endphp
+                <option value="{{ $branch->id }}" {{ in_array((string) $branch->id, $selectedBranchIds, true) ? 'selected' : '' }}>{{ ucfirst($branch->name) }}</option>
             @endforeach
 
         </select>
     </div>
     @endif
     @if(!auth('admin')->check() && auth()->check())
-        <input type="hidden" readonly id="branch_id" name="branch_id" value="{{ auth()->user()->branch_id }}">
+        <input type="hidden" readonly id="branch_id" name="branch_id[]" value="{{ auth()->user()->branch_id }}">
     @endif
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="name" class="form-label">{{ __('index.department_name') }} <span style="color: red">*</span></label>

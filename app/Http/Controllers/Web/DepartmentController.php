@@ -18,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DepartmentController extends Controller
 {
@@ -47,8 +48,10 @@ class DepartmentController extends Controller
             $filterParameters = [
                 'company_id' => AppHelper::getAuthUserCompanyId(),
                 'name' =>  $request->name ?? null,
+                'search' => $request->search ?? null,
                 'branch' =>  $request->branch ?? null,
-                'per_page' => $request->per_page ?? Department::RECORDS_PER_PAGE,
+                'is_active' => $request->is_active ?? null,
+                'per_page' => $request->per_page ?? 25,
             ];
 
             if(!auth('admin')->check() && auth()->check()){
@@ -109,11 +112,30 @@ class DepartmentController extends Controller
         $this->authorize('create_department');
         try {
             $validatedData = $request->validated();
+            $branchIds = collect($validatedData['branch_id'])->unique()->values();
+            if ($branchIds->count() > 1) {
+                unset($validatedData['dept_head_id']);
+            }
             if(isset($validatedData['dept_head_id'])){
                 $this->checkDepartmentHead($validatedData['dept_head_id']);
             }
             DB::beginTransaction();
-            $this->departmentRepo->store($validatedData);
+            $branchIds->each(function ($branchId) use ($validatedData) {
+                Department::firstOrCreate(
+                    [
+                        'company_id' => AppHelper::getAuthUserCompanyId(),
+                        'branch_id' => $branchId,
+                        'dept_name' => $validatedData['dept_name'],
+                    ],
+                    [
+                        'slug' => Str::slug($validatedData['dept_name']),
+                        'address' => $validatedData['address'],
+                        'phone' => $validatedData['phone'],
+                        'dept_head_id' => $validatedData['dept_head_id'] ?? null,
+                        'is_active' => $validatedData['is_active'] ?? Department::IS_ACTIVE,
+                    ]
+                );
+            });
             DB::commit();
             return redirect()
                 ->route('admin.departments.index')
@@ -139,8 +161,14 @@ class DepartmentController extends Controller
             $filteredUsers = isset($departmentsDetail->branch_id)
                 ? $this->userRepo->getActiveEmployeeOfBranch($departmentsDetail->branch_id, $selectUser)
                 : [];
+            $relatedDepartments = Department::query()
+                ->where('company_id', AppHelper::getAuthUserCompanyId())
+                ->where('dept_name', $departmentsDetail->dept_name)
+                ->get(['id', 'branch_id']);
+            $selectedBranchIds = $relatedDepartments->pluck('branch_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
+
             return view($this->view . 'edit',
-                compact('branches', 'filteredUsers', 'departmentsDetail')
+                compact('branches', 'filteredUsers', 'departmentsDetail', 'selectedBranchIds')
             );
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -156,12 +184,41 @@ class DepartmentController extends Controller
             if (!$departmentDetail) {
                 throw new Exception(__('message.update_department'), 404);
             }
+            $branchIds = collect($validatedData['branch_id'])->unique()->values();
+            if ($branchIds->count() > 1) {
+                unset($validatedData['dept_head_id']);
+            }
             if(isset($validatedData['dept_head_id'])){
                 $this->checkDepartmentHead($validatedData['dept_head_id'],$id);
             }
 
             DB::beginTransaction();
-            $department = $this->departmentRepo->update($departmentDetail, $validatedData);
+            $oldDepartmentName = $departmentDetail->dept_name;
+            $branchIds->each(function ($branchId) use ($validatedData, $oldDepartmentName, $departmentDetail) {
+                $department = $branchId == $departmentDetail->branch_id
+                    ? $departmentDetail
+                    : Department::query()
+                        ->where('company_id', AppHelper::getAuthUserCompanyId())
+                        ->where('branch_id', $branchId)
+                        ->whereIn('dept_name', [$oldDepartmentName, $validatedData['dept_name']])
+                        ->first();
+
+                if (!$department) {
+                    $department = new Department();
+                    $department->company_id = AppHelper::getAuthUserCompanyId();
+                    $department->branch_id = $branchId;
+                }
+
+                $department->fill([
+                    'dept_name' => $validatedData['dept_name'],
+                    'slug' => Str::slug($validatedData['dept_name']),
+                    'address' => $validatedData['address'],
+                    'phone' => $validatedData['phone'],
+                    'dept_head_id' => $validatedData['dept_head_id'] ?? null,
+                    'is_active' => $validatedData['is_active'] ?? Department::IS_ACTIVE,
+                ]);
+                $department->save();
+            });
             DB::commit();
             return redirect()
                 ->route('admin.departments.index')

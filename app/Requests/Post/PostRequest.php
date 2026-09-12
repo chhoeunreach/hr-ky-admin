@@ -21,7 +21,9 @@ class PostRequest extends FormRequest
     public function prepareForValidation()
     {
         if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
+            $this->merge([
+                'branch_id' => [auth()->user()->branch_id],
+            ]);
         }
     }
 
@@ -32,20 +34,26 @@ class PostRequest extends FormRequest
      */
     public function rules()
     {
-        $branchId = $this->input('branch_id');
+        $branchIds = collect((array) $this->input('branch_id'))->filter()->all();
+
+        $branchRules = [
+            'required',
+            Rule::exists('branches', 'id')->where(function ($query) {
+                return $query->where('company_id', AppHelper::getAuthUserCompanyId());
+            }),
+        ];
 
         return [
             'post_name' => 'required|string|max:50',
-            'branch_id' => [
+            'branch_id' => ['required', 'array', 'min:1'],
+            'branch_id.*' => $branchRules,
+            'dept_id' => ['required', 'array', 'min:1'],
+            'dept_id.*' => [
                 'required',
-                Rule::exists('branches', 'id')->where(function ($query) {
-                    return $query->where('company_id', AppHelper::getAuthUserCompanyId());
-                }),
-            ],
-            'dept_id' => [
-                'required',
-                Rule::exists('departments', 'id')->where(function ($query) use ($branchId) {
-                    return $query->where('branch_id', $branchId);
+                Rule::exists('departments', 'id')->where(function ($query) use ($branchIds) {
+                    return $query
+                        ->where('company_id', AppHelper::getAuthUserCompanyId())
+                        ->whereIn('branch_id', $branchIds);
                 }),
             ],
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],
@@ -53,8 +61,6 @@ class PostRequest extends FormRequest
     }
 
 }
-
-
 
 
 

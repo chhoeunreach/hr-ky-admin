@@ -9,16 +9,21 @@
 @section('action', __('index.employees_action'))
 
 @section('button')
-    @can('create_employee')
-        <div class="float-md-end d-flex align-items-center gap-2 justify-content-center">
+    <div class="float-md-end d-flex align-items-center gap-2 justify-content-center">
+        <a href="{{ route('admin.employees.calendar') }}">
+            <button class="btn btn-outline-primary d-flex align-items-center gap-2">
+                <i class="link-icon" data-feather="calendar"></i>Calendar
+            </button>
+        </a>
 
+        @can('create_employee')
             <a href="{{ route('admin.employees.create')}}">
                 <button class="btn btn-primary d-flex align-items-center gap-2">
                     <i class="link-icon" data-feather="plus"></i>{{ __('index.add_employee') }}
                 </button>
             </a>
-        </div>
-    @endcan
+        @endcan
+    </div>
 @endsection
 
 @section('main-content')

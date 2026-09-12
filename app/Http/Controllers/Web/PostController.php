@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Web;
 
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Department;
+use App\Models\Post;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\DepartmentRepository;
@@ -30,17 +32,22 @@ class PostController extends Controller
     {
         $this->authorize('list_post');
         try {
+            $branchIds = $this->resolveIdList($request->query('branch_id', []));
+            $departmentIds = $this->resolveIdList($request->query('department_id', []));
+
             $filterParameters = [
                 'name' =>  $request->name ?? null,
-                'branch_id' => $request->branch_id ?? null,
-                'department_id' => $request->department_id ?? null,
-                'per_page' => $request->per_page ?? \App\Models\Post::RECORDS_PER_PAGE,
+                'search' => $request->search ?? null,
+                'branch_id' => $branchIds,
+                'department_id' => $departmentIds,
+                'is_active' => $request->is_active ?? null,
+                'per_page' => $request->per_page ?? 25,
             ];
             if(!auth('admin')->check() && auth()->check()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = [auth()->user()->branch_id];
             }
             $postSelect = ['*'];
-            $with = ['department:id,dept_name','employees:id,name,post_id,avatar'];
+            $with = ['branch:id,name', 'department:id,dept_name','employees:id,name,post_id,avatar'];
 
             $posts = $this->postRepo->getAllDepartmentPosts($filterParameters,$with,$postSelect);
             $with = ['branches:id,name'];
@@ -52,6 +59,16 @@ class PostController extends Controller
         } catch (\Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    private function resolveIdList($value): array
+    {
+        return collect(is_array($value) ? $value : [$value])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     public function create()
@@ -91,7 +108,22 @@ class PostController extends Controller
         try {
             $validatedData = $request->validated();
             DB::beginTransaction();
-            $this->postRepo->store($validatedData);
+            $departments = Department::query()
+                ->whereIn('id', collect($validatedData['dept_id'])->unique()->values()->all())
+                ->get(['id', 'branch_id']);
+
+            $departments->each(function (Department $department) use ($validatedData) {
+                Post::firstOrCreate(
+                    [
+                        'post_name' => $validatedData['post_name'],
+                        'branch_id' => $department->branch_id,
+                        'dept_id' => $department->id,
+                    ],
+                    [
+                        'is_active' => $validatedData['is_active'] ?? Post::IS_ACTIVE,
+                    ]
+                );
+            });
             DB::commit();
             return redirect()->route('admin.posts.index')->with('success', __('message.post_add'));
         } catch (\Exception $e) {
@@ -113,8 +145,15 @@ class PostController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
+            $relatedPosts = Post::query()
+                ->where('post_name', $postDetail->post_name)
+                ->whereHas('branch', fn ($query) => $query->where('company_id', AppHelper::getAuthUserCompanyId()))
+                ->get(['id', 'branch_id', 'dept_id']);
+            $selectedBranchIds = $relatedPosts->pluck('branch_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
+            $selectedDepartmentIds = $relatedPosts->pluck('dept_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
+
             return view($this->view.'edit',
-                compact('postDetail','departmentDetail','companyDetail')
+                compact('postDetail','departmentDetail','companyDetail', 'selectedBranchIds', 'selectedDepartmentIds')
             );
         }catch(\Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -131,7 +170,31 @@ class PostController extends Controller
                 throw new \Exception('Post Detail Not Found',404);
             }
             DB::beginTransaction();
-            $post = $this->postRepo->update($postDetail,$validatedData);
+            $oldPostName = $postDetail->post_name;
+            $departments = Department::query()
+                ->whereIn('id', collect($validatedData['dept_id'])->unique()->values()->all())
+                ->get(['id', 'branch_id']);
+
+            $departments->each(function (Department $department) use ($validatedData, $oldPostName, $postDetail) {
+                $post = $department->id == $postDetail->dept_id
+                    ? $postDetail
+                    : Post::query()
+                        ->where('dept_id', $department->id)
+                        ->whereIn('post_name', [$oldPostName, $validatedData['post_name']])
+                        ->first();
+
+                if (!$post) {
+                    $post = new Post();
+                }
+
+                $post->fill([
+                    'post_name' => $validatedData['post_name'],
+                    'branch_id' => $department->branch_id,
+                    'dept_id' => $department->id,
+                    'is_active' => $validatedData['is_active'] ?? Post::IS_ACTIVE,
+                ]);
+                $post->save();
+            });
             DB::commit();
             return redirect()->route('admin.posts.index')->with('success', __('message.post_update'));
         }catch(\Exception $exception){

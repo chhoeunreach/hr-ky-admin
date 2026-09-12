@@ -51,11 +51,15 @@ class AttendanceMonthlyController extends Controller
         $this->authorizeMonthlyAttendance();
 
         $month = $this->resolveMonth((string) $request->query('month', now()->format('Y-m')));
+        $branchIds = $this->resolveIdList($request->query('branch_id', []));
+        $departmentIds = $this->resolveIdList($request->query('department_id', []));
+        $shiftIds = $this->resolveIdList($request->query('shift_id', []));
+
         $filter = [
             'month' => $month->format('Y-m'),
-            'branch_id' => $request->query('branch_id'),
-            'department_id' => $request->query('department_id'),
-            'shift_id' => $request->query('shift_id'),
+            'branch_id' => $branchIds,
+            'department_id' => $departmentIds,
+            'shift_id' => $shiftIds,
             'search' => trim((string) $request->query('search', '')),
             'per_page' => $request->query('per_page', 25),
         ];
@@ -125,53 +129,95 @@ class AttendanceMonthlyController extends Controller
     {
         $this->authorizeMonthlyAttendance();
 
-        $branchId = $request->query('branch_id');
-        $departmentId = $request->query('department_id');
+        $branchIds = $this->resolveIdList($request->query('branch_id', []));
+        $departmentIds = $this->resolveIdList($request->query('department_id', []));
+
+        $departments = $this->departmentsForFilter($branchIds);
+        $duplicateDepartmentNames = $this->duplicateDepartmentNames($departments);
 
         return response()->json([
-            'departments' => $this->departmentsForFilter($branchId)->map(fn (Department $department) => [
+            'departments' => $departments->map(fn (Department $department) => [
                 'id' => $department->id,
-                'name' => $department->dept_name,
+                'name' => $this->departmentFilterLabel($department, $duplicateDepartmentNames),
             ])->values(),
-            'shifts' => $this->shiftsForFilter($branchId, $departmentId)->map(fn (OfficeTime $shift) => [
+            'shifts' => $this->shiftsForFilter($branchIds, $departmentIds)->map(fn (OfficeTime $shift) => [
                 'id' => $shift->id,
                 'name' => $this->shiftLabel($shift),
             ])->values(),
         ]);
     }
 
-    private function departmentsForFilter($branchId): Collection
+    private function resolveIdList($value): array
     {
+        return collect(is_array($value) ? $value : [$value])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function departmentsForFilter($branchIds): Collection
+    {
+        $branchIds = $this->resolveIdList($branchIds);
+
         return Department::query()
+            ->with('branch:id,name')
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('is_active', Department::IS_ACTIVE)
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when(!empty($branchIds), fn ($query) => $query->whereIn('branch_id', $branchIds))
             ->orderBy('dept_name')
             ->get(['id', 'dept_name', 'branch_id']);
     }
 
-    private function shiftsForFilter($branchId, $departmentId): Collection
+    private function duplicateDepartmentNames(Collection $departments): array
     {
+        return $departments
+            ->groupBy(fn (Department $department) => strtolower(trim((string) $department->dept_name)))
+            ->filter(fn (Collection $group, string $name) => $name !== '' && $group->count() > 1)
+            ->keys()
+            ->all();
+    }
+
+    private function departmentFilterLabel(Department $department, array $duplicateDepartmentNames): string
+    {
+        $departmentName = ucfirst((string) $department->dept_name);
+        $normalizedName = strtolower(trim((string) $department->dept_name));
+
+        if (!in_array($normalizedName, $duplicateDepartmentNames, true)) {
+            return $departmentName;
+        }
+
+        $branchName = $department->branch?->name;
+
+        return $branchName ? $departmentName . ' - ' . ucfirst($branchName) : $departmentName;
+    }
+
+    private function shiftsForFilter($branchIds, $departmentIds): Collection
+    {
+        $branchIds = $this->resolveIdList($branchIds);
+        $departmentIds = $this->resolveIdList($departmentIds);
+
         $employeeShiftIds = User::query()
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('status', 'verified')
             ->where('is_active', 1)
             ->whereNotNull('office_time_id')
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
-            ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->when(!empty($branchIds), fn ($query) => $query->whereIn('branch_id', $branchIds))
+            ->when(!empty($departmentIds), fn ($query) => $query->whereIn('department_id', $departmentIds))
             ->pluck('office_time_id')
             ->filter()
             ->unique()
             ->values();
 
-        if ($departmentId && $employeeShiftIds->isEmpty()) {
+        if (!empty($departmentIds) && $employeeShiftIds->isEmpty()) {
             return collect();
         }
 
         return OfficeTime::query()
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('is_active', 1)
-            ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))
+            ->when(!empty($branchIds), fn ($query) => $query->whereIn('branch_id', $branchIds))
             ->when($employeeShiftIds->isNotEmpty(), fn ($query) => $query->whereIn('id', $employeeShiftIds))
             ->orderBy('shift')
             ->get(['id', 'shift', 'opening_time', 'closing_time', 'branch_id']);
@@ -215,9 +261,9 @@ class AttendanceMonthlyController extends Controller
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->where('status', 'verified')
             ->where('is_active', 1)
-            ->when($filter['branch_id'], fn ($query) => $query->where('branch_id', $filter['branch_id']))
-            ->when($filter['department_id'], fn ($query) => $query->where('department_id', $filter['department_id']))
-            ->when($filter['shift_id'], fn ($query) => $query->where('office_time_id', $filter['shift_id']))
+            ->when(!empty($filter['branch_id']), fn ($query) => $query->whereIn('branch_id', $filter['branch_id']))
+            ->when(!empty($filter['department_id']), fn ($query) => $query->whereIn('department_id', $filter['department_id']))
+            ->when(!empty($filter['shift_id']), fn ($query) => $query->whereIn('office_time_id', $filter['shift_id']))
             ->when($filter['search'], function ($query) use ($filter) {
                 $search = '%' . $filter['search'] . '%';
                 $query->where(function ($query) use ($search) {

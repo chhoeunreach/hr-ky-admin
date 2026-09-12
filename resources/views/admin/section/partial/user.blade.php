@@ -38,6 +38,11 @@
                            data-href="{{route('admin.employees.index')}}"
                            class="nav-link {{ request()->routeIs('admin.employees.index') || request()->routeIs('admin.employees.create') || request()->routeIs('admin.employees.edit') || request()->routeIs('admin.employees.show') ? 'active' : ''}}">{{ __('index.employees') }}</a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.employees.calendar') }}"
+                           data-href="{{ route('admin.employees.calendar') }}"
+                           class="nav-link {{ request()->routeIs('admin.employees.calendar') ? 'active' : ''}}">Employees Calendar</a>
+                    </li>
                 @endcan
                 @can('employee.profile.view')
                     <li class="nav-item">
