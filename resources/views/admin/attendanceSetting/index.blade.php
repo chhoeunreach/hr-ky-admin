@@ -53,7 +53,15 @@
                                                 <span class="slider round"></span>
                                             </label>
                                         @elseif($datum->slug === 'attendance_location_radius')
-                                            <input type="number" class="form-control" min="1" oninput="validity.valid||(value='');" name="attendance_location_radius" value="{{ $datum->value }}" autocomplete="off">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <input type="hidden" name="attendance_location_radius_enabled" value="0">
+                                                <label class="switch mb-0">
+                                                    <input type="checkbox" name="attendance_location_radius_enabled" value="1" {{ $datum->status == 1 ? 'checked' : '' }}>
+                                                    <span class="slider round"></span>
+                                                </label>
+                                                <input type="number" class="form-control" min="1" max="100000" oninput="validity.valid||(value='');" name="attendance_location_radius" value="{{ $datum->value }}" autocomplete="off" style="max-width: 220px;">
+                                                <span class="text-muted">meters</span>
+                                            </div>
                                         @elseif($datum->slug === 'attendance_map_url')
                                             <input type="url" class="form-control" name="attendance_map_url" value="{{ $datum->value }}" placeholder="https://maps.google.com/..." autocomplete="off">
                                         @else
@@ -192,7 +200,6 @@
         });
     </script>
 @endsection
-
 
 
 

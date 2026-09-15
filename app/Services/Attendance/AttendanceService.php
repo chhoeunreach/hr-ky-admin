@@ -583,6 +583,7 @@ class AttendanceService
         $branchLatitude = $branch?->branch_location_latitude;
         $branchLongitude = $branch?->branch_location_longitude;
         $radius = AppHelper::getAttendanceLocationRadius();
+        $radiusEnabled = AppHelper::isAttendanceLocationRadiusEnabled();
 
         $validation = [
             'employee_location' => [
@@ -594,10 +595,14 @@ class AttendanceService
                 'longitude' => $branchLongitude,
             ],
             'distance_to_branch_in_meter' => null,
-            'allowed_branch_radius_in_meter' => $radius,
+            'allowed_branch_radius_in_meter' => $radiusEnabled ? $radius : null,
             'within_branch_radius' => null,
             'location_validation_message' => null,
         ];
+
+        if (!$radiusEnabled) {
+            return $validation;
+        }
 
         if (
             $latitude === null || $longitude === null ||

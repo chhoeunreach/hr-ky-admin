@@ -56,6 +56,11 @@ class AppSettingSeeder extends Seeder
                 'slug' => Str::slug('Allow Multiple Leave Request'),
                 'status' => 1
             ],
+            [
+                'name'=> 'Android APK',
+                'slug' => Str::slug('Android APK'),
+                'status' => 1
+            ],
         ];
 
         $appSettingSlugs = array_column($appSetting, 'slug');

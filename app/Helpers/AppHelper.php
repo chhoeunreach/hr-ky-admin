@@ -347,6 +347,15 @@ class AppHelper
         return (int) ($radius ?: 100);
     }
 
+    public static function isAttendanceLocationRadiusEnabled(): bool
+    {
+        $status = AttendanceSetting::where('slug', 'attendance_location_radius')
+            ->pluck('status')
+            ->first();
+
+        return $status === null || (int) $status === 1;
+    }
+
     public static function getAwardDisplayLimit():int
     {
         return GeneralSetting::where('key', 'award_display_limit')->pluck('value')->first() ?? 14;

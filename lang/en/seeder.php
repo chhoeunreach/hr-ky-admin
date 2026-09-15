@@ -14,6 +14,7 @@ return [
     'reset-leave-count' => 'Reset Leave Count on 1st Shrawan',
     'enable-employee-location' => 'Enable Employee Location',
     'allow-multiple-leave-request' => 'Allow Multiple Leave Request',
+    'android-apk' => 'Android APK',
 
     /** General Setting */
 

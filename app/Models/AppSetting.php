@@ -14,6 +14,7 @@ class AppSetting extends Model
     protected $fillable = [
         'name',
         'slug',
+        'value',
         'status'
     ];
 

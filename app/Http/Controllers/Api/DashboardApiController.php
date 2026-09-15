@@ -118,12 +118,14 @@ class DashboardApiController extends Controller
             $dashboard['attendance_selfie'] = AppHelper::ifAttendanceSelfieEnabled();
             $dashboard['attendance_map'] = $isAttendanceMapFeatured;
             $dashboard['attendance_map_url'] = AppHelper::getAttendanceMapUrl();
+            $dashboard['attendance_location_radius_enabled'] = AppHelper::isAttendanceLocationRadiusEnabled();
             $dashboard['attendance_method'] = array_values(array_diff(AppHelper::attendanceMethod(),['biometric']));
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
             $dashboard['workspace_location'] = [
                 'latitude' => $userDetail->branch?->branch_location_latitude,
                 'longitude' => $userDetail->branch?->branch_location_longitude,
                 'radius_in_meters' => AppHelper::getAttendanceLocationRadius(),
+                'radius_enabled' => AppHelper::isAttendanceLocationRadiusEnabled(),
             ];
             $dashboard['shift_dates'] = $shiftDates;
             $dashboard['features'] = new FeatureCollection($features);

@@ -85,6 +85,7 @@ class AttendanceSettingController extends Controller
                 'attendance_method.*' => 'sometimes|string|in:default,biometric,nfc,qr',
                 'attendance_limit' => 'sometimes|integer|min:1',
                 'attendance_location_radius' => 'sometimes|integer|min:1|max:100000',
+                'attendance_location_radius_enabled' => 'sometimes|in:0,1',
                 'attendance_note' => 'sometimes|in:0,1',
                 'attendance_selfie' => 'sometimes|in:0,1',
                 'attendance_map_url' => 'nullable|string|max:2048',
@@ -121,8 +122,13 @@ class AttendanceSettingController extends Controller
                     $data['values'] = $values;
                 } elseif ($slug === 'attendance_limit' && $request->has('attendance_limit')) {
                     $data['value'] = $request->input('attendance_limit');
-                } elseif ($slug === 'attendance_location_radius' && $request->has('attendance_location_radius')) {
-                    $data['value'] = $request->input('attendance_location_radius');
+                } elseif ($slug === 'attendance_location_radius') {
+                    if ($request->has('attendance_location_radius')) {
+                        $data['value'] = $request->input('attendance_location_radius');
+                    }
+                    if ($request->has('attendance_location_radius_enabled')) {
+                        $data['status'] = $request->input('attendance_location_radius_enabled');
+                    }
                 } elseif ($slug === 'attendance_note' && $request->has('attendance_note')) {
                     $data['status'] = $request->input('attendance_note');
                 } elseif ($slug === 'attendance_selfie' && $request->has('attendance_selfie')) {

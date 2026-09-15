@@ -23,7 +23,7 @@
                     <table id="dataTableExample" class="table">
                         <thead>
                         <tr>
-                            <th>#</th>
+                            <th>@lang('index.name')</th>
                             <th class="text-center">@lang('index.action')</th>
                         </tr>
                         </thead>
@@ -33,11 +33,31 @@
                                 <tr>
                                     <td><strong> {{( $value->name =='override bssid') ? __('index.check_router_bssid'):__('seeder.'.$value->slug)}} </strong> </td>
                                     <td class="text-center">
-                                        <label class="switch">
-                                            <input class="toggleStatus" href="{{route('admin.app-settings.toggle-status',$value->id)}}"
-                                                   type="checkbox" {{($value->status) == 1 ?'checked':''}}>
-                                            <span class="slider round"></span>
-                                        </label>
+                                        @if($value->slug === 'android-apk')
+                                            <form action="{{ route('admin.app-settings.android-apk.update') }}" method="post" enctype="multipart/form-data" class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+                                                @csrf
+                                                <label class="switch mb-0">
+                                                    <input class="toggleStatus" href="{{route('admin.app-settings.toggle-status',$value->id)}}"
+                                                           type="checkbox" {{($value->status) == 1 ?'checked':''}}>
+                                                    <span class="slider round"></span>
+                                                </label>
+                                                <input type="file" name="android_apk" class="form-control form-control-sm" accept=".apk" required style="max-width: 260px;">
+                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                    <i class="link-icon" data-feather="upload"></i> @lang('index.upload_android_apk')
+                                                </button>
+                                                @if($value->value)
+                                                    <a href="{{ asset($value->value) }}" class="btn btn-outline-secondary btn-sm" download>
+                                                        <i class="link-icon" data-feather="download"></i> @lang('index.current_file')
+                                                    </a>
+                                                @endif
+                                            </form>
+                                        @else
+                                            <label class="switch">
+                                                <input class="toggleStatus" href="{{route('admin.app-settings.toggle-status',$value->id)}}"
+                                                       type="checkbox" {{($value->status) == 1 ?'checked':''}}>
+                                                <span class="slider round"></span>
+                                            </label>
+                                        @endif
                                     </td>
                                 </tr>
 

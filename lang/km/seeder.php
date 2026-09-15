@@ -14,6 +14,7 @@ return [
     'reset-leave-count' => 'កំណត់ចំនួនឈប់សម្រាកឡើងវិញនៅថ្ងៃទី 1 ខែ Shrawan',
     'enable-employee-location' => 'បើកទីតាំងបុគ្គលិក',
     'allow-multiple-leave-request' => 'អនុញ្ញាតសំណើឈប់សម្រាកច្រើន',
+    'android-apk' => 'Android APK',
 
     /** General Setting */
 

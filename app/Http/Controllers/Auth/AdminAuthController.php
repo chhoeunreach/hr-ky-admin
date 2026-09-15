@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppSetting;
 use App\Models\Company;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
@@ -46,7 +47,14 @@ class AdminAuthController extends Controller
         }
 
         $companyDetail = $this->companyRepo->getCompanyDetail($select);
-        return view('auth.login', compact('companyDetail'));
+        $androidApkSetting = AppSetting::where('slug', 'android-apk')
+            ->where('status', 1)
+            ->whereNotNull('value')
+            ->first();
+        $androidApkPath = $androidApkSetting?->value ?: 'downloads/ky-checking-24-04-2026.apk';
+        $androidApkUrl = asset($androidApkPath);
+
+        return view('auth.login', compact('companyDetail', 'androidApkUrl'));
     }
 
     public function login(Request $request)

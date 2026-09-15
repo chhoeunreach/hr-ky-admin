@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->string('value')->nullable();
             $table->boolean('status')->default(0);
             $table->timestamps();
         });
@@ -22,4 +23,3 @@ return new class extends Migration
         Schema::dropIfExists('app_settings');
     }
 };
-

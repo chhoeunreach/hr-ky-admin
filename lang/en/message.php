@@ -8,6 +8,8 @@ return [
     'salary_deleted'=>'Advance Salary Detail Deleted Successfully',
     'theme_not_found'=>'Theme Detail Not found',
     'theme_changed'=>'Theme Changed Successfully',
+    'android_apk_updated' => 'Android APK updated successfully',
+    'android_apk_invalid' => 'Please upload a valid Android APK file.',
 
     /** Asset */
     'asset_saved'=>'Asset record saved successfully',

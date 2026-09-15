@@ -33,7 +33,7 @@
                                             <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
                                                 <a href="#" class="noble-ui-logo d-block mb-0">{{ $companyDetail  ? ucfirst($companyDetail->name) : ''}}</a>
                                                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                                                    <a href="{{ asset('downloads/ky-checking-24-04-2026.apk') }}"
+                                                    <a href="{{ $androidApkUrl }}"
                                                        class="btn btn-outline-primary btn-sm"
                                                        download>
                                                         <i class="link-icon" data-feather="download"></i>
