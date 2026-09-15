@@ -15,6 +15,7 @@ class Attendance extends Model
     use HasFactory;
 
     protected $table = 'attendances';
+    public const SELFIE_UPLOAD_PATH = 'uploads/attendance/selfies/';
 
     protected $fillable = [
         'user_id',
@@ -38,6 +39,10 @@ class Attendance extends Model
         'undertime',
         'check_in_note',
         'check_out_note',
+        'check_in_selfie',
+        'check_out_selfie',
+        'check_in_offline_request_id',
+        'check_out_offline_request_id',
         'night_checkin',
         'night_checkout',
         'office_time_id'

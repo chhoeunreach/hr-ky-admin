@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Helpers\AttendanceHelper;
+use App\Models\Attendance;
 use App\Models\TelegramGroup;
 use App\Models\User;
 use App\Services\TelegramService;
@@ -118,20 +119,58 @@ class AttendanceTelegramNotificationService
             }
             $messageText .= "🗺️ ផែនទី: " . ($locationInfo['link'] ?? '');
 
-            $this->telegramService->sendToAction(
-                $type === 'check_out' ? TelegramGroup::EVENT_ATTENDANCE_CHECKOUT : TelegramGroup::EVENT_ATTENDANCE_CHECKIN,
-                $messageText,
-                null,
-                $branchName,
-                $departmentName,
-                $latitude !== null ? (float) $latitude : null,
-                $longitude !== null ? (float) $longitude : null,
-            );
+            $actionKey = $type === 'check_out'
+                ? TelegramGroup::EVENT_ATTENDANCE_CHECKOUT
+                : TelegramGroup::EVENT_ATTENDANCE_CHECKIN;
+
+            $latitude = $latitude !== null ? (float) $latitude : null;
+            $longitude = $longitude !== null ? (float) $longitude : null;
+            $selfiePath = $this->selfiePath($type, $attendance);
+
+            if ($selfiePath !== null) {
+                $this->telegramService->sendPhotoToAction(
+                    $actionKey,
+                    $selfiePath,
+                    $messageText,
+                    null,
+                    $branchName,
+                    $departmentName,
+                    $latitude,
+                    $longitude,
+                );
+            } else {
+                $this->telegramService->sendToAction(
+                    $actionKey,
+                    $messageText,
+                    null,
+                    $branchName,
+                    $departmentName,
+                    $latitude,
+                    $longitude,
+                );
+            }
         } catch (\Throwable $e) {
             Log::error('Telegram attendance notification error.', [
                 'type' => $type,
                 'exception' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function selfiePath(string $type, mixed $attendance): ?string
+    {
+        $fileName = $type === 'check_out'
+            ? ($attendance->check_out_selfie ?? null)
+            : ($attendance->check_in_selfie ?? null);
+
+        $fileName = trim((string) $fileName);
+
+        if ($fileName === '') {
+            return null;
+        }
+
+        $path = public_path(Attendance::SELFIE_UPLOAD_PATH . $fileName);
+
+        return is_file($path) ? $path : null;
     }
 }

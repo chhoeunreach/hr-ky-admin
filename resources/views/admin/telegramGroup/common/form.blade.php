@@ -97,6 +97,22 @@
     </div>
 
     <div class="col-lg-4 col-md-6 mb-4">
+        <label for="send_location" class="form-label">Send Map</label>
+        <select class="form-select" id="send_location" name="send_location">
+            <option value="1" {{ (string) old('send_location', isset($telegramGroup) ? (int) ($telegramGroup->send_location ?? 1) : 1) === '1' ? 'selected' : '' }}>Yes</option>
+            <option value="0" {{ (string) old('send_location', isset($telegramGroup) ? (int) ($telegramGroup->send_location ?? 1) : 1) === '0' ? 'selected' : '' }}>No</option>
+        </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
+        <label for="send_selfie" class="form-label">Send Selfie Photo</label>
+        <select class="form-select" id="send_selfie" name="send_selfie">
+            <option value="1" {{ (string) old('send_selfie', isset($telegramGroup) ? (int) ($telegramGroup->send_selfie ?? 1) : 1) === '1' ? 'selected' : '' }}>Yes</option>
+            <option value="0" {{ (string) old('send_selfie', isset($telegramGroup) ? (int) ($telegramGroup->send_selfie ?? 1) : 1) === '0' ? 'selected' : '' }}>No</option>
+        </select>
+    </div>
+
+    <div class="col-lg-4 col-md-6 mb-4">
         <label for="is_active" class="form-label">{{ __('index.status') }}</label>
         <select class="form-select" id="is_active" name="is_active">
             <option value="1" {{ (string) old('is_active', isset($telegramGroup) ? (int) $telegramGroup->is_active : 1) === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>

@@ -66,7 +66,7 @@ class AttendanceSettingController extends Controller
     {
         try {
             $attendanceSettings = AttendanceSetting::query()
-                ->whereIn('slug', ['attendance_note', 'attendance_limit', 'attendance_method'])
+                ->whereIn('slug', ['attendance_note', 'attendance_selfie', 'attendance_limit', 'attendance_method', 'attendance_location_radius'])
                 ->get();
 
             return view($this->view . 'index', compact('attendanceSettings'));
@@ -84,7 +84,9 @@ class AttendanceSettingController extends Controller
                 'attendance_method' => 'sometimes|array',
                 'attendance_method.*' => 'sometimes|string|in:default,biometric,nfc,qr',
                 'attendance_limit' => 'sometimes|integer|min:1',
+                'attendance_location_radius' => 'sometimes|integer|min:1|max:100000',
                 'attendance_note' => 'sometimes|in:0,1',
+                'attendance_selfie' => 'sometimes|in:0,1',
             ];
 
             $validator = \Validator::make($request->all(), $rules);
@@ -118,8 +120,12 @@ class AttendanceSettingController extends Controller
                     $data['values'] = $values;
                 } elseif ($slug === 'attendance_limit' && $request->has('attendance_limit')) {
                     $data['value'] = $request->input('attendance_limit');
+                } elseif ($slug === 'attendance_location_radius' && $request->has('attendance_location_radius')) {
+                    $data['value'] = $request->input('attendance_location_radius');
                 } elseif ($slug === 'attendance_note' && $request->has('attendance_note')) {
                     $data['status'] = $request->input('attendance_note');
+                } elseif ($slug === 'attendance_selfie' && $request->has('attendance_selfie')) {
+                    $data['status'] = $request->input('attendance_selfie');
                 }
 
                 if (!empty($data)) {

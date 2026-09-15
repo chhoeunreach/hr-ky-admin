@@ -4,6 +4,7 @@ namespace App\Resources\Attendance;
 
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
+use App\Models\Attendance;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AttendanceDetailResource extends JsonResource
@@ -27,6 +28,12 @@ class AttendanceDetailResource extends JsonResource
             'is_overtime' => $extraData['isOverTime'],
             'undertime' => isset($this->check_out_at) ? (floor($extraData['underTime'] / 60) . 'h ' . round(($extraData['underTime'] - floor($extraData['underTime'] / 60) * 60)) . 'm') : '',
             'is_undertime' => $extraData['isUnderTime'],
+            'check_in_selfie' => $this->check_in_selfie
+                ? asset(Attendance::SELFIE_UPLOAD_PATH . $this->check_in_selfie)
+                : null,
+            'check_out_selfie' => $this->check_out_selfie
+                ? asset(Attendance::SELFIE_UPLOAD_PATH . $this->check_out_selfie)
+                : null,
         ];
     }
 }

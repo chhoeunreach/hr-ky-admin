@@ -284,6 +284,12 @@ class AppHelper
         return AttendanceSetting::where('slug', $slug)->where('status', 1)->exists();
     }
 
+    public static function ifAttendanceSelfieEnabled(): bool
+    {
+        $slug = 'attendance_selfie';
+        return AttendanceSetting::where('slug', $slug)->where('status', 1)->exists();
+    }
+
    public static function attendanceMethod()
     {
         $slug = 'attendance_method';
@@ -321,6 +327,15 @@ class AppHelper
     public static function getAttendanceLimit():int
     {
         return AttendanceSetting::where('slug', 'attendance_limit')->pluck('value')->first();
+    }
+
+    public static function getAttendanceLocationRadius(): int
+    {
+        $radius = AttendanceSetting::where('slug', 'attendance_location_radius')
+            ->pluck('value')
+            ->first();
+
+        return (int) ($radius ?: 100);
     }
 
     public static function getAwardDisplayLimit():int

@@ -78,6 +78,8 @@ class TelegramGroupRepository
     private function prepareData(array $data): array
     {
         $data['send_for_all'] = (bool) ($data['send_for_all'] ?? false);
+        $data['send_location'] = (bool) ($data['send_location'] ?? true);
+        $data['send_selfie'] = (bool) ($data['send_selfie'] ?? true);
         $data['is_active'] = (bool) ($data['is_active'] ?? false);
         $data['chat_ids'] = array_values(array_unique(array_filter($data['chat_ids'] ?? [])));
         $data['action_keys'] = array_values(array_unique(array_filter($data['action_keys'] ?? [])));

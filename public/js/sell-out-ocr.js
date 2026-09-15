@@ -48,7 +48,7 @@
                 reject(new Error('Tesseract.js loaded, but OCR engine was not available.'));
             };
             script.onerror = function () {
-                reject(new Error('Unable to load Tesseract.js. Please check the internet connection.'));
+                reject(new Error('មិនអាចដំណើរការ OCR បានទេ។ សូមពិនិត្យការតភ្ជាប់អ៊ីនធឺណិត។'));
             };
             document.head.appendChild(script);
         });

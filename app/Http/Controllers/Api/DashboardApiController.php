@@ -50,7 +50,7 @@ class DashboardApiController extends Controller
             $nfc_key = 'create_nfc';
             $userId = getAuthUserCode();
             $with = [
-                'branch:id,name,payment_qr_codes',
+                'branch:id,name,payment_qr_codes,branch_location_latitude,branch_location_longitude',
                 'company:id,name,weekend',
                 'post:id,post_name',
                 'department:id,dept_name',
@@ -114,8 +114,14 @@ class DashboardApiController extends Controller
 
             $dashboard['date_in_ad'] = !AppHelper::ifDateInBsEnabled();
             $dashboard['attendance_note'] = AppHelper::ifAttendanceNoteEnabled();
+            $dashboard['attendance_selfie'] = AppHelper::ifAttendanceSelfieEnabled();
             $dashboard['attendance_method'] = array_values(array_diff(AppHelper::attendanceMethod(),['biometric']));
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
+            $dashboard['workspace_location'] = [
+                'latitude' => $userDetail->branch?->branch_location_latitude,
+                'longitude' => $userDetail->branch?->branch_location_longitude,
+                'radius_in_meters' => AppHelper::getAttendanceLocationRadius(),
+            ];
             $dashboard['shift_dates'] = $shiftDates;
             $dashboard['features'] = new FeatureCollection($features);
             $dashboard['home_cards'] = $homeCards;

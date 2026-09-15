@@ -32,6 +32,8 @@ class TelegramGroupRequest extends FormRequest
             'branch_name' => ['nullable', 'string', 'max:255'],
             'department_name' => ['nullable', 'string', 'max:255'],
             'send_for_all' => ['nullable', 'boolean'],
+            'send_location' => ['nullable', 'boolean'],
+            'send_selfie' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'description' => ['nullable', 'string'],
         ];

@@ -6,6 +6,7 @@ use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\User;
 use App\Requests\Attendance\AttendanceCheckInRequest;
 use App\Requests\Attendance\AttendanceCheckOutRequest;
@@ -19,6 +20,7 @@ use App\Services\Attendance\AttendanceTelegramNotificationService;
 use App\Services\Nfc\NfcService;
 use App\Services\Qr\QrCodeService;
 use App\Traits\CustomAuthorizesRequests;
+use App\Traits\ImageService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,6 +35,7 @@ use function PHPUnit\Framework\isNull;
 class AttendanceApiController extends Controller
 {
     use CustomAuthorizesRequests;
+    use ImageService;
     private string $displayMessage = '';
     private array $data = [];
     private array $notificationData = [];
@@ -126,6 +129,16 @@ class AttendanceApiController extends Controller
                 'identifier' => ['nullable', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::qr->value, 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::nfc->value,],
                 'attendance_status_type' => ['nullable', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::wifi->value],
                 'note'=>['nullable'],
+                'selfie' => [
+                    AppHelper::ifAttendanceSelfieEnabled() && $request->input('attendance_type') === EmployeeAttendanceTypeEnum::qr->value
+                        ? 'required'
+                        : 'nullable',
+                    'image',
+                    'mimes:jpg,jpeg,png,webp',
+                    'max:5120'
+                ],
+                'offline_request_id' => ['nullable', 'string', 'max:100'],
+                'recorded_at' => ['nullable', 'date'],
             ]);
 
             if ($validator->fails()) {
@@ -146,6 +159,27 @@ class AttendanceApiController extends Controller
             $validatedData['company_id'] = $userDetail['company_id'];
             $validatedData['office_time_id'] = $userDetail['office_time_id'];
             $validatedData['allow_holiday_check_in'] = $userDetail['allow_holiday_check_in'];
+
+            if (
+                AppHelper::isEmployeeLocationRequired() &&
+                $validatedData['attendance_type'] !== EmployeeAttendanceTypeEnum::face->value
+            ) {
+                $this->attendanceService->resolveBranchLocationValidation(
+                    $validatedData['user_id'],
+                    $validatedData['latitude'],
+                    $validatedData['longitude']
+                );
+            }
+
+            if (!empty($validatedData['offline_request_id'])) {
+                $duplicateResponse = $this->duplicateOfflineAttendanceResponse(
+                    $validatedData['offline_request_id'],
+                    $validatedData['user_id']
+                );
+                if ($duplicateResponse) {
+                    return $duplicateResponse;
+                }
+            }
 
             $this->storeAttendanceLog($validatedData, $userDetail);
 
@@ -407,6 +441,8 @@ class AttendanceApiController extends Controller
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
         $validatedData['check_in_latitude'] = (float) $validatedData['latitude'];
         $validatedData['check_in_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_in_selfie'] = $this->storeAttendanceSelfie($validatedData);
+        $validatedData['check_in_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
         $this->attendanceForTelegram = $attendanceData;
 
@@ -427,6 +463,8 @@ class AttendanceApiController extends Controller
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
         $validatedData['check_out_latitude'] = (float) $validatedData['latitude'];
         $validatedData['check_out_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_out_selfie'] = $this->storeAttendanceSelfie($validatedData);
+        $validatedData['check_out_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
 
         $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
         $this->attendanceForTelegram = $attendanceData;
@@ -565,6 +603,8 @@ class AttendanceApiController extends Controller
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
         $validatedData['check_in_latitude'] = (float) $validatedData['latitude'];
         $validatedData['check_in_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_in_selfie'] = $this->storeAttendanceSelfie($validatedData);
+        $validatedData['check_in_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
         $this->attendanceForTelegram = $attendanceData;
 
@@ -585,6 +625,8 @@ class AttendanceApiController extends Controller
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
         $validatedData['check_out_latitude'] = (float) $validatedData['latitude'];
         $validatedData['check_out_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_out_selfie'] = $this->storeAttendanceSelfie($validatedData);
+        $validatedData['check_out_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
 
         $attendanceData = $this->attendanceService->newCheckOut($userTodayCheckInDetail, $validatedData);
         $this->attendanceForTelegram = $attendanceData;
@@ -597,6 +639,37 @@ class AttendanceApiController extends Controller
         $this->notificationData['workedTime'] = $workedTime;
         $this->data = (new NightAttendanceResource($attendanceData))->toArray(request());
         $this->displayMessage = __('index.check_out_successful');
+    }
+
+    private function storeAttendanceSelfie(array $validatedData): ?string
+    {
+        if (!AppHelper::ifAttendanceSelfieEnabled() || !isset($validatedData['selfie'])) {
+            return null;
+        }
+
+        return $this->storeImage($validatedData['selfie'], Attendance::SELFIE_UPLOAD_PATH, 800, 800);
+    }
+
+    private function duplicateOfflineAttendanceResponse(string $offlineRequestId, int $userId): ?JsonResponse
+    {
+        $attendance = Attendance::query()
+            ->where('user_id', $userId)
+            ->where(function ($query) use ($offlineRequestId) {
+                $query
+                    ->where('check_in_offline_request_id', $offlineRequestId)
+                    ->orWhere('check_out_offline_request_id', $offlineRequestId);
+            })
+            ->first();
+
+        if (!$attendance) {
+            return null;
+        }
+
+        $resource = ($attendance->night_checkin || $attendance->night_checkout)
+            ? (new NightAttendanceResource($attendance))->toArray(request())
+            : (new TodayAttendanceResource($attendance))->toArray(request());
+
+        return AppHelper::sendSuccessResponse(__('index.data_found'), $resource);
     }
 
 }

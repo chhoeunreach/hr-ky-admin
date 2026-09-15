@@ -54,9 +54,9 @@ class TelegramService
         $branchName = trim((string) $branchName);
         $departmentName = trim((string) $departmentName);
 
-        $chatIds = $this->getActionChatIds($actionKey, $branchName, $departmentName);
+        $recipients = $this->getActionRecipients($actionKey, $branchName, $departmentName);
 
-        if ($chatIds === []) {
+        if ($recipients === []) {
             $this->lastError = 'No active Telegram chat IDs match this action, branch, and department.';
             Log::error('Telegram notification skipped: no chat_id available.', [
                 'actionKey' => $actionKey,
@@ -67,11 +67,54 @@ class TelegramService
         }
 
         $allOk = true;
-        foreach ($chatIds as $chatId) {
+        foreach ($recipients as $recipient) {
+            $chatId = $recipient['chat_id'];
             $messageOk = $this->sendMessage($chatId, $messageText, $parseMode);
             $allOk = $allOk && $messageOk;
 
-            if ($latitude !== null && $longitude !== null) {
+            if ($latitude !== null && $longitude !== null && $this->groupSendsLocation($recipient['group'])) {
+                $locationOk = $this->sendLocation($chatId, $latitude, $longitude);
+                $allOk = $allOk && $locationOk;
+            }
+        }
+
+        return $allOk;
+    }
+
+    public function sendPhotoToAction(
+        string $actionKey,
+        string $photoPath,
+        ?string $caption = null,
+        ?string $parseMode = null,
+        ?string $branchName = null,
+        ?string $departmentName = null,
+        ?float $latitude = null,
+        ?float $longitude = null
+    ): bool {
+        $branchName = trim((string) $branchName);
+        $departmentName = trim((string) $departmentName);
+
+        $recipients = $this->getActionRecipients($actionKey, $branchName, $departmentName);
+
+        if ($recipients === []) {
+            $this->lastError = 'No active Telegram chat IDs match this action, branch, and department.';
+            Log::error('Telegram photo notification skipped: no chat_id available.', [
+                'actionKey' => $actionKey,
+                'branchName' => $branchName,
+                'departmentName' => $departmentName,
+            ]);
+            return false;
+        }
+
+        $allOk = true;
+        foreach ($recipients as $recipient) {
+            $chatId = $recipient['chat_id'];
+            $messageOk = $this->groupSendsSelfie($recipient['group'])
+                ? $this->sendPhoto($chatId, $photoPath, $caption, $parseMode) !== null
+                : $this->sendMessage($chatId, (string) $caption, $parseMode);
+            $allOk = $allOk && $messageOk;
+
+            if ($latitude !== null && $longitude !== null && $this->groupSendsLocation($recipient['group'])) {
                 $locationOk = $this->sendLocation($chatId, $latitude, $longitude);
                 $allOk = $allOk && $locationOk;
             }
@@ -553,7 +596,8 @@ class TelegramService
 
     private function getActionChatIds(string $actionKey, string $branchName, string $departmentName): array
     {
-        $chatIds = $this->resolveConfiguredChatIds($actionKey, $branchName, $departmentName);
+        $recipients = $this->getActionRecipients($actionKey, $branchName, $departmentName);
+        $chatIds = array_map(fn (array $recipient): string => $recipient['chat_id'], $recipients);
 
         if ($chatIds === []) {
             Log::error('Telegram routing failed (missing or unknown branch/department).', [
@@ -572,6 +616,19 @@ class TelegramService
     }
 
     private function resolveConfiguredChatIds(string $actionKey, string $branchName, string $departmentName): array
+    {
+        return array_map(
+            fn (array $recipient): string => $recipient['chat_id'],
+            $this->resolveConfiguredRecipients($actionKey, $branchName, $departmentName)
+        );
+    }
+
+    private function getActionRecipients(string $actionKey, string $branchName, string $departmentName): array
+    {
+        return $this->resolveConfiguredRecipients($actionKey, $branchName, $departmentName);
+    }
+
+    private function resolveConfiguredRecipients(string $actionKey, string $branchName, string $departmentName): array
     {
         try {
             if (! Schema::hasTable('telegram_groups')) {
@@ -592,36 +649,36 @@ class TelegramService
         $branchName = Str::lower(trim($branchName));
         $departmentName = Str::lower(trim($departmentName));
 
-        $alwaysChatIds = [];
-        $routedChatIdsBySpecificity = [];
+        $alwaysRecipients = [];
+        $routedRecipientsBySpecificity = [];
         foreach ($groups as $group) {
             if (! $this->groupMatchesEvent($group, $actionKey)) {
                 continue;
             }
 
-            $groupChatIds = $this->groupChatIds($group);
-            if ($groupChatIds === []) {
+            $groupRecipients = $this->groupRecipients($group);
+            if ($groupRecipients === []) {
                 continue;
             }
 
             if ($group->send_for_all) {
-                $alwaysChatIds = array_merge($alwaysChatIds, $groupChatIds);
+                $alwaysRecipients = array_merge($alwaysRecipients, $groupRecipients);
                 continue;
             }
 
             $specificity = $this->routeMatchSpecificity($group, $branchName, $departmentName);
             if ($specificity !== null) {
-                $routedChatIdsBySpecificity[$specificity] = array_merge($routedChatIdsBySpecificity[$specificity] ?? [], $groupChatIds);
+                $routedRecipientsBySpecificity[$specificity] = array_merge($routedRecipientsBySpecificity[$specificity] ?? [], $groupRecipients);
             }
         }
 
-        $chatIds = $alwaysChatIds;
-        if ($routedChatIdsBySpecificity !== []) {
-            $maxSpecificity = max(array_keys($routedChatIdsBySpecificity));
-            $chatIds = array_merge($chatIds, $routedChatIdsBySpecificity[$maxSpecificity]);
+        $recipients = $alwaysRecipients;
+        if ($routedRecipientsBySpecificity !== []) {
+            $maxSpecificity = max(array_keys($routedRecipientsBySpecificity));
+            $recipients = array_merge($recipients, $routedRecipientsBySpecificity[$maxSpecificity]);
         }
 
-        return array_values(array_unique($chatIds));
+        return array_values(collect($recipients)->unique('chat_id')->all());
     }
 
     private function groupMatchesEvent(TelegramGroup $group, string $actionKey): bool
@@ -668,6 +725,24 @@ class TelegramService
         return array_values(array_filter(array_map(function ($chatId) {
             return trim((string) $chatId);
         }, $chatIds)));
+    }
+
+    private function groupRecipients(TelegramGroup $group): array
+    {
+        return array_map(
+            fn (string $chatId): array => ['chat_id' => $chatId, 'group' => $group],
+            $this->groupChatIds($group)
+        );
+    }
+
+    private function groupSendsLocation(?TelegramGroup $group): bool
+    {
+        return $group === null || $group->send_location !== false;
+    }
+
+    private function groupSendsSelfie(?TelegramGroup $group): bool
+    {
+        return $group === null || $group->send_selfie !== false;
     }
 
     private function normalizedRouteNames(?string $names): array

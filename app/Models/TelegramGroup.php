@@ -50,12 +50,16 @@ class TelegramGroup extends Model
         'branch_name',
         'department_name',
         'send_for_all',
+        'send_location',
+        'send_selfie',
         'is_active',
         'description',
     ];
 
     protected $casts = [
         'send_for_all' => 'boolean',
+        'send_location' => 'boolean',
+        'send_selfie' => 'boolean',
         'is_active' => 'boolean',
         'chat_ids' => 'array',
         'action_keys' => 'array',

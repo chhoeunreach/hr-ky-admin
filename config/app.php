@@ -95,9 +95,9 @@ return [
     |
     */
 
-    'locale' => 'en',
+    'locale' => env('APP_LOCALE', 'km'),
 
-    'api_locale' => env('APP_API_LOCALE', 'en'),
+    'api_locale' => env('APP_API_LOCALE', 'km'),
 
     'supported_locales' => [
         
@@ -162,7 +162,7 @@ return [
     |
     */
 
-    'fallback_locale' => 'en',
+    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'km'),
 
     /*
     |--------------------------------------------------------------------------

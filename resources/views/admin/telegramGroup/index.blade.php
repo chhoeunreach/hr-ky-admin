@@ -76,6 +76,8 @@
                             <th>Branch</th>
                             <th>Department</th>
                             <th class="text-center">All</th>
+                            <th class="text-center">Map</th>
+                            <th class="text-center">Selfie</th>
                             <th class="text-center">{{ __('index.status') }}</th>
                             @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
                                 <th class="text-center">{{ __('index.action') }}</th>
@@ -108,6 +110,16 @@
                                 <td>{{ $telegramGroup->branch_name ?: ($telegramGroup->branch?->name ?? 'All') }}</td>
                                 <td>{{ $telegramGroup->department_name ?: ($telegramGroup->department?->dept_name ?? 'All') }}</td>
                                 <td class="text-center">{{ $telegramGroup->send_for_all ? 'Yes' : 'No' }}</td>
+                                <td class="text-center">
+                                    <span class="badge {{ ($telegramGroup->send_location ?? true) ? 'bg-success' : 'bg-secondary' }}">
+                                        {{ ($telegramGroup->send_location ?? true) ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge {{ ($telegramGroup->send_selfie ?? true) ? 'bg-success' : 'bg-secondary' }}">
+                                        {{ ($telegramGroup->send_selfie ?? true) ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
                                 <td class="text-center">
                                     @can('toggle_telegram_group_status')
                                         <label class="switch">

@@ -244,8 +244,8 @@
                 <div class="live-map-empty d-flex align-items-center justify-content-center text-center p-4 h-100">
                     <div>
                         <i class="link-icon text-muted mb-2" data-feather="map"></i>
-                        <p class="mb-1 fw-bold">Map library did not load</p>
-                        <small class="text-muted">Staff GPS data will still show in the list. Check internet/CDN access for Leaflet.</small>
+                        <p class="mb-1 fw-bold">មិនអាចបង្ហាញផែនទីបានទេ</p>
+                        <small class="text-muted">ទិន្នន័យ GPS បុគ្គលិកនៅតែបង្ហាញក្នុងបញ្ជី។ សូមពិនិត្យការតភ្ជាប់អ៊ីនធឺណិត។</small>
                     </div>
                 </div>
             `;

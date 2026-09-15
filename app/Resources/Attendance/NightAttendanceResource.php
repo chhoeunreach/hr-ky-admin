@@ -4,6 +4,7 @@ namespace App\Resources\Attendance;
 
 
 use App\Helpers\AttendanceHelper;
+use App\Models\Attendance;
 
 use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,6 +33,12 @@ class NightAttendanceResource extends JsonResource
                 'latitude' => $this->check_out_latitude,
                 'longitude' => $this->check_out_longitude,
             ],
+            'check_in_selfie' => $this->check_in_selfie
+                ? asset(Attendance::SELFIE_UPLOAD_PATH . $this->check_in_selfie)
+                : null,
+            'check_out_selfie' => $this->check_out_selfie
+                ? asset(Attendance::SELFIE_UPLOAD_PATH . $this->check_out_selfie)
+                : null,
             'latest_location' => [
                 'latitude' => $this->night_checkout ? $this->check_out_latitude : $this->check_in_latitude,
                 'longitude' => $this->night_checkout ? $this->check_out_longitude : $this->check_in_longitude,
@@ -45,7 +52,6 @@ class NightAttendanceResource extends JsonResource
         ];
     }
 }
-
 
 
 

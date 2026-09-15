@@ -28,9 +28,23 @@ class AttendanceSettingSeeder extends Seeder
                 'status' => 0
             ],
             [
+                'name'=> 'Attendance Selfie',
+                'slug' => 'attendance_selfie',
+                'value'=>null,
+                'values'=>null,
+                'status' => 1
+            ],
+            [
                 'name' => 'Attendance Limit',
                 'slug' => 'attendance_limit',
                 'value' => 1,
+                'values'=>null,
+                'status' => 1,
+            ],
+            [
+                'name' => 'Attendance Location Radius',
+                'slug' => 'attendance_location_radius',
+                'value' => 100,
                 'values'=>null,
                 'status' => 1,
             ],

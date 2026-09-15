@@ -27,7 +27,7 @@ use Illuminate\Support\Facades\Log;
 
 class AttendanceService
 {
-    public const DEFAULT_BRANCH_RADIUS_IN_METER = 50;
+    public const DEFAULT_BRANCH_RADIUS_IN_METER = 100;
 
     public function __construct(protected AttendanceRepository $attendanceRepo,
                                 protected UserRepository       $userRepo,
@@ -229,12 +229,14 @@ class AttendanceService
 
         $shift = AppHelper::getUserShift($validatedData['user_id']);
 
-        $checkInAt = Carbon::now()->toTimeString();
+        $recordedAt = $this->attendanceRecordedAt($validatedData);
+        $attendanceDate = $recordedAt->format('Y-m-d');
+        $checkInAt = $recordedAt->toTimeString();
 
         if ($shift && isset($shift->opening_time)) {
-            $checkInAt = Carbon::createFromTimeString(now()->toTimeString());
+            $checkInAt = Carbon::createFromTimeString($recordedAt->toTimeString());
             $openingTime = Carbon::createFromFormat('H:i:s', $shift->opening_time);
-            $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave(date('Y-m-d'), $validatedData['user_id']);
+            $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave($attendanceDate, $validatedData['user_id']);
 
             if (!($timeLeave) && ($shift->is_early_check_in == 1 && $shift->checkin_before)) {
                 $checkInTimeAllowed = $openingTime->copy()->subMinutes($shift->checkin_before);
@@ -262,7 +264,7 @@ class AttendanceService
         }
 
 
-        $validatedData['attendance_date'] = Carbon::now()->format('Y-m-d');
+        $validatedData['attendance_date'] = $attendanceDate;
 
         if ($validatedData['night_shift']) {
             $validatedData['night_checkin'] = $checkInAt;
@@ -297,7 +299,9 @@ class AttendanceService
      */
     public function newCheckOut($attendanceData, $validatedData)
     {
-        $checkOut = Carbon::now()->toTimeString();
+        $recordedAt = $this->attendanceRecordedAt($validatedData);
+        $attendanceDate = $recordedAt->format('Y-m-d');
+        $checkOut = $recordedAt->toTimeString();
         $timeLeaveInMinutes = 0;
 
         if (isset($attendanceData->check_in_at)) {
@@ -313,9 +317,9 @@ class AttendanceService
 
         if ($shift && isset($shift->closing_time)) {
             $openingTime = Carbon::createFromFormat('H:i:s', $shift->closing_time);
-            $checkOutAt = Carbon::createFromTimeString(now()->toTimeString());
+            $checkOutAt = Carbon::createFromTimeString($recordedAt->toTimeString());
 
-            $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave(date('Y-m-d'), $validatedData['user_id']);
+            $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave($attendanceDate, $validatedData['user_id']);
 
             if (!isset($timeLeave) && ($shift->is_early_check_out == 1 && $shift->checkout_before)) {
 
@@ -351,7 +355,7 @@ class AttendanceService
         }
 
         if ($validatedData['night_shift']) {
-            $validatedData['night_checkout'] = Carbon::now()->toDateString() . ' ' . $checkOut;
+            $validatedData['night_checkout'] = $recordedAt->toDateString() . ' ' . $checkOut;
             $workedData = AttendanceHelper::calculateWorkedHour($validatedData['night_checkout'], $attendanceData->night_checkin, $attendanceData->user_id);
         } else {
             $validatedData['check_out_at'] = $checkOut;
@@ -478,6 +482,15 @@ class AttendanceService
 
     }
 
+    private function attendanceRecordedAt(array $validatedData): Carbon
+    {
+        if (!empty($validatedData['recorded_at'])) {
+            return Carbon::parse($validatedData['recorded_at']);
+        }
+
+        return Carbon::now();
+    }
+
     /**
      * @throws Exception
      */
@@ -569,7 +582,7 @@ class AttendanceService
 
         $branchLatitude = $branch?->branch_location_latitude;
         $branchLongitude = $branch?->branch_location_longitude;
-        $radius = self::DEFAULT_BRANCH_RADIUS_IN_METER;
+        $radius = AppHelper::getAttendanceLocationRadius();
 
         $validation = [
             'employee_location' => [

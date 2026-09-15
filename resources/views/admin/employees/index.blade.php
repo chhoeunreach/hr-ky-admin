@@ -853,6 +853,11 @@
                                                     </p>
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
+                                                           title="{{ $value->username ?: 'N/A' }}">
+                                                        Username: {{ $value->username ?: 'N/A' }}
+                                                    </small>
+                                                    <small class="text-muted d-block text-truncate"
+                                                           style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
                                                            title="{{ ucfirst($value->role ? $value->role->name : 'N/A') }}">
                                                         ({{ ucfirst($value->role ? $value->role->name : 'N/A') }})
                                                     </small>
@@ -871,6 +876,11 @@
                                                        title="{{ ucfirst($value->name) }}">
                                                         {{ ucfirst($value->name) }}
                                                     </p>
+                                                    <small class="text-muted d-block text-truncate"
+                                                           style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
+                                                           title="{{ $value->username ?: 'N/A' }}">
+                                                        Username: {{ $value->username ?: 'N/A' }}
+                                                    </small>
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
                                                            title="{{ ucfirst($value->role ? $value->role->name : 'N/A') }}">

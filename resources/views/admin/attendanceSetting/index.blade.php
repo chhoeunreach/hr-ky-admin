@@ -52,6 +52,8 @@
                                                 <input class="toggleStatus" data-href="{{ route('admin.attendance-settings.toggle-status', $datum->id) }}" type="checkbox" {{ $datum->status == 1 ? 'checked' : '' }}>
                                                 <span class="slider round"></span>
                                             </label>
+                                        @elseif($datum->slug === 'attendance_location_radius')
+                                            <input type="number" class="form-control" min="1" oninput="validity.valid||(value='');" name="attendance_location_radius" value="{{ $datum->value }}" autocomplete="off">
                                         @else
                                             <input type="number" class="form-control" min="1" oninput="validity.valid||(value='');" name="attendance_limit" value="{{ $datum->value }}" autocomplete="off">
                                         @endif
