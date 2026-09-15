@@ -7,12 +7,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::table('attendance_settings')->updateOrInsert(
-            ['slug' => 'attendance_map_url'],
+        DB::table('features')->updateOrInsert(
+            ['key' => 'attendance-map'],
             [
-                'name' => 'Attendance Map URL',
-                'value' => null,
-                'values' => null,
+                'group' => 'Attendance',
+                'name' => 'Attendance Map',
                 'status' => 1,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -22,8 +21,8 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('attendance_settings')
-            ->where('slug', 'attendance_map_url')
+        DB::table('features')
+            ->where('key', 'attendance-map')
             ->delete();
     }
 };

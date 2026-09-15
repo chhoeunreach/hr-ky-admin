@@ -1853,4 +1853,8 @@ return [
     'subtotal' => 'Subtotal',
     'total_reports' => 'Total Reports',
     'extracted_text' => 'Extracted Text',
+    'get_current_location' => 'Get Current Location',
+    'getting_location' => 'Getting location...',
+    'geolocation_not_supported' => 'This browser does not support location access.',
+    'location_permission_denied' => 'Unable to get location. Please allow location access and try again.',
 ];

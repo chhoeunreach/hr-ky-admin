@@ -79,6 +79,7 @@ class DashboardApiController extends Controller
             $overview->upcoming_training = $trainingOverView->upcoming_training;
             $shiftDates = $this->getAllDatesForShiftNotification($userDetail);
             $features = $this->featureRepository->getAllFeatures();
+            $isAttendanceMapFeatured = $features->where('key', 'attendance-map')->where('status', 1)->first() !== null;
             $advanceSalaryApproveKey = 'advance-salary-approve';
             $canApproveAdvanceSalary = AppHelper::checkRoleIdWithGivenPermission(
                 $userDetail->role_id,
@@ -115,7 +116,8 @@ class DashboardApiController extends Controller
             $dashboard['date_in_ad'] = !AppHelper::ifDateInBsEnabled();
             $dashboard['attendance_note'] = AppHelper::ifAttendanceNoteEnabled();
             $dashboard['attendance_selfie'] = AppHelper::ifAttendanceSelfieEnabled();
-            $dashboard['attendance_map'] = AppHelper::ifAttendanceMapEnabled();
+            $dashboard['attendance_map'] = $isAttendanceMapFeatured;
+            $dashboard['attendance_map_url'] = AppHelper::getAttendanceMapUrl();
             $dashboard['attendance_method'] = array_values(array_diff(AppHelper::attendanceMethod(),['biometric']));
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
             $dashboard['workspace_location'] = [

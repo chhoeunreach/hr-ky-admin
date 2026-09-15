@@ -1909,4 +1909,8 @@ return [
     'subtotal' => 'សរុបរង',
     'total_reports' => 'ចំនួនរបាយការណ៍សរុប',
     'extracted_text' => 'អត្ថបទដែលបានស្រង់ចេញ',
+    'get_current_location' => 'យកទីតាំងបច្ចុប្បន្ន',
+    'getting_location' => 'កំពុងយកទីតាំង...',
+    'geolocation_not_supported' => 'កម្មវិធីរុករកនេះមិនគាំទ្រការចូលប្រើទីតាំងទេ។',
+    'location_permission_denied' => 'មិនអាចយកទីតាំងបានទេ។ សូមអនុញ្ញាតការចូលប្រើទីតាំង ហើយព្យាយាមម្តងទៀត។',
 ];

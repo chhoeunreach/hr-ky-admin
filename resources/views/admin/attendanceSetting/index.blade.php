@@ -54,6 +54,8 @@
                                             </label>
                                         @elseif($datum->slug === 'attendance_location_radius')
                                             <input type="number" class="form-control" min="1" oninput="validity.valid||(value='');" name="attendance_location_radius" value="{{ $datum->value }}" autocomplete="off">
+                                        @elseif($datum->slug === 'attendance_map_url')
+                                            <input type="url" class="form-control" name="attendance_map_url" value="{{ $datum->value }}" placeholder="https://maps.google.com/..." autocomplete="off">
                                         @else
                                             <input type="number" class="form-control" min="1" oninput="validity.valid||(value='');" name="attendance_limit" value="{{ $datum->value }}" autocomplete="off">
                                         @endif
@@ -190,7 +192,6 @@
         });
     </script>
 @endsection
-
 
 
 

@@ -290,10 +290,13 @@ class AppHelper
         return AttendanceSetting::where('slug', $slug)->where('status', 1)->exists();
     }
 
-    public static function ifAttendanceMapEnabled(): bool
+    public static function getAttendanceMapUrl(): ?string
     {
-        $slug = 'attendance_map';
-        return AttendanceSetting::where('slug', $slug)->where('status', 1)->exists();
+        $url = AttendanceSetting::where('slug', 'attendance_map_url')
+            ->pluck('value')
+            ->first();
+
+        return filled($url) ? trim($url) : null;
     }
 
    public static function attendanceMethod()

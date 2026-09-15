@@ -95,6 +95,14 @@ class FeatureSeeder extends Seeder
                 'updated_at' => Carbon::now()
             ],
             [
+                'group' => 'Attendance',
+                'name' => 'Attendance Map',
+                'key' => Str::slug('Attendance Map'),
+                'status' => 1,
+                'created_at' => Carbon::now(),
+                'updated_at' => Carbon::now()
+            ],
+            [
                 'group' => 'Office Desk',
                 'name' => 'Leave Request',
                 'key' => Str::slug('Leave Request'),

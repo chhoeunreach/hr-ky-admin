@@ -99,6 +99,12 @@
         <input type="text" class="form-control" id="branch_location_longitude" required name="branch_location_longitude" value="{{ isset($branch) ? $branch->branch_location_longitude : old('branch_location_longitude') }}" autocomplete="off" placeholder="{{ __('index.enter_branch_location_longitude') }}">
     </div>
 
+    <div class="col-lg-4 col-md-6 mb-4 d-flex align-items-end">
+        <button type="button" class="btn btn-outline-primary getBranchCurrentLocation">
+            <i class="link-icon" data-feather="map-pin"></i> {{ __('index.get_current_location') }}
+        </button>
+    </div>
+
     <div class="col-lg-4 mb-4">
         <label for="exampleFormControlSelect1" class="form-label">{{ __('index.status') }}</label>
         <select class="form-select" id="exampleFormControlSelect1" name="is_active">
@@ -154,6 +160,42 @@
                 if ($('.payment-qr-code-row').length > 1) {
                     $(this).closest('.payment-qr-code-row').remove();
                 }
+            });
+
+            $('.getBranchCurrentLocation').on('click', function () {
+                const button = $(this);
+                const form = button.closest('form');
+                const latitudeInput = form.find('[name="branch_location_latitude"]');
+                const longitudeInput = form.find('[name="branch_location_longitude"]');
+                const originalHtml = button.html();
+
+                if (!navigator.geolocation) {
+                    Swal.fire('{{ __('index.error') }}', '{{ __('index.geolocation_not_supported') }}', 'error');
+                    return;
+                }
+
+                button.prop('disabled', true).html('{{ __('index.getting_location') }}');
+
+                navigator.geolocation.getCurrentPosition(
+                    function (position) {
+                        latitudeInput.val(position.coords.latitude.toFixed(7));
+                        longitudeInput.val(position.coords.longitude.toFixed(7));
+                        button.prop('disabled', false).html(originalHtml);
+
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
+                    },
+                    function () {
+                        button.prop('disabled', false).html(originalHtml);
+                        Swal.fire('{{ __('index.error') }}', '{{ __('index.location_permission_denied') }}', 'error');
+
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
             });
         });
     </script>
