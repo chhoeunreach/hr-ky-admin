@@ -66,7 +66,7 @@ class AttendanceSettingController extends Controller
     {
         try {
             $attendanceSettings = AttendanceSetting::query()
-                ->whereIn('slug', ['attendance_note', 'attendance_selfie', 'attendance_limit', 'attendance_method', 'attendance_location_radius'])
+                ->whereIn('slug', ['attendance_note', 'attendance_selfie', 'attendance_map', 'attendance_limit', 'attendance_method', 'attendance_location_radius'])
                 ->get();
 
             return view($this->view . 'index', compact('attendanceSettings'));
@@ -87,6 +87,7 @@ class AttendanceSettingController extends Controller
                 'attendance_location_radius' => 'sometimes|integer|min:1|max:100000',
                 'attendance_note' => 'sometimes|in:0,1',
                 'attendance_selfie' => 'sometimes|in:0,1',
+                'attendance_map' => 'sometimes|in:0,1',
             ];
 
             $validator = \Validator::make($request->all(), $rules);
@@ -126,6 +127,8 @@ class AttendanceSettingController extends Controller
                     $data['status'] = $request->input('attendance_note');
                 } elseif ($slug === 'attendance_selfie' && $request->has('attendance_selfie')) {
                     $data['status'] = $request->input('attendance_selfie');
+                } elseif ($slug === 'attendance_map' && $request->has('attendance_map')) {
+                    $data['status'] = $request->input('attendance_map');
                 }
 
                 if (!empty($data)) {

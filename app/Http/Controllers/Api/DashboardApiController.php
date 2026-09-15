@@ -115,6 +115,7 @@ class DashboardApiController extends Controller
             $dashboard['date_in_ad'] = !AppHelper::ifDateInBsEnabled();
             $dashboard['attendance_note'] = AppHelper::ifAttendanceNoteEnabled();
             $dashboard['attendance_selfie'] = AppHelper::ifAttendanceSelfieEnabled();
+            $dashboard['attendance_map'] = AppHelper::ifAttendanceMapEnabled();
             $dashboard['attendance_method'] = array_values(array_diff(AppHelper::attendanceMethod(),['biometric']));
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
             $dashboard['workspace_location'] = [

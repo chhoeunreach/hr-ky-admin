@@ -35,6 +35,13 @@ class AttendanceSettingSeeder extends Seeder
                 'status' => 1
             ],
             [
+                'name'=> 'Attendance Map',
+                'slug' => 'attendance_map',
+                'value'=>null,
+                'values'=>null,
+                'status' => 1
+            ],
+            [
                 'name' => 'Attendance Limit',
                 'slug' => 'attendance_limit',
                 'value' => 1,
