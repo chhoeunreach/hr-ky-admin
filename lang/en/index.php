@@ -1859,4 +1859,6 @@ return [
     'location_permission_denied' => 'Unable to get location. Please allow location access and try again.',
     'upload_android_apk' => 'Upload Android APK',
     'current_file' => 'Current File',
+    'check_in_selfie' => 'Check-in Selfie',
+    'check_out_selfie' => 'Check-out Selfie',
 ];

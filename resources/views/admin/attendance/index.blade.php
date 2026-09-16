@@ -1669,6 +1669,28 @@
                                         $rowHasAnyRequest = (bool) ($firstAttendance?->leave_request_id || $firstAttendance?->time_leave_id);
                                         $rowShowAttendanceStatus = !is_null($firstAttendance->attendance_status) || !$rowHasAnyRequest;
                                         $firstAttendanceBadgeMeta = $attendanceBadgeMeta($firstAttendance);
+                                        $attendanceSelfieActions = collect();
+                                        $selfieAttendanceNumber = 1;
+
+                                        foreach ($userAttendances as $selfieAttendance) {
+                                            $selfieLabelSuffix = $multipleEntries > 1 ? ' #' . $selfieAttendanceNumber : '';
+
+                                            if (!empty($selfieAttendance->check_in_selfie)) {
+                                                $attendanceSelfieActions->push([
+                                                    'path' => $selfieAttendance->check_in_selfie,
+                                                    'label' => __('index.check_in_selfie') . $selfieLabelSuffix,
+                                                ]);
+                                            }
+
+                                            if (!empty($selfieAttendance->check_out_selfie)) {
+                                                $attendanceSelfieActions->push([
+                                                    'path' => $selfieAttendance->check_out_selfie,
+                                                    'label' => __('index.check_out_selfie') . $selfieLabelSuffix,
+                                                ]);
+                                            }
+
+                                            $selfieAttendanceNumber++;
+                                        }
                                     @endphp
 
                                     <tr class="attendance-day-row"
@@ -2184,6 +2206,17 @@
                                                                 </a>
                                                             </li>
                                                         @endcan
+                                                        @foreach($attendanceSelfieActions as $selfieAction)
+                                                            <li class="me-2">
+                                                                <a href="#"
+                                                                   class="showProfilePhoto"
+                                                                   data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                                   data-name="{{ $selfieAction['label'] }}"
+                                                                   title="{{ $selfieAction['label'] }}">
+                                                                    <i class="link-icon" data-feather="image"></i>
+                                                                </a>
+                                                            </li>
+                                                        @endforeach
                                                         @if($attendanceNote)
                                                             <li class="me-2">
                                                                 <a href="#"
@@ -2245,6 +2278,17 @@
                                                             </li>
                                                         @endcan
                                                     @endif
+                                                    @foreach($attendanceSelfieActions as $selfieAction)
+                                                        <li class="me-2">
+                                                            <a href="#"
+                                                               class="showProfilePhoto"
+                                                               data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                               data-name="{{ $selfieAction['label'] }}"
+                                                               title="{{ $selfieAction['label'] }}">
+                                                                <i class="link-icon" data-feather="image"></i>
+                                                            </a>
+                                                        </li>
+                                                    @endforeach
                                                     @if($attendanceNote)
                                                         <li class="me-2">
                                                             <a href="#"
@@ -2315,6 +2359,17 @@
                                                                 </a>
                                                             </li>
                                                         @endcan
+                                                            @foreach($attendanceSelfieActions as $selfieAction)
+                                                                <li class="me-2">
+                                                                    <a href="#"
+                                                                       class="showProfilePhoto"
+                                                                       data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                                       data-name="{{ $selfieAction['label'] }}"
+                                                                       title="{{ $selfieAction['label'] }}">
+                                                                        <i class="link-icon" data-feather="image"></i>
+                                                                    </a>
+                                                                </li>
+                                                            @endforeach
                                                             @if($attendanceNote)
                                                                 <li class="me-2">
                                                                     <a href="#"

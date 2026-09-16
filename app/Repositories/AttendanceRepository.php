@@ -237,6 +237,8 @@ class AttendanceRepository
             'attendances.check_out_type',
             'attendances.check_in_note',
             'attendances.check_out_note',
+            'attendances.check_in_selfie',
+            'attendances.check_out_selfie',
             'attendances.night_checkin',
             'attendances.night_checkout',
             'office_times.shift_type as shift',

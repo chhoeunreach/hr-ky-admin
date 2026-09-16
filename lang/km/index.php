@@ -1915,4 +1915,6 @@ return [
     'location_permission_denied' => 'មិនអាចយកទីតាំងបានទេ។ សូមអនុញ្ញាតការចូលប្រើទីតាំង ហើយព្យាយាមម្តងទៀត។',
     'upload_android_apk' => 'បង្ហោះ Android APK',
     'current_file' => 'ឯកសារបច្ចុប្បន្ន',
+    'check_in_selfie' => 'រូប Selfie ពេលចូលម៉ោង',
+    'check_out_selfie' => 'រូប Selfie ពេលចេញម៉ោង',
 ];
