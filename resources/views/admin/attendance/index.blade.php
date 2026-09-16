@@ -1589,7 +1589,7 @@
                                         <th class="text-center">{{ __('index.worked_hour') }}</th>
                                     @endif
                                 <th class="text-center">{{ __('index.attendance_status') }}</th>
-                                @canany(['attendance_create', 'attendance_update', 'attendance_delete'])
+                                @canany(['attendance_create', 'attendance_update', 'attendance_delete', 'view_attendance_selfie'])
                                     <th class="text-center">{{ __('index.action') }}</th>
                                 @endcanany
                             </tr>
@@ -2145,7 +2145,7 @@
                                         </div>
                                     </td>
 
-                                    @canany(['attendance_create','attendance_update','attendance_delete'])
+                                    @canany(['attendance_create','attendance_update','attendance_delete','view_attendance_selfie'])
                                         @if($nightShift && $filterParameter['attendance_date'] ==  $currentDate)
 
                                             <td class="text-center">
@@ -2206,17 +2206,19 @@
                                                                 </a>
                                                             </li>
                                                         @endcan
-                                                        @foreach($attendanceSelfieActions as $selfieAction)
-                                                            <li class="me-2">
-                                                                <a href="#"
-                                                                   class="showProfilePhoto"
-                                                                   data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
-                                                                   data-name="{{ $selfieAction['label'] }}"
-                                                                   title="{{ $selfieAction['label'] }}">
-                                                                    <i class="link-icon" data-feather="image"></i>
-                                                                </a>
-                                                            </li>
-                                                        @endforeach
+                                                        @can('view_attendance_selfie')
+                                                            @foreach($attendanceSelfieActions as $selfieAction)
+                                                                <li class="me-2">
+                                                                    <a href="#"
+                                                                       class="showProfilePhoto"
+                                                                       data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                                       data-name="{{ $selfieAction['label'] }}"
+                                                                       title="{{ $selfieAction['label'] }}">
+                                                                        <i class="link-icon" data-feather="image"></i>
+                                                                    </a>
+                                                                </li>
+                                                            @endforeach
+                                                        @endcan
                                                         @if($attendanceNote)
                                                             <li class="me-2">
                                                                 <a href="#"
@@ -2278,17 +2280,19 @@
                                                             </li>
                                                         @endcan
                                                     @endif
-                                                    @foreach($attendanceSelfieActions as $selfieAction)
-                                                        <li class="me-2">
-                                                            <a href="#"
-                                                               class="showProfilePhoto"
-                                                               data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
-                                                               data-name="{{ $selfieAction['label'] }}"
-                                                               title="{{ $selfieAction['label'] }}">
-                                                                <i class="link-icon" data-feather="image"></i>
-                                                            </a>
-                                                        </li>
-                                                    @endforeach
+                                                    @can('view_attendance_selfie')
+                                                        @foreach($attendanceSelfieActions as $selfieAction)
+                                                            <li class="me-2">
+                                                                <a href="#"
+                                                                   class="showProfilePhoto"
+                                                                   data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                                   data-name="{{ $selfieAction['label'] }}"
+                                                                   title="{{ $selfieAction['label'] }}">
+                                                                    <i class="link-icon" data-feather="image"></i>
+                                                                </a>
+                                                            </li>
+                                                        @endforeach
+                                                    @endcan
                                                     @if($attendanceNote)
                                                         <li class="me-2">
                                                             <a href="#"
@@ -2359,17 +2363,19 @@
                                                                 </a>
                                                             </li>
                                                         @endcan
-                                                            @foreach($attendanceSelfieActions as $selfieAction)
-                                                                <li class="me-2">
-                                                                    <a href="#"
-                                                                       class="showProfilePhoto"
-                                                                       data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
-                                                                       data-name="{{ $selfieAction['label'] }}"
-                                                                       title="{{ $selfieAction['label'] }}">
-                                                                        <i class="link-icon" data-feather="image"></i>
-                                                                    </a>
-                                                                </li>
-                                                            @endforeach
+                                                            @can('view_attendance_selfie')
+                                                                @foreach($attendanceSelfieActions as $selfieAction)
+                                                                    <li class="me-2">
+                                                                        <a href="#"
+                                                                           class="showProfilePhoto"
+                                                                           data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $selfieAction['path']) }}"
+                                                                           data-name="{{ $selfieAction['label'] }}"
+                                                                           title="{{ $selfieAction['label'] }}">
+                                                                            <i class="link-icon" data-feather="image"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                @endforeach
+                                                            @endcan
                                                             @if($attendanceNote)
                                                                 <li class="me-2">
                                                                     <a href="#"

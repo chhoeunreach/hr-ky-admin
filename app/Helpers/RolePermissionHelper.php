@@ -701,6 +701,11 @@ class RolePermissionHelper
                 "permission_groups_id" => 7
             ],
             [
+                "name" => "View Attendance Selfie",
+                "permission_key" => "view_attendance_selfie",
+                "permission_groups_id" => 7
+            ],
+            [
                 "name" => "Attendance Delete",
                 "permission_key" => "attendance_delete",
                 "permission_groups_id" => 7
