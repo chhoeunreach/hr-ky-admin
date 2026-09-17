@@ -2901,6 +2901,10 @@
                 link.addEventListener('click', () => {
                     const href = link.getAttribute('href') || '';
 
+                    if (link.classList.contains('deleteAttendance')) {
+                        return;
+                    }
+
                     if (
                         href === '#'
                         || href.startsWith('javascript:')

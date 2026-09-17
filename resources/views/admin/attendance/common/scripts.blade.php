@@ -45,6 +45,24 @@
             });
         });
 
+        $(document).off('click.attendanceDelete', 'a.deleteAttendance').on('click.attendanceDelete', 'a.deleteAttendance', function (event) {
+            event.preventDefault();
+            let href = $(this).attr('href');
+            Swal.fire({
+                title: '{{ __('index.delete_confirmation') }}',
+                icon: 'warning',
+                showDenyButton: true,
+                confirmButtonText: `{{ __('index.yes') }}`,
+                denyButtonText: `{{ __('index.no') }}`,
+                padding: '10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = href;
+                }
+            });
+        });
+
 
         $(document).off('click.attendanceLocation', '.checkLocation').on('click.attendanceLocation', '.checkLocation', function (event) {
             event.preventDefault();

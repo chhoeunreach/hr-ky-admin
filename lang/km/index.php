@@ -726,7 +726,7 @@ return [
     'salary_increment_remark'=>'Salary Increment Remark',
     'advance_salary_requests'=>'Advance Salary Requests',
     'advance_salary_request_filter'=>'Advance Salary Requests Filter',
-    'delete_confirmation'=>'Are you sure you want to Delete ?',
+    'delete_confirmation'=>'តើអ្នកប្រាកដថាចង់លុបមែនទេ?',
     'payslip_for_the_month_of'=>'Payslip for the Month of',
     'absent_deduction'=>'Absent Deduction',
 
