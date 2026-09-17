@@ -2,7 +2,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header text-center">
-                <h5 class="modal-title" id="exampleModalLabel">{{ __('index.add_branch') }}</h5>
+                <h5 class="modal-title" id="exampleModalLabel">{{ __('index.change_password') }}</h5>
             </div>
             <div class="modal-body">
                 <div class="container">

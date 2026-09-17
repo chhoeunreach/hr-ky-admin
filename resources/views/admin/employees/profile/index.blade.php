@@ -1,8 +1,8 @@
 @extends('layouts.master')
 
-@section('title', 'Employee Profiles')
+@section('title', __('index.employee_profiles'))
 
-@section('action', 'Employee Profile')
+@section('action', __('index.employee_profile'))
 
 @section('main-content')
     <section class="content">
@@ -152,24 +152,24 @@
                             data-bs-target="#employeeProfileFilters"
                             aria-expanded="{{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
                             aria-controls="employeeProfileFilters">
-                        Filter
+                        {{ __('index.filter') }}
                     </button>
-                    <h6 class="card-title mb-0">Employee Profile</h6>
+                    <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
                     @can('employee.profile.print')
                         <button type="button" class="btn btn-outline-primary btn-sm ms-auto" onclick="window.print()">
-                            Print
+                            {{ __('index.print') }}
                         </button>
                     @endcan
                 </div>
-                <h6 class="employee-profile-print-title d-none">Employee Profile</h6>
+                <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
                 <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
                     <div class="row g-2">
                         <div class="col-lg-2 col-md-6">
-                            <input class="form-control" name="search" value="{{ request('search') }}" placeholder="Search employee">
+                            <input class="form-control" name="search" value="{{ request('search') }}" placeholder="{{ __('index.search_employee') }}">
                         </div>
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="branch_id">
-                                <option value="">All Branches</option>
+                                <option value="">{{ __('index.all_branches') }}</option>
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" @selected((string) request('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
                                 @endforeach
@@ -177,7 +177,7 @@
                         </div>
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="department_id">
-                                <option value="">All Departments</option>
+                                <option value="">{{ __('index.all_departments') }}</option>
                                 @foreach($departments as $department)
                                     <option value="{{ $department->id }}" @selected((string) request('department_id') === (string) $department->id)>{{ $department->dept_name }}</option>
                                 @endforeach
@@ -185,7 +185,7 @@
                         </div>
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="post_id">
-                                <option value="">All Positions</option>
+                                <option value="">{{ __('index.all_positions') }}</option>
                                 @foreach($posts as $post)
                                     <option value="{{ $post->id }}" @selected((string) request('post_id') === (string) $post->id)>{{ $post->post_name }}</option>
                                 @endforeach
@@ -193,17 +193,17 @@
                         </div>
                         <div class="col-lg-1 col-md-6">
                             <select class="form-select" name="employment_status">
-                                <option value="">All Status</option>
+                                <option value="">{{ __('index.all_status') }}</option>
                                 @foreach(['active', 'probation', 'suspended', 'resigned', 'terminated', 'inactive'] as $status)
-                                    <option value="{{ $status }}" @selected($employmentStatus === $status)>{{ ucfirst($status) }}</option>
+                                    <option value="{{ $status }}" @selected($employmentStatus === $status)>{{ __('index.' . $status) }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-lg-1 col-md-6">
                             <select class="form-select" name="review_status">
-                                <option value="">Review</option>
+                                <option value="">{{ __('index.review') }}</option>
                                 @foreach(['Due', 'Overdue', 'Upcoming', 'Done', 'N/A'] as $status)
-                                    <option value="{{ $status }}" @selected(request('review_status') === $status)>{{ $status }}</option>
+                                    <option value="{{ $status }}" @selected(request('review_status') === $status)>{{ $status === 'N/A' ? 'N/A' : __('index.' . strtolower($status)) }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -212,12 +212,12 @@
                                 @foreach([10, 25, 50, 100] as $size)
                                     <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>
                                 @endforeach
-                                <option value="all" @selected($perPage === 'all')>All</option>
+                                <option value="all" @selected($perPage === 'all')>{{ __('index.all') }}</option>
                             </select>
                         </div>
                         <div class="col-lg-1 col-md-6 d-flex gap-2">
-                            <button class="btn btn-primary w-100">Apply</button>
-                            <a class="btn btn-outline-secondary" href="{{ route('admin.employees.profile.index') }}">Reset</a>
+                            <button class="btn btn-primary w-100">{{ __('index.apply') }}</button>
+                            <a class="btn btn-outline-secondary" href="{{ route('admin.employees.profile.index') }}">{{ __('index.reset') }}</a>
                         </div>
                     </div>
                 </form>
@@ -227,13 +227,13 @@
                     <table class="table table-sm">
                         <thead>
                         <tr>
-                            <th class="no-print">Action</th>
-                            <th>Employee</th>
-                            <th>Branch</th>
-                            <th>Department</th>
-                            <th>Position</th>
-                            <th>Working Life</th>
-                            <th>Review</th>
+                            <th class="no-print">{{ __('index.action') }}</th>
+                            <th>{{ __('index.employee') }}</th>
+                            <th>{{ __('index.branch') }}</th>
+                            <th>{{ __('index.department') }}</th>
+                            <th>{{ __('index.position') }}</th>
+                            <th>{{ __('index.working_life') }}</th>
+                            <th>{{ __('index.review') }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -248,7 +248,7 @@
                             @endphp
                             <tr>
                                 <td class="no-print">
-                                    <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">Employee 360</a>
+                                    <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">{{ __('index.employee_360') }}</a>
                                 </td>
                                 <td>
                                     @php
@@ -273,9 +273,9 @@
                                 <td>
                                     <strong>{{ $workingLife($employee) }}</strong>
                                             <div class="text-muted small">
-                                                {{ $employee->joining_date ? 'From ' . $employee->joining_date : 'No join date' }}
+                                                {{ $employee->joining_date ? __('index.from') . ' ' . $employee->joining_date : __('index.no_join_date') }}
                                                 @if($employee->employee360Profile?->last_working_date)
-                                                    to {{ $employee->employee360Profile->last_working_date->format('Y-m-d') }}
+                                                    {{ __('index.to') }} {{ $employee->employee360Profile->last_working_date->format('Y-m-d') }}
                                                 @endif
                                             </div>
                                 </td>
@@ -285,41 +285,42 @@
                                             @php
                                                 $canCreateFromBadge = in_array($milestone['status'], ['Due', 'Overdue'], true);
                                                 $reviewUrl = route('admin.employees.profile.show', [
-                                                    'employee' => $employee->id,
-                                                    'tab' => 'evaluation',
-                                                    'review_create' => 1,
-                                                    'review_type' => $milestone['review_type'],
-                                                    'period_start' => $milestone['period_start'],
-                                                    'period_end' => $milestone['period_end'],
-                                                    'review_date' => $milestone['date'],
-                                                ]);
+                                                     'employee' => $employee->id,
+                                                     'tab' => 'evaluation',
+                                                     'review_create' => 1,
+                                                     'review_type' => $milestone['review_type'],
+                                                     'period_start' => $milestone['period_start'],
+                                                     'period_end' => $milestone['period_end'],
+                                                     'review_date' => $milestone['date'],
+                                                 ]);
+                                                $statusLabel = $milestone['status'] === 'N/A' ? 'N/A' : __('index.' . strtolower($milestone['status']));
                                             @endphp
                                             @can('employee.performance.create')
                                                 @if($canCreateFromBadge)
                                                     <a class="badge bg-{{ $reviewBadgeClass($milestone['status']) }} text-decoration-none"
                                                        href="{{ $reviewUrl }}"
                                                        title="Create review due: {{ $milestone['date'] ?: 'N/A' }}">
-                                                        {{ $milestone['label'] }}: {{ $milestone['status'] }}
+                                                        {{ $milestone['label'] }}: {{ $statusLabel }}
                                                     </a>
                                                 @else
                                                     <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="Due: {{ $milestone['date'] ?: 'N/A' }}">
-                                                        {{ $milestone['label'] }}: {{ $milestone['status'] }}
+                                                        {{ $milestone['label'] }}: {{ $statusLabel }}
                                                     </span>
                                                 @endif
                                             @else
                                                 <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="Due: {{ $milestone['date'] ?: 'N/A' }}">
-                                                    {{ $milestone['label'] }}: {{ $milestone['status'] }}
+                                                    {{ $milestone['label'] }}: {{ $statusLabel }}
                                                 </span>
                                             @endcan
                                         @endforeach
                                     </div>
                                     <div class="text-muted small mt-1">
-                                        Next: {{ collect($reviewMilestones)->firstWhere('status', 'Upcoming')['date'] ?? collect($reviewMilestones)->firstWhere('status', 'Due')['date'] ?? collect($reviewMilestones)->firstWhere('status', 'Overdue')['date'] ?? 'Completed' }}
+                                        {{ __('index.next') }}: {{ collect($reviewMilestones)->firstWhere('status', 'Upcoming')['date'] ?? collect($reviewMilestones)->firstWhere('status', 'Due')['date'] ?? collect($reviewMilestones)->firstWhere('status', 'Overdue')['date'] ?? __('index.completed') }}
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="text-center">No records found</td></tr>
+                            <tr><td colspan="7" class="text-center">{{ __('index.no_records_found') }}</td></tr>
                         @endforelse
                         </tbody>
                     </table>

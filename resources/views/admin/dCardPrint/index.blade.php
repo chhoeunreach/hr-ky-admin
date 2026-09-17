@@ -54,23 +54,23 @@
                 </div>
                 <div>
                     <div class="studio-title">{{ $company?->name ?? 'គ្នាយើង' }} <span>គ្នាយើង</span></div>
-                    <div class="studio-subtitle">D Card Print Studio · Employee card designer and A4 batch printing</div>
+                    <div class="studio-subtitle">{{ __('index.d_card_print_studio_subtitle') }}</div>
                 </div>
             </div>
             <nav class="studio-main-tabs">
                 <button type="button" class="active" data-studio-tab="editor">
-                    <i class="link-icon" data-feather="credit-card"></i> Template Designer
+                    <i class="link-icon" data-feather="credit-card"></i> {{ __('index.template_designer') }}
                 </button>
                 <button type="button" data-studio-tab="batch">
-                    <i class="link-icon" data-feather="users"></i> Employee Batch Roster
+                    <i class="link-icon" data-feather="users"></i> {{ __('index.employee_batch_roster') }}
                     <strong><span id="selectedCount">0</span>/<span id="totalCount">0</span></strong>
                 </button>
                 <button type="button" data-studio-tab="a4print">
-                    <i class="link-icon" data-feather="printer"></i> A4 Print Studio
+                    <i class="link-icon" data-feather="printer"></i> {{ __('index.a4_print_studio') }}
                 </button>
             </nav>
             <button type="button" class="studio-print-btn" id="printCards">
-                <i class="link-icon" data-feather="printer"></i> Quick Print A4
+                <i class="link-icon" data-feather="printer"></i> {{ __('index.quick_print_a4') }}
             </button>
         </header>
 
@@ -79,24 +79,24 @@
                 <div class="col-xl-4 col-lg-5">
                     <div class="studio-panel-head">
                         <div>
-                            <h5><i class="link-icon" data-feather="sliders"></i> ID Card Template Studio</h5>
-                            <p>Customize layout, templates, photo styles & 300 DPI guides</p>
+                            <h5><i class="link-icon" data-feather="sliders"></i> {{ __('index.id_card_template_studio') }}</h5>
+                            <p>{{ __('index.id_card_template_studio_subtitle') }}</p>
                         </div>
-                        <button type="button" class="btn btn-link" id="resetStudio">Reset</button>
+                        <button type="button" class="btn btn-link" id="resetStudio">{{ __('index.reset') }}</button>
                     </div>
 
                     <div class="studio-subtabs">
-                        <button type="button" class="active" data-editor-section="templates"><i data-feather="grid"></i> Templates</button>
-                        <button type="button" data-editor-section="orientation"><i data-feather="crop"></i> Orientation</button>
-                        <button type="button" data-editor-section="branding"><i data-feather="droplet"></i> Branding</button>
-                        <button type="button" data-editor-section="front"><i data-feather="credit-card"></i> Front Layout</button>
-                        <button type="button" data-editor-section="back"><i data-feather="grid"></i> Back Side</button>
-                        <button type="button" data-editor-section="guides"><i data-feather="crop"></i> Guides</button>
+                        <button type="button" class="active" data-editor-section="templates"><i data-feather="grid"></i> {{ __('index.templates') }}</button>
+                        <button type="button" data-editor-section="orientation"><i data-feather="crop"></i> {{ __('index.orientation') }}</button>
+                        <button type="button" data-editor-section="branding"><i data-feather="droplet"></i> {{ __('index.branding') }}</button>
+                        <button type="button" data-editor-section="front"><i data-feather="credit-card"></i> {{ __('index.front_layout') }}</button>
+                        <button type="button" data-editor-section="back"><i data-feather="grid"></i> {{ __('index.back_side') }}</button>
+                        <button type="button" data-editor-section="guides"><i data-feather="crop"></i> {{ __('index.guides') }}</button>
                     </div>
 
                     <div class="card mb-3 editor-section active" data-editor-content="templates">
                         <div class="card-header">
-                            <h6 class="card-title mb-0">Templates</h6>
+                            <h6 class="card-title mb-0">{{ __('index.templates') }}</h6>
                         </div>
                         <div class="card-body">
                             <p class="template-intro">Choose from 8 high-resolution ID card template styles tailored for គ្នាយើង, corporate, academic, and medical sectors:</p>

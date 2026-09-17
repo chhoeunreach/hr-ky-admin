@@ -1,10 +1,10 @@
 @extends('layouts.master')
 
-@section('title', 'Live Staff Map')
+@section('title', __('index.live_staff_map'))
 
-@section('nav-head', 'Live Staff Map')
+@section('nav-head', __('index.live_staff_map'))
 
-@section('action', 'Live Map')
+@section('action', __('index.live_staff_map'))
 
 @section('styles')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
@@ -101,7 +101,7 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h6 class="card-title mb-0">Select Live Map Date</h6>
+                <h6 class="card-title mb-0">{{ __('index.select_live_map_date') }}</h6>
             </div>
             <form class="forms-sample card-body pb-0" action="{{ route('admin.live-map') }}" method="get">
                 <div class="row align-items-center">
@@ -163,12 +163,12 @@
             <div class="card mb-0">
                 <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
                     <div>
-                        <h6 class="card-title mb-1">Staff Scan-In Map</h6>
-                        <small class="text-muted">Shows one pin for each staff check-in on the selected date and refreshes automatically.</small>
+                        <h6 class="card-title mb-1">{{ __('index.staff_scan_in_map') }}</h6>
+                        <small class="text-muted">{{ __('index.staff_scan_in_map_subtitle') }}</small>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm" id="refreshLiveMap">
                         <i class="link-icon" data-feather="refresh-cw"></i>
-                        Refresh
+                        {{ __('index.refresh') ?? 'Refresh' }}
                     </button>
                 </div>
                 <div class="card-body p-0">
@@ -179,19 +179,19 @@
             <div class="card live-map-panel mb-0">
                 <div class="card-header">
                     <div class="d-flex align-items-center justify-content-between mb-3">
-                        <h6 class="card-title mb-0">Staff Scan-In List</h6>
+                        <h6 class="card-title mb-0">{{ __('index.staff_scan_in_list') }}</h6>
                         <span class="badge bg-primary" id="staffLocationCount">0</span>
                     </div>
-                    <input type="search" class="form-control" id="staffLocationSearch" placeholder="Search staff, branch, department">
-                    <small class="text-muted d-block mt-2" id="liveMapUpdatedAt">Loading scan-in pins...</small>
+                    <input type="search" class="form-control" id="staffLocationSearch" placeholder="{{ __('index.search_staff_branch_dept') }}">
+                    <small class="text-muted d-block mt-2" id="liveMapUpdatedAt">{{ __('index.loading_scan_in_pins') }}</small>
                 </div>
                 <div class="card-body p-0">
                     <div class="live-map-list" id="staffLocationList"></div>
                     <div class="live-map-empty d-none align-items-center justify-content-center text-center p-4" id="staffLocationEmpty">
                         <div>
                             <i class="link-icon text-muted mb-2" data-feather="map-pin"></i>
-                            <p class="mb-0 fw-bold">No scan-ins found</p>
-                            <small class="text-muted">Pins appear when staff check in with location data on the selected date.</small>
+                            <p class="mb-0 fw-bold">{{ __('index.no_scan_ins_found') }}</p>
+                            <small class="text-muted">{{ __('index.pins_appear_when_staff_checkin') }}</small>
                         </div>
                     </div>
                 </div>

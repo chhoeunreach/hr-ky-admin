@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Telegram Employees')
+@section('title', __('index.telegram_employees'))
 
 @section('styles')
     <style>
@@ -132,20 +132,20 @@
 
         <div class="telegram-topbar">
             <div>
-                <h4>Telegram Employees</h4>
-                <p>Direct Telegram chat, employee linking, and broadcast alerts</p>
+                <h4>{{ __('index.telegram_employees') }}</h4>
+                <p>{{ __('index.telegram_employees_subtitle') }}</p>
             </div>
             <div class="telegram-status-strip">
-                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="all" title="View all employees"><i data-feather="users"></i> <strong>{{ $stats['total'] ?? 0 }}</strong> Employees</button>
-                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="linked" title="View linked employees"><i data-feather="check-circle"></i> <strong>{{ $stats['linked'] ?? 0 }}</strong> Linked</button>
-                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="unlinked" title="View not linked employees"><i data-feather="alert-circle"></i> <strong>{{ $stats['unlinked'] ?? 0 }}</strong> Not Linked</button>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="all" title="View all employees"><i data-feather="users"></i> <strong>{{ $stats['total'] ?? 0 }}</strong> {{ __('index.employees') }}</button>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="linked" title="View linked employees"><i data-feather="check-circle"></i> <strong>{{ $stats['linked'] ?? 0 }}</strong> {{ __('index.linked') }}</button>
+                <button type="button" class="telegram-metric telegram-stats-trigger" data-type="unlinked" title="View not linked employees"><i data-feather="alert-circle"></i> <strong>{{ $stats['unlinked'] ?? 0 }}</strong> {{ __('index.not_linked') }}</button>
                 <form method="POST" action="{{ route('admin.telegram-employees.sync-starts') }}" class="m-0">
                     @csrf
                     <button type="submit" class="btn btn-outline-success">
-                        <i data-feather="download-cloud"></i> Sync Telegram Starts
+                        <i data-feather="download-cloud"></i> {{ __('index.sync_telegram_starts') }}
                     </button>
                 </form>
-                <a href="{{ route('admin.telegram-bot.index') }}" class="btn btn-outline-primary"><i data-feather="settings"></i> Bot Settings</a>
+                <a href="{{ route('admin.telegram-bot.index') }}" class="btn btn-outline-primary"><i data-feather="settings"></i> {{ __('index.bot_settings') }}</a>
             </div>
         </div>
 
@@ -153,22 +153,22 @@
             <aside class="telegram-sidebar">
                 <form class="telegram-search" action="{{ route('admin.telegram-employees.index') }}" method="get">
                     <div class="telegram-search-title">
-                        <h3>Chats</h3>
+                        <h3>{{ __('index.chats') }}</h3>
                         <span class="telegram-bot-pill {{ $botReady ? '' : 'missing' }}">
                             <i data-feather="{{ $botReady ? 'radio' : 'alert-triangle' }}"></i>
-                            {{ $botReady ? '@' . ltrim($botUsername, '@') : 'Bot setup needed' }}
+                            {{ $botReady ? '@' . ltrim($botUsername, '@') : __('index.bot_setup_needed') }}
                         </span>
                     </div>
-                    <input type="text" placeholder="Search name, phone, code, username" name="search" value="{{ $filters['search'] }}" class="form-control">
+                    <input type="text" placeholder="{{ __('index.search_name_phone_code_username') }}" name="search" value="{{ $filters['search'] }}" class="form-control">
                     <div class="telegram-filter-grid">
                         <select class="form-select" name="branch_id">
-                            <option value="">All Branches</option>
+                            <option value="">{{ __('index.all_branches') }}</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}" {{ (string) $filters['branch_id'] === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                             @endforeach
                         </select>
                         <select class="form-select" name="department_id">
-                            <option value="">All Departments</option>
+                            <option value="">{{ __('index.all_departments') }}</option>
                             @foreach($departments as $department)
                                 <option value="{{ $department->id }}" {{ (string) $filters['department_id'] === (string) $department->id ? 'selected' : '' }}>{{ $department->dept_name }}</option>
                             @endforeach
@@ -176,11 +176,11 @@
                     </div>
                     <div class="telegram-filter-grid">
                         <select class="form-select" name="linked">
-                            <option value="">All Status</option>
-                            <option value="yes" {{ $filters['linked'] === 'yes' ? 'selected' : '' }}>Linked</option>
-                            <option value="no" {{ $filters['linked'] === 'no' ? 'selected' : '' }}>Not Linked</option>
+                            <option value="">{{ __('index.all_status') }}</option>
+                            <option value="yes" {{ $filters['linked'] === 'yes' ? 'selected' : '' }}>{{ __('index.linked') }}</option>
+                            <option value="no" {{ $filters['linked'] === 'no' ? 'selected' : '' }}>{{ __('index.not_linked') }}</option>
                         </select>
-                        <button type="submit" class="btn btn-primary"><i data-feather="search"></i> Search</button>
+                        <button type="submit" class="btn btn-primary"><i data-feather="search"></i> {{ __('index.search') }}</button>
                     </div>
                 </form>
 
@@ -191,8 +191,8 @@
                             $isActive = (int) $employee->id === $activeEmployeeId;
                             $avatar = $employee->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar) : asset('assets/images/img.png');
                             $initial = mb_substr(trim($employee->name ?: $employee->username ?: 'U'), 0, 1);
-                            $preview = $employee->telegram_chat_id ? ($employee->telegram_username ? '@' . $employee->telegram_username : 'Chat ID ' . $employee->telegram_chat_id) : 'Waiting for Telegram link';
-                            $headerStatus = trim(implode(' · ', array_filter([$employee->phone, $employee->employee_code ?: $employee->username, $employee->branch?->name, $employee->telegram_chat_id ? 'connected via Telegram' : 'not connected'])));
+                            $preview = $employee->telegram_chat_id ? ($employee->telegram_username ? '@' . $employee->telegram_username : 'Chat ID ' . $employee->telegram_chat_id) : __('index.waiting_telegram_link');
+                            $headerStatus = trim(implode(' · ', array_filter([$employee->phone, $employee->employee_code ?: $employee->username, $employee->branch?->name, $employee->telegram_chat_id ? __('index.connected_via_telegram') : __('index.not_connected')])));
                         @endphp
                         <button type="button" class="telegram-row {{ $isActive ? 'active' : '' }}" data-chat-target="employee-chat-{{ $employee->id }}" data-employee-id="{{ $employee->id }}" data-name="{{ $employee->name }}" data-status="{{ $headerStatus }}" data-avatar="{{ $avatar }}" data-has-avatar="{{ $employee->avatar ? '1' : '0' }}" data-initial="{{ $initial }}">
                             <span class="telegram-avatar">
@@ -216,8 +216,8 @@
                         <div class="p-4 text-center text-muted"><strong>{{ __('index.no_records_found') }}</strong></div>
                     @endforelse
                     </div>
-                    <div class="telegram-load-more" id="telegramLoadMore"><span class="spinner"></span> Loading more...</div>
-                    <div class="telegram-list-end" id="telegramListEnd">End of list</div>
+                    <div class="telegram-load-more" id="telegramLoadMore"><span class="spinner"></span> {{ __('index.loading_more') }}</div>
+                    <div class="telegram-list-end" id="telegramListEnd">{{ __('index.end_of_list') }}</div>
                 </div>
 
                 <div class="telegram-sidebar-footer" id="telegramSidebarFooter" @if($employees->hasMorePages() || $employees->isEmpty()) style="display: none;"@endif>
@@ -233,8 +233,8 @@
                             <span class="telegram-avatar-fallback" id="activeEmployeeInitial">?</span>
                         </span>
                         <span class="min-width-0">
-                            <h4 id="activeEmployeeName">Select a conversation</h4>
-                            <p id="activeEmployeeStatus">Choose an employee from the list</p>
+                            <h4 id="activeEmployeeName">{{ __('index.select_conversation') }}</h4>
+                            <p id="activeEmployeeStatus">{{ __('index.choose_employee_from_list') }}</p>
                         </span>
                     </div>
                     <div class="telegram-header-actions">
@@ -244,7 +244,7 @@
                 </header>
 
                 <main class="telegram-chat-body" id="telegramChatBody">
-                    <div class="telegram-empty" id="telegramEmpty" style="{{ $activeEmployeeId ? 'display: none;' : '' }}">Select a conversation from the left to start chatting.</div>
+                    <div class="telegram-empty" id="telegramEmpty" style="{{ $activeEmployeeId ? 'display: none;' : '' }}">{{ __('index.select_conversation_start_chat') }}</div>
 
                     @foreach($employees as $employee)
                         @php
@@ -253,26 +253,26 @@
                             $username = $employee->telegram_username ? '@' . $employee->telegram_username : 'Not saved';
                         @endphp
                         <div class="telegram-panel {{ $isActive ? 'active' : '' }}" id="employee-chat-{{ $employee->id }}">
-                            <div class="telegram-day">Today</div>
+                            <div class="telegram-day">{{ __('index.today') }}</div>
                             <div class="telegram-message in">
-                                <h5>Employee Profile</h5>
+                                <h5>{{ __('index.employee_profile') }}</h5>
                                 <p>{{ $employee->employee_code ?: $employee->username ?: 'No employee code' }}</p>
                                 <div class="telegram-detail-grid">
-                                    <div class="telegram-detail"><span>Phone</span><strong>{{ $employee->phone ?: 'N/A' }}</strong></div>
-                                    <div class="telegram-detail"><span>Branch</span><strong>{{ $employee->branch?->name ?: 'N/A' }}</strong></div>
-                                    <div class="telegram-detail"><span>Department</span><strong>{{ $employee->department?->dept_name ?: 'N/A' }}</strong></div>
-                                    <div class="telegram-detail"><span>Telegram</span><strong>{{ $employee->telegram_chat_id ? 'Connected' : 'Not linked' }}</strong></div>
+                                    <div class="telegram-detail"><span>{{ __('index.phone') }}</span><strong>{{ $employee->phone ?: 'N/A' }}</strong></div>
+                                    <div class="telegram-detail"><span>{{ __('index.branch') }}</span><strong>{{ $employee->branch?->name ?: 'N/A' }}</strong></div>
+                                    <div class="telegram-detail"><span>{{ __('index.department') }}</span><strong>{{ $employee->department?->dept_name ?: 'N/A' }}</strong></div>
+                                    <div class="telegram-detail"><span>{{ __('index.telegram') }}</span><strong>{{ $employee->telegram_chat_id ? __('index.connected') : __('index.not_linked') }}</strong></div>
                                 </div>
                                 <small>{{ now()->format('H:i') }}</small>
                             </div>
 
                             <div class="telegram-message out">
-                                <h5>Connection Setup</h5>
+                                <h5>{{ __('index.connection_setup') }}</h5>
                                 @if($employee->telegram_chat_id)
                                     <p>This employee has been connected and can receive Telegram messages.</p>
                                     <div class="telegram-detail-grid">
-                                        <div class="telegram-detail"><span>Chat ID</span><strong>{{ $employee->telegram_chat_id }}</strong></div>
-                                        <div class="telegram-detail"><span>Username</span><strong>{{ $username }}</strong></div>
+                                        <div class="telegram-detail"><span>{{ __('index.chat_id') }}</span><strong>{{ $employee->telegram_chat_id }}</strong></div>
+                                        <div class="telegram-detail"><span>{{ __('index.username') }}</span><strong>{{ $username }}</strong></div>
                                     </div>
                                     @if($employee->telegram_linked_at)
                                         <small>Linked at {{ optional($employee->telegram_linked_at)->format('Y-m-d H:i') }}</small>
@@ -281,7 +281,7 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger">
-                                            <i data-feather="unlink"></i> Unlink Telegram
+                                            <i data-feather="unlink"></i> {{ __('index.unlink_telegram') }}
                                         </button>
                                     </form>
                                 @else
@@ -306,21 +306,21 @@
                             </div>
 
                             <div class="telegram-message in">
-                                <h5>Manual Link</h5>
+                                <h5>{{ __('index.manual_link') }}</h5>
                                 <p>Paste the employee Telegram chat ID here if you already know it.</p>
                                 <form method="POST" action="{{ route('admin.telegram-employees.update', ['employee' => $employee->id, 'active_employee' => $employee->id]) }}">
                                     @csrf
                                     @method('PUT')
                                     <div class="telegram-form-grid">
                                         <div>
-                                            <label class="form-label" for="telegram_chat_id_{{ $employee->id }}">Chat ID</label>
+                                            <label class="form-label" for="telegram_chat_id_{{ $employee->id }}">{{ __('index.chat_id') }}</label>
                                             <input type="text" id="telegram_chat_id_{{ $employee->id }}" name="telegram_chat_id" class="form-control" value="{{ $employee->telegram_chat_id }}" placeholder="Example: 123456789">
                                         </div>
                                         <div>
-                                            <label class="form-label" for="telegram_username_{{ $employee->id }}">Username</label>
+                                            <label class="form-label" for="telegram_username_{{ $employee->id }}">{{ __('index.username') }}</label>
                                             <input type="text" id="telegram_username_{{ $employee->id }}" name="telegram_username" class="form-control" value="{{ $employee->telegram_username ? '@' . $employee->telegram_username : '' }}" placeholder="@username">
                                         </div>
-                                        <button type="submit" class="btn btn-primary"><i data-feather="save"></i> Save</button>
+                                        <button type="submit" class="btn btn-primary"><i data-feather="save"></i> {{ __('index.save') }}</button>
                                     </div>
                                 </form>
                                 <small>Employees can also send <code>/link {{ $employee->employee_code ?: $employee->username ?: 'EMPLOYEE_CODE' }}</code> to the bot.</small>

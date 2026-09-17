@@ -41,51 +41,51 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.employees.calendar') }}"
                            data-href="{{ route('admin.employees.calendar') }}"
-                           class="nav-link {{ request()->routeIs('admin.employees.calendar') ? 'active' : ''}}">Employees Calendar</a>
+                           class="nav-link {{ request()->routeIs('admin.employees.calendar') ? 'active' : ''}}">{{ __('index.employees_calendar') }}</a>
                     </li>
                 @endcan
                 @can('employee.profile.view')
                     <li class="nav-item">
                         <a href="{{ route('admin.employees.profile.index') }}"
                            data-href="{{ route('admin.employees.profile.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.employees.profile.*') ? 'active' : ''}}">Employee Profile</a>
+                           class="nav-link {{ request()->routeIs('admin.employees.profile.*') ? 'active' : ''}}">{{ __('index.employee_profile') }}</a>
                     </li>
                 @endcan
                 @can('employee.performance.create')
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.dashboard') }}"
                            data-href="{{ route('admin.staff-evaluations.dashboard') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.dashboard') ? 'active' : ''}}">Evaluation Dashboard</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.dashboard') ? 'active' : ''}}">{{ __('index.evaluation_dashboard') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.job-descriptions.index') }}"
                            data-href="{{ route('admin.staff-evaluations.job-descriptions.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.job-descriptions.*') ? 'active' : ''}}">Job Descriptions</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.job-descriptions.*') ? 'active' : ''}}">{{ __('index.job_descriptions') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.templates.index') }}"
                            data-href="{{ route('admin.staff-evaluations.templates.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.templates.*') ? 'active' : ''}}">Evaluation Templates</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.templates.*') ? 'active' : ''}}">{{ __('index.evaluation_templates') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.ai-create') }}"
                            data-href="{{ route('admin.staff-evaluations.ai-create') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.ai-create') ? 'active' : ''}}">AI Evaluation Generator</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.ai-create') ? 'active' : ''}}">{{ __('index.ai_evaluation_generator') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.history') }}"
                            data-href="{{ route('admin.staff-evaluations.history') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.history') ? 'active' : ''}}">Evaluation History</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.history') ? 'active' : ''}}">{{ __('index.evaluation_history') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.reports') }}"
                            data-href="{{ route('admin.staff-evaluations.reports') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.reports') ? 'active' : ''}}">Performance Reports</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.reports') ? 'active' : ''}}">{{ __('index.performance_reports') }}</a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.staff-evaluations.settings') }}"
                            data-href="{{ route('admin.staff-evaluations.settings') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.settings') ? 'active' : ''}}">Evaluation Settings</a>
+                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.settings') ? 'active' : ''}}">{{ __('index.evaluation_settings') }}</a>
                     </li>
                 @endcan
                 @can('list_employee')
@@ -102,7 +102,7 @@
                     <li class="nav-item">
                         <a href="{{route('admin.telegram-employees.index')}}"
                            data-href="{{route('admin.telegram-employees.index')}}"
-                           class="nav-link {{request()->routeIs('admin.telegram-employees.*') ? 'active' : ''}}">Telegram Employees</a>
+                           class="nav-link {{request()->routeIs('admin.telegram-employees.*') ? 'active' : ''}}">{{ __('index.telegram_employees') }}</a>
                     </li>
                 @endcan
                 @can('d_card_print')

@@ -56,14 +56,14 @@
 
                             <div class="w-100 py-2 d-flex align-items-center">
                                 <label class="fw-bolder mb-0 text-uppercase w-45 border-end me-4">{{ __('index.gender') }}:</label>
-                                <p class="d-inline-block">{{ ucfirst($userDetail->gender) }}</p>
+                                <p class="d-inline-block">{{ in_array($userDetail->gender, ['male', 'female', 'other']) ? __('index.' . $userDetail->gender) : ucfirst($userDetail->gender) }}</p>
                             </div>
                         </div>
 
                         <div class="d-md-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
                             <div class="w-100 py-2 d-flex align-items-center">
                                 <label class="fw-bolder mb-0 text-uppercase w-45 border-end me-4">{{ __('index.marital_status') }}:</label>
-                                <p class="d-inline-block">{{ ucfirst($userDetail->marital_status) }}</p>
+                                <p class="d-inline-block">{{ in_array($userDetail->marital_status, ['single', 'married', 'unmarried', 'divorced']) ? __('index.' . $userDetail->marital_status) : ucfirst($userDetail->marital_status) }}</p>
                             </div>
 
                             <div class="w-100 py-2 d-flex align-items-center">
@@ -126,7 +126,7 @@
 
                             <div class="w-100 py-2 d-flex align-items-center">
                                 <label class="fw-bolder mb-0 text-uppercase w-45 border-end me-4">{{ __('index.employment_type') }}:</label>
-                                <p class="d-inline-block">{{ ucfirst($userDetail->employment_type) }}</p>
+                                <p class="d-inline-block">{{ in_array($userDetail->employment_type, ['permanent', 'contract']) ? __('index.' . $userDetail->employment_type) : ucfirst($userDetail->employment_type) }}</p>
                             </div>
                         </div>
 
@@ -138,7 +138,7 @@
 
                             <div class="w-100 py-2 d-flex align-items-center">
                                 <label class="fw-bolder mb-0 text-uppercase w-45 border-end me-4">{{ __('index.workspace') }}:</label>
-                                <p class="d-inline-block">{{ $userDetail->workspace_type == 1 ? __('index.office') : __('index.home') }}</p>
+                                <p class="d-inline-block">{{ $userDetail->workspace_type == \App\Models\User::FIELD ? __('index.field') : __('index.office') }}</p>
                             </div>
                         </div>
                     </div>
@@ -167,7 +167,7 @@
                         <div class="d-md-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
                             <div class="w-100 py-2 d-flex align-items-center">
                                 <label class="fw-bolder mb-0 text-uppercase w-45 border-end me-4">{{ __('index.account_type') }}:</label>
-                                <p class="d-inline-block">{{ ucfirst($userDetail->accountDetail->bank_account_type ?? __('index.not_available')) }}</p>
+                                <p class="d-inline-block">{{ isset($userDetail->accountDetail->bank_account_type) && in_array($userDetail->accountDetail->bank_account_type, ['saving', 'current', 'salary']) ? __('index.' . $userDetail->accountDetail->bank_account_type) : ucfirst($userDetail->accountDetail->bank_account_type ?? __('index.not_available')) }}</p>
                             </div>
 
                             <div class="w-100 py-2 d-flex align-items-center">

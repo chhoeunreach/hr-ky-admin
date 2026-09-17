@@ -12,7 +12,7 @@
     <div class="float-md-end d-flex align-items-center gap-1.5 justify-content-center">
         <a href="{{ route('admin.employees.calendar') }}">
             <button class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1.5 rounded-2 px-2.5 py-1.5" style="font-size: 0.8125rem;">
-                <i class="link-icon" data-feather="calendar" style="width: 13px; height: 13px;"></i>Calendar
+                <i class="link-icon" data-feather="calendar" style="width: 13px; height: 13px;"></i>{{ __('index.employees_calendar') }}
             </button>
         </a>
 
@@ -52,11 +52,11 @@
             <div class="col-xl-3 col-sm-6 col-12">
                 <div class="card border-0 shadow-sm h-100 kpi-card-interactive"
                      onclick="filterByStatus('')"
-                     title="Click to show all employees"
+                     title="{{ __('index.all') }}"
                      style="border-radius: 10px; background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border-left: 3.5px solid #3b82f6 !important; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">Total Employees</span>
+                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">{{ __('index.total_employees') }}</span>
                             <h4 class="fw-bold mb-0 text-dark" style="font-size: 1.25rem; line-height: 1.2;">{{ $stats['total'] ?? $users->total() }}</h4>
                         </div>
                         <div class="rounded-2 bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -69,11 +69,11 @@
             <div class="col-xl-3 col-sm-6 col-12">
                 <div class="card border-0 shadow-sm h-100 kpi-card-interactive"
                      onclick="filterByStatus('1')"
-                     title="Click to filter active employees"
+                     title="{{ __('index.active') }}"
                      style="border-radius: 10px; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 3.5px solid #10b981 !important; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">Active Employees</span>
+                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">{{ __('index.active_employee') }}</span>
                             <h4 class="fw-bold mb-0 text-success" style="font-size: 1.25rem; line-height: 1.2;">{{ $stats['active'] ?? 0 }}</h4>
                         </div>
                         <div class="rounded-2 bg-success bg-opacity-10 text-success d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
@@ -86,11 +86,11 @@
             <div class="col-xl-3 col-sm-6 col-12">
                 <div class="card border-0 shadow-sm h-100 kpi-card-interactive"
                      onclick="filterByStatus('0')"
-                     title="Click to filter inactive employees"
+                     title="{{ __('index.inactive') }}"
                      style="border-radius: 10px; background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%); border-left: 3.5px solid #ef4444 !important; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
                     <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">Inactive Employees</span>
+                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">{{ __('index.inactive_employee') }}</span>
                             <h4 class="fw-bold mb-0 text-danger" style="font-size: 1.25rem; line-height: 1.2;">{{ $stats['inactive'] ?? 0 }}</h4>
                         </div>
                         <div class="rounded-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: rgba(239, 68, 68, 0.1); color: #ef4444;">
@@ -104,7 +104,7 @@
                 <div class="card border-0 shadow-sm h-100" style="border-radius: 10px; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); border-left: 3.5px solid #f97316 !important;">
                     <div class="card-body p-2 px-3 d-flex align-items-center justify-content-between">
                         <div>
-                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">Total Branches</span>
+                            <span class="text-muted d-block" style="font-size: 11px; font-weight: 500; line-height: 1.2;">{{ __('index.total_branches') }}</span>
                             <h4 class="fw-bold mb-0" style="color: #ea580c; font-size: 1.25rem; line-height: 1.2;">{{ $stats['branches'] ?? $branches->count() }}</h4>
                         </div>
                         <div class="rounded-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: rgba(249, 115, 22, 0.1); color: #f97316;">
@@ -128,7 +128,7 @@
                         <i class="link-icon" data-feather="filter" style="width: 13px; height: 13px;"></i>
                         <span>{{ __('index.filter') }}</span>
                         @if($hasEmployeeFilters)
-                            <span class="badge bg-primary rounded-pill" style="font-size: 9.5px;">Active</span>
+                            <span class="badge bg-primary rounded-pill" style="font-size: 9.5px;">{{ __('index.active') }}</span>
                         @endif
                     </button>
                     <h6 class="card-title mb-0 fw-bold" style="font-size: 0.9rem;">{{ __('index.employee_lists') }}</h6>
@@ -173,7 +173,7 @@
                     <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
                         <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.role') }}</label>
                         <select class="form-control" id="role_id" name="role_id" data-placeholder="{{ __('index.select_role') }}">
-                            <option value="">All Roles</option>
+                            <option value="">{{ __('index.all_roles') }}</option>
                             @foreach($roles as $role)
                                 <option value="{{ $role->id }}" {{ (string)($filterParameters['role_id'] ?? '') === (string)$role->id ? 'selected' : '' }}>
                                     {{ ucfirst($role->name) }}
@@ -204,9 +204,9 @@
                     <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
                         <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.is_active') }}</label>
                         <select class="form-control" id="is_active" name="is_active">
-                            <option value="">All Status</option>
-                            <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>Active</option>
-                            <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>Inactive</option>
+                            <option value="">{{ __('index.all_status') }}</option>
+                            <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
+                            <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
                         </select>
                     </div>
 
@@ -238,11 +238,11 @@
                         <div class="d-flex align-items-center gap-2">
                             <h6 class="card-title mb-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;">{{ __('index.employee_lists') }}</h6>
                             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2 py-0.5 rounded-pill" style="font-size: 10.5px; font-weight: 600;">
-                                {{ number_format($users->total()) }} Staff
+                                {{ number_format($users->total()) }} {{ __('index.staff') }}
                             </span>
                         </div>
                         <div class="employee-entry-control">
-                            <span class="text-muted small fw-medium">Show</span>
+                            <span class="text-muted small fw-medium">{{ __('index.show') }}</span>
                             <select class="form-select form-select-sm employee-entry-select" id="per_page" name="per_page" form="employeeFilterForm">
                                 <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
@@ -250,9 +250,9 @@
                                 <option value="200" {{ (string)($filterParameters['per_page'] ?? '') === '200' ? 'selected' : '' }}>200</option>
                                 <option value="500" {{ (string)($filterParameters['per_page'] ?? '') === '500' ? 'selected' : '' }}>500</option>
                                 <option value="1000" {{ (string)($filterParameters['per_page'] ?? '') === '1000' ? 'selected' : '' }}>1,000</option>
-                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>All</option>
+                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>{{ __('index.all') }}</option>
                             </select>
-                            <span class="text-muted small fw-medium">entries</span>
+                            <span class="text-muted small fw-medium">{{ __('index.entries') }}</span>
                         </div>
                     </div>
                     <div class="employee-toolbar-actions">
@@ -264,7 +264,7 @@
                                     class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 rounded-2 px-2.5 py-1 fw-medium shadow-none"
                                     style="border-color: #cbd5e1; color: #475569; font-size: 0.8rem;">
                                 <i class="link-icon" data-feather="download" style="width: 13px; height: 13px;"></i>
-                                <span>Export</span>
+                                <span>{{ __('index.export') }}</span>
                             </button>
                         @endcan
                     </div>
@@ -275,12 +275,12 @@
                                    id="employeeListSearch"
                                    class="employee-list-search"
                                    value="{{ $filterParameters['search'] ?? '' }}"
-                                   placeholder="Search employee...">
+                                   placeholder="{{ __('index.search_employee') }}">
                             <button type="button"
                                     id="employeeSearchClear"
                                     class="employee-search-clear"
                                     style="display: {{ filled($filterParameters['search'] ?? null) ? 'flex' : 'none' }};"
-                                    title="Clear search">
+                                    title="{{ __('index.clear_search') }}">
                                 <i class="link-icon" data-feather="x"></i>
                             </button>
                         </div>
@@ -854,7 +854,7 @@
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
                                                            title="{{ $value->username ?: 'N/A' }}">
-                                                        Username: {{ $value->username ?: 'N/A' }}
+                                                        {{ __('index.username') }}: {{ $value->username ?: 'N/A' }}
                                                     </small>
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
@@ -879,7 +879,7 @@
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
                                                            title="{{ $value->username ?: 'N/A' }}">
-                                                        Username: {{ $value->username ?: 'N/A' }}
+                                                        {{ __('index.username') }}: {{ $value->username ?: 'N/A' }}
                                                     </small>
                                                     <small class="text-muted d-block text-truncate"
                                                            style="max-width: 145px; font-size: 0.725rem; line-height: 1.2;"
@@ -970,10 +970,10 @@
                                         </div>
                                         <a class="changeWorkPlace workplace-badge-btn {{ $value->workspace_type == User::FIELD ? 'workplace-field' : 'workplace-office' }}"
                                            data-href="{{ route('admin.employees.change-workspace', $value->id) }}"
-                                           title="Click to toggle workspace (Office / Field)"
+                                           title="{{ __('index.toggle_workspace_hint') }}"
                                            role="button">
                                             <i class="link-icon" data-feather="{{ $value->workspace_type == User::FIELD ? 'navigation' : 'home' }}" style="width: 10px; height: 10px;"></i>
-                                            <span>{{ $value->workspace_type == User::FIELD ? 'Field' : 'Office' }}</span>
+                                            <span>{{ $value->workspace_type == User::FIELD ? __('index.field') : __('index.office') }}</span>
                                         </a>
                                     </div>
                                 </td>
@@ -994,7 +994,7 @@
                                             <span class="slider round"></span>
                                         </label>
                                         <span class="badge {{ $value->is_active == 1 ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger' }} rounded-pill" style="font-size: 9px; font-weight: 600; padding: 2px 6px;">
-                                            {{ $value->is_active == 1 ? 'Active' : 'Inactive' }}
+                                            {{ $value->is_active == 1 ? __('index.active') : __('index.inactive') }}
                                         </span>
                                     </div>
                                 </td>
@@ -1004,13 +1004,13 @@
                                             @can('employee.profile.view')
                                                 <a href="{{ route('admin.employees.profile.show', $value->id) }}"
                                                    class="employee-action-btn btn-view"
-                                                   title="Employee 360">
+                                                   title="{{ __('index.employee_360') }}">
                                                     <i class="link-icon" data-feather="user" style="width: 13px; height: 13px;"></i>
                                                 </a>
                                             @elsecan('show_detail_employee')
                                                 <a href="{{ route('admin.employees.show', $value->id) }}"
                                                    class="employee-action-btn btn-view"
-                                                   title="View Detail">
+                                                   title="{{ __('index.view_details') }}">
                                                     <i class="link-icon" data-feather="eye" style="width: 13px; height: 13px;"></i>
                                                 </a>
                                             @endcan
@@ -1031,7 +1031,7 @@
                                                         id="dropdownMenuButton{{ $value->id }}"
                                                         data-bs-toggle="dropdown"
                                                         aria-expanded="false"
-                                                        title="More actions">
+                                                        title="{{ __('index.more_actions') }}">
                                                     <i class="link-icon" data-feather="more-vertical" style="width: 14px; height: 14px;"></i>
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 py-1" style="min-width: 190px; border-radius: 12px;" aria-labelledby="dropdownMenuButton{{ $value->id }}">
@@ -1039,7 +1039,7 @@
                                                         <li>
                                                             <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ route('admin.employees.show', $value->id) }}">
                                                                 <i class="link-icon text-primary" data-feather="eye" style="width: 14px; height: 14px;"></i>
-                                                                <span>View Details</span>
+                                                                <span>{{ __('index.view_details') }}</span>
                                                             </a>
                                                         </li>
                                                     @endcan
@@ -1048,7 +1048,7 @@
                                                         <li>
                                                             <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="{{ route('admin.employees.profile.show', $value->id) }}">
                                                                 <i class="link-icon text-primary" data-feather="user" style="width: 14px; height: 14px;"></i>
-                                                                <span>Employee 360</span>
+                                                                <span>{{ __('index.employee_360') }}</span>
                                                             </a>
                                                         </li>
                                                     @endcan
@@ -1062,7 +1062,7 @@
                                                                    data-bs-toggle="modal"
                                                                    data-bs-target="#telegramConnectModal{{ $value->id }}">
                                                                     <i class="link-icon {{ $value->telegram_chat_id ? 'text-success' : 'text-info' }}" data-feather="{{ $value->telegram_chat_id ? 'check-circle' : 'send' }}" style="width: 14px; height: 14px;"></i>
-                                                                    <span>{{ $value->telegram_chat_id ? 'Telegram Connected' : 'Connect Telegram' }}</span>
+                                                                    <span>{{ $value->telegram_chat_id ? __('index.telegram_connected') : __('index.connect_telegram') }}</span>
                                                                 </a>
                                                             </li>
                                                         @endif
@@ -1116,7 +1116,7 @@
                                                         <div class="modal-content border-0 shadow" style="border-radius: 14px;">
                                                             <div class="modal-header">
                                                                 <h5 class="modal-title" id="telegramConnectModalLabel{{ $value->id }}">
-                                                                    {{ $value->telegram_chat_id ? ucfirst($value->name) . ' has been connected' : 'Connect ' . ucfirst($value->name) . ' to Telegram' }}
+                                                                    {{ $value->telegram_chat_id ? ucfirst($value->name) . ' ' . __('index.has_been_connected') : __('index.connect_to_telegram', ['name' => ucfirst($value->name)]) }}
                                                                 </h5>
                                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                             </div>
@@ -1125,20 +1125,20 @@
                                                                     @if($value->telegram_chat_id)
                                                                         <div class="telegram-connect-status">
                                                                             <i class="link-icon" data-feather="check-circle"></i>
-                                                                            Has been connected
+                                                                            {{ __('index.has_been_connected') }}
                                                                         </div>
 
                                                                         <p class="mb-2">
-                                                                            This employee is already connected to Telegram.
+                                                                            {{ __('index.already_connected_telegram') }}
                                                                         </p>
 
                                                                         <div class="text-muted mb-3">
-                                                                            Chat ID: {{ $value->telegram_chat_id }}
+                                                                            {{ __('index.chat_id') }}: {{ $value->telegram_chat_id }}
                                                                             @if($value->telegram_username)
-                                                                                <br>Username: {{ '@' . $value->telegram_username }}
+                                                                                <br>{{ __('index.username') }}: {{ '@' . $value->telegram_username }}
                                                                             @endif
                                                                             @if($value->telegram_linked_at)
-                                                                                <br>Linked at: {{ optional($value->telegram_linked_at)->format('Y-m-d H:i') }}
+                                                                                <br>{{ __('index.linked_at') }}: {{ optional($value->telegram_linked_at)->format('Y-m-d H:i') }}
                                                                             @endif
                                                                         </div>
                                                                     @else
@@ -1147,7 +1147,7 @@
                                                                         </div>
 
                                                                         <p class="mb-2">
-                                                                            Scan this QR code or open the link to connect this employee with the Telegram bot.
+                                                                            {{ __('index.scan_qr_telegram') }}
                                                                         </p>
                                                                     @endif
 
@@ -1160,7 +1160,7 @@
                                                                         <button type="button"
                                                                                 class="btn btn-outline-secondary copyTelegramConnectLink"
                                                                                 data-target="telegramConnectLink{{ $value->id }}">
-                                                                            Copy
+                                                                            {{ __('index.copy') }}
                                                                         </button>
                                                                     </div>
                                                                 </div>
@@ -1172,7 +1172,7 @@
                                                                         @method('DELETE')
                                                                         <button type="submit" class="btn btn-outline-danger">
                                                                             <i class="link-icon" data-feather="unlink"></i>
-                                                                            Unlink Telegram
+                                                                            {{ __('index.unlink_telegram') }}
                                                                         </button>
                                                                     </form>
                                                                 @endif
@@ -1180,7 +1180,7 @@
                                                                     @csrf
                                                                     <button type="submit" class="btn btn-outline-success">
                                                                         <i class="link-icon" data-feather="download-cloud"></i>
-                                                                        Sync Telegram Starts
+                                                                        {{ __('index.sync_telegram_starts') }}
                                                                     </button>
                                                                 </form>
                                                                 <a href="{{ $telegramConnectUrl }}"
@@ -1188,9 +1188,9 @@
                                                                    rel="noopener noreferrer"
                                                                    class="btn {{ $value->telegram_chat_id ? 'btn-outline-primary' : 'btn-primary' }}">
                                                                     <i class="link-icon" data-feather="send"></i>
-                                                                    {{ $value->telegram_chat_id ? 'Open Connect Link Again' : 'Open Telegram' }}
+                                                                    {{ $value->telegram_chat_id ? __('index.open_connect_link_again') : __('index.open_telegram') }}
                                                                 </a>
-                                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.close') }}</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1208,11 +1208,11 @@
                                             <i class="link-icon text-muted" data-feather="users" style="width: 32px; height: 32px;"></i>
                                         </div>
                                         <h6 class="fw-bold text-dark mb-1">{{ __('index.no_records_found') }}</h6>
-                                        <p class="text-muted small mb-3">No employees found matching your search or filter criteria.</p>
+                                        <p class="text-muted small mb-3">{{ __('index.no_employees_matching_filter') }}</p>
                                         <div class="d-flex align-items-center justify-content-center gap-2">
                                             <button type="button" class="btn btn-sm btn-outline-secondary rounded-3 px-3" onclick="window.location.href='{{ route('admin.employees.index') }}'">
                                                 <i class="link-icon" data-feather="refresh-cw" style="width: 12px; height: 12px;"></i>
-                                                <span>Reset Filters</span>
+                                                <span>{{ __('index.reset_filters') }}</span>
                                             </button>
                                             @can('create_employee')
                                                 <a href="{{ route('admin.employees.create') }}" class="btn btn-sm btn-primary rounded-3 px-3">
@@ -1231,13 +1231,13 @@
             </div>
             <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2" id="employeeTableFooter">
                 <div class="employee-pagination-info text-muted small d-flex align-items-center gap-1.5">
-                    <span>Showing</span>
+                    <span>{{ __('index.showing') }}</span>
                     <span class="fw-bold text-dark">{{ $users->firstItem() ?? 0 }}</span>
-                    <span>to</span>
+                    <span>{{ __('index.to') }}</span>
                     <span class="fw-bold text-dark">{{ $users->lastItem() ?? 0 }}</span>
-                    <span>of</span>
+                    <span>{{ __('index.of') }}</span>
                     <span class="fw-bold text-dark">{{ number_format($users->total()) }}</span>
-                    <span>entries</span>
+                    <span>{{ __('index.entries') }}</span>
                 </div>
                 <div class="employee-pagination-wrap">
                     {{ $users->appends($_GET)->links() }}
@@ -1271,7 +1271,7 @@
             }
 
             var originalText = button.text();
-            button.text('Copied');
+            button.text('{{ __('index.copied') }}');
 
             setTimeout(function () {
                 button.text(originalText);
@@ -1316,7 +1316,7 @@
         });
 
         $(document).on('submit', '.telegram-unlink-form', function (event) {
-            if (!confirm('Unlink this employee from Telegram?')) {
+            if (!confirm('{{ __('index.confirm_unlink_telegram') }}')) {
                 event.preventDefault();
             }
         });

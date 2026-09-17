@@ -1,10 +1,10 @@
 @extends('layouts.master')
 
-@section('title', 'Chat Management')
+@section('title', __('index.chat_management'))
 
-@section('action', 'Chat Management')
+@section('action', __('index.chat_management'))
 
-@section('nav-head', 'Chat Management')
+@section('nav-head', __('index.chat_management'))
 
 @section('styles')
     <style>
@@ -631,12 +631,12 @@
 @section('main-content')
     @php
         $infoSections = [
-            'Chat information',
-            'Customize chat',
-            'Group options',
-            'Chat members',
-            'Media, files and links',
-            'Privacy and support',
+            __('index.chat_information'),
+            __('index.customize_chat'),
+            __('index.group_options'),
+            __('index.chat_members'),
+            __('index.media_files_links'),
+            __('index.privacy_support'),
         ];
         $botUsername = trim((string) ($botSettings[\App\Support\TelegramBotSettings::BOT_USERNAME] ?? ''));
         $botReady = ! empty($botSettings['bot_token_saved']) && $botUsername !== '';
@@ -658,19 +658,19 @@
 
                 <div class="chat-search-box">
                     <i data-feather="search"></i>
-                    <input id="chat-staff-search" type="text" placeholder="Search staff" value="{{ $filters['search'] }}">
+                    <input id="chat-staff-search" type="text" placeholder="{{ __('index.search_staff') }}" value="{{ $filters['search'] }}">
                 </div>
 
                 <div class="chat-filters">
                     <div class="chat-filter-grid">
                         <select id="chat-filter-branch" class="form-select form-select-sm">
-                            <option value="">All Branches</option>
+                            <option value="">{{ __('index.all_branches') }}</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}" {{ (string) $filters['branch_id'] === (string) $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                             @endforeach
                         </select>
                         <select id="chat-filter-department" class="form-select form-select-sm">
-                            <option value="">All Departments</option>
+                            <option value="">{{ __('index.all_departments') }}</option>
                             @foreach($departments as $department)
                                 <option value="{{ $department->id }}" {{ (string) $filters['department_id'] === (string) $department->id ? 'selected' : '' }}>{{ $department->dept_name }}</option>
                             @endforeach
@@ -678,11 +678,11 @@
                     </div>
                     <div class="chat-filter-grid">
                         <select id="chat-filter-linked" class="form-select form-select-sm">
-                            <option value="">All Status</option>
-                            <option value="yes" {{ $filters['linked'] === 'yes' ? 'selected' : '' }}>Linked</option>
-                            <option value="no" {{ $filters['linked'] === 'no' ? 'selected' : '' }}>Not Linked</option>
+                            <option value="">{{ __('index.all_status') }}</option>
+                            <option value="yes" {{ $filters['linked'] === 'yes' ? 'selected' : '' }}>{{ __('index.linked') }}</option>
+                            <option value="no" {{ $filters['linked'] === 'no' ? 'selected' : '' }}>{{ __('index.not_linked') }}</option>
                         </select>
-                        <button type="button" id="chat-filter-reset" class="btn btn-outline-secondary btn-sm"><i data-feather="rotate-ccw"></i> Reset</button>
+                        <button type="button" id="chat-filter-reset" class="btn btn-outline-secondary btn-sm"><i data-feather="rotate-ccw"></i> {{ __('index.reset') }}</button>
                     </div>
                 </div>
 
@@ -767,7 +767,7 @@
                         <div class="mt-3">
                             <span class="chat-channel-badge {{ $selectedStaff->telegram_chat_id ? '' : 'off' }}">
                                 <i data-feather="{{ $selectedStaff->telegram_chat_id ? 'check-circle' : 'alert-circle' }}"></i>
-                                {{ $selectedStaff->telegram_chat_id ? 'Telegram connected' : 'Telegram not connected' }}
+                                {{ $selectedStaff->telegram_chat_id ? __('index.telegram_connected') : __('index.telegram_not_connected') }}
                             </span>
                         </div>
                         @if($selectedStaff->telegram_chat_id)

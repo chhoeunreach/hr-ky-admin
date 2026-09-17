@@ -1,31 +1,31 @@
 @extends('layouts.master')
 
-@section('title', __('index.employee_calendar') ?? 'Employee Calendar')
+@section('title', __('index.employees_calendar'))
 
-@section('action', __('index.employee_calendar') ?? 'Employee Calendar')
+@section('action', __('index.employees_calendar'))
 
 @section('button')
     <div class="float-md-end d-flex align-items-center gap-2 justify-content-center flex-wrap">
         <a href="{{ route('admin.employees.index') }}">
             <button class="btn btn-outline-secondary d-flex align-items-center gap-2">
-                <i class="link-icon" data-feather="list"></i>{{ __('index.employee_lists') ?? 'Employee Lists' }}
+                <i class="link-icon" data-feather="list"></i>{{ __('index.employee_lists') }}
             </button>
         </a>
         <a href="{{ route('admin.leave-request.add') }}">
             <button class="btn btn-primary d-flex align-items-center gap-2">
-                <i class="link-icon" data-feather="plus"></i>{{ __('index.leave_request') ?? 'Leave' }}
+                <i class="link-icon" data-feather="plus"></i>{{ __('index.leave_request') }}
             </button>
         </a>
         <a href="{{ route('admin.time-leave-request.create') }}">
             <button class="btn btn-outline-primary d-flex align-items-center gap-2">
-                <i class="link-icon" data-feather="clock"></i>{{ __('index.time_leave_request') ?? 'Time Leave' }}
+                <i class="link-icon" data-feather="clock"></i>{{ __('index.time_leave_request') }}
             </button>
         </a>
-        <button type="button" class="btn btn-outline-success d-flex align-items-center gap-2" id="exportCalendarCsvBtn" title="Export monthly schedule as CSV">
-            <i class="link-icon" data-feather="download"></i>Export CSV
+        <button type="button" class="btn btn-outline-success d-flex align-items-center gap-2" id="exportCalendarCsvBtn" title="{{ __('index.export_calendar_csv_title') }}">
+            <i class="link-icon" data-feather="download"></i>{{ __('index.export_csv') }}
         </button>
-        <button type="button" class="btn btn-outline-dark d-flex align-items-center gap-2" onclick="window.print()" title="Print Calendar">
-            <i class="link-icon" data-feather="printer"></i>Print
+        <button type="button" class="btn btn-outline-dark d-flex align-items-center gap-2" onclick="window.print()" title="{{ __('index.print_calendar_title') }}">
+            <i class="link-icon" data-feather="printer"></i>{{ __('index.print') ?? 'Print' }}
         </button>
     </div>
 @endsection
@@ -65,17 +65,17 @@
                             aria-expanded="{{ $hasEmployeeFilters ? 'true' : 'false' }}"
                             aria-controls="employeeFilterCollapse">
                         <i class="link-icon" data-feather="filter"></i>
-                        {{ __('index.filter') ?? 'Filter' }}
+                        {{ __('index.filter') }}
                         @if($hasEmployeeFilters)
-                            <span class="badge bg-primary rounded-pill ms-1">Active</span>
+                            <span class="badge bg-primary rounded-pill ms-1">{{ __('index.active') }}</span>
                         @endif
                     </button>
-                    <span class="text-muted small">Filter employees by branch, department, designation, or status</span>
+                    <span class="text-muted small">{{ __('index.filter_calendar_hint') }}</span>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     @if($hasEmployeeFilters)
                         <a href="{{ route('admin.employees.calendar') }}" class="btn btn-sm btn-link text-danger text-decoration-none d-flex align-items-center gap-1">
-                            <i class="link-icon" data-feather="x-circle"></i> Clear Filters
+                            <i class="link-icon" data-feather="x-circle"></i> {{ __('index.clear_filters') }}
                         </a>
                     @endif
                 </div>
@@ -87,9 +87,9 @@
                     <div class="row align-items-center">
                         @if(!isset(auth()->user()->branch_id))
                             <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                                <label class="form-label small text-muted mb-1">{{ __('index.branch') ?? 'Branch' }}</label>
+                                <label class="form-label small text-muted mb-1">{{ __('index.branch') }}</label>
                                 <select class="form-control" id="branch" name="branch_id">
-                                    <option value="" {{ empty($filterParameters['branch_id']) ? 'selected' : '' }}>{{ __('index.select_branch') ?? 'All Branches' }}</option>
+                                    <option value="" {{ empty($filterParameters['branch_id']) ? 'selected' : '' }}>{{ __('index.select_branch') }}</option>
                                     @foreach($branches as $branch)
                                         <option {{ ($filterParameters['branch_id'] == $branch->id) ? 'selected' : '' }} value="{{ $branch->id }}">{{ $branch->name }}</option>
                                     @endforeach
@@ -98,62 +98,62 @@
                         @endif
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">{{ __('index.department') ?? 'Department' }}</label>
+                            <label class="form-label small text-muted mb-1">{{ __('index.department') }}</label>
                             <select class="form-control" id="department" name="department_id">
-                                <option value="" selected>{{ __('index.select_department') ?? 'All Departments' }}</option>
+                                <option value="" selected>{{ __('index.select_department') }}</option>
                             </select>
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">{{ __('index.post') ?? 'Designation' }}</label>
+                            <label class="form-label small text-muted mb-1">{{ __('index.post') }}</label>
                             <select class="form-control" id="post" name="post_id">
-                                <option value="" selected>{{ __('index.select_post') ?? 'All Designations' }}</option>
+                                <option value="" selected>{{ __('index.select_post') }}</option>
                             </select>
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">{{ __('index.employee_name') ?? 'Employee Name' }}</label>
-                            <input type="text" placeholder="{{ __('index.employee_name') ?? 'Employee Name' }}" id="employeeName"
+                            <label class="form-label small text-muted mb-1">{{ __('index.employee_name') }}</label>
+                            <input type="text" placeholder="{{ __('index.employee_name') }}" id="employeeName"
                                    name="employee_name" value="{{ $filterParameters['employee_name'] ?? '' }}"
                                    class="form-control">
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">{{ __('index.employee_email') ?? 'Email' }}</label>
-                            <input type="text" placeholder="{{ __('index.employee_email') ?? 'Email' }}" id="email" name="email"
+                            <label class="form-label small text-muted mb-1">{{ __('index.employee_email') }}</label>
+                            <input type="text" placeholder="{{ __('index.employee_email') }}" id="email" name="email"
                                    value="{{ $filterParameters['email'] ?? '' }}" class="form-control">
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">{{ __('index.employee_phone') ?? 'Phone' }}</label>
-                            <input type="number" placeholder="{{ __('index.employee_phone') ?? 'Phone' }}" id="phone" name="phone"
+                            <label class="form-label small text-muted mb-1">{{ __('index.employee_phone') }}</label>
+                            <input type="number" placeholder="{{ __('index.employee_phone') }}" id="phone" name="phone"
                                    value="{{ $filterParameters['phone'] ?? '' }}" class="form-control">
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">Status</label>
+                            <label class="form-label small text-muted mb-1">{{ __('index.status') }}</label>
                             <select class="form-control" id="is_active" name="is_active">
-                                <option value="">All Status</option>
-                                <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>Active</option>
-                                <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>Inactive</option>
+                                <option value="">{{ __('index.all_status') }}</option>
+                                <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
+                                <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
                             </select>
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3">
-                            <label class="form-label small text-muted mb-1">Quick Search</label>
+                            <label class="form-label small text-muted mb-1">{{ __('index.quick_search') }}</label>
                             <input type="text"
                                    id="employeeListSearch"
                                    class="form-control"
                                    value="{{ $filterParameters['search'] ?? '' }}"
-                                   placeholder="Search keyword...">
+                                   placeholder="{{ __('index.search_keyword') }}">
                         </div>
 
                         <div class="col-xxl-3 col-xl-3 col-md-6 mb-3 d-flex align-items-end gap-2">
                             <button type="submit" value="filter" class="btn btn-primary flex-grow-1">
-                                <i class="link-icon" data-feather="search"></i> {{ __('index.filter') ?? 'Apply' }}
+                                <i class="link-icon" data-feather="search"></i> {{ __('index.apply') }}
                             </button>
                             <a class="btn btn-outline-secondary" href="{{ route('admin.employees.calendar') }}">
-                                {{ __('index.reset') ?? 'Reset' }}
+                                {{ __('index.reset') }}
                             </a>
                         </div>
                     </div>
@@ -168,7 +168,7 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="calendar"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ $summary['total_events'] ?? 0 }}</span>
-                        <span class="kpi-label">Total Events</span>
+                        <span class="kpi-label">{{ __('index.total_events') }}</span>
                     </div>
                 </div>
             </div>
@@ -177,10 +177,10 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="sun"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ $summary['leave_requests'] ?? 0 }}</span>
-                        <span class="kpi-label">Leaves</span>
+                        <span class="kpi-label">{{ __('index.leaves') }}</span>
                     </div>
                     @if(($summary['leave_pending'] ?? 0) > 0)
-                        <span class="kpi-sub-badge pending" title="{{ $summary['leave_pending'] }} Pending">{{ $summary['leave_pending'] }} pend.</span>
+                        <span class="kpi-sub-badge pending" title="{{ $summary['leave_pending'] }} Pending">{{ $summary['leave_pending'] }} {{ __('index.pend') }}</span>
                     @endif
                 </div>
             </div>
@@ -189,10 +189,10 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="clock"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ $summary['time_leave_requests'] ?? 0 }}</span>
-                        <span class="kpi-label">Time Leaves</span>
+                        <span class="kpi-label">{{ __('index.time_leaves') }}</span>
                     </div>
                     @if(($summary['time_leave_pending'] ?? 0) > 0)
-                        <span class="kpi-sub-badge pending" title="{{ $summary['time_leave_pending'] }} Pending">{{ $summary['time_leave_pending'] }} pend.</span>
+                        <span class="kpi-sub-badge pending" title="{{ $summary['time_leave_pending'] }} Pending">{{ $summary['time_leave_pending'] }} {{ __('index.pend') }}</span>
                     @endif
                 </div>
             </div>
@@ -201,7 +201,7 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="gift"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ $summary['birthdays'] ?? 0 }}</span>
-                        <span class="kpi-label">Birthdays</span>
+                        <span class="kpi-label">{{ __('index.birthdays') }}</span>
                     </div>
                 </div>
             </div>
@@ -210,7 +210,7 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="award"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ $summary['anniversaries'] ?? 0 }}</span>
-                        <span class="kpi-label">Anniversaries</span>
+                        <span class="kpi-label">{{ __('index.anniversaries') }}</span>
                     </div>
                 </div>
             </div>
@@ -219,7 +219,7 @@
                     <div class="kpi-icon"><i class="link-icon" data-feather="flag"></i></div>
                     <div class="kpi-info">
                         <span class="kpi-value">{{ ($summary['holidays'] ?? 0) + ($summary['company_events'] ?? 0) }}</span>
-                        <span class="kpi-label">Holidays & Events</span>
+                        <span class="kpi-label">{{ __('index.holidays_events') }}</span>
                     </div>
                 </div>
             </div>
@@ -234,17 +234,17 @@
                     <div class="calendar-nav-group">
                         <div class="btn-group" role="group" aria-label="Month navigation">
                             <a class="btn btn-outline-secondary"
-                               title="Previous Month"
+                               title="{{ __('index.prev_month') }}"
                                href="{{ request()->fullUrlWithQuery(['calendar_month' => $employeeCalendar['previous_month']]) }}">
                                 <i class="link-icon" data-feather="chevron-left"></i>
                             </a>
                             <a class="btn btn-outline-secondary px-3"
-                               title="Jump to Current Month"
+                               title="{{ __('index.jump_current_month') }}"
                                href="{{ request()->fullUrlWithQuery(['calendar_month' => now()->format('Y-m')]) }}">
-                                Today
+                                {{ __('index.today') }}
                             </a>
                             <a class="btn btn-outline-secondary"
-                               title="Next Month"
+                               title="{{ __('index.next_month') }}"
                                href="{{ request()->fullUrlWithQuery(['calendar_month' => $employeeCalendar['next_month']]) }}">
                                 <i class="link-icon" data-feather="chevron-right"></i>
                             </a>
@@ -255,8 +255,8 @@
                                title="Pick Month"
                                value="{{ $employeeCalendar['month_value'] ?? now()->format('Y-m') }}">
                         <h4 class="calendar-month-heading mb-0 ms-2">
-                            {{ $employeeCalendar['month_label'] ?? 'Employee Calendar' }}
-                            <span class="badge bg-light text-dark border ms-1 fw-normal fs-6">{{ $summary['total_events'] ?? 0 }} events</span>
+                            {{ $employeeCalendar['month_label'] ?? __('index.employees_calendar') }}
+                            <span class="badge bg-light text-dark border ms-1 fw-normal fs-6">{{ $summary['total_events'] ?? 0 }} {{ __('index.events_count') }}</span>
                         </h4>
                     </div>
 
@@ -268,20 +268,20 @@
                             <input type="text"
                                    id="calendarLiveSearch"
                                    class="form-control form-control-sm"
-                                   placeholder="Filter employee or event...">
+                                   placeholder="{{ __('index.filter_employee_or_event') }}">
                             <button type="button" id="calendarClearSearch" class="btn-clear d-none">&times;</button>
                         </div>
 
                         <!-- View Switcher Tabs -->
                         <div class="btn-group view-switcher-tabs" role="group" aria-label="View Switcher">
                             <button type="button" class="btn btn-sm btn-outline-primary active" data-view="month" id="viewMonthBtn">
-                                <i class="link-icon" data-feather="grid"></i> Month
+                                <i class="link-icon" data-feather="grid"></i> {{ __('index.view_month') }}
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary" data-view="week" id="viewWeekBtn">
-                                <i class="link-icon" data-feather="columns"></i> Week
+                                <i class="link-icon" data-feather="columns"></i> {{ __('index.view_week') }}
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary" data-view="agenda" id="viewAgendaBtn">
-                                <i class="link-icon" data-feather="list"></i> Agenda
+                                <i class="link-icon" data-feather="list"></i> {{ __('index.view_agenda') }}
                             </button>
                         </div>
                     </div>
@@ -289,27 +289,27 @@
 
                 <!-- Event Category Filter Pills -->
                 <div class="calendar-filter-pills mt-3 pt-2 border-top d-flex align-items-center gap-2 flex-wrap">
-                    <span class="text-muted small fw-semibold me-1"><i class="link-icon me-1" data-feather="sliders"></i>Filter:</span>
+                    <span class="text-muted small fw-semibold me-1"><i class="link-icon me-1" data-feather="sliders"></i>{{ __('index.filter_events') }}</span>
                     <button type="button" class="btn btn-xs category-filter-btn active" data-category="all">
-                        All <span class="badge rounded-pill bg-secondary ms-1">{{ $summary['total_events'] ?? 0 }}</span>
+                        {{ __('index.all') }} <span class="badge rounded-pill bg-secondary ms-1">{{ $summary['total_events'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-birthday" data-category="birthday">
-                        <span class="cat-dot dot-birthday"></span> Birthdays <span class="badge rounded-pill ms-1">{{ $summary['birthdays'] ?? 0 }}</span>
+                        <span class="cat-dot dot-birthday"></span> {{ __('index.birthdays') }} <span class="badge rounded-pill ms-1">{{ $summary['birthdays'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-leave" data-category="leave">
-                        <span class="cat-dot dot-leave"></span> Leaves <span class="badge rounded-pill ms-1">{{ $summary['leave_requests'] ?? 0 }}</span>
+                        <span class="cat-dot dot-leave"></span> {{ __('index.leaves') }} <span class="badge rounded-pill ms-1">{{ $summary['leave_requests'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-time-leave" data-category="time_leave">
-                        <span class="cat-dot dot-time-leave"></span> Time Leaves <span class="badge rounded-pill ms-1">{{ $summary['time_leave_requests'] ?? 0 }}</span>
+                        <span class="cat-dot dot-time-leave"></span> {{ __('index.time_leaves') }} <span class="badge rounded-pill ms-1">{{ $summary['time_leave_requests'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-anniversary" data-category="anniversary">
-                        <span class="cat-dot dot-anniversary"></span> Anniversaries <span class="badge rounded-pill ms-1">{{ $summary['anniversaries'] ?? 0 }}</span>
+                        <span class="cat-dot dot-anniversary"></span> {{ __('index.anniversaries') }} <span class="badge rounded-pill ms-1">{{ $summary['anniversaries'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-holiday" data-category="holiday">
-                        <span class="cat-dot dot-holiday"></span> Holidays <span class="badge rounded-pill ms-1">{{ $summary['holidays'] ?? 0 }}</span>
+                        <span class="cat-dot dot-holiday"></span> {{ __('index.holidays') }} <span class="badge rounded-pill ms-1">{{ $summary['holidays'] ?? 0 }}</span>
                     </button>
                     <button type="button" class="btn btn-xs category-filter-btn cat-event" data-category="company_event">
-                        <span class="cat-dot dot-event"></span> Events <span class="badge rounded-pill ms-1">{{ $summary['company_events'] ?? 0 }}</span>
+                        <span class="cat-dot dot-event"></span> {{ __('index.events') }} <span class="badge rounded-pill ms-1">{{ $summary['company_events'] ?? 0 }}</span>
                     </button>
                 </div>
             </div>
@@ -323,10 +323,22 @@
                         <div id="calendarMonthView" class="calendar-view-pane active">
                             <div class="employee-calendar-grid" aria-label="Employee calendar {{ $employeeCalendar['month_label'] ?? '' }}">
                                 <!-- Weekday Headers -->
-                                @foreach(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as $wIndex => $weekday)
+                                @php
+                                    $weekdaysMap = [
+                                        0 => ['full' => 'Sunday', 'short' => 'Sun', 'km' => 'អាទិត្យ', 'km_short' => 'អាទិត្យ'],
+                                        1 => ['full' => 'Monday', 'short' => 'Mon', 'km' => 'ចន្ទ', 'km_short' => 'ចន្ទ'],
+                                        2 => ['full' => 'Tuesday', 'short' => 'Tue', 'km' => 'អង្គារ', 'km_short' => 'អង្គារ'],
+                                        3 => ['full' => 'Wednesday', 'short' => 'Wed', 'km' => 'ពុធ', 'km_short' => 'ពុធ'],
+                                        4 => ['full' => 'Thursday', 'short' => 'Thu', 'km' => 'ព្រហស្បតិ៍', 'km_short' => 'ព្រហ'],
+                                        5 => ['full' => 'Friday', 'short' => 'Fri', 'km' => 'សុក្រ', 'km_short' => 'សុក្រ'],
+                                        6 => ['full' => 'Saturday', 'short' => 'Sat', 'km' => 'សៅរ៍', 'km_short' => 'សៅរ៍'],
+                                    ];
+                                    $isKhmer = app()->getLocale() == 'km';
+                                @endphp
+                                @foreach($weekdaysMap as $wIndex => $wData)
                                     <div class="employee-calendar-weekday{{ ($wIndex === 0 || $wIndex === 6) ? ' is-weekend' : '' }}">
-                                        <span class="d-none d-md-inline">{{ $weekday }}</span>
-                                        <span class="d-inline d-md-none">{{ substr($weekday, 0, 3) }}</span>
+                                        <span class="d-none d-md-inline">{{ $isKhmer ? $wData['km'] : $wData['full'] }}</span>
+                                        <span class="d-inline d-md-none">{{ $isKhmer ? $wData['km_short'] : $wData['short'] }}</span>
                                     </div>
                                 @endforeach
 
@@ -350,7 +362,7 @@
                                             <div class="day-number-wrap">
                                                 <span class="day-number">{{ $day['day'] }}</span>
                                                 @if($day['is_today'])
-                                                    <span class="today-badge">Today</span>
+                                                    <span class="today-badge">{{ __('index.today') }}</span>
                                                 @endif
                                             </div>
                                             @if($eventsCount > 0)
@@ -381,7 +393,7 @@
                                                         class="btn-more-events"
                                                         data-date="{{ $dateKey }}"
                                                         onclick="window.showDayScheduleModal('{{ $dateKey }}')">
-                                                    +{{ $eventsCount - $visibleLimit }} more...
+                                                    {{ __('index.more_events', ['count' => $eventsCount - $visibleLimit]) }}
                                                 </button>
                                             @endif
                                         </div>
@@ -395,14 +407,14 @@
                             <div class="week-view-toolbar d-flex align-items-center justify-content-between mb-3 bg-light p-2 rounded">
                                 <div class="btn-group btn-group-sm">
                                     <button type="button" class="btn btn-outline-secondary" id="prevWeekBtn">
-                                        <i class="link-icon" data-feather="chevron-left"></i> Prev Week
+                                        <i class="link-icon" data-feather="chevron-left"></i> {{ __('index.prev_week') }}
                                     </button>
                                     <button type="button" class="btn btn-outline-secondary" id="nextWeekBtn">
-                                        Next Week <i class="link-icon" data-feather="chevron-right"></i>
+                                        {{ __('index.next_week') }} <i class="link-icon" data-feather="chevron-right"></i>
                                     </button>
                                 </div>
-                                <span class="fw-semibold text-muted" id="weekRangeLabel">Week Schedule</span>
-                                <div class="text-muted small">7-day breakdown</div>
+                                <span class="fw-semibold text-muted" id="weekRangeLabel">{{ __('index.week_schedule') }}</span>
+                                <div class="text-muted small">{{ __('index.seven_day_breakdown') }}</div>
                             </div>
                             <div class="week-columns-wrapper" id="weekColumnsContainer">
                                 <!-- Week columns will be rendered via JS -->
@@ -424,10 +436,10 @@
                                                 </div>
                                                 <div class="agenda-date-info">
                                                     <h6 class="mb-0 fw-bold">{{ \Carbon\Carbon::parse($dateKey)->format('l, F d, Y') }}</h6>
-                                                    <small class="text-muted">{{ count($day['events']) }} event(s) scheduled</small>
+                                                    <small class="text-muted">{{ __('index.events_scheduled', ['count' => count($day['events'])]) }}</small>
                                                 </div>
                                                 @if($day['is_today'])
-                                                    <span class="badge bg-success ms-auto">Today</span>
+                                                    <span class="badge bg-success ms-auto">{{ __('index.today') }}</span>
                                                 @endif
                                             </div>
 
@@ -459,7 +471,7 @@
                                                                     @if(!empty($event['time']))
                                                                         <i class="link-icon me-1" data-feather="clock"></i>{{ $event['time'] }}
                                                                     @else
-                                                                        <i class="link-icon me-1" data-feather="calendar"></i>{{ $event['duration'] ?? 'All Day' }}
+                                                                        <i class="link-icon me-1" data-feather="calendar"></i>{{ $event['duration'] ?? __('index.all_day') }}
                                                                     @endif
                                                                 </div>
                                                             </div>
@@ -479,7 +491,7 @@
                                                             <button type="button"
                                                                     class="btn btn-sm btn-outline-primary"
                                                                     onclick="window.showEventDetailsModal('{{ $event['id'] }}')">
-                                                                Details
+                                                                {{ __('index.detail') }}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -492,8 +504,8 @@
                                 @if(!$hasAnyEvents)
                                     <div class="text-center py-5">
                                         <i class="link-icon text-muted mb-2" data-feather="calendar" style="width:48px;height:48px;"></i>
-                                        <h5 class="text-muted">No scheduled events found for this month</h5>
-                                        <p class="text-muted small">Try adjusting your filters or select a different month.</p>
+                                        <h5 class="text-muted">{{ __('index.no_events_month') }}</h5>
+                                        <p class="text-muted small">{{ __('index.adjust_filters_or_month') }}</p>
                                     </div>
                                 @endif
                             </div>
@@ -507,9 +519,9 @@
                             <div class="card-header bg-white py-2 d-flex align-items-center justify-content-between">
                                 <h6 class="card-title mb-0 fs-6 d-flex align-items-center gap-2">
                                     <i class="link-icon text-primary" data-feather="calendar"></i>
-                                    <span id="selectedDayTitle">Day Schedule</span>
+                                    <span id="selectedDayTitle">{{ __('index.day_schedule') }}</span>
                                 </h6>
-                                <span class="badge bg-primary-subtle text-primary" id="selectedDayBadge">Today</span>
+                                <span class="badge bg-primary-subtle text-primary" id="selectedDayBadge">{{ __('index.today') }}</span>
                             </div>
                             <div class="card-body p-2" id="selectedDayEventsContainer">
                                 <!-- Rendered dynamically on day click or defaults to today -->
@@ -533,7 +545,7 @@
                                 @else
                                     <div class="text-center py-3 text-muted small">
                                         <i class="link-icon mb-1" data-feather="smile"></i>
-                                        <p class="mb-0">No events scheduled for today.</p>
+                                        <p class="mb-0">{{ __('index.no_events_today') }}</p>
                                     </div>
                                 @endif
                             </div>
@@ -544,7 +556,7 @@
                             <div class="card-header bg-white py-2 d-flex align-items-center justify-content-between">
                                 <h6 class="card-title mb-0 fs-6 d-flex align-items-center gap-2">
                                     <i class="link-icon text-warning" data-feather="bell"></i>
-                                    Upcoming Highlights
+                                    {{ __('index.upcoming_highlights') }}
                                 </h6>
                                 <span class="badge bg-light text-secondary border">{{ count($upcomingEvents) }}</span>
                             </div>
@@ -555,7 +567,7 @@
                                             @php
                                                 $evtDate = \Carbon\Carbon::parse($upEvt['date']);
                                                 $diffDays = now()->startOfDay()->diffInDays($evtDate->startOfDay(), false);
-                                                $timeTag = $diffDays == 0 ? 'Today' : ($diffDays == 1 ? 'Tomorrow' : ($diffDays > 1 ? "In {$diffDays} days" : $evtDate->format('M d')));
+                                                $timeTag = $diffDays == 0 ? __('index.today') : ($diffDays == 1 ? 'Tomorrow' : ($diffDays > 1 ? "In {$diffDays} days" : $evtDate->format('M d')));
                                             @endphp
                                             <div class="upcoming-item p-2 rounded border bg-white cursor-pointer"
                                                  onclick="window.showEventDetailsModal('{{ $upEvt['id'] }}')">
@@ -577,7 +589,7 @@
                                     </div>
                                 @else
                                     <div class="text-center py-3 text-muted small">
-                                        <p class="mb-0">No upcoming events this month.</p>
+                                        <p class="mb-0">{{ __('index.no_upcoming_events_month') }}</p>
                                     </div>
                                 @endif
                             </div>
@@ -586,32 +598,32 @@
                         <!-- Calendar Legend Card -->
                         <div class="card border-0 shadow-sm sidebar-widget-card">
                             <div class="card-header bg-white py-2">
-                                <h6 class="card-title mb-0 fs-6">Legend</h6>
+                                <h6 class="card-title mb-0 fs-6">{{ __('index.legend') }}</h6>
                             </div>
                             <div class="card-body p-2">
                                 <ul class="list-unstyled mb-0 d-grid gap-2 small">
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-birthday me-2"></span>Birthday</span>
+                                        <span><span class="cat-dot dot-birthday me-2"></span>{{ __('index.birthday') }}</span>
                                         <span class="text-muted">{{ $summary['birthdays'] ?? 0 }}</span>
                                     </li>
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-leave me-2"></span>Leave</span>
+                                        <span><span class="cat-dot dot-leave me-2"></span>{{ __('index.leave_label') }}</span>
                                         <span class="text-muted">{{ $summary['leave_requests'] ?? 0 }}</span>
                                     </li>
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-time-leave me-2"></span>Time Leave</span>
+                                        <span><span class="cat-dot dot-time-leave me-2"></span>{{ __('index.time_leave_label') }}</span>
                                         <span class="text-muted">{{ $summary['time_leave_requests'] ?? 0 }}</span>
                                     </li>
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-anniversary me-2"></span>Anniversary</span>
+                                        <span><span class="cat-dot dot-anniversary me-2"></span>{{ __('index.anniversary_label') }}</span>
                                         <span class="text-muted">{{ $summary['anniversaries'] ?? 0 }}</span>
                                     </li>
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-holiday me-2"></span>Public Holiday</span>
+                                        <span><span class="cat-dot dot-holiday me-2"></span>{{ __('index.holiday_label') }}</span>
                                         <span class="text-muted">{{ $summary['holidays'] ?? 0 }}</span>
                                     </li>
                                     <li class="d-flex align-items-center justify-content-between">
-                                        <span><span class="cat-dot dot-event me-2"></span>Company Event</span>
+                                        <span><span class="cat-dot dot-event me-2"></span>{{ __('index.company_event_label') }}</span>
                                         <span class="text-muted">{{ $summary['company_events'] ?? 0 }}</span>
                                     </li>
                                 </ul>
@@ -628,8 +640,8 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-bottom py-3">
                         <div class="d-flex align-items-center gap-2">
-                            <span class="badge fs-6 event-modal-type-badge" id="modalEventTypeBadge">Event</span>
-                            <span class="badge bg-light text-dark border" id="modalEventStatusBadge">Status</span>
+                            <span class="badge fs-6 event-modal-type-badge" id="modalEventTypeBadge">{{ __('index.event') }}</span>
+                            <span class="badge bg-light text-dark border" id="modalEventStatusBadge">{{ __('index.status') }}</span>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -642,7 +654,7 @@
                                  class="rounded-circle shadow-sm"
                                  style="width:58px;height:58px;object-fit:cover;">
                             <div class="overflow-hidden">
-                                <h5 class="mb-1 fw-bold text-truncate" id="modalEmployeeName">Employee Name</h5>
+                                <h5 class="mb-1 fw-bold text-truncate" id="modalEmployeeName">{{ __('index.name') }}</h5>
                                 <div class="text-muted small d-flex align-items-center gap-2 flex-wrap">
                                     <span id="modalEmployeeCode" class="badge bg-light text-secondary border"></span>
                                     <span id="modalEmployeeDept"></span>
@@ -655,13 +667,13 @@
                         <div class="row g-3 mb-3">
                             <div class="col-6">
                                 <div class="p-2 rounded bg-light">
-                                    <small class="text-muted d-block mb-1">Date</small>
+                                    <small class="text-muted d-block mb-1">{{ __('index.date') ?? 'Date' }}</small>
                                     <strong class="small text-dark" id="modalEventDate"></strong>
                                 </div>
                             </div>
                             <div class="col-6">
                                 <div class="p-2 rounded bg-light">
-                                    <small class="text-muted d-block mb-1">Time / Duration</small>
+                                    <small class="text-muted d-block mb-1">{{ __('index.time') }} / {{ __('index.duration') ?? 'Duration' }}</small>
                                     <strong class="small text-dark" id="modalEventDuration"></strong>
                                 </div>
                             </div>
@@ -669,22 +681,22 @@
 
                         <!-- Event Description / Reason -->
                         <div class="mb-3">
-                            <label class="form-label small text-muted mb-1 fw-semibold">Description / Reason</label>
+                            <label class="form-label small text-muted mb-1 fw-semibold">{{ __('index.description') }}</label>
                             <div class="p-3 rounded bg-light text-dark small" id="modalEventReason" style="white-space: pre-line;">
                             </div>
                         </div>
 
                         <!-- Admin Remark (Optional) -->
                         <div class="mb-2 d-none" id="modalAdminRemarkWrapper">
-                            <label class="form-label small text-muted mb-1 fw-semibold">Admin Remark</label>
+                            <label class="form-label small text-muted mb-1 fw-semibold">{{ __('index.admin_remark') ?? 'Admin Remark' }}</label>
                             <div class="p-2 rounded bg-warning-subtle text-dark small" id="modalAdminRemark">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light border-top py-2">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{{ __('index.close') }}</button>
                         <a href="#" id="modalActionLink" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1">
-                            <span id="modalActionLinkLabel">View Details</span>
+                            <span id="modalActionLinkLabel">{{ __('index.view_details') }}</span>
                             <i class="link-icon" data-feather="arrow-right"></i>
                         </a>
                     </div>
@@ -698,8 +710,8 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-bottom py-3">
                         <div>
-                            <h5 class="modal-title fw-bold mb-0" id="dayScheduleModalTitle">Day Schedule</h5>
-                            <small class="text-muted" id="dayScheduleModalSubtitle">All events scheduled on this day</small>
+                            <h5 class="modal-title fw-bold mb-0" id="dayScheduleModalTitle">{{ __('index.day_schedule') }}</h5>
+                            <small class="text-muted" id="dayScheduleModalSubtitle">{{ __('index.events_scheduled_day') }}</small>
                         </div>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
@@ -709,7 +721,7 @@
                         </div>
                     </div>
                     <div class="modal-footer bg-light border-top py-2">
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">{{ __('index.close') }}</button>
                     </div>
                 </div>
             </div>
@@ -727,7 +739,21 @@
             upcomingEvents: @json($upcomingEvents),
             summary: @json($summary),
             todayKey: @json($todayKey),
-            defaultAvatar: "{{ asset('assets/images/img.png') }}"
+            defaultAvatar: "{{ asset('assets/images/img.png') }}",
+            i18n: {
+                today: @json(__('index.today')),
+                allDay: @json(__('index.all_day')),
+                noEvents: @json(__('index.no_records_found')),
+                noEventsOnDate: @json(__('index.no_events_on_date')),
+                noDescriptionProvided: @json(__('index.no_description_provided')),
+                viewRecord: @json(__('index.view_record')),
+                viewDetails: @json(__('index.view_details')),
+                daySchedule: @json(__('index.day_schedule')),
+                eventsScheduledCount: @json(__('index.events_count')),
+                week: @json(__('index.view_week')),
+                of: @json(__('index.of')),
+                to: @json(__('index.to'))
+            }
         };
     </script>
 
@@ -1510,7 +1536,7 @@
                 const week = weeks[currentWeekIndex];
                 const startDateStr = week[0].date;
                 const endDateStr = week[6].date;
-                $('#weekRangeLabel').text(`${startDateStr} to ${endDateStr} (Week ${currentWeekIndex + 1} of ${weeks.length})`);
+                $('#weekRangeLabel').text(`${startDateStr} ${data.i18n.to} ${endDateStr} (${data.i18n.week} ${currentWeekIndex + 1} ${data.i18n.of} ${weeks.length})`);
 
                 let html = '';
                 week.forEach(day => {
@@ -1523,13 +1549,13 @@
                             <div class="week-col-header">
                                 <span class="week-col-weekday ${isWeekend ? 'text-danger' : ''}">${day.weekday}</span>
                                 <div class="week-col-daynum">${day.day}</div>
-                                ${isToday ? '<span class="today-badge">Today</span>' : ''}
+                                ${isToday ? `<span class="today-badge">${data.i18n.today}</span>` : ''}
                             </div>
                             <div class="week-events-stack">
                     `;
 
                     if (dayEvents.length === 0) {
-                        html += `<div class="text-muted text-center py-4 small">No events</div>`;
+                        html += `<div class="text-muted text-center py-4 small">${data.i18n.noEvents}</div>`;
                     } else {
                         dayEvents.forEach(evt => {
                             html += `
@@ -1591,7 +1617,7 @@
                 if (!dayData) return;
 
                 $('#selectedDayTitle').text(dateStr);
-                $('#selectedDayBadge').text(dayData.is_today ? 'Today' : dayData.weekday);
+                $('#selectedDayBadge').text(dayData.is_today ? data.i18n.today : dayData.weekday);
 
                 const container = $('#selectedDayEventsContainer');
                 const events = dayData.events || [];
@@ -1600,7 +1626,7 @@
                     container.html(`
                         <div class="text-center py-3 text-muted small">
                             <i class="link-icon mb-1" data-feather="smile"></i>
-                            <p class="mb-0">No events scheduled on this date.</p>
+                            <p class="mb-0">${data.i18n.noEventsOnDate}</p>
                         </div>
                     `);
                 } else {
@@ -1655,8 +1681,8 @@
                 $('#modalEmployeeBranch').text(event.employee_branch ? `Branch: ${event.employee_branch}` : '');
 
                 $('#modalEventDate').text(event.start_date ? `${event.start_date} ${event.end_date ? ' - ' + event.end_date : ''}` : event.date);
-                $('#modalEventDuration').text(event.time || event.duration || 'All Day');
-                $('#modalEventReason').text(event.reason || 'No description provided.');
+                $('#modalEventDuration').text(event.time || event.duration || data.i18n.allDay);
+                $('#modalEventReason').text(event.reason || data.i18n.noDescriptionProvided);
 
                 if (event.admin_remark) {
                     $('#modalAdminRemark').text(event.admin_remark);
@@ -1668,7 +1694,7 @@
                 const actionLink = $('#modalActionLink');
                 if (event.url) {
                     actionLink.attr('href', event.url).removeClass('d-none');
-                    $('#modalActionLinkLabel').text(event.url_label || 'View Record');
+                    $('#modalActionLinkLabel').text(event.url_label || data.i18n.viewDetails);
                 } else {
                     actionLink.addClass('d-none');
                 }
@@ -1684,8 +1710,8 @@
                 const dayData = days[dateStr];
                 if (!dayData) return;
 
-                $('#dayScheduleModalTitle').text(`Schedule for ${dateStr}`);
-                $('#dayScheduleModalSubtitle').text(`${(dayData.events || []).length} event(s) scheduled`);
+                $('#dayScheduleModalTitle').text(`${data.i18n.daySchedule}: ${dateStr}`);
+                $('#dayScheduleModalSubtitle').text(`${(dayData.events || []).length} ${data.i18n.eventsScheduledCount}`);
 
                 let html = '';
                 (dayData.events || []).forEach(evt => {

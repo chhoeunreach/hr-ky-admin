@@ -1,8 +1,8 @@
 @extends('layouts.master')
 
-@section('title', 'Employee Location')
+@section('title', __('index.location_logs'))
 
-@section('action', 'Location Log')
+@section('action', __('index.location_logs'))
 
 @section('main-content')
     <section class="content">
@@ -11,7 +11,7 @@
 
         <div class="card mb-4">
             <div class="card-header">
-                <h6 class="card-title mb-0">Employee Location Log Filter</h6>
+                <h6 class="card-title mb-0">{{ __('index.employee_location_log_filter') }}</h6>
             </div>
             <form class="forms-sample card-body pb-0" action="{{ route('admin.employee.log') }}" method="get">
                 <div class="row align-items-center">
@@ -67,14 +67,14 @@
 
         <div class="card">
             <div class="card-header">
-                <h6 class="card-title mb-0">Location Logs</h6>
+                <h6 class="card-title mb-0">{{ __('index.location_logs') }}</h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table id="dataTableExample" class="table table-bordered table-hover">
                         <thead>
                         <tr>
-                            <th class="text-center">SN</th>
+                            <th class="text-center">{{ __('index.sn') }}</th>
                             <th>{{ __('index.employee_name') }}</th>
                             <th class="text-center">{{ __('index.date') }}</th>
                             <th class="text-center">{{ __('index.location') }}</th>
@@ -93,7 +93,7 @@
 
                                     {{ \App\Helpers\AppHelper::formatDateForView($date)  }}
                                     @if($logs->count() > 1)
-                                        <span class="badge bg-primary ms-2">{{ $logs->count() }} Records</span>
+                                        <span class="badge bg-primary ms-2">{{ $logs->count() }} {{ __('index.records') }}</span>
                                     @endif
                                 </td>
                                 <td class="text-center">
@@ -102,7 +102,7 @@
                                             data-bs-target="#details-{{ $userId }}"
                                             aria-expanded="false"
                                             aria-controls="details-{{ $userId }}">
-                                        View Details
+                                        {{ __('index.view_details') }}
                                     </button>
                                 </td>
 
@@ -112,9 +112,9 @@
                                     <table class="table table-sm mb-0">
                                         <thead>
                                         <tr>
-                                            <th class="text-center">SN</th>
-                                            <th class="text-center">Time</th>
-                                            <th class="text-center">Location</th>
+                                            <th class="text-center">{{ __('index.sn') }}</th>
+                                            <th class="text-center">{{ __('index.time') }}</th>
+                                            <th class="text-center">{{ __('index.location') }}</th>
                                         </tr>
                                         </thead>
                                         <tbody>
@@ -126,11 +126,11 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <span class="btn btn-outline-secondary btn-xs checkLocation"
-                                                          title="Show Location"
+                                                          title="{{ __('index.show_location') }}"
                                                           data-bs-toggle="modal"
                                                           data-href="{{ 'https://maps.google.com/maps?q=' . ($log->latitude ?? '0') . ',' . ($log->longitude ?? '0') . '&t=&z=20&ie=UTF8&iwloc=&output=embed' }}"
                                                           data-bs-target="#addslider">
-                                                        View Location
+                                                        {{ __('index.view_location') }}
                                                     </span>
                                                 </td>
                                             </tr>
@@ -154,7 +154,7 @@
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title" id="addsliderLabel">Location   <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button></h5>
+                                    <h5 class="modal-title" id="addsliderLabel">{{ __('index.location') }}   <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button></h5>
 
                                 </div>
                                 <div class="modal-body">

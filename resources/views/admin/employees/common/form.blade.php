@@ -50,65 +50,65 @@
         <div class="card-body pb-2">
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
-                    <h5 class="mb-1">Employee Information</h5>
-                    <p class="text-muted mb-0">Review the full employee profile before making changes.</p>
+                    <h5 class="mb-1">{{ __('index.employee_information') }}</h5>
+                    <p class="text-muted mb-0">{{ __('index.review_employee_profile_before_changes') }}</p>
                 </div>
                 <div class="d-flex flex-wrap gap-2">
                     <span class="badge bg-primary">ID: {{ $userDetail->id }}</span>
                     <span class="badge {{ $userDetail->is_active ? 'bg-success' : 'bg-secondary' }}">
-                        {{ $userDetail->is_active ? 'Active' : 'Inactive' }}
+                        {{ $userDetail->is_active ? __('index.active') : __('index.inactive') }}
                     </span>
-                    <span class="badge bg-light text-dark">Status: {{ ucfirst($userDetail->status ?? 'n/a') }}</span>
+                    <span class="badge bg-light text-dark">{{ __('index.status') }}: {{ ucfirst($userDetail->status ?? 'n/a') }}</span>
                 </div>
             </div>
 
             <div class="employee-info-grid">
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Employee Code</span>
+                    <span class="employee-info-label">{{ __('index.employee_code') }}</span>
                     <div class="employee-info-value">{{ $userDetail->employee_code ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Username</span>
+                    <span class="employee-info-label">{{ __('index.username') }}</span>
                     <div class="employee-info-value">{{ $userDetail->username ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Email</span>
+                    <span class="employee-info-label">{{ __('index.email') }}</span>
                     <div class="employee-info-value">{{ $userDetail->email ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Phone</span>
+                    <span class="employee-info-label">{{ __('index.phone') }}</span>
                     <div class="employee-info-value">{{ $userDetail->phone ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Company</span>
+                    <span class="employee-info-label">{{ __('index.company') }}</span>
                     <div class="employee-info-value">{{ $userDetail->company?->name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Branch</span>
+                    <span class="employee-info-label">{{ __('index.branch') }}</span>
                     <div class="employee-info-value">{{ $userDetail->branch?->name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Department</span>
+                    <span class="employee-info-label">{{ __('index.department') }}</span>
                     <div class="employee-info-value">{{ $userDetail->department?->dept_name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Post</span>
+                    <span class="employee-info-label">{{ __('index.post') }}</span>
                     <div class="employee-info-value">{{ $userDetail->post?->post_name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Role</span>
+                    <span class="employee-info-label">{{ __('index.role') }}</span>
                     <div class="employee-info-value">{{ $userDetail->role?->name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Supervisor</span>
+                    <span class="employee-info-label">{{ __('index.supervisor') }}</span>
                     <div class="employee-info-value">{{ $userDetail->supervisor?->name ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Employment Type</span>
-                    <div class="employee-info-value">{{ $userDetail->employment_type ? ucfirst($userDetail->employment_type) : 'N/A' }}</div>
+                    <span class="employee-info-label">{{ __('index.employment_type') }}</span>
+                    <div class="employee-info-value">{{ $userDetail->employment_type ? (in_array($userDetail->employment_type, ['permanent', 'contract']) ? __('index.' . $userDetail->employment_type) : ucfirst($userDetail->employment_type)) : 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Workspace</span>
+                    <span class="employee-info-label">{{ __('index.workspace') }}</span>
                     <div class="employee-info-value">
                         @if($userDetail->workspace_type === \App\Models\User::FIELD)
                             {{ __('index.field') }}
@@ -120,19 +120,19 @@
                     </div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Joining Date</span>
+                    <span class="employee-info-label">{{ __('index.joining_date') }}</span>
                     <div class="employee-info-value">{{ $userDetail->joining_date ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Date of Birth</span>
+                    <span class="employee-info-label">{{ __('index.dob') }}</span>
                     <div class="employee-info-value">{{ $userDetail->dob ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Created At</span>
+                    <span class="employee-info-label">{{ __('index.created_at') }}</span>
                     <div class="employee-info-value">{{ $userDetail->created_at?->format('M d, Y h:i A') ?: 'N/A' }}</div>
                 </div>
                 <div class="employee-info-item">
-                    <span class="employee-info-label">Updated At</span>
+                    <span class="employee-info-label">{{ __('index.updated_at') }}</span>
                     <div class="employee-info-value">{{ $userDetail->updated_at?->format('M d, Y h:i A') ?: 'N/A' }}</div>
                 </div>
             </div>
@@ -195,22 +195,22 @@
                 </div>
 
                 <div class="col-lg-4 col-md-6 mb-3">
-                    <label for="telegram_chat_id" class="form-label">Telegram Bot Chat ID</label>
+                    <label for="telegram_chat_id" class="form-label">{{ __('index.telegram_bot_chat_id') }}</label>
                     <input type="text" class="form-control" id="telegram_chat_id" name="telegram_chat_id"
                            value="{{ old('telegram_chat_id', $userDetail->telegram_chat_id ?? '') }}"
-                           autocomplete="off" placeholder="Example: 123456789">
+                           autocomplete="off" placeholder="{{ __('index.telegram_chat_id_placeholder') }}">
                     @if(isset($userDetail) && $userDetail->telegram_linked_at)
-                        <small class="text-success">Linked {{ $userDetail->telegram_linked_at->format('Y-m-d H:i') }}</small>
+                        <small class="text-success">{{ __('index.linked_at') }} {{ $userDetail->telegram_linked_at->format('Y-m-d H:i') }}</small>
                     @else
-                        <small class="text-muted">Employee can send /link {{ $userDetail->employee_code ?? 'EMPLOYEE_CODE' }} to the bot.</small>
+                        <small class="text-muted">{{ __('index.telegram_link_hint', ['code' => $userDetail->employee_code ?? 'EMPLOYEE_CODE']) }}</small>
                     @endif
                 </div>
 
                 <div class="col-lg-4 col-md-6 mb-3">
-                    <label for="telegram_username" class="form-label">Telegram Username</label>
+                    <label for="telegram_username" class="form-label">{{ __('index.telegram_username') }}</label>
                     <input type="text" class="form-control" id="telegram_username" name="telegram_username"
                            value="{{ old('telegram_username', $userDetail->telegram_username ?? '') }}"
-                           autocomplete="off" placeholder="@username">
+                           autocomplete="off" placeholder="{{ __('index.telegram_username_placeholder') }}">
                 </div>
 
                 <div class="col-lg-4 col-md-6 mb-3">
@@ -236,7 +236,7 @@
                         @foreach(User::GENDER as $value)
                             <option
                                 value="{{$value}}" {{ isset($userDetail) && ($userDetail->gender ) == $value || old('gender') == $value ? 'selected': '' }}>
-                                {{ucfirst($value)}}</option>
+                                {{ in_array($value, ['male', 'female', 'other']) ? __('index.' . $value) : ucfirst($value) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -250,7 +250,7 @@
                         @foreach(User::MARITAL_STATUS as $value)
                             <option value="{{ $value }}"
                                 {{ isset($userDetail) && ($userDetail->marital_status ) == $value || old('marital_status') == $value ? 'selected': '' }}>
-                                {{ucfirst($value)}}
+                                {{ in_array($value, ['single', 'married', 'unmarried', 'divorced']) ? __('index.' . $value) : ucfirst($value) }}
                             </option>
                         @endforeach
                     </select>
@@ -395,7 +395,7 @@
                         @foreach(User::EMPLOYMENT_TYPE as $value)
                             <option
                                 value="{{$value}}" {{ isset($userDetail) && ($userDetail->employment_type ) == $value || old('employment_type') == $value ? 'selected': '' }}>
-                                {{ucfirst($value)}}</option>
+                                {{ in_array($value, ['permanent', 'contract']) ? __('index.' . $value) : ucfirst($value) }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -555,7 +555,7 @@
                                 @foreach(EmployeeAccount::BANK_ACCOUNT_TYPE as $value)
                                     <option
                                         value="{{ $value }}" {{ isset($userDetail?->accountDetail) && ($userDetail?->accountDetail?->bank_account_type ) == $value || old('bank_account_type') == $value ? 'selected': '' }}>
-                                        {{ucfirst($value)}}</option>
+                                        {{ in_array($value, ['saving', 'current', 'salary']) ? __('index.' . $value) : ucfirst($value) }}</option>
                                 @endforeach
                             </select>
                         </div>
