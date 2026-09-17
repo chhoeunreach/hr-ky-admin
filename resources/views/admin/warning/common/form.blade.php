@@ -1,43 +1,27 @@
 
 <div class="row">
-    @if(!isset(auth()->user()->branch_id))
     <div class="col-lg-4 col-md-6 mb-4">
-        <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="branch_id" name="branch_id">
-            <option selected disabled>{{ __('index.select_branch') }}</option>
-            @foreach($branch as $value)
-                <option value="{{ $value->id }}" {{ ((isset($warningDetail) && $warningDetail->branch_id == $value->id) || (isset(auth()->user()->branch_id) && auth()->user()->branch_id == $value->id)) ? 'selected' : '' }}>
-                    {{ ucfirst($value->name) }}
+        <label for="employee_id" class="form-label">{{ __('index.employee') }} <span style="color: red">*</span></label>
+        @php
+            $selectedEmployeeIds = collect(old('employee_id', $employeeIds ?? []))->map(fn ($id) => (string) $id)->all();
+            $selectedDepartmentIds = collect(old('department_id', $departmentIds ?? []))->filter()->unique()->values();
+        @endphp
+        <select class="form-select" id="employee_id" name="employee_id[]" multiple>
+            @foreach($employees ?? [] as $employee)
+                <option value="{{ $employee->id }}"
+                        data-branch-id="{{ $employee->branch_id }}"
+                        data-department-id="{{ $employee->department_id }}"
+                    {{ in_array((string) $employee->id, $selectedEmployeeIds, true) ? 'selected' : '' }}>
+                    {{ ucfirst($employee->name) }}{{ $employee->username ? ' (' . $employee->username . ')' : '' }}
                 </option>
             @endforeach
         </select>
-    </div>
-    @endif
-
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="department_id" class="form-label">{{ __('index.department') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="department_id" multiple name="department_id[]">
-            @if(isset($warningDetail))
-                @foreach($filteredDepartment as $department)
-                    <option value="{{ $department->id }}" {{ in_array($department->id, $departmentIds) ? 'selected' : '' }}>
-                        {{ ucfirst($department->dept_name) }}
-                    </option>
-                @endforeach
-            @endif
-        </select>
-    </div>
-
-    <div class="col-lg-4 mb-4">
-        <label for="employee_id" class="form-label">{{ __('index.employee') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="employee_id" name="employee_id[]" multiple>
-            @if(isset($warningDetail))
-                @foreach($filteredUsers as $user)
-                    <option value="{{ $user->id }}" {{ in_array($user->id, $employeeIds) ? 'selected' : '' }}>
-                        {{ ucfirst($user->name) }}
-                    </option>
-                @endforeach
-            @endif
-        </select>
+        <input type="hidden" id="warning_branch_id" name="branch_id" value="{{ old('branch_id', $warningDetail->branch_id ?? auth()->user()->branch_id ?? '') }}">
+        <div id="warning_department_inputs">
+            @foreach($selectedDepartmentIds as $departmentId)
+                <input type="hidden" name="department_id[]" value="{{ $departmentId }}">
+            @endforeach
+        </div>
     </div>
     <div class="col-lg-12">
         <div class="row">
@@ -82,6 +66,5 @@
         </div>
     @endcanany
 </div>
-
 
 

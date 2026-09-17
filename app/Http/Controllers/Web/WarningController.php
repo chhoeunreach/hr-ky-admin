@@ -80,8 +80,12 @@ class WarningController extends Controller
             $selectBranch = ['id','name'];
             $isBsEnabled = AppHelper::ifDateInBsEnabled();
             $branch = $this->branchRepository->getLoggedInUserCompanyBranches($companyId,$selectBranch);
+            $employees = $this->userRepository->getAllVerifiedEmployeesExceptAdminOfCompany(
+                ['id', 'name', 'username', 'branch_id', 'department_id'],
+                ['branch:id,name', 'department:id,dept_name']
+            );
 
-            return view($this->view.'create', compact('branch','isBsEnabled','employeeIds','departmentIds'));
+            return view($this->view.'create', compact('branch','isBsEnabled','employeeIds','departmentIds','employees'));
         }catch(Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -162,8 +166,10 @@ class WarningController extends Controller
 
             $branch = $this->branchRepository->getLoggedInUserCompanyBranches($companyId,$selectBranch);
 
-            $selectUser = ['id', 'name'];
-            $users = $this->userRepository->getAllVerifiedEmployeeOfCompany($selectUser);
+            $employees = $this->userRepository->getAllVerifiedEmployeesExceptAdminOfCompany(
+                ['id', 'name', 'username', 'branch_id', 'department_id'],
+                ['branch:id,name', 'department:id,dept_name']
+            );
             $employeeIds = [];
             foreach ($warningDetail->warningEmployee as $key => $value) {
                 $employeeIds[] = $value->employee_id;
@@ -181,9 +187,9 @@ class WarningController extends Controller
             $select = ['name', 'id'];
             $filteredUsers = !empty($departmentIds)
                 ? $this->userRepository->getActiveEmployeesByDepartment($departmentIds, $select)
-                : $users;
+                : $employees;
 
-            return view($this->view.'edit', compact('warningDetail','isBsEnabled','branch','employeeIds','filteredUsers','departmentIds','filteredDepartment'));
+            return view($this->view.'edit', compact('warningDetail','isBsEnabled','branch','employeeIds','filteredUsers','departmentIds','filteredDepartment','employees'));
         }catch(Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }

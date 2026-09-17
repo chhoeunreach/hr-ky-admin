@@ -7,6 +7,7 @@ use App\Helpers\AppHelper;
 use App\Models\Asset;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class WarningRequest extends FormRequest
@@ -32,6 +33,30 @@ class WarningRequest extends FormRequest
         $this->merge([
             'warning_date' => $fromDate->format('Y-m-d'),
         ]);
+
+        $employeeIds = collect($this->input('employee_id', []))->filter()->values();
+
+        if ($employeeIds->isNotEmpty()) {
+            $employees = DB::table('users')
+                ->whereIn('id', $employeeIds)
+                ->get(['id', 'branch_id', 'department_id']);
+
+            if (!$this->filled('branch_id')) {
+                $this->merge(['branch_id' => $employees->first()?->branch_id]);
+            }
+
+            if (empty($this->input('department_id'))) {
+                $this->merge([
+                    'department_id' => $employees
+                        ->pluck('department_id')
+                        ->filter()
+                        ->unique()
+                        ->values()
+                        ->all(),
+                ]);
+            }
+        }
+
         if (!auth('admin')->check() && auth()->check()) {
             $this->merge(['branch_id' => auth()->user()->branch_id]);
         }
@@ -70,4 +95,3 @@ class WarningRequest extends FormRequest
 
 
 }
-

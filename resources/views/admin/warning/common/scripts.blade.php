@@ -11,6 +11,45 @@
             placeholder: "{{ __('index.select_department') }}"
         });
 
+        const syncWarningEmployeeMeta = () => {
+            const formBranchInput = document.getElementById('warning_branch_id');
+            const departmentContainer = document.getElementById('warning_department_inputs');
+
+            if (!formBranchInput || !departmentContainer) {
+                return;
+            }
+
+            const selectedOptions = $('#employee_id').find(':selected');
+            const departmentIds = [];
+            let branchId = '';
+
+            selectedOptions.each(function () {
+                const optionBranchId = $(this).data('branch-id');
+                const optionDepartmentId = $(this).data('department-id');
+
+                if (!branchId && optionBranchId) {
+                    branchId = String(optionBranchId);
+                }
+
+                if (optionDepartmentId && !departmentIds.includes(String(optionDepartmentId))) {
+                    departmentIds.push(String(optionDepartmentId));
+                }
+            });
+
+            formBranchInput.value = branchId || formBranchInput.value;
+            departmentContainer.innerHTML = '';
+            departmentIds.forEach((departmentId) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'department_id[]';
+                input.value = departmentId;
+                departmentContainer.appendChild(input);
+            });
+        };
+
+        $('#employee_id').on('change', syncWarningEmployeeMeta);
+        syncWarningEmployeeMeta();
+
 
         $.ajaxSetup({
             headers: {
@@ -57,6 +96,10 @@
 
 
     $(document).ready(function () {
+        if (!document.getElementById('department_id')) {
+            return;
+        }
+
         // Define variables
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
@@ -183,9 +226,11 @@
     });
 
 
-    document.getElementById('withNotification').addEventListener('click', function (event) {
-
-        document.getElementById('notification').value = 1;
-    });
+    const withNotificationButton = document.getElementById('withNotification');
+    if (withNotificationButton) {
+        withNotificationButton.addEventListener('click', function (event) {
+            document.getElementById('notification').value = 1;
+        });
+    }
 
 </script>
