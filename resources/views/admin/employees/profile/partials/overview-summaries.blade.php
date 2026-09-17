@@ -3,19 +3,19 @@
     @if($canViewEmployment)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="briefcase"></i> Employment Summary</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('employment')">View Details</button>
+                <h6><i class="link-icon" data-feather="briefcase"></i> {{ __('index.employment_summary') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('employment')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-info-grid">
-                    <div><label>Department</label><span>{{ $overview['employment']['department'] ?: 'N/A' }}</span></div>
-                    <div><label>Position</label><span>{{ $overview['employment']['position'] ?: 'N/A' }}</span></div>
-                    <div><label>Branch</label><span>{{ $overview['employment']['branch'] ?: 'N/A' }}</span></div>
-                    <div><label>Manager</label><span>{{ $overview['employment']['manager'] ?: 'N/A' }}</span></div>
-                    <div><label>Employment Type</label><span>{{ $overview['employment']['employment_type'] ?: 'N/A' }}</span></div>
-                    <div><label>Probation End</label><span>{{ $overview['employment']['probation_end_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['probation_end_date'])->format('d M Y') : 'N/A' }}</span></div>
-                    <div><label>Joining Date</label><span>{{ $overview['employment']['joining_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['joining_date'])->format('d M Y') : 'N/A' }}</span></div>
-                    <div><label>Years of Service</label><span>{{ $overview['employment']['years_of_service'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.department') }}</label><span>{{ $overview['employment']['department'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.position') }}</label><span>{{ $overview['employment']['position'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.branch') }}</label><span>{{ $overview['employment']['branch'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.manager') }}</label><span>{{ $overview['employment']['manager'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.employment_type') }}</label><span>{{ $overview['employment']['employment_type'] ?: 'N/A' }}</span></div>
+                    <div><label>{{ __('index.probation_end') }}</label><span>{{ $overview['employment']['probation_end_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['probation_end_date'])->format('d M Y') : 'N/A' }}</span></div>
+                    <div><label>{{ __('index.joining_date') }}</label><span>{{ $overview['employment']['joining_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['joining_date'])->format('d M Y') : 'N/A' }}</span></div>
+                    <div><label>{{ __('index.years_of_service') }}</label><span>{{ $overview['employment']['years_of_service'] ?: 'N/A' }}</span></div>
                 </div>
             </div>
         </div>
@@ -23,47 +23,47 @@
 
     <div class="emp-overview-card">
         <div class="emp-card-head">
-            <h6><i class="link-icon" data-feather="user"></i> Personal Data</h6>
-            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">View Details</button>
+            <h6><i class="link-icon" data-feather="user"></i> {{ __('index.personal_data') }}</h6>
+            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">{{ __('index.view_details') }}</button>
         </div>
         <div class="emp-card-body">
             <div class="emp-info-grid">
-                <div><label>Name (Khmer)</label><span>{{ $overview['personal']['name'] ?: 'N/A' }}</span></div>
-                <div><label>Name (EN)</label><span>{{ $overview['personal']['english_name'] ?: 'N/A' }}</span></div>
-                <div><label>Gender</label><span>{{ $overview['personal']['gender'] ? \Illuminate\Support\Str::title($overview['personal']['gender']) : 'N/A' }}</span></div>
-                <div><label>Date of Birth</label><span>{{ $overview['personal']['dob'] ? \Illuminate\Support\Carbon::parse($overview['personal']['dob'])->format('d M Y') : 'N/A' }}</span></div>
-                <div><label>Phone</label><span>{{ $overview['personal']['phone'] ?: 'N/A' }}</span></div>
-                <div><label>Email</label><span>{{ $overview['personal']['email'] ?: 'N/A' }}</span></div>
-                <div><label>Address</label><span>{{ $overview['personal']['address'] ?: 'N/A' }}</span></div>
-                <div><label>Emergency Contact</label><span>{{ $overview['personal']['emergency_contact'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.name_khmer') }}</label><span>{{ $overview['personal']['name'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.name_english') }}</label><span>{{ $overview['personal']['english_name'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.gender') }}</label><span>{{ $overview['personal']['gender'] ? \Illuminate\Support\Str::title($overview['personal']['gender']) : 'N/A' }}</span></div>
+                <div><label>{{ __('index.date_of_birth') }}</label><span>{{ $overview['personal']['dob'] ? \Illuminate\Support\Carbon::parse($overview['personal']['dob'])->format('d M Y') : 'N/A' }}</span></div>
+                <div><label>{{ __('index.phone') }}</label><span>{{ $overview['personal']['phone'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.email') }}</label><span>{{ $overview['personal']['email'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.address') }}</label><span>{{ $overview['personal']['address'] ?: 'N/A' }}</span></div>
+                <div><label>{{ __('index.emergency_contact') }}</label><span>{{ $overview['personal']['emergency_contact'] ?: 'N/A' }}</span></div>
             </div>
         </div>
     </div>
 
     <div class="emp-overview-card">
         <div class="emp-card-head">
-            <h6><i class="link-icon" data-feather="activity"></i> Attendance</h6>
-            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('attendance')">View Details</button>
+            <h6><i class="link-icon" data-feather="activity"></i> {{ __('index.attendance') }}</h6>
+            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('attendance')">{{ __('index.view_details') }}</button>
         </div>
         <div class="emp-card-body">
             <div class="emp-chart-block">
                 <canvas id="attendanceChart" height="120"></canvas>
             </div>
             <div class="emp-info-grid">
-                <div><label>Period</label><span>{{ $overview['attendance']['from'] ? \Illuminate\Support\Carbon::parse($overview['attendance']['from'])->format('d M Y') . ' → ' . \Illuminate\Support\Carbon::parse($overview['attendance']['to'])->format('d M Y') : 'N/A' }}</span></div>
-                <div><label>Working Days</label><span>{{ $overview['attendance']['working_days'] }}</span></div>
-                <div><label>Present</label><span>{{ $overview['attendance']['present'] }}</span></div>
-                <div><label>Late</label><span>{{ $overview['attendance']['late'] }}</span></div>
-                <div><label>Absent</label><span>{{ $overview['attendance']['absent'] }}</span></div>
-                <div><label>Worked Hours</label><span>{{ $overview['attendance']['worked_hours'] ? number_format($overview['attendance']['worked_hours'], 1) . ' hrs' : 'N/A' }}</span></div>
+                <div><label>{{ __('index.period') }}</label><span>{{ $overview['attendance']['from'] ? \Illuminate\Support\Carbon::parse($overview['attendance']['from'])->format('d M Y') . ' → ' . \Illuminate\Support\Carbon::parse($overview['attendance']['to'])->format('d M Y') : 'N/A' }}</span></div>
+                <div><label>{{ __('index.working_days') }}</label><span>{{ $overview['attendance']['working_days'] }}</span></div>
+                <div><label>{{ __('index.present') }}</label><span>{{ $overview['attendance']['present'] }}</span></div>
+                <div><label>{{ __('index.late') }}</label><span>{{ $overview['attendance']['late'] }}</span></div>
+                <div><label>{{ __('index.absent') }}</label><span>{{ $overview['attendance']['absent'] }}</span></div>
+                <div><label>{{ __('index.worked_hours') }}</label><span>{{ $overview['attendance']['worked_hours'] ? number_format($overview['attendance']['worked_hours'], 1) . ' hrs' : 'N/A' }}</span></div>
             </div>
         </div>
     </div>
 
     <div class="emp-overview-card">
         <div class="emp-card-head">
-            <h6><i class="link-icon" data-feather="calendar"></i> Leave Balance</h6>
-            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('attendance')">View Details</button>
+            <h6><i class="link-icon" data-feather="calendar"></i> {{ __('index.leave_balance') }}</h6>
+            <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('attendance')">{{ __('index.view_details') }}</button>
         </div>
         <div class="emp-card-body">
             @php
@@ -72,20 +72,20 @@
             <div class="emp-leave-summary">
                 <div class="emp-leave-balance">
                     <div class="emp-leave-balance-value">{{ number_format($overview['leave']['balance'], 1) }}</div>
-                    <div class="emp-leave-balance-label">Days Remaining</div>
+                    <div class="emp-leave-balance-label">{{ __('index.days_remaining') }}</div>
                 </div>
                 <div class="emp-leave-bar">
                     <div class="progress emp-progress">
                         <div class="progress-bar" role="progressbar" style="width: {{ min(100, $leavePct) }}%"><span class="sr-only">{{ $leavePct }}%</span></div>
                     </div>
-                    <div class="emp-leave-bar-labels"><span>{{ $leavePct }}% used</span><span>{{ $overview['leave']['pending'] }} pending</span></div>
+                    <div class="emp-leave-bar-labels"><span>{{ $leavePct }}% {{ __('index.used') }}</span><span>{{ $overview['leave']['pending'] }} {{ __('index.pending') }}</span></div>
                 </div>
             </div>
             <div class="emp-info-grid">
-                <div><label>Allocated</label><span>{{ number_format($overview['leave']['allocated'], 1) }} days</span></div>
-                <div><label>Used</label><span>{{ number_format($overview['leave']['used'], 1) }} days</span></div>
-                <div><label>Balance</label><span class="text-primary fw-semibold">{{ number_format($overview['leave']['balance'], 1) }} days</span></div>
-                <div><label>Pending Requests</label><span>{{ $overview['leave']['pending'] }}</span></div>
+                <div><label>{{ __('index.allocated') }}</label><span>{{ number_format($overview['leave']['allocated'], 1) }} {{ __('index.days') }}</span></div>
+                <div><label>{{ __('index.used') }}</label><span>{{ number_format($overview['leave']['used'], 1) }} {{ __('index.days') }}</span></div>
+                <div><label>{{ __('index.leave_balance') }}</label><span class="text-primary fw-semibold">{{ number_format($overview['leave']['balance'], 1) }} {{ __('index.days') }}</span></div>
+                <div><label>{{ __('index.pending_requests') }}</label><span>{{ $overview['leave']['pending'] }}</span></div>
             </div>
         </div>
     </div>
@@ -93,24 +93,24 @@
     @if($canViewPerformance)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="bar-chart-2"></i> Performance</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('evaluation')">View Details</button>
+                <h6><i class="link-icon" data-feather="bar-chart-2"></i> {{ __('index.performance') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('evaluation')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 @if(isset($overview['performance']['score']))
                     <div class="emp-score-row">
                         <div class="emp-score-main">
                             <span class="emp-score-value">{{ number_format($overview['performance']['score'], 1) }}%</span>
-                            <span class="emp-score-grade badge {{ $overview['performance']['grade'] ? 'bg-primary' : 'bg-secondary' }}">{{ $overview['performance']['grade'] ?: 'No Grade' }}</span>
+                            <span class="emp-score-grade badge {{ $overview['performance']['grade'] ? 'bg-primary' : 'bg-secondary' }}">{{ $overview['performance']['grade'] ?: __('index.no_grade') }}</span>
                         </div>
                         <div class="emp-score-meta">
                             @if($overview['performance']['review_date'])
-                                <div><label>Last Review</label><span>{{ \Illuminate\Support\Carbon::parse($overview['performance']['review_date'])->format('d M Y') }}</span></div>
+                                <div><label>{{ __('index.last_review') }}</label><span>{{ \Illuminate\Support\Carbon::parse($overview['performance']['review_date'])->format('d M Y') }}</span></div>
                             @endif
                             @if($overview['performance']['reviewer'])
-                                <div><label>Reviewer</label><span>{{ $overview['performance']['reviewer'] }}</span></div>
+                                <div><label>{{ __('index.reviewer') }}</label><span>{{ $overview['performance']['reviewer'] }}</span></div>
                             @endif
-                            <div><label>Trend</label><span>{{ ucfirst($overview['performance']['trend']) }}</span></div>
+                            <div><label>{{ __('index.trend') }}</label><span>{{ ucfirst($overview['performance']['trend']) }}</span></div>
                         </div>
                     </div>
                     @if($overview['performance']['chart'])
@@ -118,10 +118,10 @@
                             <canvas id="performanceChart" height="120"></canvas>
                         </div>
                     @else
-                        <div class="emp-empty">No review history available.</div>
+                        <div class="emp-empty">{{ __('index.no_review_history') }}</div>
                     @endif
                 @else
-                    <div class="emp-empty"><i class="link-icon" data-feather="bar-chart-2"></i> No performance review yet.</div>
+                    <div class="emp-empty"><i class="link-icon" data-feather="bar-chart-2"></i> {{ __('index.no_performance_review') }}</div>
                 @endif
             </div>
         </div>
@@ -130,15 +130,15 @@
     @if($canViewGoal)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="target"></i> Goals</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('goals')">View Details</button>
+                <h6><i class="link-icon" data-feather="target"></i> {{ __('index.goals') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('goals')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-stat-row">
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['active'] }}</span><span class="emp-stat-label">Active</span></div>
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['completed'] }}</span><span class="emp-stat-label">Completed</span></div>
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['overdue'] }}</span><span class="emp-stat-label">Overdue</span></div>
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['avg_progress'] }}%</span><span class="emp-stat-label">Avg. Progress</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['active'] }}</span><span class="emp-stat-label">{{ __('index.active') }}</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['completed'] }}</span><span class="emp-stat-label">{{ __('index.completed') }}</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['overdue'] }}</span><span class="emp-stat-label">{{ __('index.overdue') }}</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['goals']['avg_progress'] }}%</span><span class="emp-stat-label">{{ __('index.avg_progress') }}</span></div>
                 </div>
                 @if($overview['goals']['top']->isNotEmpty())
                     <div class="emp-goal-list">
@@ -152,16 +152,16 @@
                                     <div class="progress-bar {{ $goal->status === 'completed' ? 'bg-success' : ($goal->status === 'overdue' ? 'bg-danger' : ($goal->status === 'in_progress' ? 'bg-primary' : 'bg-secondary')) }}" role="progressbar" style="width: {{ min(100, (int) $goal->progress) }}%"></div>
                                 </div>
                                 <div class="emp-goal-meta">
-                                    <span>{{ ucfirst(str_replace('_', ' ', $goal->status)) }}</span>
+                                    <span>{{ \Illuminate\Support\Facades\Lang::has('index.' . $goal->status) ? __('index.' . $goal->status) : ucfirst(str_replace('_', ' ', $goal->status)) }}</span>
                                     @if($goal->due_date)
-                                        <span>Due {{ \Illuminate\Support\Carbon::parse($goal->due_date)->format('d M Y') }}</span>
+                                        <span>{{ __('index.due') }} {{ \Illuminate\Support\Carbon::parse($goal->due_date)->format('d M Y') }}</span>
                                     @endif
                                 </div>
                             </div>
                         @endforeach
                     </div>
                 @else
-                    <div class="emp-empty"><i class="link-icon" data-feather="target"></i> No goals defined yet.</div>
+                    <div class="emp-empty"><i class="link-icon" data-feather="target"></i> {{ __('index.no_goals_defined') }}</div>
                 @endif
             </div>
         </div>
@@ -170,18 +170,18 @@
     @if($canViewSalary)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="dollar-sign"></i> Payroll</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('salary')">View Details</button>
+                <h6><i class="link-icon" data-feather="dollar-sign"></i> {{ __('index.payroll') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('salary')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-info-grid">
-                    <div><label>Base Salary</label><span>{{ $overview['payroll']['base_salary'] ? '$' . number_format($overview['payroll']['base_salary']) : 'N/A' }}</span></div>
-                    <div><label>Allowances</label><span>{{ $overview['payroll']['allowances'] ? '$' . number_format($overview['payroll']['allowances']) : 'N/A' }}</span></div>
+                    <div><label>{{ __('index.base_salary') }}</label><span>{{ $overview['payroll']['base_salary'] ? '$' . number_format($overview['payroll']['base_salary']) : 'N/A' }}</span></div>
+                    <div><label>{{ __('index.allowances') }}</label><span>{{ $overview['payroll']['allowances'] ? '$' . number_format($overview['payroll']['allowances']) : 'N/A' }}</span></div>
                     @if($overview['payroll']['last_adjustment'])
-                        <div><label>Last Adjustment</label><span>{{ $overview['payroll']['last_adjustment']->effective_date ? \Illuminate\Support\Carbon::parse($overview['payroll']['last_adjustment']->effective_date)->format('d M Y') : 'N/A' }}</span></div>
-                        <div><label>New Salary</label><span>${{ number_format($overview['payroll']['last_adjustment']->new_base_salary ?: $overview['payroll']['base_salary']) }}</span></div>
+                        <div><label>{{ __('index.last_adjustment') }}</label><span>{{ $overview['payroll']['last_adjustment']->effective_date ? \Illuminate\Support\Carbon::parse($overview['payroll']['last_adjustment']->effective_date)->format('d M Y') : 'N/A' }}</span></div>
+                        <div><label>{{ __('index.new_salary') }}</label><span>${{ number_format($overview['payroll']['last_adjustment']->new_base_salary ?: $overview['payroll']['base_salary']) }}</span></div>
                     @else
-                        <div><label>Last Adjustment</label><span>N/A</span></div>
+                        <div><label>{{ __('index.last_adjustment') }}</label><span>N/A</span></div>
                     @endif
                 </div>
             </div>
@@ -191,23 +191,23 @@
     @if($canViewDocument)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="archive"></i> Documents</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">View Details</button>
+                <h6><i class="link-icon" data-feather="archive"></i> {{ __('index.documents') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-info-grid">
-                    <div><label>Total Documents</label><span>{{ $overview['documents']['total'] }}</span></div>
-                    <div><label>Expiring Soon (30d)</label><span class="{{ $overview['documents']['expiring']->isNotEmpty() ? 'text-warning fw-semibold' : '' }}">{{ $overview['documents']['expiring']->count() }}</span></div>
-                    <div><label>Expired</label><span class="{{ $overview['documents']['expired']->isNotEmpty() ? 'text-danger fw-semibold' : '' }}">{{ $overview['documents']['expired']->count() }}</span></div>
-                    <div><label>Recent Upload</label><span>{{ $overview['documents']['recent']->isNotEmpty() ? \Illuminate\Support\Str::limit($overview['documents']['recent']->first()->title, 18) : 'N/A' }}</span></div>
+                    <div><label>{{ __('index.total_documents') }}</label><span>{{ $overview['documents']['total'] }}</span></div>
+                    <div><label>{{ __('index.expiring_soon') }}</label><span class="{{ $overview['documents']['expiring']->isNotEmpty() ? 'text-warning fw-semibold' : '' }}">{{ $overview['documents']['expiring']->count() }}</span></div>
+                    <div><label>{{ __('index.expired') }}</label><span class="{{ $overview['documents']['expired']->isNotEmpty() ? 'text-danger fw-semibold' : '' }}">{{ $overview['documents']['expired']->count() }}</span></div>
+                    <div><label>{{ __('index.recent_upload') }}</label><span>{{ $overview['documents']['recent']->isNotEmpty() ? \Illuminate\Support\Str::limit($overview['documents']['recent']->first()->title, 18) : 'N/A' }}</span></div>
                 </div>
                 @if($overview['documents']['expiring']->isNotEmpty() || $overview['documents']['expired']->isNotEmpty())
                     <div class="emp-doc-alert">
                         @foreach($overview['documents']['expired'] as $doc)
-                            <div class="emp-doc-alert-item text-danger"><i class="link-icon" data-feather="alert-circle"></i> <span>{{ \Illuminate\Support\Str::limit($doc->title, 30) }}</span> <em>expired {{ $doc->expiry_date ? \Illuminate\Support\Carbon::parse($doc->expiry_date)->format('d M Y') : '' }}</em></div>
+                            <div class="emp-doc-alert-item text-danger"><i class="link-icon" data-feather="alert-circle"></i> <span>{{ \Illuminate\Support\Str::limit($doc->title, 30) }}</span> <em>{{ __('index.expired') }} {{ $doc->expiry_date ? \Illuminate\Support\Carbon::parse($doc->expiry_date)->format('d M Y') : '' }}</em></div>
                         @endforeach
                         @foreach($overview['documents']['expiring'] as $doc)
-                            <div class="emp-doc-alert-item text-warning"><i class="link-icon" data-feather="alert-triangle"></i> <span>{{ \Illuminate\Support\Str::limit($doc->title, 30) }}</span> <em>expires {{ $doc->expiry_date ? \Illuminate\Support\Carbon::parse($doc->expiry_date)->format('d M Y') : '' }}</em></div>
+                            <div class="emp-doc-alert-item text-warning"><i class="link-icon" data-feather="alert-triangle"></i> <span>{{ \Illuminate\Support\Str::limit($doc->title, 30) }}</span> <em>{{ __('index.expires') }} {{ $doc->expiry_date ? \Illuminate\Support\Carbon::parse($doc->expiry_date)->format('d M Y') : '' }}</em></div>
                         @endforeach
                     </div>
                 @endif
@@ -218,13 +218,13 @@
     @if($canViewTraining)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="award"></i> Training</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">View Details</button>
+                <h6><i class="link-icon" data-feather="award"></i> {{ __('index.training') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('personal')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-stat-row">
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['training']['total'] }}</span><span class="emp-stat-label">Total Trainings</span></div>
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['training']['certificates'] }}</span><span class="emp-stat-label">Certificates</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['training']['total'] }}</span><span class="emp-stat-label">{{ __('index.total_trainings') }}</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['training']['certificates'] }}</span><span class="emp-stat-label">{{ __('index.certificates') }}</span></div>
                 </div>
                 @if($overview['training']['recent']->isNotEmpty())
                     <div class="emp-list">
@@ -236,14 +236,14 @@
                                         <span>{{ \Illuminate\Support\Carbon::parse($item->training_date)->format('d M Y') }}</span>
                                     @endif
                                     @if(filled($item->certificate))
-                                        <span class="text-success"><i class="link-icon" data-feather="check-circle"></i> Certificate</span>
+                                        <span class="text-success"><i class="link-icon" data-feather="check-circle"></i> {{ __('index.certificate') }}</span>
                                     @endif
                                 </div>
                             </div>
                         @endforeach
                     </div>
                 @else
-                    <div class="emp-empty"><i class="link-icon" data-feather="award"></i> No training records yet.</div>
+                    <div class="emp-empty"><i class="link-icon" data-feather="award"></i> {{ __('index.no_training_records') }}</div>
                 @endif
             </div>
         </div>
@@ -252,13 +252,13 @@
     @if($canViewDiscipline)
         <div class="emp-overview-card">
             <div class="emp-card-head">
-                <h6><i class="link-icon" data-feather="alert-octagon"></i> Disciplinary</h6>
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('discipline')">View Details</button>
+                <h6><i class="link-icon" data-feather="alert-octagon"></i> {{ __('index.disciplinary') }}</h6>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('discipline')">{{ __('index.view_details') }}</button>
             </div>
             <div class="emp-card-body">
                 <div class="emp-stat-row">
-                    <div class="emp-stat"><span class="emp-stat-value {{ $overview['discipline']['active'] > 0 ? 'text-danger' : 'text-success' }}">{{ $overview['discipline']['active'] }}</span><span class="emp-stat-label">Active</span></div>
-                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['discipline']['total'] }}</span><span class="emp-stat-label">Total</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value {{ $overview['discipline']['active'] > 0 ? 'text-danger' : 'text-success' }}">{{ $overview['discipline']['active'] }}</span><span class="emp-stat-label">{{ __('index.active') }}</span></div>
+                    <div class="emp-stat"><span class="emp-stat-value">{{ $overview['discipline']['total'] }}</span><span class="emp-stat-label">{{ __('index.total') }}</span></div>
                 </div>
                 @if($overview['discipline']['latest'])
                     <div class="emp-list">
@@ -273,7 +273,7 @@
                         </div>
                     </div>
                 @else
-                    <div class="emp-empty"><i class="link-icon" data-feather="check-circle"></i> No disciplinary records.</div>
+                    <div class="emp-empty"><i class="link-icon" data-feather="check-circle"></i> {{ __('index.no_disciplinary_records') }}</div>
                 @endif
             </div>
         </div>

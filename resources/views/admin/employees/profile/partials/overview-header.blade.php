@@ -1,14 +1,14 @@
 @php
     $overviewStatus = strtolower((string) ($overview['employment']['status'] ?? ($employee->is_active ? 'active' : 'inactive')));
     $statusStyles = [
-        'active' => ['bg-success', 'Active / សកម្ម'],
-        'probation' => ['bg-info', 'Probation / សាកល្បង'],
-        'on_leave' => ['bg-primary', 'On Leave / ឈប់សម្រាក'],
-        'suspended' => ['bg-warning text-dark', 'Suspended / ផ្អាក'],
-        'resigned' => ['bg-secondary', 'Resigned / លាឈប់'],
-        'terminated' => ['bg-danger', 'Terminated / បញ្ចប់ការងារ'],
-        'retired' => ['bg-dark', 'Retired / ចូលនិវត្តន៍'],
-        'inactive' => ['bg-secondary', 'Inactive / អសកម្ម'],
+        'active' => ['bg-success', __('index.active')],
+        'probation' => ['bg-info', __('index.probation')],
+        'on_leave' => ['bg-primary', __('index.on_leave')],
+        'suspended' => ['bg-warning text-dark', __('index.suspended')],
+        'resigned' => ['bg-secondary', __('index.resigned')],
+        'terminated' => ['bg-danger', __('index.terminated')],
+        'retired' => ['bg-dark', __('index.retired')],
+        'inactive' => ['bg-secondary', __('index.inactive')],
     ];
     [$statusClass, $statusLabel] = $statusStyles[$overviewStatus] ?? ['bg-secondary', ucfirst($overviewStatus) ?: 'N/A'];
     $navUrl = route('admin.employees.profile.show', $employee->id);
@@ -35,7 +35,7 @@
             <span>{{ $overview['employment']['branch'] ?: 'N/A' }}</span>
         </p>
         <div class="employee-360-hero-meta">
-            <span><i class="link-icon" data-feather="calendar"></i> Joined {{ $overview['employment']['joining_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['joining_date'])->format('d M Y') : 'N/A' }}</span>
+            <span><i class="link-icon" data-feather="calendar"></i> {{ __('index.joined') }} {{ $overview['employment']['joining_date'] ? \Illuminate\Support\Carbon::parse($overview['employment']['joining_date'])->format('d M Y') : 'N/A' }}</span>
             <span><i class="link-icon" data-feather="user-check"></i> {{ $overview['employment']['manager'] ?: 'N/A' }}</span>
             <span><i class="link-icon" data-feather="phone"></i> {{ $employee->phone ?: 'N/A' }}</span>
             <span><i class="link-icon" data-feather="mail"></i> {{ $employee->email ?: 'N/A' }}</span>
@@ -46,12 +46,12 @@
     <div class="employee-360-hero-actions">
         <div class="employee-360-hero-nav">
             @if($previousEmployee)
-                <a class="btn btn-outline-secondary btn-xs" href="{{ route('admin.employees.profile.show', $previousEmployee->id) }}" title="Previous Employee / បុគ្គលិកមុន">
+                <a class="btn btn-outline-secondary btn-xs" href="{{ route('admin.employees.profile.show', $previousEmployee->id) }}" title="{{ __('index.previous_employee') }}">
                     <i class="link-icon" data-feather="chevron-left"></i>
                 </a>
             @endif
             @if($nextEmployee)
-                <a class="btn btn-outline-secondary btn-xs" href="{{ route('admin.employees.profile.show', $nextEmployee->id) }}" title="Next Employee / បុគ្គលិកបន្ទាប់">
+                <a class="btn btn-outline-secondary btn-xs" href="{{ route('admin.employees.profile.show', $nextEmployee->id) }}" title="{{ __('index.next_employee') }}">
                     <i class="link-icon" data-feather="chevron-right"></i>
                 </a>
             @endif
@@ -60,27 +60,27 @@
         <div class="btn-group employee-360-hero-buttons">
             @can('employee.profile.edit')
                 <a class="btn btn-outline-primary btn-xs" href="{{ route('admin.employees.edit', $employee->id) }}">
-                    <i class="link-icon" data-feather="edit"></i> Edit
+                    <i class="link-icon" data-feather="edit"></i> {{ __('index.edit') }}
                 </a>
             @endcan
             @can('employee.complete_form.print')
                 <button type="button" class="btn btn-outline-primary btn-xs" onclick="printEmployeeCompleteForm()">
-                    <i class="link-icon" data-feather="printer"></i> Print Profile
+                    <i class="link-icon" data-feather="printer"></i> {{ __('index.print_profile') }}
                 </button>
             @endcan
             <button type="button" class="btn btn-outline-secondary btn-xs dropdown-toggle" data-bs-toggle="dropdown">
-                More Actions <i class="link-icon" data-feather="more-horizontal"></i>
+                {{ __('index.more_actions') }} <i class="link-icon" data-feather="more-horizontal"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end">
                 @can('employee.employment.manage')
-                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="git-branch"></i> Change Department / Transfer</a></li>
-                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="user-cog"></i> Change Position / Assign Manager</a></li>
+                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="git-branch"></i> {{ __('index.transfer_department') }}</a></li>
+                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="user-cog"></i> {{ __('index.change_position_manager') }}</a></li>
                 @endcan
                 @can('employee.salary.manage')
-                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=salary"><i class="link-icon" data-feather="dollar-sign"></i> Salary Adjustment</a></li>
+                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=salary"><i class="link-icon" data-feather="dollar-sign"></i> {{ __('index.salary_adjustment') }}</a></li>
                 @endcan
                 @can('employee.profile.edit')
-                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=personal"><i class="link-icon" data-feather="toggle-left"></i> Employment Status</a></li>
+                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=personal"><i class="link-icon" data-feather="toggle-left"></i> {{ __('index.employment_status') }}</a></li>
                 @endcan
             </ul>
         </div>

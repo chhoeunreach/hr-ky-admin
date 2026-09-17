@@ -1,18 +1,18 @@
 @extends('layouts.master')
 
-@section('title', 'Employee 360 Profile')
+@section('title', __('index.employee_360_profile'))
 
-@section('action', 'Employee Profile')
+@section('action', __('index.employee_profile'))
 
 @section('button')
     <div class="d-md-flex">
         @can('employee.performance.create')
             <a href="{{ route('admin.staff-evaluations.ai-create', ['employee_id' => $employee->id]) }}" class="btn btn-success me-2">
-                AI Evaluation Form
+                {{ __('index.ai_evaluation_form') }}
             </a>
         @endcan
         <a href="{{ route('admin.employees.show', $employee->id) }}" class="btn btn-outline-secondary me-2">
-            <i class="link-icon" data-feather="eye"></i>Basic Detail
+            <i class="link-icon" data-feather="eye"></i>{{ __('index.basic_detail') }}
         </a>
         <a href="{{ route('admin.employees.index') }}" class="btn btn-primary">
             <i class="link-icon" data-feather="arrow-left"></i> {{ __('index.back') }}
@@ -44,44 +44,45 @@
                 ['Communication & Initiative', 'Communicate well and seek ways to improve work', 5],
             ];
             $tabs = [
-                'overview' => 'Overview',
-                'complete-form' => 'Complete Form',
-                'personal' => 'Personal & Documents',
-                'attendance' => 'Attendance',
+                'overview' => __('index.overview'),
+                'complete-form' => __('index.complete_form'),
+                'personal' => __('index.personal_and_documents'),
+                'attendance' => __('index.attendance'),
             ];
+            $activeProfileTab = request('tab') === 'personal' ? 'personal' : 'overview';
             if ($canViewDocument) {
-                $tabs['contract-form'] = 'Contract Form';
+                $tabs['contract-form'] = __('index.contract_form');
             }
             if ($canViewDiscipline) {
-                $tabs['discipline'] = 'Staff Warning Records';
-                $tabs['staff-warning-form'] = 'Staff Warning Form';
+                $tabs['discipline'] = __('index.staff_warning_records');
+                $tabs['staff-warning-form'] = __('index.staff_warning_form');
             }
             if ($canViewEmployment) {
-                $tabs['employment'] = 'Employment';
+                $tabs['employment'] = __('index.employment');
             }
             if ($canViewSalary) {
-                $tabs['salary'] = 'Salary';
+                $tabs['salary'] = __('index.salary');
             }
             if ($canViewInterview) {
-                $tabs['interview'] = 'Interview';
+                $tabs['interview'] = __('index.interview');
             }
             if ($canViewKpi) {
-                $tabs['kpi'] = 'KPI';
+                $tabs['kpi'] = __('index.kpi');
             }
             if ($canViewPerformance) {
-                $tabs['evaluation'] = 'Evaluation';
+                $tabs['evaluation'] = __('index.evaluation');
             }
             if ($canViewTraining) {
-                $tabs['training'] = 'Training';
+                $tabs['training'] = __('index.training');
             }
             if ($canViewReward) {
-                $tabs['rewards'] = 'Rewards';
+                $tabs['rewards'] = __('index.rewards');
             }
             if ($canViewGoal) {
-                $tabs['goals'] = 'Goals';
+                $tabs['goals'] = __('index.goals');
             }
             if ($canViewAudit) {
-                $tabs['history'] = 'History';
+                $tabs['history'] = __('index.history');
             }
         @endphp
 
@@ -1352,7 +1353,7 @@
                 <ul class="nav nav-tabs employee-360-tabs" id="employee360Tabs" role="tablist">
                     @foreach($tabs as $tab => $label)
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link {{ $loop->first ? 'active' : '' }}"
+                            <button class="nav-link {{ $activeProfileTab === $tab ? 'active' : '' }}"
                                     id="{{ $tab }}-tab"
                                     data-bs-toggle="tab"
                                     data-bs-target="#{{ $tab }}"
@@ -1364,7 +1365,7 @@
             </div>
             <div class="card-body">
                 <div class="tab-content">
-                    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                    <div class="tab-pane fade {{ $activeProfileTab === 'overview' ? 'show active' : '' }}" id="overview" role="tabpanel">
                         @include('admin.employees.profile.partials.overview-kpi')
                         @include('admin.employees.profile.partials.overview-summaries')
                         @include('admin.employees.profile.partials.overview-activity')
@@ -1392,7 +1393,7 @@
                         </div>
                     @endif
 
-                    <div class="tab-pane fade" id="personal" role="tabpanel">
+                    <div class="tab-pane fade {{ $activeProfileTab === 'personal' ? 'show active' : '' }}" id="personal" role="tabpanel">
                         @if($canViewDocument)
                             @include('admin.employees.profile.partials.documents')
                         @endif
@@ -1401,35 +1402,41 @@
                             @csrf
                             @method('PUT')
                             <div class="employee-360-section">
-                                <h6>Personal Information</h6>
+                                <h6>{{ __('index.personal_information') }}</h6>
                                 <div class="row">
                                     @foreach([
-                                        'national_id' => 'National ID',
-                                        'nationality' => 'Nationality',
-                                        'education_level' => 'Education Level',
-                                        'telegram' => 'Telegram',
-                                        'emergency_contact_name' => 'Emergency Contact',
-                                        'emergency_contact_relationship' => 'Relationship',
-                                        'emergency_contact_phone' => 'Emergency Phone',
+                                        'national_id' => __('index.national_id'),
+                                        'nationality' => __('index.nationality'),
+                                        'education_level' => __('index.education_level'),
+                                        'telegram' => __('index.telegram'),
+                                        'emergency_contact_name' => __('index.emergency_contact'),
+                                        'emergency_contact_relationship' => __('index.relationship'),
+                                        'emergency_contact_phone' => __('index.emergency_phone'),
                                     ] as $field => $label)
                                         <div class="col-lg-3 col-md-6 mb-3">
                                             <label class="form-label">{{ $label }}</label>
-                                            <input class="form-control" name="{{ $field }}" value="{{ old($field, $profile->{$field}) }}">
+                                            <input class="form-control" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $profile->{$field}) }}">
                                         </div>
+                                        @if($field === 'national_id')
+                                            <div class="col-lg-3 col-md-6 mb-3">
+                                                <label class="form-label" for="nationalIdExpiryDate">{{ __('index.national_id_expiry_date') }}</label>
+                                                <input class="form-control" type="date" id="nationalIdExpiryDate" name="national_id_expiry_date" value="{{ old('national_id_expiry_date', optional($profile->national_id_expiry_date)->format('Y-m-d')) }}">
+                                            </div>
+                                        @endif
                                     @endforeach
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Current Address</label>
+                                        <label class="form-label">{{ __('index.current_address') }}</label>
                                         <textarea class="form-control" name="current_address" rows="3">{{ old('current_address', $profile->current_address ?: $employee->address) }}</textarea>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Permanent Address</label>
+                                        <label class="form-label">{{ __('index.permanent_address') }}</label>
                                         <textarea class="form-control" name="permanent_address" rows="3">{{ old('permanent_address', $profile->permanent_address) }}</textarea>
                                     </div>
                                 </div>
                             </div>
                             @include('admin.employees.profile.partials.profile-employment-salary-fields')
                             @can('employee.profile.edit')
-                                <button class="btn btn-primary">Save Profile</button>
+                                <button class="btn btn-primary">{{ __('index.save_profile') }}</button>
                             @endcan
                         </form>
                     </div>
@@ -1468,8 +1475,14 @@
                         <div class="employee-360-grid">
                             @foreach($attendanceSummary as $label => $value)
                                 @if(!in_array($label, ['from', 'to'], true))
+                                    @php
+                                        $labelKey = 'index.' . $label;
+                                        $displayLabel = \Illuminate\Support\Facades\Lang::has($labelKey)
+                                            ? __($labelKey)
+                                            : ucwords(str_replace('_', ' ', $label));
+                                    @endphp
                                     <div class="employee-360-metric">
-                                        <small>{{ ucwords(str_replace('_', ' ', $label)) }}</small>
+                                        <small>{{ $displayLabel }}</small>
                                         <strong>{{ $value }}</strong>
                                     </div>
                                 @endif
@@ -1501,10 +1514,10 @@
                                 <table class="table table-sm employee-360-table">
                                     <thead>
                                     <tr>
-                                        <th>Date</th>
-                                        <th>Module</th>
-                                        <th>Action</th>
-                                        <th>Record</th>
+                                        <th>{{ __('index.date') }}</th>
+                                        <th>{{ __('index.module') }}</th>
+                                        <th>{{ __('index.action') }}</th>
+                                        <th>{{ __('index.record') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -1516,7 +1529,7 @@
                                             <td>{{ $log->record_id }}</td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="4" class="text-center">No records found</td></tr>
+                                        <tr><td colspan="4" class="text-center">{{ __('index.no_records_found') }}</td></tr>
                                     @endforelse
                                     </tbody>
                                 </table>

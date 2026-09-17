@@ -244,6 +244,7 @@ class EmployeeProfileController extends Controller
 
         $data = $request->validate([
             'national_id' => ['nullable', 'string', 'max:255'],
+            'national_id_expiry_date' => ['nullable', 'date'],
             'nationality' => ['nullable', 'string', 'max:255'],
             'education_level' => ['nullable', 'string', 'max:255'],
             'telegram' => ['nullable', 'string', 'max:255'],
@@ -680,23 +681,55 @@ class EmployeeProfileController extends Controller
     public function storeDocument(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.document.manage');
-        $data = $request->validate([
-            'document_type' => ['required', Rule::in(['national_id', 'employment_contract', 'cv', 'certificate', 'salary_letter', 'promotion_letter', 'warning_letter', 'performance_review', 'training_certificate', 'other'])],
-            'title' => ['required', 'string', 'max:255'],
-            'file' => ['nullable', 'file', 'max:10240'],
-            'document_date' => ['nullable', 'date'],
-            'expiry_date' => ['nullable', 'date'],
-            'note' => ['nullable', 'string'],
+        $validated = $request->validate([
+            'documents' => ['required', 'array', 'min:1', 'max:20'],
+            'documents.*.document_type' => ['required', Rule::in(['national_id', 'employment_contract', 'cv', 'certificate', 'salary_letter', 'promotion_letter', 'warning_letter', 'performance_review', 'training_certificate', 'other'])],
+            'documents.*.title' => ['required', 'string', 'max:255'],
+            'documents.*.file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx'],
+            'documents.*.document_date' => ['nullable', 'date'],
+            'documents.*.expiry_date' => ['nullable', 'date'],
+            'documents.*.note' => ['nullable', 'string'],
+            'ocr_profile' => ['nullable', 'array'],
+            'ocr_profile.national_id' => ['nullable', 'string', 'max:255'],
+            'ocr_profile.nationality' => ['nullable', 'string', 'max:255'],
+            'ocr_profile.national_id_expiry_date' => ['nullable', 'date'],
         ]);
-        if ($request->hasFile('file')) {
-            $data['file_path'] = $request->file('file')->store('employee-documents', 'local');
+
+        $storedPaths = [];
+        try {
+            DB::transaction(function () use ($validated, $employee, $request, &$storedPaths) {
+                foreach ($validated['documents'] as $document) {
+                    $file = $document['file'];
+                    unset($document['file']);
+                    $document['file_path'] = $file->store('employee-documents', 'local');
+                    if (!$document['file_path']) {
+                        throw new \RuntimeException('Document upload failed.');
+                    }
+                    $storedPaths[] = $document['file_path'];
+                    $record = EmployeeDocument::create($this->withEmployee($employee, $document, ['uploaded_by' => auth()->id()]));
+                    $this->audit($employee, 'document', 'create', $record->id, null, $record->toArray(), $request);
+                }
+
+                if ($this->can('employee.profile.edit') && !empty($validated['ocr_profile'])) {
+                    $profile = EmployeeProfile::firstOrNew(['employee_id' => $employee->id]);
+                    $old = $profile->exists ? $profile->getOriginal() : null;
+                    $profile->fill(array_intersect_key($validated['ocr_profile'], array_flip([
+                        'national_id', 'nationality', 'national_id_expiry_date',
+                    ])));
+                    $profile->setAttribute($profile->exists ? 'updated_by' : 'created_by', auth()->id());
+                    $profile->save();
+                    $this->audit($employee, 'profile', $old ? 'update' : 'create', $profile->id, $old, $profile->fresh()->toArray(), $request);
+                }
+            });
+        } catch (\Throwable $exception) {
+            if ($storedPaths) {
+                Storage::disk('local')->delete($storedPaths);
+            }
+            throw $exception;
         }
-        unset($data['file']);
 
-        $record = EmployeeDocument::create($this->withEmployee($employee, $data, ['uploaded_by' => auth()->id()]));
-        $this->audit($employee, 'document', 'create', $record->id, null, $record->toArray(), $request);
-
-        return back()->with('success', 'Document added.');
+        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'personal'])
+            ->with('success', count($validated['documents']) . ' document(s) added.');
     }
 
     public function saveContract(Request $request, User $employee): RedirectResponse

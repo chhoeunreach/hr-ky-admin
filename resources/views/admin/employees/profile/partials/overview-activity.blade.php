@@ -1,9 +1,9 @@
 <div class="emp-overview-grid2 emp-overview-grid2-bottom">
     <div class="emp-overview-card">
         <div class="emp-card-head">
-            <h6><i class="link-icon" data-feather="clock"></i> Recent Activity</h6>
+            <h6><i class="link-icon" data-feather="clock"></i> {{ __('index.recent_activity') }}</h6>
             @can('employee.audit.view')
-                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('history')">View All</button>
+                <button type="button" class="btn btn-outline-secondary btn-xs" onclick="employeeGotoTab('history')">{{ __('index.view_all') }}</button>
             @endcan
         </div>
         <div class="emp-card-body">
@@ -27,44 +27,44 @@
                     @endforeach
                 </ul>
             @else
-                <div class="emp-empty"><i class="link-icon" data-feather="clock"></i> No recent activity.</div>
+                <div class="emp-empty"><i class="link-icon" data-feather="clock"></i> {{ __('index.no_recent_activity') }}</div>
             @endif
         </div>
     </div>
 
     <div class="emp-overview-card">
         <div class="emp-card-head">
-            <h6><i class="link-icon" data-feather="compass"></i> Employee 360&deg; Summary</h6>
+            <h6><i class="link-icon" data-feather="compass"></i> {{ __('index.employee_360_summary') }}</h6>
         </div>
         <div class="emp-card-body">
             <div class="emp-360-summary">
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-primary" data-feather="briefcase"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['employment'] }}</span><span class="emp-360-summary-label">Employment</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['employment'] }}</span><span class="emp-360-summary-label">{{ __('index.employment') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-success" data-feather="check-circle"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['attendance'] }}</span><span class="emp-360-summary-label">Attendance Rate</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['attendance'] }}</span><span class="emp-360-summary-label">{{ __('index.attendance_rate') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-warning" data-feather="bar-chart-2"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['performance'] }}</span><span class="emp-360-summary-label">Performance</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['performance'] }}</span><span class="emp-360-summary-label">{{ __('index.performance') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-info" data-feather="calendar"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['leave'] }}</span><span class="emp-360-summary-label">Leave Balance</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['leave'] }}</span><span class="emp-360-summary-label">{{ __('index.leave_balance') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-primary" data-feather="target"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['goals'] }}</span><span class="emp-360-summary-label">Goals Progress</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['goals'] }}</span><span class="emp-360-summary-label">{{ __('index.goals_progress') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon text-success" data-feather="award"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['training'] }}</span><span class="emp-360-summary-label">Training</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['training'] }}</span><span class="emp-360-summary-label">{{ __('index.training') }}</span></div>
                 </div>
                 <div class="emp-360-summary-item">
                     <i class="link-icon {{ $overview['summary360']['discipline'] === 'Active Warning' ? 'text-danger' : 'text-success' }}" data-feather="shield"></i>
-                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['discipline'] }}</span><span class="emp-360-summary-label">Disciplinary</span></div>
+                    <div><span class="emp-360-summary-status">{{ $overview['summary360']['discipline'] }}</span><span class="emp-360-summary-label">{{ __('index.disciplinary') }}</span></div>
                 </div>
             </div>
         </div>

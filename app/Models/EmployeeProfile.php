@@ -12,6 +12,7 @@ class EmployeeProfile extends Model
     protected $fillable = [
         'employee_id',
         'national_id',
+        'national_id_expiry_date',
         'nationality',
         'education_level',
         'telegram',
@@ -43,6 +44,7 @@ class EmployeeProfile extends Model
     ];
 
     protected $casts = [
+        'national_id_expiry_date' => 'date',
         'probation_end_date' => 'date',
         'last_working_date' => 'date',
         'contract_start_date' => 'date',
