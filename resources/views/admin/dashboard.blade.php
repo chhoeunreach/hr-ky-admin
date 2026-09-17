@@ -109,11 +109,11 @@ $currentMonthLabel = now()->format('M Y');
             flex-direction: column;
             justify-content: space-between;
             width: 100%;
-            min-height: 94px;
-            padding: 0.65rem 0.85rem;
+            min-height: 80px;
+            padding: 0.5rem 0.7rem;
             background: var(--dash-surface);
             border: 1px solid var(--dash-border);
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
             transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
             text-align: left;
@@ -129,7 +129,7 @@ $currentMonthLabel = now()->format('M Y');
 
         .kpi-card:hover {
             border-color: var(--kpi-border, var(--dash-brand));
-            box-shadow: 0 6px 18px -3px rgba(15, 23, 42, 0.07), 0 0 0 1px var(--kpi-border, var(--dash-brand));
+            box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.07), 0 0 0 1px var(--kpi-border, var(--dash-brand));
             transform: translateY(-2px);
         }
 
@@ -142,35 +142,34 @@ $currentMonthLabel = now()->format('M Y');
             height: 2.5px;
             background: var(--kpi-accent, var(--dash-brand));
             opacity: 0.9;
-            border-radius: 10px 10px 0 0;
+            border-radius: 8px 8px 0 0;
         }
 
         .kpi-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 6px;
-            margin-bottom: 0.35rem;
+            gap: 4px;
+            margin-bottom: 0.25rem;
         }
 
         .kpi-title {
             margin: 0;
-            font-size: 0.68rem;
+            font-size: 0.65rem;
             font-weight: 700;
             color: var(--dash-muted);
             text-transform: uppercase;
             letter-spacing: 0.03em;
-            line-height: 1.25;
+            line-height: 1.2;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
         }
 
         .kpi-badge {
-            font-size: 0.62rem;
+            font-size: 0.6rem;
             font-weight: 700;
-            padding: 0.08rem 0.35rem;
-            border-radius: 16px;
+            padding: 0.06rem 0.32rem;
+            border-radius: 12px;
             background: var(--kpi-bg, var(--dash-brand-soft));
             color: var(--kpi-accent, var(--dash-brand));
             flex-shrink: 0;
@@ -181,12 +180,12 @@ $currentMonthLabel = now()->format('M Y');
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
         }
 
         .kpi-value {
             margin: 0;
-            font-size: 1.38rem;
+            font-size: 1.22rem;
             font-weight: 800;
             color: var(--dash-ink);
             line-height: 1.1;
@@ -197,9 +196,9 @@ $currentMonthLabel = now()->format('M Y');
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            border-radius: 7px;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
             background: var(--kpi-bg, var(--dash-brand-soft));
             color: var(--kpi-accent, var(--dash-brand));
             flex-shrink: 0;
@@ -211,17 +210,17 @@ $currentMonthLabel = now()->format('M Y');
         }
 
         .kpi-icon-wrap svg {
-            width: 16px;
-            height: 16px;
+            width: 14px;
+            height: 14px;
             stroke-width: 2.2;
         }
 
         .kpi-footer {
-            margin-top: 0.35rem;
+            margin-top: 0.25rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-size: 0.66rem;
+            font-size: 0.63rem;
             color: var(--dash-subtle);
             font-weight: 600;
             line-height: 1.2;
@@ -938,6 +937,278 @@ $currentMonthLabel = now()->format('M Y');
             .branch-summary-table { min-width: 1400px; }
             .kpi-value { font-size: 1.55rem; }
         }
+
+        /* Executive Header Banner */
+        .executive-banner {
+            background: linear-gradient(135deg, var(--dash-surface) 0%, color-mix(in srgb, var(--dash-brand) 5%, var(--dash-surface)) 100%);
+            border: 1px solid var(--dash-border);
+            border-left: 4px solid var(--dash-brand);
+            border-radius: 12px;
+            padding: 0.85rem 1.15rem;
+            margin-bottom: 0.85rem;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .executive-greeting-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--dash-ink);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .executive-greeting-sub {
+            font-size: 0.74rem;
+            color: var(--dash-muted);
+            margin: 0.2rem 0 0;
+        }
+
+        .executive-rate-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.4rem 0.85rem;
+            background: var(--dash-surface);
+            border: 1px solid var(--dash-border);
+            border-radius: 9px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.02);
+        }
+
+        .executive-rate-val {
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: var(--dash-brand);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .executive-rate-progress {
+            width: 85px;
+            height: 6px;
+            background: var(--dash-border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .executive-rate-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--dash-brand) 0%, #10b981 100%);
+            border-radius: 10px;
+        }
+
+        .executive-actions-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .executive-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.38rem 0.72rem;
+            border-radius: 7px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            border: 1px solid var(--dash-border);
+            background: var(--dash-surface);
+            color: var(--dash-ink);
+        }
+
+        .executive-btn:hover {
+            border-color: var(--dash-brand);
+            color: var(--dash-brand);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+        }
+
+        .executive-btn-primary {
+            background: var(--dash-brand);
+            border-color: var(--dash-brand);
+            color: #ffffff !important;
+        }
+
+        .executive-btn-primary:hover {
+            background: var(--dash-brand-hover);
+            border-color: var(--dash-brand-hover);
+            color: #ffffff !important;
+        }
+
+        /* Workforce Hub Card & Tabs */
+        .workforce-hub-card {
+            border: 1px solid var(--dash-border);
+            border-radius: 12px;
+            background: var(--dash-surface);
+            box-shadow: 0 1px 8px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.25rem;
+            overflow: hidden;
+        }
+
+        .workforce-hub-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--dash-border);
+            background: var(--dash-surface);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .workforce-nav-pills {
+            display: inline-flex;
+            background: var(--dash-bg);
+            padding: 3px;
+            border-radius: 8px;
+            border: 1px solid var(--dash-border);
+            gap: 3px;
+        }
+
+        .workforce-nav-link {
+            border: none;
+            background: transparent;
+            color: var(--dash-muted);
+            font-size: 0.76rem;
+            font-weight: 700;
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+
+        .workforce-nav-link.active {
+            background: var(--dash-surface);
+            color: var(--dash-brand);
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+        }
+
+        .workforce-search-wrap {
+            position: relative;
+            min-width: 220px;
+        }
+
+        .workforce-search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--dash-muted);
+            width: 13px;
+            height: 13px;
+            pointer-events: none;
+        }
+
+        .workforce-search-input {
+            padding-left: 28px !important;
+            font-size: 0.76rem !important;
+            border-radius: 7px !important;
+            border-color: var(--dash-border) !important;
+            background: var(--dash-bg) !important;
+            color: var(--dash-ink) !important;
+            height: 32px;
+        }
+
+        .workforce-search-input:focus {
+            background: var(--dash-surface) !important;
+            border-color: var(--dash-brand) !important;
+            box-shadow: 0 0 0 2px var(--dash-brand-soft) !important;
+        }
+
+        .summary-zero-val {
+            display: inline-block;
+            color: var(--dash-subtle);
+            font-weight: 600;
+            font-size: 0.72rem;
+            opacity: 0.55;
+        }
+
+        .summary-value-zero {
+            opacity: 0.45;
+            background: transparent !important;
+            border: 1px dashed var(--dash-border) !important;
+            color: var(--dash-muted) !important;
+            font-weight: 500;
+        }
+
+        .summary-value-zero:hover {
+            opacity: 0.85;
+            border-style: solid !important;
+        }
+
+        .summary-metric-urgent-alert {
+            animation: pulse-ring 2s infinite;
+            border-color: #ef4444 !important;
+            color: #dc2626 !important;
+            background: #fef2f2 !important;
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+
+        /* Modal Row Styling */
+        .modal-emp-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-emp-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--dash-border);
+            flex-shrink: 0;
+        }
+
+        .modal-emp-info {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.25;
+        }
+
+        .modal-emp-name {
+            font-weight: 700;
+            color: var(--dash-ink);
+            font-size: 0.8rem;
+        }
+
+        .modal-emp-code {
+            font-size: 0.68rem;
+            color: var(--dash-muted);
+            font-family: 'SF Mono', 'Roboto Mono', monospace;
+        }
+
+        .summary-quick-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        .summary-quick-actions .btn {
+            padding: 0.22rem 0.55rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border-radius: 6px;
+        }
     </style>
 @endsection
 
@@ -951,6 +1222,30 @@ $currentMonthLabel = now()->format('M Y');
                 'urgent' => 'priority-badge-urgent'
             ];
             $dashboardCardBranchIds = $branchDashboardSummaries->pluck('id')->filter()->implode(',');
+
+            $authUser = auth()->user();
+            $authUserName = $authUser ? $authUser->name : 'Administrator';
+            $hourNow = (int) now()->format('H');
+            if ($hourNow < 12) {
+                $timeGreeting = \Illuminate\Support\Facades\Lang::has('index.good_morning') ? __('index.good_morning') : 'Good Morning';
+                $greetingIcon = 'sun';
+            } elseif ($hourNow < 17) {
+                $timeGreeting = \Illuminate\Support\Facades\Lang::has('index.good_afternoon') ? __('index.good_afternoon') : 'Good Afternoon';
+                $greetingIcon = 'cloud';
+            } else {
+                $timeGreeting = \Illuminate\Support\Facades\Lang::has('index.good_evening') ? __('index.good_evening') : 'Good Evening';
+                $greetingIcon = 'moon';
+            }
+
+            $activeStaffCount = $dashboardDetail?->active_employee ?? 0;
+            $checkedInStaffCount = $dashboardDetail?->total_checked_in_employee ?? 0;
+            $attendanceRatePercent = $activeStaffCount > 0 ? min(100, round(($checkedInStaffCount / $activeStaffCount) * 100)) : 0;
+            $pendingLeaveCount = $dashboardDetail?->total_pending_leave_requests ?? 0;
+
+            $hasAttendanceWidget = auth()->check() && auth()->user()->can('allow_attendance');
+            $kpiCardColClass = $hasAttendanceWidget
+                ? 'col-xxl-3 col-xl-3 col-lg-4 col-md-6 col-sm-6 d-flex'
+                : 'col-xxl-2 col-xl-2 col-lg-3 col-md-4 col-sm-6 d-flex';
         @endphp
 
         <div id="flashAttendanceMessage" class="d-none">
@@ -974,13 +1269,70 @@ $currentMonthLabel = now()->format('M Y');
             </div>
         </div>
 
+        <!-- Executive Greeting & Live Stat Banner -->
+        <div class="executive-banner">
+            <div>
+                <h3 class="executive-greeting-title">
+                    <i data-feather="{{ $greetingIcon }}" class="text-primary" style="width: 20px; height: 20px;"></i>
+                    <span>{{ $timeGreeting }}, {{ ucfirst($authUserName) }}!</span>
+                </h3>
+                <p class="executive-greeting-sub">
+                    <i data-feather="calendar" style="width: 12px; height: 12px; vertical-align: -1px;"></i>
+                    {{ now()->format('l, d M Y') }} &bull; {{ ucfirst($dashboardDetail?->company_name ?? 'Organization') }}
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="executive-rate-chip" title="Today's Workforce Attendance Rate">
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-1 gap-2">
+                            <span class="small fw-bold text-muted" style="font-size: 0.66rem;">{{ \Illuminate\Support\Facades\Lang::has('index.attendance_rate') ? __('index.attendance_rate') : 'Attendance Rate' }}</span>
+                            <span class="executive-rate-val">{{ $attendanceRatePercent }}%</span>
+                        </div>
+                        <div class="executive-rate-progress">
+                            <div class="executive-rate-bar" style="width: {{ $attendanceRatePercent }}%;"></div>
+                        </div>
+                    </div>
+                    <div class="border-start ps-3 text-muted" style="font-size: 0.7rem; line-height: 1.25;">
+                        <b class="text-dark">{{ $checkedInStaffCount }}</b> / {{ $activeStaffCount }}<br>{{ __('index.checked_in') ?? 'Present' }}
+                    </div>
+                </div>
+
+                <div class="executive-actions-group">
+                    @if($pendingLeaveCount > 0)
+                        <button type="button"
+                                class="executive-btn summary-trigger"
+                                data-summary-scope="branch"
+                                data-summary-metric="active_employee_pending_request"
+                                data-entity-name="{{ __('index.pending_leave_requests') }}"
+                                data-entity-ids="{{ $dashboardCardBranchIds }}"
+                                style="border-color: #fca5a5; background: #fef2f2; color: #dc2626;">
+                            <i data-feather="alert-circle" style="width: 13px; height: 13px;"></i>
+                            <span>{{ $pendingLeaveCount }} {{ __('index.pending') ?? 'Pending' }}</span>
+                        </button>
+                    @endif
+
+                    @if(Route::has('showQR'))
+                        <a href="{{ route('showQR') }}" class="executive-btn" target="_blank" title="Display attendance QR code">
+                            <i data-feather="maximize" style="width: 13px; height: 13px;"></i>
+                            <span>QR Code</span>
+                        </a>
+                    @endif
+
+                    <button type="button" class="executive-btn" onclick="window.location.reload();" title="Refresh Dashboard">
+                        <i data-feather="refresh-cw" style="width: 13px; height: 13px;"></i>
+                        <span class="d-none d-sm-inline">{{ \Illuminate\Support\Facades\Lang::has('index.refresh') ? __('index.refresh') : 'Refresh' }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Top KPI Grid + Attendance Hub -->
         <div class="row g-2 mb-3">
-            @can('attendance_summary')
-                <div class="{{ (auth()->check() && auth()->user()->can('allow_attendance')) ? 'col-xxl-9 col-xl-8' : 'col-12' }}">
-                    <div class="row g-2">
+            <div class="{{ $hasAttendanceWidget ? 'col-xxl-9 col-xl-9 col-lg-8' : 'col-12' }}">
+                <div class="row g-2">
                         <!-- 1. Total Employees (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-employees summary-trigger"
                                     data-summary-scope="branch"
@@ -1006,7 +1358,7 @@ $currentMonthLabel = now()->format('M Y');
                         </div>
 
                         <!-- 2. Active Employees (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-active summary-trigger"
                                     data-summary-scope="branch"
@@ -1032,7 +1384,7 @@ $currentMonthLabel = now()->format('M Y');
                         </div>
 
                         <!-- 3. Inactive Employees (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-inactive summary-trigger"
                                     data-summary-scope="branch"
@@ -1058,8 +1410,8 @@ $currentMonthLabel = now()->format('M Y');
                         </div>
 
                         <!-- 4. Total Departments -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-departments">
+                        <div class="{{ $kpiCardColClass }}">
+                            <a href="{{ Route::has('admin.departments.index') ? route('admin.departments.index') : 'javascript:;' }}" class="kpi-card kpi-theme-departments text-decoration-none">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.total_departments') }}</span>
@@ -1073,14 +1425,19 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>{{ __('index.department') }} snapshot</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.department') }} snapshot</span>
                                 </div>
-                            </div>
+                            </a>
                         </div>
 
-                        <!-- 5. Checked In Today -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-checkin">
+                        <!-- 5. Checked In Today (Interactive) -->
+                        <div class="{{ $kpiCardColClass }}">
+                            <button type="button"
+                                    class="kpi-card kpi-theme-checkin summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="active_employee_checkin"
+                                    data-entity-name="{{ __('index.total_check_in_today') }}"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.total_check_in_today') }}</span>
@@ -1094,14 +1451,19 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>{{ __('index.checked_in') }} log</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.checked_in') }} list</span>
                                 </div>
-                            </div>
+                            </button>
                         </div>
 
-                        <!-- 6. Checked Out Today -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-checkout">
+                        <!-- 6. Checked Out Today (Interactive) -->
+                        <div class="{{ $kpiCardColClass }}">
+                            <button type="button"
+                                    class="kpi-card kpi-theme-checkout summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="active_employee_checkout"
+                                    data-entity-name="{{ __('index.total_check_out_today') }}"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.total_check_out_today') }}</span>
@@ -1115,14 +1477,19 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>{{ __('index.checked_out') }} log</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.checked_out') }} list</span>
                                 </div>
-                            </div>
+                            </button>
                         </div>
 
-                        <!-- 7. On Leave Today -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-onleave">
+                        <!-- 7. On Leave Today (Interactive) -->
+                        <div class="{{ $kpiCardColClass }}">
+                            <button type="button"
+                                    class="kpi-card kpi-theme-onleave summary-trigger"
+                                    data-summary-scope="branch"
+                                    data-summary-metric="active_employee_leave"
+                                    data-entity-name="{{ __('index.on_leave_today') }}"
+                                    data-entity-ids="{{ $dashboardCardBranchIds }}">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.on_leave_today') }}</span>
@@ -1136,13 +1503,13 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>{{ __('index.leave') }} today</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.leave') }} list</span>
                                 </div>
-                            </div>
+                            </button>
                         </div>
 
                         <!-- 8. Pending Leave Requests (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-pending summary-trigger"
                                     data-summary-scope="branch"
@@ -1152,23 +1519,23 @@ $currentMonthLabel = now()->format('M Y');
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.pending_leave_requests') }}</span>
-                                        <span class="kpi-badge">{{ __('index.action_required') ?? 'Action' }}</span>
+                                        <span class="kpi-badge" style="background:#fee2e2; color:#b91c1c;">{{ \Illuminate\Support\Facades\Lang::has('index.action_required') ? __('index.action_required') : 'Action Required' }}</span>
                                     </div>
                                     <div class="kpi-body">
-                                        <h3 class="kpi-value">{{ number_format($dashboardDetail?->total_pending_leave_requests ?? 0) }}</h3>
-                                        <div class="kpi-icon-wrap">
+                                        <h3 class="kpi-value" style="color: #dc2626;">{{ number_format($dashboardDetail?->total_pending_leave_requests ?? 0) }}</h3>
+                                        <div class="kpi-icon-wrap" style="background:#fee2e2; color:#dc2626;">
                                             <i data-feather="alert-circle"></i>
                                         </div>
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.review') ?? 'Review' }}</span>
+                                    <span class="kpi-interactive-hint" style="color:#dc2626;"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ \Illuminate\Support\Facades\Lang::has('index.review') ? __('index.review') : 'Review' }}</span>
                                 </div>
                             </button>
                         </div>
 
                         <!-- 9. Monthly Leave Requests (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-leave-req summary-trigger"
                                     data-summary-scope="branch"
@@ -1194,7 +1561,7 @@ $currentMonthLabel = now()->format('M Y');
                         </div>
 
                         <!-- 10. Monthly Time Leave Requests (Interactive) -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
+                        <div class="{{ $kpiCardColClass }}">
                             <button type="button"
                                     class="kpi-card kpi-theme-time-req summary-trigger"
                                     data-summary-scope="branch"
@@ -1220,8 +1587,8 @@ $currentMonthLabel = now()->format('M Y');
                         </div>
 
                         <!-- 11. Paid Leaves -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-paid-leave">
+                        <div class="{{ $kpiCardColClass }}">
+                            <a href="{{ Route::has('admin.leaves.index') ? route('admin.leaves.index') : 'javascript:;' }}" class="kpi-card kpi-theme-paid-leave text-decoration-none">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.paid_leaves') }}</span>
@@ -1235,14 +1602,14 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>Allocated days</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.leave_type') ?? 'Leave Types' }}</span>
                                 </div>
-                            </div>
+                            </a>
                         </div>
 
                         <!-- 12. Total Holidays -->
-                        <div class="col-xxl-3 col-xl-6 col-lg-6 col-md-6 d-flex">
-                            <div class="kpi-card kpi-theme-holidays">
+                        <div class="{{ $kpiCardColClass }}">
+                            <a href="{{ Route::has('admin.holidays.index') ? route('admin.holidays.index') : 'javascript:;' }}" class="kpi-card kpi-theme-holidays text-decoration-none">
                                 <div>
                                     <div class="kpi-header">
                                         <span class="kpi-title">{{ __('index.total_holidays') }}</span>
@@ -1256,18 +1623,17 @@ $currentMonthLabel = now()->format('M Y');
                                     </div>
                                 </div>
                                 <div class="kpi-footer">
-                                    <span>Annual holidays</span>
+                                    <span class="kpi-interactive-hint"><i data-feather="arrow-up-right" style="width:12px;height:12px;"></i> {{ __('index.holidays') ?? 'Holidays' }}</span>
                                 </div>
-                            </div>
+                            </a>
                         </div>
                     </div>
                 </div>
-            @endcan
 
             <!-- Attendance Hub Widget -->
             @if(auth()->user())
                 @can('allow_attendance')
-                    <div class="col-xxl-3 col-xl-4 d-flex">
+                    <div class="col-xxl-3 col-xl-3 col-lg-4 d-flex">
                         <div class="attendance-terminal-card w-100">
                             <div class="terminal-header">
                                 <span class="terminal-tag">
@@ -1346,266 +1712,54 @@ $currentMonthLabel = now()->format('M Y');
             @endif
         </div>
 
-        <!-- Branch & Department Summary Tables -->
-        @can('attendance_summary')
-            @php
-                $summaryMetrics = [
-                    'total_all_employee' => __('index.all_staff'),
-                    'inactive_employee' => __('index.inactive_employee'),
-                    'active_employee' => __('index.active'),
-                    'active_employee_checkin' => __('index.checked_in'),
-                    'active_employee_not_yet_checkin' => __('index.no_check_in'),
-                    'active_employee_checkout' => __('index.checked_out'),
-                    'active_employee_not_yet_checkout' => __('index.no_check_out'),
-                    'active_employee_dayoff' => __('index.day_off'),
-                    'active_employee_leave' => __('index.leave'),
-                    'active_employee_pending_request' => __('index.pending_leave_requests'),
-                    'active_employee_time_leave' => __('index.time_leave'),
-                    'active_employee_time_leave_request' => __('index.time_leave_request'),
-                ];
-                $branchSummaryTotals = [
-                    'total_all_employee' => $branchDashboardSummaries->sum('total_all_employee'),
-                    'inactive_employee' => $branchDashboardSummaries->sum('inactive_employee'),
-                    'active_employee' => $branchDashboardSummaries->sum('active_employee'),
-                    'active_employee_checkin' => $branchDashboardSummaries->sum('active_employee_checkin'),
-                    'active_employee_not_yet_checkin' => $branchDashboardSummaries->sum('active_employee_not_yet_checkin'),
-                    'active_employee_checkout' => $branchDashboardSummaries->sum('active_employee_checkout'),
-                    'active_employee_not_yet_checkout' => $branchDashboardSummaries->sum('active_employee_not_yet_checkout'),
-                    'active_employee_dayoff' => $branchDashboardSummaries->sum('active_employee_dayoff'),
-                    'active_employee_leave' => $branchDashboardSummaries->sum('active_employee_leave'),
-                    'active_employee_pending_request' => $branchDashboardSummaries->sum('active_employee_pending_request'),
-                    'active_employee_time_leave' => $branchDashboardSummaries->sum('active_employee_time_leave'),
-                    'active_employee_time_leave_request' => $branchDashboardSummaries->sum('active_employee_time_leave_request'),
-                ];
-                $branchSummaryAllIds = $branchDashboardSummaries->pluck('id')->filter()->implode(',');
-            @endphp
-
-            <!-- Branch Summary Panel -->
-            <div class="summary-panel">
-                <div class="card-header">
-                    <div class="summary-panel-heading">
-                        <div class="summary-panel-title-group">
-                            <div class="summary-panel-icon">
-                                <i data-feather="map-pin"></i>
-                            </div>
-                            <div>
-                                <h4 class="summary-panel-title">
-                                    {{ __('index.branch_summary') }}
-                                    <span class="badge bg-primary-subtle text-primary border rounded-pill">{{ count($branchDashboardSummaries) }} {{ __('index.branch') }}</span>
-                                </h4>
-                                <p class="summary-panel-subtitle">{{ __('index.branch_summary_subtitle') }}</p>
-                            </div>
-                        </div>
-                        <button type="button"
-                                class="summary-panel-toggle"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#branchSummaryCollapse"
-                                aria-expanded="false"
-                                aria-controls="branchSummaryCollapse"
-                                title="Toggle table">
-                            <i data-feather="chevron-down"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body collapse" id="branchSummaryCollapse">
-                    <div class="summary-table-shell">
-                        <table class="table table-striped branch-summary-table mb-0">
-                            <thead>
-                            <tr>
-                                <th>{{ __('index.branch') }}</th>
-                                @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                    <th class="text-center">{{ $metricLabel }}</th>
-                                @endforeach
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @forelse($branchDashboardSummaries as $branchSummary)
-                                <tr>
-                                    <td>
-                                        <button type="button"
-                                                class="summary-name-trigger"
-                                                data-summary-scope="branch"
-                                                data-summary-metric="total_all_employee"
-                                                data-entity-name="{{ ucfirst($branchSummary->name) }}"
-                                                data-entity-ids="{{ $branchSummary->id }}">
-                                            {{ ucfirst($branchSummary->name) }}
-                                        </button>
-                                    </td>
-                                    @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                        <td class="text-center">
-                                            <button type="button"
-                                                    class="summary-value-trigger summary-metric-{{ $metricKey }}"
-                                                    data-summary-scope="branch"
-                                                    data-summary-metric="{{ $metricKey }}"
-                                                    data-entity-name="{{ ucfirst($branchSummary->name) }}"
-                                                    data-entity-ids="{{ $branchSummary->id }}">
-                                                {{ number_format($branchSummary->{$metricKey}) }}
-                                            </button>
-                                        </td>
-                                    @endforeach
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="13" class="text-center py-3"><b>{{ __('index.no_records_found') }}</b></td>
-                                </tr>
-                            @endforelse
-                            </tbody>
-                            <tfoot>
-                            <tr>
-                                <th>{{ __('index.total') }}</th>
-                                @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                    <td class="text-center">
-                                        <button type="button"
-                                                class="summary-value-trigger summary-metric-{{ $metricKey }}"
-                                                data-summary-scope="branch"
-                                                data-summary-metric="{{ $metricKey }}"
-                                                data-entity-name="{{ __('index.all_branches') }}"
-                                                data-entity-ids="{{ $branchSummaryAllIds }}">
-                                            {{ number_format($branchSummaryTotals[$metricKey]) }}
-                                        </button>
-                                    </td>
-                                @endforeach
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Department Summary Panel -->
-            @php
-                $departmentSummaryTotals = [
-                    'total_all_employee' => $departmentDashboardSummaries->sum('total_all_employee'),
-                    'inactive_employee' => $departmentDashboardSummaries->sum('inactive_employee'),
-                    'active_employee' => $departmentDashboardSummaries->sum('active_employee'),
-                    'active_employee_checkin' => $departmentDashboardSummaries->sum('active_employee_checkin'),
-                    'active_employee_not_yet_checkin' => $departmentDashboardSummaries->sum('active_employee_not_yet_checkin'),
-                    'active_employee_checkout' => $departmentDashboardSummaries->sum('active_employee_checkout'),
-                    'active_employee_not_yet_checkout' => $departmentDashboardSummaries->sum('active_employee_not_yet_checkout'),
-                    'active_employee_dayoff' => $departmentDashboardSummaries->sum('active_employee_dayoff'),
-                    'active_employee_leave' => $departmentDashboardSummaries->sum('active_employee_leave'),
-                    'active_employee_pending_request' => $departmentDashboardSummaries->sum('active_employee_pending_request'),
-                    'active_employee_time_leave' => $departmentDashboardSummaries->sum('active_employee_time_leave'),
-                    'active_employee_time_leave_request' => $departmentDashboardSummaries->sum('active_employee_time_leave_request'),
-                ];
-                $departmentSummaryAllIds = $departmentDashboardSummaries->pluck('department_ids')->flatten()->filter()->unique()->implode(',');
-            @endphp
-            <div class="summary-panel">
-                <div class="card-header">
-                    <div class="summary-panel-heading">
-                        <div class="summary-panel-title-group">
-                            <div class="summary-panel-icon">
-                                <i data-feather="grid"></i>
-                            </div>
-                            <div>
-                                <h4 class="summary-panel-title">
-                                    {{ __('index.department_summary') }}
-                                    <span class="badge bg-primary-subtle text-primary border rounded-pill">{{ count($departmentDashboardSummaries) }} {{ __('index.department') }}</span>
-                                </h4>
-                                <p class="summary-panel-subtitle">{{ __('index.department_summary_subtitle') }}</p>
-                            </div>
-                        </div>
-                        <button type="button"
-                                class="summary-panel-toggle"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#departmentSummaryCollapse"
-                                aria-expanded="false"
-                                aria-controls="departmentSummaryCollapse"
-                                title="Toggle table">
-                            <i data-feather="chevron-down"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="card-body collapse" id="departmentSummaryCollapse">
-                    <div class="summary-table-shell">
-                        <table class="table table-striped branch-summary-table mb-0">
-                            <thead>
-                            <tr>
-                                <th>{{ __('index.department') }}</th>
-                                @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                    <th class="text-center">{{ $metricLabel }}</th>
-                                @endforeach
-                            </tr>
-                            </thead>
-                            <tbody>
-                            @forelse($departmentDashboardSummaries as $departmentSummary)
-                                <tr>
-                                    <td>
-                                        <button type="button"
-                                                class="summary-name-trigger"
-                                                data-summary-scope="department"
-                                                data-summary-metric="total_all_employee"
-                                                data-entity-name="{{ ucfirst($departmentSummary->dept_name) }}"
-                                                data-entity-ids="{{ implode(',', $departmentSummary->department_ids ?? []) }}">
-                                            {{ ucfirst($departmentSummary->dept_name) }}
-                                        </button>
-                                    </td>
-                                    @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                        <td class="text-center">
-                                            <button type="button"
-                                                    class="summary-value-trigger summary-metric-{{ $metricKey }}"
-                                                    data-summary-scope="department"
-                                                    data-summary-metric="{{ $metricKey }}"
-                                                    data-entity-name="{{ ucfirst($departmentSummary->dept_name) }}"
-                                                    data-entity-ids="{{ implode(',', $departmentSummary->department_ids ?? []) }}">
-                                                {{ number_format($departmentSummary->{$metricKey}) }}
-                                            </button>
-                                        </td>
-                                    @endforeach
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="13" class="text-center py-3"><b>{{ __('index.no_records_found') }}</b></td>
-                                </tr>
-                            @endforelse
-                            </tbody>
-                            <tfoot>
-                            <tr>
-                                <th>{{ __('index.total') }}</th>
-                                @foreach($summaryMetrics as $metricKey => $metricLabel)
-                                    <td class="text-center">
-                                        <button type="button"
-                                                class="summary-value-trigger summary-metric-{{ $metricKey }}"
-                                                data-summary-scope="department"
-                                                data-summary-metric="{{ $metricKey }}"
-                                                data-entity-name="{{ __('index.all_departments') }}"
-                                                data-entity-ids="{{ $departmentSummaryAllIds }}">
-                                            {{ number_format($departmentSummaryTotals[$metricKey]) }}
-                                        </button>
-                                    </td>
-                                @endforeach
-                            </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            </div>
+        <!-- Summary Modals (Triggered by interactive KPI cards) -->
 
             <!-- Summary Detail Modal -->
             <div class="modal fade" id="summaryDetailModal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog modal-xl modal-dialog-scrollable">
                     <div class="modal-content border-0 shadow-lg">
-                        <div class="modal-header border-bottom py-3">
-                            <h5 class="modal-title fw-bold" id="summaryDetailModalLabel">{{ __('index.summary_detail') }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
+                        <div class="modal-header border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="summary-panel-icon" style="width: 28px; height: 28px;">
+                                    <i data-feather="users" style="width: 15px; height: 15px;"></i>
+                                </div>
+                                <h5 class="modal-title fw-bold fs-6 mb-0 d-flex align-items-center gap-2" id="summaryDetailModalLabel">
+                                    {{ __('index.summary_detail') }}
+                                </h5>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1" id="summaryDetailCountBadge">0</span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="position-relative" style="min-width: 220px;">
+                                    <input type="search" id="summaryDetailSearchInput" class="form-control form-control-sm" placeholder="{{ __('index.search') ?? 'Search' }} staff, code, branch..." style="font-size:0.75rem; border-radius:7px;">
+                                </div>
+                                <button type="button" id="summaryDetailExportBtn" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2.5" title="Export CSV">
+                                    <i data-feather="download" style="width:13px;height:13px;"></i>
+                                    <span class="d-none d-sm-inline" style="font-size:0.72rem;">CSV</span>
+                                </button>
+                                <button type="button" id="summaryDetailPrintBtn" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 py-1 px-2.5" title="Print List">
+                                    <i data-feather="printer" style="width:13px;height:13px;"></i>
+                                    <span class="d-none d-sm-inline" style="font-size:0.72rem;">Print</span>
+                                </button>
+                                <button type="button" class="btn-close ms-1" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
+                            </div>
                         </div>
                         <div class="modal-body p-0">
                             <div id="summaryDetailLoading" class="text-center py-5 d-none">
                                 <div class="spinner-border text-primary" role="status"></div>
-                                <div class="mt-2 text-muted fw-semibold">{{ __('index.loading') }}</div>
+                                <div class="mt-2 text-muted fw-semibold" style="font-size:0.8rem;">{{ __('index.loading') }}</div>
                             </div>
                             <div id="summaryDetailEmpty" class="text-center py-5 d-none text-muted fw-bold">{{ __('index.no_records_found') }}</div>
                             <div class="table-responsive">
-                                <table class="table table-hover custom-dash-table mb-0">
+                                <table class="table table-hover custom-dash-table mb-0" id="summaryDetailTable">
                                     <thead>
                                     <tr>
-                                        <th>{{ __('index.name') }}</th>
-                                        <th>{{ __('index.employee_code') }}</th>
+                                        <th style="min-width: 180px;">{{ __('index.employee') ?? 'Employee' }}</th>
                                         <th>{{ __('index.email') }}</th>
                                         <th>{{ __('index.branch') }}</th>
                                         <th>{{ __('index.department') }}</th>
-                                        <th>{{ __('index.status') }}</th>
-                                        <th class="text-end">{{ __('index.quick_action') }}</th>
+                                        <th class="text-center">{{ __('index.status') }}</th>
+                                        <th class="text-end" style="min-width: 170px;">{{ __('index.quick_action') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody id="summaryDetailTableBody"></tbody>
@@ -1686,7 +1840,6 @@ $currentMonthLabel = now()->format('M Y');
                     </div>
                 </div>
             </div>
-        @endcan
 
         <!-- Project Management & Activity Hub -->
         @canany(['project_detail','client_detail'])

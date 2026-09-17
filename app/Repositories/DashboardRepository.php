@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Helpers\AppHelper;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -595,6 +596,7 @@ class DashboardRepository
                 'users.name',
                 'users.username',
                 'users.email',
+                'users.avatar',
                 'users.is_active',
                 'pending_leave_requests.pending_leave_request_id',
                 'pending_time_leave_requests.pending_time_leave_request_id',
@@ -786,6 +788,7 @@ class DashboardRepository
                 return [
                     'id' => $row->id,
                     'name' => $row->name,
+                    'avatar_url' => $row->avatar ? asset(User::AVATAR_UPLOAD_PATH . $row->avatar) : asset('assets/images/img.png'),
                     'employee_code' => $row->username ?: 'N/A',
                     'email' => $row->email ?: 'N/A',
                     'branch' => $row->branch_name ?: 'N/A',

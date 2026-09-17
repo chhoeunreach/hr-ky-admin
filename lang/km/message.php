@@ -92,17 +92,17 @@ return [
     'logout_request'=>'បានទទួលយកសំណើចេញពីប្រព័ន្ធរបស់បុគ្គលិក',
 
     /** Employee salary */
-    'account_not_found'=>'Employee Account Detail Not Found',
-    'invalid_cycle'=>'Invalid Cycle Data',
-    'salary_cycle_update'=>'Salary Cycle Updated to :cycle Successfully',
+    'account_not_found'=>'រកមិនឃើញគណនីបុគ្គលិក។',
+    'invalid_cycle'=>'វដ្តបើកប្រាក់ខែមិនត្រឹមត្រូវ។',
+    'salary_cycle_update'=>'បានប្តូរវដ្តបើកប្រាក់ខែទៅជា :cycle ដោយជោគជ័យ។',
     'payroll_update'=>'Payroll updated successfully',
     'payroll_delete_error'=>'Payslip cannot be deleted once paid or locked.',
     'payroll_delete'=>'Payroll deleted successfully',
-    'salary_add'=>'Employee Salary added successfully',
-    'salary_update'=>'Employee Salary Updated successfully',
+    'salary_add'=>'បានបន្ថែមប្រាក់ខែបុគ្គលិកដោយជោគជ័យ។',
+    'salary_update'=>'បានធ្វើបច្ចុប្បន្នភាពប្រាក់ខែបុគ្គលិកដោយជោគជ័យ។',
     'payment_date_error'=>'Please select the paid on date while making payment.',
     'payment_method_error'=>'Please select a payment method while making payment.',
-    'salary_delete'=>'Employee Salary deleted successfully',
+    'salary_delete'=>'បានលុបប្រាក់ខែបុគ្គលិកដោយជោគជ័យ។',
 
     /** fiscal year */
     'invalid_format' => 'Invalid fiscal year format.',
@@ -126,7 +126,7 @@ return [
     'holidays_removed' => 'បានលុបថ្ងៃឈប់សម្រាកដោយជោគជ័យ',
     'holidays_imported' => 'បាននាំចូលព័ត៌មានថ្ងៃឈប់សម្រាកដោយជោគជ័យ',
     'holidays_import_error' => 'Your CSV files have unmatched Columns to our database. Your columns must be in this sequence: event, event_date, note and is_public_holiday only',
-    'salaries_imported' => 'Employee Salaries Imported Successfully',
+    'salaries_imported' => 'បាននាំចូលប្រាក់ខែបុគ្គលិកដោយជោគជ័យ។',
 
     /** Leave */
     'leave_status_updated' => 'បានធ្វើបច្ចុប្បន្នភាពស្ថានភាពដោយជោគជ័យ',

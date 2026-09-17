@@ -48,6 +48,118 @@
             }
         };
 
+        let activeSummaryResponse = null;
+        let activeSummaryRows = [];
+
+        function renderSummaryDetailTable(rows) {
+            const tableBody = $('#summaryDetailTableBody');
+            tableBody.empty();
+
+            if (!rows || !rows.length) {
+                $('#summaryDetailEmpty').removeClass('d-none');
+                $('#summaryDetailCountBadge').text('0');
+                return;
+            }
+
+            $('#summaryDetailEmpty').addClass('d-none');
+            $('#summaryDetailCountBadge').text(rows.length);
+
+            const isPendingLeaveMetric = activeSummaryResponse?.metric === 'active_employee_pending_request';
+            const isPendingTimeLeaveMetric = activeSummaryResponse?.metric === 'active_employee_time_leave_request';
+            const isCurrentMonthLeaveMetric = activeSummaryResponse?.metric === 'current_month_leave_request';
+            const isCurrentMonthTimeLeaveMetric = activeSummaryResponse?.metric === 'current_month_time_leave_request';
+            const canQuickLeave = Boolean(activeSummaryResponse?.can_quick_leave);
+            const canUpdateLeaveRequest = Boolean(activeSummaryResponse?.can_update_leave_request);
+            const canUpdateTimeLeave = Boolean(activeSummaryResponse?.can_update_time_leave);
+
+            const defaultAvatar = '{{ asset("assets/images/img.png") }}';
+
+            const rowsHtml = rows.map((row) => {
+                let actionsHtml = '';
+
+                if (isPendingTimeLeaveMetric && row.pending_time_leave_request_id) {
+                    actionsHtml = `
+                        ${canUpdateTimeLeave
+                            ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-time-leave-request-update"
+                                    data-href="${row.time_leave_update_url ?? '#'}"
+                                    data-status="approved"
+                                    data-remark="">
+                                    ${dashboardI18n.approveReject}
+                               </a>`
+                            : ''}
+                        <a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>
+                    `;
+                } else if (row.pending_leave_request_id) {
+                    actionsHtml = `
+                        ${canUpdateLeaveRequest
+                            ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-leave-request-update"
+                                    data-href="${row.leave_update_url ?? '#'}"
+                                    data-status="approved"
+                                    data-remark=""
+                                    data-id="${row.pending_leave_request_id}">
+                                    ${dashboardI18n.approveReject}
+                               </a>`
+                            : ''}
+                        <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>
+                    `;
+                } else if (isCurrentMonthLeaveMetric) {
+                    actionsHtml = `<a href="${row.leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewLeaveRequests}</a>`;
+                } else if (isCurrentMonthTimeLeaveMetric) {
+                    actionsHtml = `<a href="${row.time_leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
+                } else if (canQuickLeave) {
+                    actionsHtml = `
+                        <a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
+                            data-user-id="${row.id}"
+                            data-user-name="${row.name ?? dashboardI18n.employee}"
+                            data-fetch-url="${row.leave_types_url ?? '#'}">
+                            ${dashboardI18n.quickLeave}
+                        </a>
+                    `;
+                } else if (isPendingLeaveMetric) {
+                    actionsHtml = `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>`;
+                } else if (isPendingTimeLeaveMetric) {
+                    actionsHtml = `<a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
+                }
+
+                const avatarSrc = row.avatar_url ? row.avatar_url : defaultAvatar;
+                const statusBadge = String(row.status || '').toLowerCase() === 'active'
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-0.5" style="font-size:0.68rem;">Active</span>'
+                    : '<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill px-2 py-0.5" style="font-size:0.68rem;">Inactive</span>';
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="modal-emp-cell">
+                                <img class="modal-emp-avatar" src="${avatarSrc}" alt="${row.name ?? 'Avatar'}" onerror="this.src='${defaultAvatar}'">
+                                <div class="modal-emp-info">
+                                    <span class="modal-emp-name">${row.name ?? 'N/A'}</span>
+                                    <span class="modal-emp-code">${row.employee_code && row.employee_code !== 'N/A' ? '#' + row.employee_code : ''}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="text-muted" style="font-size:0.75rem;">${row.email ?? 'N/A'}</span></td>
+                        <td><span class="badge bg-light text-secondary border" style="font-size:0.7rem;">${row.branch ?? 'N/A'}</span></td>
+                        <td><span class="badge bg-light text-secondary border" style="font-size:0.7rem;">${row.department ?? 'N/A'}</span></td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-end">
+                            <div class="summary-quick-actions">
+                                ${actionsHtml}
+                                <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer" title="${dashboardI18n.quickChat}">
+                                    <i data-feather="message-square" style="width:12px;height:12px;"></i>
+                                    <span class="d-none d-md-inline">${dashboardI18n.quickChat}</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            tableBody.html(rowsHtml);
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
         $(document).on('click', '.summary-trigger', function () {
             if (!summaryDetailModal) {
                 return;
@@ -66,6 +178,8 @@
             $('#summaryDetailTableBody').empty();
             $('#summaryDetailEmpty').addClass('d-none').text(dashboardI18n.noRecordsFound);
             $('#summaryDetailLoading').removeClass('d-none');
+            $('#summaryDetailCountBadge').text('0');
+            $('#summaryDetailSearchInput').val('');
             summaryDetailModal.show();
 
             $.ajax({
@@ -80,93 +194,82 @@
                 },
                 success: function (response) {
                     $('#summaryDetailModalLabel').text(response.title || dashboardI18n.summaryDetail);
-                    const isPendingLeaveMetric = response.metric === 'active_employee_pending_request';
-                    const isPendingTimeLeaveMetric = response.metric === 'active_employee_time_leave_request';
-                    const isCurrentMonthLeaveMetric = response.metric === 'current_month_leave_request';
-                    const isCurrentMonthTimeLeaveMetric = response.metric === 'current_month_time_leave_request';
-                    const canQuickLeave = Boolean(response.can_quick_leave);
-                    const canUpdateLeaveRequest = Boolean(response.can_update_leave_request);
-                    const canUpdateTimeLeave = Boolean(response.can_update_time_leave);
                     dashboardSummaryCurrentDate = response.current_date || '';
                     dashboardSummaryCurrentDateDisplay = response.current_date_display || response.current_date || '';
-
-                    if (!response.rows || !response.rows.length) {
-                        $('#summaryDetailEmpty').removeClass('d-none');
-                        return;
-                    }
-
-                    const rowsHtml = response.rows.map((row) => {
-                        let actionsHtml = '';
-
-                        if (isPendingTimeLeaveMetric && row.pending_time_leave_request_id) {
-                            actionsHtml = `
-                                ${canUpdateTimeLeave
-                                    ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-time-leave-request-update"
-                                            data-href="${row.time_leave_update_url ?? '#'}"
-                                            data-status="approved"
-                                            data-remark="">
-                                            ${dashboardI18n.approveReject}
-                                       </a>`
-                                    : ''}
-                                <a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>
-                            `;
-                        } else if (row.pending_leave_request_id) {
-                            actionsHtml = `
-                                ${canUpdateLeaveRequest
-                                    ? `<a href="#" class="btn btn-outline-warning btn-sm dashboard-leave-request-update"
-                                            data-href="${row.leave_update_url ?? '#'}"
-                                            data-status="approved"
-                                            data-remark=""
-                                            data-id="${row.pending_leave_request_id}">
-                                            ${dashboardI18n.approveReject}
-                                       </a>`
-                                    : ''}
-                                <a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>
-                            `;
-                        } else if (isCurrentMonthLeaveMetric) {
-                            actionsHtml = `<a href="${row.leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewLeaveRequests}</a>`;
-                        } else if (isCurrentMonthTimeLeaveMetric) {
-                            actionsHtml = `<a href="${row.time_leave_requests_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
-                        } else if (canQuickLeave) {
-                            actionsHtml = `
-                                <a href="#" class="btn btn-outline-warning btn-sm dashboard-quick-leave-trigger"
-                                    data-user-id="${row.id}"
-                                    data-user-name="${row.name ?? dashboardI18n.employee}"
-                                    data-fetch-url="${row.leave_types_url ?? '#'}">
-                                    ${dashboardI18n.quickLeave}
-                                </a>
-                            `;
-                        } else if (isPendingLeaveMetric) {
-                            actionsHtml = `<a href="${row.pending_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewPendingLeave}</a>`;
-                        } else if (isPendingTimeLeaveMetric) {
-                            actionsHtml = `<a href="${row.pending_time_leave_url ?? '#'}" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.viewTimeLeave}</a>`;
-                        }
-
-                        return `
-                            <tr>
-                                <td>${row.name ?? 'N/A'}</td>
-                                <td>${row.employee_code ?? 'N/A'}</td>
-                                <td>${row.email ?? 'N/A'}</td>
-                                <td>${row.branch ?? 'N/A'}</td>
-                                <td>${row.department ?? 'N/A'}</td>
-                                <td>${row.status ?? 'N/A'}</td>
-                                <td>
-                                    <div class="summary-quick-actions">
-                                        ${actionsHtml}
-                                        <a href="${row.chat_url ?? '#'}" class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener noreferrer">${dashboardI18n.quickChat}</a>
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-
-                    $('#summaryDetailTableBody').html(rowsHtml);
+                    activeSummaryResponse = response;
+                    activeSummaryRows = response.rows || [];
+                    renderSummaryDetailTable(activeSummaryRows);
                 },
                 error: function () {
                     $('#summaryDetailEmpty').removeClass('d-none').text(dashboardI18n.unableLoadDetailNow);
                 },
                 complete: function () {
                     $('#summaryDetailLoading').addClass('d-none');
+                }
+            });
+        });
+
+        $('#summaryDetailSearchInput').on('input', function () {
+            const term = $(this).val().toLowerCase().trim();
+            if (!term) {
+                renderSummaryDetailTable(activeSummaryRows);
+                return;
+            }
+            const filtered = activeSummaryRows.filter((r) => {
+                return (r.name && r.name.toLowerCase().includes(term)) ||
+                       (r.employee_code && r.employee_code.toLowerCase().includes(term)) ||
+                       (r.email && r.email.toLowerCase().includes(term)) ||
+                       (r.branch && r.branch.toLowerCase().includes(term)) ||
+                       (r.department && r.department.toLowerCase().includes(term));
+            });
+            renderSummaryDetailTable(filtered);
+        });
+
+        $('#summaryDetailExportBtn').on('click', function () {
+            if (!activeSummaryRows || !activeSummaryRows.length) return;
+            const term = $('#summaryDetailSearchInput').val().toLowerCase().trim();
+            const list = term ? activeSummaryRows.filter((r) => {
+                return (r.name && r.name.toLowerCase().includes(term)) ||
+                       (r.employee_code && r.employee_code.toLowerCase().includes(term)) ||
+                       (r.email && r.email.toLowerCase().includes(term)) ||
+                       (r.branch && r.branch.toLowerCase().includes(term)) ||
+                       (r.department && r.department.toLowerCase().includes(term));
+            }) : activeSummaryRows;
+
+            let csv = "data:text/csv;charset=utf-8,Name,Employee Code,Email,Branch,Department,Status\r\n";
+            list.forEach((r) => {
+                const row = [
+                    `"${(r.name || '').replace(/"/g, '""')}"`,
+                    `"${(r.employee_code || '').replace(/"/g, '""')}"`,
+                    `"${(r.email || '').replace(/"/g, '""')}"`,
+                    `"${(r.branch || '').replace(/"/g, '""')}"`,
+                    `"${(r.department || '').replace(/"/g, '""')}"`,
+                    `"${(r.status || '').replace(/"/g, '""')}"`
+                ];
+                csv += row.join(",") + "\r\n";
+            });
+            const encodedUri = encodeURI(csv);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            const titleSlug = (activeSummaryResponse?.title || 'workforce_summary').toLowerCase().replace(/[^a-z0-9]/g, '_');
+            link.setAttribute("download", `${titleSlug}_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        $('#summaryDetailPrintBtn').on('click', function () {
+            window.print();
+        });
+
+        $('#workforceFilterInput').on('input', function () {
+            const term = $(this).val().toLowerCase().trim();
+            $('.workforce-row').each(function () {
+                const unitName = $(this).data('unit-name') || '';
+                if (!term || unitName.includes(term)) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
                 }
             });
         });
@@ -487,6 +590,9 @@
 
         $("#startWorkingBtn").click(function(e) {
             e.preventDefault();
+            const $btn = $(this);
+            const origHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" style="width:14px;height:14px;"></span> GPS...');
             showLoader();
             let url = $(this).attr('href');
             let audioUrl = $(this).data('audio');
@@ -513,6 +619,7 @@
                         location.reload();
                     },
                     error: function (jqXHR, textStatus, errorThrown) {
+                        $btn.prop('disabled', false).html(origHtml);
                         if (jqXHR.status === 400) {
                             let errorObj = JSON.parse(jqXHR.responseText);
                             let errorMessage = "Error: " + errorObj.message;
@@ -534,6 +641,7 @@
                     }
                 });
             }).catch(function (error) {
+                $btn.prop('disabled', false).html(origHtml);
                 hideLoader();
                 $('#flashAttendanceMessage').removeClass('d-none');
                 $('.errorStartWorking').show();
@@ -544,6 +652,9 @@
 
         $("#stopWorkingBtn").click(function(e){
             e.preventDefault();
+            const $btn = $(this);
+            const origHtml = $btn.html();
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1" role="status" style="width:14px;height:14px;"></span> GPS...');
             showLoader();
             let url = $(this).attr('href');
             let audioUrl = $(this).data('audio');
@@ -570,6 +681,7 @@
                     location.reload();
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
+                    $btn.prop('disabled', false).html(origHtml);
                     if (jqXHR.status === 400) {
                         let errorObj = JSON.parse(jqXHR.responseText);
                         let errorMessage = "Error: " + errorObj.message;
@@ -591,6 +703,7 @@
                 }
             });
             }).catch(function (error) {
+                $btn.prop('disabled', false).html(origHtml);
                 hideLoader();
                 $('#flashAttendanceMessage').removeClass('d-none');
                 $('.errorStartWorking').show();

@@ -42,7 +42,7 @@
                         <div class="card-body mt-2 col-md-6">
                             <h4 class="mb-4">@lang('index.salary_csv_example')</h4>
                             <div class="col-md-12">
-                                <p>The import file should contain these headers:</p>
+                                <p>{{ __('index.salary_csv_headers') }}</p>
                                 <ul class="mb-3">
                                     <li>username or employee_id</li>
                                     <li>payroll_type</li>
@@ -61,7 +61,7 @@
                                     <li>weekly_basic_salary</li>
                                     <li>weekly_fixed_allowance</li>
                                 </ul>
-                                <p class="mb-0">Existing employee salary rows will be updated if the employee already has salary data.</p>
+                                <p class="mb-0">{{ __('index.salary_csv_update_existing') }}</p>
                             </div>
                         </div>
                     </div>

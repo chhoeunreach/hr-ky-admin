@@ -120,7 +120,7 @@ class EmployeeSalaryController extends Controller
                 throw new Exception(__('message.invalid_cycle'),400);
             }
             $updateCycle = $this->userAccountRepo->updateEmployeeSalaryCycle($employeeAccountDetail,$salaryCycle);
-            return redirect()->back()->with('success',__('message.salary_cycle_update',['cycle'=>ucfirst($updateCycle->salary_cycle)]));
+            return redirect()->back()->with('success',__('message.salary_cycle_update',['cycle'=>__('index.' . $updateCycle->salary_cycle)]));
 
         }catch(Exception $exception){
             return redirect()

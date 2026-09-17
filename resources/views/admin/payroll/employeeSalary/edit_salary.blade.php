@@ -55,19 +55,19 @@
                         <div class="row">
                             <div class="col-lg-4 col-md-4 mb-4" x-show="payroll_type === 'hourly' || (payroll_type === 'annual' && payment_type === 'weekly')">
                                 <label for="hourRate" class="form-label">{{ __('index.hourly_rate') }}</label>
-                                <input type="number" min="0" step="0.01" x-model="hour_rate" name="hour_rate" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="Enter Hourly Rate" id="hourRate">
+                                <input type="number" min="0" step="0.01" x-model="hour_rate" name="hour_rate" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.hourly_rate') }}" id="hourRate">
                             </div>
                             <div class="col-lg-4 col-md-4 mb-4" x-show="payment_type === 'weekly'">
                                 <label for="weeklyHour" class="form-label">{{ __('index.working_hours_in_week') }}</label>
-                                <input type="number" min="0" step="0.1" x-model="weekly_hours" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="Enter Weekly Hours" name="weekly_hours" id="weeklyHour">
+                                <input type="number" min="0" step="0.1" x-model="weekly_hours" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.working_hours_in_week') }}" name="weekly_hours" id="weeklyHour">
                             </div>
                             <div class="col-lg-4 col-md-4 mb-4" x-show="payroll_type === 'hourly' && payment_type === 'monthly'">
                                 <label for="monthlyHour" class="form-label">{{ __('index.working_hours_in_month') }}</label>
-                                <input type="number" min="0" step="0.1" x-model="monthly_hours" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="Enter Monthly Hours" name="monthly_hours" id="monthlyHour">
+                                <input type="number" min="0" step="0.1" x-model="monthly_hours" class="form-control" @input="calculateAnnualSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.working_hours_in_month') }}" name="monthly_hours" id="monthlyHour">
                             </div>
                             <div class="col-lg-4 col-md-4 mb-4">
                                 <label for="annualSalary" class="form-label">{{ __('index.annual_salary') }}</label>
-                                <input type="number" min="0" step="0.1" x-model="annual_salary" class="form-control" @input="calculateSalary()" oninput="validity.valid||(value='');" placeholder="Enter Annual Salary" name="annual_salary" id="annualSalary" x-bind:readonly="payroll_type === 'hourly'">
+                                <input type="number" min="0" step="0.1" x-model="annual_salary" class="form-control" @input="calculateSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.annual_salary') }}" name="annual_salary" id="annualSalary" x-bind:readonly="payroll_type === 'hourly'">
                             </div>
                         </div>
 
@@ -92,8 +92,8 @@
                                         <div style="display: flex;">
                                             <input type="number" min="0" step="0.1" max="100" class="form-control" @input="calculateSalary()" x-model="basic_salary_value" name="basic_salary_value" id="basicSalaryValue" style="width: 60%;">
                                             <select class="form-control" x-model="basic_salary_type" @change="calculateSalary()" name="basic_salary_type" style="width: 35%;">
-                                                <option value="{{ $percentType }}">% of Salary</option>
-                                                <option value="{{ $fixedType }}">{{ ucfirst($fixedType) }}</option>
+                                                <option value="{{ $percentType }}">{{ __('index.percent_of_salary') }}</option>
+                                                <option value="{{ $fixedType }}">{{ __('index.fixed') }}</option>
                                             </select>
                                         </div>
                                     </td>
@@ -112,7 +112,8 @@
                                         <td x-text="income.name"></td>
                                         <td>
                                             <div style="display: flex;">
-                                                <input style="text-align:center; border:none; background: inherit;" type="text" readonly min="0" step="0.1" class="form-control" x-model="income.value_type" name="value_type">
+                                                <input type="hidden" x-bind:value="income.value_type" name="value_type">
+                                                <input style="text-align:center; border:none; background: inherit;" type="text" readonly class="form-control" x-bind:value="income.value_type === 'fixed' ? '{{ __('index.fixed') }}' : income.value_type === 'adjustable' ? '{{ __('index.adjustable') }}' : income.value_type === 'basic' ? '{{ __('index.basic_percent') }}' : income.value_type === 'ctc' ? '{{ __('index.percent') }}' : income.value_type">
                                                 <input style="text-align:center; border:none; background: inherit;" type="number" readonly min="0" step="0.1" class="form-control" x-show="income.value_type !== 'fixed'" x-model="income.annual_component_value" name="annual_component_value">
                                             </div>
                                         </td>
@@ -160,7 +161,8 @@
                                         <td x-text="deduction.name"></td>
                                         <td>
                                             <div style="display: flex;">
-                                                <input style="text-align:center; border:none; background: inherit;" type="text" readonly min="0" step="0.1" class="form-control" x-model="deduction.value_type" name="value_type">
+                                                <input type="hidden" x-bind:value="deduction.value_type" name="value_type">
+                                                <input style="text-align:center; border:none; background: inherit;" type="text" readonly class="form-control" x-bind:value="deduction.value_type === 'fixed' ? '{{ __('index.fixed') }}' : deduction.value_type === 'adjustable' ? '{{ __('index.adjustable') }}' : deduction.value_type === 'basic' ? '{{ __('index.basic_percent') }}' : deduction.value_type === 'ctc' ? '{{ __('index.percent') }}' : deduction.value_type">
                                                 <input style="text-align:center; border:none; background: inherit;" type="number" readonly min="0" step="0.1" class="form-control" x-show="deduction.value_type !== 'fixed'" x-model="deduction.annual_component_value" name="annual_component_value">
                                             </div>
                                         </td>
@@ -208,4 +210,3 @@
     <script src="{{asset('assets/js/salary_calculation.js')}}"></script>
 
 @endsection
-

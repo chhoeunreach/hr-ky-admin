@@ -81,7 +81,7 @@
                                 <tr>
                                     <td>{{++$key}}</td>
                                     <td>{{ucfirst($value->employee_name)}}</td>
-                                    <td class="text-center">{{ ucfirst($value->marital_status) }}</td>
+                                    <td class="text-center">{{ in_array($value->marital_status, ['single', 'married'], true) ? __('index.marital_status_' . $value->marital_status) : ucfirst($value->marital_status ?? '') }}</td>
 {{--                        <td>{{ number_format($value->salary) }}</td>--}}
                             <td class="text-center">
                                 <select class="form-control-sm"
@@ -92,7 +92,7 @@
                                 >
                                     @foreach(\App\Models\EmployeeAccount::SALARY_CYCLE as $salaryCycle)
                                             <option value="{{$salaryCycle}}" {{$value->salary_cycle == $salaryCycle ? 'selected' : '' }}>
-                                                {{ucfirst($salaryCycle)}}
+                                                {{ __('index.' . $salaryCycle) }}
                                             </option>
                                     @endforeach
                                 </select>
@@ -104,7 +104,7 @@
                                     data-bs-toggle="dropdown"
                                     aria-haspopup="true"
                                     aria-expanded="false"
-                                    title="More Action"
+                                    title="{{ __('index.action') }}"
                                 > </a>
 
                                 <div class="dropdown-menu p-0" aria-labelledby="payslipDropdown">
@@ -116,7 +116,7 @@
                                         @if($employeeSalaryStatus == 0)
                                             @can('add_salary')
                                                 <li class="dropdown-item p-2 border-bottom">
-                                                    <a title="generate payroll"
+                                                    <a title="{{ __('index.add_salary') }}"
                                                         href="{{ route('admin.employee-salaries.add', $value->employee_id) }}">
                                                         <button class="btn btn-primary btn-xs"> @lang('index.add_salary')
                                                         </button>
@@ -126,7 +126,7 @@
                                         @else
                                             @can('edit_salary')
                                                 <li class="dropdown-item p-2 border-bottom">
-                                                    <a title="generate payroll"
+                                                    <a title="{{ __('index.edit_salary') }}"
                                                         href="{{ route('admin.employee-salaries.edit-salary', $value->employee_id) }}">
                                                         <button class="btn btn-primary btn-xs">{{ __('index.edit_salary') }}
                                                         </button>
@@ -135,7 +135,7 @@
                                             @endcan
                                             @can('salary_increment')
                                                 <li class="dropdown-item p-2 border-bottom">
-                                                    <a title="Update Employee Salary"
+                                                    <a title="{{ __('index.increase_salary') }}"
                                                         href="{{route('admin.employee-salaries.increase-salary',$value->employee_id)}}">
                                                         <button class="btn btn-primary btn-xs">{{ __('index.increase_salary') }}
                                                         </button>
@@ -146,7 +146,7 @@
                                                 <li class="dropdown-item p-2 border-bottom">
                                                     <a href="{{route('admin.employee-salaries.salary-revise-history.show',$value->employee_id)}}"
                                                         class="viewSalaryReviseHistory me-2"
-                                                        title="show salary revised log">
+                                                        title="{{ __('index.salary_review_history') }}">
                                                         <button class="btn btn-primary btn-xs">{{ __('index.salary_review_history') }}
                                                         </button>
                                                     </a>
@@ -157,7 +157,7 @@
                                                         <a
                                                             data-href="{{ route('admin.employee-salaries.delete-salary',$value->employee_id) }}"
                                                             class="deleteEmployeeSalary me-2"
-                                                            title="show salary revised log">
+                                                            title="{{ __('index.delete') }}">
                                                             <button class="btn btn-primary btn-xs">{{ __('index.delete') }}
                                                             </button>
                                                         </a>
