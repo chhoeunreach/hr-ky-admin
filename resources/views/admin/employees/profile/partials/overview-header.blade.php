@@ -74,7 +74,7 @@
             <ul class="dropdown-menu dropdown-menu-end">
                 @can('employee.employment.manage')
                     <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="git-branch"></i> {{ __('index.transfer_department') }}</a></li>
-                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="user-cog"></i> {{ __('index.change_position_manager') }}</a></li>
+                    <li><a class="dropdown-item" href="{{ $navUrl }}?tab=employment"><i class="link-icon" data-feather="settings"></i> {{ __('index.change_position_manager') }}</a></li>
                 @endcan
                 @can('employee.salary.manage')
                     <li><a class="dropdown-item" href="{{ $navUrl }}?tab=salary"><i class="link-icon" data-feather="dollar-sign"></i> {{ __('index.salary_adjustment') }}</a></li>
