@@ -1,7 +1,28 @@
+<style>
+    .employee-documents-table { min-width: 780px; margin-bottom: 0; }
+    .employee-documents-table thead th { background: #f8fafc; border-bottom: 1px solid #dbe3e8; color: #526176; font-size: .72rem; font-weight: 700; padding: .75rem; text-transform: uppercase; }
+    .employee-documents-table tbody td { border-color: #e8edf2; padding: .8rem .75rem; vertical-align: middle; }
+    .employee-documents-table tbody tr:last-child td { border-bottom: 0; }
+    .employee-document-type { background: #eaf4f2; color: #12685e; border: 1px solid #cce7e1; border-radius: 4px; font-weight: 600; }
+    .employee-document-title { min-width: 0; overflow-wrap: anywhere; }
+    .employee-document-note { display: block; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .employee-document-actions { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .employee-document-actions .btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border-radius: 5px; }
+    .employee-document-modal .modal-content { border: 1px solid #dce4eb; border-radius: 6px; box-shadow: 0 18px 50px rgba(20, 37, 54, .16); }
+    .employee-document-modal .modal-header, .employee-document-modal .modal-footer { padding: .85rem 1.15rem; }
+    #addEmployeeDocumentModal .modal-body, #editEmployeeDocumentModal .modal-body, #employeeDocumentPhotoModal .modal-body { padding: 1.15rem; }
+    .employee-document-modal .modal-title { font-size: 1rem; font-weight: 700; }
+    .employee-document-modal .form-label { color: #344256; font-size: .78rem; font-weight: 600; margin-bottom: .3rem; }
+    .employee-document-modal .form-control, .employee-document-modal .form-select { border-color: #d5dfe8; }
+    .employee-document-modal .form-control:focus, .employee-document-modal .form-select:focus { border-color: #3b9889; box-shadow: 0 0 0 .2rem rgba(59, 152, 137, .13); }
+    .employee-document-row { border: 1px solid #dce4eb !important; border-radius: 6px !important; background: #fff !important; }
+    .employee-document-modal .document-ocr-text { max-height: 180px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+    @media (max-width: 575px) { .employee-document-modal .modal-dialog { margin: .5rem; } .employee-document-modal .modal-header, .employee-document-modal .modal-footer, #addEmployeeDocumentModal .modal-body, #editEmployeeDocumentModal .modal-body, #employeeDocumentPhotoModal .modal-body { padding: .85rem; } }
+</style>
 <div class="employee-360-section">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
-            <h6 class="mb-0"><i class="link-icon" data-feather="file-text" style="width:16px;height:16px;"></i> {{ __('index.documents') }}</h6>
+            <h6 class="mb-1"><i class="link-icon" data-feather="file-text" style="width:16px;height:16px;"></i> {{ __('index.documents') }}</h6>
             <small class="text-muted">{{ count($documents) }} {{ __('index.records') }}</small>
         </div>
         @can('employee.document.manage')
@@ -12,7 +33,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-hover table-bordered employee-360-table align-middle">
+        <table class="table table-hover employee-360-table employee-documents-table align-middle">
             <thead>
             <tr>
                 <th style="width: 140px;">{{ __('index.type') }}</th>
@@ -31,12 +52,12 @@
                 @endphp
                 <tr>
                     <td>
-                        <span class="badge bg-secondary">
+                        <span class="badge employee-document-type">
                             {{ \Illuminate\Support\Facades\Lang::has('index.' . $record->document_type) ? __('index.' . $record->document_type) : ucfirst(str_replace('_', ' ', $record->document_type)) }}
                         </span>
                     </td>
                     <td>
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex align-items-center employee-document-title">
                             @if(in_array($fileExt, ['jpg', 'jpeg', 'png', 'webp']))
                                 <i data-feather="image" class="text-primary me-2" style="width: 16px; height: 16px;"></i>
                             @elseif($fileExt === 'pdf')
@@ -60,13 +81,14 @@
                             <span class="text-muted">N/A</span>
                         @endif
                     </td>
-                    <td class="small text-muted">{{ $record->note ?: 'N/A' }}</td>
+                    <td class="small text-muted"><span class="employee-document-note" title="{{ $record->note }}">{{ $record->note ?: 'N/A' }}</span></td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm" role="group">
+                        <div class="employee-document-actions" role="group" aria-label="{{ __('index.action') }}">
                             @if($record->file_path)
                                 <button type="button"
-                                        class="btn btn-outline-info btn-xs view-document-btn"
+                                        class="btn btn-outline-primary view-document-btn"
                                         title="{{ __('index.view_document') }}"
+                                        aria-label="{{ __('index.view_document') }}"
                                         data-url="{{ route('admin.employees.profile.documents.view', [$employee->id, $record->id]) }}"
                                         data-download="{{ route('admin.employees.profile.documents.download', [$employee->id, $record->id]) }}"
                                         data-title="{{ $record->title }}"
@@ -74,22 +96,24 @@
                                     <i data-feather="eye" style="width: 13px; height: 13px;"></i>
                                 </button>
                                 <a href="{{ route('admin.employees.profile.documents.download', [$employee->id, $record->id]) }}"
-                                   class="btn btn-outline-secondary btn-xs"
-                                   title="{{ __('index.download') }}">
+                                   class="btn btn-outline-secondary"
+                                   title="{{ __('index.download') }}" aria-label="{{ __('index.download') }}">
                                     <i data-feather="download" style="width: 13px; height: 13px;"></i>
                                 </a>
                             @endif
 
                             @can('employee.document.manage')
                                 <button type="button"
-                                        class="btn btn-outline-primary btn-xs edit-document-btn"
+                                        class="btn btn-outline-secondary edit-document-btn"
                                         title="{{ __('index.edit_document') }}"
+                                        aria-label="{{ __('index.edit_document') }}"
                                         data-url="{{ route('admin.employees.profile.documents.update', [$employee->id, $record->id]) }}"
                                         data-title="{{ $record->title }}"
                                         data-type="{{ $record->document_type }}"
                                         data-date="{{ optional($record->document_date)->format('Y-m-d') }}"
                                         data-expiry="{{ optional($record->expiry_date)->format('Y-m-d') }}"
-                                        data-note="{{ $record->note }}">
+                                        data-note="{{ $record->note }}"
+                                        data-file-url="{{ $record->file_path ? route('admin.employees.profile.documents.view', [$employee->id, $record->id]) : '' }}">
                                     <i data-feather="edit-2" style="width: 13px; height: 13px;"></i>
                                 </button>
 
@@ -99,7 +123,7 @@
                                       onsubmit="return confirm('{{ __('index.confirm_delete_document') }}');">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-xs" title="{{ __('index.delete_document') }}">
+                                    <button type="submit" class="btn btn-outline-danger" title="{{ __('index.delete_document') }}" aria-label="{{ __('index.delete_document') }}">
                                         <i data-feather="trash-2" style="width: 13px; height: 13px;"></i>
                                     </button>
                                 </form>
@@ -121,11 +145,11 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
 
     <!-- Add Document Modal -->
-    <div class="modal fade" id="addEmployeeDocumentModal" tabindex="-1" aria-labelledby="addEmployeeDocumentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal fade employee-document-modal" id="addEmployeeDocumentModal" tabindex="-1" aria-labelledby="addEmployeeDocumentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addEmployeeDocumentModalLabel"><i data-feather="upload" class="me-2"></i>{{ __('index.add_documents') }}</h5>
+                    <h5 class="modal-title" id="addEmployeeDocumentModalLabel"><i data-feather="upload" class="me-2" style="width:17px;height:17px;"></i>{{ __('index.add_documents') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="post" enctype="multipart/form-data" action="{{ route('admin.employees.profile.documents.store', $employee->id) }}" id="employeeDocumentsForm"
@@ -134,8 +158,8 @@
                       data-ocr-lang="{{ asset('assets/vendors/tesseract/lang') }}">
                     @csrf
                     <div class="modal-body">
-                        <div class="d-flex align-items-center justify-content-between mb-3">
-                            <span class="text-muted small">Upload employee identification, contracts, certificates, or letters.</span>
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                            <span class="text-muted small">{{ __('index.documents') }}</span>
                             <button type="button" class="btn btn-outline-primary btn-sm" id="addEmployeeDocumentRow">
                                 <i data-feather="plus"></i> {{ __('index.add_document') }}
                             </button>
@@ -145,7 +169,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
-                        <button type="submit" class="btn btn-primary">{{ __('index.upload_documents') }}</button>
+                        <button type="submit" class="btn btn-primary"><i data-feather="upload" style="width:14px;height:14px;"></i> {{ __('index.upload_documents') }}</button>
                     </div>
                 </form>
             </div>
@@ -153,11 +177,11 @@
     </div>
 
     <!-- Edit Document Modal -->
-    <div class="modal fade" id="editEmployeeDocumentModal" tabindex="-1" aria-labelledby="editEmployeeDocumentModalLabel" aria-hidden="true">
+    <div class="modal fade employee-document-modal" id="editEmployeeDocumentModal" tabindex="-1" aria-labelledby="editEmployeeDocumentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editEmployeeDocumentModalLabel"><i data-feather="edit" class="me-2"></i>{{ __('index.edit_document') }}</h5>
+                    <h5 class="modal-title" id="editEmployeeDocumentModalLabel"><i data-feather="edit-2" class="me-2" style="width:17px;height:17px;"></i>{{ __('index.edit_document') }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="editDocumentForm" method="POST" enctype="multipart/form-data">
@@ -166,32 +190,36 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('index.type') }} <span class="text-danger">*</span></label>
-                                <select class="form-select" name="document_type" id="edit_document_type" required>
+                                <label class="form-label" for="edit_document_type">{{ __('index.type') }} <span class="text-danger">*</span></label>
+                                <select class="form-select form-select-sm" name="document_type" id="edit_document_type" required>
                                     @foreach(['national_id','employment_contract','cv','certificate','salary_letter','promotion_letter','warning_letter','performance_review','training_certificate','other'] as $item)
                                         <option value="{{ $item }}">{{ \Illuminate\Support\Facades\Lang::has('index.' . $item) ? __('index.' . $item) : ucfirst(str_replace('_', ' ', $item)) }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('index.title') }} <span class="text-danger">*</span></label>
-                                <input class="form-control" name="title" id="edit_title" required>
+                                <label class="form-label" for="edit_title">{{ __('index.title') }} <span class="text-danger">*</span></label>
+                                <input class="form-control form-control-sm" name="title" id="edit_title" required>
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('index.document_date') }}</label>
-                                <input class="form-control" type="date" name="document_date" id="edit_document_date">
+                                <label class="form-label" for="edit_document_date">{{ __('index.document_date') }}</label>
+                                <input class="form-control form-control-sm" type="date" name="document_date" id="edit_document_date">
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">{{ __('index.expiry_date') }}</label>
-                                <input class="form-control" type="date" name="expiry_date" id="edit_expiry_date">
+                                <label class="form-label" for="edit_expiry_date">{{ __('index.expiry_date') }}</label>
+                                <input class="form-control form-control-sm" type="date" name="expiry_date" id="edit_expiry_date">
                             </div>
                             <div class="col-12">
-                                <label class="form-label">{{ __('index.file') }} <small class="text-muted">(Leave blank to keep existing file)</small></label>
-                                <input class="form-control" type="file" name="file" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx">
+                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                                    <label class="form-label mb-0" for="edit_document_file">{{ __('index.file') }}</label>
+                                    <a id="edit_document_current_file" href="#" target="_blank" rel="noopener noreferrer" class="small text-decoration-none"><i data-feather="external-link" style="width:13px;height:13px;"></i> {{ __('index.view_document') }}</a>
+                                </div>
+                                <input class="form-control form-control-sm" id="edit_document_file" type="file" name="file" accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                                <small class="text-muted">{{ __('index.file') }}: JPG, PNG, WEBP, PDF, DOC, DOCX. Leave blank to keep the current file.</small>
                             </div>
                             <div class="col-12">
-                                <label class="form-label">{{ __('index.notes') }}</label>
-                                <textarea class="form-control" name="note" id="edit_note" rows="3"></textarea>
+                                <label class="form-label" for="edit_note">{{ __('index.notes') }}</label>
+                                <textarea class="form-control form-control-sm" name="note" id="edit_note" rows="2"></textarea>
                             </div>
                         </div>
                     </div>
@@ -206,40 +234,41 @@
 
     <!-- Template for Add Document Rows -->
     <template id="employeeDocumentRowTemplate">
-        <div class="border rounded p-3 mb-3 employee-document-row bg-light">
-            <div class="row g-2 align-items-end">
-                <div class="col-lg-2 col-md-4">
-                    <label class="form-label small">{{ __('index.type') }}</label>
-                    <select class="form-select form-select-sm document-type" name="documents[__INDEX__][document_type]">
+        <div class="employee-document-row p-3 mb-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="small fw-semibold text-secondary">{{ __('index.document') }}</span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-document-row" title="{{ __('index.delete_document') }}" aria-label="{{ __('index.delete_document') }}">
+                    <i data-feather="trash-2" style="width:14px;height:14px;"></i>
+                </button>
+            </div>
+            <div class="row g-2">
+                <div class="col-lg-4 col-md-6">
+                    <label class="form-label">{{ __('index.type') }} <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm document-type" name="documents[__INDEX__][document_type]" required>
                         @foreach(['national_id','employment_contract','cv','certificate','salary_letter','promotion_letter','warning_letter','performance_review','training_certificate','other'] as $item)
                             <option value="{{ $item }}">{{ \Illuminate\Support\Facades\Lang::has('index.' . $item) ? __('index.' . $item) : ucfirst(str_replace('_', ' ', $item)) }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-lg-3 col-md-8">
-                    <label class="form-label small">{{ __('index.title') }}</label>
+                <div class="col-lg-8 col-md-6">
+                    <label class="form-label">{{ __('index.title') }} <span class="text-danger">*</span></label>
                     <input class="form-control form-control-sm document-title" name="documents[__INDEX__][title]" required>
                 </div>
-                <div class="col-lg-2 col-md-4">
-                    <label class="form-label small">{{ __('index.document_date') }}</label>
+                <div class="col-lg-6 col-md-6">
+                    <label class="form-label">{{ __('index.file') }} <span class="text-danger">*</span></label>
+                    <input class="form-control form-control-sm document-file" type="file" name="documents[__INDEX__][file]" accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+                </div>
+                <div class="col-lg-3 col-md-3">
+                    <label class="form-label">{{ __('index.document_date') }}</label>
                     <input class="form-control form-control-sm" type="date" name="documents[__INDEX__][document_date]">
                 </div>
-                <div class="col-lg-2 col-md-4">
-                    <label class="form-label small">{{ __('index.expiry_date') }}</label>
+                <div class="col-lg-3 col-md-3">
+                    <label class="form-label">{{ __('index.expiry_date') }}</label>
                     <input class="form-control form-control-sm document-expiry" type="date" name="documents[__INDEX__][expiry_date]">
                 </div>
-                <div class="col-lg-3 col-md-4">
-                    <label class="form-label small">{{ __('index.file') }}</label>
-                    <input class="form-control form-control-sm document-file" type="file" name="documents[__INDEX__][file]" accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx" required>
-                </div>
-                <div class="col-md-10 mt-2">
-                    <label class="form-label small">{{ __('index.notes') }}</label>
+                <div class="col-12">
+                    <label class="form-label">{{ __('index.notes') }}</label>
                     <input class="form-control form-control-sm document-note" name="documents[__INDEX__][note]" placeholder="{{ __('index.notes') }}">
-                </div>
-                <div class="col-md-2 mt-2 text-md-end">
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-document-row" title="Remove document">
-                        <i data-feather="trash-2"></i>
-                    </button>
                 </div>
             </div>
             <div class="small text-muted mt-2 document-file-choice" aria-live="polite"></div>
@@ -256,7 +285,7 @@
     </template>
 
     <!-- Cropper Modal -->
-    <div class="modal fade" id="employeeDocumentPhotoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade employee-document-modal" id="employeeDocumentPhotoModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
@@ -283,11 +312,11 @@
 @endcan
 
 <!-- Document Viewer Modal -->
-<div class="modal fade" id="viewEmployeeDocumentModal" tabindex="-1" aria-labelledby="viewEmployeeDocumentModalLabel" aria-hidden="true">
+<div class="modal fade employee-document-modal" id="viewEmployeeDocumentModal" tabindex="-1" aria-labelledby="viewEmployeeDocumentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-2">
+            <div class="modal-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
                     <i data-feather="file" class="text-primary"></i>
                     <h5 class="modal-title" id="viewEmployeeDocumentModalLabel">{{ __('index.document_viewer') }}</h5>
                 </div>
@@ -356,12 +385,17 @@
         document.querySelectorAll('.edit-document-btn').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 const form = document.getElementById('editDocumentForm');
+                form.reset();
                 form.action = this.getAttribute('data-url');
                 document.getElementById('edit_title').value = this.getAttribute('data-title') || '';
                 document.getElementById('edit_document_type').value = this.getAttribute('data-type') || 'other';
                 document.getElementById('edit_document_date').value = this.getAttribute('data-date') || '';
                 document.getElementById('edit_expiry_date').value = this.getAttribute('data-expiry') || '';
                 document.getElementById('edit_note').value = this.getAttribute('data-note') || '';
+                const currentFile = document.getElementById('edit_document_current_file');
+                const fileUrl = this.getAttribute('data-file-url');
+                currentFile.href = fileUrl || '#';
+                currentFile.classList.toggle('d-none', !fileUrl);
 
                 const modal = new bootstrap.Modal(document.getElementById('editEmployeeDocumentModal'));
                 modal.show();
