@@ -143,6 +143,8 @@ class AttendanceService
                     'updated_at' => $value->updated_at,
                     'check_in_type' => $value->check_in_type,
                     'check_out_type' => $value->check_out_type,
+                    'check_in_selfie' => $value->check_in_selfie,
+                    'check_out_selfie' => $value->check_out_selfie,
                     'worked_hour' => $value->worked_hour,
                     'working_hour' => $extraData['workingHourMin'],
                     'night_checkin' => $value->night_checkin,

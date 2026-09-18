@@ -930,6 +930,23 @@ class AttendanceController extends Controller
             $this->userRepository->updateUserOnlineStatus($userDetail,1);
 
             DB::commit();
+
+            try {
+                $this->attendanceLogService->logActivity([
+                    'employee_id' => $userId,
+                    'attendance_type' => 'web',
+                    'identifier' => 'web_portal',
+                    'action' => 'check_in',
+                    'latitude' => $validatedData['check_in_latitude'] ?? null,
+                    'longitude' => $validatedData['check_in_longitude'] ?? null,
+                    'source' => $dashboardAttendance ? 'dashboard' : 'web',
+                    'created_by' => auth()->id(),
+                    'attendance_id' => $checkInAttendance?->id,
+                ]);
+            } catch (Exception $e) {
+                Log::warning('Failed to log checkIn activity: ' . $e->getMessage());
+            }
+
             AppHelper::sendNotificationToAuthorizedUser(
                 __('message.checkin_notification'),
                 __('message.employee_checkin',[ 'name' => ucfirst($userDetail->name),
@@ -992,6 +1009,23 @@ class AttendanceController extends Controller
 
                 $this->userRepository->updateUserOnlineStatus($userDetail,0);
             DB::commit();
+
+            try {
+                $this->attendanceLogService->logActivity([
+                    'employee_id' => $userId,
+                    'attendance_type' => 'web',
+                    'identifier' => 'web_portal',
+                    'action' => 'check_out',
+                    'latitude' => $validatedData['check_out_latitude'] ?? null,
+                    'longitude' => $validatedData['check_out_longitude'] ?? null,
+                    'source' => $dashboardAttendance ? 'dashboard' : 'web',
+                    'created_by' => auth()->id(),
+                    'attendance_id' => $attendanceCheckOut?->id,
+                ]);
+            } catch (Exception $e) {
+                Log::warning('Failed to log checkOut activity: ' . $e->getMessage());
+            }
+
             AppHelper::sendNotificationToAuthorizedUser(
                 __('message.checkout_notification'),
                 __('message.employee_checkout', [
@@ -1203,8 +1237,33 @@ class AttendanceController extends Controller
             }
             $validatedData['office_time_id'] = $userDetail['office_time_id'];
             DB::beginTransaction();
-            $this->attendanceService->addAttendance($validatedData);
+            $attendanceRecord = $this->attendanceService->addAttendance($validatedData);
             DB::commit();
+
+            try {
+                $this->attendanceLogService->logActivity([
+                    'employee_id' => $validatedData['user_id'],
+                    'attendance_type' => 'manual',
+                    'identifier' => 'admin_panel',
+                    'action' => 'check_in',
+                    'source' => 'admin',
+                    'created_by' => auth()->id(),
+                    'attendance_id' => $attendanceRecord?->id,
+                ]);
+                if (!empty($validatedData['check_out_at']) || !empty($validatedData['night_checkout'])) {
+                    $this->attendanceLogService->logActivity([
+                        'employee_id' => $validatedData['user_id'],
+                        'attendance_type' => 'manual',
+                        'identifier' => 'admin_panel',
+                        'action' => 'check_out',
+                        'source' => 'admin',
+                        'created_by' => auth()->id(),
+                        'attendance_id' => $attendanceRecord?->id,
+                    ]);
+                }
+            } catch (Exception $e) {
+                Log::warning('Failed to log admin add attendance activity: ' . $e->getMessage());
+            }
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
@@ -1232,12 +1291,24 @@ class AttendanceController extends Controller
      * @throws AuthorizationException
      */
     public function logs(Request $request){
-        $this->authorize('list_attendance');
+        $this->authorize('list_attendance_log');
         try {
+            $isBsEnabled = AppHelper::ifDateInBsEnabled();
+            $date = $request->date;
+            $dateInAD = null;
+            if ($date) {
+                $dateInAD = $isBsEnabled ? AppHelper::getEnglishDate($date) : $date;
+            }
+
             $filterData = [
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
                 'employee_id' => $request->employee_id ?? null,
+                'action' => $request->action ?? null,
+                'attendance_type' => $request->attendance_type ?? null,
+                'attendance_status' => $request->attendance_status ?? null,
+                'date' => $dateInAD,
+                'raw_date' => $date,
             ];
 
             if(!auth('admin')->check() && auth()->check()){
@@ -1248,7 +1319,29 @@ class AttendanceController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
-            return view($this->view . 'log', compact('logData','companyDetail','filterData','biometricLogData'));
+            return view($this->view . 'log', compact('logData','companyDetail','filterData','biometricLogData', 'isBsEnabled'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function destroyLog($id)
+    {
+        $this->authorize('delete_attendance_log');
+        try {
+            $this->attendanceLogService->delete($id);
+            return redirect()->back()->with('success', __('index.attendance_log_deleted_successfully'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function destroyBiometricLog($id)
+    {
+        $this->authorize('delete_attendance_log');
+        try {
+            $this->attendanceLogService->deleteBiometricLog($id);
+            return redirect()->back()->with('success', __('index.attendance_log_deleted_successfully'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

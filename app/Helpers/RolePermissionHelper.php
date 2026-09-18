@@ -715,6 +715,16 @@ class RolePermissionHelper
                 "permission_key" => "allow_attendance_without_checkout",
                 "permission_groups_id" => 7
             ],
+            [
+                "name" => "Attendance Logs",
+                "permission_key" => "list_attendance_log",
+                "permission_groups_id" => 7
+            ],
+            [
+                "name" => "Delete Attendance Log",
+                "permission_key" => "delete_attendance_log",
+                "permission_groups_id" => 7
+            ],
 
             /** Leave Permissions */
             [

@@ -15,7 +15,18 @@ class AttendanceLog extends Model
     public $timestamps = true;
     const RECORDS_PER_PAGE = 20;
     protected $fillable = [
-        'employee_id', 'attendance_type', 'identifier','created_at','updated_at'
+        'employee_id',
+        'attendance_type',
+        'identifier',
+        'action',
+        'latitude',
+        'longitude',
+        'note',
+        'source',
+        'created_by',
+        'attendance_id',
+        'created_at',
+        'updated_at'
     ];
 
     public static function boot()
@@ -33,8 +44,19 @@ class AttendanceLog extends Model
             }
         });
     }
+
     public function user()
     {
         return $this->belongsTo(User::class, 'employee_id', 'id');
+    }
+
+    public function attendance()
+    {
+        return $this->belongsTo(Attendance::class, 'attendance_id', 'id');
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by', 'id');
     }
 }

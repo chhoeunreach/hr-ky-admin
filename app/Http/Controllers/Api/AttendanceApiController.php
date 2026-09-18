@@ -181,8 +181,6 @@ class AttendanceApiController extends Controller
                 }
             }
 
-            $this->storeAttendanceLog($validatedData, $userDetail);
-
             DB::beginTransaction();
 
             if ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::nfc->value)
@@ -234,6 +232,9 @@ class AttendanceApiController extends Controller
 
             DB::commit();
 
+            $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
+            $this->storeAttendanceLog($validatedData, $userDetail, $type, $this->attendanceForTelegram?->id);
+
             $this->sendNotification($this->notificationData['title'],$this->notificationData['permissionKey'],$this->notificationData['time'],$this->notificationData['workedTime'] ?? null  );
 
             if ($this->attendanceForTelegram) {
@@ -243,7 +244,6 @@ class AttendanceApiController extends Controller
                     'department:id,dept_name',
                     'officeTime:id,opening_time,closing_time',
                 ]);
-                $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
                 $this->attendanceTelegramNotificationService->notify($type, $user, $this->attendanceForTelegram);
             }
 
@@ -502,31 +502,27 @@ class AttendanceApiController extends Controller
         );
     }
 
-    public function storeAttendanceLog($validatedData, $userDetail)
+    public function storeAttendanceLog($validatedData, $userDetail, $action = null, $attendanceId = null)
     {
-        try{
-            DB::beginTransaction();
-            $logData = [
-                'attendance_type' => $validatedData['attendance_type'],
-                'identifier' => ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) ? $validatedData['router_bssid'] : $validatedData['identifier'],
-            ];
+        try {
+            $identifier = ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value)
+                ? ($validatedData['router_bssid'] ?? null)
+                : ($validatedData['identifier'] ?? null);
 
-            $attendanceLog = $this->attendanceLogService->findLogsByEmployeeId($userDetail['id']);
-
-            if(isset($attendanceLog)){
-
-                $this->attendanceLogService->updateAttendanceLog($attendanceLog->id, $logData);
-            }else{
-                $logData['employee_id']= $userDetail['id'];
-
-                $this->attendanceLogService->createAttendanceLog($logData);
-            }
-            DB::commit();
-        }catch (Exception $exception){
-            DB::rollBack();
+            $this->attendanceLogService->logActivity([
+                'employee_id' => $userDetail['id'] ?? $userDetail->id ?? null,
+                'attendance_type' => $validatedData['attendance_type'] ?? 'manual',
+                'identifier' => $identifier,
+                'action' => $action,
+                'latitude' => $validatedData['latitude'] ?? null,
+                'longitude' => $validatedData['longitude'] ?? null,
+                'note' => $validatedData['note'] ?? null,
+                'source' => 'app',
+                'attendance_id' => $attendanceId,
+            ]);
+        } catch (Exception $exception) {
+            Log::warning('Failed to store attendance log activity: ' . $exception->getMessage());
         }
-
-
     }
 
     /**

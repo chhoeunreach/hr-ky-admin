@@ -2384,6 +2384,11 @@ return [
     'group_options' => 'ជម្រើសក្រុម',
     'chat_members' => 'សមាជិកជជែក',
     'media_files_links' => 'មេឌៀ ឯកសារ និងតំណ',
-    'privacy_support' => 'ឯកជនភាព និងជំនួយ',
     'chat_management' => 'ការគ្រប់គ្រងការជជែក',
+    'attendance_log_deleted_successfully' => 'បានលុបកំណត់ត្រាវត្តមានដោយជោគជ័យ',
+    'filter_by_action' => 'ច្រោះតាមសកម្មភាព',
+    'filter_by_type' => 'ច្រោះតាមប្រភេទ',
+    'all_actions' => 'សកម្មភាពទាំងអស់',
+    'all_types' => 'ប្រភេទទាំងអស់',
+    'confirm_delete_log' => 'តើអ្នកពិតជាចង់លុបកំណត់ត្រាវត្តមាននេះមែនទេ?',
 ];

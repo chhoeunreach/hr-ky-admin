@@ -1010,9 +1010,9 @@
                             <th class="attendance-print-only" style="text-align: center;">Remark</th>
                             <th style="text-align: center;">{{ __('index.status') }}</th>
                             <th style="text-align: center;">{{ __('index.shift') }}</th>
-                            @can('attendance_update')
+                            @canany(['attendance_update', 'view_attendance_selfie'])
                                 <th class="attendance-print-hide" style="text-align: center;">{{ __('index.action') }}</th>
-                            @endcan
+                            @endcanany
                         </tr>
                         </thead>
 
@@ -1408,66 +1408,94 @@
                                             @else
                                                 <td></td>
                                             @endif
-                                            @can('attendance_update')
+                                            @canany(['attendance_update', 'view_attendance_selfie'])
                                                 <td class="text-center attendance-print-hide">
 
                                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
-                                                        @if(isset($attendance['shift'])  && ($attendance['shift'] == \App\Enum\ShiftTypeEnum::night->value))
-                                                            <li class="me-2">
-                                                                <a href=""
-                                                                    class="editNightAttendance"
-                                                                    data-href="{{ route('admin.night_attendances.update', $attendance['id']) }}"
-                                                                    data-in="{{ $attendance['night_checkin'] }}"
-                                                                    data-out="{{ $attendance['night_checkout'] ?? null }}"
-                                                                    data-remark="{{ $attendance['edit_remark'] }}"
-                                                                    data-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $attendance['attendance_date']) }}"
-                                                                    data-name="{{ ucfirst($userDetail->name) }}"
-                                                                    title="{{ __('index.edit_attendance_time') }}"
-                                                                >
-                                                                    <i class="link-icon" data-feather="edit"></i>
-                                                                </a>
-                                                            </li>
-                                                        @else
-                                                            @if(count($dayData['data']) < $multipleAttendance && isset($attendance['check_out_at']))
+                                                        @can('attendance_update')
+                                                            @if(isset($attendance['shift'])  && ($attendance['shift'] == \App\Enum\ShiftTypeEnum::night->value))
                                                                 <li class="me-2">
                                                                     <a href=""
-                                                                    class="addEmployeeAttendance"
-                                                                    data-href="{{ route('admin.attendances.store') }}"
-                                                                    data-name="{{ ucfirst($userDetail->name) }}"
-                                                                    data-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
-                                                                    data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $attendance['attendance_date']) }}"
-                                                                    data-user_id="{{ $userDetail->id }}"
-                                                                    title="{{ __('index.add_attendance_time') }}">
-                                                                    <i class="link-icon" data-feather="plus-circle"></i>
-                                                                </a>
-                                                                </li>
-                                                            @endif
-                                                            @if(isset($attendance['id']))
-                                                                <li class="me-2">
-                                                                    <a href=""
-                                                                        class="editAttendance"
-                                                                        data-href="{{ route('admin.attendances.update', $attendance['id']) }}"
-                                                                        data-in="{{ date('H:i', strtotime($attendance['check_in_at'])) }}"
-                                                                        data-out="{{ $attendance['check_out_at'] ? date('H:i', strtotime($attendance['check_out_at'])) : null }}"
+                                                                        class="editNightAttendance"
+                                                                        data-href="{{ route('admin.night_attendances.update', $attendance['id']) }}"
+                                                                        data-in="{{ $attendance['night_checkin'] }}"
+                                                                        data-out="{{ $attendance['night_checkout'] ?? null }}"
                                                                         data-remark="{{ $attendance['edit_remark'] }}"
                                                                         data-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $attendance['attendance_date']) }}"
                                                                         data-name="{{ ucfirst($userDetail->name) }}"
-                                                                        title="{{ __('index.edit_attendance_time') }}">
+                                                                        title="{{ __('index.edit_attendance_time') }}"
+                                                                    >
                                                                         <i class="link-icon" data-feather="edit"></i>
                                                                     </a>
                                                                 </li>
+                                                            @else
+                                                                @if(count($dayData['data']) < $multipleAttendance && isset($attendance['check_out_at']))
+                                                                    <li class="me-2">
+                                                                        <a href=""
+                                                                        class="addEmployeeAttendance"
+                                                                        data-href="{{ route('admin.attendances.store') }}"
+                                                                        data-name="{{ ucfirst($userDetail->name) }}"
+                                                                        data-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                                        data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $attendance['attendance_date']) }}"
+                                                                        data-user_id="{{ $userDetail->id }}"
+                                                                        title="{{ __('index.add_attendance_time') }}">
+                                                                        <i class="link-icon" data-feather="plus-circle"></i>
+                                                                    </a>
+                                                                    </li>
+                                                                @endif
+                                                                @if(isset($attendance['id']))
+                                                                    <li class="me-2">
+                                                                        <a href=""
+                                                                            class="editAttendance"
+                                                                            data-href="{{ route('admin.attendances.update', $attendance['id']) }}"
+                                                                            data-in="{{ date('H:i', strtotime($attendance['check_in_at'])) }}"
+                                                                            data-out="{{ $attendance['check_out_at'] ? date('H:i', strtotime($attendance['check_out_at'])) : null }}"
+                                                                            data-remark="{{ $attendance['edit_remark'] }}"
+                                                                            data-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $attendance['attendance_date']) }}"
+                                                                            data-name="{{ ucfirst($userDetail->name) }}"
+                                                                            title="{{ __('index.edit_attendance_time') }}">
+                                                                            <i class="link-icon" data-feather="edit"></i>
+                                                                        </a>
+                                                                    </li>
+                                                                @endif
                                                             @endif
-                                                        @endif
+                                                        @endcan
                                                         @can('attendance_delete')
-                                                            <li class="me-2">
-                                                                <a class="deleteAttendance" href="{{ route('admin.attendance.delete', $attendance['id']) }}">
-                                                                    <i class="link-icon"  data-feather="delete"></i>
-                                                                </a>
-                                                            </li>
+                                                            @if(isset($attendance['id']))
+                                                                <li class="me-2">
+                                                                    <a class="deleteAttendance" href="{{ route('admin.attendance.delete', $attendance['id']) }}">
+                                                                        <i class="link-icon"  data-feather="delete"></i>
+                                                                    </a>
+                                                                </li>
+                                                            @endif
+                                                        @endcan
+                                                        @can('view_attendance_selfie')
+                                                            @if(!empty($attendance['check_in_selfie']))
+                                                                <li class="me-2">
+                                                                    <a href="#"
+                                                                       class="showProfilePhoto"
+                                                                       data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $attendance['check_in_selfie']) }}"
+                                                                       data-name="{{ __('index.check_in_selfie') }}"
+                                                                       title="{{ __('index.check_in_selfie') }}">
+                                                                        <i class="link-icon" data-feather="image"></i>
+                                                                    </a>
+                                                                </li>
+                                                            @endif
+                                                            @if(!empty($attendance['check_out_selfie']))
+                                                                <li class="me-2">
+                                                                    <a href="#"
+                                                                       class="showProfilePhoto"
+                                                                       data-src="{{ asset(\App\Models\Attendance::SELFIE_UPLOAD_PATH . $attendance['check_out_selfie']) }}"
+                                                                       data-name="{{ __('index.check_out_selfie') }}"
+                                                                       title="{{ __('index.check_out_selfie') }}">
+                                                                        <i class="link-icon" data-feather="image"></i>
+                                                                    </a>
+                                                                </li>
+                                                            @endif
                                                         @endcan
                                                     </ul>
                                                 </td>
-                                            @endcan
+                                            @endcanany
                                     </tr>
                                 @endforeach
 
@@ -1496,9 +1524,9 @@
                                         <th class="attendance-print-only"></th>
                                         <th></th>
                                         <th></th>
-                                        @can('attendance_update')
+                                        @canany(['attendance_update', 'view_attendance_selfie'])
                                             <th class="attendance-print-hide"></th>
-                                        @endcan
+                                        @endcanany
 
                                     </tr>
                                 @endif
@@ -1706,20 +1734,24 @@
                                          @endif
                                      </td>
                                     <td  class="text-center"><i class="link-icon" data-feather="x"></i></td>
-                                    <td  class="text-center attendance-print-hide">
-                                        @if(!$leaveRequest && !$timeLeave && isset($reason) && $reason == 'Absent')
-                                            <a href=""
-                                                class="addEmployeeAttendance"
-                                                data-href="{{ route('admin.attendances.store') }}"
-                                                data-name="{{ ucfirst($userDetail->name) }}"
-                                                data-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
-                                                data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
-                                                data-user_id="{{ $userDetail->id }}"
-                                                title="{{ __('index.add_attendance_time') }}">
-                                                <i class="link-icon" data-feather="plus-circle"></i>
-                                            </a>
-                                        @endif
-                                    </td>
+                                    @canany(['attendance_update', 'view_attendance_selfie'])
+                                        <td  class="text-center attendance-print-hide">
+                                            @can('attendance_update')
+                                                @if(!$leaveRequest && !$timeLeave && isset($reason) && $reason == 'Absent')
+                                                    <a href=""
+                                                        class="addEmployeeAttendance"
+                                                        data-href="{{ route('admin.attendances.store') }}"
+                                                        data-name="{{ ucfirst($userDetail->name) }}"
+                                                        data-date="{{ date('Y-m-d', strtotime($dayData['attendance_date'])) }}"
+                                                        data-cdate="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $dayData['attendance_date']) }}"
+                                                        data-user_id="{{ $userDetail->id }}"
+                                                        title="{{ __('index.add_attendance_time') }}">
+                                                        <i class="link-icon" data-feather="plus-circle"></i>
+                                                    </a>
+                                                @endif
+                                            @endcan
+                                        </td>
+                                    @endcanany
                                 </tr>
                             @endif
                         </tbody>
@@ -1768,6 +1800,20 @@
                     <div class="modal-body">
                         <iframe id="iframeModalWindow" class="attendancelocation" height="500px" width="100%" src=""
                                 name="iframe_modal"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="profilePhotoModal" tabindex="-1" aria-labelledby="profilePhotoModal" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="profilePhotoModalTitle"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="profilePhotoPreview" src="" alt="profile" class="img-fluid rounded" style="max-height: 70vh; object-fit: contain;">
                     </div>
                 </div>
             </div>
@@ -2069,6 +2115,21 @@
 
                     attendanceQuickTimeLeaveModal.show();
                 });
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.showProfilePhoto');
+                if (!element) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                document.getElementById('profilePhotoPreview').setAttribute('src', element.getAttribute('data-src'));
+                document.getElementById('profilePhotoModalTitle').innerText = element.getAttribute('data-name') || '';
+
+                const modal = new bootstrap.Modal(document.getElementById('profilePhotoModal'));
+                modal.show();
             });
 
             document.querySelectorAll('.showAttendanceLeaveReason').forEach(function (element) {

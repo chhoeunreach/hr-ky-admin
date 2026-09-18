@@ -246,7 +246,12 @@ class User extends Authenticatable
 
     public function attendanceLog()
     {
-        return $this->hasOne(AttendanceLog::class, 'employee_id','id');
+        return $this->hasOne(AttendanceLog::class, 'employee_id','id')->latestOfMany();
+    }
+
+    public function attendanceLogs(): HasMany
+    {
+        return $this->hasMany(AttendanceLog::class, 'employee_id', 'id');
     }
 
     public function faceProfile(): HasOne

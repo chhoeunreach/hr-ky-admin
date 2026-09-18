@@ -2314,6 +2314,11 @@ return [
     'group_options' => 'Group options',
     'chat_members' => 'Chat members',
     'media_files_links' => 'Media, files and links',
-    'privacy_support' => 'Privacy and support',
     'chat_management' => 'Chat Management',
+    'attendance_log_deleted_successfully' => 'Attendance log deleted successfully',
+    'filter_by_action' => 'Filter by Action',
+    'filter_by_type' => 'Filter by Type',
+    'all_actions' => 'All Actions',
+    'all_types' => 'All Types',
+    'confirm_delete_log' => 'Are you sure you want to delete this attendance log?',
 ];

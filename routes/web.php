@@ -636,6 +636,8 @@ Route::group([
 
         /** Attendance Logs */
         Route::get('attendance/logs', [AttendanceController::class, 'logs'])->name('attendance.log');
+        Route::delete('attendance/logs/{id}', [AttendanceController::class, 'destroyLog'])->name('attendance.log.delete');
+        Route::delete('attendance/biometric-logs/{id}', [AttendanceController::class, 'destroyBiometricLog'])->name('attendance.biometric-log.delete');
 
         /** calculate tax */
         Route::get('calculate_tax',[EmployeeSalaryController::class, 'calculateTax'])->name('get-tax');

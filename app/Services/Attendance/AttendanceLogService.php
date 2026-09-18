@@ -81,10 +81,34 @@ class AttendanceLogService
 
     public function createAttendanceLog($validatedData)
     {
-
-
         return $this->attendanceLogRepository->store($validatedData);
+    }
 
+    public function logActivity(array $data)
+    {
+        $logEntry = [
+            'employee_id' => $data['employee_id'] ?? $data['user_id'] ?? null,
+            'attendance_type' => $data['attendance_type'] ?? 'manual',
+            'identifier' => $data['identifier'] ?? null,
+            'action' => $data['action'] ?? null,
+            'latitude' => isset($data['latitude']) && is_numeric($data['latitude']) ? (float) $data['latitude'] : null,
+            'longitude' => isset($data['longitude']) && is_numeric($data['longitude']) ? (float) $data['longitude'] : null,
+            'note' => $data['note'] ?? $data['remark'] ?? null,
+            'source' => $data['source'] ?? 'app',
+            'created_by' => $data['created_by'] ?? (auth()->check() ? auth()->id() : null),
+            'attendance_id' => $data['attendance_id'] ?? null,
+        ];
+
+        return $this->attendanceLogRepository->store(array_filter($logEntry, fn($v) => !is_null($v)));
+    }
+
+    public function deleteBiometricLog($id)
+    {
+        $biometricLog = $this->attendanceLogRepository->findBiometricLogById($id);
+        if ($biometricLog) {
+            return $this->attendanceLogRepository->deleteBiometricLog($biometricLog);
+        }
+        return false;
     }
 
 //    public function getEmployeeAttendanceSummaryOfTheMonth($filterParameter, array $select = ['*'], array $with = []): Collection|array
