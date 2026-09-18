@@ -7,6 +7,7 @@ use App\Exports\UserExport;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeLocation;
+use App\Models\EmployeeDocument;
 use App\Models\EmployeeProfile;
 use App\Models\Event;
 use App\Models\Holiday;
@@ -38,6 +39,8 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Laravel\Passport\RefreshTokenRepository;
 use Laravel\Passport\TokenRepository;
 use Carbon\Carbon;
@@ -696,6 +699,8 @@ class UserController extends Controller
     public function store(UserCreateRequest $request, UserAccountRequest $accountRequest, UserLeaveTypeRequest $leaveRequest)
     {
         $this->authorize('create_employee');
+        $documents = $this->validatedEmployeeDocuments($request);
+        $storedDocumentPaths = [];
         try {
             $validatedData = $request->validated();
 
@@ -718,6 +723,7 @@ class UserController extends Controller
             $user = $this->userRepo->store($validatedData);
             $accountValidatedData['user_id'] = $user['id'];
             $this->accountRepo->store($accountValidatedData);
+            $this->storeEmployeeDocuments($user, $documents, $storedDocumentPaths);
 
             if (!is_null($user['leave_allocated']) && isset($leaveTypeData['leave_type_id'])) {
                 foreach ($leaveTypeData['leave_type_id'] as $key => $value) {
@@ -738,6 +744,7 @@ class UserController extends Controller
                 ->with('success', __('message.add_user'));
         } catch (Exception $exception) {
             DB::rollBack();
+            Storage::disk('local')->delete($storedDocumentPaths);
             return redirect()->back()->with('danger', $exception->getMessage())->withInput();
         }
     }
@@ -857,6 +864,8 @@ class UserController extends Controller
     public function update(UserUpdateRequest $request, UserAccountRequest $accountRequest, UserLeaveTypeRequest $leaveRequest, $id)
     {
         $this->authorize('edit_employee');
+        $documents = $this->validatedEmployeeDocuments($request);
+        $storedDocumentPaths = [];
         try {
             $validatedData = $request->validated();
 
@@ -888,6 +897,7 @@ class UserController extends Controller
             DB::beginTransaction();
             $this->userRepo->update($userDetail, $validatedData);
             $this->accountRepo->createOrUpdate($userDetail, $accountValidatedData);
+            $this->storeEmployeeDocuments($userDetail, $documents, $storedDocumentPaths);
 
             if (!is_null($validatedData['leave_allocated']) && isset($leaveTypeData['leave_type_id'])) {
                 foreach ($leaveTypeData['leave_type_id'] as $key => $value) {
@@ -917,7 +927,44 @@ class UserController extends Controller
                 ->with('success', __('message.update_user'));
         } catch (Exception $exception) {
             DB::rollBack();
-            return redirect()->back()->with('danger', $exception->getMessage());
+            Storage::disk('local')->delete($storedDocumentPaths);
+            return redirect()->back()->with('danger', $exception->getMessage())->withInput();
+        }
+    }
+
+    private function validatedEmployeeDocuments(Request $request): array
+    {
+        if (!$request->has('documents')) {
+            return [];
+        }
+
+        $this->authorize('employee.document.manage');
+
+        return $request->validate([
+            'documents' => ['required', 'array', 'min:1', 'max:20'],
+            'documents.*.document_type' => ['required', Rule::in(['national_id', 'employment_contract', 'cv', 'certificate', 'salary_letter', 'promotion_letter', 'warning_letter', 'performance_review', 'training_certificate', 'other'])],
+            'documents.*.title' => ['required', 'string', 'max:255'],
+            'documents.*.file' => ['required', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx'],
+            'documents.*.document_date' => ['nullable', 'date'],
+            'documents.*.expiry_date' => ['nullable', 'date'],
+            'documents.*.note' => ['nullable', 'string'],
+        ])['documents'];
+    }
+
+    private function storeEmployeeDocuments(User $employee, array $documents, array &$storedPaths): void
+    {
+        foreach ($documents as $document) {
+            $file = $document['file'];
+            unset($document['file']);
+            $document['file_path'] = $file->store('employee-documents', 'local');
+            if (!$document['file_path']) {
+                throw new \RuntimeException('Document upload failed.');
+            }
+            $storedPaths[] = $document['file_path'];
+            EmployeeDocument::create($document + [
+                'employee_id' => $employee->id,
+                'uploaded_by' => auth()->id(),
+            ]);
         }
     }
 

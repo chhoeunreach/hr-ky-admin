@@ -33,5 +33,6 @@
 @section('scripts')
 
     @include('admin.employees.common.scripts')
+    @include('admin.employees.common.documents-scripts')
 
 @endsection

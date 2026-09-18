@@ -1750,6 +1750,7 @@ return [
     'all_departments' => 'នាយកដ្ឋានទាំងអស់',
     'all_shifts' => 'វេនទាំងអស់',
     'apply' => 'អនុវត្ត',
+    'apply_again' => 'អនុវត្តម្តងទៀត',
     'reset' => 'កំណត់ឡើងវិញ',
     'report_month' => 'ខែរបាយការណ៍',
     'employees_in_view' => 'បុគ្គលិកដែលបានបង្ហាញ',

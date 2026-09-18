@@ -142,7 +142,22 @@
 <div class="card mb-4">
     <div class="card-body pb-2">
         <div class="profile-detail">
-            <h5 class="mb-3 border-bottom pb-3">{{ __('index.personal_detail') }}</h5>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3 border-bottom pb-3">
+                <h5 class="mb-0">{{ __('index.personal_detail') }}</h5>
+                @can('employee.document.manage')
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span id="employeeFormDocumentCount" class="small text-muted"></span>
+                        @if(isset($userDetail))
+                            <a href="{{ route('admin.employees.profile.show', ['employee' => $userDetail->id, 'tab' => 'personal']) }}" class="small">
+                                {{ __('index.view_document') }}
+                            </a>
+                        @endif
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#employeeFormDocumentsModal">
+                            <i class="link-icon" data-feather="file-plus"></i> {{ __('index.add_documents') }}
+                        </button>
+                    </div>
+                @endcan
+            </div>
             <div class="row">
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="employee_code" class="form-label">{{ __('index.employee_code') }} </label>
@@ -567,6 +582,8 @@
     </div>
 </div>
 
+
+@include('admin.employees.common.documents-modal')
 
 <button type="submit" class="btn btn-primary">
     <i class="link-icon" data-feather="plus"></i> {{isset($userDetail)? __('index.update_user'):__('index.create_user')}}

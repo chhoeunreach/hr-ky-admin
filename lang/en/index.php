@@ -1699,6 +1699,7 @@ return [
     'all_departments' => 'All Departments',
     'all_shifts' => 'All Shifts',
     'apply' => 'Apply',
+    'apply_again' => 'Apply Again',
     'report_month' => 'Report Month',
     'employees_in_view' => 'Employees In View',
     'after_branch_department_filters' => 'After branch and department filters',
