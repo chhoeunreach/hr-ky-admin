@@ -27,8 +27,8 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
         }
 
         $salaryData = [
-            'payroll_type' => $this->stringValue($row, 'payroll_type', 'monthly'),
-            'payment_type' => $this->stringValue($row, 'payment_type', 'bank'),
+            'payroll_type' => $this->stringValue($row, 'payroll_type', 'annual'),
+            'payment_type' => $this->stringValue($row, 'payment_type', 'monthly'),
             'annual_salary' => $this->numberValue($row, 'annual_salary'),
             'basic_salary_type' => $this->basicSalaryType($row['basic_salary_type'] ?? null),
             'basic_salary_value' => $this->numberValue($row, 'basic_salary_value'),
@@ -43,6 +43,43 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
             'weekly_basic_salary' => $this->numberValue($row, 'weekly_basic_salary'),
             'weekly_fixed_allowance' => $this->numberValue($row, 'weekly_fixed_allowance'),
         ];
+
+        if (!in_array($salaryData['payroll_type'], ['annual', 'hourly'], true)
+            || !in_array($salaryData['payment_type'], ['monthly', 'weekly'], true)) {
+            throw new Exception("Invalid payroll or payment type for {$employee->username}.");
+        }
+
+        $annualSalary = round((float) $salaryData['annual_salary'], 2);
+        if ($annualSalary <= 0) {
+            throw new Exception("Annual salary must be greater than zero for {$employee->username}.");
+        }
+        if ($salaryData['payroll_type'] === 'hourly') {
+            $hours = $salaryData['payment_type'] === 'weekly' ? $salaryData['weekly_hours'] : $salaryData['monthly_hours'];
+            if ($salaryData['hour_rate'] <= 0 || $hours <= 0) {
+                throw new Exception("Hourly salary requires a positive rate and working hours for {$employee->username}.");
+            }
+            $annualSalary = round($salaryData['hour_rate'] * $hours * ($salaryData['payment_type'] === 'weekly' ? 52 : 12), 2);
+        }
+        $basicValue = (float) $salaryData['basic_salary_value'];
+        if ($salaryData['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue > 100
+            || $salaryData['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::fixed->value && $basicValue > $annualSalary / 12) {
+            throw new Exception("Invalid basic salary for {$employee->username}.");
+        }
+
+        $monthlyBasic = $salaryData['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value
+            ? round($annualSalary / 12 * $basicValue / 100, 2)
+            : round($basicValue, 2);
+        $annualBasic = $salaryData['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue == 100
+            ? $annualSalary
+            : round($monthlyBasic * 12, 2);
+        $annualAllowance = round($annualSalary - $annualBasic, 2);
+        $salaryData['annual_salary'] = $annualSalary;
+        $salaryData['monthly_basic_salary'] = $monthlyBasic;
+        $salaryData['annual_basic_salary'] = $annualBasic;
+        $salaryData['weekly_basic_salary'] = round($annualBasic / 52, 2);
+        $salaryData['monthly_fixed_allowance'] = round($annualAllowance / 12, 2);
+        $salaryData['annual_fixed_allowance'] = $annualAllowance;
+        $salaryData['weekly_fixed_allowance'] = round($annualAllowance / 52, 2);
 
         EmployeeSalary::updateOrCreate(
             ['employee_id' => $employee->id],
@@ -72,14 +109,21 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
     {
         $type = strtolower(trim((string) ($value ?? '')));
 
+        if ($type === '') {
+            return EmployeeBasicSalaryTypeEnum::fixed->value;
+        }
         if ($type === 'percentage') {
             return EmployeeBasicSalaryTypeEnum::percent->value;
         }
 
-        return in_array($type, [
+        if (!in_array($type, [
             EmployeeBasicSalaryTypeEnum::fixed->value,
             EmployeeBasicSalaryTypeEnum::percent->value,
-        ], true) ? $type : EmployeeBasicSalaryTypeEnum::fixed->value;
+        ], true)) {
+            throw new Exception("Invalid basic salary type: {$type}.");
+        }
+
+        return $type;
     }
 
     private function stringValue(array $row, string $key, ?string $default = null): ?string
@@ -99,7 +143,11 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
             return $default;
         }
 
-        return is_numeric($row[$key]) ? $row[$key] + 0 : $default;
+        if (!is_numeric($row[$key]) || (float) $row[$key] < 0) {
+            throw new Exception("Invalid {$key} value in salary import.");
+        }
+
+        return $row[$key] + 0;
     }
 
     private function nullableNumberValue(array $row, string $key): int|null
@@ -108,6 +156,10 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
             return null;
         }
 
-        return is_numeric($row[$key]) ? (int) $row[$key] : null;
+        if (!ctype_digit((string) $row[$key])) {
+            throw new Exception("Invalid {$key} value in salary import.");
+        }
+
+        return (int) $row[$key];
     }
 }

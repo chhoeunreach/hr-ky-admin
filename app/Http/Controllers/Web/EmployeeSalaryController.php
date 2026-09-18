@@ -49,6 +49,7 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 use MilanTarami\NumberToWordsConverter\Services\NumberToWords;
 
@@ -91,7 +92,7 @@ class EmployeeSalaryController extends Controller
                 'branch_id' => $request->branch_id ?? null
             ];
             if(!auth('admin')->check() && auth()->check()){
-                $filterParameters['branch'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $employeeLists = $this->userRepository->getAllVerifiedActiveEmployeeWithSalaryGroup($filterParameters);
 
@@ -111,6 +112,10 @@ class EmployeeSalaryController extends Controller
     {
         try{
             $this->authorize('change_salary_cycle');
+
+            if (!$this->userRepository->findUserDetailById($employeeId, ['id'])) {
+                throw new Exception(__('message.account_not_found'), 404);
+            }
 
             $employeeAccountDetail = $this->userAccountRepo->findAccountDetailByEmployeeId($employeeId);
             if(!$employeeAccountDetail){
@@ -433,9 +438,15 @@ class EmployeeSalaryController extends Controller
      */
     public function saveSalary(Request $request, $employeeId): RedirectResponse
     {
+        $this->authorize('add_salary');
+        $validatedData = $this->validatedSalaryData($request, $employeeId);
         try{
-            $this->authorize('add_salary');
-            $validatedData = $request->all();
+            if (!$this->userRepository->findUserDetailById($employeeId, ['id'])) {
+                throw new Exception(__('message.account_not_found'), 404);
+            }
+            if ($this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId)) {
+                throw ValidationException::withMessages(['employee_id' => 'This employee already has a salary record.']);
+            }
 
             $employeeSalaryGroup = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
 
@@ -444,16 +455,14 @@ class EmployeeSalaryController extends Controller
                 $validatedData['salary_group_id'] = $employeeSalaryGroup->salary_group_id;
             }
 
-            $validatedData['weekly_basic_salary'] = round(($validatedData['annual_basic_salary']/52),2);
-            $validatedData['weekly_fixed_allowance'] = round(($validatedData['annual_fixed_allowance']/52),2);
-
             DB::beginTransaction();
                 $this->employeeSalaryRepository->store($validatedData);
             DB::commit();
 
             return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_add'));
 
-
+        }catch(ValidationException $exception){
+            throw $exception;
         }catch(Exception $exception){
             DB::rollBack();
             return redirect()
@@ -505,14 +514,15 @@ class EmployeeSalaryController extends Controller
      */
     public function updateSalary(Request $request, $employeeId): RedirectResponse
     {
+        $this->authorize('edit_salary');
+        $validatedData = $this->validatedSalaryData($request, $employeeId);
         try{
-            $this->authorize('edit_salary');
-            $validatedData = $request->all();
-
             $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
-
-            $validatedData['weekly_basic_salary'] = round(($validatedData['annual_basic_salary']/52),2);
-            $validatedData['weekly_fixed_allowance'] = round(($validatedData['annual_fixed_allowance']/52),2);
+            if (!$employeeSalary) {
+                return redirect()->route('admin.employee-salaries.index')->with('danger', __('message.account_not_found'));
+            }
+            $employeeSalaryGroup = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
+            $validatedData['salary_group_id'] = $employeeSalaryGroup?->salary_group_id;
             DB::beginTransaction();
             $this->employeeSalaryRepository->update($employeeSalary, $validatedData);
             DB::commit();
@@ -526,6 +536,57 @@ class EmployeeSalaryController extends Controller
                 ->back()
                 ->with('danger', $exception->getMessage());
         }
+    }
+
+    private function validatedSalaryData(Request $request, $employeeId): array
+    {
+        $data = $request->validate([
+            'payroll_type' => ['required', 'in:annual,hourly'],
+            'payment_type' => ['required', 'in:monthly,weekly'],
+            'annual_salary' => ['required', 'numeric', 'min:0'],
+            'basic_salary_type' => ['required', 'in:percent,fixed'],
+            'basic_salary_value' => ['required', 'numeric', 'min:0'],
+            'hour_rate' => ['nullable', 'numeric', 'min:0'],
+            'weekly_hours' => ['nullable', 'numeric', 'min:0'],
+            'monthly_hours' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $annualSalary = round((float) $data['annual_salary'], 2);
+        if ($data['payroll_type'] === 'hourly') {
+            $hoursField = $data['payment_type'] === 'weekly' ? 'weekly_hours' : 'monthly_hours';
+            $hourRate = (float) ($data['hour_rate'] ?? 0);
+            $hours = (float) ($data[$hoursField] ?? 0);
+            if ($hourRate <= 0 || $hours <= 0) {
+                throw ValidationException::withMessages([$hoursField => 'Hourly salaries require a positive rate and working hours.']);
+            }
+            $annualSalary = round($hourRate * $hours * ($data['payment_type'] === 'weekly' ? 52 : 12), 2);
+        }
+        $basicValue = (float) $data['basic_salary_value'];
+        if ($data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue > 100) {
+            throw ValidationException::withMessages(['basic_salary_value' => 'Basic salary percentage cannot exceed 100.']);
+        }
+        if ($data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::fixed->value && $basicValue > $annualSalary / 12) {
+            throw ValidationException::withMessages(['basic_salary_value' => 'Basic salary cannot exceed the monthly salary.']);
+        }
+
+        $monthlyBasic = $data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value
+            ? round($annualSalary / 12 * $basicValue / 100, 2)
+            : round($basicValue, 2);
+        $annualBasic = $data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue == 100
+            ? $annualSalary
+            : round($monthlyBasic * 12, 2);
+        $annualAllowance = round($annualSalary - $annualBasic, 2);
+
+        return array_merge($data, [
+            'employee_id' => $employeeId,
+            'annual_salary' => $annualSalary,
+            'monthly_basic_salary' => $monthlyBasic,
+            'annual_basic_salary' => $annualBasic,
+            'weekly_basic_salary' => round($annualBasic / 52, 2),
+            'monthly_fixed_allowance' => round($annualAllowance / 12, 2),
+            'annual_fixed_allowance' => $annualAllowance,
+            'weekly_fixed_allowance' => round($annualAllowance / 52, 2),
+        ]);
     }
 
 
@@ -633,10 +694,13 @@ class EmployeeSalaryController extends Controller
     public function deleteSalary($employeeId): RedirectResponse
     {
         try{
-            $this->authorize('add_salary');
+            $this->authorize('delete_salary');
 
 
             $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
+            if (!$employeeSalary) {
+                return redirect()->route('admin.employee-salaries.index')->with('danger', __('message.account_not_found'));
+            }
 
             DB::beginTransaction();
                 $this->employeeSalaryRepository->delete($employeeSalary);
@@ -730,7 +794,7 @@ class EmployeeSalaryController extends Controller
                 'file' => ['required', 'file', 'mimes:xlsx,csv,txt'],
             ]);
 
-            Excel::import(new EmployeeSalaryImport(), $request->file('file'));
+            DB::transaction(fn () => Excel::import(new EmployeeSalaryImport(), $request->file('file')));
 
             return redirect()
                 ->route('admin.employee-salaries.index')

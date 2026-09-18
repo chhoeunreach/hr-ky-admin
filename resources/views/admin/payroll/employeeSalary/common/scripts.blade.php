@@ -14,12 +14,12 @@
 
         $('.error').hide();
 
-        $('body').on('change','#salaryCycle',function (event) {
-            event.preventDefault();
-            let salaryCycle = $(this).val()
-            let employeeId = $(this).data('employee')
-            let currentCycle = $(this).data('current')
-            let url = "{{url('admin/employee-salaries/update-cycle')}}" +'/' + employeeId + '/' + salaryCycle;
+        $('body').on('change', '.salary-cycle-select', function () {
+            const select = this;
+            const salaryCycle = select.value;
+            const currentCycle = select.dataset.current;
+            const form = select.closest('td').querySelector('.salary-cycle-form');
+            if (!form || salaryCycle === currentCycle) return;
             Swal.fire({
                 title: '{{ __('index.confirm_change_cycle') }}',
                 showDenyButton: true,
@@ -29,9 +29,10 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = url;
-                }else{
-                    $(this).val(currentCycle);
+                    form.action = form.dataset.urlTemplate.replace('__CYCLE__', encodeURIComponent(salaryCycle));
+                    form.submit();
+                } else {
+                    select.value = currentCycle;
                 }
             })
         })
@@ -56,11 +57,11 @@
             })
         })
 
-        $('.deleteEmployeeSalary').click(function (event) {
+        $('.deleteEmployeeSalaryForm').on('submit', function (event) {
             event.preventDefault();
-            let href = $(this).data('href');
+            const form = this;
             Swal.fire({
-                title: '{{ __('index.confirm_delete_payroll') }}',
+                title: '{{ __('index.delete') }} {{ __('index.employee_salary') }}?',
                 showDenyButton: true,
                 confirmButtonText: `{{ __('index.yes') }}`,
                 denyButtonText: `{{ __('index.no') }}`,
@@ -69,7 +70,7 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = href;
+                    form.submit();
                 }
             })
         })
@@ -84,10 +85,14 @@
             const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
             const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
             const selectedBranchId = isAdmin ? $('#branch_id').val() : defaultBranchId;
-            // Changed selector to #branch
-            let departmentId = "{{ $userDetail->department_id ?? $filterParameters['department_id'] ?? old('department_id') }}";
+            const departmentId = @json($filterParameters['department_id'] ?? old('department_id'));
 
-            if (!selectedBranchId) return;
+            const department = $('#department_id');
+            department.empty().append('<option value="">{{ __('index.all') }}</option>');
+            if (!selectedBranchId) {
+                department.trigger('change.select2');
+                return;
+            }
 
             try {
                 const response = await $.ajax({
@@ -95,22 +100,15 @@
                     url: `{{ url('admin/departments/get-All-Departments') }}/${selectedBranchId}`,
                 });
 
-                $('#department_id').empty(); // Changed selector to #department_id
-
-                // Departments
-                if (!departmentId) {
-                    $('#department_id').append('<option disabled selected>{{ __('index.select_department') }}</option>');
-                }
                 if (response.data && response.data.length > 0) {
-                    response.data.forEach(department => {
-                        $('#department_id').append(`<option ${department.id == departmentId ? 'selected' : ''} value="${department.id}">${department.dept_name}</option>`);
+                    response.data.forEach(item => {
+                        department.append(new Option(item.dept_name, item.id, false, String(item.id) === String(departmentId)));
                     });
-                } else {
-                    $('#department_id').append('<option disabled>{{ __("index.no_department_found") }}</option>');
                 }
+                department.trigger('change.select2');
 
             } catch (error) {
-                $('#department_id').append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
+                department.append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
             }
         };
 
@@ -121,7 +119,7 @@
             $('#branch_id').on('change', loadDepartments);
             $('#branch_id').trigger('change');
         } else {
-            loadDepartments(); // Load directly for regular users
+            loadDepartments();
         }
     });
 
