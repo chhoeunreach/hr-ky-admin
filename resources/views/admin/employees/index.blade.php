@@ -1171,7 +1171,7 @@
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="btn btn-outline-danger">
-                                                                            <i class="link-icon" data-feather="unlink"></i>
+                                                                            <i class="link-icon" data-feather="x-circle"></i>
                                                                             {{ __('index.unlink_telegram') }}
                                                                         </button>
                                                                     </form>
