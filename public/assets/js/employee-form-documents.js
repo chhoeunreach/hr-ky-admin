@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const preparedPhotos = new WeakMap();
     const cropperByRow = new WeakMap();
     const previewUrls = new WeakMap();
+    const photoModes = new WeakMap();
     const scanVersions = new WeakMap();
 
     function updateCount() {
@@ -59,21 +60,23 @@ document.addEventListener('DOMContentLoaded', () => {
         row.querySelector('.document-photo').classList.add('d-none');
         originalPhotos.delete(row);
         preparedPhotos.delete(row);
+        photoModes.delete(row);
     }
 
     function startCrop(row) {
         destroyCropper(row);
-        row.querySelector('.document-rotate-tools').classList.remove('d-none');
         if (!window.Cropper) {
             row.querySelector('.photo-status').textContent = 'Crop tool unavailable. Choose Original.';
-            row.querySelector('[value="original"]').checked = true;
+            photoModes.delete(row);
+            row.querySelector('.use-document-photo').classList.add('d-none');
             row.querySelector('.document-rotate-tools').classList.add('d-none');
             return;
         }
+        row.querySelector('.document-rotate-tools').classList.remove('d-none');
         const image = row.querySelector('.document-photo-preview');
         if (!image.complete || !image.naturalWidth) {
             image.addEventListener('load', () => {
-                if (row.querySelector('[value="crop"]').checked) startCrop(row);
+                if (photoModes.get(row) === 'crop') startCrop(row);
             }, { once: true });
             return;
         }
@@ -85,15 +88,54 @@ document.addEventListener('DOMContentLoaded', () => {
         originalPhotos.set(row, file);
         const url = URL.createObjectURL(file);
         previewUrls.set(row, url);
-        row.querySelector('.document-photo-preview').src = url;
-        row.querySelector('.photo-status').textContent = row.querySelector('[value="crop"]').checked
-            ? 'Adjust the crop, then apply.'
-            : 'Using original photo.';
-        row.querySelector('.document-photo').classList.remove('d-none');
-        const cropping = row.querySelector('[value="crop"]').checked;
-        row.querySelector('.use-document-photo').classList.toggle('d-none', !cropping);
-        if (cropping) startCrop(row);
-        else {
+        askPhotoMode(row, file, true);
+    }
+
+    async function askPhotoMode(row, file, cancelClears = false) {
+        if (!window.Swal) {
+            row.querySelector('.photo-status').textContent = 'Photo choice is unavailable.';
+            return;
+        }
+        const photoPanel = row.querySelector('.document-photo');
+        const wasVisible = !photoPanel.classList.contains('d-none');
+        photoPanel.classList.add('d-none');
+        const result = await Swal.fire({
+            title: modal.dataset.photoTitle,
+            text: file.name,
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: modal.dataset.originalLabel,
+            denyButtonText: modal.dataset.cropLabel,
+            cancelButtonText: modal.dataset.cancelLabel,
+            reverseButtons: true,
+            width: '400px',
+            padding: '1rem',
+            didOpen: () => {
+                Swal.getContainer().style.zIndex = '2000';
+            },
+        });
+        if (!row.isConnected || originalPhotos.get(row) !== file) return;
+        if (!result.isConfirmed && !result.isDenied) {
+            if (cancelClears) {
+                row.querySelector('.document-file').value = '';
+                clearPreview(row);
+            } else if (wasVisible) photoPanel.classList.remove('d-none');
+            return;
+        }
+
+        row.querySelector('.document-photo-preview').src = previewUrls.get(row);
+        photoPanel.classList.remove('d-none');
+        scanVersions.set(row, (scanVersions.get(row) || 0) + 1);
+        preparedPhotos.delete(row);
+        row.querySelector('.document-ocr').classList.add('d-none');
+        const mode = result.isDenied ? 'crop' : 'original';
+        photoModes.set(row, mode);
+        row.querySelector('.use-document-photo').classList.toggle('d-none', mode !== 'crop');
+        if (mode === 'crop') {
+            row.querySelector('.photo-status').textContent = 'Adjust the crop, then apply.';
+            startCrop(row);
+        } else {
+            destroyCropper(row);
             row.querySelector('.document-rotate-tools').classList.add('d-none');
             usePhoto(row);
         }
@@ -106,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         button.disabled = true;
         try {
             let file = original;
-            if (row.querySelector('[value="crop"]').checked) {
+            if (photoModes.get(row) === 'crop') {
                 const cropper = cropperByRow.get(row);
                 if (!cropper) throw new Error('Crop tool is not ready.');
                 const canvas = cropper.getCroppedCanvas({ maxWidth: 3200, maxHeight: 3200, imageSmoothingQuality: 'high' });
@@ -189,6 +231,10 @@ document.addEventListener('DOMContentLoaded', () => {
             updateCount();
         }
         if (event.target.closest('.use-document-photo')) usePhoto(row);
+        if (event.target.closest('.change-photo-mode')) {
+            const file = originalPhotos.get(row);
+            if (file) askPhotoMode(row, file);
+        }
         if (event.target.closest('.retry-document-ocr')) {
             const file = preparedPhotos.get(row);
             if (file && row.querySelector('.document-type').value === 'national_id') recognize(row, file);
@@ -222,21 +268,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = preparedPhotos.get(row);
             row.querySelector('.document-ocr').classList.add('d-none');
             if (event.target.value === 'national_id' && file?.type.startsWith('image/')) recognize(row, file);
-        }
-        if (event.target.matches('[value="crop"], [value="original"]')) {
-            if (!originalPhotos.has(row)) return;
-            scanVersions.set(row, (scanVersions.get(row) || 0) + 1);
-            preparedPhotos.delete(row);
-            row.querySelector('.document-ocr').classList.add('d-none');
-            row.querySelector('.photo-status').textContent = 'Apply the selected photo before saving.';
-            const cropping = event.target.value === 'crop';
-            row.querySelector('.use-document-photo').classList.toggle('d-none', !cropping);
-            if (cropping) startCrop(row);
-            else {
-                destroyCropper(row);
-                row.querySelector('.document-rotate-tools').classList.add('d-none');
-                usePhoto(row);
-            }
         }
         if (event.target.matches('.document-file')) {
             const file = event.target.files[0];

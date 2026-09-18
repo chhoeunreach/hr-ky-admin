@@ -17,7 +17,11 @@
     <div class="modal fade" id="employeeFormDocumentsModal" tabindex="-1" aria-labelledby="employeeFormDocumentsTitle" aria-hidden="true"
          data-ocr-worker="{{ asset('assets/vendors/tesseract/worker.min.js') }}"
          data-ocr-core="{{ asset('assets/vendors/tesseract/core') }}"
-         data-ocr-lang="{{ asset('assets/vendors/tesseract/lang') }}">
+         data-ocr-lang="{{ asset('assets/vendors/tesseract/lang') }}"
+         data-photo-title="{{ __('index.photo') }}"
+         data-original-label="{{ __('index.photo_original') }}"
+         data-crop-label="{{ __('index.photo_crop') }}"
+         data-cancel-label="{{ __('index.cancel') }}">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header flex-wrap gap-2 py-2 px-3">
@@ -41,16 +45,9 @@
         <div class="border p-2 mb-2 employee-form-document-row">
             <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
                 <span class="small fw-semibold">{{ __('index.document') }} <span class="document-number"></span></span>
-                <div class="d-flex align-items-center gap-3">
-                    <fieldset class="d-flex align-items-center gap-2 m-0">
-                        <legend class="small text-muted m-0" style="float:none;width:auto">{{ __('index.photo') }}</legend>
-                        <label class="small mb-0"><input type="radio" name="document_photo_mode___INDEX__" value="original" checked> Original</label>
-                        <label class="small mb-0"><input type="radio" name="document_photo_mode___INDEX__" value="crop"> Crop</label>
-                    </fieldset>
-                    <button type="button" class="btn btn-outline-danger btn-sm remove-document" title="{{ __('index.delete_document') }}" aria-label="{{ __('index.delete_document') }}">
-                        <i data-feather="trash-2"></i>
-                    </button>
-                </div>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-document" title="{{ __('index.delete_document') }}" aria-label="{{ __('index.delete_document') }}">
+                    <i data-feather="trash-2"></i>
+                </button>
             </div>
             <div class="row g-2 align-items-end">
                 <div class="col-md-3">
@@ -87,6 +84,7 @@
                     <img class="document-photo-preview" alt="Selected document photo">
                 </div>
                 <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm change-photo-mode" title="{{ __('index.change_photo_mode') }}">{{ __('index.change_photo_mode') }}</button>
                     <div class="document-rotate-tools d-none">
                         <button type="button" class="btn btn-outline-secondary btn-sm me-1 rotate-document-left" title="Rotate left" aria-label="Rotate left">
                             <i data-feather="rotate-ccw"></i>
