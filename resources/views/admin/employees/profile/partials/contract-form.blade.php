@@ -57,29 +57,21 @@
 @endphp
 
 @can('employee.document.manage')
-    <div class="employee-360-section">
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
-            <h6 class="mb-2 mb-md-0">Contract Add / Update Before Print</h6>
-            <div class="d-flex gap-2">
-                <button type="button"
-                        class="btn btn-outline-secondary btn-sm"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#contractEditCollapse"
-                        aria-expanded="{{ $errors->any() ? 'true' : 'false' }}"
-                        aria-controls="contractEditCollapse">
-                    Expand / Collapse
-                </button>
-                <button type="submit" form="contractEditForm" class="btn btn-primary btn-sm">Save / Update Contract</button>
-            </div>
-        </div>
-
-        <form id="contractEditForm"
-              method="POST"
-              action="{{ route('admin.employees.profile.contract.save', $employee->id) }}">
-            @csrf
-
-        <div id="contractEditCollapse" class="collapse {{ $errors->any() ? 'show' : '' }}">
-        <div class="row g-3">
+    <div class="modal fade" id="contractEditModal" tabindex="-1" aria-labelledby="contractEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <form id="contractEditForm"
+                  method="POST"
+                  action="{{ route('admin.employees.profile.contract.save', $employee->id) }}"
+                  class="modal-content">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="contractEditModalLabel">
+                        <i data-feather="file-text" class="me-2 text-primary"></i>Contract Add / Update Before Print
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
             <div class="col-md-3">
                 <label class="form-label">Contract No</label>
                 <input type="text" name="contract_no" class="form-control" value="{{ $contractNo }}">
@@ -232,19 +224,31 @@
                     </label>
                 @endforeach
             </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i data-feather="check" class="me-1"></i> Save / Update Contract
+                    </button>
+                </div>
+            </form>
         </div>
-        </div>
-        </form>
     </div>
 @endcan
 
-@can('employee.contract_form.print')
-    <div class="employee-complete-toolbar">
-        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printContractForm()">
+<div class="employee-complete-toolbar mb-3">
+    @can('employee.document.manage')
+        <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#contractEditModal">
+            <i data-feather="edit-2" class="me-1"></i> Edit / Update Contract
+        </button>
+    @endcan
+    @can('employee.contract_form.print')
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="printContractForm()">
             <i class="link-icon" data-feather="printer"></i> Print Saved Contract
         </button>
-    </div>
-@endcan
+    @endcan
+</div>
 
 <div class="employee-complete-paper employee-contract-paper">
     <div class="employee-complete-header">

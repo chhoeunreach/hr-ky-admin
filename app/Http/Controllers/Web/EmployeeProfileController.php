@@ -33,6 +33,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -589,6 +590,22 @@ class EmployeeProfileController extends Controller
         return back()->with('success', 'Discipline record deleted.');
     }
 
+    public function viewDisciplineAttachment(Request $request, User $employee, EmployeeDisciplinaryRecord $discipline): BinaryFileResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless($discipline->employee_id === $employee->id, 404);
+        abort_unless($discipline->attachment && Storage::disk('local')->exists($discipline->attachment), 404);
+
+        $path = Storage::disk('local')->path($discipline->attachment);
+        $mime = File::mimeType($path) ?: 'application/octet-stream';
+        $filename = basename($discipline->attachment);
+
+        return response()->file($path, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
+    }
+
     public function storeOverviewNote(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
@@ -810,6 +827,70 @@ class EmployeeProfileController extends Controller
         abort_unless(Storage::disk('local')->exists($document->file_path), 404);
 
         return Storage::disk('local')->download($document->file_path);
+    }
+
+    public function viewDocument(User $employee, EmployeeDocument $document)
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.document.view');
+
+        abort_unless($document->employee_id === $employee->id && $document->file_path, 404);
+        abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+        $path = Storage::disk('local')->path($document->file_path);
+        $mimeType = File::mimeType($path);
+
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . basename($document->file_path) . '"',
+        ]);
+    }
+
+    public function updateDocument(Request $request, User $employee, EmployeeDocument $document): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.document.manage');
+        abort_unless($document->employee_id === $employee->id, 404);
+
+        $validated = $request->validate([
+            'document_type' => ['required', Rule::in(['national_id', 'employment_contract', 'cv', 'certificate', 'salary_letter', 'promotion_letter', 'warning_letter', 'performance_review', 'training_certificate', 'other'])],
+            'title' => ['required', 'string', 'max:255'],
+            'document_date' => ['nullable', 'date'],
+            'expiry_date' => ['nullable', 'date'],
+            'note' => ['nullable', 'string'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx'],
+        ]);
+
+        $old = $document->toArray();
+
+        if ($request->hasFile('file')) {
+            if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
+                Storage::disk('local')->delete($document->file_path);
+            }
+            $validated['file_path'] = $request->file('file')->store('employee-documents', 'local');
+        }
+        unset($validated['file']);
+
+        $document->update($validated);
+        $this->audit($employee, 'document', 'update', $document->id, $old, $document->fresh()->toArray(), $request);
+
+        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'personal'])
+            ->with('success', __('index.document_updated_successfully') ?? 'Document updated successfully.');
+    }
+
+    public function destroyDocument(Request $request, User $employee, EmployeeDocument $document): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.document.manage');
+        abort_unless($document->employee_id === $employee->id, 404);
+
+        $old = $document->toArray();
+        if ($document->file_path && Storage::disk('local')->exists($document->file_path)) {
+            Storage::disk('local')->delete($document->file_path);
+        }
+        $docId = $document->id;
+        $document->delete();
+        $this->audit($employee, 'document', 'delete', $docId, $old, null, $request);
+
+        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'personal'])
+            ->with('success', __('index.document_deleted_successfully') ?? 'Document deleted successfully.');
     }
 
     private function buildOverview(

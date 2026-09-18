@@ -1398,47 +1398,243 @@
                             @include('admin.employees.profile.partials.documents')
                         @endif
 
-                        <form method="post" action="{{ route('admin.employees.profile.update', $employee->id) }}">
-                            @csrf
-                            @method('PUT')
-                            <div class="employee-360-section">
-                                <h6>{{ __('index.personal_information') }}</h6>
-                                <div class="row">
-                                    @foreach([
-                                        'national_id' => __('index.national_id'),
-                                        'nationality' => __('index.nationality'),
-                                        'education_level' => __('index.education_level'),
-                                        'telegram' => __('index.telegram'),
-                                        'emergency_contact_name' => __('index.emergency_contact'),
-                                        'emergency_contact_relationship' => __('index.relationship'),
-                                        'emergency_contact_phone' => __('index.emergency_phone'),
-                                    ] as $field => $label)
-                                        <div class="col-lg-3 col-md-6 mb-3">
-                                            <label class="form-label">{{ $label }}</label>
-                                            <input class="form-control" id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $profile->{$field}) }}">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0 fw-bold text-dark"><i data-feather="user" class="me-2 text-primary"></i>{{ __('index.personal_information') }}</h6>
+                                @can('employee.profile.edit')
+                                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editPersonalInformationModal">
+                                        <i data-feather="edit-2" class="me-1"></i> {{ __('index.edit_personal_information') }}
+                                    </button>
+                                @endcan
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.national_id') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->national_id ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.national_id_expiry_date') }}</div>
+                                        <div class="fw-semibold text-dark">{{ optional($profile->national_id_expiry_date)->format('Y-m-d') ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.nationality') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->nationality ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.education_level') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->education_level ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.telegram') }}</div>
+                                        <div class="fw-semibold text-dark">
+                                            @if($profile->telegram)
+                                                <a href="https://t.me/{{ ltrim($profile->telegram, '@') }}" target="_blank" class="text-primary text-decoration-none">
+                                                    <i data-feather="send" class="feather-xs me-1"></i>{{ $profile->telegram }}
+                                                </a>
+                                            @else
+                                                —
+                                            @endif
                                         </div>
-                                        @if($field === 'national_id')
-                                            <div class="col-lg-3 col-md-6 mb-3">
-                                                <label class="form-label" for="nationalIdExpiryDate">{{ __('index.national_id_expiry_date') }}</label>
-                                                <input class="form-control" type="date" id="nationalIdExpiryDate" name="national_id_expiry_date" value="{{ old('national_id_expiry_date', optional($profile->national_id_expiry_date)->format('Y-m-d')) }}">
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.emergency_contact') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->emergency_contact_name ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.relationship') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->emergency_contact_relationship ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.emergency_phone') }}</div>
+                                        <div class="fw-semibold text-dark">
+                                            @if($profile->emergency_contact_phone)
+                                                <a href="tel:{{ $profile->emergency_contact_phone }}" class="text-decoration-none">{{ $profile->emergency_contact_phone }}</a>
+                                            @else
+                                                —
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.current_address') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->current_address ?: ($employee->address ?: '—') }}</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.permanent_address') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->permanent_address ?: '—' }}</div>
+                                    </div>
+                                </div>
+
+                                <hr class="my-4">
+
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <h6 class="fw-bold mb-0 text-dark"><i data-feather="briefcase" class="me-2 text-primary"></i>{{ __('index.employment_information') }}</h6>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.employment_status') }}</div>
+                                        <div>
+                                            @php
+                                                $statusColors = [
+                                                    'active' => 'bg-success',
+                                                    'probation' => 'bg-warning text-dark',
+                                                    'suspended' => 'bg-danger',
+                                                    'resigned' => 'bg-secondary',
+                                                    'terminated' => 'bg-dark',
+                                                    'inactive' => 'bg-secondary',
+                                                ];
+                                                $badgeClass = $statusColors[$profile->employment_status] ?? 'bg-primary';
+                                                $statusLabel = \Illuminate\Support\Facades\Lang::has('index.' . $profile->employment_status) ? __('index.' . $profile->employment_status) : ucfirst(str_replace('_', ' ', $profile->employment_status ?: 'active'));
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }}">{{ $statusLabel }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.probation_period') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->probation_period ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.probation_end_date') }}</div>
+                                        <div class="fw-semibold text-dark">{{ optional($profile->probation_end_date)->format('Y-m-d') ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.contract_start_date') }}</div>
+                                        <div class="fw-semibold text-dark">{{ optional($profile->contract_start_date)->format('Y-m-d') ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.contract_end_date') }}</div>
+                                        <div class="fw-semibold text-dark">{{ optional($profile->contract_end_date)->format('Y-m-d') ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.last_working_date') }}</div>
+                                        <div class="fw-semibold text-dark">{{ optional($profile->last_working_date)->format('Y-m-d') ?: '—' }}</div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="text-muted small mb-1">{{ __('index.weekly_day_off') }}</div>
+                                        <div class="fw-semibold text-dark">{{ $profile->weekly_day_off ?: '—' }}</div>
+                                    </div>
+                                    @if($profile->employment_end_reason)
+                                        <div class="col-12">
+                                            <div class="text-muted small mb-1">{{ __('index.employment_end_reason') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->employment_end_reason }}</div>
+                                        </div>
+                                    @endif
+                                </div>
+
+                                @can('employee.salary.manage')
+                                    <hr class="my-4">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h6 class="fw-bold mb-0 text-dark"><i data-feather="dollar-sign" class="me-2 text-primary"></i>{{ __('index.salary_and_benefits') }}</h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.starting_salary') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->starting_salary ? '$' . number_format((float)$profile->starting_salary, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.current_base_salary') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->current_base_salary ? '$' . number_format((float)$profile->current_base_salary, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.allowances') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->allowances ? '$' . number_format((float)$profile->allowances, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.commission') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->commission ? '$' . number_format((float)$profile->commission, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.attendance_bonus') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->attendance_bonus ? '$' . number_format((float)$profile->attendance_bonus, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.punctuality_bonus') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->punctuality_bonus ? '$' . number_format((float)$profile->punctuality_bonus, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.overtime') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->overtime ? '$' . number_format((float)$profile->overtime, 2) : '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.payment_method') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->payment_method ?: '—' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-md-6">
+                                            <div class="text-muted small mb-1">{{ __('index.salary_payment_date') }}</div>
+                                            <div class="fw-semibold text-dark">{{ $profile->salary_payment_date ?: '—' }}</div>
+                                        </div>
+                                        @if($profile->other_benefits)
+                                            <div class="col-12">
+                                                <div class="text-muted small mb-1">{{ __('index.other_benefits') }}</div>
+                                                <div class="fw-semibold text-dark">{{ $profile->other_benefits }}</div>
                                             </div>
                                         @endif
-                                    @endforeach
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">{{ __('index.current_address') }}</label>
-                                        <textarea class="form-control" name="current_address" rows="3">{{ old('current_address', $profile->current_address ?: $employee->address) }}</textarea>
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">{{ __('index.permanent_address') }}</label>
-                                        <textarea class="form-control" name="permanent_address" rows="3">{{ old('permanent_address', $profile->permanent_address) }}</textarea>
+                                @endcan
+                            </div>
+                        </div>
+
+                        @can('employee.profile.edit')
+                            <div class="modal fade" id="editPersonalInformationModal" tabindex="-1" aria-labelledby="editPersonalInformationModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <form method="post" action="{{ route('admin.employees.profile.update', $employee->id) }}">
+                                            @csrf
+                                            @method('PUT')
+                                            <div class="modal-header">
+                                                <h5 class="modal-title fw-bold" id="editPersonalInformationModalLabel">
+                                                    <i data-feather="edit-2" class="me-2 text-primary"></i>{{ __('index.edit_personal_information') }}
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <div class="employee-360-section mb-4">
+                                                    <h6 class="fw-bold text-primary mb-3">{{ __('index.personal_information') }}</h6>
+                                                    <div class="row">
+                                                        @foreach([
+                                                            'national_id' => __('index.national_id'),
+                                                            'nationality' => __('index.nationality'),
+                                                            'education_level' => __('index.education_level'),
+                                                            'telegram' => __('index.telegram'),
+                                                            'emergency_contact_name' => __('index.emergency_contact'),
+                                                            'emergency_contact_relationship' => __('index.relationship'),
+                                                            'emergency_contact_phone' => __('index.emergency_phone'),
+                                                        ] as $field => $label)
+                                                            <div class="col-lg-3 col-md-6 mb-3">
+                                                                <label class="form-label" for="edit_{{ $field }}">{{ $label }}</label>
+                                                                <input class="form-control" id="edit_{{ $field }}" name="{{ $field }}" value="{{ old($field, $profile->{$field}) }}">
+                                                            </div>
+                                                            @if($field === 'national_id')
+                                                                <div class="col-lg-3 col-md-6 mb-3">
+                                                                    <label class="form-label" for="edit_nationalIdExpiryDate">{{ __('index.national_id_expiry_date') }}</label>
+                                                                    <input class="form-control" type="date" id="edit_nationalIdExpiryDate" name="national_id_expiry_date" value="{{ old('national_id_expiry_date', optional($profile->national_id_expiry_date)->format('Y-m-d')) }}">
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">{{ __('index.current_address') }}</label>
+                                                            <textarea class="form-control" name="current_address" rows="3">{{ old('current_address', $profile->current_address ?: $employee->address) }}</textarea>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label">{{ __('index.permanent_address') }}</label>
+                                                            <textarea class="form-control" name="permanent_address" rows="3">{{ old('permanent_address', $profile->permanent_address) }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                @include('admin.employees.profile.partials.profile-employment-salary-fields')
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i data-feather="check" class="me-1"></i> {{ __('index.save_profile') }}
+                                                </button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
-                            @include('admin.employees.profile.partials.profile-employment-salary-fields')
-                            @can('employee.profile.edit')
-                                <button class="btn btn-primary">{{ __('index.save_profile') }}</button>
-                            @endcan
-                        </form>
+                        @endcan
                     </div>
 
                     @if($canViewEmployment)
@@ -1686,6 +1882,19 @@
 
         window.addEventListener('afterprint', cleanupEmployeeCompletePrintRoot);
 
+        document.getElementById('employee360Tabs')?.addEventListener('shown.bs.tab', (event) => {
+            const tab = event.target.getAttribute('data-bs-target')?.slice(1);
+            if (!tab) return;
+
+            const url = new URL(window.location.href);
+            if (tab === 'overview') {
+                url.searchParams.delete('tab');
+            } else {
+                url.searchParams.set('tab', tab);
+            }
+            window.history.replaceState(window.history.state, '', url);
+        });
+
         const profileParams = new URLSearchParams(window.location.search);
         const requestedTab = profileParams.get('tab') === 'documents' ? 'personal' : profileParams.get('tab');
         if (requestedTab) {
@@ -1714,5 +1923,10 @@
                 }
             });
         });
+
+        document.addEventListener('shown.bs.modal', () => {
+            if (window.feather) feather.replace();
+        });
+        if (window.feather) feather.replace();
     </script>
 @endsection
