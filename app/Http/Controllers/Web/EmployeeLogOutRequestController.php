@@ -59,9 +59,13 @@ class EmployeeLogOutRequestController extends Controller
     {
         $this->authorize('accept_logout_request');
         try {
-            $employee = $this->userRepository->findUserDetailById($employeeId, ['id', 'company_id', 'logout_status']);
+            $employee = $this->userRepository->findUserDetailById($employeeId, ['id', 'company_id', 'branch_id', 'logout_status']);
             if (!$employee
                 || (int) $employee->company_id !== (int) AppHelper::getAuthUserCompanyId()
+                || (!auth('admin')->check()
+                    && auth()->check()
+                    && filled(auth()->user()->branch_id)
+                    && (int) $employee->branch_id !== (int) auth()->user()->branch_id)
                 || (int) $employee->logout_status !== User::LOGOUT_STATUS['pending']) {
                 return redirect()->back()->with('danger', __('index.no_records_found'));
             }

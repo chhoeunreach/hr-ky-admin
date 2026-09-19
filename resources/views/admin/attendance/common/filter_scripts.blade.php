@@ -56,7 +56,6 @@
                 const data = await response.json(); // Missing in original code
 
 
-                console.log(employeeId);
                 if (data.data && data.data.length > 0) {
                     // Populate dropdown with employee options
                     data.data.forEach(user => {

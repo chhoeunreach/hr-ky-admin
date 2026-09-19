@@ -445,6 +445,7 @@ class UserRepository
 
         return User::select($select)
             ->with($with)
+            ->where('company_id', $filterData['company_id'])
             ->when(isset($filterData['branch_id']), function($query) use ($filterData) {
                 $query->where('branch_id', $filterData['branch_id']);
             })
