@@ -119,6 +119,7 @@ class UserRepository
     {
         return User::select($select)
             ->with($with)
+            ->where('company_id', $filterData['company_id'])
             ->where('status', 'verified')
             ->where('is_active', self::IS_ACTIVE)
             ->get();
@@ -438,11 +439,12 @@ class UserRepository
             ->first();
     }
 
-    public function getAllCompanyEmployeeLogOutRequest($filterData,$select = ['*'])
+    public function getAllCompanyEmployeeLogOutRequest($filterData, $select = ['*'], $with = [])
     {
 
 
         return User::select($select)
+            ->with($with)
             ->when(isset($filterData['branch_id']), function($query) use ($filterData) {
                 $query->where('branch_id', $filterData['branch_id']);
             })
@@ -455,6 +457,7 @@ class UserRepository
             ->where('logout_status', self::IS_ACTIVE)
             ->where('status', 'verified')
             ->where('is_active', self::IS_ACTIVE)
+            ->latest('updated_at')
             ->get();
     }
 

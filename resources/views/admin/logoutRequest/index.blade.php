@@ -4,6 +4,18 @@
 
 @section('main-content')
 
+    <style>
+        .logout-request-table { min-width: 1040px; margin-bottom: 0; }
+        .logout-request-table thead th { background: #f8fafc; color: #526176; font-size: .72rem; font-weight: 700; padding: .75rem; text-transform: uppercase; white-space: nowrap; }
+        .logout-request-table tbody td { border-color: #e7edf2; padding: .8rem .75rem; vertical-align: middle; }
+        .logout-employee { display: flex; align-items: center; gap: .65rem; min-width: 210px; }
+        .logout-employee img { width: 38px; height: 38px; border-radius: 50%; flex: 0 0 auto; object-fit: cover; }
+        .logout-primary { color: #172033; font-weight: 650; line-height: 1.25; }
+        .logout-secondary { color: #718096; display: block; font-size: .72rem; line-height: 1.45; overflow-wrap: anywhere; }
+        .logout-device-badge { background: #edf7f5; border: 1px solid #cfe9e3; border-radius: 4px; color: #176b5e; display: inline-flex; font-size: .7rem; font-weight: 700; padding: .18rem .4rem; text-transform: uppercase; }
+        .logout-action-form { margin: 0; }
+    </style>
+
     <section class="content">
 
         @include('admin.section.flash_message')
@@ -68,24 +80,71 @@
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="dataTableExample" class="table table-hover logout-request-table">
                         <thead>
                         <tr>
                             <th>#</th>
                             <th>{{ __('index.employee_name') }}</th>
-                            <th>{{ __('index.logout_request_status') }}</th>
+                            <th>{{ __('index.contact') }}</th>
+                            <th>{{ __('index.branch') }} / {{ __('index.department') }}</th>
+                            <th>Position / Role</th>
+                            <th>Device</th>
+                            <th>Requested</th>
+                            <th class="text-center">{{ __('index.action') }}</th>
                         </tr>
                         </thead>
                         <tbody>
                         @forelse($logoutRequests as $key => $value)
                             <tr>
                                 <td>{{ ++$key }}</td>
-                                <td><strong>{{ removeSpecialChars($value->name) }}</strong></td>
                                 <td>
-                                    <button class="btn btn-primary btn-xs acceptLogoutRequest"
-                                            data-href="{{ route('admin.logout-requests.accept', $value->id) }}">
-                                        {{ __('index.take_action') }}
-                                    </button>
+                                    <div class="logout-employee">
+                                        <img src="{{ $value->avatar_url }}" alt="{{ $value->name }}">
+                                        <div>
+                                            <div class="logout-primary">{{ removeSpecialChars($value->name) }}</div>
+                                            @if($value->english_name && $value->english_name !== $value->name)
+                                                <span class="logout-secondary">{{ $value->english_name }}</span>
+                                            @endif
+                                            <span class="logout-secondary">{{ __('index.employee_code') }}: {{ $value->employee_code ?: 'N/A' }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="logout-secondary">{{ $value->email ?: 'N/A' }}</span>
+                                    <span class="logout-secondary">{{ $value->phone ?: 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <div class="logout-primary">{{ $value->branch?->name ?: 'N/A' }}</div>
+                                    <span class="logout-secondary">{{ $value->department?->dept_name ?: 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <div class="logout-primary">{{ $value->post?->post_name ?: 'N/A' }}</div>
+                                    <span class="logout-secondary">{{ $value->role?->name ?: 'N/A' }}</span>
+                                    <span class="logout-secondary">{{ $value->employment_type ? ucfirst($value->employment_type) : 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <span class="logout-device-badge">{{ $value->device_type ?: 'Unknown' }}</span>
+                                    <span class="logout-secondary mt-1">{{ $value->latestDeviceLocation?->device_name ?: 'Device name unavailable' }}</span>
+                                    @if($value->latestDeviceLocation?->battery_level !== null)
+                                        <span class="logout-secondary">Battery: {{ $value->latestDeviceLocation->battery_level }}%</span>
+                                    @endif
+                                    <span class="logout-secondary">Last seen: {{ $value->latestDeviceLocation?->updated_at?->format('Y-m-d H:i') ?: 'N/A' }}</span>
+                                </td>
+                                <td>
+                                    <div class="logout-primary">{{ $value->updated_at?->format('Y-m-d') ?: 'N/A' }}</div>
+                                    <span class="logout-secondary">{{ $value->updated_at?->format('H:i') ?: '' }}</span>
+                                    <span class="badge bg-warning bg-opacity-15 text-dark mt-1">Pending</span>
+                                </td>
+                                <td class="text-center">
+                                    @can('accept_logout_request')
+                                        <form method="POST" action="{{ route('admin.logout-requests.accept', $value->id) }}" class="logout-action-form acceptLogoutRequestForm">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i data-feather="check" style="width:14px;height:14px;"></i> {{ __('index.take_action') }}
+                                            </button>
+                                        </form>
+                                    @endcan
                                 </td>
                             </tr>
                         @empty
@@ -113,9 +172,9 @@
                 }
             });
 
-            $('.acceptLogoutRequest').click(function (event) {
+            $('.acceptLogoutRequestForm').on('submit', function (event) {
                 event.preventDefault();
-                let href = $(this).data('href');
+                const form = this;
                 Swal.fire({
                     title: '{{ __('index.confirm_accept_logout_request') }}',
                     showDenyButton: true,
@@ -126,7 +185,7 @@
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        form.submit();
                     }
                 })
             })

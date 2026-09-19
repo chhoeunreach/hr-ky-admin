@@ -189,6 +189,11 @@ class User extends Authenticatable
             ->select('id', 'opening_time', 'closing_time', 'shift', 'shift_type', 'is_late_check_in', 'checkin_after', 'is_early_check_out', 'checkout_before');
     }
 
+    public function latestDeviceLocation(): HasOne
+    {
+        return $this->hasOne(UserLocation::class, 'user_id', 'id');
+    }
+
     public function employeeAttendance(): HasMany
     {
         return $this->hasMany(Attendance::class, 'user_id', 'id');
@@ -399,4 +404,3 @@ class User extends Authenticatable
         return asset('assets/images/img.png');
     }
 }
-

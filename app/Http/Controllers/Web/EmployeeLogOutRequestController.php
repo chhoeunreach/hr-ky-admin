@@ -6,6 +6,7 @@ use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
+use App\Models\User;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class EmployeeLogOutRequestController extends Controller
         $this->authorize('list_logout_request');
         try{
             $filterData = [
+                'company_id' => AppHelper::getAuthUserCompanyId(),
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
                 'employee_id' => $request->employee_id ?? null,
@@ -31,8 +33,19 @@ class EmployeeLogOutRequestController extends Controller
             if(!auth('admin')->check() && auth()->check()){
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
-            $select = ['id','name','logout_status'];
-            $logoutRequests = $this->userRepository->getAllCompanyEmployeeLogOutRequest($filterData,$select);
+            $select = [
+                'id', 'name', 'english_name', 'employee_code', 'email', 'phone', 'avatar',
+                'employment_type', 'device_type', 'logout_status', 'branch_id',
+                'department_id', 'post_id', 'role_id', 'updated_at',
+            ];
+            $relations = [
+                'branch:id,name',
+                'department:id,dept_name',
+                'post:id,post_name',
+                'role:id,name,slug',
+                'latestDeviceLocation:id,user_id,device_name,battery_level,updated_at',
+            ];
+            $logoutRequests = $this->userRepository->getAllCompanyEmployeeLogOutRequest($filterData, $select, $relations);
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
@@ -46,6 +59,12 @@ class EmployeeLogOutRequestController extends Controller
     {
         $this->authorize('accept_logout_request');
         try {
+            $employee = $this->userRepository->findUserDetailById($employeeId, ['id', 'company_id', 'logout_status']);
+            if (!$employee
+                || (int) $employee->company_id !== (int) AppHelper::getAuthUserCompanyId()
+                || (int) $employee->logout_status !== User::LOGOUT_STATUS['pending']) {
+                return redirect()->back()->with('danger', __('index.no_records_found'));
+            }
             DB::beginTransaction();
                 $this->userRepository->acceptLogoutRequest($employeeId);
             DB::commit();

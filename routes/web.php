@@ -385,7 +385,7 @@ Route::group([
 
         /**logout request Routes */
         Route::get('employee/logout-requests', [EmployeeLogOutRequestController::class, 'getAllCompanyEmployeeLogOutRequest'])->name('logout-requests.index');
-        Route::get('employee/logout-requests/toggle-status/{employeeId}', [EmployeeLogOutRequestController::class, 'acceptLogoutRequest'])->name('logout-requests.accept');
+        Route::patch('employee/logout-requests/{employeeId}/accept', [EmployeeLogOutRequestController::class, 'acceptLogoutRequest'])->name('logout-requests.accept');
 
         /** Notice route */
         Route::resource('notices', NoticeController::class);
