@@ -1423,6 +1423,7 @@ class UserController extends Controller
                 'post:id,post_name',
                 'role:id,name',
                 'latestDeviceLocation',
+                'deviceLocations',
             ])->findOrFail($id);
 
             // Parse device info
@@ -1494,25 +1495,35 @@ class UserController extends Controller
             }
 
             // Query tokens (sessions)
+            $deviceLocationsByKey = $user->deviceLocations
+                ->filter(fn ($location) => !empty($location->device_key))
+                ->keyBy('device_key');
+
             $tokens = DB::table('oauth_access_tokens')
                 ->where('user_id', $user->id)
                 ->orderByDesc('created_at')
                 ->take(20)
                 ->get()
-                ->map(function ($token) {
+                ->map(function ($token) use ($deviceLocationsByKey) {
                     $isRevoked = (bool)$token->revoked;
                     $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
                     $isActive = !$isRevoked && !$isExpired;
                     $sessionPlatform = 'Unknown';
                     $sessionDeviceName = 'Legacy session';
+                    $sessionDeviceKey = null;
 
                     if (str_starts_with((string) $token->name, 'device-login:')) {
                         $sessionDevice = json_decode(substr($token->name, strlen('device-login:')), true);
                         if (is_array($sessionDevice)) {
                             $sessionPlatform = ucfirst((string) ($sessionDevice['platform'] ?? 'unknown'));
                             $sessionDeviceName = (string) ($sessionDevice['device_name'] ?? $sessionPlatform . ' Device');
+                            $sessionDeviceKey = $sessionDevice['device_key'] ?? null;
                         }
                     }
+
+                    $deviceLocation = $sessionDeviceKey
+                        ? $deviceLocationsByKey->get($sessionDeviceKey)
+                        : null;
 
                     return [
                         'id' => $token->id,
@@ -1526,6 +1537,15 @@ class UserController extends Controller
                         'login_at_human' => $token->created_at ? Carbon::parse($token->created_at)->diffForHumans() : 'N/A',
                         'last_active_at' => $token->updated_at ? Carbon::parse($token->updated_at)->format('Y-m-d H:i:s') : null,
                         'expires_at' => $token->expires_at ? Carbon::parse($token->expires_at)->format('Y-m-d H:i:s') : null,
+                        'location' => [
+                            'has_location' => (bool) $deviceLocation,
+                            'latitude' => $deviceLocation?->latitude,
+                            'longitude' => $deviceLocation?->longitude,
+                            'updated_at_human' => $deviceLocation?->updated_at?->diffForHumans(),
+                            'map_url' => $deviceLocation
+                                ? 'https://www.google.com/maps?q=' . $deviceLocation->latitude . ',' . $deviceLocation->longitude
+                                : null,
+                        ],
                     ];
                 });
 

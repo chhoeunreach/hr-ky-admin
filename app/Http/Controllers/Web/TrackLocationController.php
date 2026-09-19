@@ -55,9 +55,11 @@ class TrackLocationController extends Controller
             $location = null;
 
             if (Schema::hasTable('user_locations')) {
+                $deviceKey = hash('sha256', (string) $authUser->uuid);
                 $location = UserLocation::updateOrCreate(
-                    ['user_id' => $authUser->id],
+                    ['user_id' => $authUser->id, 'device_key' => $deviceKey],
                     [
+                        'device_type' => $authUser->device_type,
                         'latitude' => $validated['latitude'],
                         'longitude' => $validated['longitude'],
                         'accuracy' => $validated['accuracy'],

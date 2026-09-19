@@ -191,7 +191,12 @@ class User extends Authenticatable
 
     public function latestDeviceLocation(): HasOne
     {
-        return $this->hasOne(UserLocation::class, 'user_id', 'id');
+        return $this->hasOne(UserLocation::class, 'user_id', 'id')->latestOfMany();
+    }
+
+    public function deviceLocations(): HasMany
+    {
+        return $this->hasMany(UserLocation::class, 'user_id', 'id');
     }
 
     public function employeeAttendance(): HasMany

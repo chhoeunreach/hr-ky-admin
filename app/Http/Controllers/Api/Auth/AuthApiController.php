@@ -106,6 +106,7 @@ class AuthApiController
         return 'device-login:' . json_encode([
             'platform' => $platform,
             'device_name' => Str::limit($deviceName, 100, ''),
+            'device_key' => hash('sha256', $rawUuid),
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 

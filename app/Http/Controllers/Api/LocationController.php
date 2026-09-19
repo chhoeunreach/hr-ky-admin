@@ -54,7 +54,9 @@ class LocationController extends Controller
             $location = null;
 
             if (Schema::hasTable('user_locations')) {
+                $deviceKey = hash('sha256', (string) $authUser->uuid);
                 $locationData = [
+                    'device_type' => $authUser->device_type,
                     'latitude' => $validated['latitude'],
                     'longitude' => $validated['longitude'],
                     'accuracy' => $validated['accuracy'],
@@ -69,7 +71,7 @@ class LocationController extends Controller
                 }
 
                 $location = UserLocation::updateOrCreate(
-                    ['user_id' => $authUser->id],
+                    ['user_id' => $authUser->id, 'device_key' => $deviceKey],
                     $locationData
                 )->fresh(['user:id,name,email,phone,avatar,branch_id,department_id']);
             }

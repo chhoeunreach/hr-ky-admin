@@ -12,6 +12,8 @@ class UserLocation extends Model
 
     protected $fillable = [
         'user_id',
+        'device_key',
+        'device_type',
         'latitude',
         'longitude',
         'accuracy',

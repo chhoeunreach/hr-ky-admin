@@ -1482,9 +1482,15 @@
                         ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 rounded-pill px-2 py-0.5" style="font-size: 10px;">Active</span>'
                         : '<span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Revoked/Expired</span>';
 
-                    var actionBtn = s.is_active
+                    var locationBtn = s.location && s.location.has_location && s.location.map_url
+                        ? '<a href="' + escapeEdaHtml(s.location.map_url) + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-xs py-0.5 px-2 rounded-2 d-inline-flex align-items-center gap-1" title="{{ __('index.view_latest_location') }}"><i data-feather="map-pin" style="width: 12px; height: 12px;"></i> {{ __('index.view_on_map') }}</a>'
+                        : '<button type="button" class="btn btn-outline-secondary btn-xs py-0.5 px-2 rounded-2" disabled title="{{ __('index.location_unavailable') }}"><i data-feather="map-pin" style="width: 12px; height: 12px;"></i></button>';
+
+                    var revokeBtn = s.is_active
                         ? '<button type="button" class="btn btn-outline-danger btn-xs py-0.5 px-2 rounded-2 revokeSessionBtn" data-employee-id="' + emp.id + '" data-token-id="' + escapeEdaHtml(s.id) + '" title="{{ __('index.revoke_session') }}"><i data-feather="x-circle" style="width: 12px; height: 12px;"></i> {{ __('index.revoke_session') }}</button>'
-                        : '<span class="text-muted small">-</span>';
+                        : '';
+
+                    var actionBtn = '<div class="d-inline-flex align-items-center justify-content-end gap-1">' + locationBtn + revokeBtn + '</div>';
 
                     sessionsHtml += '<tr>' +
                         '<td class="ps-3 text-muted fw-semibold" style="font-size: 11px;">' + (idx + 1) + '</td>' +
