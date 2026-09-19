@@ -27,6 +27,7 @@ use App\Http\Controllers\Api\ResignationApiController;
 use App\Http\Controllers\Api\SellOutReportController;
 use App\Http\Controllers\Api\SocialRewardApiController;
 use App\Http\Controllers\Api\StaticPageContentApiController;
+use App\Http\Controllers\Api\AppLinkApiController;
 use App\Http\Controllers\Api\SupportApiController;
 use App\Http\Controllers\Api\TadaApiController;
 use App\Http\Controllers\Api\TaskApiController;
@@ -44,6 +45,7 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
 Route::get('app-version', [DashboardApiController::class, 'appVersion']);
+Route::get('app-links', [AppLinkApiController::class, 'index']);
 Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
     ->middleware('auth:api');
 
@@ -83,6 +85,8 @@ Route::group([
     Route::post('users/location',[UserProfileApiController::class, 'storeLocation']);
     Route::post('location/update', [LocationController::class, 'update']);
     /** content management Routes **/
+        /** app links Routes **/
+    Route::get('app-links', [AppLinkApiController::class, 'index']);
     Route::get('static-page-content/{contentType}', [StaticPageContentApiController::class, 'getStaticPageContentByContentType']);
     Route::get('company-rules', [StaticPageContentApiController::class, 'getCompanyRulesDetail']);
     Route::get('static-page-content/{contentType}/{titleSlug}', [StaticPageContentApiController::class, 'getStaticPageContentByContentTypeAndTitleSlug']);

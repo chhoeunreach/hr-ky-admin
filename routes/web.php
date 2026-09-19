@@ -67,6 +67,7 @@ use App\Http\Controllers\Web\SSFController;
 use App\Http\Controllers\Web\PFController;
 use App\Http\Controllers\Web\SellStaffReportController;
 use App\Http\Controllers\Web\StaticPageContentController;
+use App\Http\Controllers\Web\AppLinkController;
 use App\Http\Controllers\Web\SupportController;
 use App\Http\Controllers\Web\TadaAttachmentController;
 use App\Http\Controllers\Web\TadaController;
@@ -340,6 +341,11 @@ Route::group([
         Route::get('leaves/get-employee-leave-types/{employeeId}', [LeaveTypeController::class, 'getEmployeeLeaveTypes'])->name('leaves.employee-data');
 
         /** Company Content Management route */
+                /** App Link Management route */
+        Route::resource('app-links', AppLinkController::class);
+        Route::get('app-links/toggle-status/{id}', [AppLinkController::class, 'toggleStatus'])->name('app-links.toggle-status');
+        Route::get('app-links/delete/{id}', [AppLinkController::class, 'delete'])->name('app-links.delete');
+
         Route::resource('static-page-contents', StaticPageContentController::class);
         Route::get('static-page-contents/toggle-status/{id}', [StaticPageContentController::class, 'toggleStatus'])->name('static-page-contents.toggle-status');
         Route::get('static-page-contents/delete/{id}', [StaticPageContentController::class, 'delete'])->name('static-page-contents.delete');

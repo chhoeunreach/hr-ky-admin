@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'link_list' => 'List Link',
+    'link_section' => 'Link Management',
 
     /*
     |--------------------------------------------------------------------------

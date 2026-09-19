@@ -82,9 +82,19 @@ class SMPushNotification
             $messageForRecipient = $message
                 ->toToken((string) $token)
                 ->withApnsConfig(
-                    ApnsConfig::new()
-                        ->withSound('default')
-                        ->withBadge($badgeCount)
+                    ApnsConfig::fromArray([
+                        'headers' => [
+                            'apns-priority' => '10',
+                            'apns-push-type' => 'alert',
+                        ],
+                        'payload' => [
+                            'aps' => [
+                                'sound' => 'default',
+                                'badge' => $badgeCount,
+                                'content-available' => 1,
+                            ],
+                        ],
+                    ])
                 );
 
             try {

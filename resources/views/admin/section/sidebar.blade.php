@@ -38,6 +38,7 @@
 {{--                @include('admin.section.partial.resignation')--}}
 {{--                @include('admin.section.partial.terminationManagement')--}}
                 @include('admin.section.partial.staticPageContent')
+                @include('admin.section.partial.link')
                 @include('admin.section.partial.ticket')
                 @include('admin.section.partial.setting')
             </ul>
