@@ -322,6 +322,113 @@ class AppHelper
         return AppSetting::where('slug', $slug)->where('status', 1)->exists();
     }
 
+    public static function getAppVersionSettings(): array
+    {
+        $setting = AppSetting::where('slug', 'app-version-update')->first();
+        $defaults = [
+            'enabled' => true,
+            'target_version' => env('LATEST_MOBILE_VERSION', '13.00'),
+            'min_version' => env('MIN_MOBILE_VERSION', '13.00'),
+            'force_update' => (bool) env('FORCE_MOBILE_UPDATE', false),
+            'alert_title' => 'New Version Available',
+            'alert_message' => 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.',
+            'android_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
+            'ios_url' => env('IOS_DOWNLOAD_URL', 'https://apps.apple.com'),
+        ];
+
+        if (!$setting) {
+            return $defaults;
+        }
+
+        $decoded = json_decode((string)$setting->value, true);
+        if (!is_array($decoded)) {
+            $decoded = [];
+        }
+
+        $apkSetting = AppSetting::where('slug', 'android-apk')->where('status', 1)->first();
+        $fallbackApkUrl = ($apkSetting && !empty($apkSetting->value)) ? asset($apkSetting->value) : $defaults['android_url'];
+
+        return [
+            'enabled' => (bool) ($setting->status ?? 1),
+            'target_version' => !empty($decoded['target_version']) ? trim($decoded['target_version']) : $defaults['target_version'],
+            'min_version' => !empty($decoded['min_version']) ? trim($decoded['min_version']) : $defaults['min_version'],
+            'force_update' => isset($decoded['force_update']) ? (bool)$decoded['force_update'] : $defaults['force_update'],
+            'alert_title' => !empty($decoded['alert_title']) ? trim($decoded['alert_title']) : $defaults['alert_title'],
+            'alert_message' => !empty($decoded['alert_message']) ? trim($decoded['alert_message']) : $defaults['alert_message'],
+            'android_url' => !empty($decoded['android_url']) ? trim($decoded['android_url']) : $fallbackApkUrl,
+            'ios_url' => !empty($decoded['ios_url']) ? trim($decoded['ios_url']) : $defaults['ios_url'],
+        ];
+    }
+
+    public static function normalizeAppVersion(?string $version): ?string
+    {
+        if ($version === null || trim($version) === '') {
+            return null;
+        }
+
+        $v = trim($version);
+        $v = ltrim($v, 'vV');
+        if (str_contains($v, '+')) {
+            $v = explode('+', $v)[0];
+        }
+        if (str_contains($v, '-')) {
+            $v = explode('-', $v)[0];
+        }
+
+        return trim($v);
+    }
+
+    public static function getAppVersionCheckData(?string $clientVersion = null): array
+    {
+        $settings = self::getAppVersionSettings();
+        $normalizedClient = self::normalizeAppVersion($clientVersion);
+
+        $targetVersion = $settings['target_version'];
+        $minVersion = $settings['min_version'];
+        $forceUpdate = $settings['force_update'];
+        $isEnabled = $settings['enabled'];
+
+        $isUpdateAvailable = false;
+        $isUpdateRequired = false;
+
+        if ($normalizedClient !== null && $isEnabled) {
+            if (version_compare($normalizedClient, $targetVersion, '<')) {
+                $isUpdateAvailable = true;
+            }
+
+            if (version_compare($normalizedClient, $minVersion, '<') || ($forceUpdate && $isUpdateAvailable)) {
+                $isUpdateRequired = true;
+            }
+        }
+
+        $message = str_replace(
+            [':target_version', ':min_version', ':current_version'],
+            [$targetVersion, $minVersion, (string)($clientVersion ?: $targetVersion)],
+            $settings['alert_message']
+        );
+
+        $showAlert = $isEnabled && ($isUpdateAvailable || $isUpdateRequired);
+
+        return [
+            'latest_version' => $targetVersion,
+            'min_required_version' => $minVersion,
+            'download_url' => $settings['android_url'] ?: $settings['ios_url'],
+            'force_update' => $isUpdateRequired,
+            'update_message' => $message,
+            'version_check_enabled' => $isEnabled,
+            'target_version' => $targetVersion,
+            'current_version' => $clientVersion,
+            'normalized_version' => $normalizedClient,
+            'is_update_available' => $isUpdateAvailable,
+            'is_update_required' => $isUpdateRequired,
+            'show_alert' => $showAlert,
+            'alert_title' => $settings['alert_title'],
+            'alert_message' => $message,
+            'android_url' => $settings['android_url'],
+            'ios_url' => $settings['ios_url'],
+        ];
+    }
+
     public static function enableTaxExemption()
     {
         return SSF::first()?->enable_tax_exemption;

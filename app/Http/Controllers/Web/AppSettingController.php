@@ -34,7 +34,8 @@ class AppSettingController extends Controller
         try{
             $select=['id','name','slug','value','status'];
             $appSettings = $this->appSettingRepo->getAllAppSettings($select);
-            return view($this->view.'index',compact('appSettings'));
+            $appVersionSetting = AppHelper::getAppVersionSettings();
+            return view($this->view.'index', compact('appSettings', 'appVersionSetting'));
         }catch(\Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -132,4 +133,51 @@ class AppSettingController extends Controller
     }
 
 
+    public function updateAppVersion(Request $request): RedirectResponse
+    {
+        $this->authorize('app_setting');
+        try {
+            if (env('DEMO_MODE', false)) {
+                throw new Exception(__('message.add_company_warning'), 400);
+            }
+
+            $validated = $request->validate([
+                'target_version' => ['required', 'string', 'max:50'],
+                'min_version' => ['required', 'string', 'max:50'],
+                'force_update' => ['nullable', 'boolean'],
+                'enabled' => ['nullable', 'boolean'],
+                'alert_title' => ['required', 'string', 'max:150'],
+                'alert_message' => ['required', 'string', 'max:1000'],
+                'android_url' => ['nullable', 'string', 'max:255'],
+                'ios_url' => ['nullable', 'string', 'max:255'],
+            ]);
+
+            $payload = [
+                'target_version' => trim($validated['target_version']),
+                'min_version' => trim($validated['min_version']),
+                'force_update' => (bool) $request->input('force_update', false),
+                'alert_title' => trim($validated['alert_title']),
+                'alert_message' => trim($validated['alert_message']),
+                'android_url' => trim((string)($validated['android_url'] ?? '')),
+                'ios_url' => trim((string)($validated['ios_url'] ?? '')),
+            ];
+
+            $setting = AppSetting::firstOrCreate(
+                ['slug' => 'app-version-update'],
+                [
+                    'name' => 'App Version Control',
+                    'status' => 1,
+                ]
+            );
+
+            $setting->update([
+                'value' => json_encode($payload),
+                'status' => $request->has('enabled') ? (int)$request->input('enabled') : 1,
+            ]);
+
+            return redirect()->back()->with('success', __('index.app_version_updated'));
+        } catch (\Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
 }

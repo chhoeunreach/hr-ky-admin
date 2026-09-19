@@ -116,7 +116,8 @@ class AuthApiController
                         'theme_mode' => $user->app_theme_mode ?: User::DEFAULT_THEME_MODE,
                         'avatar' => ($user->avatar) ? asset(User::AVATAR_UPLOAD_PATH.$user->avatar) : asset('assets/images/img.png'),
                     ],
-                    'tokens' => $tokens
+                    'tokens' => $tokens,
+                    'app_version' => AppHelper::getAppVersionCheckData($validatedData['app_version'] ?? null),
                 ]
             );
         } catch (Exception $e) {

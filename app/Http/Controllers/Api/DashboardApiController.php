@@ -133,13 +133,12 @@ class DashboardApiController extends Controller
             $dashboard['teamMembers'] = new TeamSheetCollection($teamMembers);
             $dashboard['add_nfc'] = AppHelper::checkRoleIdWithGivenPermission($userDetail->role_id, $nfc_key);
             $dashboard['theme'] = new ThemeSettingResource($themeSetting);
-            $dashboard['app_version'] = [
-                'latest_version' => env('LATEST_MOBILE_VERSION', '1.3.0'),
-                'min_required_version' => env('MIN_MOBILE_VERSION', '1.2.0'),
-                'download_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
-                'force_update' => (bool) env('FORCE_MOBILE_UPDATE', false),
-                'update_message' => 'A new version of the app is available. Please update to enjoy the latest features and improvements.',
-            ];
+            $currentAppVersion = $request->header('X-App-Version')
+                ?? $request->header('App-Version')
+                ?? $request->get('app_version')
+                ?? $userDetail->latestDeviceLocation?->app_version;
+
+            $dashboard['app_version'] = AppHelper::getAppVersionCheckData($currentAppVersion);
 
             if (isset($holiday)) {
                 $dashboard['recent_holiday'] = new HolidayResource($holiday);
@@ -388,14 +387,12 @@ class DashboardApiController extends Controller
     }
 
 
-    public function appVersion(): JsonResponse
+    public function appVersion(Request $request): JsonResponse
     {
-        return AppHelper::sendSuccessResponse(__('index.data_found'), [
-            'latest_version' => env('LATEST_MOBILE_VERSION', '1.3.0'),
-            'min_required_version' => env('MIN_MOBILE_VERSION', '1.2.0'),
-            'download_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
-            'force_update' => (bool) env('FORCE_MOBILE_UPDATE', false),
-            'update_message' => 'A new version of the app is available. Please update to enjoy the latest features and improvements.',
-        ]);
+        $currentAppVersion = $request->header('X-App-Version')
+            ?? $request->header('App-Version')
+            ?? $request->get('app_version');
+
+        return AppHelper::sendSuccessResponse(__('index.data_found'), AppHelper::getAppVersionCheckData($currentAppVersion));
     }
 }

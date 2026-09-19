@@ -18,6 +18,7 @@ class AppSettingRepository
                 $query->where('slug', '!=', $nepaliDateSlug)->where('slug', '!=', $leaveCountResetSlug);
             })
             ->where('slug','!=','attendance-note')
+            ->where('slug','!=','app-version-update')
             ->latest()
             ->get();
     }
