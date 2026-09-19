@@ -30,6 +30,10 @@
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-warning btn-sm py-1 px-3 rounded-pill d-inline-flex align-items-center gap-1.5 shadow-sm text-dark fw-medium" data-bs-toggle="modal" data-bs-target="#sendUpdateAlertModal">
+                        <i data-feather="send" style="width: 13px; height: 13px;"></i>
+                        @lang('index.send_update_alert')
+                    </button>
                     @if(!empty($appVersionSetting['enabled']))
                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1" style="font-size: 11px;">
                             <span class="status-dot bg-success" style="width: 6px; height: 6px; border-radius: 50%; display: inline-block;"></span> Active
@@ -195,6 +199,9 @@
                     </div>
 
                     <div class="mt-4 pt-3 border-top d-flex align-items-center justify-content-end gap-2" style="border-color: #f1f5f9 !important;">
+                        <button type="button" class="btn btn-outline-warning btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#sendUpdateAlertModal">
+                            <i data-feather="send" style="width: 14px; height: 14px;"></i> @lang('index.send_update_alert')
+                        </button>
                         <button type="submit" class="btn btn-primary btn-sm px-3 py-1.5 d-inline-flex align-items-center gap-1.5">
                             <i data-feather="save" style="width: 14px; height: 14px;"></i> @lang('index.update')
                         </button>
@@ -281,6 +288,79 @@
                             <button class="btn btn-danger btn-sm">@lang('index.attendances')  </button>
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Send Update Alert Modal -->
+        <div class="modal fade" id="sendUpdateAlertModal" tabindex="-1" aria-labelledby="sendUpdateAlertModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow" style="border-radius: 12px; overflow: hidden;">
+                    <div class="modal-header bg-warning bg-opacity-10 border-bottom py-3 px-4">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="p-2 bg-warning bg-opacity-20 text-warning-emphasis rounded-circle d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                <i data-feather="send" style="width: 16px; height: 16px;"></i>
+                            </div>
+                            <h5 class="modal-title fw-semibold text-dark" id="sendUpdateAlertModalLabel" style="font-size: 15.5px;">@lang('index.send_update_alert_to_users')</h5>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{{ route('admin.app-settings.send-update-alert') }}" method="POST" id="sendUpdateAlertForm">
+                        @csrf
+                        <div class="modal-body p-4">
+                            <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-start gap-2" style="font-size: 12px;">
+                                <i data-feather="info" style="width: 15px; height: 15px; flex-shrink: 0;" class="mt-0.5"></i>
+                                <span>@lang('index.send_alert_notice')</span>
+                            </div>
+
+                            <!-- Target Version Badge -->
+                            <div class="p-2.5 mb-3 rounded-2 bg-light border d-flex align-items-center justify-content-between" style="font-size: 12.5px;">
+                                <span class="text-muted">@lang('index.target_app_version'):</span>
+                                <span class="badge bg-primary px-2.5 py-1 rounded-pill" style="font-size: 11px;">
+                                    v{{ $appVersionSetting['target_version'] ?? '13.00' }}
+                                </span>
+                            </div>
+
+                            <!-- Target Audience -->
+                            <div class="mb-3">
+                                <label class="form-label fw-medium text-dark small">@lang('index.target_audience') <span class="text-danger">*</span></label>
+                                <div class="d-flex flex-column gap-2">
+                                    <label class="p-2.5 rounded-2 border d-flex align-items-center gap-2.5 cursor-pointer bg-white" style="border-color: #e2e8f0 !important;">
+                                        <input type="radio" name="target_audience" value="all" checked class="form-check-input mt-0">
+                                        <div>
+                                            <span class="fw-medium text-dark d-block" style="font-size: 12.5px;">@lang('index.all_mobile_users')</span>
+                                            <small class="text-muted" style="font-size: 11px;">Send push notification and in-app notice to all registered mobile app users.</small>
+                                        </div>
+                                    </label>
+                                    <label class="p-2.5 rounded-2 border d-flex align-items-center gap-2.5 cursor-pointer bg-white" style="border-color: #e2e8f0 !important;">
+                                        <input type="radio" name="target_audience" value="outdated" class="form-check-input mt-0">
+                                        <div>
+                                            <span class="fw-medium text-dark d-block" style="font-size: 12.5px;">{{ __('index.outdated_devices_only', ['version' => $appVersionSetting['target_version'] ?? '13.00']) }}</span>
+                                            <small class="text-muted" style="font-size: 11px;">Target only devices that have not yet updated to target version.</small>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Alert Title -->
+                            <div class="mb-3">
+                                <label class="form-label fw-medium text-dark small" for="modalAlertTitle">@lang('index.alert_title') <span class="text-danger">*</span></label>
+                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? 'New Version Available' }}" required>
+                            </div>
+
+                            <!-- Alert Message -->
+                            <div class="mb-2">
+                                <label class="form-label fw-medium text-dark small" for="modalAlertMessage">@lang('index.alert_message') <span class="text-danger">*</span></label>
+                                <textarea name="alert_message" id="modalAlertMessage" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light py-2 px-4 border-top">
+                            <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">@lang('index.cancel')</button>
+                            <button type="submit" class="btn btn-warning btn-sm rounded-pill px-4 text-dark fw-medium d-inline-flex align-items-center gap-1.5" id="btnSubmitSendAlert">
+                                <i data-feather="send" style="width: 13px; height: 13px;"></i> @lang('index.send_now')
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

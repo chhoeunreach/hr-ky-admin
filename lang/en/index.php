@@ -2400,5 +2400,16 @@ return [
     'later' => 'Later',
     'status_outdated' => 'Outdated - Alert will be triggered',
     'status_up_to_date' => 'Up to date - No alert',
+    'send_update_alert' => 'Send Update Alert',
+    'send_update_alert_to_users' => 'Send Update Alert to App Users',
+    'send_now' => 'Send Alert Now',
+    'target_audience' => 'Target Audience',
+    'all_mobile_users' => 'All Mobile App Users',
+    'outdated_devices_only' => 'Outdated App Devices Only (< :version)',
+    'alert_sent_successfully' => 'Update alert notification has been sent successfully to :count user(s).',
+    'no_recipients_found' => 'No active mobile app recipients found to receive the alert.',
+    'send_alert_notice' => 'This will broadcast a push notification to users\' mobile phones and post an in-app update announcement.',
+    'confirm_send_alert_title' => 'Confirm Broadcast Alert',
+    'confirm_send_alert_msg' => 'Are you sure you want to send this update alert to the selected mobile app users?',
 ];
 

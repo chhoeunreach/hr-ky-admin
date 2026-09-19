@@ -202,6 +202,7 @@ Route::group([
             Route::get('app-settings/toggle-status/{id}', [AppSettingController::class, 'toggleStatus'])->name('app-settings.toggle-status');
             Route::post('app-settings/android-apk', [AppSettingController::class, 'updateAndroidApk'])->name('app-settings.android-apk.update');
             Route::post('app-settings/app-version', [AppSettingController::class, 'updateAppVersion'])->name('app-settings.app-version.update');
+            Route::post('app-settings/send-update-alert', [AppSettingController::class, 'sendAppUpdateAlert'])->name('app-settings.send-update-alert');
 
             /** Telegram group route */
             Route::get('telegram-bot', [TelegramBotController::class, 'index'])->name('telegram-bot.index');
