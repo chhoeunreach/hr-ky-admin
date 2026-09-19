@@ -1481,7 +1481,7 @@ class UserController extends Controller
             }
 
             // Fallback to attendance_logs if still no GPS
-            if (!$latitude || !$longitude) {
+            if ((!$latitude || !$longitude) && Schema::hasTable('attendance_logs') && Schema::hasColumn('attendance_logs', 'latitude') && Schema::hasColumn('attendance_logs', 'longitude')) {
                 $attLog = DB::table('attendance_logs')
                     ->where('employee_id', $user->id)
                     ->whereNotNull('latitude')
@@ -1668,26 +1668,38 @@ class UserController extends Controller
                 });
 
             // Activity Logs: recent attendance_logs
-            $attendanceActivities = DB::table('attendance_logs')
-                ->where('employee_id', $user->id)
-                ->orderByDesc('created_at')
-                ->take(30)
-                ->get()
-                ->map(function ($log) {
-                    $action = $log->action ?: ($log->attendance_type ? ucfirst($log->attendance_type) : 'Attendance Ping');
-                    return [
-                        'id' => 'att_log_' . $log->id,
-                        'type' => 'attendance_log',
-                        'title' => ucwords(str_replace('_', ' ', $action)),
-                        'source' => $log->source ?: ($log->attendance_type ?: 'App'),
-                        'identifier' => $log->identifier,
-                        'note' => $log->note,
-                        'latitude' => $log->latitude ? (float)$log->latitude : null,
-                        'longitude' => $log->longitude ? (float)$log->longitude : null,
-                        'created_at' => $log->created_at ? Carbon::parse($log->created_at)->format('Y-m-d H:i:s') : null,
-                        'created_at_human' => $log->created_at ? Carbon::parse($log->created_at)->diffForHumans() : '',
-                    ];
-                });
+            $attendanceActivities = collect();
+            if (Schema::hasTable('attendance_logs')) {
+                $hasAttLat = Schema::hasColumn('attendance_logs', 'latitude');
+                $hasAttLng = Schema::hasColumn('attendance_logs', 'longitude');
+                $hasAttAction = Schema::hasColumn('attendance_logs', 'action');
+                $hasAttSource = Schema::hasColumn('attendance_logs', 'source');
+                $hasAttNote = Schema::hasColumn('attendance_logs', 'note');
+
+                $attendanceActivities = DB::table('attendance_logs')
+                    ->where('employee_id', $user->id)
+                    ->orderByDesc('created_at')
+                    ->take(30)
+                    ->get()
+                    ->map(function ($log) use ($hasAttLat, $hasAttLng, $hasAttAction, $hasAttSource, $hasAttNote) {
+                        $action = ($hasAttAction && !empty($log->action))
+                            ? $log->action
+                            : (!empty($log->attendance_type) ? ucfirst($log->attendance_type) : 'Attendance Ping');
+
+                        return [
+                            'id' => 'att_log_' . $log->id,
+                            'type' => 'attendance_log',
+                            'title' => ucwords(str_replace('_', ' ', $action)),
+                            'source' => ($hasAttSource && !empty($log->source)) ? $log->source : ($log->attendance_type ?: 'App'),
+                            'identifier' => $log->identifier ?? null,
+                            'note' => ($hasAttNote && !empty($log->note)) ? $log->note : null,
+                            'latitude' => ($hasAttLat && !empty($log->latitude)) ? (float)$log->latitude : null,
+                            'longitude' => ($hasAttLng && !empty($log->longitude)) ? (float)$log->longitude : null,
+                            'created_at' => $log->created_at ? Carbon::parse($log->created_at)->format('Y-m-d H:i:s') : null,
+                            'created_at_human' => $log->created_at ? Carbon::parse($log->created_at)->diffForHumans() : '',
+                        ];
+                    });
+            }
 
             // Attendances table records
             $attendances = DB::table('attendances')

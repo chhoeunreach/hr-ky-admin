@@ -1020,6 +1020,8 @@
                                                    title="{{ __('index.view_details') }}">
                                                     <i class="link-icon" data-feather="eye" style="width: 13px; height: 13px;"></i>
                                                 </a>
+                                            @endcan
+
                                             @canany(['show_detail_employee', 'employee.profile.view', 'force_logout'])
                                                 <a href="javascript:void(0)"
                                                    class="employee-action-btn btn-device viewDeviceActivity"
