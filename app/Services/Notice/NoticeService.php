@@ -151,4 +151,10 @@ class NoticeService
         }
     }
 
+    public function getRecentNoticeForEmployee($userId)
+    {
+        return $this->noticeRepo->getRecentNoticeForEmployee($userId);
+    }
+
 }
+

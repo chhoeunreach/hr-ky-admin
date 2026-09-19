@@ -45,10 +45,21 @@
                     <option value="0" {{ isset($noticeDetail) && ($noticeDetail->is_active || old('is_active')) == 0 ? 'selected' : '' }}>@lang('index.inactive')</option>
                 </select>
             </div>
+            <div class="col-lg-12 mb-4">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="send_work_alert" name="send_work_alert" value="1" checked>
+                    <label class="form-check-label fw-bold" for="send_work_alert">
+                        <i data-feather="bell" style="width: 15px; height: 15px;" class="text-warning"></i> @lang('index.send_work_alert_to_mobile')
+                    </label>
+                </div>
+                <small class="text-muted">@lang('index.send_work_alert_hint')</small>
+            </div>
         </div>
     </div>
 
-    <div class="col-lg-12 mb-4">
-        <button type="submit" class="btn btn-primary">@lang('index.send_notice')</button>
+    <div class="col-lg-12 mb-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-1">
+            <i data-feather="send" style="width: 14px; height: 14px;"></i> {{ isset($noticeDetail) ? __('index.update') : __('index.send_work_alert') }}
+        </button>
     </div>
 </div>

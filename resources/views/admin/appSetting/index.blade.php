@@ -52,6 +52,7 @@
                     <div class="p-3 mb-4 rounded-3 border d-flex align-items-center justify-content-between" style="background-color: #f8fafc; border-color: #e2e8f0 !important;">
                         <div class="d-flex align-items-center gap-2">
                             <label class="switch mb-0">
+                                <input type="hidden" name="enabled" value="0">
                                 <input type="checkbox" name="enabled" value="1" id="versionCheckEnabledSwitch" {{ !empty($appVersionSetting['enabled']) ? 'checked' : '' }}>
                                 <span class="slider round"></span>
                             </label>
@@ -105,6 +106,7 @@
                                         <small class="text-muted d-block" style="font-size: 11.5px;">@lang('index.force_update_hint')</small>
                                     </div>
                                     <label class="switch mb-0">
+                                        <input type="hidden" name="force_update" value="0">
                                         <input type="checkbox" name="force_update" value="1" id="forceUpdateSwitch" {{ !empty($appVersionSetting['force_update']) ? 'checked' : '' }}>
                                         <span class="slider round"></span>
                                     </label>

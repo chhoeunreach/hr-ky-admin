@@ -617,6 +617,10 @@ return [
     'confirm_change_notice_status' => 'Are you sure you want to change status for Notice?',
     'confirm_delete_notice' => 'Are you sure you want to Delete Notice?',
     'confirm_send_notice' => 'Are you sure you want to Send Notice?',
+    'send_work_alert' => 'ផ្ញើការដាស់តឿនការងារ',
+    'confirm_send_work_alert' => 'តើអ្នកប្រាកដថាចង់ផ្ញើការដាស់តឿនការងារ (Work Alert) នេះទៅកាន់ទូរស័ព្ទដៃបុគ្គលិកដែរឬទេ?',
+    'send_work_alert_to_mobile' => 'ផ្ញើជាការដាស់តឿនការងារ (Work Alert Popup) ទៅកាន់ App ទូរស័ព្ទដៃ',
+    'send_work_alert_hint' => 'នៅពេលបើក ដំណឹងនេះនឹងលោតផ្ទាំង Alert នៅលើទូរស័ព្ទដៃរបស់បុគ្គលិកដូចជាផ្ទាំង Update Alert ដែរ',
     'notice_detail_modal_title' => 'Notice :title Detail',
 
     /** payroll */

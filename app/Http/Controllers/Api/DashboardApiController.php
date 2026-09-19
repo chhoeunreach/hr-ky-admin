@@ -20,6 +20,7 @@ use App\Resources\Dashboard\ThemeSettingResource;
 use App\Resources\Dashboard\UserReportResource;
 use App\Resources\Event\EventResource;
 use App\Resources\Holiday\HolidayCollection;
+use App\Resources\Notice\NoticeResource;
 use App\Resources\Training\TrainingResource;
 use App\Resources\User\CompanyResource;
 use App\Resources\User\HolidayResource;
@@ -27,6 +28,7 @@ use App\Resources\User\TeamSheetCollection;
 use App\Services\AwardManagement\AwardService;
 use App\Services\EventManagement\EventService;
 use App\Services\Holiday\HolidayService;
+use App\Services\Notice\NoticeService;
 use App\Services\ThemeSetting\ThemeSettingService;
 use App\Services\TrainingManagement\TrainingService;
 use Carbon\Carbon;
@@ -40,7 +42,8 @@ use Illuminate\Support\Str;
 class DashboardApiController extends Controller
 {
     public function __construct(protected UserRepository $userRepo, protected HolidayService $holidayService, protected FeatureRepository $featureRepository,
-                                protected AwardService $awardService, protected EventService $eventService, protected TrainingService $trainingService, protected ThemeSettingService $themeSettingService)
+                                protected AwardService $awardService, protected EventService $eventService, protected TrainingService $trainingService, protected ThemeSettingService $themeSettingService,
+                                protected NoticeService $noticeService)
     {}
 
     public function userDashboardDetail(Request $request): JsonResponse
@@ -172,6 +175,26 @@ class DashboardApiController extends Controller
 
             } else {
                 $dashboard['recent_event'] = null;
+            }
+
+            $recentNotice = $this->noticeService->getRecentNoticeForEmployee($userId);
+            if ($recentNotice) {
+                $dashboard['recent_notice'] = new NoticeResource($recentNotice);
+                $dashboard['notice_alert'] = [
+                    'has_alert' => true,
+                    'show_alert' => true,
+                    'notice_id' => $recentNotice->id,
+                    'id' => $recentNotice->id,
+                    'alert_title' => ucfirst($recentNotice->title),
+                    'alert_message' => removeHtmlTags($recentNotice->description),
+                    'notice_title' => ucfirst($recentNotice->title),
+                    'description' => removeHtmlTags($recentNotice->description),
+                    'publish_date' => $recentNotice->notice_publish_date,
+                    'type' => 'notice',
+                ];
+            } else {
+                $dashboard['recent_notice'] = null;
+                $dashboard['notice_alert'] = null;
             }
 
             return AppHelper::sendSuccessResponse(__('index.data_found'), $dashboard);

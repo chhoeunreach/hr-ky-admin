@@ -15,6 +15,9 @@ class NoticeResource extends JsonResource
             'description' => removeHtmlTags($this->description),
             'notice_published_date' => $this->notice_publish_date,
             'notice_published_date_nepali' => (AppHelper::formatDateForView($this->notice_publish_date)) . ',' . date("h:i A", strtotime($this->notice_publish_date)),
+            'show_alert' => (bool)$this->is_active,
+            'alert_title' => ucfirst($this->title),
+            'alert_message' => removeHtmlTags($this->description),
         ];
     }
 }

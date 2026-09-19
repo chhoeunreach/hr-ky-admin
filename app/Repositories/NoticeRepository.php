@@ -76,4 +76,18 @@ class NoticeRepository{
         return true;
     }
 
+    public function getRecentNoticeForEmployee($userId)
+    {
+        return Notice::withoutGlobalScope('branch')
+            ->whereHas('noticeReceiversDetail', function($query) use ($userId) {
+                $query->where('notice_receiver_id', $userId);
+            })
+            ->where('is_active', 1)
+            ->whereNotNull('notice_publish_date')
+            ->where('notice_publish_date', '<=', Carbon::now())
+            ->orderByDesc('notice_publish_date')
+            ->first();
+    }
+
 }
+

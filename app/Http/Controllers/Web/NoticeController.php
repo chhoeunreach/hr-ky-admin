@@ -86,7 +86,8 @@ class NoticeController extends Controller
             DB::commit();
             if ($notice) {
                 $userIds = $this->getUserIdsForNoticeNotification($validatedData['receiver']);
-                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags($notice['description']), $userIds);
+                $noticeId = is_object($notice) ? $notice->id : ($notice['id'] ?? null);
+                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags(is_object($notice) ? $notice->description : ($notice['description'] ?? $validatedData['description'])), $userIds, $noticeId);
             }
             return redirect()
                 ->back()
@@ -102,17 +103,46 @@ class NoticeController extends Controller
         try {
             $userIds = [];
             foreach ($validatedData as $key => $value) {
-                $userIds[] = $value['notice_receiver_id'];
+                $userIds[] = is_array($value) ? ($value['notice_receiver_id'] ?? null) : ($value->notice_receiver_id ?? null);
             }
-            return $userIds;
+            return array_values(array_filter($userIds));
         } catch (Exception $ex) {
-            return redirect()->back()->with('danger', $ex->getMessage());
+            return [];
         }
     }
 
-    private function sendNoticeNotification($title, $description, $userIds)
+    private function sendNoticeNotification($title, $description, $userIds, $id = null)
     {
-        SMPushHelper::sendNoticeNotification($title, $description, $userIds);
+        SMPushHelper::sendNoticeNotification($title, $description, $userIds, false, $id ?? '');
+
+        try {
+            if (!empty($userIds)) {
+                $notificationData = [
+                    'title' => $title,
+                    'type' => 'notice',
+                    'description' => $description,
+                    'notification_for_id' => $id,
+                    'company_id' => AppHelper::getAuthUserCompanyId(),
+                    'is_active' => 1,
+                ];
+                $notification = \App\Models\Notification::create($notificationData);
+                if ($notification) {
+                    $userNotifications = [];
+                    foreach ($userIds as $userId) {
+                        $userNotifications[] = [
+                            'notification_id' => $notification->id,
+                            'user_id' => $userId,
+                            'is_seen' => 0,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                    }
+                    \Illuminate\Support\Facades\DB::table('user_notifications')->insert($userNotifications);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Notice in-app notification error: ' . $e->getMessage());
+        }
     }
 
     public function show($id)
@@ -165,7 +195,7 @@ class NoticeController extends Controller
             DB::commit();
             if ($updateNotice) {
                 $userIds = $this->getUserIdsForNoticeNotification($validatedData['receiver']);
-                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags($validatedData['description']), $userIds);
+                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags($validatedData['description']), $userIds, $id);
             }
             return redirect()->back()->with('success', __('message.notice_update_sent'));
         } catch (Exception $exception) {
@@ -210,7 +240,7 @@ class NoticeController extends Controller
             $select = ['*'];
             $noticeDetail = $this->noticeService->findOrFailNoticeDetailById($noticeId, $select, $with);
             $userIds = $this->getUserIdsForNoticeNotification($noticeDetail->noticeReceiversDetail);
-            $this->sendNoticeNotification(ucfirst($noticeDetail->title), removeHtmlTags($noticeDetail->description), $userIds);
+            $this->sendNoticeNotification(ucfirst($noticeDetail->title), removeHtmlTags($noticeDetail->description), $userIds, $noticeDetail->id);
             DB::beginTransaction();
             $validatedData['is_active'] = 1;
             $validatedData['notice_publish_date'] = Carbon::now()->format('Y-m-d H:i:s');

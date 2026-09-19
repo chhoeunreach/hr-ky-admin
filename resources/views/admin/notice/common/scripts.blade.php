@@ -55,7 +55,7 @@
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
-                title: '@lang('index.confirm_send_notice')',
+                title: '@lang('index.confirm_send_work_alert')',
                 showDenyButton: true,
                 confirmButtonText: `@lang('index.yes')`,
                 denyButtonText: `@lang('index.no')`,

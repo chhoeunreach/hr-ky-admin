@@ -156,10 +156,14 @@ class AppSettingController extends Controller
                 'ios_url' => ['nullable', 'string', 'max:255'],
             ]);
 
+            $isEnabled = $request->boolean('enabled');
+            $forceUpdate = $request->boolean('force_update');
+
             $payload = [
+                'enabled' => $isEnabled,
                 'target_version' => trim($validated['target_version']),
                 'min_version' => trim($validated['min_version']),
-                'force_update' => (bool) $request->input('force_update', false),
+                'force_update' => $forceUpdate,
                 'alert_title' => trim($validated['alert_title']),
                 'alert_message' => trim($validated['alert_message']),
                 'android_url' => trim((string)($validated['android_url'] ?? '')),
@@ -176,7 +180,7 @@ class AppSettingController extends Controller
 
             $setting->update([
                 'value' => json_encode($payload),
-                'status' => $request->has('enabled') ? (int)$request->input('enabled') : 1,
+                'status' => $isEnabled ? 1 : 0,
             ]);
 
             return redirect()->back()->with('success', __('index.app_version_updated'));

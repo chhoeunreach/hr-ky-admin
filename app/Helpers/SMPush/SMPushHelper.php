@@ -145,9 +145,15 @@ class SMPushHelper
                 title: $title,
                 message: Str::limit($description, 100, '...'),
                 data: [
+                    'type' => 'notice',
+                    'work_alert' => '1',
+                    'show_alert' => '1',
                     'title' => $title,
                     'message' => Str::limit($description, 3700, '...'),
-                    'id' => $id
+                    'alert_title' => $title,
+                    'alert_message' => Str::limit($description, 3700, '...'),
+                    'id' => (string)$id,
+                    'notice_id' => (string)$id,
                 ],
                 recipients: $recipients
             );

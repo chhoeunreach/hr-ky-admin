@@ -348,8 +348,10 @@ class AppHelper
         $apkSetting = AppSetting::where('slug', 'android-apk')->where('status', 1)->first();
         $fallbackApkUrl = ($apkSetting && !empty($apkSetting->value)) ? asset($apkSetting->value) : $defaults['android_url'];
 
+        $isEnabled = isset($setting->status) ? ((int)$setting->status === 1) : (isset($decoded['enabled']) ? (bool)$decoded['enabled'] : true);
+
         return [
-            'enabled' => (bool) ($setting->status ?? 1),
+            'enabled' => $isEnabled,
             'target_version' => !empty($decoded['target_version']) ? trim($decoded['target_version']) : $defaults['target_version'],
             'min_version' => !empty($decoded['min_version']) ? trim($decoded['min_version']) : $defaults['min_version'],
             'force_update' => isset($decoded['force_update']) ? (bool)$decoded['force_update'] : $defaults['force_update'],

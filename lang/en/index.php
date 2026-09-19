@@ -614,6 +614,10 @@ return [
     'confirm_change_notice_status' => 'Are you sure you want to change status for Notice?',
     'confirm_delete_notice' => 'Are you sure you want to Delete Notice?',
     'confirm_send_notice' => 'Are you sure you want to Send Notice?',
+    'send_work_alert' => 'Send Work Alert',
+    'confirm_send_work_alert' => 'Are you sure you want to Send this Work Alert to employee mobile apps?',
+    'send_work_alert_to_mobile' => 'Send as Work Alert / Popup Alert to Mobile App',
+    'send_work_alert_hint' => 'When enabled, this notice will display as an alert popup on the employee mobile app similar to Update Alert.',
     'notice_detail_modal_title' => 'Notice :title Detail',
 
     /** payroll */

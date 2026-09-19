@@ -142,8 +142,10 @@
                                             @endcan
                                             @can('send_notice')
                                                 <li>
-                                                    <a class="sendNotice" data-href="{{ route('admin.notices.send-notice', $value->id) }}" title="@lang('index.send_notice')">
-                                                        <button class="btn btn-primary btn-xs text-nowrap">@lang('index.send_notice')</button>
+                                                    <a class="sendNotice" data-href="{{ route('admin.notices.send-notice', $value->id) }}" title="@lang('index.send_work_alert')">
+                                                        <button class="btn btn-warning btn-xs text-nowrap d-inline-flex align-items-center gap-1">
+                                                            <i data-feather="bell" style="width: 12px; height: 12px;"></i> @lang('index.send_work_alert')
+                                                        </button>
                                                     </a>
                                                 </li>
                                             @endcan
