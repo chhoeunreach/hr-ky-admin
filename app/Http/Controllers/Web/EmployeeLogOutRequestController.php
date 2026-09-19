@@ -43,7 +43,15 @@ class EmployeeLogOutRequestController extends Controller
                 'department:id,dept_name',
                 'post:id,post_name',
                 'role:id,name,slug',
-                'latestDeviceLocation:id,user_id,device_name,battery_level,updated_at',
+                'latestDeviceLocation' => function ($query) {
+                    $query->select([
+                        'user_locations.id',
+                        'user_locations.user_id',
+                        'user_locations.device_name',
+                        'user_locations.battery_level',
+                        'user_locations.updated_at',
+                    ]);
+                },
             ];
             $logoutRequests = $this->userRepository->getAllCompanyEmployeeLogOutRequest($filterData, $select, $relations);
             $with = ['branches:id,name'];
