@@ -39,9 +39,20 @@ class SMPushNotification
     {
         $data['android_channel_id'] = 'ahpu_channel_11';
 
-        $firebase = (new Factory)
-            ->withServiceAccount(storage_path('firebase-adminsdk.json'));
+        $credentialsPath = storage_path('firebase-adminsdk.json');
+        if (!file_exists($credentialsPath) || !is_readable($credentialsPath) || filesize($credentialsPath) === 0) {
+            Log::warning("Firebase credentials file missing, empty or unreadable at [{$credentialsPath}]. Push notification skipped.");
+            return;
+        }
 
+        try {
+            $firebase = (new Factory)
+                ->withServiceAccount($credentialsPath);
+            $messaging = $firebase->createMessaging();
+        } catch (\Throwable $e) {
+            Log::error("Failed to initialize Firebase with service account [{$credentialsPath}]: " . $e->getMessage());
+            return;
+        }
 
         $fromArray = $isSilence ? [] : [
             'notification' => [
@@ -60,7 +71,6 @@ class SMPushNotification
             )
         ;
 
-        $messaging = $firebase->createMessaging();
         $responses = [];
 
         foreach ($recipients as $userId => $token) {
