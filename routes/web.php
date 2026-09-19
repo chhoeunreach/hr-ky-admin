@@ -284,6 +284,9 @@ Route::group([
         Route::get('employees/get-all-employees/{departmentId}', [UserController::class, 'getAllEmployeeByDepartmentId'])->name('employees.getAllUsersByDepartmentId');
         Route::post('employees/fetch-employees-by-department', [UserController::class, 'fetchEmployeesByDepartment'])->name('employees.fetchByDepartment');
         Route::post('employees/fetch-employees-by-departments', [UserController::class, 'fetchDepartmentEmployees'])->name('employees.getByDepartment');
+        Route::get('employees/device-activities/{id}', [UserController::class, 'getDeviceAndActivities'])->name('employees.device-activities');
+        Route::post('employees/{id}/revoke-session/{tokenId}', [UserController::class, 'revokeSessionToken'])->name('employees.revoke-session');
+
         Route::get('face-kiosks', [FaceKioskController::class, 'index'])->name('face-kiosks.index');
         Route::post('face-kiosks/devices', [FaceKioskController::class, 'storeDevice'])->name('face-kiosks.devices.store');
         Route::post('face-kiosks/devices/{device}/rotate-token', [FaceKioskController::class, 'rotateToken'])->name('face-kiosks.devices.rotate');

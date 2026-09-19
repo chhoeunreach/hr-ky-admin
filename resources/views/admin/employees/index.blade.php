@@ -661,7 +661,14 @@
                         border-color: #bbf7d0;
                     }
 
+                    .employee-action-btn.btn-device:hover {
+                        background: #f0fdfa;
+                        color: #0d9488;
+                        border-color: #99f6e4;
+                    }
+
                     .employee-action-btn.btn-more:hover {
+
                         background: #f8fafc;
                         color: #1e293b;
                         border-color: #cbd5e1;
@@ -1015,16 +1022,6 @@
                                                 </a>
                                             @endcan
 
-                                            @can('edit_employee')
-                                                <a href="{{ route('admin.employees.edit', $value->id) }}"
-                                                   class="employee-action-btn btn-edit"
-                                                   title="{{ __('index.edit_detail') }}"
-                                                   target="_blank"
-                                                   rel="noopener noreferrer">
-                                                    <i class="link-icon" data-feather="edit-2" style="width: 13px; height: 13px;"></i>
-                                                </a>
-                                            @endcan
-
                                             <div class="dropdown d-inline-block">
                                                 <button class="employee-action-btn btn-more"
                                                         type="button"
@@ -1052,6 +1049,33 @@
                                                             </a>
                                                         </li>
                                                     @endcan
+
+                                                    @can('edit_employee')
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2"
+                                                               href="{{ route('admin.employees.edit', $value->id) }}"
+                                                               target="_blank"
+                                                               rel="noopener noreferrer">
+                                                                <i class="link-icon text-success" data-feather="edit-2" style="width: 14px; height: 14px;"></i>
+                                                                <span>{{ __('index.edit_detail') }}</span>
+                                                            </a>
+                                                        </li>
+                                                    @endcan
+
+                                                    @canany(['show_detail_employee', 'employee.profile.view', 'force_logout'])
+                                                        <li>
+                                                            <a class="dropdown-item d-flex align-items-center gap-2 py-2 viewDeviceActivity"
+                                                               href="javascript:void(0)"
+                                                               data-id="{{ $value->id }}"
+                                                               data-name="{{ ucfirst($value->name) }}"
+                                                               data-url="{{ route('admin.employees.device-activities', $value->id) }}"
+                                                               data-force-logout-url="{{ route('admin.employees.force-logout', $value->id) }}">
+                                                                <i class="link-icon text-info" data-feather="smartphone" style="width: 14px; height: 14px;"></i>
+                                                                <span>{{ __('index.device_and_activity_logs') }}</span>
+                                                            </a>
+                                                        </li>
+                                                    @endcanany
+
 
                                                     @can('edit_employee')
                                                         @php $telegramConnectUrl = $telegramBotUsername ? TelegramBotSettings::connectUrl($value) : null; @endphp
@@ -1089,6 +1113,7 @@
                                                             </a>
                                                         </li>
                                                     @endcan
+
 
                                                     @can('delete_employee')
                                                         @if( (isset(auth()->user()->id) && $value->id != auth()->user()->id) || $value->id != 1)
@@ -1248,6 +1273,7 @@
 
     </section>
     @include('admin.employees.common.password')
+    @include('admin.employees.common.device-activity-modal')
 @endsection
 
 @section('scripts')
@@ -1320,5 +1346,342 @@
                 event.preventDefault();
             }
         });
+
+        // ==========================================
+        // Device & Activity Logs Interactive Script
+        // ==========================================
+        var currentEdaEmployeeId = null;
+        var currentEdaUrl = null;
+        var currentEdaForceLogoutUrl = null;
+        var currentEdaActivities = [];
+
+        function escapeEdaHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function loadEmployeeDeviceActivities() {
+            if (!currentEdaUrl) return;
+
+            $('#edaLoadingState').removeClass('d-none');
+            $('#edaErrorState').addClass('d-none');
+            $('#edaContentState').addClass('d-none');
+
+            fetch(currentEdaUrl, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' (' + res.statusText + ')');
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data.success) {
+                    throw new Error(data.message || 'Error loading device details');
+                }
+                renderEmployeeDeviceActivities(data);
+            })
+            .catch(function(err) {
+                $('#edaLoadingState').addClass('d-none');
+                $('#edaErrorState').removeClass('d-none');
+                $('#edaErrorMessage').text(err.message || 'Failed to load device information');
+            });
+        }
+
+        function renderEmployeeDeviceActivities(data) {
+            var emp = data.employee;
+            var dev = data.device;
+            var sessions = data.sessions || [];
+            var acts = data.activities || {};
+
+            // Header info
+            $('#edaEmployeeAvatar').attr('src', emp.avatar);
+            $('#edaEmployeeName').text(emp.name + (emp.english_name && emp.english_name !== emp.name ? ' (' + emp.english_name + ')' : ''));
+            $('#edaEmployeeCode').text('Code: ' + (emp.employee_code || 'N/A'));
+            $('#edaEmployeeRole').text(emp.role || 'N/A');
+            $('#edaEmployeeDept').text(emp.department || 'N/A');
+            $('#edaEmployeeBranch').text(emp.branch || 'N/A');
+
+            // Online Status Badge
+            var isOnline = Number(emp.online_status) === 1;
+            $('#edaOnlineBadge').removeClass('status-online status-offline')
+                .addClass(isOnline ? 'status-online' : 'status-offline');
+            $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
+
+            // Platform badge
+            var platform = (dev.platform || 'web').toLowerCase();
+            var platformHtml = '';
+            if (platform === 'ios') {
+                platformHtml = '<span class="badge bg-dark text-white rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1"><i data-feather="smartphone" style="width: 12px; height: 12px;"></i> Apple iOS</span>';
+            } else if (platform === 'android') {
+                platformHtml = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1"><i data-feather="smartphone" style="width: 12px; height: 12px;"></i> Android</span>';
+            } else {
+                platformHtml = '<span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1"><i data-feather="monitor" style="width: 12px; height: 12px;"></i> Web Browser</span>';
+            }
+            $('#edaPlatformBadgeContainer').html(platformHtml);
+
+            // Device fields
+            $('#edaDeviceName').text(dev.device_name || 'N/A');
+            if (dev.battery_level !== null && dev.battery_level !== undefined) {
+                $('#edaDeviceName').append(' <span class="badge bg-secondary bg-opacity-15 text-dark rounded-pill py-0.5 px-1.5 ms-1" style="font-size: 10px;"><i data-feather="battery-charging" style="width: 10px; height: 10px;"></i> ' + dev.battery_level + '%</span>');
+            }
+            $('#edaDeviceUuid').text(dev.uuid || 'N/A');
+
+            // Login Time
+            $('#edaLoginTime').text(dev.last_login_at || 'Never logged in');
+            $('#edaLoginTimeHuman').text(dev.last_login_human ? '(' + dev.last_login_human + ')' : '');
+
+            // Location
+            if (dev.location && dev.location.has_location) {
+                $('#edaLocationCoords').text(dev.location.latitude + ', ' + dev.location.longitude);
+                $('#edaLocationTime').text(dev.location.updated_at_human ? 'Updated: ' + dev.location.updated_at_human : '');
+                $('#edaMapLinkWrapper').show();
+                $('#edaMapBtn').attr('href', dev.location.map_url);
+            } else {
+                $('#edaLocationCoords').text('No GPS location available');
+                $('#edaLocationTime').text(emp.branch ? 'Assigned: ' + emp.branch : '');
+                $('#edaMapLinkWrapper').hide();
+            }
+
+            // Sessions Tab
+            $('#edaSessionCountBadge').text(data.active_sessions_count || sessions.length);
+            var sessionsHtml = '';
+            if (sessions.length > 0) {
+                sessions.forEach(function(s, idx) {
+                    var shortId = s.id ? s.id.substring(0, 14) + '...' : 'N/A';
+                    var statusBadge = s.is_active
+                        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 rounded-pill px-2 py-0.5" style="font-size: 10px;">Active</span>'
+                        : '<span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Revoked/Expired</span>';
+
+                    var actionBtn = s.is_active
+                        ? '<button type="button" class="btn btn-outline-danger btn-xs py-0.5 px-2 rounded-2 revokeSessionBtn" data-employee-id="' + emp.id + '" data-token-id="' + escapeEdaHtml(s.id) + '" title="{{ __('index.revoke_session') }}"><i data-feather="x-circle" style="width: 12px; height: 12px;"></i> {{ __('index.revoke_session') }}</button>'
+                        : '<span class="text-muted small">-</span>';
+
+                    sessionsHtml += '<tr>' +
+                        '<td class="ps-3 text-muted fw-semibold" style="font-size: 11px;">' + (idx + 1) + '</td>' +
+                        '<td><span class="fw-semibold text-dark">' + escapeEdaHtml(s.device_name) + '</span><span class="badge bg-light text-muted ms-1" style="font-size: 9.5px;">' + escapeEdaHtml(s.platform) + '</span></td>' +
+                        '<td><span class="session-token-code" title="' + escapeEdaHtml(s.id) + '">' + escapeEdaHtml(shortId) + '</span> <button type="button" class="btn btn-link btn-xs p-0 text-muted copyTokenBtn" data-token="' + escapeEdaHtml(s.id) + '" title="Copy Session ID"><i data-feather="copy" style="width: 11px; height: 11px;"></i></button></td>' +
+                        '<td><div class="fw-medium text-dark">' + (s.login_at || '---') + '</div><small class="text-muted" style="font-size: 10px;">' + escapeEdaHtml(s.login_at_human) + '</small></td>' +
+                        '<td><span class="text-muted" style="font-size: 11.5px;">' + (s.last_active_at || '---') + '</span></td>' +
+                        '<td class="text-center">' + statusBadge + '</td>' +
+                        '<td class="text-end pe-3">' + actionBtn + '</td>' +
+                    '</tr>';
+                });
+            } else {
+                sessionsHtml = '<tr><td colspan="7" class="text-center py-4 text-muted">{{ __('index.no_active_sessions') }}</td></tr>';
+            }
+            $('#edaSessionsTableBody').html(sessionsHtml);
+
+            // Activities Tab
+            var mergedActs = [];
+            if (acts.attendance_logs && acts.attendance_logs.length) {
+                acts.attendance_logs.forEach(function(a) {
+                    mergedActs.push({
+                        category: 'attendance',
+                        title: a.title,
+                        source: a.source || 'App',
+                        coords: a.latitude && a.longitude ? a.latitude + ', ' + a.longitude : (a.note || 'N/A'),
+                        mapUrl: a.latitude && a.longitude ? 'https://www.google.com/maps?q=' + a.latitude + ',' + a.longitude : null,
+                        time: a.created_at,
+                        human: a.created_at_human
+                    });
+                });
+            }
+            if (acts.attendances && acts.attendances.length) {
+                acts.attendances.forEach(function(a) {
+                    mergedActs.push({
+                        category: 'attendance',
+                        title: a.title,
+                        source: 'Status: ' + a.status,
+                        coords: (a.check_in_at ? 'In: ' + a.check_in_at : '') + (a.check_out_at ? ' | Out: ' + a.check_out_at : ''),
+                        mapUrl: null,
+                        time: a.created_at,
+                        human: a.created_at_human
+                    });
+                });
+            }
+            if (acts.location_history && acts.location_history.length) {
+                acts.location_history.forEach(function(l) {
+                    mergedActs.push({
+                        category: 'location',
+                        title: 'GPS Location Ping',
+                        source: 'Location Tracker',
+                        coords: l.latitude + ', ' + l.longitude,
+                        mapUrl: 'https://www.google.com/maps?q=' + l.latitude + ',' + l.longitude,
+                        time: l.created_at,
+                        human: l.created_at_human
+                    });
+                });
+            }
+
+            currentEdaActivities = mergedActs;
+            $('#edaActivityCountBadge').text(mergedActs.length);
+            renderEdaActivityTable('all');
+
+            // Show Content
+            $('#edaLoadingState').addClass('d-none');
+            $('#edaContentState').removeClass('d-none');
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
+        function renderEdaActivityTable(filter) {
+            var items = currentEdaActivities;
+            if (filter !== 'all') {
+                items = items.filter(function(i) { return i.category === filter; });
+            }
+
+            var html = '';
+            if (items.length > 0) {
+                items.forEach(function(item, idx) {
+                    var icon = item.category === 'location' ? 'navigation' : 'calendar';
+                    var badgeClass = item.category === 'location' ? 'bg-primary' : 'bg-success';
+                    var mapBtn = item.mapUrl
+                        ? ' <a href="' + item.mapUrl + '" target="_blank" class="btn btn-link btn-xs p-0 text-primary ms-1" title="View Map"><i data-feather="external-link" style="width: 11px; height: 11px;"></i></a>'
+                        : '';
+
+                    html += '<tr>' +
+                        '<td class="ps-3 text-muted fw-semibold" style="font-size: 11px;">' + (idx + 1) + '</td>' +
+                        '<td><span class="badge ' + badgeClass + ' bg-opacity-10 text-' + (item.category === 'location' ? 'primary' : 'success') + ' border rounded-pill px-2 py-0.5 me-1.5" style="font-size: 10px;"><i data-feather="' + icon + '" style="width: 10px; height: 10px;"></i></span><span class="fw-semibold text-dark">' + escapeEdaHtml(item.title) + '</span></td>' +
+                        '<td><span class="text-muted small">' + escapeEdaHtml(item.source) + '</span></td>' +
+                        '<td><span class="text-dark small">' + escapeEdaHtml(item.coords) + '</span>' + mapBtn + '</td>' +
+                        '<td><div class="fw-medium text-dark" style="font-size: 11.5px;">' + (item.time || '---') + '</div><small class="text-muted" style="font-size: 10px;">' + escapeEdaHtml(item.human) + '</small></td>' +
+                    '</tr>';
+                });
+            } else {
+                html = '<tr><td colspan="5" class="text-center py-4 text-muted">{{ __('index.no_activity_logs') }}</td></tr>';
+            }
+            $('#edaActivitiesTableBody').html(html);
+
+            if (typeof feather !== 'undefined') {
+                feather.replace();
+            }
+        }
+
+        // Open modal on click
+        $(document).on('click', '.viewDeviceActivity', function(e) {
+            e.preventDefault();
+            var btn = $(this);
+            currentEdaEmployeeId = btn.data('id');
+            currentEdaUrl = btn.data('url');
+            currentEdaForceLogoutUrl = btn.data('force-logout-url');
+
+            var modalEl = document.getElementById('employeeDeviceActivityModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            loadEmployeeDeviceActivities();
+        });
+
+        // Retry handler
+        $('#edaRetryBtn').on('click', function() {
+            loadEmployeeDeviceActivities();
+        });
+
+        // Activity filter buttons
+        $('#edaActivityFilterGroup button').on('click', function() {
+            $('#edaActivityFilterGroup button').removeClass('active');
+            $(this).addClass('active');
+            renderEdaActivityTable($(this).data('filter'));
+        });
+
+        // Copy token handler
+        $(document).on('click', '.copyTokenBtn', function(e) {
+            e.preventDefault();
+            var token = $(this).data('token');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(token);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Session ID copied to clipboard',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            }
+        });
+
+        // Revoke single session
+        $(document).on('click', '.revokeSessionBtn', function(e) {
+            e.preventDefault();
+            var empId = $(this).data('employee-id');
+            var tokenId = $(this).data('token-id');
+
+            Swal.fire({
+                title: '{{ __('index.revoke_session') }}',
+                text: '{{ __('index.confirm_revoke_session') }}',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ __('index.yes') }}, Revoke',
+                cancelButtonText: '{{ __('index.cancel') }}'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    var revokeUrl = '{{ url('admin/employees') }}/' + empId + '/revoke-session/' + encodeURIComponent(tokenId);
+                    fetch(revokeUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        if (data.success) {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: 'success',
+                                title: data.message || '{{ __('index.session_revoked_successfully') }}',
+                                showConfirmButton: false,
+                                timer: 2000
+                            });
+                            loadEmployeeDeviceActivities();
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to revoke session', 'error');
+                        }
+                    })
+                    .catch(function(err) {
+                        Swal.fire('Error', err.message || 'Server error', 'error');
+                    });
+                }
+            });
+        });
+
+        // Force logout all
+        $('#edaForceLogoutAllBtn').on('click', function(e) {
+            e.preventDefault();
+            if (!currentEdaForceLogoutUrl) return;
+
+            Swal.fire({
+                title: '{{ __('index.confirm_force_logout') }}',
+                text: 'This will terminate ALL active login sessions and revoke all access tokens for this employee.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '{{ __('index.yes') }}, Logout All',
+                cancelButtonText: '{{ __('index.cancel') }}'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    window.location.href = currentEdaForceLogoutUrl;
+                }
+            });
+        });
     </script>
 @endsection
+

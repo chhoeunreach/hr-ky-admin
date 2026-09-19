@@ -39,7 +39,9 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Validation\Rule;
 use Laravel\Passport\RefreshTokenRepository;
 use Laravel\Passport\TokenRepository;
@@ -1411,6 +1413,301 @@ class UserController extends Controller
         }
     }
 
+    public function getDeviceAndActivities($id): JsonResponse
+    {
+        $this->authorize('show_detail_employee');
+        try {
+            $user = User::with([
+                'branch:id,name',
+                'department:id,dept_name',
+                'post:id,post_name',
+                'role:id,name',
+                'latestDeviceLocation',
+            ])->findOrFail($id);
+
+            // Parse device info
+            $rawUuid = (string)($user->uuid ?? '');
+            $deviceType = strtolower((string)($user->device_type ?? 'web'));
+            $deviceName = 'N/A';
+            $deviceIdentifier = null;
+
+            if ($rawUuid !== '') {
+                if (str_contains($rawUuid, ':')) {
+                    $parts = explode(':', $rawUuid, 2);
+                    $deviceName = trim($parts[0]);
+                    $deviceIdentifier = trim($parts[1]);
+                } else {
+                    $deviceIdentifier = $rawUuid;
+                    $deviceName = $user->device_type ? ucfirst($user->device_type) . ' Device' : 'Mobile Device';
+                }
+            }
+
+            if (!empty($user->latestDeviceLocation?->device_name)) {
+                $deviceName = $user->latestDeviceLocation->device_name;
+            } elseif ($deviceName === 'N/A' && $deviceType === 'web') {
+                $deviceName = 'Web Portal / Desktop';
+            }
+
+            // Location details
+            $latestLocation = $user->latestDeviceLocation;
+            $latitude = $latestLocation?->latitude;
+            $longitude = $latestLocation?->longitude;
+            $accuracy = $latestLocation?->accuracy;
+            $battery = $latestLocation?->battery_level;
+            $locationUpdatedAt = $latestLocation?->updated_at;
+
+            // Fallback to employee_locations if user_locations is empty
+            if (!$latitude || !$longitude) {
+                $empLoc = EmployeeLocation::where('employee_id', $user->id)->latest('id')->first();
+                if ($empLoc) {
+                    $latitude = (float)$empLoc->latitude;
+                    $longitude = (float)$empLoc->longitude;
+                    $locationUpdatedAt = $empLoc->created_at ?? $empLoc->updated_at;
+                }
+            }
+
+            // Fallback to attendance_logs if still no GPS
+            if (!$latitude || !$longitude) {
+                $attLog = DB::table('attendance_logs')
+                    ->where('employee_id', $user->id)
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->latest('id')
+                    ->first();
+                if ($attLog) {
+                    $latitude = (float)$attLog->latitude;
+                    $longitude = (float)$attLog->longitude;
+                    $locationUpdatedAt = Carbon::parse($attLog->created_at);
+                }
+            }
+
+            // Query tokens (sessions)
+            $tokens = DB::table('oauth_access_tokens')
+                ->where('user_id', $user->id)
+                ->orderByDesc('created_at')
+                ->take(20)
+                ->get()
+                ->map(function ($token) use ($deviceType, $deviceName) {
+                    $isRevoked = (bool)$token->revoked;
+                    $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
+                    $isActive = !$isRevoked && !$isExpired;
+
+                    return [
+                        'id' => $token->id,
+                        'name' => $token->name ?: 'Personal Access Token',
+                        'platform' => ucfirst($deviceType),
+                        'device_name' => $deviceName !== 'N/A' ? $deviceName : ucfirst($deviceType),
+                        'is_active' => $isActive,
+                        'revoked' => $isRevoked,
+                        'expired' => $isExpired,
+                        'login_at' => $token->created_at ? Carbon::parse($token->created_at)->format('Y-m-d H:i:s') : null,
+                        'login_at_human' => $token->created_at ? Carbon::parse($token->created_at)->diffForHumans() : 'N/A',
+                        'last_active_at' => $token->updated_at ? Carbon::parse($token->updated_at)->format('Y-m-d H:i:s') : null,
+                        'expires_at' => $token->expires_at ? Carbon::parse($token->expires_at)->format('Y-m-d H:i:s') : null,
+                    ];
+                });
+
+            // Activity Logs: recent attendance_logs
+            $attendanceActivities = DB::table('attendance_logs')
+                ->where('employee_id', $user->id)
+                ->orderByDesc('created_at')
+                ->take(30)
+                ->get()
+                ->map(function ($log) {
+                    $action = $log->action ?: ($log->attendance_type ? ucfirst($log->attendance_type) : 'Attendance Ping');
+                    return [
+                        'id' => 'att_log_' . $log->id,
+                        'type' => 'attendance_log',
+                        'title' => ucwords(str_replace('_', ' ', $action)),
+                        'source' => $log->source ?: ($log->attendance_type ?: 'App'),
+                        'identifier' => $log->identifier,
+                        'note' => $log->note,
+                        'latitude' => $log->latitude ? (float)$log->latitude : null,
+                        'longitude' => $log->longitude ? (float)$log->longitude : null,
+                        'created_at' => $log->created_at ? Carbon::parse($log->created_at)->format('Y-m-d H:i:s') : null,
+                        'created_at_human' => $log->created_at ? Carbon::parse($log->created_at)->diffForHumans() : '',
+                    ];
+                });
+
+            // Attendances table records
+            $attendances = DB::table('attendances')
+                ->where('user_id', $user->id)
+                ->orderByDesc('attendance_date')
+                ->orderByDesc('id')
+                ->take(15)
+                ->get()
+                ->map(function ($att) {
+                    $inCoords = ($att->check_in_latitude && $att->check_in_longitude) ? $att->check_in_latitude . ', ' . $att->check_in_longitude : null;
+                    $outCoords = ($att->check_out_latitude && $att->check_out_longitude) ? $att->check_out_latitude . ', ' . $att->check_out_longitude : null;
+                    return [
+                        'id' => 'att_' . $att->id,
+                        'type' => 'attendance_daily',
+                        'title' => 'Daily Attendance: ' . $att->attendance_date,
+                        'check_in_at' => $att->check_in_at,
+                        'check_out_at' => $att->check_out_at,
+                        'check_in_type' => $att->check_in_type,
+                        'check_out_type' => $att->check_out_type,
+                        'in_coords' => $inCoords,
+                        'out_coords' => $outCoords,
+                        'latitude' => $att->check_in_latitude ? (float)$att->check_in_latitude : null,
+                        'longitude' => $att->check_in_longitude ? (float)$att->check_in_longitude : null,
+                        'status' => $att->attendance_status == 1 ? 'Approved' : 'Pending',
+                        'created_at' => $att->created_at ? Carbon::parse($att->created_at)->format('Y-m-d H:i:s') : null,
+                        'created_at_human' => $att->created_at ? Carbon::parse($att->created_at)->diffForHumans() : '',
+                    ];
+                });
 
 
+            // Recent GPS breadcrumb activities
+            $locationActivities = DB::table('employee_locations')
+                ->where('employee_id', $user->id)
+                ->orderByDesc('created_at')
+                ->take(15)
+                ->get()
+                ->map(function ($loc) {
+                    return [
+                        'id' => 'loc_' . $loc->id,
+                        'type' => 'location',
+                        'title' => 'GPS Location Update',
+                        'latitude' => (float)$loc->latitude,
+                        'longitude' => (float)$loc->longitude,
+                        'created_at' => $loc->created_at ? Carbon::parse($loc->created_at)->format('Y-m-d H:i:s') : null,
+                        'created_at_human' => $loc->created_at ? Carbon::parse($loc->created_at)->diffForHumans() : '',
+                    ];
+                });
+
+            // Profile Audit Logs (if any)
+            $auditLogs = collect();
+            if (Schema::hasTable('employee_profile_audit_logs')) {
+                $auditLogs = DB::table('employee_profile_audit_logs')
+                    ->where('employee_id', $user->id)
+                    ->orderByDesc('created_at')
+                    ->take(10)
+                    ->get()
+                    ->map(function ($audit) {
+                        return [
+                            'id' => 'audit_' . $audit->id,
+                            'type' => 'audit',
+                            'title' => 'Profile Updated (' . ($audit->section ?? 'general') . ')',
+                            'note' => $audit->notes ?? ($audit->action ?? null),
+                            'created_at' => $audit->created_at ? Carbon::parse($audit->created_at)->format('Y-m-d H:i:s') : null,
+                            'created_at_human' => $audit->created_at ? Carbon::parse($audit->created_at)->diffForHumans() : '',
+                        ];
+                    });
+            }
+
+            return response()->json([
+                'success' => true,
+                'employee' => [
+                    'id' => $user->id,
+                    'name' => removeSpecialChars($user->name),
+                    'english_name' => $user->english_name,
+                    'employee_code' => $user->employee_code ?: 'N/A',
+                    'avatar' => $user->avatar ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar) : asset('assets/images/img.png'),
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'branch' => $user->branch?->name ?: 'N/A',
+                    'department' => $user->department?->dept_name ?: 'N/A',
+                    'post' => $user->post?->post_name ?: 'N/A',
+                    'role' => $user->role?->name ?: 'N/A',
+                    'is_active' => (bool)$user->is_active,
+                    'online_status' => (int)($user->online_status ?? 0),
+                    'workspace_type' => $user->workspace_type == User::FIELD ? 'Field' : 'Office',
+                ],
+                'device' => [
+                    'device_name' => $deviceName,
+                    'platform' => $deviceType,
+                    'device_type' => $deviceType,
+                    'uuid' => $deviceIdentifier ?: ($rawUuid ?: 'N/A'),
+                    'full_uuid' => $rawUuid ?: 'N/A',
+                    'battery_level' => $battery,
+                    'accuracy' => $accuracy,
+                    'has_fcm' => !empty($user->fcm_token),
+                    'logout_status' => (int)($user->logout_status ?? 0),
+                    'last_login_at' => $user->updated_at ? Carbon::parse($user->updated_at)->format('Y-m-d H:i:s') : null,
+                    'last_login_human' => $user->updated_at ? Carbon::parse($user->updated_at)->diffForHumans() : 'N/A',
+                    'location' => [
+                        'has_location' => !empty($latitude) && !empty($longitude),
+                        'latitude' => $latitude,
+                        'longitude' => $longitude,
+                        'accuracy' => $accuracy,
+                        'updated_at' => $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->format('Y-m-d H:i:s') : null,
+                        'updated_at_human' => $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->diffForHumans() : 'N/A',
+                        'map_url' => (!empty($latitude) && !empty($longitude)) ? "https://www.google.com/maps?q={$latitude},{$longitude}" : null,
+                    ],
+                ],
+                'sessions' => $tokens,
+                'active_sessions_count' => $tokens->where('is_active', true)->count(),
+                'activities' => [
+                    'attendance_logs' => $attendanceActivities,
+                    'attendances' => $attendances,
+                    'location_history' => $locationActivities,
+                    'audit_logs' => $auditLogs,
+                ],
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function revokeSessionToken($employeeId, $tokenId): JsonResponse
+    {
+        $this->authorize('force_logout');
+        try {
+            $tokenRepository = app(TokenRepository::class);
+            $refreshTokenRepository = app(RefreshTokenRepository::class);
+
+            $token = $tokenRepository->find($tokenId);
+            if (!$token || (int)$token->user_id !== (int)$employeeId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('message.user_not_found'),
+                ], 404);
+            }
+
+            DB::beginTransaction();
+            $tokenRepository->revokeAccessToken($tokenId);
+            $refreshTokenRepository->revokeRefreshTokensByAccessTokenId($tokenId);
+
+            // Check if any active tokens remain
+            $remainingActive = DB::table('oauth_access_tokens')
+                ->where('user_id', $employeeId)
+                ->where('revoked', 0)
+                ->where(function ($query) {
+                    $query->whereNull('expires_at')
+                          ->orWhere('expires_at', '>', now());
+                })
+                ->count();
+
+            if ($remainingActive === 0) {
+                $user = User::find($employeeId);
+                if ($user) {
+                    $user->uuid = null;
+                    $user->logout_status = 0;
+                    $user->online_status = 0;
+                    $user->remember_token = null;
+                    $user->fcm_token = null;
+                    $user->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => __('index.session_revoked_successfully'),
+                'remaining_active' => $remainingActive,
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
+
