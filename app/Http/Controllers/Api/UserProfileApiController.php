@@ -506,6 +506,14 @@ class UserProfileApiController extends Controller
             $validator = Validator::make($request->all(), [
                 'latitude' => ['required'],
                 'longitude' => ['required'],
+                'accuracy' => ['nullable', 'numeric'],
+                'battery_level' => ['nullable', 'integer'],
+                'device_name' => ['nullable', 'string', 'max:255'],
+                'app_name' => ['nullable', 'string', 'max:255'],
+                'app_version' => ['nullable', 'string', 'max:80'],
+                'app_build' => ['nullable', 'string', 'max:80'],
+                'device_model' => ['nullable', 'string', 'max:255'],
+                'os_version' => ['nullable', 'string', 'max:120'],
             ]);
 
             if ($validator->fails()) {
@@ -529,22 +537,32 @@ class UserProfileApiController extends Controller
             $location = null;
             if (Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'device_key')) {
                 $rawUuid = (string) ($userDetail->uuid ?? '');
-                $deviceName = str_contains($rawUuid, ':')
-                    ? trim(explode(':', $rawUuid, 2)[0])
-                    : ucfirst((string) ($userDetail->device_type ?? 'mobile')) . ' Device';
+                $deviceName = $request->input('device_name')
+                    ?: (str_contains($rawUuid, ':')
+                        ? trim(explode(':', $rawUuid, 2)[0])
+                        : ucfirst((string) ($userDetail->device_type ?? 'mobile')) . ' Device');
+
+                $locationData = [
+                    'device_type' => $userDetail->device_type,
+                    'latitude' => $validatedData['latitude'],
+                    'longitude' => $validatedData['longitude'],
+                    'accuracy' => $request->input('accuracy', 0),
+                    'battery_level' => $request->input('battery_level'),
+                    'device_name' => $deviceName,
+                ];
+
+                foreach (['app_name', 'app_version', 'app_build', 'device_model', 'os_version'] as $col) {
+                    if (Schema::hasColumn('user_locations', $col) && $request->filled($col)) {
+                        $locationData[$col] = $request->input($col);
+                    }
+                }
 
                 $location = UserLocation::updateOrCreate(
                     [
                         'user_id' => $userDetail->id,
                         'device_key' => hash('sha256', $rawUuid),
                     ],
-                    [
-                        'device_type' => $userDetail->device_type,
-                        'latitude' => $validatedData['latitude'],
-                        'longitude' => $validatedData['longitude'],
-                        'accuracy' => 0,
-                        'device_name' => $deviceName,
-                    ]
+                    $locationData
                 )->fresh(['user:id,name,email,phone,avatar,branch_id,department_id']);
             }
 

@@ -7,10 +7,10 @@ use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
-use App\Models\User;
+use App\Models\LeaveRequestMaster;
+use App\Models\TimeLeave;
 use App\Requests\Attendance\AttendanceCheckInRequest;
 use App\Requests\Attendance\AttendanceCheckOutRequest;
-use App\Resources\Attendance\EmployeeAttendanceDetailCollection;
 use App\Resources\Attendance\NightAttendanceResource;
 use App\Resources\Attendance\TodayAttendanceResource;
 use App\Resources\Dashboard\EmployeeTodayAttendance;
@@ -91,11 +91,19 @@ class AttendanceApiController extends Controller
             }
 
 
-            if ($attendanceDetail->employeeAttendance->count() > 0) {
-                $returnData['employee_attendance'] = new EmployeeAttendanceDetailCollection($attendanceDetail->employeeAttendance);
-            } else {
-                $returnData['employee_attendance'] = [];
-            }
+            $dateRange = $this->attendanceMonthDateRange($isBsEnabled, $year, $month);
+            $monthlyAttendance = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth([
+                'date_in_bs' => $isBsEnabled,
+                'year' => $year,
+                'month' => $month,
+                'user_id' => $filterParameter['user_id'],
+            ]);
+            $returnData['employee_attendance'] = $this->mobileAttendanceRows(
+                $monthlyAttendance,
+                $filterParameter['user_id'],
+                $dateRange['start_date'],
+                $dateRange['end_date']
+            );
 
             $returnData['attendance_summary'] = [
                 'totalDays' => $attendanceSummary['totalDays'],
@@ -112,6 +120,184 @@ class AttendanceApiController extends Controller
         } catch (Exception $exception) {
             return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
         }
+    }
+
+    private function attendanceMonthDateRange(bool $isBsEnabled, int|string $year, int|string|null $month): array
+    {
+        if ($isBsEnabled) {
+            $dateInAD = AppHelper::findAdDatesFromNepaliMonthAndYear($year, $month);
+            $startDate = date('Y-m-d', strtotime($dateInAD['start_date']));
+            $endDate = date('Y-m-d', strtotime($dateInAD['end_date']));
+        } else {
+            $firstDay = $year . '-' . $month . '-01';
+            $startDate = date('Y-m-d', strtotime($firstDay));
+            $endDate = date('Y-m-t', strtotime($firstDay));
+        }
+
+        $today = date('Y-m-d');
+        if ($endDate > $today) {
+            $endDate = $today;
+        }
+
+        return [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+        ];
+    }
+
+    private function mobileAttendanceRows(array $monthlyAttendance, int|string $userId, string $startDate, string $endDate): array
+    {
+        $leaveRequestsByDate = $this->leaveRequestsByDate($userId, $startDate, $endDate);
+        $timeLeavesByDate = $this->timeLeavesByDate($userId, $startDate, $endDate);
+        $rows = [];
+
+        ksort($monthlyAttendance);
+
+        foreach ($monthlyAttendance as $day) {
+            $attendanceDate = $day['attendance_date'] ?? null;
+            if (!$attendanceDate) {
+                continue;
+            }
+
+            $leaveRequest = $leaveRequestsByDate[$attendanceDate] ?? null;
+            $timeLeave = $timeLeavesByDate[$attendanceDate] ?? null;
+
+            if (!empty($day['data'])) {
+                foreach ($day['data'] as $attendance) {
+                    $rows[] = $this->mobileAttendanceRow($attendanceDate, $attendance, $leaveRequest, $timeLeave);
+                }
+                continue;
+            }
+
+            $rows[] = $this->mobileAttendanceRow($attendanceDate, null, $leaveRequest, $timeLeave);
+        }
+
+        return $rows;
+    }
+
+    private function mobileAttendanceRow(
+        string $attendanceDate,
+        ?array $attendance,
+        ?LeaveRequestMaster $leaveRequest,
+        ?TimeLeave $timeLeave
+    ): array {
+        $extraData = $this->attendanceDisplayStatus($attendance, $leaveRequest, $timeLeave);
+        $workedMinutes = (double)($attendance['worked_hour'] ?? 0);
+        $workingMinutes = (double)($attendance['working_hour'] ?? 0);
+        $overTime = (double)($attendance['overtime'] ?? 0);
+        $underTime = (double)($attendance['undertime'] ?? 0);
+
+        return [
+            'id' => $attendance['id'] ?? 0,
+            'attendance_date' => AppHelper::dateInDDMMFormat($attendanceDate, false),
+            'attendance_date_nepali' => AppHelper::dateInDDMMFormat($attendanceDate),
+            'attendance_date_ad' => $attendanceDate,
+            'week_day' => AttendanceHelper::getWeekDayInShortForm($attendanceDate),
+            'check_in' => isset($attendance['check_in_at'])
+                ? AttendanceHelper::changeTimeFormatForAttendanceView($attendance['check_in_at'])
+                : (isset($attendance['night_checkin'])
+                    ? AttendanceHelper::changeTimeFormatForAttendanceView($attendance['night_checkin'])
+                    : '-'),
+            'check_out' => isset($attendance['check_out_at'])
+                ? AttendanceHelper::changeTimeFormatForAttendanceView($attendance['check_out_at'])
+                : (isset($attendance['night_checkout'])
+                    ? AttendanceHelper::changeTimeFormatForAttendanceView($attendance['night_checkout'])
+                    : '-'),
+            'worked_hours_min' => $workedMinutes,
+            'worked_hours' => $this->minutesLabel($workedMinutes),
+            'working_hours_min' => $workingMinutes,
+            'working_hours' => $this->minutesLabel($workingMinutes),
+            'overtime' => $overTime > 0 ? $this->minutesLabel($overTime) : '',
+            'is_overtime' => $overTime > 0,
+            'undertime' => $underTime > 0 ? $this->minutesLabel($underTime) : '',
+            'is_undertime' => $underTime > 0,
+            'day_status' => $extraData['day_status'],
+            'status_label' => $extraData['status_label'],
+            'leave_status' => $leaveRequest?->status,
+            'leave_type' => $leaveRequest?->leaveType?->name,
+            'time_leave_status' => $timeLeave?->status,
+            'time_leave_from' => $timeLeave?->start_time
+                ? AttendanceHelper::changeTimeFormatForAttendanceView($timeLeave->start_time)
+                : null,
+            'time_leave_to' => $timeLeave?->end_time
+                ? AttendanceHelper::changeTimeFormatForAttendanceView($timeLeave->end_time)
+                : null,
+        ];
+    }
+
+    private function attendanceDisplayStatus(
+        ?array $attendance,
+        ?LeaveRequestMaster $leaveRequest,
+        ?TimeLeave $timeLeave
+    ): array {
+        if ($leaveRequest) {
+            $leaveType = $leaveRequest->leaveType?->name ?: __('index.leave_request');
+            return [
+                'day_status' => $leaveRequest->status === 'approved' ? 'leave' : 'leave_request',
+                'status_label' => $leaveType . ' (' . ucfirst((string)$leaveRequest->status) . ')',
+            ];
+        }
+
+        if ($timeLeave) {
+            $timeLabel = 'Time Leave (' . ucfirst((string)$timeLeave->status) . ')';
+            return [
+                'day_status' => $timeLeave->status === 'approved' ? 'time_leave' : 'time_leave_request',
+                'status_label' => $timeLabel,
+            ];
+        }
+
+        if ($attendance) {
+            return [
+                'day_status' => 'present',
+                'status_label' => 'Present',
+            ];
+        }
+
+        return [
+            'day_status' => 'absent',
+            'status_label' => 'Absent',
+        ];
+    }
+
+    private function leaveRequestsByDate(int|string $userId, string $startDate, string $endDate): array
+    {
+        $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
+            ->where('requested_by', $userId)
+            ->whereIn('status', ['approved', 'pending'])
+            ->whereDate('leave_from', '<=', $endDate)
+            ->whereDate('leave_to', '>=', $startDate)
+            ->orderByRaw("FIELD(status, 'approved', 'pending')")
+            ->get();
+
+        $byDate = [];
+        foreach ($leaveRequests as $leaveRequest) {
+            $from = max(strtotime($startDate), strtotime($leaveRequest->leave_from));
+            $to = min(strtotime($endDate), strtotime($leaveRequest->leave_to));
+
+            for ($date = $from; $date <= $to; $date = strtotime('+1 day', $date)) {
+                $key = date('Y-m-d', $date);
+                $byDate[$key] ??= $leaveRequest;
+            }
+        }
+
+        return $byDate;
+    }
+
+    private function timeLeavesByDate(int|string $userId, string $startDate, string $endDate): array
+    {
+        return TimeLeave::query()
+            ->where('requested_by', $userId)
+            ->whereIn('status', ['approved', 'pending'])
+            ->whereBetween('issue_date', [$startDate, $endDate])
+            ->orderByRaw("FIELD(status, 'approved', 'pending')")
+            ->get()
+            ->keyBy('issue_date')
+            ->all();
+    }
+
+    private function minutesLabel(float $minutes): string
+    {
+        return floor($minutes / 60) . 'h ' . round($minutes - floor($minutes / 60) * 60) . 'm';
     }
 
  /**
@@ -522,6 +708,46 @@ class AttendanceApiController extends Controller
                 'source' => 'app',
                 'attendance_id' => $attendanceId,
             ]);
+
+            $lat = !empty($validatedData['latitude']) ? (float)$validatedData['latitude'] : null;
+            $lng = !empty($validatedData['longitude']) ? (float)$validatedData['longitude'] : null;
+            $userId = $userDetail['id'] ?? $userDetail->id ?? null;
+
+            if ($userId && $lat && $lng) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('user_locations')) {
+                    $rawUuid = (string) ($userDetail->uuid ?? ($userDetail['uuid'] ?? ''));
+                    $deviceKey = hash('sha256', $rawUuid);
+                    $deviceName = request()->input('device_name')
+                        ?: (str_contains($rawUuid, ':')
+                            ? trim(explode(':', $rawUuid, 2)[0])
+                            : ucfirst((string) ($userDetail->device_type ?? ($userDetail['device_type'] ?? 'mobile'))) . ' Device');
+
+                    $locationData = [
+                        'device_type' => $userDetail->device_type ?? ($userDetail['device_type'] ?? 'mobile'),
+                        'latitude' => $lat,
+                        'longitude' => $lng,
+                        'accuracy' => request()->input('accuracy', 0),
+                        'device_name' => $deviceName,
+                    ];
+
+                    foreach (['app_name', 'app_version', 'app_build', 'device_model', 'os_version', 'battery_level'] as $col) {
+                        if (\Illuminate\Support\Facades\Schema::hasColumn('user_locations', $col) && request()->filled($col)) {
+                            $locationData[$col] = request()->input($col);
+                        }
+                    }
+
+                    \App\Models\UserLocation::updateOrCreate(
+                        ['user_id' => $userId, 'device_key' => $deviceKey],
+                        $locationData
+                    );
+                }
+
+                \App\Models\EmployeeLocation::create([
+                    'employee_id' => $userId,
+                    'latitude' => $lat,
+                    'longitude' => $lng,
+                ]);
+            }
         } catch (Exception $exception) {
             Log::warning('Failed to store attendance log activity: ' . $exception->getMessage());
         }

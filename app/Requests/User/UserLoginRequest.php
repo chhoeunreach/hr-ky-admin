@@ -33,6 +33,14 @@ class UserLoginRequest extends FormRequest
             'uuid' => ['required', 'string'],
             'latitude' => ['nullable', 'numeric'],
             'longitude' => ['nullable', 'numeric'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+            'device_model' => ['nullable', 'string', 'max:255'],
+            'os_version' => ['nullable', 'string', 'max:120'],
+            'app_name' => ['nullable', 'string', 'max:255'],
+            'app_version' => ['nullable', 'string', 'max:80'],
+            'app_build' => ['nullable', 'string', 'max:80'],
+            'accuracy' => ['nullable', 'numeric'],
+            'battery_level' => ['nullable', 'integer'],
         ];
 
     }

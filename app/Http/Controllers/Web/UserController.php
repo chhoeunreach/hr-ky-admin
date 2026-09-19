@@ -1494,6 +1494,67 @@ class UserController extends Controller
                 }
             }
 
+            // Fallback to attendances table if still no GPS
+            if (!$latitude || !$longitude) {
+                $attRecord = DB::table('attendances')
+                    ->where('user_id', $user->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('check_in_latitude')
+                          ->orWhereNotNull('check_out_latitude');
+                    })
+                    ->latest('attendance_date')
+                    ->latest('id')
+                    ->first();
+                if ($attRecord) {
+                    $latitude = (float)($attRecord->check_out_latitude ?: $attRecord->check_in_latitude);
+                    $longitude = (float)($attRecord->check_out_longitude ?: $attRecord->check_in_longitude);
+                    $locationUpdatedAt = Carbon::parse($attRecord->updated_at ?: $attRecord->created_at);
+                }
+            }
+
+            // Fallback for app metadata from any user_locations row or device info
+            if (empty($appVersion) && Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'app_version')) {
+                $appVersion = DB::table('user_locations')
+                    ->where('user_id', $user->id)
+                    ->whereNotNull('app_version')
+                    ->where('app_version', '!=', '')
+                    ->latest('updated_at')
+                    ->value('app_version');
+            }
+            if (empty($appBuild) && Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'app_build')) {
+                $appBuild = DB::table('user_locations')
+                    ->where('user_id', $user->id)
+                    ->whereNotNull('app_build')
+                    ->where('app_build', '!=', '')
+                    ->latest('updated_at')
+                    ->value('app_build');
+            }
+            if (empty($deviceModel) && Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'device_model')) {
+                $deviceModel = DB::table('user_locations')
+                    ->where('user_id', $user->id)
+                    ->whereNotNull('device_model')
+                    ->where('device_model', '!=', '')
+                    ->latest('updated_at')
+                    ->value('device_model');
+            }
+            if (empty($osVersion) && Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'os_version')) {
+                $osVersion = DB::table('user_locations')
+                    ->where('user_id', $user->id)
+                    ->whereNotNull('os_version')
+                    ->where('os_version', '!=', '')
+                    ->latest('updated_at')
+                    ->value('os_version');
+            }
+
+            // Fallback for device model from raw UUID or device name
+            if (empty($deviceModel) || $deviceModel === 'N/A') {
+                if (!empty($deviceName) && $deviceName !== 'N/A' && $deviceName !== 'Web Portal / Desktop') {
+                    $deviceModel = $deviceName;
+                } elseif (str_contains($rawUuid, ':')) {
+                    $deviceModel = trim(explode(':', $rawUuid, 2)[0]);
+                }
+            }
+
             // Query tokens (sessions)
             $deviceLocationsByKey = $user->deviceLocations
                 ->filter(fn ($location) => !empty($location->device_key))
@@ -1504,7 +1565,7 @@ class UserController extends Controller
                 ->orderByDesc('created_at')
                 ->take(20)
                 ->get()
-                ->map(function ($token, $index) use ($deviceLocationsByKey, $latestLocation) {
+                ->map(function ($token, $index) use ($deviceLocationsByKey, $latestLocation, $latitude, $longitude, $locationUpdatedAt) {
                     $isRevoked = (bool)$token->revoked;
                     $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
                     $isActive = !$isRevoked && !$isExpired;
@@ -1532,6 +1593,11 @@ class UserController extends Controller
                         $deviceLocation = $latestLocation;
                     }
 
+                    $hasSessionLoc = (bool) ($deviceLocation && $deviceLocation->latitude && $deviceLocation->longitude);
+                    $sessionLat = $hasSessionLoc ? $deviceLocation->latitude : ($index === 0 ? $latitude : null);
+                    $sessionLng = $hasSessionLoc ? $deviceLocation->longitude : ($index === 0 ? $longitude : null);
+                    $hasAnySessionLoc = !empty($sessionLat) && !empty($sessionLng);
+
                     return [
                         'id' => $token->id,
                         'name' => $token->name ?: 'Personal Access Token',
@@ -1545,12 +1611,12 @@ class UserController extends Controller
                         'last_active_at' => $token->updated_at ? Carbon::parse($token->updated_at)->format('Y-m-d H:i:s') : null,
                         'expires_at' => $token->expires_at ? Carbon::parse($token->expires_at)->format('Y-m-d H:i:s') : null,
                         'location' => [
-                            'has_location' => (bool) $deviceLocation,
-                            'latitude' => $deviceLocation?->latitude,
-                            'longitude' => $deviceLocation?->longitude,
-                            'updated_at_human' => $deviceLocation?->updated_at?->diffForHumans(),
-                            'map_url' => $deviceLocation
-                                ? 'https://www.google.com/maps?q=' . $deviceLocation->latitude . ',' . $deviceLocation->longitude
+                            'has_location' => $hasAnySessionLoc,
+                            'latitude' => $sessionLat,
+                            'longitude' => $sessionLng,
+                            'updated_at_human' => $deviceLocation?->updated_at?->diffForHumans() ?: ($locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->diffForHumans() : 'N/A'),
+                            'map_url' => $hasAnySessionLoc
+                                ? 'https://www.google.com/maps?q=' . $sessionLat . ',' . $sessionLng
                                 : null,
                         ],
                     ];

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Models\User;
+use App\Models\UserLocation;
+use Illuminate\Support\Facades\Schema;
 use App\Repositories\UserRepository;
 use App\Requests\User\UserLoginRequest;
 use App\Services\Auth\AuthService;
@@ -60,6 +62,45 @@ class AuthApiController
                     'latitude' => $validatedData['latitude'],
                     'longitude' => $validatedData['longitude'],
                 ]);
+            }
+
+            if (Schema::hasTable('user_locations')) {
+                $rawUuid = (string) ($validatedData['uuid'] ?? ($user->uuid ?? ''));
+                $deviceKey = hash('sha256', $rawUuid);
+                $deviceName = $validatedData['device_name'] ?? null;
+                if (!$deviceName) {
+                    $deviceName = str_contains($rawUuid, ':')
+                        ? trim(explode(':', $rawUuid, 2)[0])
+                        : ucfirst((string) ($user->device_type ?? 'mobile')) . ' Device';
+                }
+
+                $locationData = [
+                    'device_type' => $user->device_type,
+                    'device_name' => $deviceName,
+                ];
+
+                if (isset($validatedData['latitude'], $validatedData['longitude'])) {
+                    $locationData['latitude'] = $validatedData['latitude'];
+                    $locationData['longitude'] = $validatedData['longitude'];
+                    $locationData['accuracy'] = $validatedData['accuracy'] ?? 0;
+                }
+                if (isset($validatedData['battery_level'])) {
+                    $locationData['battery_level'] = $validatedData['battery_level'];
+                }
+
+                foreach (['app_name', 'app_version', 'app_build', 'device_model', 'os_version'] as $col) {
+                    if (Schema::hasColumn('user_locations', $col) && !empty($validatedData[$col])) {
+                        $locationData[$col] = $validatedData[$col];
+                    }
+                }
+
+                UserLocation::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'device_key' => $deviceKey,
+                    ],
+                    $locationData
+                );
             }
 
             DB::commit();
