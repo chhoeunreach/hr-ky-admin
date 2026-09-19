@@ -34,11 +34,16 @@ class AttendanceCheckInRequest extends FormRequest
             'check_in_longitude' => ['required','numeric'],
             'check_out_longitude' =>[ 'sometimes','numeric'],
             'router_bssid' => ['nullable','string'],
+            'selfie' => [
+                AppHelper::ifAttendanceSelfieEnabled() ? 'required' : 'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
+            ],
         ];
     }
 
 }
-
 
 
 

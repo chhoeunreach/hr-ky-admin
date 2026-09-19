@@ -122,15 +122,15 @@ class AttendanceApiController extends Controller
         try {
 
             $validator = Validator::make($request->all(), [
-                'attendance_type' => [new Enum(EmployeeAttendanceTypeEnum::class)],
+                'attendance_type' => ['required', new Enum(EmployeeAttendanceTypeEnum::class)],
                 'latitude' => ['required', 'numeric'],
                 'longitude' => ['required', 'numeric'],
                 'router_bssid' => ['nullable'],
                 'identifier' => ['nullable', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::qr->value, 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::nfc->value,],
-                'attendance_status_type' => ['nullable', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::wifi->value],
+                'attendance_status_type' => ['nullable', 'in:checkIn,checkOut', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::wifi->value],
                 'note'=>['nullable'],
                 'selfie' => [
-                    AppHelper::ifAttendanceSelfieEnabled() && $request->input('attendance_type') === EmployeeAttendanceTypeEnum::qr->value
+                    AppHelper::ifAttendanceSelfieEnabled() && $request->input('attendance_type') !== EmployeeAttendanceTypeEnum::face->value
                         ? 'required'
                         : 'nullable',
                     'image',
@@ -270,9 +270,10 @@ class AttendanceApiController extends Controller
 
             $validatedData['user_id'] = $userDetail->id;
             $validatedData['company_id'] = $userDetail->company_id;
+            $validatedData['check_in_selfie'] = $this->storeAttendanceSelfie($validatedData);
 
 
-            $this->attendanceService->authorizeAttendance($validatedData['router_bssid'], $validatedData['user_id']);
+            $this->attendanceService->authorizeAttendance($validatedData['router_bssid'] ?? null, $validatedData['user_id']);
 
             $checkIn = $this->attendanceService->employeeCheckIn($validatedData);
             $data = new TodayAttendanceResource($checkIn);
@@ -312,6 +313,7 @@ class AttendanceApiController extends Controller
             $validatedData = $request->validated();
             $validatedData['user_id'] = $userDetail->id;
             $validatedData['company_id'] = $userDetail->company_id;
+            $validatedData['check_out_selfie'] = $this->storeAttendanceSelfie($validatedData);
 
             $checkOut = $this->attendanceService->employeeCheckOut($validatedData);
             $data = new TodayAttendanceResource($checkOut);
@@ -639,8 +641,19 @@ class AttendanceApiController extends Controller
 
     private function storeAttendanceSelfie(array $validatedData): ?string
     {
-        if (!AppHelper::ifAttendanceSelfieEnabled() || !isset($validatedData['selfie'])) {
+        if (!AppHelper::ifAttendanceSelfieEnabled()) {
             return null;
+        }
+
+        $isFaceKiosk = ($validatedData['attendance_type'] ?? null) === EmployeeAttendanceTypeEnum::face->value;
+        if ($isFaceKiosk) {
+            return null;
+        }
+
+        if (!isset($validatedData['selfie'])) {
+            throw ValidationException::withMessages([
+                'selfie' => ['A selfie is required for attendance.'],
+            ]);
         }
 
         return $this->storeImage($validatedData['selfie'], Attendance::SELFIE_UPLOAD_PATH, 800, 800);
