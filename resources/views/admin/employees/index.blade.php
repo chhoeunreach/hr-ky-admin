@@ -1412,7 +1412,9 @@
             // Online Status Badge
             var isOnline = Number(emp.online_status) === 1;
             $('#edaOnlineBadge').removeClass('status-online status-offline')
-                .addClass(isOnline ? 'status-online' : 'status-offline');
+                .addClass(isOnline ? 'status-online' : 'status-offline')
+                .prop('disabled', !isOnline)
+                .css('cursor', isOnline ? 'pointer' : 'default');
             $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
 
             // Platform badge
@@ -1606,6 +1608,57 @@
         // Retry handler
         $('#edaRetryBtn').on('click', function() {
             loadEmployeeDeviceActivities();
+        });
+
+        // Fetch and open the latest reported location exactly once per click.
+        $(document).on('click', '#edaOnlineBadge', function() {
+            var button = $(this);
+            if (button.prop('disabled') || !currentEdaUrl || button.data('requesting-location')) return;
+
+            button.data('requesting-location', true).prop('disabled', true);
+            $('#edaOnlineText').text('{{ __('index.requesting_location') }}');
+            var mapWindow = window.open('', '_blank');
+            if (mapWindow) mapWindow.opener = null;
+
+            var separator = currentEdaUrl.indexOf('?') === -1 ? '?' : '&';
+            fetch(currentEdaUrl + separator + '_location_request=' + Date.now(), {
+                cache: 'no-store',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status + ' (' + res.statusText + ')');
+                return res.json();
+            })
+            .then(function(data) {
+                if (!data.success) throw new Error(data.message || '{{ __('index.location_unavailable') }}');
+
+                renderEmployeeDeviceActivities(data);
+                var location = data.device && data.device.location;
+                if (!location || !location.has_location || !location.map_url) {
+                    throw new Error('{{ __('index.location_unavailable') }}');
+                }
+
+                if (mapWindow) {
+                    mapWindow.location.replace(location.map_url);
+                } else {
+                    window.location.assign(location.map_url);
+                }
+            })
+            .catch(function(err) {
+                if (mapWindow) mapWindow.close();
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('Location', err.message || '{{ __('index.location_unavailable') }}', 'info');
+                }
+            })
+            .finally(function() {
+                button.data('requesting-location', false);
+                var isOnline = button.hasClass('status-online');
+                button.prop('disabled', !isOnline);
+                $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
+            });
         });
 
         // Activity filter buttons

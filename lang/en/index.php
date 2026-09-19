@@ -2340,11 +2340,15 @@ return [
     'close' => 'Close',
     'device_and_activity_logs' => 'Device & Activity Logs',
     'device_sessions' => 'Device & Sessions',
+    'activity_logs' => 'Activity Logs',
     'active_sessions' => 'Active Sessions',
     'device_name' => 'Device Name',
     'platform' => 'Platform',
     'online_status' => 'Online Status',
     'last_location' => 'Last Location',
+    'view_latest_location' => 'View latest reported location',
+    'requesting_location' => 'Getting location...',
+    'location_unavailable' => 'No reported GPS location is available.',
     'login_time' => 'Login Time',
     'session_id' => 'Session ID',
     'revoke_session' => 'Revoke Session',
@@ -2359,4 +2363,3 @@ return [
     'confirm_revoke_session' => 'Are you sure you want to revoke this session? The user will be logged out on this device.',
     'offline' => 'Offline',
 ];
-
