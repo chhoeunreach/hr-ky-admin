@@ -1144,6 +1144,7 @@ class UserController extends Controller
             }
             $validatedData['uuid'] = null;
             $validatedData['logout_status'] = 0;
+            $validatedData['online_status'] = 0;
             $validatedData['remember_token'] = null;
             $validatedData['fcm_token'] = null;
             $this->userRepo->update($userDetail, $validatedData);
@@ -1555,6 +1556,16 @@ class UserController extends Controller
                 }
             }
 
+            $isUserOnline = (int)($user->online_status ?? 0) === 1 && !empty($user->uuid);
+            $userDeviceKey = !empty($rawUuid) ? hash('sha256', $rawUuid) : null;
+
+            // Last offline / last seen calculation:
+            $lastSeenTime = $locationUpdatedAt ?: ($user->updated_at ?: null);
+            $lastSeenHuman = $lastSeenTime ? Carbon::parse($lastSeenTime)->diffForHumans() : 'N/A';
+            $lastSeenFormatted = $lastSeenTime ? Carbon::parse($lastSeenTime)->format('Y-m-d H:i:s') : null;
+            $lastOfflineHuman = !$isUserOnline ? $lastSeenHuman : null;
+            $lastOfflineAt = !$isUserOnline ? $lastSeenFormatted : null;
+
             // Query tokens (sessions)
             $deviceLocationsByKey = $user->deviceLocations
                 ->filter(fn ($location) => !empty($location->device_key))
@@ -1565,7 +1576,7 @@ class UserController extends Controller
                 ->orderByDesc('created_at')
                 ->take(20)
                 ->get()
-                ->map(function ($token, $index) use ($deviceLocationsByKey, $latestLocation, $latitude, $longitude, $locationUpdatedAt) {
+                ->map(function ($token, $index) use ($deviceLocationsByKey, $latestLocation, $latitude, $longitude, $locationUpdatedAt, $isUserOnline, $userDeviceKey) {
                     $isRevoked = (bool)$token->revoked;
                     $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
                     $isActive = !$isRevoked && !$isExpired;
@@ -1594,27 +1605,61 @@ class UserController extends Controller
                     }
 
                     $hasSessionLoc = (bool) ($deviceLocation && $deviceLocation->latitude && $deviceLocation->longitude);
-                    $sessionLat = $hasSessionLoc ? $deviceLocation->latitude : ($index === 0 ? $latitude : null);
-                    $sessionLng = $hasSessionLoc ? $deviceLocation->longitude : ($index === 0 ? $longitude : null);
+                    $sessionLat = $hasSessionLoc ? (float)$deviceLocation->latitude : ($index === 0 && !empty($latitude) ? (float)$latitude : null);
+                    $sessionLng = $hasSessionLoc ? (float)$deviceLocation->longitude : ($index === 0 && !empty($longitude) ? (float)$longitude : null);
                     $hasAnySessionLoc = !empty($sessionLat) && !empty($sessionLng);
+
+                    // Determine session online status:
+                    $isSessionOnline = false;
+                    $sessionStatusText = 'Offline';
+                    if (!$isActive) {
+                        $sessionStatusText = $isRevoked ? 'Revoked' : 'Expired';
+                    } elseif ($isUserOnline) {
+                        if ($sessionDeviceKey && $userDeviceKey && $sessionDeviceKey === $userDeviceKey) {
+                            $isSessionOnline = true;
+                            $sessionStatusText = 'Online Now';
+                        } elseif ($index === 0) {
+                            $isSessionOnline = true;
+                            $sessionStatusText = 'Online Now';
+                        } elseif ($deviceLocation && $deviceLocation->updated_at && Carbon::parse($deviceLocation->updated_at)->diffInMinutes() <= 15) {
+                            $isSessionOnline = true;
+                            $sessionStatusText = 'Online Now';
+                        }
+                    }
+
+                    $sessionLastSeenTime = $deviceLocation?->updated_at ?? ($token->updated_at ?? $token->created_at);
+                    $sessionLastSeenHuman = $sessionLastSeenTime ? Carbon::parse($sessionLastSeenTime)->diffForHumans() : 'N/A';
+                    $sessionLastSeenFormatted = $sessionLastSeenTime ? Carbon::parse($sessionLastSeenTime)->format('Y-m-d H:i:s') : null;
 
                     return [
                         'id' => $token->id,
                         'name' => $token->name ?: 'Personal Access Token',
                         'platform' => $sessionPlatform,
                         'device_name' => $sessionDeviceName,
+                        'device_model' => $deviceLocation?->device_model ?: ($sessionPlatform !== 'Unknown' ? $sessionPlatform : 'N/A'),
+                        'os_version' => $deviceLocation?->os_version ?: null,
+                        'app_version' => $deviceLocation?->app_version ?: null,
+                        'battery_level' => $deviceLocation?->battery_level ?? null,
                         'is_active' => $isActive,
+                        'is_online' => $isSessionOnline,
+                        'status_text' => $sessionStatusText,
                         'revoked' => $isRevoked,
                         'expired' => $isExpired,
                         'login_at' => $token->created_at ? Carbon::parse($token->created_at)->format('Y-m-d H:i:s') : null,
                         'login_at_human' => $token->created_at ? Carbon::parse($token->created_at)->diffForHumans() : 'N/A',
                         'last_active_at' => $token->updated_at ? Carbon::parse($token->updated_at)->format('Y-m-d H:i:s') : null,
+                        'last_seen_at' => $sessionLastSeenFormatted,
+                        'last_seen_human' => $sessionLastSeenHuman,
                         'expires_at' => $token->expires_at ? Carbon::parse($token->expires_at)->format('Y-m-d H:i:s') : null,
                         'location' => [
                             'has_location' => $hasAnySessionLoc,
                             'latitude' => $sessionLat,
                             'longitude' => $sessionLng,
-                            'updated_at_human' => $deviceLocation?->updated_at?->diffForHumans() ?: ($locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->diffForHumans() : 'N/A'),
+                            'accuracy' => $deviceLocation?->accuracy,
+                            'is_live' => $isSessionOnline,
+                            'status_text' => $hasAnySessionLoc ? ($isSessionOnline ? 'Live Location' : 'Last Offline Location') : 'No GPS',
+                            'updated_at' => $deviceLocation?->updated_at ? Carbon::parse($deviceLocation->updated_at)->format('Y-m-d H:i:s') : ($index === 0 && $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->format('Y-m-d H:i:s') : null),
+                            'updated_at_human' => $deviceLocation?->updated_at?->diffForHumans() ?: ($index === 0 && $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->diffForHumans() : 'N/A'),
                             'map_url' => $hasAnySessionLoc
                                 ? 'https://www.google.com/maps?q=' . $sessionLat . ',' . $sessionLng
                                 : null,
@@ -1739,6 +1784,12 @@ class UserController extends Controller
                     'accuracy' => $accuracy,
                     'has_fcm' => !empty($user->fcm_token),
                     'logout_status' => (int)($user->logout_status ?? 0),
+                    'is_online' => $isUserOnline,
+                    'status_label' => $isUserOnline ? 'Online Now' : 'Offline',
+                    'last_seen_at' => $lastSeenFormatted,
+                    'last_seen_human' => $lastSeenHuman,
+                    'last_offline_at' => $lastOfflineAt,
+                    'last_offline_human' => $lastOfflineHuman,
                     'last_login_at' => $user->updated_at ? Carbon::parse($user->updated_at)->format('Y-m-d H:i:s') : null,
                     'last_login_human' => $user->updated_at ? Carbon::parse($user->updated_at)->diffForHumans() : 'N/A',
                     'app' => [
@@ -1753,6 +1804,8 @@ class UserController extends Controller
                         'latitude' => $latitude,
                         'longitude' => $longitude,
                         'accuracy' => $accuracy,
+                        'is_live' => $isUserOnline,
+                        'status_text' => $isUserOnline ? 'Live Location' : 'Last Offline Location',
                         'updated_at' => $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->format('Y-m-d H:i:s') : null,
                         'updated_at_human' => $locationUpdatedAt ? Carbon::parse($locationUpdatedAt)->diffForHumans() : 'N/A',
                         'map_url' => (!empty($latitude) && !empty($longitude)) ? "https://www.google.com/maps?q={$latitude},{$longitude}" : null,
@@ -1760,6 +1813,8 @@ class UserController extends Controller
                 ],
                 'sessions' => $tokens,
                 'active_sessions_count' => $tokens->where('is_active', true)->count(),
+                'online_devices_count' => $tokens->where('is_active', true)->where('is_online', true)->count(),
+                'offline_devices_count' => $tokens->where('is_active', true)->where('is_online', false)->count(),
                 'activities' => [
                     'attendance_logs' => $attendanceActivities,
                     'attendances' => $attendances,

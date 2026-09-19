@@ -1020,7 +1020,17 @@
                                                    title="{{ __('index.view_details') }}">
                                                     <i class="link-icon" data-feather="eye" style="width: 13px; height: 13px;"></i>
                                                 </a>
-                                            @endcan
+                                            @canany(['show_detail_employee', 'employee.profile.view', 'force_logout'])
+                                                <a href="javascript:void(0)"
+                                                   class="employee-action-btn btn-device viewDeviceActivity"
+                                                   data-id="{{ $value->id }}"
+                                                   data-name="{{ ucfirst($value->name) }}"
+                                                   data-url="{{ route('admin.employees.device-activities', $value->id) }}"
+                                                   data-force-logout-url="{{ route('admin.employees.force-logout', $value->id) }}"
+                                                   title="{{ __('index.device_and_activity_logs') }}">
+                                                    <i class="link-icon" data-feather="smartphone" style="width: 13px; height: 13px;"></i>
+                                                </a>
+                                            @endcanany
 
                                             <div class="dropdown d-inline-block">
                                                 <button class="employee-action-btn btn-more"
@@ -1410,10 +1420,20 @@
             $('#edaEmployeeBranch').text(emp.branch || 'N/A');
 
             // Online Status Badge
-            var isOnline = Number(emp.online_status) === 1;
+            var isOnline = dev.is_online !== undefined ? Boolean(dev.is_online) : Number(emp.online_status) === 1;
             $('#edaOnlineBadge').removeClass('status-online status-offline')
                 .addClass(isOnline ? 'status-online' : 'status-offline');
-            $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
+            var headerOnlineText = isOnline
+                ? '{{ __('index.online_now') }}'
+                : '{{ __('index.offline') }}' + (dev.last_seen_human && dev.last_seen_human !== 'N/A' ? ' &bull; ' + dev.last_seen_human : '');
+            $('#edaOnlineText').html(headerOnlineText);
+            $('#edaViewLiveLocationText').text(isOnline ? '{{ __('index.view_live_location') }}' : '{{ __('index.view_last_location') }}');
+
+            // Primary Device Status Badge in Header
+            var devStatusHtml = isOnline
+                ? '<span class="badge status-online rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5" style="font-size: 11px;"><span class="status-dot"></span> {{ __('index.online_now') }}</span>'
+                : '<span class="badge status-offline rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5" style="font-size: 11px;"><span class="status-dot"></span> {{ __('index.offline') }}' + (dev.last_seen_human && dev.last_seen_human !== 'N/A' ? ' (' + dev.last_seen_human + ')' : '') + '</span>';
+            $('#edaDeviceStatusBadgeContainer').html(devStatusHtml);
 
             // Platform badge
             var platform = (dev.platform || 'web').toLowerCase();
@@ -1430,9 +1450,12 @@
             // Device fields
             $('#edaDeviceName').text(dev.device_name || 'N/A');
             if (dev.battery_level !== null && dev.battery_level !== undefined) {
-                $('#edaDeviceName').append(' <span class="badge bg-secondary bg-opacity-15 text-dark rounded-pill py-0.5 px-1.5 ms-1" style="font-size: 10px;"><i data-feather="battery-charging" style="width: 10px; height: 10px;"></i> ' + dev.battery_level + '%</span>');
+                var batteryColor = dev.battery_level <= 20 ? 'danger' : (dev.battery_level <= 50 ? 'warning' : 'success');
+                $('#edaBatteryBadge').html('<span class="badge bg-' + batteryColor + ' bg-opacity-15 text-' + batteryColor + ' rounded-pill py-0.5 px-1.5 ms-1" style="font-size: 10px;"><i data-feather="battery-charging" style="width: 10px; height: 10px;"></i> ' + dev.battery_level + '%</span>');
+            } else {
+                $('#edaBatteryBadge').empty();
             }
-            $('#edaDeviceUuid').text(dev.uuid || 'N/A');
+            $('#edaDeviceUuid').text(dev.uuid || 'N/A').attr('title', dev.full_uuid || dev.uuid || '');
 
             var app = dev.app || {};
             var appVersionText = app.version && app.version !== 'N/A' ? 'Version: ' + app.version : 'Version unavailable';
@@ -1441,38 +1464,60 @@
             }
             var deviceModelText = app.device_model && app.device_model !== 'N/A' ? app.device_model : '';
             if (app.os_version && app.os_version !== 'N/A') {
-                deviceModelText += (deviceModelText ? ' | ' : '') + app.os_version;
+                deviceModelText += (deviceModelText ? ' &bull; ' : '') + app.os_version;
             }
             $('#edaAppName').text(app.name || '{{ config('app.name', 'Mobile App') }}');
             $('#edaAppVersion').text(appVersionText);
-            $('#edaDeviceModel').text(deviceModelText || 'Device model unavailable');
+            $('#edaDeviceModel').html(deviceModelText || '<span class="text-muted">Model unavailable</span>');
 
-            // Login Time
+            // Connection & Activity
+            var connBadge = isOnline
+                ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 10.5px;"><span class="status-dot bg-success"></span> {{ __('index.online_now') }}</span>'
+                : '<span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-25 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 10.5px;"><span class="status-dot bg-secondary"></span> {{ __('index.offline') }}</span>';
+            $('#edaDeviceConnectionBadge').html(connBadge);
             $('#edaLoginTime').text(dev.last_login_at || 'Never logged in');
             $('#edaLoginTimeHuman').text(dev.last_login_human ? '(' + dev.last_login_human + ')' : '');
+            $('#edaLastSeenTime').text(dev.last_seen_at || '---');
+            $('#edaLastSeenHuman').text(dev.last_seen_human ? '(' + dev.last_seen_human + ')' : '');
+
+            // FCM Push status
+            var hasFcm = Boolean(dev.has_fcm);
+            $('#edaFcmBadge').removeClass('bg-success bg-secondary bg-opacity-10 text-success text-muted')
+                .addClass(hasFcm ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-muted');
+            $('#edaFcmText').text(hasFcm ? 'Push Notifications: Active' : 'Push Notifications: Inactive');
 
             // Location
-            if (dev.location && dev.location.has_location) {
-                $('#edaLocationCoords').text(dev.location.latitude + ', ' + dev.location.longitude);
-                $('#edaLocationTime').text(dev.location.updated_at_human ? 'Updated: ' + dev.location.updated_at_human : '');
+            var loc = dev.location;
+            if (loc && loc.has_location && loc.latitude && loc.longitude) {
+                var isLiveLoc = Boolean(loc.is_live);
+                var locBadgeClass = isLiveLoc ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25';
+                var locBadgeText = isLiveLoc ? '{{ __('index.live_location') }}' : '{{ __('index.last_offline_location') }}';
+                $('#edaLocationStatusBadge').attr('class', 'badge rounded-pill px-1.5 py-0.5 ' + locBadgeClass).text(locBadgeText);
+
+                var coordsStr = Number(loc.latitude).toFixed(6) + ', ' + Number(loc.longitude).toFixed(6);
+                $('#edaLocationCoords').text(coordsStr).data('coords', coordsStr);
+                $('#edaCopyCoordsBtn').removeClass('d-none').data('coords', coordsStr);
+                $('#edaLocationTime').text(loc.updated_at ? '{{ __('index.recorded') }}: ' + loc.updated_at + ' (' + (loc.updated_at_human || '') + ')' : '');
+                $('#edaLocationAccuracy').text(loc.accuracy ? '{{ __('index.accuracy') }}: &plusmn;' + Math.round(loc.accuracy) + 'm' : '');
                 $('#edaMapLinkWrapper').show();
-                $('#edaMapBtn').attr('href', dev.location.map_url);
+                $('#edaMapBtn').attr('href', loc.map_url);
                 $('#edaViewLiveLocationBtn')
                     .prop('disabled', false)
-                    .data('can-view-location', true)
-                    .find('span').text(isOnline ? '{{ __('index.view_live_location') }}' : '{{ __('index.view_last_location') }}');
+                    .data('can-view-location', true);
                 $('#edaDevicePlatformLink')
-                    .attr('href', dev.location.map_url)
+                    .attr('href', loc.map_url)
                     .attr('aria-disabled', 'false')
                     .removeClass('opacity-50 pe-none');
             } else {
-                $('#edaLocationCoords').text('No GPS location available');
+                $('#edaLocationStatusBadge').attr('class', 'badge bg-secondary bg-opacity-10 text-muted rounded-pill px-1.5 py-0.5').text('{{ __('index.location_unavailable') }}');
+                $('#edaLocationCoords').text('No GPS location available').removeData('coords');
+                $('#edaCopyCoordsBtn').addClass('d-none');
                 $('#edaLocationTime').text(emp.branch ? 'Assigned: ' + emp.branch : '');
+                $('#edaLocationAccuracy').text('');
                 $('#edaMapLinkWrapper').hide();
                 $('#edaViewLiveLocationBtn')
                     .prop('disabled', true)
-                    .data('can-view-location', false)
-                    .find('span').text('{{ __('index.view_last_location') }}');
+                    .data('can-view-location', false);
                 $('#edaDevicePlatformLink')
                     .removeAttr('href')
                     .attr('aria-disabled', 'true')
@@ -1480,18 +1525,64 @@
             }
 
             // Sessions Tab
-            $('#edaSessionCountBadge').text(data.active_sessions_count || sessions.length);
+            var totalSessions = sessions.length;
+            var onlineCount = data.online_devices_count !== undefined ? data.online_devices_count : sessions.filter(function(s) { return s.is_online; }).length;
+            var offlineCount = data.offline_devices_count !== undefined ? data.offline_devices_count : sessions.filter(function(s) { return s.is_active && !s.is_online; }).length;
+
+            $('#edaSessionCountBadge').text(totalSessions);
+            $('#edaSessionsTotalBadge').text(totalSessions + ' Total');
+            $('#edaSessionsOnlineCount').text(onlineCount);
+            $('#edaSessionsOfflineCount').text(offlineCount);
+
             var sessionsHtml = '';
             if (sessions.length > 0) {
                 sessions.forEach(function(s, idx) {
                     var shortId = s.id ? s.id.substring(0, 14) + '...' : 'N/A';
-                    var statusBadge = s.is_active
-                        ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 rounded-pill px-2 py-0.5" style="font-size: 10px;">Active</span>'
-                        : '<span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Revoked/Expired</span>';
 
+                    // Session status badge
+                    var sessionStatusBadge = '';
+                    if (s.is_active) {
+                        sessionStatusBadge = '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 10px;">{{ __('index.active') }}</span>';
+                    } else if (s.revoked) {
+                        sessionStatusBadge = '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 10px;">Revoked</span>';
+                    } else {
+                        sessionStatusBadge = '<span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Expired</span>';
+                    }
+
+                    // Device connection status badge
+                    var devStatusBadge = '';
+                    if (s.is_online) {
+                        devStatusBadge = '<span class="badge status-online rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 10px;"><span class="status-dot"></span> {{ __('index.online_now') }}</span>';
+                    } else if (s.is_active) {
+                        var lastSeenText = s.last_seen_human && s.last_seen_human !== 'N/A' ? s.last_seen_human : '';
+                        devStatusBadge = '<span class="badge status-offline rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" style="font-size: 10px;"><span class="status-dot"></span> {{ __('index.offline') }}</span>' +
+                            (lastSeenText ? '<small class="text-muted d-block mt-0.5" style="font-size: 9.5px;">' + escapeEdaHtml(lastSeenText) + '</small>' : '');
+                    } else {
+                        devStatusBadge = '<span class="badge bg-light text-muted rounded-pill px-2 py-0.5" style="font-size: 10px;">Inactive</span>';
+                    }
+
+                    // Location column
+                    var locHtml = '';
+                    if (s.location && s.location.has_location && s.location.latitude && s.location.longitude) {
+                        var isLive = Boolean(s.location.is_live);
+                        var locTypeBadge = isLive
+                            ? '<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-1.5 py-0.2" style="font-size: 9px;">{{ __('index.live') }}</span>'
+                            : '<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 rounded-pill px-1.5 py-0.2" style="font-size: 9px;">{{ __('index.last_offline') }}</span>';
+
+                        var coordsShort = Number(s.location.latitude).toFixed(4) + ', ' + Number(s.location.longitude).toFixed(4);
+                        locHtml = '<div class="d-flex align-items-center gap-1 mb-0.5">' +
+                            locTypeBadge +
+                            '<span class="fw-medium text-dark" style="font-size: 11px;">' + coordsShort + '</span>' +
+                            '</div>' +
+                            '<small class="text-muted d-block" style="font-size: 9.5px;">' + (s.location.updated_at_human || '') + '</small>';
+                    } else {
+                        locHtml = '<span class="text-muted small" style="font-size: 11px;">No GPS recorded</span>';
+                    }
+
+                    // Action buttons
                     var locationBtn = s.location && s.location.has_location && s.location.map_url
-                        ? '<a href="' + escapeEdaHtml(s.location.map_url) + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-xs py-0.5 px-2 rounded-2 d-inline-flex align-items-center gap-1" title="{{ __('index.view_latest_location') }}"><i data-feather="map-pin" style="width: 12px; height: 12px;"></i> {{ __('index.view_on_map') }}</a>'
-                        : '<button type="button" class="btn btn-outline-secondary btn-xs py-0.5 px-2 rounded-2" disabled title="{{ __('index.location_unavailable') }}"><i data-feather="map-pin" style="width: 12px; height: 12px;"></i></button>';
+                        ? '<a href="' + escapeEdaHtml(s.location.map_url) + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-xs py-0.5 px-2 rounded-2 d-inline-flex align-items-center gap-1" title="{{ __('index.view_on_map') }}"><i data-feather="map-pin" style="width: 11px; height: 11px;"></i> {{ __('index.view_on_map') }}</a>'
+                        : '<button type="button" class="btn btn-outline-secondary btn-xs py-0.5 px-2 rounded-2 opacity-50 pe-none" disabled title="{{ __('index.location_unavailable') }}"><i data-feather="map-pin" style="width: 12px; height: 12px;"></i></button>';
 
                     var revokeBtn = s.is_active
                         ? '<button type="button" class="btn btn-outline-danger btn-xs py-0.5 px-2 rounded-2 revokeSessionBtn" data-employee-id="' + emp.id + '" data-token-id="' + escapeEdaHtml(s.id) + '" title="{{ __('index.revoke_session') }}"><i data-feather="x-circle" style="width: 12px; height: 12px;"></i> {{ __('index.revoke_session') }}</button>'
@@ -1499,18 +1590,40 @@
 
                     var actionBtn = '<div class="d-inline-flex align-items-center justify-content-end gap-1">' + locationBtn + revokeBtn + '</div>';
 
+                    // Platform badge
+                    var pIcon = 'monitor';
+                    var pClass = 'bg-info bg-opacity-10 text-info';
+                    var pLower = (s.platform || '').toLowerCase();
+                    if (pLower.indexOf('ios') !== -1 || pLower.indexOf('apple') !== -1) {
+                        pIcon = 'smartphone';
+                        pClass = 'bg-dark text-white';
+                    } else if (pLower.indexOf('android') !== -1) {
+                        pIcon = 'smartphone';
+                        pClass = 'bg-success bg-opacity-10 text-success';
+                    }
+
                     sessionsHtml += '<tr>' +
                         '<td class="ps-3 text-muted fw-semibold" style="font-size: 11px;">' + (idx + 1) + '</td>' +
-                        '<td><span class="fw-semibold text-dark">' + escapeEdaHtml(s.device_name) + '</span><span class="badge bg-light text-muted ms-1" style="font-size: 9.5px;">' + escapeEdaHtml(s.platform) + '</span></td>' +
+                        '<td>' +
+                            '<div class="d-flex align-items-center gap-1.5">' +
+                                '<span class="badge ' + pClass + ' rounded-pill px-1.5 py-0.5" style="font-size: 9px;"><i data-feather="' + pIcon + '" style="width: 9px; height: 9px;"></i> ' + escapeEdaHtml(s.platform) + '</span>' +
+                                '<span class="fw-bold text-dark" style="font-size: 11.5px;">' + escapeEdaHtml(s.device_name) + '</span>' +
+                            '</div>' +
+                            (s.device_model && s.device_model !== 'N/A' ? '<small class="text-muted d-block mt-0.5" style="font-size: 10px;">' + escapeEdaHtml(s.device_model) + (s.os_version ? ' &bull; ' + escapeEdaHtml(s.os_version) : '') + '</small>' : '') +
+                        '</td>' +
+                        '<td class="text-center">' + devStatusBadge + '</td>' +
                         '<td><span class="session-token-code" title="' + escapeEdaHtml(s.id) + '">' + escapeEdaHtml(shortId) + '</span> <button type="button" class="btn btn-link btn-xs p-0 text-muted copyTokenBtn" data-token="' + escapeEdaHtml(s.id) + '" title="Copy Session ID"><i data-feather="copy" style="width: 11px; height: 11px;"></i></button></td>' +
-                        '<td><div class="fw-medium text-dark">' + (s.login_at || '---') + '</div><small class="text-muted" style="font-size: 10px;">' + escapeEdaHtml(s.login_at_human) + '</small></td>' +
-                        '<td><span class="text-muted" style="font-size: 11.5px;">' + (s.last_active_at || '---') + '</span></td>' +
-                        '<td class="text-center">' + statusBadge + '</td>' +
+                        '<td>' + locHtml + '</td>' +
+                        '<td>' +
+                            '<div class="fw-medium text-dark" style="font-size: 11px;">' + (s.login_at || '---') + '</div>' +
+                            '<small class="text-muted d-block" style="font-size: 9.5px;">Last seen: ' + (s.last_seen_at || '---') + '</small>' +
+                        '</td>' +
+                        '<td class="text-center">' + sessionStatusBadge + '</td>' +
                         '<td class="text-end pe-3">' + actionBtn + '</td>' +
                     '</tr>';
                 });
             } else {
-                sessionsHtml = '<tr><td colspan="7" class="text-center py-4 text-muted">{{ __('index.no_active_sessions') }}</td></tr>';
+                sessionsHtml = '<tr><td colspan="8" class="text-center py-4 text-muted">{{ __('index.no_active_sessions') }}</td></tr>';
             }
             $('#edaSessionsTableBody').html(sessionsHtml);
 
@@ -1692,6 +1805,44 @@
                         position: 'top-end',
                         icon: 'success',
                         title: 'Session ID copied to clipboard',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            }
+        });
+
+        // Copy coordinates handler
+        $(document).on('click', '#edaCopyCoordsBtn', function(e) {
+            e.preventDefault();
+            var coords = $(this).data('coords');
+            if (coords && navigator.clipboard) {
+                navigator.clipboard.writeText(coords);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: '{{ __('index.coordinates_copied') }}',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                }
+            }
+        });
+
+        // Copy UUID handler
+        $(document).on('click', '#edaCopyUuidBtn', function(e) {
+            e.preventDefault();
+            var uuid = $('#edaDeviceUuid').attr('title') || $('#edaDeviceUuid').text();
+            if (uuid && uuid !== '---' && uuid !== 'N/A' && navigator.clipboard) {
+                navigator.clipboard.writeText(uuid);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Device UUID copied to clipboard',
                         showConfirmButton: false,
                         timer: 1500
                     });

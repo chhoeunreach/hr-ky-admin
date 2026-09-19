@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
+Route::get('app-version', [DashboardApiController::class, 'appVersion']);
 Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
     ->middleware('auth:api');
 

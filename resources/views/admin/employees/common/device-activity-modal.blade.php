@@ -17,20 +17,20 @@
                             <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0.5 fw-medium" id="edaEmployeeCode" style="font-size: 11px;">
                                 ---
                             </span>
-                            <span class="badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5"
+                            <span class="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5"
                                   id="edaOnlineBadge"
                                   style="font-size: 11px; background-color: #f1f5f9; color: #64748b;">
                                 <span class="status-dot"></span>
                                 <span id="edaOnlineText">{{ __('index.loading') }}</span>
                             </span>
                             <button type="button"
-                                    class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
+                                    class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2.5 py-1 rounded-pill"
                                     id="edaViewLiveLocationBtn"
                                     title="{{ __('index.view_latest_location') }}"
                                     disabled
-                                    style="font-size: 11px;">
+                                    style="font-size: 11px; font-weight: 600;">
                                 <i data-feather="map-pin" style="width: 12px; height: 12px;"></i>
-                                <span>{{ __('index.view_live_location') }}</span>
+                                <span id="edaViewLiveLocationText">{{ __('index.view_live_location') }}</span>
                             </button>
                         </div>
                         <div class="text-muted small mt-0.5 text-truncate" style="font-size: 0.78rem;">
@@ -107,7 +107,7 @@
                     <div class="tab-pane fade show active" id="edaSessionsPane" role="tabpanel" aria-labelledby="eda-sessions-tab">
                         <!-- Primary Device Card -->
                         <div class="card border border-slate-200 shadow-none mb-4" style="border-radius: 12px; background: #ffffff;">
-                            <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
+                            <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
                                 <a href="#" target="_blank" rel="noopener noreferrer"
                                    class="d-flex align-items-center gap-2 text-decoration-none"
                                    id="edaDevicePlatformLink"
@@ -118,42 +118,85 @@
                                     <span class="fw-bold text-dark small">{{ __('index.device_name') }} &amp; {{ __('index.platform') }}</span>
                                     <i data-feather="map-pin" class="text-primary" style="width: 13px; height: 13px;"></i>
                                 </a>
-                                <div id="edaPlatformBadgeContainer"></div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <div id="edaDeviceStatusBadgeContainer"></div>
+                                    <div id="edaPlatformBadgeContainer"></div>
+                                </div>
                             </div>
                             <div class="card-body p-3">
                                 <div class="row g-3">
-                                    <div class="col-lg-3 col-md-6">
-                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
-                                            <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.device_name') }}</span>
-                                            <span class="fw-bold text-dark d-block text-truncate" id="edaDeviceName" style="font-size: 0.9rem;">---</span>
-                                            <small class="text-muted text-truncate d-block mt-0.5" id="edaDeviceUuid" style="font-size: 10.5px; font-family: monospace;">---</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-3 col-md-6">
-                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
-                                            <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.login_time') }}</span>
-                                            <span class="fw-bold text-dark d-block" id="edaLoginTime" style="font-size: 0.88rem;">---</span>
-                                            <small class="text-muted d-block mt-0.5" id="edaLoginTimeHuman" style="font-size: 10.5px;">---</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-3 col-md-6">
-                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
-                                            <span class="text-muted d-block small" style="font-size: 11px;">App Information</span>
-                                            <span class="fw-bold text-dark d-block text-truncate" id="edaAppName" style="font-size: 0.88rem;">---</span>
-                                            <small class="text-muted d-block mt-0.5 text-truncate" id="edaAppVersion" style="font-size: 10.5px;">---</small>
-                                            <small class="text-muted d-block mt-0.5 text-truncate" id="edaDeviceModel" style="font-size: 10.5px;">---</small>
-                                        </div>
-                                    </div>
+                                    <!-- Col 1: Device & Hardware -->
                                     <div class="col-lg-3 col-md-6">
                                         <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100 d-flex flex-column justify-content-between">
                                             <div>
-                                                <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.last_location') }}</span>
-                                                <span class="fw-semibold text-dark d-block text-truncate" id="edaLocationCoords" style="font-size: 0.85rem;">---</span>
-                                                <small class="text-muted d-block" id="edaLocationTime" style="font-size: 10.5px;">---</small>
+                                                <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.device_name') }}</span>
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                                    <span class="fw-bold text-dark text-truncate" id="edaDeviceName" style="font-size: 0.9rem;">---</span>
+                                                    <span id="edaBatteryBadge"></span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1 text-truncate" id="edaDeviceModel" style="font-size: 10.5px;">---</small>
                                             </div>
-                                            <div class="mt-1" id="edaMapLinkWrapper">
-                                                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline-primary py-0.5 px-2 rounded-2 d-inline-flex align-items-center gap-1" id="edaMapBtn" style="font-size: 10.5px;">
-                                                    <i data-feather="map-pin" style="width: 11px; height: 11px;"></i>
+                                            <div class="mt-2 pt-2 border-top border-1 border-opacity-50 d-flex align-items-center justify-content-between">
+                                                <small class="text-muted text-truncate" id="edaDeviceUuid" style="font-size: 10px; font-family: monospace; max-width: 150px;">---</small>
+                                                <button type="button" class="btn btn-link btn-xs p-0 text-muted" id="edaCopyUuidBtn" title="Copy UUID">
+                                                    <i data-feather="copy" style="width: 11px; height: 11px;"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Col 2: Connection & Activity -->
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100">
+                                            <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.online_status') }}</span>
+                                            <div class="mt-1 mb-2" id="edaDeviceConnectionBadge">
+                                                <span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10.5px;">---</span>
+                                            </div>
+                                            <div class="mb-1.5">
+                                                <span class="text-muted d-block" style="font-size: 10px;">{{ __('index.login_time') }}</span>
+                                                <span class="fw-bold text-dark d-block" id="edaLoginTime" style="font-size: 0.82rem;">---</span>
+                                                <small class="text-muted d-block" id="edaLoginTimeHuman" style="font-size: 10px;">---</small>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted d-block" style="font-size: 10px;">{{ __('index.last_seen') }}</span>
+                                                <span class="fw-semibold text-dark d-block" id="edaLastSeenTime" style="font-size: 0.82rem;">---</span>
+                                                <small class="text-muted d-block" id="edaLastSeenHuman" style="font-size: 10px;">---</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Col 3: App Information -->
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100">
+                                            <span class="text-muted d-block small" style="font-size: 11px;">App &amp; Notifications</span>
+                                            <span class="fw-bold text-dark d-block text-truncate mt-0.5" id="edaAppName" style="font-size: 0.88rem;">---</span>
+                                            <small class="text-muted d-block mt-0.5 text-truncate" id="edaAppVersion" style="font-size: 10.5px;">---</small>
+                                            <div class="mt-2 pt-2 border-top border-1 border-opacity-50">
+                                                <span class="badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="edaFcmBadge" style="font-size: 10px;">
+                                                    <i data-feather="bell" style="width: 10px; height: 10px;"></i>
+                                                    <span id="edaFcmText">---</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Col 4: Device Location -->
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100 d-flex flex-column justify-content-between">
+                                            <div>
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <span class="text-muted small" style="font-size: 11px;">{{ __('index.last_location') }}</span>
+                                                    <span class="badge rounded-pill px-1.5 py-0.5" id="edaLocationStatusBadge" style="font-size: 9.5px;">---</span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="fw-semibold text-dark text-truncate" id="edaLocationCoords" style="font-size: 0.85rem;">---</span>
+                                                    <button type="button" class="btn btn-link btn-xs p-0 text-muted d-none" id="edaCopyCoordsBtn" title="{{ __('index.copy_coordinates') }}">
+                                                        <i data-feather="copy" style="width: 11px; height: 11px;"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted d-block mt-0.5" id="edaLocationTime" style="font-size: 10.5px;">---</small>
+                                                <small class="text-muted d-block" id="edaLocationAccuracy" style="font-size: 10px;">---</small>
+                                            </div>
+                                            <div class="mt-2 pt-1" id="edaMapLinkWrapper">
+                                                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-primary py-1 px-2.5 rounded-2 d-inline-flex align-items-center gap-1 shadow-sm w-100 justify-content-center" id="edaMapBtn" style="font-size: 11px; font-weight: 600;">
+                                                    <i data-feather="map-pin" style="width: 12px; height: 12px;"></i>
                                                     <span>{{ __('index.view_on_map') }}</span>
                                                 </a>
                                             </div>
@@ -170,9 +213,15 @@
                                     <div class="rounded-2 d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success" style="width: 28px; height: 28px;">
                                         <i data-feather="key" style="width: 14px; height: 14px;"></i>
                                     </div>
-                                    <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
                                         <span class="fw-bold text-dark small">{{ __('index.active_sessions') }}</span>
-                                        <span class="text-muted small ms-1" style="font-size: 11px;">(Tokens &amp; Logins)</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 rounded-pill px-2 py-0.5" id="edaSessionsTotalBadge" style="font-size: 10.5px;">0</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="edaSessionsOnlineBadge" style="font-size: 10.5px;">
+                                            <span class="status-dot"></span> <span id="edaSessionsOnlineCount">0</span> {{ __('index.online_now') }}
+                                        </span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-20 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="edaSessionsOfflineBadge" style="font-size: 10.5px;">
+                                            <span class="status-dot"></span> <span id="edaSessionsOfflineCount">0</span> {{ __('index.offline') }}
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
@@ -188,9 +237,10 @@
                                         <tr>
                                             <th class="ps-3" style="width: 40px;">#</th>
                                             <th>{{ __('index.device_name') }} / {{ __('index.platform') }}</th>
+                                            <th class="text-center">{{ __('index.online_status') }}</th>
                                             <th>{{ __('index.session_id') }}</th>
-                                            <th>{{ __('index.login_time') }}</th>
-                                            <th>{{ __('index.last_seen') }}</th>
+                                            <th>{{ __('index.last_location') }}</th>
+                                            <th>{{ __('index.login_time') }} &amp; {{ __('index.last_seen') }}</th>
                                             <th class="text-center">{{ __('index.status') }}</th>
                                             <th class="text-end pe-3">{{ __('index.action') }}</th>
                                         </tr>
