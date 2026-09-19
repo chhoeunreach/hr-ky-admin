@@ -2497,5 +2497,13 @@ return [
     'all_mobile_users_desc' => 'ផ្ញើសារ Push Notification និងដំណឹងក្នុង App ទៅកាន់បុគ្គលិកប្រើប្រាស់ទូរស័ព្ទទាំងអស់។',
     'outdated_devices_desc' => 'កំណត់គោលដៅតែលើឧបករណ៍ណាដែលមិនទាន់បានអាប់ដេតដល់កំណែថ្មីប៉ុណ្ណោះ។',
     'placeholders_hint' => ':target_version, :min_version',
+    'alert_dialog_content' => 'ខ្លឹមសារផ្ទាំងជូនដំណឹង',
+    'bilingual_support' => 'គាំទ្រពីរភាសា (ខ្មែរ & អង់គ្លេស)',
+    'khmer_language' => 'ភាសាខ្មែរ',
+    'english_language' => 'ភាសាអង់គ្លេស',
+    'alert_title_km' => 'ចំណងជើងផ្ទាំងជូនដំណឹង (ខ្មែរ)',
+    'alert_message_km' => 'សារជូនដំណឹង (ខ្មែរ)',
+    'alert_title_en' => 'ចំណងជើងផ្ទាំងជូនដំណឹង (អង់គ្លេស)',
+    'alert_message_en' => 'សារជូនដំណឹង (អង់គ្លេស)',
 ];
 

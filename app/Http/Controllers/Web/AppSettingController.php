@@ -150,8 +150,12 @@ class AppSettingController extends Controller
                 'min_version' => ['required', 'string', 'max:50'],
                 'force_update' => ['nullable', 'boolean'],
                 'enabled' => ['nullable', 'boolean'],
-                'alert_title' => ['required', 'string', 'max:150'],
-                'alert_message' => ['required', 'string', 'max:1000'],
+                'alert_title_km' => ['nullable', 'string', 'max:150'],
+                'alert_message_km' => ['nullable', 'string', 'max:1000'],
+                'alert_title_en' => ['nullable', 'string', 'max:150'],
+                'alert_message_en' => ['nullable', 'string', 'max:1000'],
+                'alert_title' => ['nullable', 'string', 'max:150'],
+                'alert_message' => ['nullable', 'string', 'max:1000'],
                 'android_url' => ['nullable', 'string', 'max:255'],
                 'ios_url' => ['nullable', 'string', 'max:255'],
             ]);
@@ -159,13 +163,39 @@ class AppSettingController extends Controller
             $isEnabled = $request->boolean('enabled');
             $forceUpdate = $request->boolean('force_update');
 
+            $titleKm = trim((string)($validated['alert_title_km'] ?? ''));
+            $msgKm = trim((string)($validated['alert_message_km'] ?? ''));
+            $titleEn = trim((string)($validated['alert_title_en'] ?? ''));
+            $msgEn = trim((string)($validated['alert_message_en'] ?? ''));
+
+            if (empty($titleKm)) {
+                $titleKm = 'មានកំណែអាប់ដេតថ្មី';
+            }
+            if (empty($msgKm)) {
+                $msgKm = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
+            }
+            if (empty($titleEn)) {
+                $titleEn = 'New Version Available';
+            }
+            if (empty($msgEn)) {
+                $msgEn = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
+            }
+
+            $currentLocale = app()->getLocale();
+            $activeTitle = ($currentLocale === 'km') ? $titleKm : $titleEn;
+            $activeMsg = ($currentLocale === 'km') ? $msgKm : $msgEn;
+
             $payload = [
                 'enabled' => $isEnabled,
                 'target_version' => trim($validated['target_version']),
                 'min_version' => trim($validated['min_version']),
                 'force_update' => $forceUpdate,
-                'alert_title' => trim($validated['alert_title']),
-                'alert_message' => trim($validated['alert_message']),
+                'alert_title_km' => $titleKm,
+                'alert_message_km' => $msgKm,
+                'alert_title_en' => $titleEn,
+                'alert_message_en' => $msgEn,
+                'alert_title' => $activeTitle,
+                'alert_message' => $activeMsg,
                 'android_url' => trim((string)($validated['android_url'] ?? '')),
                 'ios_url' => trim((string)($validated['ios_url'] ?? '')),
             ];

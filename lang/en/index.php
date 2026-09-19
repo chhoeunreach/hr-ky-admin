@@ -2427,5 +2427,13 @@ return [
     'all_mobile_users_desc' => 'Send push notification and in-app notice to all registered mobile app users.',
     'outdated_devices_desc' => 'Target only devices that have not yet updated to target version.',
     'placeholders_hint' => ':target_version, :min_version',
+    'alert_dialog_content' => 'Alert Dialog Content',
+    'bilingual_support' => 'Bilingual (Khmer & English)',
+    'khmer_language' => 'Khmer',
+    'english_language' => 'English',
+    'alert_title_km' => 'Alert Dialog Title (Khmer)',
+    'alert_message_km' => 'Alert Message (Khmer)',
+    'alert_title_en' => 'Alert Dialog Title (English)',
+    'alert_message_en' => 'Alert Message (English)',
 ];
 

@@ -322,16 +322,28 @@ class AppHelper
         return AppSetting::where('slug', $slug)->where('status', 1)->exists();
     }
 
-    public static function getAppVersionSettings(): array
+    public static function getAppVersionSettings(?string $locale = null): array
     {
         $setting = AppSetting::where('slug', 'app-version-update')->first();
+
+        $defaultKmTitle = 'មានកំណែអាប់ដេតថ្មី';
+        $defaultKmMessage = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
+        $defaultEnTitle = 'New Version Available';
+        $defaultEnMessage = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
+
+        $targetLocale = $locale ?: app()->getLocale();
+
         $defaults = [
             'enabled' => true,
             'target_version' => env('LATEST_MOBILE_VERSION', '13.00'),
             'min_version' => env('MIN_MOBILE_VERSION', '13.00'),
             'force_update' => (bool) env('FORCE_MOBILE_UPDATE', false),
-            'alert_title' => 'New Version Available',
-            'alert_message' => 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.',
+            'alert_title_km' => $defaultKmTitle,
+            'alert_message_km' => $defaultKmMessage,
+            'alert_title_en' => $defaultEnTitle,
+            'alert_message_en' => $defaultEnMessage,
+            'alert_title' => ($targetLocale === 'km') ? $defaultKmTitle : $defaultEnTitle,
+            'alert_message' => ($targetLocale === 'km') ? $defaultKmMessage : $defaultEnMessage,
             'android_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
             'ios_url' => env('IOS_DOWNLOAD_URL', 'https://apps.apple.com'),
         ];
@@ -350,13 +362,48 @@ class AppHelper
 
         $isEnabled = isset($setting->status) ? ((int)$setting->status === 1) : (isset($decoded['enabled']) ? (bool)$decoded['enabled'] : true);
 
+        $hasKhmerChar = function (?string $str): bool {
+            return !empty($str) && (bool) preg_match('/[\x{1780}-\x{17FF}]/u', $str);
+        };
+
+        $legacyTitle = !empty($decoded['alert_title']) ? trim($decoded['alert_title']) : null;
+        $legacyMsg = !empty($decoded['alert_message']) ? trim($decoded['alert_message']) : null;
+
+        $titleKm = !empty($decoded['alert_title_km'])
+            ? trim($decoded['alert_title_km'])
+            : ($hasKhmerChar($legacyTitle) ? $legacyTitle : $defaultKmTitle);
+
+        $messageKm = !empty($decoded['alert_message_km'])
+            ? trim($decoded['alert_message_km'])
+            : ($hasKhmerChar($legacyMsg) ? $legacyMsg : $defaultKmMessage);
+
+        $titleEn = !empty($decoded['alert_title_en'])
+            ? trim($decoded['alert_title_en'])
+            : (!$hasKhmerChar($legacyTitle) && $legacyTitle ? $legacyTitle : $defaultEnTitle);
+
+        $messageEn = !empty($decoded['alert_message_en'])
+            ? trim($decoded['alert_message_en'])
+            : (!$hasKhmerChar($legacyMsg) && $legacyMsg ? $legacyMsg : $defaultEnMessage);
+
+        if ($targetLocale === 'km') {
+            $activeTitle = $titleKm ?: $titleEn;
+            $activeMessage = $messageKm ?: $messageEn;
+        } else {
+            $activeTitle = $titleEn ?: $titleKm;
+            $activeMessage = $messageEn ?: $messageKm;
+        }
+
         return [
             'enabled' => $isEnabled,
             'target_version' => !empty($decoded['target_version']) ? trim($decoded['target_version']) : $defaults['target_version'],
             'min_version' => !empty($decoded['min_version']) ? trim($decoded['min_version']) : $defaults['min_version'],
             'force_update' => isset($decoded['force_update']) ? (bool)$decoded['force_update'] : $defaults['force_update'],
-            'alert_title' => !empty($decoded['alert_title']) ? trim($decoded['alert_title']) : $defaults['alert_title'],
-            'alert_message' => !empty($decoded['alert_message']) ? trim($decoded['alert_message']) : $defaults['alert_message'],
+            'alert_title_km' => $titleKm,
+            'alert_message_km' => $messageKm,
+            'alert_title_en' => $titleEn,
+            'alert_message_en' => $messageEn,
+            'alert_title' => $activeTitle,
+            'alert_message' => $activeMessage,
             'android_url' => !empty($decoded['android_url']) ? trim($decoded['android_url']) : $fallbackApkUrl,
             'ios_url' => !empty($decoded['ios_url']) ? trim($decoded['ios_url']) : $defaults['ios_url'],
         ];
@@ -380,9 +427,21 @@ class AppHelper
         return trim($v);
     }
 
-    public static function getAppVersionCheckData(?string $clientVersion = null): array
+    public static function getAppVersionCheckData(?string $clientVersion = null, ?string $locale = null): array
     {
-        $settings = self::getAppVersionSettings();
+        $targetLocale = $locale;
+        if (!$targetLocale && function_exists('request') && request()) {
+            $acceptLang = request()->header('Accept-Language');
+            if ($acceptLang && str_contains(strtolower($acceptLang), 'km')) {
+                $targetLocale = 'km';
+            } elseif ($acceptLang && str_contains(strtolower($acceptLang), 'en')) {
+                $targetLocale = 'en';
+            } else {
+                $targetLocale = request()->get('lang') ?: app()->getLocale();
+            }
+        }
+
+        $settings = self::getAppVersionSettings($targetLocale);
         $normalizedClient = self::normalizeAppVersion($clientVersion);
 
         $targetVersion = $settings['target_version'];
@@ -403,11 +462,17 @@ class AppHelper
             }
         }
 
-        $message = str_replace(
-            [':target_version', ':min_version', ':current_version'],
-            [$targetVersion, $minVersion, (string)($clientVersion ?: $targetVersion)],
-            $settings['alert_message']
-        );
+        $replacePlaceholders = function(string $str) use ($targetVersion, $minVersion, $clientVersion): string {
+            return str_replace(
+                [':target_version', ':min_version', ':current_version'],
+                [$targetVersion, $minVersion, (string)($clientVersion ?: $targetVersion)],
+                $str
+            );
+        };
+
+        $message = $replacePlaceholders($settings['alert_message']);
+        $messageKm = $replacePlaceholders($settings['alert_message_km']);
+        $messageEn = $replacePlaceholders($settings['alert_message_en']);
 
         $showAlert = $isEnabled && ($isUpdateAvailable || $isUpdateRequired);
 
@@ -426,6 +491,10 @@ class AppHelper
             'show_alert' => $showAlert,
             'alert_title' => $settings['alert_title'],
             'alert_message' => $message,
+            'alert_title_km' => $settings['alert_title_km'],
+            'alert_message_km' => $messageKm,
+            'alert_title_en' => $settings['alert_title_en'],
+            'alert_message_en' => $messageEn,
             'android_url' => $settings['android_url'],
             'ios_url' => $settings['ios_url'],
         ];

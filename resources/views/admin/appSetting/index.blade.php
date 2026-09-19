@@ -118,21 +118,69 @@
                                 </div>
                             </div>
 
-                            <!-- Row 3: Alert Content -->
-                            <div class="row g-3">
-                                <div class="col-sm-5">
-                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleInput">
-                                        @lang('index.alert_title') <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" name="alert_title" id="alertTitleInput" class="form-control form-control-sm" placeholder="{{ __('index.new_version_available') }}" value="{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}" required>
+                            <!-- Row 3: Alert Content (Bilingual Tabs: Khmer & English) -->
+                            <div class="border rounded-2 p-3 bg-white mb-1" style="border-color: #e2e8f0 !important;">
+                                <div class="d-flex align-items-center justify-content-between mb-2.5 pb-2 border-bottom" style="border-color: #f1f5f9 !important;">
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <i data-feather="message-circle" style="width: 14px; height: 14px;" class="text-primary"></i>
+                                        <span class="small fw-semibold text-dark">@lang('index.alert_dialog_content')</span>
+                                    </div>
+                                    <!-- Language Tabs -->
+                                    <ul class="nav nav-pills" id="alertLangTabs" role="tablist" style="gap: 4px;">
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link {{ app()->getLocale() === 'km' ? 'active' : '' }} py-0.5 px-2.5 rounded-pill fw-medium" id="tab-lang-km" data-bs-toggle="pill" data-bs-target="#pane-lang-km" type="button" role="tab" style="font-size: 11.5px;">
+                                                🇰🇭 @lang('index.khmer_language')
+                                            </button>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link {{ app()->getLocale() !== 'km' ? 'active' : '' }} py-0.5 px-2.5 rounded-pill fw-medium" id="tab-lang-en" data-bs-toggle="pill" data-bs-target="#pane-lang-en" type="button" role="tab" style="font-size: 11.5px;">
+                                                🇬🇧 @lang('index.english_language')
+                                            </button>
+                                        </li>
+                                    </ul>
                                 </div>
-                                <div class="col-sm-7">
-                                    <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageInput">
-                                        <span>@lang('index.alert_message') <span class="text-danger">*</span></span>
-                                        <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
-                                    </label>
-                                    <textarea name="alert_message" id="alertMessageInput" class="form-control form-control-sm" rows="2" placeholder="{{ __('index.alert_message_hint') }}" required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+
+                                <div class="tab-content" id="alertLangTabContent">
+                                    <!-- Khmer Tab Pane -->
+                                    <div class="tab-pane fade {{ app()->getLocale() === 'km' ? 'show active' : '' }}" id="pane-lang-km" role="tabpanel">
+                                        <div class="row g-3">
+                                            <div class="col-sm-5">
+                                                <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleKmInput">
+                                                    @lang('index.alert_title_km') <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" name="alert_title_km" id="alertTitleKmInput" class="form-control form-control-sm" placeholder="មានកំណែអាប់ដេតថ្មី" value="{{ $appVersionSetting['alert_title_km'] ?? 'មានកំណែអាប់ដេតថ្មី' }}" required>
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageKmInput">
+                                                    <span>@lang('index.alert_message_km') <span class="text-danger">*</span></span>
+                                                    <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
+                                                </label>
+                                                <textarea name="alert_message_km" id="alertMessageKmInput" class="form-control form-control-sm" rows="2" placeholder="មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។" required>{{ $appVersionSetting['alert_message_km'] ?? 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- English Tab Pane -->
+                                    <div class="tab-pane fade {{ app()->getLocale() !== 'km' ? 'show active' : '' }}" id="pane-lang-en" role="tabpanel">
+                                        <div class="row g-3">
+                                            <div class="col-sm-5">
+                                                <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleEnInput">
+                                                    @lang('index.alert_title_en') <span class="text-danger">*</span>
+                                                </label>
+                                                <input type="text" name="alert_title_en" id="alertTitleEnInput" class="form-control form-control-sm" placeholder="New Version Available" value="{{ $appVersionSetting['alert_title_en'] ?? 'New Version Available' }}" required>
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageEnInput">
+                                                    <span>@lang('index.alert_message_en') <span class="text-danger">*</span></span>
+                                                    <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
+                                                </label>
+                                                <textarea name="alert_message_en" id="alertMessageEnInput" class="form-control form-control-sm" rows="2" placeholder="A new version of the app (:target_version) is available..." required>{{ $appVersionSetting['alert_message_en'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
+                                <input type="hidden" name="alert_title" id="alertTitleInput" value="{{ $appVersionSetting['alert_title'] ?? '' }}">
+                                <input type="hidden" name="alert_message" id="alertMessageInput" value="{{ $appVersionSetting['alert_message'] ?? '' }}">
                             </div>
                         </div>
 
@@ -144,9 +192,15 @@
                                     <span class="text-uppercase fw-bold text-muted d-flex align-items-center gap-1.5" style="font-size: 10.5px; letter-spacing: 0.5px;">
                                         <i data-feather="eye" style="width: 13px; height: 13px;"></i> @lang('index.preview_alert')
                                     </span>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5" style="font-size: 10px;" id="previewModeBadge">
-                                        {{ !empty($appVersionSetting['force_update']) ? __('index.force_update_alert') : __('index.soft_alert') }}
-                                    </span>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        <div class="btn-group btn-group-xs" role="group" id="previewLangGroup">
+                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ app()->getLocale() === 'km' ? 'active' : '' }}" id="btnPreviewKm" style="font-size: 10.5px;">🇰🇭 KM</button>
+                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ app()->getLocale() !== 'km' ? 'active' : '' }}" id="btnPreviewEn" style="font-size: 10.5px;">🇬🇧 EN</button>
+                                        </div>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5" style="font-size: 10px;" id="previewModeBadge">
+                                            {{ !empty($appVersionSetting['force_update']) ? __('index.force_update_alert') : __('index.soft_alert') }}
+                                        </span>
+                                    </div>
                                 </div>
 
                                 <!-- Compact Dialog Preview Box -->
@@ -314,16 +368,25 @@
                                 </div>
                             </div>
 
+                            <!-- Alert Dialog Content with Language Selector -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <label class="form-label fw-medium text-dark small mb-0">@lang('index.alert_dialog_content')</label>
+                                <div class="btn-group btn-group-xs" role="group" id="modalLangGroup">
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 {{ app()->getLocale() === 'km' ? 'active' : '' }}" id="btnModalLangKm" style="font-size: 11px;">🇰🇭 @lang('index.khmer_language')</button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary py-0.5 px-2 {{ app()->getLocale() !== 'km' ? 'active' : '' }}" id="btnModalLangEn" style="font-size: 11px;">🇬🇧 @lang('index.english_language')</button>
+                                </div>
+                            </div>
+
                             <!-- Alert Title -->
                             <div class="mb-3">
                                 <label class="form-label fw-medium text-dark small" for="modalAlertTitle">@lang('index.alert_title') <span class="text-danger">*</span></label>
-                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}" required>
+                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? ($appVersionSetting['alert_title_km'] ?? 'មានកំណែអាប់ដេតថ្មី') }}" required>
                             </div>
 
                             <!-- Alert Message -->
                             <div class="mb-2">
                                 <label class="form-label fw-medium text-dark small" for="modalAlertMessage">@lang('index.alert_message') <span class="text-danger">*</span></label>
-                                <textarea name="alert_message" id="modalAlertMessage" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+                                <textarea name="alert_message" id="modalAlertMessage" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? ($appVersionSetting['alert_message_km'] ?? 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។') }}</textarea>
                             </div>
                         </div>
                         <div class="modal-footer bg-light py-2.5 px-4 border-top">
@@ -371,6 +434,7 @@
             });
 
             // App Version Real-time Preview and Simulator
+            var activeLang = @json(app()->getLocale() === 'km' ? 'km' : 'en');
             var textEnabled = @json(__('index.enabled'));
             var textDisabled = @json(__('index.disabled'));
             var textSoftAlert = @json(__('index.soft_alert'));
@@ -379,7 +443,11 @@
             var tplUpdateRequired = @json(__('index.verdict_update_required'));
             var tplAlertShown = @json(__('index.verdict_alert_shown'));
             var tplUpToDate = @json(__('index.verdict_up_to_date'));
-            var defaultTitle = @json(__('index.new_version_available'));
+
+            var defaultKmTitle = 'មានកំណែអាប់ដេតថ្មី';
+            var defaultKmMsg = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
+            var defaultEnTitle = 'New Version Available';
+            var defaultEnMsg = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
 
             function compareVersions(v1, v2) {
                 var clean1 = (v1 || '').replace(/^[vV]/, '').split('+')[0].split('-')[0].trim();
@@ -400,12 +468,22 @@
             }
 
             function updatePreview() {
-                var title = $('#alertTitleInput').val() || defaultTitle;
                 var targetVer = $('#targetVersionInput').val() || '13.00';
                 var minVer = $('#minVersionInput').val() || '13.00';
-                var rawMsg = $('#alertMessageInput').val() || '';
                 var isForce = $('#forceUpdateSwitch').is(':checked');
                 var isEnabled = $('#versionCheckEnabledSwitch').is(':checked');
+
+                var title = (activeLang === 'km')
+                    ? ($('#alertTitleKmInput').val() || defaultKmTitle)
+                    : ($('#alertTitleEnInput').val() || defaultEnTitle);
+
+                var rawMsg = (activeLang === 'km')
+                    ? ($('#alertMessageKmInput').val() || defaultKmMsg)
+                    : ($('#alertMessageEnInput').val() || defaultEnMsg);
+
+                // Synchronize fallback hidden fields
+                $('#alertTitleInput').val(title);
+                $('#alertMessageInput').val(rawMsg);
 
                 var formattedMsg = rawMsg
                     .replace(/:target_version/g, targetVer)
@@ -414,6 +492,18 @@
 
                 $('#previewTitle').text(title);
                 $('#previewMessage').text(formattedMsg);
+
+                if (activeLang === 'km') {
+                    $('#previewLaterBtn').text('ពេលក្រោយ');
+                    $('#previewUpdateBtn').text('អាប់ដេតឥឡូវនេះ');
+                    $('#btnPreviewKm').addClass('active');
+                    $('#btnPreviewEn').removeClass('active');
+                } else {
+                    $('#previewLaterBtn').text('Later');
+                    $('#previewUpdateBtn').text('Update Now');
+                    $('#btnPreviewEn').addClass('active');
+                    $('#btnPreviewKm').removeClass('active');
+                }
 
                 if (isForce) {
                     $('#previewModeBadge').attr('class', 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-0.5').text(textForceUpdate);
@@ -493,10 +583,72 @@
                 if (window.feather) feather.replace();
             }
 
-            $('#alertTitleInput, #targetVersionInput, #minVersionInput, #alertMessageInput').on('input', updatePreview);
+            // Tab switching events
+            $('#tab-lang-km').on('shown.bs.tab', function () {
+                activeLang = 'km';
+                updatePreview();
+            });
+
+            $('#tab-lang-en').on('shown.bs.tab', function () {
+                activeLang = 'en';
+                updatePreview();
+            });
+
+            // Preview language toggle buttons
+            $('#btnPreviewKm').on('click', function () {
+                activeLang = 'km';
+                var tabTrigger = document.querySelector('#tab-lang-km');
+                if (tabTrigger && window.bootstrap) {
+                    bootstrap.Tab.getOrCreateInstance(tabTrigger).show();
+                }
+                updatePreview();
+            });
+
+            $('#btnPreviewEn').on('click', function () {
+                activeLang = 'en';
+                var tabTrigger = document.querySelector('#tab-lang-en');
+                if (tabTrigger && window.bootstrap) {
+                    bootstrap.Tab.getOrCreateInstance(tabTrigger).show();
+                }
+                updatePreview();
+            });
+
+            // Input events
+            $('#alertTitleKmInput, #alertMessageKmInput').on('input', function () {
+                if (activeLang === 'km') updatePreview();
+            });
+
+            $('#alertTitleEnInput, #alertMessageEnInput').on('input', function () {
+                if (activeLang === 'en') updatePreview();
+            });
+
+            $('#targetVersionInput, #minVersionInput').on('input', updatePreview);
             $('#forceUpdateSwitch, #versionCheckEnabledSwitch').on('change', updatePreview);
             $('#testVersionInput').on('input', runVersionSimulator);
             $('#runTestVersionBtn').on('click', runVersionSimulator);
+
+            // Modal language buttons
+            $('#btnModalLangKm').on('click', function () {
+                $('#modalAlertTitle').val($('#alertTitleKmInput').val() || defaultKmTitle);
+                $('#modalAlertMessage').val($('#alertMessageKmInput').val() || defaultKmMsg);
+                $('#btnModalLangKm').addClass('active');
+                $('#btnModalLangEn').removeClass('active');
+            });
+
+            $('#btnModalLangEn').on('click', function () {
+                $('#modalAlertTitle').val($('#alertTitleEnInput').val() || defaultEnTitle);
+                $('#modalAlertMessage').val($('#alertMessageEnInput').val() || defaultEnMsg);
+                $('#btnModalLangEn').addClass('active');
+                $('#btnModalLangKm').removeClass('active');
+            });
+
+            $('#sendUpdateAlertModal').on('show.bs.modal', function () {
+                if (activeLang === 'km') {
+                    $('#btnModalLangKm').click();
+                } else {
+                    $('#btnModalLangEn').click();
+                }
+            });
 
             // Initial render
             updatePreview();
