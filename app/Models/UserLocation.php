@@ -17,6 +17,11 @@ class UserLocation extends Model
         'accuracy',
         'battery_level',
         'device_name',
+        'app_name',
+        'app_version',
+        'app_build',
+        'device_model',
+        'os_version',
     ];
 
     protected $casts = [

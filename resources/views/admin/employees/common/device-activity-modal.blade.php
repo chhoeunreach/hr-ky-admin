@@ -107,21 +107,29 @@
                             </div>
                             <div class="card-body p-3">
                                 <div class="row g-3">
-                                    <div class="col-md-4 col-sm-6">
+                                    <div class="col-lg-3 col-md-6">
                                         <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
                                             <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.device_name') }}</span>
                                             <span class="fw-bold text-dark d-block text-truncate" id="edaDeviceName" style="font-size: 0.9rem;">---</span>
                                             <small class="text-muted text-truncate d-block mt-0.5" id="edaDeviceUuid" style="font-size: 10.5px; font-family: monospace;">---</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 col-sm-6">
+                                    <div class="col-lg-3 col-md-6">
                                         <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
                                             <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.login_time') }}</span>
                                             <span class="fw-bold text-dark d-block" id="edaLoginTime" style="font-size: 0.88rem;">---</span>
                                             <small class="text-muted d-block mt-0.5" id="edaLoginTimeHuman" style="font-size: 10.5px;">---</small>
                                         </div>
                                     </div>
-                                    <div class="col-md-4 col-sm-12">
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50">
+                                            <span class="text-muted d-block small" style="font-size: 11px;">App Information</span>
+                                            <span class="fw-bold text-dark d-block text-truncate" id="edaAppName" style="font-size: 0.88rem;">---</span>
+                                            <small class="text-muted d-block mt-0.5 text-truncate" id="edaAppVersion" style="font-size: 10.5px;">---</small>
+                                            <small class="text-muted d-block mt-0.5 text-truncate" id="edaDeviceModel" style="font-size: 10.5px;">---</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-3 col-md-6">
                                         <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100 d-flex flex-column justify-content-between">
                                             <div>
                                                 <span class="text-muted d-block small" style="font-size: 11px;">{{ __('index.last_location') }}</span>

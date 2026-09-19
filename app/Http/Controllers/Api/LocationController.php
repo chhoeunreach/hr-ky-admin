@@ -26,6 +26,11 @@ class LocationController extends Controller
             'accuracy' => ['required', 'numeric', 'min:0'],
             'battery_level' => ['nullable', 'integer', 'between:0,100'],
             'device_name' => ['nullable', 'string', 'max:255'],
+            'app_name' => ['nullable', 'string', 'max:255'],
+            'app_version' => ['nullable', 'string', 'max:80'],
+            'app_build' => ['nullable', 'string', 'max:80'],
+            'device_model' => ['nullable', 'string', 'max:255'],
+            'os_version' => ['nullable', 'string', 'max:120'],
         ]);
 
         if ($validator->fails()) {
@@ -49,15 +54,23 @@ class LocationController extends Controller
             $location = null;
 
             if (Schema::hasTable('user_locations')) {
+                $locationData = [
+                    'latitude' => $validated['latitude'],
+                    'longitude' => $validated['longitude'],
+                    'accuracy' => $validated['accuracy'],
+                    'battery_level' => $validated['battery_level'] ?? null,
+                    'device_name' => $validated['device_name'] ?? null,
+                ];
+
+                foreach (['app_name', 'app_version', 'app_build', 'device_model', 'os_version'] as $column) {
+                    if (Schema::hasColumn('user_locations', $column)) {
+                        $locationData[$column] = $validated[$column] ?? null;
+                    }
+                }
+
                 $location = UserLocation::updateOrCreate(
                     ['user_id' => $authUser->id],
-                    [
-                        'latitude' => $validated['latitude'],
-                        'longitude' => $validated['longitude'],
-                        'accuracy' => $validated['accuracy'],
-                        'battery_level' => $validated['battery_level'] ?? null,
-                        'device_name' => $validated['device_name'] ?? null,
-                    ]
+                    $locationData
                 )->fresh(['user:id,name,email,phone,avatar,branch_id,department_id']);
             }
 
@@ -81,6 +94,11 @@ class LocationController extends Controller
                     'accuracy' => $validated['accuracy'],
                     'battery_level' => $validated['battery_level'] ?? null,
                     'device_name' => $validated['device_name'] ?? null,
+                    'app_name' => $validated['app_name'] ?? null,
+                    'app_version' => $validated['app_version'] ?? null,
+                    'app_build' => $validated['app_build'] ?? null,
+                    'device_model' => $validated['device_model'] ?? null,
+                    'os_version' => $validated['os_version'] ?? null,
                     'updated_at' => now(),
                 ],
             ]);

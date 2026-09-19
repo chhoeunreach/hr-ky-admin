@@ -1434,6 +1434,19 @@
             }
             $('#edaDeviceUuid').text(dev.uuid || 'N/A');
 
+            var app = dev.app || {};
+            var appVersionText = app.version && app.version !== 'N/A' ? 'Version: ' + app.version : 'Version unavailable';
+            if (app.build && app.build !== 'N/A') {
+                appVersionText += ' | Build: ' + app.build;
+            }
+            var deviceModelText = app.device_model && app.device_model !== 'N/A' ? app.device_model : '';
+            if (app.os_version && app.os_version !== 'N/A') {
+                deviceModelText += (deviceModelText ? ' | ' : '') + app.os_version;
+            }
+            $('#edaAppName').text(app.name || '{{ config('app.name', 'Mobile App') }}');
+            $('#edaAppVersion').text(appVersionText);
+            $('#edaDeviceModel').text(deviceModelText || 'Device model unavailable');
+
             // Login Time
             $('#edaLoginTime').text(dev.last_login_at || 'Never logged in');
             $('#edaLoginTimeHuman').text(dev.last_login_human ? '(' + dev.last_login_human + ')' : '');
@@ -1684,4 +1697,3 @@
         });
     </script>
 @endsection
-

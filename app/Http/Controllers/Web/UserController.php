@@ -1455,6 +1455,16 @@ class UserController extends Controller
             $accuracy = $latestLocation?->accuracy;
             $battery = $latestLocation?->battery_level;
             $locationUpdatedAt = $latestLocation?->updated_at;
+            $locationColumn = function (string $column) use ($latestLocation) {
+                return $latestLocation && Schema::hasColumn('user_locations', $column)
+                    ? ($latestLocation->{$column} ?? null)
+                    : null;
+            };
+            $appName = $locationColumn('app_name') ?: config('app.name', 'Mobile App');
+            $appVersion = $locationColumn('app_version');
+            $appBuild = $locationColumn('app_build');
+            $deviceModel = $locationColumn('device_model');
+            $osVersion = $locationColumn('os_version');
 
             // Fallback to employee_locations if user_locations is empty
             if (!$latitude || !$longitude) {
@@ -1626,6 +1636,13 @@ class UserController extends Controller
                     'logout_status' => (int)($user->logout_status ?? 0),
                     'last_login_at' => $user->updated_at ? Carbon::parse($user->updated_at)->format('Y-m-d H:i:s') : null,
                     'last_login_human' => $user->updated_at ? Carbon::parse($user->updated_at)->diffForHumans() : 'N/A',
+                    'app' => [
+                        'name' => $appName,
+                        'version' => $appVersion ?: 'N/A',
+                        'build' => $appBuild ?: 'N/A',
+                        'device_model' => $deviceModel ?: 'N/A',
+                        'os_version' => $osVersion ?: 'N/A',
+                    ],
                     'location' => [
                         'has_location' => !empty($latitude) && !empty($longitude),
                         'latitude' => $latitude,
@@ -1710,4 +1727,3 @@ class UserController extends Controller
         }
     }
 }
-
