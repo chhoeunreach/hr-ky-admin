@@ -83,3 +83,6 @@ public/downloads/ky-checking-24-04-2026.apk
 public/uploads/
 config/passport.php
 git
+
+# Firebase service account credentials
+storage/firebase-adminsdk.json
