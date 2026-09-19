@@ -1413,7 +1413,6 @@
             var isOnline = Number(emp.online_status) === 1;
             $('#edaOnlineBadge').removeClass('status-online status-offline')
                 .addClass(isOnline ? 'status-online' : 'status-offline');
-            $('#edaViewLiveLocationBtn').prop('disabled', !isOnline);
             $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
 
             // Platform badge
@@ -1458,6 +1457,10 @@
                 $('#edaLocationTime').text(dev.location.updated_at_human ? 'Updated: ' + dev.location.updated_at_human : '');
                 $('#edaMapLinkWrapper').show();
                 $('#edaMapBtn').attr('href', dev.location.map_url);
+                $('#edaViewLiveLocationBtn')
+                    .prop('disabled', false)
+                    .data('can-view-location', true)
+                    .find('span').text(isOnline ? '{{ __('index.view_live_location') }}' : '{{ __('index.view_last_location') }}');
                 $('#edaDevicePlatformLink')
                     .attr('href', dev.location.map_url)
                     .attr('aria-disabled', 'false')
@@ -1466,6 +1469,10 @@
                 $('#edaLocationCoords').text('No GPS location available');
                 $('#edaLocationTime').text(emp.branch ? 'Assigned: ' + emp.branch : '');
                 $('#edaMapLinkWrapper').hide();
+                $('#edaViewLiveLocationBtn')
+                    .prop('disabled', true)
+                    .data('can-view-location', false)
+                    .find('span').text('{{ __('index.view_last_location') }}');
                 $('#edaDevicePlatformLink')
                     .removeAttr('href')
                     .attr('aria-disabled', 'true')
@@ -1661,8 +1668,8 @@
             .finally(function() {
                 button.data('requesting-location', false);
                 var isOnline = $('#edaOnlineBadge').hasClass('status-online');
-                button.prop('disabled', !isOnline);
-                button.find('span').text('{{ __('index.view_live_location') }}');
+                button.prop('disabled', !button.data('can-view-location'));
+                button.find('span').text(isOnline ? '{{ __('index.view_live_location') }}' : '{{ __('index.view_last_location') }}');
             });
         });
 

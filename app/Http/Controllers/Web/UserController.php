@@ -1504,7 +1504,7 @@ class UserController extends Controller
                 ->orderByDesc('created_at')
                 ->take(20)
                 ->get()
-                ->map(function ($token) use ($deviceLocationsByKey) {
+                ->map(function ($token, $index) use ($deviceLocationsByKey, $latestLocation) {
                     $isRevoked = (bool)$token->revoked;
                     $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
                     $isActive = !$isRevoked && !$isExpired;
@@ -1524,6 +1524,13 @@ class UserController extends Controller
                     $deviceLocation = $sessionDeviceKey
                         ? $deviceLocationsByKey->get($sessionDeviceKey)
                         : null;
+
+                    // Tokens created before device tracking have no device key.
+                    // The newest legacy session can safely use the user's latest
+                    // stored location; older sessions remain unknown.
+                    if (!$deviceLocation && $index === 0) {
+                        $deviceLocation = $latestLocation;
+                    }
 
                     return [
                         'id' => $token->id,

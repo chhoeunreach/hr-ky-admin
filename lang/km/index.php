@@ -2418,6 +2418,7 @@ return [
     'last_location' => 'ទីតាំងចុងក្រោយ',
     'view_latest_location' => 'មើលទីតាំងដែលបានរាយការណ៍ចុងក្រោយ',
     'view_live_location' => 'មើលទីតាំងបច្ចុប្បន្ន',
+    'view_last_location' => 'មើលទីតាំងចុងក្រោយ',
     'requesting_location' => 'កំពុងទាញយកទីតាំង...',
     'location_unavailable' => 'មិនមានទីតាំង GPS ដែលបានរាយការណ៍ទេ។',
     'login_time' => 'កាលបរិច្ឆេទ/ម៉ោងចូលប្រើ',
