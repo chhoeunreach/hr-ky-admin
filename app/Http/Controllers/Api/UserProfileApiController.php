@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enum\EmployeeAttendanceTypeEnum;
+use App\Events\LocationUpdated;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
@@ -11,6 +12,7 @@ use App\Models\ChatConversation;
 use App\Models\Company;
 use App\Models\DCardEmployee;
 use App\Models\User;
+use App\Models\UserLocation;
 use App\Repositories\BranchRepository;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
@@ -520,9 +522,45 @@ class UserProfileApiController extends Controller
 
             $validatedData['employee_id'] = $userDetail['id'];
 
+            DB::beginTransaction();
+
             $this->userRepo->setEmployeeLocation($validatedData);
 
-            return AppHelper::sendSuccessResponse('Location successfully sent', []);
+            $location = null;
+            if (Schema::hasTable('user_locations') && Schema::hasColumn('user_locations', 'device_key')) {
+                $rawUuid = (string) ($userDetail->uuid ?? '');
+                $deviceName = str_contains($rawUuid, ':')
+                    ? trim(explode(':', $rawUuid, 2)[0])
+                    : ucfirst((string) ($userDetail->device_type ?? 'mobile')) . ' Device';
+
+                $location = UserLocation::updateOrCreate(
+                    [
+                        'user_id' => $userDetail->id,
+                        'device_key' => hash('sha256', $rawUuid),
+                    ],
+                    [
+                        'device_type' => $userDetail->device_type,
+                        'latitude' => $validatedData['latitude'],
+                        'longitude' => $validatedData['longitude'],
+                        'accuracy' => 0,
+                        'device_name' => $deviceName,
+                    ]
+                )->fresh(['user:id,name,email,phone,avatar,branch_id,department_id']);
+            }
+
+            if ($location) {
+                event(new LocationUpdated($location));
+            }
+
+            DB::commit();
+
+            return AppHelper::sendSuccessResponse('Location successfully sent', [
+                'location' => [
+                    'latitude' => (float) $validatedData['latitude'],
+                    'longitude' => (float) $validatedData['longitude'],
+                    'updated_at' => now(),
+                ],
+            ]);
         } catch (Exception $exception) {
             DB::rollBack();
             return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
