@@ -18,75 +18,75 @@
         </nav>
 
         <!-- Mobile App Version & Update Control Card -->
-        <div class="card mb-4 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
-            <div class="card-header bg-white py-2.5 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2 border-bottom" style="border-color: #f1f5f9 !important;">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="p-1.5 bg-primary bg-opacity-10 text-primary rounded-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        <i data-feather="smartphone" style="width: 17px; height: 17px;"></i>
+        <div class="card mb-4 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0 !important;">
+            <div class="card-header bg-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom" style="border-color: #f1f5f9 !important;">
+                <div class="d-flex align-items-center gap-2.5">
+                    <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i data-feather="smartphone" style="width: 18px; height: 18px;"></i>
                     </div>
                     <div>
-                        <h6 class="card-title mb-0 fw-semibold" style="font-size: 14.5px;">@lang('index.app_version_control')</h6>
-                        <small class="text-muted d-none d-sm-inline" style="font-size: 11px;">@lang('index.app_version_subtitle')</small>
+                        <h6 class="card-title mb-0 fw-bold text-dark" style="font-size: 15px;">@lang('index.app_version_control')</h6>
+                        <small class="text-muted d-none d-sm-inline" style="font-size: 11.5px;">@lang('index.app_version_subtitle')</small>
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2.5">
                     <!-- Inline Master Switch -->
-                    <div class="d-flex align-items-center gap-1.5 px-2.5 py-1 bg-light rounded-2 border">
-                        <label class="switch mb-0" style="width: 32px; height: 18px;">
+                    <div class="d-flex align-items-center gap-2 px-3 py-1 bg-light rounded-pill border" style="border-color: #e2e8f0 !important;">
+                        <label class="switch mb-0" style="width: 34px; height: 18px;">
                             <input type="hidden" name="enabled" value="0" form="appVersionForm">
                             <input type="checkbox" name="enabled" value="1" id="versionCheckEnabledSwitch" form="appVersionForm" {{ !empty($appVersionSetting['enabled']) ? 'checked' : '' }}>
                             <span class="slider round"></span>
                         </label>
-                        <span class="badge {{ !empty($appVersionSetting['enabled']) ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-light text-muted border' }}" id="enabledStatusLabel" style="font-size: 10.5px;">
-                            {{ !empty($appVersionSetting['enabled']) ? 'Enabled' : 'Disabled' }}
+                        <span class="badge {{ !empty($appVersionSetting['enabled']) ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-muted border' }} px-2 py-0.5 rounded-pill" id="enabledStatusLabel" style="font-size: 11px;">
+                            {{ !empty($appVersionSetting['enabled']) ? __('index.enabled') : __('index.disabled') }}
                         </span>
                     </div>
 
                     <!-- Action Buttons -->
-                    <button type="button" class="btn btn-warning btn-sm py-1 px-2.5 text-dark fw-medium d-inline-flex align-items-center gap-1 shadow-sm" data-bs-toggle="modal" data-bs-target="#sendUpdateAlertModal">
-                        <i data-feather="send" style="width: 12px; height: 12px;"></i>
+                    <button type="button" class="btn btn-warning btn-sm py-1.5 px-3 text-dark fw-medium d-inline-flex align-items-center gap-1.5 shadow-sm rounded-2" data-bs-toggle="modal" data-bs-target="#sendUpdateAlertModal">
+                        <i data-feather="send" style="width: 13px; height: 13px;"></i>
                         <span class="small">@lang('index.send_update_alert')</span>
                     </button>
-                    <button type="submit" form="appVersionForm" class="btn btn-primary btn-sm py-1 px-2.5 d-inline-flex align-items-center gap-1 shadow-sm">
-                        <i data-feather="save" style="width: 12px; height: 12px;"></i>
+                    <button type="submit" form="appVersionForm" class="btn btn-primary btn-sm py-1.5 px-3 d-inline-flex align-items-center gap-1.5 shadow-sm rounded-2 fw-medium">
+                        <i data-feather="save" style="width: 13px; height: 13px;"></i>
                         <span class="small">@lang('index.update')</span>
                     </button>
                 </div>
             </div>
 
-            <div class="card-body p-3">
+            <div class="card-body p-4">
                 <form action="{{ route('admin.app-settings.app-version.update') }}" method="POST" id="appVersionForm">
                     @csrf
-                    <div class="row g-3">
+                    <div class="row g-4">
                         <!-- Left Column: Form Controls (Clean 3-Row Grid) -->
                         <div class="col-lg-7">
                             <!-- Row 1: Target, Min Version & Force Update -->
-                            <div class="row g-2 mb-2.5">
+                            <div class="row g-3 mb-3">
                                 <div class="col-sm-4">
-                                    <label class="form-label fw-medium text-dark small mb-1" for="targetVersionInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="targetVersionInput">
                                         @lang('index.target_app_version') <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-light text-muted py-1 px-2"><i data-feather="tag" style="width: 13px; height: 13px;"></i></span>
+                                        <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="tag" style="width: 14px; height: 14px;"></i></span>
                                         <input type="text" name="target_version" id="targetVersionInput" class="form-control form-control-sm" placeholder="13.00" value="{{ $appVersionSetting['target_version'] ?? '13.00' }}" required>
                                     </div>
                                 </div>
                                 <div class="col-sm-4">
-                                    <label class="form-label fw-medium text-dark small mb-1" for="minVersionInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="minVersionInput">
                                         @lang('index.min_required_version') <span class="text-danger">*</span>
                                     </label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-light text-muted py-1 px-2"><i data-feather="shield" style="width: 13px; height: 13px;"></i></span>
+                                        <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="shield" style="width: 14px; height: 14px;"></i></span>
                                         <input type="text" name="min_version" id="minVersionInput" class="form-control form-control-sm" placeholder="13.00" value="{{ $appVersionSetting['min_version'] ?? '13.00' }}" required>
                                     </div>
                                 </div>
                                 <div class="col-sm-4">
-                                    <label class="form-label fw-medium text-dark small mb-1">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5">
                                         @lang('index.force_update')
                                     </label>
-                                    <div class="d-flex align-items-center justify-content-between p-1.5 px-2.5 rounded-2 border bg-light" style="height: 31px;">
-                                        <span class="small text-muted" style="font-size: 11px;">Block older</span>
+                                    <div class="d-flex align-items-center justify-content-between p-2 px-3 rounded-2 border bg-light" style="height: 34px; border-color: #e2e8f0 !important;">
+                                        <span class="small text-muted" style="font-size: 11px;">@lang('index.block_older_version')</span>
                                         <label class="switch mb-0" style="width: 32px; height: 18px;">
                                             <input type="hidden" name="force_update" value="0">
                                             <input type="checkbox" name="force_update" value="1" id="forceUpdateSwitch" {{ !empty($appVersionSetting['force_update']) ? 'checked' : '' }}>
@@ -97,81 +97,83 @@
                             </div>
 
                             <!-- Row 2: Download URLs -->
-                            <div class="row g-2 mb-2.5">
+                            <div class="row g-3 mb-3">
                                 <div class="col-sm-6">
-                                    <label class="form-label fw-medium text-dark small mb-1" for="androidUrlInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="androidUrlInput">
                                         @lang('index.android_download_url')
                                     </label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-light text-muted py-1 px-2"><i data-feather="download" style="width: 13px; height: 13px;"></i></span>
+                                        <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="download" style="width: 14px; height: 14px;"></i></span>
                                         <input type="url" name="android_url" id="androidUrlInput" class="form-control form-control-sm" placeholder="https://hr.kneayerng.com or Play Store link" value="{{ $appVersionSetting['android_url'] ?? '' }}">
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
-                                    <label class="form-label fw-medium text-dark small mb-1" for="iosUrlInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="iosUrlInput">
                                         @lang('index.ios_download_url')
                                     </label>
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-light text-muted py-1 px-2"><i data-feather="external-link" style="width: 13px; height: 13px;"></i></span>
+                                        <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="external-link" style="width: 14px; height: 14px;"></i></span>
                                         <input type="url" name="ios_url" id="iosUrlInput" class="form-control form-control-sm" placeholder="https://apps.apple.com/..." value="{{ $appVersionSetting['ios_url'] ?? '' }}">
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Row 3: Alert Content -->
-                            <div class="row g-2">
+                            <div class="row g-3">
                                 <div class="col-sm-5">
-                                    <label class="form-label fw-medium text-dark small mb-1" for="alertTitleInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleInput">
                                         @lang('index.alert_title') <span class="text-danger">*</span>
                                     </label>
-                                    <input type="text" name="alert_title" id="alertTitleInput" class="form-control form-control-sm" placeholder="New Version Available" value="{{ $appVersionSetting['alert_title'] ?? 'New Version Available' }}" required>
+                                    <input type="text" name="alert_title" id="alertTitleInput" class="form-control form-control-sm" placeholder="{{ __('index.new_version_available') }}" value="{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}" required>
                                 </div>
                                 <div class="col-sm-7">
-                                    <label class="form-label fw-medium text-dark small mb-1 d-flex align-items-center justify-content-between" for="alertMessageInput">
+                                    <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageInput">
                                         <span>@lang('index.alert_message') <span class="text-danger">*</span></span>
-                                        <span class="text-muted" style="font-size: 10px;">:target_version, :min_version</span>
+                                        <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
                                     </label>
-                                    <textarea name="alert_message" id="alertMessageInput" class="form-control form-control-sm" rows="2" placeholder="A new version (:target_version) is available..." required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+                                    <textarea name="alert_message" id="alertMessageInput" class="form-control form-control-sm" rows="2" placeholder="{{ __('index.alert_message_hint') }}" required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Right Column: Live Mobile Preview & Tester (Compact Unified Card) -->
                         <div class="col-lg-5">
-                            <div class="p-2.5 rounded-3 border h-100 d-flex flex-column justify-content-between" style="background: linear-gradient(135deg, #f8fafc 0%, #eef2f6 100%); border-color: #cbd5e1 !important;">
+                            <div class="p-3 rounded-3 border h-100 d-flex flex-column justify-content-between" style="background: #f8fafc; border-color: #e2e8f0 !important;">
                                 <!-- Preview Header -->
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <span class="text-uppercase fw-bold text-muted d-flex align-items-center gap-1" style="font-size: 10px; letter-spacing: 0.5px;">
-                                        <i data-feather="eye" style="width: 12px; height: 12px;"></i> @lang('index.preview_alert')
+                                <div class="d-flex align-items-center justify-content-between mb-2.5">
+                                    <span class="text-uppercase fw-bold text-muted d-flex align-items-center gap-1.5" style="font-size: 10.5px; letter-spacing: 0.5px;">
+                                        <i data-feather="eye" style="width: 13px; height: 13px;"></i> @lang('index.preview_alert')
                                     </span>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 9.5px;" id="previewModeBadge">Soft Alert</span>
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5" style="font-size: 10px;" id="previewModeBadge">
+                                        {{ !empty($appVersionSetting['force_update']) ? __('index.force_update_alert') : __('index.soft_alert') }}
+                                    </span>
                                 </div>
 
                                 <!-- Compact Dialog Preview Box -->
-                                <div class="bg-white rounded-2 p-2.5 shadow-sm border text-center my-auto" style="border-color: #e2e8f0 !important;">
-                                    <div class="mx-auto mb-1.5 p-1 bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 28px; height: 28px;">
-                                        <i data-feather="alert-circle" style="width: 16px; height: 16px;"></i>
+                                <div class="bg-white rounded-3 p-3 shadow-sm border text-center my-auto" style="border-color: #e2e8f0 !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;">
+                                    <div class="mx-auto mb-2 p-2 bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
+                                        <i data-feather="alert-circle" style="width: 18px; height: 18px;"></i>
                                     </div>
-                                    <h6 class="fw-bold text-dark mb-1" id="previewTitle" style="font-size: 12.5px;">New Version Available</h6>
-                                    <p class="text-muted mb-2 text-truncate-2" id="previewMessage" style="font-size: 11px; line-height: 1.35; max-height: 42px; overflow: hidden;"></p>
-                                    <div class="d-flex align-items-center justify-content-center gap-1.5">
-                                        <button type="button" class="btn btn-outline-secondary btn-xs py-0.5 px-2.5 rounded-pill" id="previewLaterBtn" style="font-size: 10px;">
+                                    <h6 class="fw-bold text-dark mb-1" id="previewTitle" style="font-size: 13px;">{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}</h6>
+                                    <p class="text-muted mb-2.5" id="previewMessage" style="font-size: 11.5px; line-height: 1.45; max-height: 48px; overflow: hidden;"></p>
+                                    <div class="d-flex align-items-center justify-content-center gap-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-xs py-1 px-3 rounded-pill" id="previewLaterBtn" style="font-size: 10.5px;">
                                             @lang('index.later')
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-xs py-0.5 px-2.5 rounded-pill" id="previewUpdateBtn" style="font-size: 10px;">
+                                        <button type="button" class="btn btn-primary btn-xs py-1 px-3 rounded-pill fw-semibold" id="previewUpdateBtn" style="font-size: 10.5px;">
                                             @lang('index.update_now')
                                         </button>
                                     </div>
                                 </div>
 
                                 <!-- Compact Simulator Bar -->
-                                <div class="pt-2 mt-2 border-top" style="border-color: #e2e8f0 !important;">
+                                <div class="pt-2.5 mt-2.5 border-top" style="border-color: #e2e8f0 !important;">
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white text-muted py-0.5 px-2" style="font-size: 11px;">@lang('index.test_version'):</span>
-                                        <input type="text" id="testVersionInput" class="form-control form-control-sm py-0.5" placeholder="12.00" value="12.00" style="font-size: 11px;">
-                                        <button class="btn btn-outline-primary btn-sm py-0.5 px-2" type="button" id="runTestVersionBtn" style="font-size: 11px;">Simulate</button>
+                                        <span class="input-group-text bg-white text-muted py-1 px-2.5" style="font-size: 11.5px;">@lang('index.test_version'):</span>
+                                        <input type="text" id="testVersionInput" class="form-control form-control-sm py-1" placeholder="12.00" value="12.00" style="font-size: 11.5px;">
+                                        <button class="btn btn-outline-primary btn-sm py-1 px-2.5 fw-medium" type="button" id="runTestVersionBtn" style="font-size: 11.5px;">@lang('index.simulate')</button>
                                     </div>
-                                    <div id="testVersionVerdict" class="mt-1"></div>
+                                    <div id="testVersionVerdict" class="mt-1.5"></div>
                                 </div>
                             </div>
                         </div>
@@ -299,14 +301,14 @@
                                         <input type="radio" name="target_audience" value="all" checked class="form-check-input mt-0">
                                         <div>
                                             <span class="fw-medium text-dark d-block" style="font-size: 12.5px;">@lang('index.all_mobile_users')</span>
-                                            <small class="text-muted" style="font-size: 11px;">Send push notification and in-app notice to all registered mobile app users.</small>
+                                            <small class="text-muted" style="font-size: 11px;">@lang('index.all_mobile_users_desc')</small>
                                         </div>
                                     </label>
                                     <label class="p-2.5 rounded-2 border d-flex align-items-center gap-2.5 cursor-pointer bg-white" style="border-color: #e2e8f0 !important;">
                                         <input type="radio" name="target_audience" value="outdated" class="form-check-input mt-0">
                                         <div>
                                             <span class="fw-medium text-dark d-block" style="font-size: 12.5px;">{{ __('index.outdated_devices_only', ['version' => $appVersionSetting['target_version'] ?? '13.00']) }}</span>
-                                            <small class="text-muted" style="font-size: 11px;">Target only devices that have not yet updated to target version.</small>
+                                            <small class="text-muted" style="font-size: 11px;">@lang('index.outdated_devices_desc')</small>
                                         </div>
                                     </label>
                                 </div>
@@ -315,7 +317,7 @@
                             <!-- Alert Title -->
                             <div class="mb-3">
                                 <label class="form-label fw-medium text-dark small" for="modalAlertTitle">@lang('index.alert_title') <span class="text-danger">*</span></label>
-                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? 'New Version Available' }}" required>
+                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}" required>
                             </div>
 
                             <!-- Alert Message -->
@@ -324,7 +326,7 @@
                                 <textarea name="alert_message" id="modalAlertMessage" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
                             </div>
                         </div>
-                        <div class="modal-footer bg-light py-2 px-4 border-top">
+                        <div class="modal-footer bg-light py-2.5 px-4 border-top">
                             <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill px-3" data-bs-dismiss="modal">@lang('index.cancel')</button>
                             <button type="submit" class="btn btn-warning btn-sm rounded-pill px-4 text-dark fw-medium d-inline-flex align-items-center gap-1.5" id="btnSubmitSendAlert">
                                 <i data-feather="send" style="width: 13px; height: 13px;"></i> @lang('index.send_now')
@@ -369,6 +371,16 @@
             });
 
             // App Version Real-time Preview and Simulator
+            var textEnabled = @json(__('index.enabled'));
+            var textDisabled = @json(__('index.disabled'));
+            var textSoftAlert = @json(__('index.soft_alert'));
+            var textForceUpdate = @json(__('index.force_update_alert'));
+            var msgDisabled = @json(__('index.version_check_disabled_verdict'));
+            var tplUpdateRequired = @json(__('index.verdict_update_required'));
+            var tplAlertShown = @json(__('index.verdict_alert_shown'));
+            var tplUpToDate = @json(__('index.verdict_up_to_date'));
+            var defaultTitle = @json(__('index.new_version_available'));
+
             function compareVersions(v1, v2) {
                 var clean1 = (v1 || '').replace(/^[vV]/, '').split('+')[0].split('-')[0].trim();
                 var clean2 = (v2 || '').replace(/^[vV]/, '').split('+')[0].split('-')[0].trim();
@@ -388,7 +400,7 @@
             }
 
             function updatePreview() {
-                var title = $('#alertTitleInput').val() || 'New Version Available';
+                var title = $('#alertTitleInput').val() || defaultTitle;
                 var targetVer = $('#targetVersionInput').val() || '13.00';
                 var minVer = $('#minVersionInput').val() || '13.00';
                 var rawMsg = $('#alertMessageInput').val() || '';
@@ -404,15 +416,15 @@
                 $('#previewMessage').text(formattedMsg);
 
                 if (isForce) {
-                    $('#previewModeBadge').attr('class', 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-0.5').text('Force Update');
+                    $('#previewModeBadge').attr('class', 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-0.5').text(textForceUpdate);
                     $('#previewLaterBtn').hide();
                 } else {
-                    $('#previewModeBadge').attr('class', 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2 py-0.5').text('Soft Alert');
+                    $('#previewModeBadge').attr('class', 'badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5').text(textSoftAlert);
                     $('#previewLaterBtn').show();
                 }
 
-                $('#enabledStatusLabel').text(isEnabled ? 'Enabled' : 'Disabled')
-                    .attr('class', isEnabled ? 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'badge bg-light text-muted border');
+                $('#enabledStatusLabel').text(isEnabled ? textEnabled : textDisabled)
+                    .attr('class', isEnabled ? 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-0.5 rounded-pill' : 'badge bg-secondary bg-opacity-10 text-muted border px-2 py-0.5 rounded-pill');
 
                 runVersionSimulator();
             }
@@ -426,9 +438,9 @@
 
                 if (!isEnabled) {
                     $('#testVersionVerdict').html(
-                        '<div class="alert alert-secondary py-1.5 px-2 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
+                        '<div class="alert alert-secondary py-1.5 px-2.5 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
                         '<i data-feather="info" style="width: 13px; height: 13px;"></i> ' +
-                        'Version checking is currently <strong>Disabled</strong>. No alerts will be sent to users.' +
+                        msgDisabled +
                         '</div>'
                     );
                     if (window.feather) feather.replace();
@@ -444,24 +456,36 @@
                 var isUnderMin = compareVersions(testVer, minVer) < 0;
 
                 if (isUnderMin || (isForce && isUnderTarget)) {
+                    var outMsg = tplUpdateRequired
+                        .replace(/:version/g, testVer)
+                        .replace(/:min_version/g, minVer)
+                        .replace(/:target/g, targetVer);
                     $('#testVersionVerdict').html(
-                        '<div class="alert alert-danger py-1.5 px-2 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
+                        '<div class="alert alert-danger py-1.5 px-2.5 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
                         '<i data-feather="alert-triangle" style="width: 13px; height: 13px;"></i> ' +
-                        '<strong>Update Required:</strong> Version <code>' + testVer + '</code> is under required target <code>' + targetVer + '</code>. User will be blocked until updated.' +
+                        outMsg +
                         '</div>'
                     );
                 } else if (isUnderTarget) {
+                    var outMsg = tplAlertShown
+                        .replace(/:version/g, testVer)
+                        .replace(/:target_version/g, targetVer)
+                        .replace(/:target/g, targetVer);
                     $('#testVersionVerdict').html(
-                        '<div class="alert alert-warning py-1.5 px-2 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
+                        '<div class="alert alert-warning py-1.5 px-2.5 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
                         '<i data-feather="alert-circle" style="width: 13px; height: 13px;"></i> ' +
-                        '<strong>Alert Shown:</strong> Version <code>' + testVer + '</code> is under target <code>' + targetVer + '</code>. User will see update alert modal.' +
+                        outMsg +
                         '</div>'
                     );
                 } else {
+                    var outMsg = tplUpToDate
+                        .replace(/:version/g, testVer)
+                        .replace(/:target_version/g, targetVer)
+                        .replace(/:target/g, targetVer);
                     $('#testVersionVerdict').html(
-                        '<div class="alert alert-success py-1.5 px-2 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
+                        '<div class="alert alert-success py-1.5 px-2.5 mb-0 d-flex align-items-center gap-1.5" style="font-size: 11.5px;">' +
                         '<i data-feather="check-circle" style="width: 13px; height: 13px;"></i> ' +
-                        '<strong>Up to Date:</strong> Version <code>' + testVer + '</code> &ge; target <code>' + targetVer + '</code>. No alert shown.' +
+                        outMsg +
                         '</div>'
                     );
                 }
