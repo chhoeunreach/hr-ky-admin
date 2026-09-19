@@ -2417,6 +2417,7 @@ return [
     'online_status' => 'ស្ថានភាពអនឡាញ',
     'last_location' => 'ទីតាំងចុងក្រោយ',
     'view_latest_location' => 'មើលទីតាំងដែលបានរាយការណ៍ចុងក្រោយ',
+    'view_live_location' => 'មើលទីតាំងបច្ចុប្បន្ន',
     'requesting_location' => 'កំពុងទាញយកទីតាំង...',
     'location_unavailable' => 'មិនមានទីតាំង GPS ដែលបានរាយការណ៍ទេ។',
     'login_time' => 'កាលបរិច្ឆេទ/ម៉ោងចូលប្រើ',

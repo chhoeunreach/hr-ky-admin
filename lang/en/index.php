@@ -2347,6 +2347,7 @@ return [
     'online_status' => 'Online Status',
     'last_location' => 'Last Location',
     'view_latest_location' => 'View latest reported location',
+    'view_live_location' => 'View Live Location',
     'requesting_location' => 'Getting location...',
     'location_unavailable' => 'No reported GPS location is available.',
     'login_time' => 'Login Time',

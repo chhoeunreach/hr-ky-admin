@@ -17,15 +17,20 @@
                             <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0.5 fw-medium" id="edaEmployeeCode" style="font-size: 11px;">
                                 ---
                             </span>
-                            <button type="button"
-                                    class="badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5 border-0"
-                                    id="edaOnlineBadge"
-                                    title="{{ __('index.view_latest_location') }}"
-                                    aria-label="{{ __('index.view_latest_location') }}"
-                                    disabled
-                                    style="font-size: 11px; background-color: #f1f5f9; color: #64748b;">
+                            <span class="badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1.5"
+                                  id="edaOnlineBadge"
+                                  style="font-size: 11px; background-color: #f1f5f9; color: #64748b;">
                                 <span class="status-dot"></span>
                                 <span id="edaOnlineText">{{ __('index.loading') }}</span>
+                            </span>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
+                                    id="edaViewLiveLocationBtn"
+                                    title="{{ __('index.view_latest_location') }}"
+                                    disabled
+                                    style="font-size: 11px;">
+                                <i data-feather="map-pin" style="width: 12px; height: 12px;"></i>
+                                <span>{{ __('index.view_live_location') }}</span>
                             </button>
                         </div>
                         <div class="text-muted small mt-0.5 text-truncate" style="font-size: 0.78rem;">

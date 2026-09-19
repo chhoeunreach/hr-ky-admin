@@ -1412,9 +1412,8 @@
             // Online Status Badge
             var isOnline = Number(emp.online_status) === 1;
             $('#edaOnlineBadge').removeClass('status-online status-offline')
-                .addClass(isOnline ? 'status-online' : 'status-offline')
-                .prop('disabled', !isOnline)
-                .css('cursor', isOnline ? 'pointer' : 'default');
+                .addClass(isOnline ? 'status-online' : 'status-offline');
+            $('#edaViewLiveLocationBtn').prop('disabled', !isOnline);
             $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
 
             // Platform badge
@@ -1611,12 +1610,12 @@
         });
 
         // Fetch and open the latest reported location exactly once per click.
-        $(document).on('click', '#edaOnlineBadge', function() {
+        $(document).on('click', '#edaViewLiveLocationBtn', function() {
             var button = $(this);
             if (button.prop('disabled') || !currentEdaUrl || button.data('requesting-location')) return;
 
             button.data('requesting-location', true).prop('disabled', true);
-            $('#edaOnlineText').text('{{ __('index.requesting_location') }}');
+            button.find('span').text('{{ __('index.requesting_location') }}');
             var mapWindow = window.open('', '_blank');
             if (mapWindow) mapWindow.opener = null;
 
@@ -1655,9 +1654,9 @@
             })
             .finally(function() {
                 button.data('requesting-location', false);
-                var isOnline = button.hasClass('status-online');
+                var isOnline = $('#edaOnlineBadge').hasClass('status-online');
                 button.prop('disabled', !isOnline);
-                $('#edaOnlineText').text(isOnline ? '{{ __('index.active') }} / Online' : '{{ __('index.offline') }}');
+                button.find('span').text('{{ __('index.view_live_location') }}');
             });
         });
 
