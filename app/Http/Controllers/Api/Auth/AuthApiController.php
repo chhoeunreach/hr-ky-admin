@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Helpers\AppHelper;
 
@@ -49,7 +50,7 @@ class AuthApiController
             }
 
 
-            $tokens = $user->createToken('MyToken' . $user->id)->accessToken;
+            $tokens = $user->createToken($this->deviceTokenName($validatedData))->accessToken;
             $validatedData['id'] = $user->id;
             $this->authService->updateUserLoginDetail($validatedData);
 
@@ -92,6 +93,20 @@ class AuthApiController
     protected function getAttempt(array $credentials): bool
     {
         return auth()->attempt($credentials);
+    }
+
+    private function deviceTokenName(array $loginData): string
+    {
+        $platform = strtolower((string) ($loginData['device_type'] ?? 'unknown'));
+        $rawUuid = (string) ($loginData['uuid'] ?? '');
+        $deviceName = str_contains($rawUuid, ':')
+            ? trim(explode(':', $rawUuid, 2)[0])
+            : ucfirst($platform) . ' Device';
+
+        return 'device-login:' . json_encode([
+            'platform' => $platform,
+            'device_name' => Str::limit($deviceName, 100, ''),
+        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
     public function logout()

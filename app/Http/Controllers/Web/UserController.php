@@ -1442,7 +1442,9 @@ class UserController extends Controller
                 }
             }
 
-            if (!empty($user->latestDeviceLocation?->device_name)) {
+            // A saved location can belong to a previous device. Prefer the current
+            // login UUID while online, and use location data only after logout.
+            if ($rawUuid === '' && !empty($user->latestDeviceLocation?->device_name)) {
                 $deviceName = $user->latestDeviceLocation->device_name;
             } elseif ($deviceName === 'N/A' && $deviceType === 'web') {
                 $deviceName = 'Web Portal / Desktop';
@@ -1497,16 +1499,26 @@ class UserController extends Controller
                 ->orderByDesc('created_at')
                 ->take(20)
                 ->get()
-                ->map(function ($token) use ($deviceType, $deviceName) {
+                ->map(function ($token) {
                     $isRevoked = (bool)$token->revoked;
                     $isExpired = $token->expires_at ? Carbon::parse($token->expires_at)->isPast() : false;
                     $isActive = !$isRevoked && !$isExpired;
+                    $sessionPlatform = 'Unknown';
+                    $sessionDeviceName = 'Legacy session';
+
+                    if (str_starts_with((string) $token->name, 'device-login:')) {
+                        $sessionDevice = json_decode(substr($token->name, strlen('device-login:')), true);
+                        if (is_array($sessionDevice)) {
+                            $sessionPlatform = ucfirst((string) ($sessionDevice['platform'] ?? 'unknown'));
+                            $sessionDeviceName = (string) ($sessionDevice['device_name'] ?? $sessionPlatform . ' Device');
+                        }
+                    }
 
                     return [
                         'id' => $token->id,
                         'name' => $token->name ?: 'Personal Access Token',
-                        'platform' => ucfirst($deviceType),
-                        'device_name' => $deviceName !== 'N/A' ? $deviceName : ucfirst($deviceType),
+                        'platform' => $sessionPlatform,
+                        'device_name' => $sessionDeviceName,
                         'is_active' => $isActive,
                         'revoked' => $isRevoked,
                         'expired' => $isExpired,

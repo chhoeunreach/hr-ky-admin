@@ -1457,10 +1457,18 @@
                 $('#edaLocationTime').text(dev.location.updated_at_human ? 'Updated: ' + dev.location.updated_at_human : '');
                 $('#edaMapLinkWrapper').show();
                 $('#edaMapBtn').attr('href', dev.location.map_url);
+                $('#edaDevicePlatformLink')
+                    .attr('href', dev.location.map_url)
+                    .attr('aria-disabled', 'false')
+                    .removeClass('opacity-50 pe-none');
             } else {
                 $('#edaLocationCoords').text('No GPS location available');
                 $('#edaLocationTime').text(emp.branch ? 'Assigned: ' + emp.branch : '');
                 $('#edaMapLinkWrapper').hide();
+                $('#edaDevicePlatformLink')
+                    .removeAttr('href')
+                    .attr('aria-disabled', 'true')
+                    .addClass('opacity-50 pe-none');
             }
 
             // Sessions Tab

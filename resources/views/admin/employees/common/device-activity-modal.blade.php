@@ -97,12 +97,16 @@
                         <!-- Primary Device Card -->
                         <div class="card border border-slate-200 shadow-none mb-4" style="border-radius: 12px; background: #ffffff;">
                             <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between">
-                                <div class="d-flex align-items-center gap-2">
+                                <a href="#" target="_blank" rel="noopener noreferrer"
+                                   class="d-flex align-items-center gap-2 text-decoration-none"
+                                   id="edaDevicePlatformLink"
+                                   title="{{ __('index.view_on_map') }}">
                                     <div class="rounded-2 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 28px; height: 28px;">
                                         <i data-feather="shield" style="width: 14px; height: 14px;"></i>
                                     </div>
                                     <span class="fw-bold text-dark small">{{ __('index.device_name') }} &amp; {{ __('index.platform') }}</span>
-                                </div>
+                                    <i data-feather="map-pin" class="text-primary" style="width: 13px; height: 13px;"></i>
+                                </a>
                                 <div id="edaPlatformBadgeContainer"></div>
                             </div>
                             <div class="card-body p-3">
