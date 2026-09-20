@@ -25,6 +25,8 @@ class UserReportResource extends JsonResource
                     'qr_code_url' => !empty($qrCode['qr_code'])
                         ? asset(Branch::UPLOAD_PATH . $qrCode['qr_code'])
                         : '',
+                    'payment_link' => $qrCode['payment_link'] ?? '',
+                    'link' => $qrCode['payment_link'] ?? '',
                 ])
                 ->filter(fn ($qrCode) => $qrCode['payment_name'] && $qrCode['qr_code_url'])
                 ->values()

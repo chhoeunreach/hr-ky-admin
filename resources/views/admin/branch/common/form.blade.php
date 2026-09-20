@@ -48,11 +48,11 @@
         <div id="paymentQrCodeRows">
             @php
                 $paymentQrCodes = old('payment_qr_codes', isset($branch) ? ($branch->payment_qr_codes ?? []) : []);
-                $paymentQrCodes = count($paymentQrCodes) ? $paymentQrCodes : [['payment_name' => '', 'qr_code' => '']];
+                $paymentQrCodes = count($paymentQrCodes) ? $paymentQrCodes : [['payment_name' => '', 'payment_link' => '', 'qr_code' => '']];
             @endphp
             @foreach($paymentQrCodes as $qrIndex => $paymentQrCode)
                 <div class="row align-items-end payment-qr-code-row">
-                    <div class="col-lg-4 col-md-5 mb-3">
+                    <div class="col-lg-3 col-md-6 mb-3">
                         <label class="form-label">{{ __('index.payment_name') }}</label>
                         <input type="text"
                                class="form-control"
@@ -60,7 +60,15 @@
                                value="{{ $paymentQrCode['payment_name'] ?? '' }}"
                                placeholder="{{ __('index.payment_method_name') }}">
                     </div>
-                    <div class="col-lg-4 col-md-5 mb-3">
+                    <div class="col-lg-4 col-md-6 mb-3">
+                        <label class="form-label">{{ __('index.payment_link') }}</label>
+                        <input type="text"
+                               class="form-control"
+                               name="payment_qr_codes[{{ $qrIndex }}][payment_link]"
+                               value="{{ $paymentQrCode['payment_link'] ?? '' }}"
+                               placeholder="https://example.com/pay">
+                    </div>
+                    <div class="col-lg-3 col-md-8 mb-3">
                         <label class="form-label">{{ __('index.qr_image') }}</label>
                         <input type="file"
                                class="form-control"
@@ -76,7 +84,7 @@
                                  class="mt-2 ht-100 wd-100">
                         @endif
                     </div>
-                    <div class="col-lg-2 col-md-2 mb-3">
+                    <div class="col-lg-2 col-md-4 mb-3">
                         <button type="button" class="btn btn-danger removePaymentQrCode">
                             <i class="link-icon" data-feather="trash-2"></i>
                         </button>
@@ -127,21 +135,28 @@
             $('#addPaymentQrCode').on('click', function () {
                 $('#paymentQrCodeRows').append(`
                     <div class="row align-items-end payment-qr-code-row">
-                        <div class="col-lg-4 col-md-5 mb-3">
+                        <div class="col-lg-3 col-md-6 mb-3">
                             <label class="form-label">{{ __('index.payment_name') }}</label>
                             <input type="text"
                                    class="form-control"
                                    name="payment_qr_codes[${paymentQrCodeIndex}][payment_name]"
                                    placeholder="{{ __('index.payment_method_name') }}">
                         </div>
-                        <div class="col-lg-4 col-md-5 mb-3">
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <label class="form-label">{{ __('index.payment_link') }}</label>
+                            <input type="text"
+                                   class="form-control"
+                                   name="payment_qr_codes[${paymentQrCodeIndex}][payment_link]"
+                                   placeholder="https://example.com/pay">
+                        </div>
+                        <div class="col-lg-3 col-md-8 mb-3">
                             <label class="form-label">{{ __('index.qr_image') }}</label>
                             <input type="file"
                                    class="form-control"
                                    name="payment_qr_codes[${paymentQrCodeIndex}][qr_code]"
                                    accept="image/*">
                         </div>
-                        <div class="col-lg-2 col-md-2 mb-3">
+                        <div class="col-lg-2 col-md-4 mb-3">
                             <button type="button" class="btn btn-danger removePaymentQrCode">
                                 <i class="link-icon" data-feather="trash-2"></i>
                             </button>

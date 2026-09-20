@@ -128,10 +128,11 @@ class BranchRepository
 
         foreach (($validatedData['payment_qr_codes'] ?? []) as $paymentQrCode) {
             $paymentName = trim($paymentQrCode['payment_name'] ?? '');
+            $paymentLink = trim($paymentQrCode['payment_link'] ?? '');
             $existingQrCode = $paymentQrCode['existing_qr_code'] ?? null;
             $uploadedQrCode = $paymentQrCode['qr_code'] ?? null;
 
-            if (!$paymentName && !$existingQrCode && !$uploadedQrCode) {
+            if (!$paymentName && !$paymentLink && !$existingQrCode && !$uploadedQrCode) {
                 continue;
             }
 
@@ -149,6 +150,7 @@ class BranchRepository
                 $paymentQrCodes[] = [
                     'payment_name' => $paymentName,
                     'qr_code' => $qrCodeFileName,
+                    'payment_link' => $paymentLink,
                 ];
             }
         }

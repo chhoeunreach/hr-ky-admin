@@ -855,6 +855,7 @@ return [
     'branch_logo'=>'Branch Logo',
     'payment_qr_codes'=>'Payment QR Codes',
     'payment_name'=>'Payment Name',
+    'payment_link'=>'Payment Link',
     'add_payment_qr_code'=>'Add Payment QR Code',
     'update_payment_method'=>'Update Payment Method',
     'component_value'=>'Component Value',
@@ -2508,4 +2509,3 @@ return [
     'alert_title_en' => 'ចំណងជើងផ្ទាំងជូនដំណឹង (អង់គ្លេស)',
     'alert_message_en' => 'សារជូនដំណឹង (អង់គ្លេស)',
 ];
-

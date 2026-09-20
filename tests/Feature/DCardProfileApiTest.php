@@ -53,7 +53,13 @@ class DCardProfileApiTest extends TestCase
         $branchId = DB::table('branches')->insertGetId([
             'name' => 'Phone Shop',
             'logo' => 'branch-logo.png',
-            'payment_qr_codes' => json_encode([]),
+            'payment_qr_codes' => json_encode([
+                [
+                    'payment_name' => 'ABA Pay',
+                    'qr_code' => 'aba-qr.png',
+                    'payment_link' => 'https://pay.example.test/aba',
+                ],
+            ]),
         ]);
         $departmentId = DB::table('departments')->insertGetId([
             'dept_name' => 'Management',
@@ -118,6 +124,10 @@ class DCardProfileApiTest extends TestCase
             ->assertJsonPath('data.photo_url', 'https://example.test/d-card/reach.png')
             ->assertJsonPath('data.profile_photo_url', 'https://example.test/d-card/reach.png')
             ->assertJsonPath('data.branch_logo_url', asset('uploads/branch/branch-logo.png'))
+            ->assertJsonPath('data.payment_qr_codes.0.payment_name', 'ABA Pay')
+            ->assertJsonPath('data.payment_qr_codes.0.qr_code_url', asset('uploads/branch/aba-qr.png'))
+            ->assertJsonPath('data.payment_qr_codes.0.payment_link', 'https://pay.example.test/aba')
+            ->assertJsonPath('data.payment_qr_codes.0.link', 'https://pay.example.test/aba')
             ->assertJsonPath('data.company_website', 'https://www.kneayerng.com')
             ->assertJsonPath('data.website_qr_data', 'https://www.kneayerng.com')
             ->assertJsonPath('data.telegram_qr_data', 'https://t.me/kneayerng')

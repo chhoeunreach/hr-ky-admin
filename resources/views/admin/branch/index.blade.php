@@ -93,6 +93,20 @@
                                                          style="object-fit: contain"
                                                          class="ht-50 wd-50 d-block mx-auto">
                                                     <small>{{ $paymentQrCode['payment_name'] }}</small>
+                                                    @if(!empty($paymentQrCode['payment_link']))
+                                                        @php
+                                                            $paymentLink = trim($paymentQrCode['payment_link']);
+                                                            $paymentHref = preg_match('/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//', $paymentLink)
+                                                                ? $paymentLink
+                                                                : 'https://' . $paymentLink;
+                                                        @endphp
+                                                        <a href="{{ $paymentHref }}"
+                                                           target="_blank"
+                                                           rel="noopener"
+                                                           class="d-block small text-primary">
+                                                            {{ __('index.payment_link') }}
+                                                        </a>
+                                                    @endif
                                                 </div>
                                             @endforeach
                                         </div>
