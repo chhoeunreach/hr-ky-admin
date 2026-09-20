@@ -58,18 +58,16 @@ class SMPushNotification
             'notification' => [
                 'title' => $title,
                 'body' => $message,
-
             ],
         ];
 
-        $message = CloudMessage
+        $baseMessage = CloudMessage
             ::fromArray($fromArray)
             ->withData($data)
             ->withAndroidConfig(
                 AndroidConfig::new()
                     ->withSound('default')
-            )
-        ;
+            );
 
         $responses = [];
 
@@ -79,23 +77,42 @@ class SMPushNotification
             }
 
             $badgeCount = self::resolveBadgeCountForUser((int) $userId);
-            $messageForRecipient = $message
-                ->toToken((string) $token)
-                ->withApnsConfig(
-                    ApnsConfig::fromArray([
-                        'headers' => [
-                            'apns-priority' => '10',
-                            'apns-push-type' => 'alert',
+
+            if ($isSilence) {
+                $apnsPayload = [
+                    'headers' => [
+                        'apns-priority' => '5',
+                        'apns-push-type' => 'background',
+                    ],
+                    'payload' => [
+                        'aps' => [
+                            'content-available' => 1,
                         ],
-                        'payload' => [
-                            'aps' => [
-                                'sound' => 'default',
-                                'badge' => $badgeCount,
-                                'content-available' => 1,
+                    ],
+                ];
+            } else {
+                $apnsPayload = [
+                    'headers' => [
+                        'apns-priority' => '10',
+                        'apns-push-type' => 'alert',
+                    ],
+                    'payload' => [
+                        'aps' => [
+                            'alert' => [
+                                'title' => $title,
+                                'body' => $message,
                             ],
+                            'sound' => 'default',
+                            'badge' => $badgeCount,
+                            'content-available' => 1,
                         ],
-                    ])
-                );
+                    ],
+                ];
+            }
+
+            $messageForRecipient = $baseMessage
+                ->toToken((string) $token)
+                ->withApnsConfig(ApnsConfig::fromArray($apnsPayload));
 
             try {
                 $responses[$userId] = $messaging->send($messageForRecipient);
@@ -107,6 +124,5 @@ class SMPushNotification
         }
 
         Log::info('firebase response '.json_encode($responses));
-
     }
 }
