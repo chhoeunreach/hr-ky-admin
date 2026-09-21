@@ -371,51 +371,55 @@ class UserProfileApiController extends Controller
 
     private function getAdminDirectoryEntries(?int $userId = null): array
     {
-        return Admin::query()
+        $admins = Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
-            ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) use ($userId) {
-                $directoryId = 1000000 + (int) $admin->id;
-                $conversation = null;
+            ->get(['id', 'name', 'username', 'email', 'avatar']);
 
-                if ($userId) {
-                    try {
-                        $conversation = $this->getOrCreateAdminConversation($userId, $admin->id);
-                    } catch (\Throwable $throwable) {
-                        $conversation = null;
-                    }
-                }
+        $existingConversations = $userId
+            ? ChatConversation::query()->where('user_id', $userId)->get()
+            : collect();
 
-                return [
-                    'id' => $directoryId,
-                    'name' => $admin->name ?? 'Admin',
-                    'username' => $admin->username ?? 'admin',
-                    'email' => $admin->email ?? '',
-                    'phone' => '',
-                    'department' => 'Administration',
-                    'branch' => '',
-                    'post' => 'Admin',
-                    'avatar' => $admin->avatar
-                        ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
-                        : asset('assets/images/img.png'),
-                    'online_status' => '0',
-                    'role' => 'admin',
-                    'user_type' => 'admin',
-                    'is_admin' => '1',
-                    'admin' => '1',
-                    'directory_type' => 'admin',
-                    'source_id' => $admin->id,
-                    'conversation_id' => ($conversation && $userId)
-                        ? 'employee_admin_' . $userId . '_' . $admin->id
-                        : null,
-                    'admin_id' => $admin->id,
-                    'admin_username' => $admin->username,
-                    'chat_mode' => 'admin_thread',
-                ];
-            })
-            ->values()
-            ->all();
+        $conversationsByAdmin = $existingConversations->whereNotNull('admin_id')->keyBy('admin_id');
+        $fallbackConversation = $existingConversations->first();
+        $supportsPerAdmin = $this->supportsPerAdminConversation();
+
+        return $admins->map(function (Admin $admin) use ($userId, $conversationsByAdmin, $fallbackConversation, $supportsPerAdmin) {
+            $directoryId = 1000000 + (int) $admin->id;
+            $conversation = $conversationsByAdmin->get($admin->id);
+
+            if (!$conversation && !$supportsPerAdmin) {
+                $conversation = $fallbackConversation;
+            }
+
+            return [
+                'id' => $directoryId,
+                'name' => $admin->name ?? 'Admin',
+                'username' => $admin->username ?? 'admin',
+                'email' => $admin->email ?? '',
+                'phone' => '',
+                'department' => 'Administration',
+                'branch' => '',
+                'post' => 'Admin',
+                'avatar' => $admin->avatar
+                    ? asset(Admin::AVATAR_UPLOAD_PATH . $admin->avatar)
+                    : asset('assets/images/img.png'),
+                'online_status' => '0',
+                'role' => 'admin',
+                'user_type' => 'admin',
+                'is_admin' => '1',
+                'admin' => '1',
+                'directory_type' => 'admin',
+                'source_id' => $admin->id,
+                'conversation_id' => $userId
+                    ? 'employee_admin_' . $userId . '_' . $admin->id
+                    : null,
+                'internal_conversation_id' => $conversation ? (string) $conversation->id : null,
+                'admin_id' => $admin->id,
+                'admin_username' => $admin->username,
+                'chat_mode' => 'admin_thread',
+            ];
+        })->values()->all();
     }
 
     private function getOrCreateAdminConversation(int $userId, int $adminId): ChatConversation
@@ -431,8 +435,6 @@ class UserProfileApiController extends Controller
                 'admin_id' => $adminId,
             ]);
         } catch (\Throwable $throwable) {
-            report($throwable);
-
             return ChatConversation::firstOrCreate([
                 'user_id' => $userId,
             ]);
@@ -447,7 +449,22 @@ class UserProfileApiController extends Controller
             return $supportsPerAdminConversation;
         }
 
-        $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+        try {
+            if (!Schema::hasColumn('chat_conversations', 'admin_id')) {
+                return $supportsPerAdminConversation = false;
+            }
+
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $indexes = collect(DB::select("SHOW INDEX FROM `chat_conversations` WHERE Key_name = 'chat_conversations_user_id_unique'"));
+                if ($indexes->isNotEmpty()) {
+                    return $supportsPerAdminConversation = false;
+                }
+            }
+
+            $supportsPerAdminConversation = true;
+        } catch (\Throwable $throwable) {
+            $supportsPerAdminConversation = false;
+        }
 
         return $supportsPerAdminConversation;
     }

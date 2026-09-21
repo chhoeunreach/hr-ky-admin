@@ -39,14 +39,27 @@ class EmployeeChatApiController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'username', 'avatar']);
             $primaryAdmin = $adminList->first();
-            $conversation = $primaryAdmin
-                ? $this->getOrCreateAdminConversation($user->id, $primaryAdmin->id)
-                : null;
-            $adminContact = $this->buildAdminContact($conversation, $primaryAdmin);
-            $adminDirectoryEntries = $adminList->map(fn (Admin $admin) => $this->transformAdminDirectoryEntry(
-                $admin,
-                $this->getOrCreateAdminConversation($user->id, $admin->id)
-            ))->values();
+
+            $existingConversations = ChatConversation::query()
+                ->where('user_id', $user->id)
+                ->get();
+            $conversationsByAdmin = $existingConversations->whereNotNull('admin_id')->keyBy('admin_id');
+            $fallbackConversation = $existingConversations->first();
+
+            $primaryConversation = $primaryAdmin ? $conversationsByAdmin->get($primaryAdmin->id) : null;
+            if (!$primaryConversation && !$supportsPerAdminConversation) {
+                $primaryConversation = $fallbackConversation;
+            }
+
+            $adminContact = $this->buildAdminContact($primaryConversation, $primaryAdmin);
+            $adminDirectoryEntries = $adminList->map(function (Admin $admin) use ($user, $conversationsByAdmin, $fallbackConversation, $supportsPerAdminConversation) {
+                $conv = $conversationsByAdmin->get($admin->id);
+                if (!$conv && !$supportsPerAdminConversation) {
+                    $conv = $fallbackConversation;
+                }
+
+                return $this->transformAdminDirectoryEntry($admin, $conv, $user->id);
+            })->values();
             $hrAssistantContacts = $this->getHrAssistantDirectoryEntries($user->id);
 
             return AppHelper::sendSuccessResponse('Mobile chat access loaded successfully.', [
@@ -75,14 +88,24 @@ class EmployeeChatApiController extends Controller
                 ->where('is_active', 1)
                 ->orderBy('name')
                 ->first(['id', 'name', 'username', 'avatar']);
-            $conversation = $primaryAdmin
-                ? $this->getOrCreateAdminConversation($authUserId, $primaryAdmin->id)
-                : null;
+
+            $supportsPerAdmin = $this->supportsPerAdminConversation();
+            $existingConversations = ChatConversation::query()
+                ->where('user_id', $authUserId)
+                ->get();
+            $conversationsByAdmin = $existingConversations->whereNotNull('admin_id')->keyBy('admin_id');
+            $fallbackConversation = $existingConversations->first();
+
+            $primaryConversation = $primaryAdmin ? $conversationsByAdmin->get($primaryAdmin->id) : null;
+            if (!$primaryConversation && !$supportsPerAdmin) {
+                $primaryConversation = $fallbackConversation;
+            }
+
             $adminContact = $this->buildAdminContact(
-                $conversation,
+                $primaryConversation,
                 $primaryAdmin
             );
-            $adminDirectoryEntries = $this->getAdminDirectoryEntries($authUserId);
+            $adminDirectoryEntries = $this->getAdminDirectoryEntries($authUserId, $existingConversations);
             $hrAssistantContacts = $this->getHrAssistantDirectoryEntries($authUserId);
 
             if ($scope !== MobileChatHelper::MODE_ALL_EMPLOYEES) {
@@ -401,23 +424,29 @@ class EmployeeChatApiController extends Controller
         ];
     }
 
-    private function getAdminDirectoryEntries(int $userId)
+    private function getAdminDirectoryEntries(int $userId, $preloadedConversations = null)
     {
-        return Admin::query()
+        $admins = Admin::query()
             ->where('is_active', 1)
             ->orderBy('name')
-            ->get(['id', 'name', 'username', 'email', 'avatar'])
-            ->map(function (Admin $admin) use ($userId) {
-                try {
-                    $conversation = $this->getOrCreateAdminConversation($userId, $admin->id);
-                } catch (Throwable $throwable) {
-                    report($throwable);
-                    $conversation = null;
-                }
+            ->get(['id', 'name', 'username', 'email', 'avatar']);
 
-                return $this->transformAdminDirectoryEntry($admin, $conversation);
-            })
-            ->values();
+        $existingConversations = $preloadedConversations ?? ChatConversation::query()
+            ->where('user_id', $userId)
+            ->get();
+
+        $conversationsByAdmin = $existingConversations->whereNotNull('admin_id')->keyBy('admin_id');
+        $fallbackConversation = $existingConversations->first();
+        $supportsPerAdmin = $this->supportsPerAdminConversation();
+
+        return $admins->map(function (Admin $admin) use ($userId, $conversationsByAdmin, $fallbackConversation, $supportsPerAdmin) {
+            $conversation = $conversationsByAdmin->get($admin->id);
+            if (!$conversation && !$supportsPerAdmin) {
+                $conversation = $fallbackConversation;
+            }
+
+            return $this->transformAdminDirectoryEntry($admin, $conversation, $userId);
+        })->values();
     }
 
     private function getHrAssistantDirectoryEntries(int $authUserId)
@@ -457,9 +486,10 @@ class EmployeeChatApiController extends Controller
             ->values();
     }
 
-    private function transformAdminDirectoryEntry(Admin $admin, ?ChatConversation $conversation = null): array
+    private function transformAdminDirectoryEntry(Admin $admin, ?ChatConversation $conversation = null, ?int $userId = null): array
     {
         $directoryId = 1000000 + (int) $admin->id;
+        $resolvedUserId = $conversation?->user_id ?? $userId ?? auth()->id();
 
         return [
             'id' => $directoryId,
@@ -482,7 +512,7 @@ class EmployeeChatApiController extends Controller
             'is_online' => false,
             'directory_type' => 'admin',
             'source_id' => $admin->id,
-            'conversation_id' => $conversation ? $this->externalConversationId($conversation->user_id, (int) $admin->id) : null,
+            'conversation_id' => $resolvedUserId ? $this->externalConversationId($resolvedUserId, (int) $admin->id) : null,
             'internal_conversation_id' => $conversation ? (string) $conversation->id : null,
             'admin_id' => $admin->id,
             'admin_username' => $admin->username,
@@ -522,8 +552,6 @@ class EmployeeChatApiController extends Controller
                 'admin_id' => $adminId,
             ]);
         } catch (Throwable $throwable) {
-            report($throwable);
-
             return ChatConversation::firstOrCreate([
                 'user_id' => $userId,
             ]);
@@ -655,9 +683,19 @@ class EmployeeChatApiController extends Controller
         }
 
         try {
-            $supportsPerAdminConversation = Schema::hasColumn('chat_conversations', 'admin_id');
+            if (!Schema::hasColumn('chat_conversations', 'admin_id')) {
+                return $supportsPerAdminConversation = false;
+            }
+
+            if (Schema::getConnection()->getDriverName() === 'mysql') {
+                $indexes = collect(DB::select("SHOW INDEX FROM `chat_conversations` WHERE Key_name = 'chat_conversations_user_id_unique'"));
+                if ($indexes->isNotEmpty()) {
+                    return $supportsPerAdminConversation = false;
+                }
+            }
+
+            $supportsPerAdminConversation = true;
         } catch (Throwable $throwable) {
-            report($throwable);
             $supportsPerAdminConversation = false;
         }
 
