@@ -2485,6 +2485,7 @@ return [
     'warranty_period' => 'Warranty Period',
     'warranty_days' => 'Warranty Days',
     'estimated_minutes' => 'Estimated Minutes',
+    'minute' => 'min',
     'available' => 'Available',
     'out_of_stock' => 'Out of Stock',
     'pre_order' => 'Pre-order',

@@ -2555,6 +2555,7 @@ return [
     'warranty_period' => 'រយៈពេលធានា',
     'warranty_days' => 'ចំនួនថ្ងៃធានា',
     'estimated_minutes' => 'រយៈពេលប៉ាន់ស្មាន (នាទី)',
+    'minute' => 'នាទី',
     'available' => 'មានក្នុងស្តុក',
     'out_of_stock' => 'អស់ពីស្តុក',
     'pre_order' => 'កុម្ម៉ង់ទុកមុន',
