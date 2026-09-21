@@ -68,6 +68,8 @@ use App\Http\Controllers\Web\PFController;
 use App\Http\Controllers\Web\SellStaffReportController;
 use App\Http\Controllers\Web\StaticPageContentController;
 use App\Http\Controllers\Web\AppLinkController;
+use App\Http\Controllers\Web\RepairDashboardController;
+use App\Http\Controllers\Web\RepairPriceWebController;
 use App\Http\Controllers\Web\SupportController;
 use App\Http\Controllers\Web\TadaAttachmentController;
 use App\Http\Controllers\Web\TadaController;
@@ -345,6 +347,40 @@ Route::group([
         Route::resource('app-links', AppLinkController::class);
         Route::get('app-links/toggle-status/{id}', [AppLinkController::class, 'toggleStatus'])->name('app-links.toggle-status');
         Route::get('app-links/delete/{id}', [AppLinkController::class, 'delete'])->name('app-links.delete');
+
+        /** Repair Management routes */
+        Route::group([
+            'prefix' => 'repair',
+            'as' => 'repair.',
+        ], function () {
+            Route::get('/', [RepairDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [RepairDashboardController::class, 'index']);
+        });
+
+        /** Repair Price Management routes */
+        Route::prefix('repair-price')->name('repair-price.')->group(function () {
+            Route::get('/', [RepairPriceWebController::class, 'index'])->name('index');
+            Route::get('import', [RepairPriceWebController::class, 'import'])->name('import');
+            Route::post('import', [RepairPriceWebController::class, 'processImport'])->name('import.process');
+            Route::get('sample-template', [RepairPriceWebController::class, 'downloadSample'])->name('sample-template');
+            Route::post('brands', [RepairPriceWebController::class, 'storeBrand'])->name('brands.store');
+            Route::put('brands/{id}', [RepairPriceWebController::class, 'updateBrand'])->name('brands.update');
+            Route::get('brands/delete/{id}', [RepairPriceWebController::class, 'deleteBrand'])->name('brands.delete');
+            Route::post('categories', [RepairPriceWebController::class, 'storeCategory'])->name('categories.store');
+            Route::put('categories/{id}', [RepairPriceWebController::class, 'updateCategory'])->name('categories.update');
+            Route::get('categories/delete/{id}', [RepairPriceWebController::class, 'deleteCategory'])->name('categories.delete');
+            Route::post('devices', [RepairPriceWebController::class, 'storeDevice'])->name('devices.store');
+            Route::put('devices/{id}', [RepairPriceWebController::class, 'updateDevice'])->name('devices.update');
+            Route::get('devices/delete/{id}', [RepairPriceWebController::class, 'deleteDevice'])->name('devices.delete');
+            Route::post('services', [RepairPriceWebController::class, 'storeService'])->name('services.store');
+            Route::put('services/{id}', [RepairPriceWebController::class, 'updateService'])->name('services.update');
+            Route::get('services/delete/{id}', [RepairPriceWebController::class, 'deleteService'])->name('services.delete');
+            Route::post('prices', [RepairPriceWebController::class, 'storePrice'])->name('prices.store');
+            Route::put('prices/{id}', [RepairPriceWebController::class, 'updatePrice'])->name('prices.update');
+            Route::get('prices/delete/{id}', [RepairPriceWebController::class, 'deletePrice'])->name('prices.delete');
+            Route::get('ajax/series/{brandId}', [RepairPriceWebController::class, 'getSeriesByBrand'])->name('ajax.series');
+        });
+
 
         Route::resource('static-page-contents', StaticPageContentController::class);
         Route::get('static-page-contents/toggle-status/{id}', [StaticPageContentController::class, 'toggleStatus'])->name('static-page-contents.toggle-status');

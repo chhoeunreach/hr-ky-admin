@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class AdminAuthController extends Controller
 {
@@ -78,6 +79,8 @@ class AdminAuthController extends Controller
 
             $this->incrementLoginAttempts($request);
             return $this->sendFailedLoginResponse($request);
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }

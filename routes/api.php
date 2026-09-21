@@ -23,6 +23,8 @@ use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\ProjectApiController;
 use App\Http\Controllers\Api\ProjectManagementDashboardApiController;
 use App\Http\Controllers\Api\PushNotificationController;
+use App\Http\Controllers\Api\RepairPrice\RepairPriceAdminController;
+use App\Http\Controllers\Api\RepairPrice\RepairPriceController;
 use App\Http\Controllers\Api\ResignationApiController;
 use App\Http\Controllers\Api\SellOutReportController;
 use App\Http\Controllers\Api\SocialRewardApiController;
@@ -64,6 +66,31 @@ Route::prefix('kiosk/v1')
             ->middleware('throttle:30,1');
         Route::post('attendance', [KioskApiController::class, 'attendance']);
         Route::get('attendance/recent', [KioskApiController::class, 'recentAttendance']);
+    });
+
+Route::prefix('repair-price')
+    ->middleware(['auth:api', 'permission'])
+    ->group(function () {
+        Route::get('permissions', [RepairPriceController::class, 'permissions']);
+        Route::get('brands', [RepairPriceController::class, 'brands']);
+        Route::get('device-types', [RepairPriceController::class, 'deviceTypes']);
+        Route::get('series', [RepairPriceController::class, 'series']);
+        Route::get('devices', [RepairPriceController::class, 'devices']);
+        Route::get('devices/{device}', [RepairPriceController::class, 'device']);
+        Route::get('devices/{device}/services', [RepairPriceController::class, 'deviceServices']);
+        Route::get('categories', [RepairPriceController::class, 'categories']);
+        Route::get('services', [RepairPriceController::class, 'services']);
+        Route::get('search', [RepairPriceController::class, 'search']);
+
+        Route::post('admin/devices', [RepairPriceAdminController::class, 'storeDevice']);
+        Route::put('admin/devices/{device}', [RepairPriceAdminController::class, 'updateDevice']);
+        Route::delete('admin/devices/{device}', [RepairPriceAdminController::class, 'destroyDevice']);
+        Route::post('admin/services', [RepairPriceAdminController::class, 'storeService']);
+        Route::put('admin/services/{service}', [RepairPriceAdminController::class, 'updateService']);
+        Route::delete('admin/services/{service}', [RepairPriceAdminController::class, 'destroyService']);
+        Route::post('admin/prices', [RepairPriceAdminController::class, 'storePrice']);
+        Route::put('admin/prices/{price}', [RepairPriceAdminController::class, 'updatePrice']);
+        Route::delete('admin/prices/{price}', [RepairPriceAdminController::class, 'destroyPrice']);
     });
 
 Route::group([

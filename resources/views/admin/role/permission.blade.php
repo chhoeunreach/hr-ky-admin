@@ -69,6 +69,24 @@
                 }
             });
 
+            $('body').on('click', '.repair-preset-btn', function() {
+                let role = $(this).data('role');
+                let group = $(this).closest('.group-checkbox');
+                let checkboxes = group.find('.module_checkbox');
+                
+                checkboxes.prop('checked', false);
+                
+                if (role === 'admin') {
+                    checkboxes.prop('checked', true);
+                } else if (role === 'manager') {
+                    checkboxes.filter('#repair_price\\.view, #repair_price\\.view_cost, #repair_price\\.manage_prices, #repair_price\\.create, #repair_price\\.update').prop('checked', true);
+                } else if (role === 'employee') {
+                    checkboxes.filter('#repair_price\\.view').prop('checked', true);
+                } else if (role === 'none') {
+                    checkboxes.prop('checked', false);
+                }
+            });
+
             $(function() {
                 $('.js-check-all').on('click', function() {
                     // Get the checked state of the "check all" checkbox itself
@@ -84,7 +102,6 @@
 
     </script>
 @endsection
-
 
 
 

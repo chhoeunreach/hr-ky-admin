@@ -20,12 +20,19 @@ class SPAuthGateMW
      */
     public function handle(Request $request, Closure $next): mixed
     {
-        if ( Auth::guard('admin')->user()) {
-            Gate::before(function () {
+        $user = Auth::guard('admin')->user() ?: Auth::user();
+        $roleSlug = $user?->role?->slug ?? '';
+        $roleId = $user?->role_id ?? null;
+
+        // Admin and Super Admin always have FULL access to all features and permissions
+        if (Auth::guard('admin')->check() || in_array($roleSlug, ['admin', 'supper-admin']) || in_array($roleId, [1, 7])) {
+            Gate::before(function ($user = null, ?string $ability = null) {
                 return true; // Always allow for admin users
             });
-        } else if (Auth::user()) {
-            $role_id = Auth::user()?->role_id ?? null;
+            return $next($request);
+        }
+
+        if (Auth::user()) {
             $allAllocatedPermissions = PermissionRole::select([
                     DB::raw('permission_roles.permission_id as permission_id'),
                     DB::raw('permissions.permission_key as permission_key'),
@@ -34,14 +41,18 @@ class SPAuthGateMW
                 ->leftJoin('permissions', function ($query) {
                     $query->on('permission_roles.permission_id', '=', 'permissions.id');
                 })
-                ->where('permission_roles.role_id', $role_id)
+                ->where('permission_roles.role_id', $roleId)
                 ->get();
+
             foreach ($allAllocatedPermissions as $permission) {
-                Gate::define($permission->permission_key, function () {
-                    return true;
-                });
+                if ($permission->permission_key) {
+                    Gate::define($permission->permission_key, function () {
+                        return true;
+                    });
+                }
             }
         }
+
         return $next($request);
     }
 }

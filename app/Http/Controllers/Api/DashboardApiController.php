@@ -199,6 +199,11 @@ class DashboardApiController extends Controller
 
             return AppHelper::sendSuccessResponse(__('index.data_found'), $dashboard);
         } catch (Exception $exception) {
+            Log::error('Dashboard API failed', [
+                'user_id' => getAuthUserCode(),
+                'message' => $exception->getMessage(),
+                'exception' => $exception,
+            ]);
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
     }

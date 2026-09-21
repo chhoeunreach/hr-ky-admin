@@ -36,8 +36,25 @@
                 @endphp
                 <div class="col-lg-12">
                     <div class="group-checkbox border-bottom pb-3 mb-4 w-100">
-                        <div class="title-ch mb-2">
-                            <h5 style="color:#e82e5f;">{{$value->name}} @lang('index.module'):</h5>
+                        <div class="title-ch mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <h5 style="color:#e82e5f;" class="mb-0">{{$value->name}} @lang('index.module'):</h5>
+                            @if($value->name == 'Repair Price')
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span class="small text-muted me-1 fw-bold">Preset Role:</span>
+                                    <button type="button" class="btn btn-xs btn-outline-purple repair-preset-btn" data-role="admin" style="padding: 2px 8px; font-size: 11px;">
+                                        Admin (អភិបាល)
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-warning repair-preset-btn" data-role="manager" style="padding: 2px 8px; font-size: 11px;">
+                                        Manager (អ្នកគ្រប់គ្រង)
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-primary repair-preset-btn" data-role="employee" style="padding: 2px 8px; font-size: 11px;">
+                                        Employee (បុគ្គលិក)
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-danger repair-preset-btn" data-role="none" style="padding: 2px 8px; font-size: 11px;">
+                                        No Access (គ្មានសិទ្ធិ)
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                         <div class="head-checkbox d-flex align-items-center gap-3 flex-wrap">
 

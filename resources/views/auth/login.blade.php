@@ -11,7 +11,6 @@
                     <div class="row w-100 mx-0 auth-page">
                         <div class="col-md-8 col-xl-6 mx-auto">
                             <div class="card">
-{{--                                @include('admin.section.flash_message')--}}
                                 <div class="row align-items-center">
                                     <div class="col-md-4 pe-md-0">
                                         <div class="auth-side-wrapper p-4">
@@ -49,6 +48,7 @@
                                                 </div>
                                             </div>
                                             <h5 class="text-muted fw-normal mb-4">{{ __('auth.welcome_back') }}</h5>
+                                            @include('admin.section.flash_message')
 
                                             <form class="forms-sample" method="POST" action="{{ route('admin.login.process') }}">
                                                 @csrf
@@ -73,9 +73,9 @@
                                                         autocomplete="email"
                                                         autofocus
                                                     >
-                                                    @if ($errors->has('username'))
+                                                    @if ($errors->has('email'))
                                                         <span class="text-danger">
-                                                        <strong>{{ $errors->first('username') }}</strong>
+                                                        <strong>{{ $errors->first('email') }}</strong>
                                                     </span>
                                                     @endif
                                                 </div>
