@@ -2445,6 +2445,7 @@ return [
     'repair_price_list' => 'Repair Price List',
     'repair_price_matrix' => 'Price Matrix & Costs',
     'repair_devices' => 'Device Models',
+    'repair_service' => 'Repair Service',
     'repair_services' => 'Services & Categories',
     'add_repair_price' => 'Add Repair Price',
     'edit_repair_price' => 'Edit Repair Price',

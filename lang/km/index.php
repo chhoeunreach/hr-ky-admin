@@ -2515,6 +2515,7 @@ return [
     'repair_price_list' => 'បញ្ជីតម្លៃជួសជុល',
     'repair_price_matrix' => 'តារាងតម្លៃ និងថ្លៃដើម',
     'repair_devices' => 'ម៉ូឌែលឧបករណ៍',
+    'repair_service' => 'សេវាកម្មជួសជុល',
     'repair_services' => 'សេវាកម្ម និងប្រភេទទំនិញ',
     'add_repair_price' => 'បន្ថែមតម្លៃជួសជុល',
     'edit_repair_price' => 'កែប្រែតម្លៃជួសជុល',
