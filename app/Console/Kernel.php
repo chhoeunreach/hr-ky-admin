@@ -49,6 +49,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('command:update-project-status')
             ->dailyAt('07:40');
 
+        // HR database backup to Telegram
+        // Daily at 02:00, 09:00, 14:00, 17:00, 21:00
+        $schedule->command('backup:database-telegram')
+            ->cron('0 3,10,15,22 * * *')
+            ->withoutOverlapping();
+
 
 
 
