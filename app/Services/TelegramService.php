@@ -279,10 +279,10 @@ class TelegramService
 
             return $targetPath;
         } catch (\Throwable $e) {
-            $this->lastError = "Telegram file download exception: {$e->getMessage()}";
+            $this->lastError = "Telegram file download exception: " . $this->redactSensitiveData($e->getMessage());
             Log::error('Telegram file download exception.', [
                 'file_path' => $filePath,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
 
             return null;
@@ -424,7 +424,6 @@ class TelegramService
 
         try {
             $request = Http::timeout(20)
-                ->retry(2, 200)
                 ->acceptJson()
                 ->attach('photo', file_get_contents($photoPath), basename($photoPath));
 
@@ -452,10 +451,10 @@ class TelegramService
 
             return $response->json('result.message_id');
         } catch (\Throwable $e) {
-            $this->lastError = $this->formatTelegramError('sendPhoto', $e->getMessage(), $chatId);
+            $this->lastError = $this->formatTelegramError('sendPhoto', $this->redactSensitiveData($e->getMessage()), $chatId);
             Log::error('Telegram sendPhoto exception.', [
                 'chatId' => $chatId,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         }
@@ -486,7 +485,6 @@ class TelegramService
 
         try {
             $request = Http::timeout(30)
-                ->retry(2, 200)
                 ->acceptJson()
                 ->attach('document', file_get_contents($documentPath), $fileName ?: basename($documentPath));
 
@@ -514,10 +512,10 @@ class TelegramService
 
             return true;
         } catch (\Throwable $e) {
-            $this->lastError = $this->formatTelegramError('sendDocument', $e->getMessage(), $chatId);
+            $this->lastError = $this->formatTelegramError('sendDocument', $this->redactSensitiveData($e->getMessage()), $chatId);
             Log::error('Telegram sendDocument exception.', [
                 'chatId' => $chatId,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return false;
         }
@@ -548,7 +546,7 @@ class TelegramService
         $url = rtrim(self::TELEGRAM_API_BASE, '/') . '/bot' . $botToken . '/sendMediaGroup';
 
         try {
-            $request = Http::timeout(30)->retry(2, 200)->acceptJson();
+            $request = Http::timeout(30)->acceptJson();
 
             $media = [];
             foreach ($photoPaths as $index => $photoPath) {
@@ -585,10 +583,10 @@ class TelegramService
 
             return $response->json('result');
         } catch (\Throwable $e) {
-            $this->lastError = $this->formatTelegramError('sendMediaGroup', $e->getMessage(), $chatId);
+            $this->lastError = $this->formatTelegramError('sendMediaGroup', $this->redactSensitiveData($e->getMessage()), $chatId);
             Log::error('Telegram sendMediaGroup exception.', [
                 'chatId' => $chatId,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         }
@@ -600,7 +598,7 @@ class TelegramService
         $chatIds = array_map(fn (array $recipient): string => $recipient['chat_id'], $recipients);
 
         if ($chatIds === []) {
-            Log::error('Telegram routing failed (missing or unknown branch/department).', [
+            Log::warning('Telegram routing failed (missing or unknown branch/department).', [
                 'actionKey' => $actionKey,
                 'branchName' => $branchName,
                 'departmentName' => $departmentName,
@@ -809,7 +807,6 @@ class TelegramService
 
         try {
             $response = Http::timeout(10)
-                ->retry(2, 200)
                 ->acceptJson()
                 ->post($url, $payload);
 
@@ -827,21 +824,21 @@ class TelegramService
             $response = $e->response;
             $this->lastError = $this->formatTelegramError(
                 $method,
-                $response ? $this->telegramErrorFromResponse($response) : $e->getMessage(),
+                $response ? $this->telegramErrorFromResponse($response) : $this->redactSensitiveData($e->getMessage()),
                 $payload['chat_id'] ?? null
             );
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
                 'status' => $response?->status(),
                 'body' => $response?->body(),
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         } catch (\Throwable $e) {
-            $this->lastError = $this->formatTelegramError($method, $e->getMessage(), $payload['chat_id'] ?? null);
+            $this->lastError = $this->formatTelegramError($method, $this->redactSensitiveData($e->getMessage()), $payload['chat_id'] ?? null);
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         }
@@ -861,7 +858,6 @@ class TelegramService
 
         try {
             $response = Http::timeout(10)
-                ->retry(2, 200)
                 ->acceptJson()
                 ->get($url, $query);
 
@@ -879,20 +875,20 @@ class TelegramService
             $response = $e->response;
             $this->lastError = $this->formatTelegramError(
                 $method,
-                $response ? $this->telegramErrorFromResponse($response) : $e->getMessage()
+                $response ? $this->telegramErrorFromResponse($response) : $this->redactSensitiveData($e->getMessage())
             );
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
                 'status' => $response?->status(),
                 'body' => $response?->body(),
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         } catch (\Throwable $e) {
-            $this->lastError = $this->formatTelegramError($method, $e->getMessage());
+            $this->lastError = $this->formatTelegramError($method, $this->redactSensitiveData($e->getMessage()));
             Log::error('Telegram API request exception.', $context + [
                 'method' => $method,
-                'exception' => $e->getMessage(),
+                'exception' => $this->redactSensitiveData($e->getMessage()),
             ]);
             return null;
         }
@@ -911,8 +907,16 @@ class TelegramService
         return $body !== '' ? Str::limit($body, 300) : 'HTTP ' . $response->status();
     }
 
+    private function redactSensitiveData(string $value): string
+    {
+        return preg_replace('/bot\d+:[A-Za-z0-9_-]+/', 'bot[REDACTED]', $value)
+            ?? 'Telegram request failed.';
+    }
+
     private function formatTelegramError(string $method, string $detail, mixed $chatId = null): string
     {
+        $detail = $this->redactSensitiveData($detail);
+
         if (strtolower(trim($detail)) === 'unauthorized') {
             return 'Telegram bot token is invalid or unauthorized. Save a fresh bot token from @BotFather, then test again.';
         }

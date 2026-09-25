@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Helpers\AttendanceHelper;
+use App\Jobs\SendAttendanceTelegramNotification;
 use App\Models\Attendance;
 use App\Models\TelegramGroup;
 use App\Models\User;
@@ -17,6 +18,19 @@ class AttendanceTelegramNotificationService
     }
 
     public function notify(string $type, User $user, mixed $attendance): void
+    {
+        if (! in_array($type, ['check_in', 'check_out'], true) || ! $attendance?->id) {
+            return;
+        }
+
+        SendAttendanceTelegramNotification::dispatch(
+            $type,
+            (int) $user->id,
+            (int) $attendance->id,
+        )->afterCommit();
+    }
+
+    public function sendNow(string $type, User $user, mixed $attendance): void
     {
         try {
             $latitude = null;
@@ -128,7 +142,7 @@ class AttendanceTelegramNotificationService
             $selfiePath = $this->selfiePath($type, $attendance);
 
             if ($selfiePath !== null) {
-                $this->telegramService->sendPhotoToAction(
+                $sent = $this->telegramService->sendPhotoToAction(
                     $actionKey,
                     $selfiePath,
                     $messageText,
@@ -139,7 +153,7 @@ class AttendanceTelegramNotificationService
                     $longitude,
                 );
             } else {
-                $this->telegramService->sendToAction(
+                $sent = $this->telegramService->sendToAction(
                     $actionKey,
                     $messageText,
                     null,
@@ -149,11 +163,29 @@ class AttendanceTelegramNotificationService
                     $longitude,
                 );
             }
+
+            if (! $sent) {
+                $error = $this->telegramService->lastError() ?: 'Telegram attendance notification failed.';
+
+                if (str_starts_with($error, 'No active Telegram chat IDs')) {
+                    Log::warning('Telegram attendance notification skipped: no matching route.', [
+                        'type' => $type,
+                        'branchName' => $branchName,
+                        'departmentName' => $departmentName,
+                    ]);
+
+                    return;
+                }
+
+                throw new \RuntimeException($error);
+            }
         } catch (\Throwable $e) {
             Log::error('Telegram attendance notification error.', [
                 'type' => $type,
-                'exception' => $e->getMessage(),
+                'exception_type' => $e::class,
             ]);
+
+            throw $e;
         }
     }
 

@@ -101,7 +101,7 @@ class AttendanceTelegramNotifier
             Log::warning('Attendance Telegram notify failed', [
                 'department_id' => $user->department_id ?? null,
                 'chat_ids' => $chatIds,
-                'error' => $e->getMessage(),
+                'error' => preg_replace('/bot\d+:[A-Za-z0-9_-]+/', 'bot[REDACTED]', $e->getMessage()),
             ]);
         }
     }
@@ -233,7 +233,7 @@ class AttendanceTelegramNotifier
             Log::warning('Attendance Telegram reverse-geocode failed', [
                 'lat' => $lat,
                 'lng' => $lng,
-                'error' => $e->getMessage(),
+                'error' => preg_replace('/bot\d+:[A-Za-z0-9_-]+/', 'bot[REDACTED]', $e->getMessage()),
             ]);
             return null;
         }
