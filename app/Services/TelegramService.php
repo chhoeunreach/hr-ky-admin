@@ -598,7 +598,11 @@ class TelegramService
         $chatIds = array_map(fn (array $recipient): string => $recipient['chat_id'], $recipients);
 
         if ($chatIds === []) {
+<<<<<<< HEAD
             Log::notice('Telegram routing unavailable (missing or unknown branch/department).', [
+=======
+            Log::warning('Telegram routing failed (missing or unknown branch/department).', [
+>>>>>>> 18efafc520e419b92ddc271379d5c143ecfd98d0
                 'actionKey' => $actionKey,
                 'branchName' => $branchName,
                 'departmentName' => $departmentName,
