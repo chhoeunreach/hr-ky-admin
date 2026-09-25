@@ -145,7 +145,7 @@
                         <i data-feather="download-cloud"></i> {{ __('index.sync_telegram_starts') }}
                     </button>
                 </form>
-                <a href="{{ route('admin.telegram-bot.index') }}" class="btn btn-outline-primary"><i data-feather="settings"></i> {{ __('index.bot_settings') }}</a>
+                <a href="{{ route('admin.telegram-groups.index') }}" class="btn btn-outline-primary"><i data-feather="users"></i> {{ __('index.telegram_groups') }}</a>
             </div>
         </div>
 
@@ -239,7 +239,7 @@
                     </div>
                     <div class="telegram-header-actions">
                         <a href="{{ route('admin.telegram-employees.index') }}" class="telegram-icon-button" title="Refresh"><i data-feather="refresh-cw"></i></a>
-                        <a href="{{ route('admin.telegram-bot.index') }}" class="telegram-icon-button" title="Telegram Bot Settings"><i data-feather="settings"></i></a>
+                        <a href="{{ route('admin.telegram-groups.index') }}" class="telegram-icon-button" title="Telegram groups"><i data-feather="users"></i></a>
                     </div>
                 </header>
 

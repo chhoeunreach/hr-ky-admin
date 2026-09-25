@@ -80,9 +80,7 @@ class TelegramBotSettings
 
     public static function botToken(): string
     {
-        self::ensureBotTokenExists();
-
-        return trim((string) self::get(self::BOT_TOKEN, self::envBotToken()));
+        return self::envBotToken();
     }
 
     public static function envBotToken(): string

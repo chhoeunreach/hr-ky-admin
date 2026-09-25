@@ -89,7 +89,7 @@ To test an HTML-formatted message:
 php artisan telegram:test --html
 ```
 
-The command sends to the configured default chat. If it fails, check the saved bot token, chat routing, and `storage/logs/laravel.log`.
+The command sends to the configured default chat. If it fails, check the saved bot token, chat routing, and the current daily log under storage/logs.
 
 To test a specific chat ID:
 
@@ -134,3 +134,168 @@ Supported commands:
 /status
 /chatid
 ```
+
+## Maintenance History: 2026-09-25
+
+### Incident Summary
+
+The production HR project at **/var/www/hr-ky-admin1** recorded:
+
+- Telegram API 502 Bad Gateway and 429 Too Many Requests responses.
+- Photo uploads timing out after 20 seconds.
+- Sell Out routing failures for material, purchase, and iCloud customer events.
+- Attendance requests waiting for synchronous Telegram calls.
+- Bot credentials appearing inside exception URLs in laravel.log.
+- A single Laravel log growing to approximately 358 MB.
+
+### Root Causes
+
+1. Attendance sent Telegram messages, photos, and locations inside the HTTP request.
+2. Requests immediately retried after 200 ms, including rate-limited requests.
+3. Exception messages included the full Telegram API URL and bot token.
+4. Four routing rows used **ច្បាអំពៅ** while events supplied **ច្បារអំពៅ**.
+5. No destination is configured for **sell_out_icloud_cus**.
+6. Production used the non-rotating single log at debug level.
+
+### Code Changes
+
+Attendance now dispatches the existing queue job after commit:
+
+~~~php
+SendAttendanceTelegramNotification::dispatch(
+    $type,
+    (int) $user->id,
+    (int) $attendance->id,
+)->afterCommit();
+~~~
+
+The job retries transient failures without holding the attendance request open:
+
+~~~php
+public int $tries = 4;
+public int $timeout = 120;
+
+public function backoff(): array
+{
+    return [10, 30, 60];
+}
+~~~
+
+The worker calls **AttendanceTelegramNotificationService::sendNow()**, preserving selfie, message, location, branch, and department behavior. Failed calls throw so the queue can retry them.
+
+Immediate HTTP retries were removed from **TelegramService**. Token-bearing exception text is sanitized before logging:
+
+~~~php
+private function redactSensitiveData(string $value): string
+{
+    return preg_replace(
+        '/bot\d+:[A-Za-z0-9_-]+/',
+        'bot[REDACTED]',
+        $value
+    ) ?? 'Telegram request failed.';
+}
+~~~
+
+Missing routing is now a notice rather than a system error. A destination must still be configured before delivery can occur.
+
+The logging stack now uses daily rotation:
+
+~~~php
+'stack' => [
+    'driver' => 'stack',
+    'channels' => ['daily'],
+    'ignore_exceptions' => false,
+],
+~~~
+
+Production settings:
+
+~~~dotenv
+LOG_CHANNEL=stack
+LOG_LEVEL=warning
+QUEUE_CONNECTION=redis
+~~~
+
+### Files Changed
+
+- app/Jobs/SendAttendanceTelegramNotification.php
+- app/Services/Attendance/AttendanceTelegramNotificationService.php
+- app/Services/Attendance/AttendanceTelegramNotifier.php
+- app/Services/TelegramService.php
+- config/logging.php
+
+### Routing Data Correction
+
+Four routing rows were normalized from **ច្បាអំពៅ** to **ច្បារអំពៅ**. Equivalent SQL:
+
+~~~sql
+UPDATE telegram_groups
+SET branch_name = REPLACE(branch_name, 'ច្បាអំពៅ', 'ច្បារអំពៅ')
+WHERE branch_name LIKE '%ច្បាអំពៅ%';
+~~~
+
+After correction, **sell_out_material** and **sell_out_purchase** each resolve a Chbar Ampov destination. **sell_out_icloud_cus** still requires assignment through **Settings > Telegram Groups**.
+
+### Deployment Commands
+
+Run from **/var/www/hr-ky-admin1** after deploying tested files:
+
+~~~bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan queue:restart
+supervisorctl restart hr-worker:*
+~~~
+
+The old token-bearing log was cleared after daily logging became active:
+
+~~~bash
+truncate -s 0 storage/logs/laravel.log
+chown www-data:www-data storage/logs/laravel.log
+~~~
+
+Pre-deployment backup:
+
+~~~text
+/root/backups/hr-telegram-20260925-0645
+~~~
+
+### Verification Results
+
+- All five changed production PHP files passed php -l.
+- Queue dispatch and token redaction passed focused in-memory checks.
+- Local and production SHA-256 checksums matched.
+- The HR worker restarted and remained RUNNING.
+- Redis queue length was 0; Laravel reported no failed jobs.
+- The HR site returned its expected HTTP 302 login redirect in about 0.08 seconds.
+- Daily warning-level logging was active.
+- No Telegram token pattern was found in the new logs.
+
+### Required Manual Actions
+
+1. Revoke the exposed token through **@BotFather** and generate a replacement.
+2. Save it under **Settings > Telegram Bot**; the database value takes priority over .env.
+3. Update TELEGRAM_BOT_TOKEN in production .env as the fallback.
+4. Assign sell_out_icloud_cus to the correct Telegram group. Do not guess because customer information may be sent to it.
+5. Test attendance check-in/out and each configured Sell Out event.
+
+After changing the token or environment settings:
+
+~~~bash
+php artisan optimize:clear
+php artisan config:cache
+php artisan queue:restart
+supervisorctl restart hr-worker:*
+~~~
+
+### Operational Checks
+
+~~~bash
+supervisorctl status hr-worker:*
+redis-cli llen queues:default
+php artisan queue:failed
+tail -f storage/logs/laravel-$(date +%F).log
+tail -f /var/log/nginx/error.log
+~~~
+
+Never place a production bot token in documentation, source control, shell commands, tickets, or chat messages.

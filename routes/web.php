@@ -84,7 +84,6 @@ use App\Http\Controllers\Web\ThemeController;
 use App\Http\Controllers\Web\ThemeSettingController;
 use App\Http\Controllers\Web\TimeLeaveController;
 use App\Http\Controllers\Web\TrackLocationController;
-use App\Http\Controllers\Web\TelegramBotController;
 use App\Http\Controllers\Web\TelegramEmployeeController;
 use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TelegramGroupController;
@@ -208,11 +207,6 @@ Route::group([
             Route::post('app-settings/send-update-alert', [AppSettingController::class, 'sendAppUpdateAlert'])->name('app-settings.send-update-alert');
 
             /** Telegram group route */
-            Route::get('telegram-bot', [TelegramBotController::class, 'index'])->name('telegram-bot.index');
-            Route::put('telegram-bot', [TelegramBotController::class, 'update'])->name('telegram-bot.update');
-            Route::post('telegram-bot/import-env-token', [TelegramBotController::class, 'importEnvToken'])->name('telegram-bot.import-env-token');
-            Route::post('telegram-bot/test-connection', [TelegramBotController::class, 'testConnection'])->name('telegram-bot.test-connection');
-            Route::post('telegram-bot/register-webhook', [TelegramBotController::class, 'registerWebhook'])->name('telegram-bot.register-webhook');
             Route::get('telegram-employees', [TelegramEmployeeController::class, 'index'])->name('telegram-employees.index');
             Route::get('telegram-employees/detail/{type}', [TelegramEmployeeController::class, 'detail'])->name('telegram-employees.detail');
             Route::post('telegram-employees/sync-starts', [TelegramEmployeeController::class, 'syncStarts'])->name('telegram-employees.sync-starts');

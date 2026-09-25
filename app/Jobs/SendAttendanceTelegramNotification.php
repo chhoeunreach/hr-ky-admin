@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Attendance;
 use App\Models\User;
-use App\Services\Attendance\AttendanceTelegramNotifier;
+use App\Services\Attendance\AttendanceTelegramNotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -18,18 +18,27 @@ class SendAttendanceTelegramNotification implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    public int $tries = 4;
+
+    public int $timeout = 120;
+
     public function __construct(
+        public string $type,
         public int $userId,
         public int $attendanceId,
-        public array $notificationData = [],
     ) {}
 
-    public function handle(AttendanceTelegramNotifier $notifier): void
+    public function backoff(): array
+    {
+        return [10, 30, 60];
+    }
+
+    public function handle(AttendanceTelegramNotificationService $notificationService): void
     {
         $user = User::query()
             ->with([
                 'branch:id,name',
-                'department:id,name',
+                'department:id,dept_name',
                 'officeTime:id,opening_time,closing_time,shift',
             ])
             ->find($this->userId);
@@ -40,7 +49,7 @@ class SendAttendanceTelegramNotification implements ShouldQueue
             return;
         }
 
-        $notifier->notify($user, $attendance, $this->notificationData);
+        $notificationService->sendNow($this->type, $user, $attendance);
     }
 }
 
