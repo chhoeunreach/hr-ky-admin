@@ -245,6 +245,7 @@ Route::group([
         Route::get('employees/profile-directory', [EmployeeProfileController::class, 'index'])->name('employees.profile.index');
         Route::prefix('employees/{employee}/profile')->name('employees.profile.')->group(function () {
             Route::get('/', [EmployeeProfileController::class, 'show'])->name('show');
+            Route::get('salary-certificate/word', [EmployeeProfileController::class, 'downloadSalaryCertificateWord'])->name('salary-certificate.word');
             Route::put('/', [EmployeeProfileController::class, 'updateProfile'])->name('update');
             Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
             Route::post('salary-history', [EmployeeProfileController::class, 'storeSalary'])->name('salary.store');

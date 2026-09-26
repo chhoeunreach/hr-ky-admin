@@ -239,6 +239,43 @@ class EmployeeProfileController extends Controller
         ));
     }
 
+    public function downloadSalaryCertificateWord(User $employee)
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
+        abort_unless(
+            $this->can('employee.salary.view') || $this->can('employee.salary.history.view'),
+            403
+        );
+
+        $employee->load([
+            'branch:id,name,logo',
+            'department:id,dept_name',
+            'post:id,post_name',
+            'employee360Profile',
+        ]);
+
+        $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
+        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)
+            ->latest('effective_date')
+            ->latest('id')
+            ->first();
+        $contract = EmployeeContract::where('employee_id', $employee->id)->first();
+        $content = view('admin.employees.profile.exports.salary-certificate-word', compact(
+            'employee',
+            'profile',
+            'latestSalary',
+            'contract'
+        ))->render();
+        $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));
+        $filename = 'Salary-Certificate-' . trim($employeeName, '-') . '-' . now()->format('Ymd') . '.doc';
+
+        return response("\xEF\xBB\xBF" . $content, 200, [
+            'Content-Type' => 'application/msword; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'private, no-store, max-age=0',
+        ]);
+    }
+
     public function updateProfile(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.profile.edit');

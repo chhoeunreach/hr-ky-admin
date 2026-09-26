@@ -1974,6 +1974,7 @@ return [
     'transfer_department' => 'ផ្លាស់ប្តូរនាយកដ្ឋាន / ផ្ទេរការងារ',
     'change_position_manager' => 'ប្តូរមុខតំណែង / ចាត់តាំងអ្នកគ្រប់គ្រង',
     'salary_adjustment' => 'កែសម្រួលប្រាក់បៀវត្ស',
+    'salary_certificate' => 'លិខិតបញ្ជាក់ប្រាក់បៀវត្ស',
     'employment_status' => 'ស្ថានភាពការងារ',
     'joined' => 'ចូលបម្រើការងារ',
 

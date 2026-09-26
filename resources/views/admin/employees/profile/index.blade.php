@@ -248,7 +248,12 @@
                             @endphp
                             <tr>
                                 <td class="no-print">
-                                    <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">{{ __('index.employee_360') }}</a>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">{{ __('index.employee_360') }}</a>
+                                        @canany(['employee.salary.view', 'employee.salary.history.view'])
+                                            <a class="btn btn-outline-success btn-xs" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary-certificate']) }}">{{ __('index.salary_certificate') }}</a>
+                                        @endcanany
+                                    </div>
                                 </td>
                                 <td>
                                     @php

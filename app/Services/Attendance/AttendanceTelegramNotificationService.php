@@ -168,11 +168,7 @@ class AttendanceTelegramNotificationService
                 $error = $this->telegramService->lastError() ?: 'Telegram attendance notification failed.';
 
                 if (str_starts_with($error, 'No active Telegram chat IDs')) {
-<<<<<<< HEAD
-                    Log::notice('Telegram attendance notification skipped: no matching route.', [
-=======
                     Log::warning('Telegram attendance notification skipped: no matching route.', [
->>>>>>> 18efafc520e419b92ddc271379d5c143ecfd98d0
                         'type' => $type,
                         'branchName' => $branchName,
                         'departmentName' => $departmentName,

@@ -62,6 +62,7 @@
             }
             if ($canViewSalary) {
                 $tabs['salary'] = __('index.salary');
+                $tabs['salary-certificate'] = __('index.salary_certificate');
             }
             if ($canViewInterview) {
                 $tabs['interview'] = __('index.interview');
@@ -84,6 +85,8 @@
             if ($canViewAudit) {
                 $tabs['history'] = __('index.history');
             }
+            $requestedProfileTab = request('tab');
+            $activeProfileTab = array_key_exists($requestedProfileTab, $tabs) ? $requestedProfileTab : $activeProfileTab;
         @endphp
 
         <style>
@@ -192,7 +195,8 @@
             #employeeOverviewPrintRoot,
             #employeeCompletePrintRoot,
             #employeeWarningPrintRoot,
-            #employeeContractPrintRoot {
+            #employeeContractPrintRoot,
+            #employeeSalaryCertificatePrintRoot {
                 display: none;
             }
             .employee-complete-paper {
@@ -617,6 +621,199 @@
                 font-size: 9px;
                 text-transform: uppercase;
             }
+            .employee-salary-certificate-paper {
+                --certificate-ink: #17324d;
+                --certificate-accent: #0f766e;
+                background: #ffffff;
+                border-top: 5px solid var(--certificate-accent);
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 13mm 14mm 10mm;
+            }
+            .employee-salary-certificate-toolbar {
+                align-items: center;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .employee-salary-certificate-letterhead {
+                align-items: flex-start;
+                border-bottom: 1px solid #cbd5e1;
+                display: flex;
+                justify-content: space-between;
+                padding-bottom: 14px;
+            }
+            .employee-salary-certificate-company {
+                align-items: center;
+                display: flex;
+                gap: 12px;
+                min-width: 0;
+            }
+            .employee-salary-certificate-logo {
+                height: 52px;
+                object-fit: contain;
+                width: 52px;
+            }
+            .employee-salary-certificate-company-name {
+                color: var(--certificate-ink);
+                font-size: 17px;
+                font-weight: 800;
+                line-height: 1.25;
+            }
+            .employee-salary-certificate-company-subtitle,
+            .employee-salary-certificate-document-meta span,
+            .employee-salary-certificate-heading span,
+            .employee-salary-certificate-recipient span,
+            .employee-salary-certificate-employee-grid span,
+            .employee-salary-certificate-facts span,
+            .employee-salary-certificate-signature span {
+                color: #64748b;
+                font-size: 8.5px;
+                font-weight: 700;
+                text-transform: uppercase;
+            }
+            .employee-salary-certificate-document-meta {
+                display: grid;
+                font-size: 9px;
+                gap: 2px 10px;
+                grid-template-columns: auto auto;
+                text-align: right;
+            }
+            .employee-salary-certificate-document-meta strong {
+                color: #334155;
+                font-size: 9px;
+            }
+            .employee-salary-certificate-heading {
+                margin: 22px 0 18px;
+                text-align: center;
+            }
+            .employee-salary-certificate-heading span {
+                color: var(--certificate-accent);
+            }
+            .employee-salary-certificate-heading h2 {
+                color: var(--certificate-ink);
+                font-size: 25px;
+                font-weight: 800;
+                margin: 3px 0 0;
+                text-transform: uppercase;
+            }
+            .employee-salary-certificate-recipient {
+                background: #f1f5f9;
+                border-left: 4px solid var(--certificate-accent);
+                display: flex;
+                flex-direction: column;
+                padding: 8px 12px;
+            }
+            .employee-salary-certificate-recipient strong {
+                color: var(--certificate-ink);
+                font-size: 11px;
+            }
+            .employee-salary-certificate-body {
+                color: #1e293b;
+                font-size: 11px;
+                line-height: 1.65;
+                margin: 14px 0;
+            }
+            .employee-salary-certificate-body p {
+                margin: 0;
+            }
+            .employee-salary-certificate-employee-grid,
+            .employee-salary-certificate-facts {
+                display: grid;
+                gap: 0;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                margin-bottom: 14px;
+            }
+            .employee-salary-certificate-employee-grid > div,
+            .employee-salary-certificate-facts > div {
+                border: 1px solid #dbe3ef;
+                display: flex;
+                flex-direction: column;
+                gap: 2px;
+                margin: -1px 0 0 -1px;
+                padding: 7px 9px;
+            }
+            .employee-salary-certificate-employee-grid strong,
+            .employee-salary-certificate-facts strong {
+                color: #1e293b;
+                font-size: 10px;
+            }
+            .employee-salary-certificate-table {
+                border-color: #dbe3ef;
+            }
+            .employee-salary-certificate-table th,
+            .employee-salary-certificate-table td {
+                border: 1px solid #dbe3ef !important;
+                font-size: 10px;
+                padding: 6px 9px !important;
+                vertical-align: middle;
+            }
+            .employee-salary-certificate-table thead th {
+                background: var(--certificate-ink);
+                color: #ffffff;
+                font-weight: 800;
+            }
+            .employee-salary-certificate-total th {
+                background: #e8f5f2;
+                color: #0f5f59;
+                font-weight: 800;
+            }
+            .employee-salary-certificate-benefits {
+                background: #f8fafc;
+                border: 1px solid #dbe3ef;
+                color: #334155;
+                font-size: 10px;
+                margin-bottom: 14px;
+                padding: 8px 10px;
+            }
+            .employee-salary-certificate-benefits p {
+                margin: 3px 0 0;
+                white-space: pre-line;
+            }
+            .employee-salary-certificate-signature {
+                display: grid;
+                gap: 28px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                margin-top: 24mm;
+            }
+            .employee-salary-certificate-signature > div {
+                border-top: 1px solid #64748b;
+                display: flex;
+                flex-direction: column;
+                min-height: 45px;
+                padding-top: 6px;
+            }
+            .employee-salary-certificate-signature strong {
+                color: #1e293b;
+                font-size: 10px;
+                min-height: 16px;
+            }
+            .employee-salary-certificate-signature small {
+                color: #64748b;
+                font-size: 8.5px;
+            }
+            .employee-salary-certificate-note {
+                border-top: 1px solid #dbe3ef;
+                color: #64748b;
+                font-size: 8.5px;
+                font-weight: 700;
+                margin-top: 18px;
+                padding-top: 7px;
+                text-align: center;
+            }
+            @media (max-width: 767.98px) {
+                .employee-salary-certificate-letterhead {
+                    gap: 12px;
+                }
+                .employee-salary-certificate-document-meta {
+                    grid-template-columns: 1fr;
+                }
+                .employee-salary-certificate-employee-grid,
+                .employee-salary-certificate-facts {
+                    grid-template-columns: 1fr;
+                }
+            }
+            }
             .employee-overview-note-item {
                 border: 1px solid #e2e8f0;
                 border-radius: 4px;
@@ -713,19 +910,23 @@
                 #employeeWarningPrintRoot,
                 #employeeWarningPrintRoot *,
                 #employeeContractPrintRoot,
-                #employeeContractPrintRoot * {
+                #employeeContractPrintRoot *,
+                #employeeSalaryCertificatePrintRoot,
+                #employeeSalaryCertificatePrintRoot * {
                     visibility: visible !important;
                 }
                 body.printing-overview-form .main-wrapper,
                 body.printing-complete-form .main-wrapper,
                 body.printing-warning-form .main-wrapper,
-                body.printing-contract-form .main-wrapper {
+                body.printing-contract-form .main-wrapper,
+                body.printing-salary-certificate .main-wrapper {
                     display: none !important;
                 }
                 body.printing-overview-form #employeeOverviewPrintRoot,
                 body.printing-complete-form #employeeCompletePrintRoot,
                 body.printing-warning-form #employeeWarningPrintRoot,
-                body.printing-contract-form #employeeContractPrintRoot {
+                body.printing-contract-form #employeeContractPrintRoot,
+                body.printing-salary-certificate #employeeSalaryCertificatePrintRoot {
                     background: #ffffff !important;
                     display: block !important;
                     margin: 0 !important;
@@ -847,6 +1048,10 @@
                 .employee-contract-paper {
                     min-height: 277mm;
                     padding: 8mm 8mm 6mm;
+                }
+                .employee-salary-certificate-paper {
+                    min-height: 277mm;
+                    padding: 10mm 10mm 8mm;
                 }
                 .employee-overview-paper {
                     min-height: 277mm;
@@ -1644,8 +1849,12 @@
                     @endif
 
                     @if($canViewSalary)
-                        <div class="tab-pane fade" id="salary" role="tabpanel">
+                        <div class="tab-pane fade {{ $activeProfileTab === 'salary' ? 'show active' : '' }}" id="salary" role="tabpanel">
                             @include('admin.employees.profile.partials.salary')
+                        </div>
+
+                        <div class="tab-pane fade {{ $activeProfileTab === 'salary-certificate' ? 'show active' : '' }}" id="salary-certificate" role="tabpanel">
+                            @include('admin.employees.profile.partials.salary-certificate')
                         </div>
                     @endif
 
@@ -1745,10 +1954,12 @@
             document.body.classList.remove('printing-overview-form');
             document.body.classList.remove('printing-warning-form');
             document.body.classList.remove('printing-contract-form');
+            document.body.classList.remove('printing-salary-certificate');
             document.getElementById('employeeOverviewPrintRoot')?.remove();
             document.getElementById('employeeCompletePrintRoot')?.remove();
             document.getElementById('employeeWarningPrintRoot')?.remove();
             document.getElementById('employeeContractPrintRoot')?.remove();
+            document.getElementById('employeeSalaryCertificatePrintRoot')?.remove();
         }
 
         const employeeProfilePrintPermissions = {
@@ -1756,6 +1967,7 @@
             overview: @can('employee.warning_overview.print') true @else false @endcan,
             warning: @can('employee.warning_form.print') true @else false @endcan,
             contract: @can('employee.contract_form.print') true @else false @endcan,
+            salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
         };
 
         function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
@@ -1796,6 +2008,10 @@
 
         function printContractForm() {
             printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form', 'contract');
+        }
+
+        function printSalaryCertificate() {
+            printEmployeeProfilePaper('#salary-certificate .employee-salary-certificate-paper', 'employeeSalaryCertificatePrintRoot', 'printing-salary-certificate', 'salaryCertificate');
         }
 
         function fillOverviewNote(textareaId, text) {

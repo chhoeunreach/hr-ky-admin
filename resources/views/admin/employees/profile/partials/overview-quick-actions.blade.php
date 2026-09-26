@@ -13,6 +13,7 @@
             @endif
             @if($canViewSalary)
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('salary')"><i class="link-icon" data-feather="dollar-sign"></i> {{ __('index.salary_adjustment') }}</button>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('salary-certificate')"><i class="link-icon" data-feather="file-text"></i> {{ __('index.salary_certificate') }}</button>
             @endif
             @if($canViewPerformance)
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('evaluation')"><i class="link-icon" data-feather="bar-chart-2"></i> {{ __('index.evaluate_performance') }}</button>

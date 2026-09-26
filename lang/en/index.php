@@ -1904,6 +1904,7 @@ return [
     'transfer_department' => 'Change Department / Transfer',
     'change_position_manager' => 'Change Position / Assign Manager',
     'salary_adjustment' => 'Salary Adjustment',
+    'salary_certificate' => 'Salary Certificate',
     'employment_status' => 'Employment Status',
     'joined' => 'Joined',
 
