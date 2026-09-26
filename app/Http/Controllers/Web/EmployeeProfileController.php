@@ -131,6 +131,7 @@ class EmployeeProfileController extends Controller
 
         $employmentHistory = EmployeeEmploymentHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
         $salaryHistory = EmployeeSalaryHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
+        $firstSalary = $salaryHistory->last();
         $interviews = EmployeeInterview::where('employee_id', $employee->id)->latest('interview_date')->latest('id')->get();
         $responsibilities = EmployeeJobResponsibility::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
         $kpis = EmployeeKpi::where('employee_id', $employee->id)->latest('id')->get();
@@ -206,6 +207,7 @@ class EmployeeProfileController extends Controller
             'leaveBalance',
             'employmentHistory',
             'salaryHistory',
+            'firstSalary',
             'interviews',
             'responsibilities',
             'kpis',
@@ -253,12 +255,17 @@ class EmployeeProfileController extends Controller
             'department:id,dept_name',
             'post:id,post_name',
             'employee360Profile',
+            'employeeSalary',
         ]);
 
         $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
         $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)
             ->latest('effective_date')
             ->latest('id')
+            ->first();
+        $firstSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)
+            ->oldest('effective_date')
+            ->oldest('id')
             ->first();
         $contract = EmployeeContract::where('employee_id', $employee->id)->first();
         $logoRelativePath = $employee->branch?->logo
@@ -274,6 +281,7 @@ class EmployeeProfileController extends Controller
             'employee',
             'profile',
             'latestSalary',
+            'firstSalary',
             'contract',
             'certificateLogoData'
         ))->render();

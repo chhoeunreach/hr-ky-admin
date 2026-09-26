@@ -90,7 +90,7 @@
                                     <td>{{ __('index.basic_salary') }}</td>
                                     <td>
                                         <div style="display: flex;">
-                                            <input type="number" min="0" step="0.1" max="100" class="form-control" @input="calculateSalary()" x-model="basic_salary_value" name="basic_salary_value" id="basicSalaryValue" style="width: 60%;">
+                                            <input type="number" min="0" step="0.1" x-bind:max="basic_salary_type === '{{ $percentType }}' ? 100 : null" class="form-control" @input="calculateSalary()" x-model="basic_salary_value" name="basic_salary_value" id="basicSalaryValue" style="width: 60%;">
                                             <select class="form-control" x-model="basic_salary_type" @change="calculateSalary()" name="basic_salary_type" style="width: 35%;">
                                                 <option value="{{ $percentType }}">{{ __('index.percent_of_salary') }}</option>
                                                 <option value="{{ $fixedType }}">{{ __('index.fixed') }}</option>

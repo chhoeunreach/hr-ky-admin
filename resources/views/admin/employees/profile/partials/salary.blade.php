@@ -1,4 +1,90 @@
 @if($canViewSalary)
+    @php
+        $payrollSalary = $employee->employeeSalary;
+        $currencySymbol = \App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol();
+        $formatPayrollMoney = fn ($amount) => filled($amount)
+            ? $currencySymbol . number_format((float) $amount, 2)
+            : '—';
+        $monthlyGrossSalary = $payrollSalary ? ((float) $payrollSalary->annual_salary / 12) : null;
+        $weeklyGrossSalary = $payrollSalary ? ((float) $payrollSalary->annual_salary / 52) : null;
+        $basicCalculation = $payrollSalary
+            ? ($payrollSalary->basic_salary_type === 'percent'
+                ? number_format((float) $payrollSalary->basic_salary_value, 2) . '%'
+                : $formatPayrollMoney($payrollSalary->basic_salary_value))
+            : '—';
+    @endphp
+
+    <div class="employee-360-section">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h6 class="mb-0 fw-bold">
+                <i data-feather="credit-card" class="me-2 text-primary"></i>{{ __('index.current_salary') }}
+            </h6>
+            @if($payrollSalary)
+                @can('edit_salary')
+                    <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employee-salaries.edit-salary', $employee->id) }}">
+                        <i data-feather="edit-2" class="me-1"></i> {{ __('index.edit_salary') }}
+                    </a>
+                @endcan
+            @else
+                @can('add_salary')
+                    <a class="btn btn-primary btn-sm" href="{{ route('admin.employee-salaries.add', $employee->id) }}">
+                        <i data-feather="plus" class="me-1"></i> {{ __('index.add_salary') }}
+                    </a>
+                @endcan
+            @endif
+        </div>
+
+        @if($payrollSalary)
+            <div class="employee-360-grid">
+                <div class="employee-360-metric">
+                    <small>{{ __('index.monthly_amount') }}</small>
+                    <strong>{{ $formatPayrollMoney($monthlyGrossSalary) }}</strong>
+                </div>
+                <div class="employee-360-metric">
+                    <small>{{ __('index.annual_salary') }}</small>
+                    <strong>{{ $formatPayrollMoney($payrollSalary->annual_salary) }}</strong>
+                </div>
+                @if($payrollSalary->payment_type === 'weekly')
+                    <div class="employee-360-metric">
+                        <small>{{ __('index.weekly_amount') }}</small>
+                        <strong>{{ $formatPayrollMoney($weeklyGrossSalary) }}</strong>
+                    </div>
+                @endif
+                <div class="employee-360-metric">
+                    <small>{{ __('index.basic_salary') }}</small>
+                    <strong>{{ $formatPayrollMoney($payrollSalary->monthly_basic_salary) }}</strong>
+                </div>
+                <div class="employee-360-metric">
+                    <small>{{ __('index.fixed_allowance') }}</small>
+                    <strong>{{ $formatPayrollMoney($payrollSalary->monthly_fixed_allowance) }}</strong>
+                </div>
+                <div class="employee-360-metric">
+                    <small>{{ __('index.payroll_type') }}</small>
+                    <strong>{{ __('index.' . $payrollSalary->payroll_type) }}</strong>
+                </div>
+                <div class="employee-360-metric">
+                    <small>{{ __('index.payment_type') }}</small>
+                    <strong>{{ __('index.' . $payrollSalary->payment_type) }}</strong>
+                </div>
+                <div class="employee-360-metric">
+                    <small>{{ __('index.calculation_type') }}</small>
+                    <strong>{{ $basicCalculation }} · {{ __('index.' . $payrollSalary->basic_salary_type) }}</strong>
+                </div>
+                @if($payrollSalary->payroll_type === 'hourly')
+                    <div class="employee-360-metric">
+                        <small>{{ __('index.hourly_rate') }}</small>
+                        <strong>{{ $formatPayrollMoney($payrollSalary->hour_rate) }}</strong>
+                    </div>
+                    <div class="employee-360-metric">
+                        <small>{{ $payrollSalary->payment_type === 'weekly' ? __('index.working_hours_in_week') : __('index.working_hours_in_month') }}</small>
+                        <strong>{{ number_format((float) ($payrollSalary->payment_type === 'weekly' ? $payrollSalary->weekly_hours : $payrollSalary->monthly_hours), 2) }}</strong>
+                    </div>
+                @endif
+            </div>
+        @else
+            <p class="text-muted mb-0">{{ __('index.no_records_found') }}</p>
+        @endif
+    </div>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h6 class="mb-0 fw-bold"><i data-feather="dollar-sign" class="me-2 text-primary"></i>{{ __('index.salary_history') ?? 'Salary History' }}</h6>
         @can('employee.salary.history.manage')

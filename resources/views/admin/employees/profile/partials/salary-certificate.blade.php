@@ -8,12 +8,30 @@
     $certificateLogo = $employee->branch?->logo
         ? asset(\App\Models\Branch::UPLOAD_PATH . $employee->branch->logo)
         : asset('assets/images/logo.png');
-    $baseSalary = $profile->current_base_salary ?: ($latestSalary?->new_base_salary ?? null);
-    $allowances = $profile->allowances ?: ($latestSalary?->allowance_after ?? null);
+    $payrollSalary = $employee->employeeSalary;
+    $payrollMonthlySalary = $payrollSalary ? (float) $payrollSalary->annual_salary / 12 : null;
+    $baseSalary = filled($payrollSalary?->monthly_basic_salary)
+        ? $payrollSalary->monthly_basic_salary
+        : (filled($profile->current_base_salary)
+            ? $profile->current_base_salary
+            : ($latestSalary?->new_base_salary ?? $payrollMonthlySalary));
+    $allowances = filled($payrollSalary?->monthly_fixed_allowance)
+        ? $payrollSalary->monthly_fixed_allowance
+        : (filled($profile->allowances)
+            ? $profile->allowances
+            : ($latestSalary?->allowance_after ?? null));
+    $startingSalary = filled($profile->starting_salary)
+        ? $profile->starting_salary
+        : (filled($firstSalary?->old_base_salary)
+            ? $firstSalary->old_base_salary
+            : (filled($firstSalary?->new_base_salary)
+                ? $firstSalary->new_base_salary
+                : (filled($payrollSalary?->monthly_basic_salary)
+                    ? $payrollSalary->monthly_basic_salary
+                    : $payrollMonthlySalary)));
     $compensationRows = collect([
-        __('index.starting_salary') => $profile->starting_salary,
         __('index.current_base_salary') => $baseSalary,
-        __('index.allowances') => filled($allowances) ? $allowances : 20,
+        __('index.allowances') => (float) $allowances > 0 ? $allowances : 20,
         __('index.commission') => filled($profile->commission) ? $profile->commission : 20,
         __('index.attendance_bonus') => filled($profile->attendance_bonus) ? $profile->attendance_bonus : 20,
         __('index.punctuality_bonus') => filled($profile->punctuality_bonus) ? $profile->punctuality_bonus : 20,
