@@ -260,20 +260,25 @@ class EmployeeProfileController extends Controller
             ->latest('id')
             ->first();
         $contract = EmployeeContract::where('employee_id', $employee->id)->first();
+        $logoRelativePath = $employee->branch?->logo
+            ? Branch::UPLOAD_PATH . $employee->branch->logo
+            : 'assets/images/logo.png';
+        $logoPath = public_path($logoRelativePath);
+        $certificateLogoData = null;
+        if (File::isFile($logoPath)) {
+            $certificateLogoData = 'data:' . File::mimeType($logoPath)
+                . ';base64,' . base64_encode(File::get($logoPath));
+        }
         $content = view('admin.employees.profile.exports.salary-certificate-word', compact(
             'employee',
             'profile',
             'latestSalary',
-            'contract'
+            'contract',
+            'certificateLogoData'
         ))->render();
         $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));
-        $filename = 'Salary-Certificate-' . trim($employeeName, '-') . '-' . now()->format('Ymd') . '.doc';
-
-        return response("\xEF\xBB\xBF" . $content, 200, [
-            'Content-Type' => 'application/msword; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Cache-Control' => 'private, no-store, max-age=0',
-        ]);
+        $employeeName = trim($employeeName, '-') ?: 'Employee-' . $employee->id;
+        $filename = 'Salary-Certificate-' . $employeeName . '-' . now()->format('Ymd') . '.doc';
     }
 
     public function updateProfile(Request $request, User $employee): RedirectResponse

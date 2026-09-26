@@ -2077,12 +2077,8 @@
                     try {
                         const response = await fetch(data.logoUrl);
                         if (response.ok) {
-                            const contentType = response.headers.get('content-type') || '';
-                            const imageType = contentType.includes('jpeg') || contentType.includes('jpg')
-                                ? 'jpg'
-                                : 'png';
                             logoRun = new d.ImageRun({
-                                type: imageType,
+                                type: 'png',
                                 data: new Uint8Array(await response.arrayBuffer()),
                                 transformation: { width: 52, height: 52 },
                             });
