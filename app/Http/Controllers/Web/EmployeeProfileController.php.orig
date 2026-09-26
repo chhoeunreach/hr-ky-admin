@@ -64,8 +64,7 @@ class EmployeeProfileController extends Controller
                         ->orWhere('english_name', 'like', "%{$search}%")
                         ->orWhere('username', 'like', "%{$search}%")
                         ->orWhere('employee_code', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             })
             ->when($request->branch_id, fn ($query, $branchId) => $query->where('branch_id', $branchId))

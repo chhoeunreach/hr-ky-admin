@@ -141,6 +141,67 @@
                     color: #111827 !important;
                 }
             }
+            .employee-profile-search {
+                margin-left: auto;
+                position: relative;
+                width: min(100%, 280px);
+            }
+            .employee-profile-search .search-icon {
+                color: #94a3b8;
+                height: 15px;
+                left: 11px;
+                pointer-events: none;
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 15px;
+            }
+            .employee-profile-search-input {
+                background: #f8fafc;
+                border: 1px solid #d7dfeb;
+                border-radius: 8px;
+                color: #1e293b;
+                font-size: .8125rem;
+                height: 34px;
+                padding: 0 34px;
+                width: 100%;
+            }
+            .employee-profile-search-input:focus {
+                background: #ffffff;
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+                outline: none;
+            }
+            .employee-profile-search-clear {
+                align-items: center;
+                background: #e2e8f0;
+                border: 0;
+                border-radius: 50%;
+                color: #64748b;
+                display: flex;
+                height: 20px;
+                justify-content: center;
+                padding: 0;
+                position: absolute;
+                right: 9px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 20px;
+            }
+            .employee-profile-search-clear:hover {
+                background: #cbd5e1;
+                color: #0f172a;
+            }
+            .employee-profile-search-clear .link-icon {
+                height: 12px;
+                width: 12px;
+            }
+            @media (max-width: 767.98px) {
+                .employee-profile-search {
+                    order: 4;
+                    width: 100%;
+                }
+            }
         </style>
 
         <div class="card">
@@ -150,23 +211,40 @@
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#employeeProfileFilters"
-                            aria-expanded="{{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
+                            aria-expanded="{{ request()->hasAny(['branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
                             aria-controls="employeeProfileFilters">
                         {{ __('index.filter') }}
                     </button>
                     <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
+                    <div class="employee-profile-search">
+                        <i class="link-icon search-icon" data-feather="search"></i>
+                        <input type="search"
+                               id="employeeProfileSearch"
+                               class="employee-profile-search-input"
+                               name="search"
+                               form="employeeProfileFilters"
+                               autocomplete="off"
+                               value="{{ request('search') }}"
+                               placeholder="{{ __('index.search_employee') }}"
+                               aria-label="{{ __('index.search_employee') }}">
+                        <button type="button"
+                                id="employeeProfileSearchClear"
+                                class="employee-profile-search-clear"
+                                style="display: {{ filled(request('search')) ? 'flex' : 'none' }};"
+                                title="{{ __('index.clear_search') }}"
+                                aria-label="{{ __('index.clear_search') }}">
+                            <i class="link-icon" data-feather="x"></i>
+                        </button>
+                    </div>
                     @can('employee.profile.print')
-                        <button type="button" class="btn btn-outline-primary btn-sm ms-auto" onclick="window.print()">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
                             {{ __('index.print') }}
                         </button>
                     @endcan
                 </div>
                 <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
-                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['search', 'branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
+                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
                     <div class="row g-2">
-                        <div class="col-lg-2 col-md-6">
-                            <input class="form-control" name="search" value="{{ request('search') }}" placeholder="{{ __('index.search_employee') }}">
-                        </div>
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="branch_id">
                                 <option value="">{{ __('index.all_branches') }}</option>
@@ -336,4 +414,34 @@
             </div>
         </div>
     </section>
+@endsection
+
+@section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const input = document.getElementById('employeeProfileSearch');
+            const clearButton = document.getElementById('employeeProfileSearchClear');
+            const form = document.getElementById('employeeProfileFilters');
+            let searchTimer;
+
+            if (!input || !clearButton || !form) {
+                return;
+            }
+
+            input.addEventListener('input', function () {
+                clearButton.style.display = input.value.trim() ? 'flex' : 'none';
+                window.clearTimeout(searchTimer);
+                searchTimer = window.setTimeout(function () {
+                    form.requestSubmit();
+                }, 500);
+            });
+
+            clearButton.addEventListener('click', function () {
+                window.clearTimeout(searchTimer);
+                input.value = '';
+                clearButton.style.display = 'none';
+                form.requestSubmit();
+            });
+        });
+    </script>
 @endsection
