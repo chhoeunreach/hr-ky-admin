@@ -138,6 +138,10 @@
                 <td><span class="label">{{ __('index.branch') }}</span><strong>{{ $employee->branch?->name ?: $notAvailable }}</strong></td>
                 <td><span class="label">{{ __('index.employment_status') }}</span><strong>{{ $employmentStatusLabel }}</strong></td>
             </tr>
+            <tr>
+                <td><span class="label">{{ __('index.phone_number') }}</span><strong>{{ $employee->phone ?: $notAvailable }}</strong></td>
+                <td><span class="label">{{ __('index.national_id') }}</span><strong>{{ $profile->national_id ?: $notAvailable }}</strong></td>
+            </tr>
         </table>
 
         <table class="salary">

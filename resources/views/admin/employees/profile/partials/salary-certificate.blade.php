@@ -50,6 +50,8 @@
             [__('index.salary_certificate_date_joined'), $formatDate($employee->joining_date)],
             [__('index.branch'), $employee->branch?->name ?: $notAvailable],
             [__('index.employment_status'), $employmentStatusLabel],
+            [__('index.phone_number'), $employee->phone ?: $notAvailable],
+            [__('index.national_id'), $profile->national_id ?: $notAvailable],
         ],
         'compensationTitle' => __('index.salary_certificate_monthly_compensation'),
         'amountTitle' => __('index.salary_certificate_amount', ['currency' => $salaryCurrency]),
@@ -132,6 +134,8 @@
         <div><span>{{ __('index.salary_certificate_date_joined') }}</span><strong>{{ $formatDate($employee->joining_date) }}</strong></div>
         <div><span>{{ __('index.branch') }}</span><strong>{{ $employee->branch?->name ?: $notAvailable }}</strong></div>
         <div><span>{{ __('index.employment_status') }}</span><strong>{{ $employmentStatusLabel }}</strong></div>
+        <div><span>{{ __('index.phone_number') }}</span><strong>{{ $employee->phone ?: $notAvailable }}</strong></div>
+        <div><span>{{ __('index.national_id') }}</span><strong>{{ $profile->national_id ?: $notAvailable }}</strong></div>
     </div>
 
     <table class="table table-sm employee-salary-certificate-table mb-3">
