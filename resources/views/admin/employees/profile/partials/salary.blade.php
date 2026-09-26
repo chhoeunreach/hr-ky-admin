@@ -35,29 +35,7 @@
         </div>
 
         @if($payrollSalary)
-            <div class="employee-360-grid">
-                <div class="employee-360-metric">
-                    <small>{{ __('index.monthly_amount') }}</small>
-                    <strong>{{ $formatPayrollMoney($monthlyGrossSalary) }}</strong>
-                </div>
-                <div class="employee-360-metric">
-                    <small>{{ __('index.annual_salary') }}</small>
-                    <strong>{{ $formatPayrollMoney($payrollSalary->annual_salary) }}</strong>
-                </div>
-                @if($payrollSalary->payment_type === 'weekly')
-                    <div class="employee-360-metric">
-                        <small>{{ __('index.weekly_amount') }}</small>
-                        <strong>{{ $formatPayrollMoney($weeklyGrossSalary) }}</strong>
-                    </div>
-                @endif
-                <div class="employee-360-metric">
-                    <small>{{ __('index.basic_salary') }}</small>
-                    <strong>{{ $formatPayrollMoney($payrollSalary->monthly_basic_salary) }}</strong>
-                </div>
-                <div class="employee-360-metric">
-                    <small>{{ __('index.fixed_allowance') }}</small>
-                    <strong>{{ $formatPayrollMoney($payrollSalary->monthly_fixed_allowance) }}</strong>
-                </div>
+            <div class="employee-360-grid mb-4">
                 <div class="employee-360-metric">
                     <small>{{ __('index.payroll_type') }}</small>
                     <strong>{{ __('index.' . $payrollSalary->payroll_type) }}</strong>
@@ -67,8 +45,8 @@
                     <strong>{{ __('index.' . $payrollSalary->payment_type) }}</strong>
                 </div>
                 <div class="employee-360-metric">
-                    <small>{{ __('index.calculation_type') }}</small>
-                    <strong>{{ $basicCalculation }} · {{ __('index.' . $payrollSalary->basic_salary_type) }}</strong>
+                    <small>{{ __('index.annual_salary') }}</small>
+                    <strong>{{ $formatPayrollMoney($payrollSalary->annual_salary) }}</strong>
                 </div>
                 @if($payrollSalary->payroll_type === 'hourly')
                     <div class="employee-360-metric">
@@ -80,6 +58,58 @@
                         <strong>{{ number_format((float) ($payrollSalary->payment_type === 'weekly' ? $payrollSalary->weekly_hours : $payrollSalary->monthly_hours), 2) }}</strong>
                     </div>
                 @endif
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm employee-360-table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>{{ __('index.salary_component') }}</th>
+                            <th>{{ __('index.calculation_type') }}</th>
+                            @if($payrollSalary->payment_type === 'weekly')
+                                <th class="text-end">{{ __('index.weekly_amount') }} ({{ $currencySymbol }})</th>
+                            @else
+                                <th class="text-end">{{ __('index.monthly_amount') }} ({{ $currencySymbol }})</th>
+                            @endif
+                            <th class="text-end">{{ __('index.annual_amount') }} ({{ $currencySymbol }})</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="fw-semibold">{{ __('index.basic_salary') }}</td>
+                            <td>
+                                <span class="fw-semibold">{{ $basicCalculation }}</span>
+                                <small class="d-block text-muted">{{ __('index.' . $payrollSalary->basic_salary_type) }}</small>
+                            </td>
+                            @if($payrollSalary->payment_type === 'weekly')
+                                <td class="text-end">{{ $formatPayrollMoney($payrollSalary->weekly_basic_salary) }}</td>
+                            @else
+                                <td class="text-end">{{ $formatPayrollMoney($payrollSalary->monthly_basic_salary) }}</td>
+                            @endif
+                            <td class="text-end">{{ $formatPayrollMoney($payrollSalary->annual_basic_salary) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="fw-semibold">{{ __('index.fixed_allowance') }}</td>
+                            <td>{{ __('index.fixed') }}</td>
+                            @if($payrollSalary->payment_type === 'weekly')
+                                <td class="text-end">{{ $formatPayrollMoney($payrollSalary->weekly_fixed_allowance) }}</td>
+                            @else
+                                <td class="text-end">{{ $formatPayrollMoney($payrollSalary->monthly_fixed_allowance) }}</td>
+                            @endif
+                            <td class="text-end">{{ $formatPayrollMoney($payrollSalary->annual_fixed_allowance) }}</td>
+                        </tr>
+                        <tr class="table-light">
+                            <th>{{ __('index.total') }}</th>
+                            <th></th>
+                            @if($payrollSalary->payment_type === 'weekly')
+                                <th class="text-end">{{ $formatPayrollMoney($weeklyGrossSalary) }}</th>
+                            @else
+                                <th class="text-end">{{ $formatPayrollMoney($monthlyGrossSalary) }}</th>
+                            @endif
+                            <th class="text-end">{{ $formatPayrollMoney($payrollSalary->annual_salary) }}</th>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         @else
             <p class="text-muted mb-0">{{ __('index.no_records_found') }}</p>
