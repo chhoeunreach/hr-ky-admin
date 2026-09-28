@@ -141,13 +141,16 @@ class EmployeeProfileController extends Controller
         $discipline = EmployeeDisciplinaryRecord::where('employee_id', $employee->id)->latest('incident_date')->latest('id')->get();
         $goals = EmployeeGoal::where('employee_id', $employee->id)->latest('due_date')->latest('id')->get();
         $improvementPlans = EmployeeImprovementPlan::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
+        $isOwnProfile = auth()->check() && auth()->id() === $employee->id;
+        $canViewLeaveRecords = $this->can('list_leave_request') || $this->can('access_admin_leave') || $isOwnProfile;
+        $canViewTimeLeaveRecords = $this->can('time_leave_list') || $this->can('access_admin_leave') || $isOwnProfile;
+
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
         $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
         $contractHistories = EmployeeContractHistory::where('employee_id', $employee->id)->latest('created_at')->limit(20)->get();
         $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)->latest('created_at')->limit(100)->get();
-
-        $isOwnProfile = auth()->check() && auth()->id() === $employee->id;
         $canViewEmployment = $this->can('employee.employment.view');
+        $canViewResignationForm = $canViewEmployment || $isOwnProfile;
         $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
@@ -227,6 +230,7 @@ class EmployeeProfileController extends Controller
             'previousEmployee',
             'nextEmployee',
             'canViewEmployment',
+            'canViewResignationForm',
             'canViewSalary',
             'canViewInterview',
             'canViewKpi',
@@ -237,6 +241,8 @@ class EmployeeProfileController extends Controller
             'canViewGoal',
             'canViewDocument',
             'canViewAudit',
+            'canViewLeaveRecords',
+            'canViewTimeLeaveRecords',
             'latestSalary',
             'latestReview'
         ));

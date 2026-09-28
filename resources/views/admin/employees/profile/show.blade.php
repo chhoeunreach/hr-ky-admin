@@ -60,9 +60,18 @@
             if ($canViewEmployment) {
                 $tabs['employment'] = __('index.employment');
             }
+            if ($canViewResignationForm) {
+                $tabs['resignation-letter'] = __('index.resignation_letter');
+            }
             if ($canViewSalary) {
                 $tabs['salary'] = __('index.salary');
                 $tabs['salary-certificate'] = __('index.salary_certificate');
+            }
+            if ($canViewLeaveRecords) {
+                $tabs['leave-letter'] = __('index.leave_letter');
+            }
+            if ($canViewTimeLeaveRecords) {
+                $tabs['time-leave-letter'] = __('index.time_leave_letter');
             }
             if ($canViewInterview) {
                 $tabs['interview'] = __('index.interview');
@@ -196,7 +205,10 @@
             #employeeCompletePrintRoot,
             #employeeWarningPrintRoot,
             #employeeContractPrintRoot,
-            #employeeSalaryCertificatePrintRoot {
+            #employeeSalaryCertificatePrintRoot,
+            #employeeLeaveLetterPrintRoot,
+            #employeeTimeLeaveLetterPrintRoot,
+            #employeeResignationLetterPrintRoot {
                 display: none;
             }
             .employee-complete-paper {
@@ -801,6 +813,273 @@
                 padding-top: 7px;
                 text-align: center;
             }
+            .employee-leave-letter-paper {
+                --certificate-ink: #17324d;
+                --certificate-accent: #0f766e;
+                border-top: 5px solid var(--certificate-accent);
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 13mm 14mm 10mm;
+            }
+            .employee-time-leave-letter-paper {
+                --certificate-accent: #b45309;
+            }
+            .employee-leave-letter-body {
+                color: #1e293b;
+                font-size: 11px;
+                line-height: 1.7;
+                margin: 16px 0;
+            }
+            .employee-leave-letter-body p {
+                margin: 0 0 10px;
+            }
+            .employee-leave-letter-status {
+                border-radius: 999px;
+                display: inline-flex;
+                font-size: 9px;
+                font-weight: 800;
+                padding: 4px 9px;
+                text-transform: uppercase;
+            }
+            .employee-leave-letter-empty {
+                border: 1px dashed #cbd5e1;
+                color: #64748b;
+                padding: 18px;
+                text-align: center;
+            }
+            .employee-print-form {
+                color: #111827;
+                font-family: "Battambang", "Noto Sans Khmer", Arial, sans-serif;
+                font-size: 10px;
+            }
+            .employee-print-form-heading {
+                margin: 10px 0 12px;
+                padding-bottom: 8px;
+            }
+            .employee-print-form-heading h2 {
+                font-size: 18px;
+                letter-spacing: 0;
+            }
+            .employee-print-form input,
+            .employee-print-form textarea {
+                color: #111827;
+                font: inherit;
+            }
+            .employee-print-form-input {
+                background: transparent;
+                border: 0;
+                border-bottom: 1px dotted #475569;
+                border-radius: 0;
+                min-width: 0;
+                outline: 0;
+                padding: 1px 3px;
+                width: 100%;
+            }
+            .employee-print-form-routing {
+                margin: 8px 0 12px;
+                padding-left: 18px;
+            }
+            .employee-print-form-routing > strong {
+                display: block;
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            .employee-print-form-routing > div {
+                align-items: end;
+                display: grid;
+                gap: 8px;
+                grid-template-columns: minmax(130px, auto) minmax(180px, 1fr);
+                margin: 3px 0;
+            }
+            .employee-print-form-section {
+                border: 1px solid #94a3b8;
+                margin-top: 9px;
+                padding: 8px 10px 9px;
+            }
+            .employee-print-form-section h3 {
+                background: #f1f5f9;
+                color: #17324d;
+                font-size: 10.5px;
+                font-weight: 800;
+                letter-spacing: 0;
+                margin: -8px -10px 8px;
+                padding: 5px 9px;
+            }
+            .employee-print-form-grid {
+                display: grid;
+                gap: 7px 12px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .employee-print-form-grid-3 {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .employee-print-form-field {
+                align-items: baseline;
+                border-bottom: 1px dotted #64748b;
+                display: grid;
+                gap: 7px;
+                grid-template-columns: auto minmax(0, 1fr);
+                min-height: 27px;
+                padding: 4px 2px 2px;
+            }
+            .employee-print-form-field span {
+                color: #475569;
+                font-weight: 700;
+            }
+            .employee-print-form-field strong {
+                overflow-wrap: anywhere;
+            }
+            .employee-print-form-field input {
+                background: transparent;
+                border: 0;
+                min-width: 0;
+                outline: 0;
+                padding: 0;
+                width: 100%;
+            }
+            .employee-print-form-options {
+                align-items: center;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 7px 14px;
+                margin: 5px 0 8px;
+            }
+            .employee-print-form-options > span {
+                font-weight: 800;
+            }
+            .employee-print-form-options label {
+                align-items: center;
+                display: inline-flex;
+                gap: 5px;
+                margin: 0;
+            }
+            .employee-print-form-options input[type="checkbox"] {
+                accent-color: #17324d;
+                height: 13px;
+                margin: 0;
+                width: 13px;
+            }
+            .employee-print-form-textarea {
+                background-color: transparent;
+                background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 22px, #94a3b8 23px);
+                border: 0;
+                border-radius: 0;
+                line-height: 23px;
+                min-height: 69px;
+                outline: 0;
+                padding: 0 3px;
+                resize: vertical;
+                width: 100%;
+            }
+            .employee-print-form-textarea.compact {
+                min-height: 46px;
+            }
+            .employee-print-form-approval {
+                background: #f8fafc;
+            }
+            .employee-print-form-signatures {
+                display: grid;
+                gap: 22px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                margin-top: 23mm;
+                text-align: center;
+            }
+            .employee-print-form-signatures > div {
+                border-top: 1px solid #475569;
+                display: flex;
+                flex-direction: column;
+                padding-top: 5px;
+            }
+            .employee-print-form-signatures span {
+                font-weight: 800;
+            }
+            .employee-print-form-signatures strong {
+                min-height: 5px;
+            }
+            .employee-print-form-signatures small {
+                color: #475569;
+                font-size: 8.5px;
+            }
+            .employee-print-form-notes {
+                border-top: 1px solid #94a3b8;
+                font-size: 8px;
+                line-height: 1.45;
+                margin-top: 12px;
+                padding-top: 6px;
+            }
+            .employee-print-form-notes ol {
+                margin: 3px 0 0;
+                padding-left: 19px;
+            }
+            .employee-print-form-notes li {
+                margin-bottom: 2px;
+            }
+            .employee-resignation-letter-paper {
+                --certificate-accent: #9f1239;
+                max-width: 190mm;
+                min-height: 277mm;
+                padding: 13mm 14mm 10mm;
+            }
+            .employee-resignation-addressee {
+                align-items: center;
+                display: flex;
+                flex-direction: column;
+                font-size: 11px;
+                gap: 3px;
+                margin: 12px 0;
+                text-align: center;
+            }
+            .employee-resignation-reference {
+                border-bottom: 1px solid #94a3b8;
+                border-top: 1px solid #94a3b8;
+                display: grid;
+                gap: 6px;
+                margin: 10px 0 12px;
+                padding: 8px 4px;
+            }
+            .employee-resignation-reference > div {
+                display: grid;
+                gap: 8px;
+                grid-template-columns: 72px minmax(0, 1fr);
+            }
+            .employee-resignation-body {
+                font-size: 10.5px;
+                line-height: 1.75;
+            }
+            .employee-resignation-body p {
+                margin: 8px 0;
+                text-align: justify;
+            }
+            .employee-resignation-body label {
+                display: block;
+                font-weight: 800;
+                margin-top: 5px;
+            }
+            .employee-resignation-last-day,
+            .employee-resignation-date {
+                align-items: end;
+                display: flex;
+                gap: 8px;
+                justify-content: flex-end;
+                margin-top: 9px;
+            }
+            .employee-resignation-last-day span,
+            .employee-resignation-date span {
+                font-weight: 800;
+            }
+            .employee-resignation-last-day input,
+            .employee-resignation-date input {
+                background: transparent;
+                border: 0;
+                border-bottom: 1px dotted #475569;
+                border-radius: 0;
+                min-width: 130px;
+                outline: 0;
+                padding: 1px 3px;
+            }
+            .employee-resignation-signatures {
+                margin-top: 25mm;
+            }
             @media (max-width: 767.98px) {
                 .employee-salary-certificate-letterhead {
                     gap: 12px;
@@ -810,6 +1089,14 @@
                 }
                 .employee-salary-certificate-employee-grid,
                 .employee-salary-certificate-facts {
+                    grid-template-columns: 1fr;
+                }
+                .employee-print-form-grid,
+                .employee-print-form-grid-3,
+                .employee-print-form-signatures {
+                    grid-template-columns: 1fr;
+                }
+                .employee-resignation-reference > div {
                     grid-template-columns: 1fr;
                 }
             }
@@ -911,21 +1198,33 @@
                 #employeeContractPrintRoot,
                 #employeeContractPrintRoot *,
                 #employeeSalaryCertificatePrintRoot,
-                #employeeSalaryCertificatePrintRoot * {
+                #employeeSalaryCertificatePrintRoot *,
+                #employeeLeaveLetterPrintRoot,
+                #employeeLeaveLetterPrintRoot *,
+                #employeeTimeLeaveLetterPrintRoot,
+                #employeeTimeLeaveLetterPrintRoot *,
+                #employeeResignationLetterPrintRoot,
+                #employeeResignationLetterPrintRoot * {
                     visibility: visible !important;
                 }
                 body.printing-overview-form .main-wrapper,
                 body.printing-complete-form .main-wrapper,
                 body.printing-warning-form .main-wrapper,
                 body.printing-contract-form .main-wrapper,
-                body.printing-salary-certificate .main-wrapper {
+                body.printing-salary-certificate .main-wrapper,
+                body.printing-leave-letter .main-wrapper,
+                body.printing-time-leave-letter .main-wrapper,
+                body.printing-resignation-letter .main-wrapper {
                     display: none !important;
                 }
                 body.printing-overview-form #employeeOverviewPrintRoot,
                 body.printing-complete-form #employeeCompletePrintRoot,
                 body.printing-warning-form #employeeWarningPrintRoot,
                 body.printing-contract-form #employeeContractPrintRoot,
-                body.printing-salary-certificate #employeeSalaryCertificatePrintRoot {
+                body.printing-salary-certificate #employeeSalaryCertificatePrintRoot,
+                body.printing-leave-letter #employeeLeaveLetterPrintRoot,
+                body.printing-time-leave-letter #employeeTimeLeaveLetterPrintRoot,
+                body.printing-resignation-letter #employeeResignationLetterPrintRoot {
                     background: #ffffff !important;
                     display: block !important;
                     margin: 0 !important;
@@ -1048,7 +1347,8 @@
                     min-height: 277mm;
                     padding: 8mm 8mm 6mm;
                 }
-                .employee-salary-certificate-paper {
+                .employee-salary-certificate-paper,
+                .employee-leave-letter-paper {
                     min-height: 277mm;
                     padding: 10mm 10mm 8mm;
                 }
@@ -1847,6 +2147,12 @@
                         </div>
                     @endif
 
+                    @if($canViewResignationForm)
+                        <div class="tab-pane fade {{ $activeProfileTab === 'resignation-letter' ? 'show active' : '' }}" id="resignation-letter" role="tabpanel">
+                            @include('admin.employees.profile.partials.resignation-letter')
+                        </div>
+                    @endif
+
                     @if($canViewSalary)
                         <div class="tab-pane fade {{ $activeProfileTab === 'salary' ? 'show active' : '' }}" id="salary" role="tabpanel">
                             @include('admin.employees.profile.partials.salary')
@@ -1854,6 +2160,18 @@
 
                         <div class="tab-pane fade {{ $activeProfileTab === 'salary-certificate' ? 'show active' : '' }}" id="salary-certificate" role="tabpanel">
                             @include('admin.employees.profile.partials.salary-certificate')
+                        </div>
+                    @endif
+
+                    @if($canViewLeaveRecords)
+                        <div class="tab-pane fade {{ $activeProfileTab === 'leave-letter' ? 'show active' : '' }}" id="leave-letter" role="tabpanel">
+                            @include('admin.employees.profile.partials.leave-letter')
+                        </div>
+                    @endif
+
+                    @if($canViewTimeLeaveRecords)
+                        <div class="tab-pane fade {{ $activeProfileTab === 'time-leave-letter' ? 'show active' : '' }}" id="time-leave-letter" role="tabpanel">
+                            @include('admin.employees.profile.partials.time-leave-letter')
                         </div>
                     @endif
 
@@ -1955,11 +2273,17 @@
             document.body.classList.remove('printing-warning-form');
             document.body.classList.remove('printing-contract-form');
             document.body.classList.remove('printing-salary-certificate');
+            document.body.classList.remove('printing-leave-letter');
+            document.body.classList.remove('printing-time-leave-letter');
+            document.body.classList.remove('printing-resignation-letter');
             document.getElementById('employeeOverviewPrintRoot')?.remove();
             document.getElementById('employeeCompletePrintRoot')?.remove();
             document.getElementById('employeeWarningPrintRoot')?.remove();
             document.getElementById('employeeContractPrintRoot')?.remove();
             document.getElementById('employeeSalaryCertificatePrintRoot')?.remove();
+            document.getElementById('employeeLeaveLetterPrintRoot')?.remove();
+            document.getElementById('employeeTimeLeaveLetterPrintRoot')?.remove();
+            document.getElementById('employeeResignationLetterPrintRoot')?.remove();
         }
 
         const employeeProfilePrintPermissions = {
@@ -1968,6 +2292,9 @@
             warning: @can('employee.warning_form.print') true @else false @endcan,
             contract: @can('employee.contract_form.print') true @else false @endcan,
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
+            leaveLetter: {{ $canViewLeaveRecords ? 'true' : 'false' }},
+            timeLeaveLetter: {{ $canViewTimeLeaveRecords ? 'true' : 'false' }},
+            resignationLetter: {{ $canViewResignationForm ? 'true' : 'false' }},
         };
 
         function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
@@ -1984,8 +2311,22 @@
             }
 
             const printRoot = document.createElement('div');
+            const printPaper = paper.cloneNode(true);
+            const sourceFields = paper.querySelectorAll('input, textarea, select');
+            const printFields = printPaper.querySelectorAll('input, textarea, select');
+            sourceFields.forEach(function (field, index) {
+                const printField = printFields[index];
+                if (!printField) {
+                    return;
+                }
+
+                printField.value = field.value;
+                if (field.matches('input[type="checkbox"], input[type="radio"]')) {
+                    printField.checked = field.checked;
+                }
+            });
             printRoot.id = rootId;
-            printRoot.appendChild(paper.cloneNode(true));
+            printRoot.appendChild(printPaper);
             document.body.appendChild(printRoot);
             document.body.classList.add(bodyClass);
 
@@ -2301,6 +2642,18 @@
 
         function printSalaryCertificate() {
             printEmployeeProfilePaper('#salary-certificate .employee-salary-certificate-paper', 'employeeSalaryCertificatePrintRoot', 'printing-salary-certificate', 'salaryCertificate');
+        }
+
+        function printLeaveLetter() {
+            printEmployeeProfilePaper('#leave-letter .employee-leave-letter-paper', 'employeeLeaveLetterPrintRoot', 'printing-leave-letter', 'leaveLetter');
+        }
+
+        function printTimeLeaveLetter() {
+            printEmployeeProfilePaper('#time-leave-letter .employee-time-leave-letter-paper', 'employeeTimeLeaveLetterPrintRoot', 'printing-time-leave-letter', 'timeLeaveLetter');
+        }
+
+        function printResignationLetter() {
+            printEmployeeProfilePaper('#resignation-letter .employee-resignation-letter-paper', 'employeeResignationLetterPrintRoot', 'printing-resignation-letter', 'resignationLetter');
         }
 
         function fillOverviewNote(textareaId, text) {
