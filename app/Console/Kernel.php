@@ -55,6 +55,17 @@ class Kernel extends ConsoleKernel
             ->cron('0 3,10,15,22 * * *')
             ->withoutOverlapping();
 
+        // Daily digest of the previous 24h of errors + a server health summary.
+        $schedule->command('errors:telegram-digest')
+            ->dailyAt('08:00')
+            ->withoutOverlapping();
+
+        // Server health watchdog: silent while healthy, alerts when not.
+        // Alerts are throttled to once per hour inside the command.
+        $schedule->command('errors:telegram-digest --health-only')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping();
+
 
 
 

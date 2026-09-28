@@ -33,6 +33,8 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        // Single destination for every Telegram message: employee alerts,
+        // error digests, server health status and database backups.
         'chat_id' => env('TELEGRAM_CHAT_ID', env('TELEGRAM_DEFAULT_CHAT_ID')),
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],

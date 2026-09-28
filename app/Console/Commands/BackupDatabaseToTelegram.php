@@ -26,7 +26,7 @@ class BackupDatabaseToTelegram extends Command
             return self::FAILURE;
         }
 
-        $chatId = '-930580993';
+        $chatId = trim((string) config('services.telegram.chat_id', ''));
 
         if ($chatId === '') {
             $this->error('TELEGRAM_CHAT_ID is not configured.');
