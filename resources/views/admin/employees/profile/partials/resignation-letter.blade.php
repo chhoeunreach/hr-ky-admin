@@ -14,12 +14,29 @@
 @endphp
 
 <div class="employee-complete-toolbar employee-salary-certificate-toolbar mb-3">
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printResignationLetter()">
-        <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
-    </button>
+    @if($canPrintResignationForm)
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printResignationLetter()">
+            <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
+        </button>
+    @endif
+    @if($canExportResignationForm)
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm"
+                data-export-type="resignationForm"
+                data-paper-selector="#resignation-letter .employee-resignation-letter-paper"
+                data-file-name="Resignation-Letter-{{ $employee->employee_code ?: $employee->id }}-{{ now()->format('Ymd') }}.docx"
+                onclick="downloadEmployeeFormWord(this)">
+            <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
+        </button>
+    @endif
 </div>
 
 <div class="employee-complete-paper employee-leave-letter-paper employee-resignation-letter-paper employee-print-form">
+    <div class="employee-resignation-national-heading">
+        <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
+        <span>{{ __('index.nation_religion_king') }}</span>
+    </div>
+
     <header class="employee-salary-certificate-letterhead">
         <div class="employee-salary-certificate-company">
             <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo">
@@ -35,11 +52,11 @@
     </header>
 
     <div class="employee-salary-certificate-heading employee-print-form-heading">
-        <span>{{ __('index.staff_form') }}</span>
         <h2>{{ __('index.resignation_request_form') }}</h2>
+        <div class="employee-resignation-title-rule"></div>
     </div>
 
-    <section class="employee-print-form-section">
+    <section class="employee-print-form-section employee-resignation-information">
         <h3>{{ __('index.employee_information') }}</h3>
         <div class="employee-print-form-grid employee-print-form-grid-3">
             <div class="employee-print-form-field"><span>{{ __('index.khmer_name') }}</span><input type="text" value="{{ $employee->name }}"></div>
@@ -55,8 +72,8 @@
     </section>
 
     <div class="employee-resignation-addressee">
-        <strong>{{ __('index.respectfully_submitted_to') }}</strong>
-        <span>{{ __('index.chief_executive_officer') }} {{ $employee->branch?->name ?: config('app.name') }}</span>
+        <span>{{ __('index.respectfully_submitted_to') }}</span>
+        <strong>{{ __('index.chief_executive_officer') }} {{ $employee->branch?->name ?: config('app.name') }}</strong>
     </div>
 
     <div class="employee-resignation-reference">

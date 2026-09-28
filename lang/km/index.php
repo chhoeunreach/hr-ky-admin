@@ -2633,7 +2633,6 @@ return [
     'no_time_leave_records_found' => 'មិនមានកំណត់ត្រាឈប់សម្រាកជាម៉ោងសម្រាប់បុគ្គលិកនេះទេ។',
     'form_number' => 'លេខទម្រង់',
     'request_date' => 'កាលបរិច្ឆេទស្នើសុំ',
-    'staff_form' => 'ទម្រង់សម្រាប់បុគ្គលិក',
     'leave_request_form' => 'ពាក្យសុំអនុញ្ញាតច្បាប់ឈប់សម្រាក',
     'time_leave_request_form' => 'ពាក្យសុំអនុញ្ញាតច្បាប់ឈប់សម្រាកជាម៉ោង',
     'direct_supervisor' => 'អ្នកគ្រប់គ្រងផ្ទាល់',
@@ -2690,5 +2689,8 @@ return [
     'branch_manager_signature' => 'ប្រធានសាខា',
     'hr_signature' => 'ផ្នែកធនធានមនុស្ស',
     'resignation_requester' => 'អ្នកស្នើសុំ',
+    'kingdom_of_cambodia' => 'ព្រះរាជាណាចក្រកម្ពុជា',
+    'nation_religion_king' => 'ជាតិ សាសនា ព្រះមហាក្សត្រ',
+    'export_word' => 'នាំចេញជា Word',
 
 ];

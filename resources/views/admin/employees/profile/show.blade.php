@@ -814,15 +814,18 @@
                 text-align: center;
             }
             .employee-leave-letter-paper {
-                --certificate-ink: #17324d;
-                --certificate-accent: #0f766e;
-                border-top: 5px solid var(--certificate-accent);
+                --certificate-ink: #111827;
+                --certificate-accent: #111827;
+                background: #ffffff;
+                background-image: none;
+                border: 1px solid #64748b;
+                border-top: 4px solid #111827;
                 max-width: 190mm;
                 min-height: 277mm;
-                padding: 13mm 14mm 10mm;
+                padding: 10mm 14mm 10mm;
             }
             .employee-time-leave-letter-paper {
-                --certificate-accent: #b45309;
+                --certificate-accent: #111827;
             }
             .employee-leave-letter-body {
                 color: #1e293b;
@@ -854,11 +857,20 @@
             }
             .employee-print-form-heading {
                 margin: 10px 0 12px;
-                padding-bottom: 8px;
+                padding: 0;
             }
             .employee-print-form-heading h2 {
-                font-size: 18px;
+                color: #111827;
+                font-family: "Khmer OS Muol Light", "Noto Serif Khmer", serif;
+                font-size: 17px;
                 letter-spacing: 0;
+                margin: 0;
+            }
+            .employee-print-form-title-rule {
+                background: #111827;
+                height: 1px;
+                margin: 4px auto 0;
+                width: 66mm;
             }
             .employee-print-form input,
             .employee-print-form textarea {
@@ -876,13 +888,15 @@
                 width: 100%;
             }
             .employee-print-form-routing {
-                margin: 8px 0 12px;
-                padding-left: 18px;
+                border-bottom: 1px solid #64748b;
+                border-top: 1px solid #64748b;
+                margin: 9px 0 12px;
+                padding: 7px 9px;
             }
             .employee-print-form-routing > strong {
                 display: block;
                 font-size: 11px;
-                margin-bottom: 5px;
+                margin-bottom: 4px;
             }
             .employee-print-form-routing > div {
                 align-items: end;
@@ -892,13 +906,14 @@
                 margin: 3px 0;
             }
             .employee-print-form-section {
-                border: 1px solid #94a3b8;
+                border: 1px solid #64748b;
                 margin-top: 9px;
                 padding: 8px 10px 9px;
             }
             .employee-print-form-section h3 {
-                background: #f1f5f9;
-                color: #17324d;
+                background: #e5e7eb;
+                border-bottom: 1px solid #64748b;
+                color: #111827;
                 font-size: 10.5px;
                 font-weight: 800;
                 letter-spacing: 0;
@@ -953,8 +968,9 @@
                 gap: 5px;
                 margin: 0;
             }
-            .employee-print-form-options input[type="checkbox"] {
-                accent-color: #17324d;
+            .employee-print-form-options input[type="checkbox"],
+            .employee-print-form-options input[type="radio"] {
+                accent-color: #111827;
                 height: 13px;
                 margin: 0;
                 width: 13px;
@@ -975,7 +991,7 @@
                 min-height: 46px;
             }
             .employee-print-form-approval {
-                background: #f8fafc;
+                background: #f3f4f6;
             }
             .employee-print-form-signatures {
                 display: grid;
@@ -1001,7 +1017,7 @@
                 font-size: 8.5px;
             }
             .employee-print-form-notes {
-                border-top: 1px solid #94a3b8;
+                border-top: 1px solid #64748b;
                 font-size: 8px;
                 line-height: 1.45;
                 margin-top: 12px;
@@ -1014,28 +1030,110 @@
             .employee-print-form-notes li {
                 margin-bottom: 2px;
             }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-salary-certificate-letterhead {
+                border-bottom: 1px solid #475569;
+                padding-bottom: 8px;
+            }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-salary-certificate-company-name {
+                color: #111827;
+            }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-salary-certificate-document-meta {
+                background: #ffffff;
+                border-color: #64748b;
+            }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-print-form-textarea {
+                background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 22px, #64748b 23px);
+            }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-print-form-signatures {
+                gap: 28px;
+                margin-top: 18mm;
+            }
+            .employee-leave-letter-paper:not(.employee-resignation-letter-paper) .employee-print-form-signatures > div {
+                border-top-color: #111827;
+            }
             .employee-resignation-letter-paper {
-                --certificate-accent: #9f1239;
+                --certificate-accent: #111827;
+                background: #ffffff;
+                background-image: none;
+                border: 1px solid #64748b;
+                border-top: 4px solid #111827;
                 max-width: 190mm;
                 min-height: 277mm;
-                padding: 13mm 14mm 10mm;
+                padding: 10mm 14mm 10mm;
+            }
+            .employee-resignation-national-heading {
+                align-items: center;
+                color: #111827;
+                display: flex;
+                flex-direction: column;
+                font-family: "Khmer OS Muol Light", "Noto Serif Khmer", serif;
+                line-height: 1.6;
+                margin-bottom: 7mm;
+                text-align: center;
+            }
+            .employee-resignation-national-heading strong {
+                font-size: 14px;
+                font-weight: 700;
+            }
+            .employee-resignation-national-heading span {
+                font-size: 11px;
+            }
+            .employee-resignation-letter-paper .employee-salary-certificate-letterhead {
+                border-bottom: 1px solid #475569;
+                padding-bottom: 8px;
+            }
+            .employee-resignation-letter-paper .employee-salary-certificate-company-name {
+                color: #111827;
+            }
+            .employee-resignation-letter-paper .employee-salary-certificate-document-meta {
+                border-color: #64748b;
+                background: #ffffff;
+            }
+            .employee-resignation-letter-paper .employee-print-form-heading {
+                border: 0;
+                margin: 10px 0 13px;
+                padding: 0;
+            }
+            .employee-resignation-letter-paper .employee-print-form-heading h2 {
+                color: #111827;
+                font-family: "Khmer OS Muol Light", "Noto Serif Khmer", serif;
+                font-size: 17px;
+                margin: 0;
+            }
+            .employee-resignation-title-rule {
+                background: #111827;
+                height: 1px;
+                margin: 4px auto 0;
+                width: 66mm;
+            }
+            .employee-resignation-information {
+                border-color: #64748b;
+            }
+            .employee-resignation-information h3 {
+                background: #e5e7eb;
+                border-bottom: 1px solid #64748b;
+                color: #111827;
             }
             .employee-resignation-addressee {
                 align-items: center;
                 display: flex;
                 flex-direction: column;
                 font-size: 11px;
-                gap: 3px;
-                margin: 12px 0;
+                gap: 2px;
+                margin: 13px 0 11px;
                 text-align: center;
             }
+            .employee-resignation-addressee strong {
+                font-family: "Khmer OS Muol Light", "Noto Serif Khmer", serif;
+                font-size: 11px;
+            }
             .employee-resignation-reference {
-                border-bottom: 1px solid #94a3b8;
-                border-top: 1px solid #94a3b8;
+                border-bottom: 1px solid #475569;
+                border-top: 1px solid #475569;
                 display: grid;
                 gap: 6px;
                 margin: 10px 0 12px;
-                padding: 8px 4px;
+                padding: 8px 7px;
             }
             .employee-resignation-reference > div {
                 display: grid;
@@ -1043,8 +1141,9 @@
                 grid-template-columns: 72px minmax(0, 1fr);
             }
             .employee-resignation-body {
+                color: #111827;
                 font-size: 10.5px;
-                line-height: 1.75;
+                line-height: 1.85;
             }
             .employee-resignation-body p {
                 margin: 8px 0;
@@ -1053,7 +1152,10 @@
             .employee-resignation-body label {
                 display: block;
                 font-weight: 800;
-                margin-top: 5px;
+                margin-top: 7px;
+            }
+            .employee-resignation-letter-paper .employee-print-form-textarea {
+                background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 22px, #64748b 23px);
             }
             .employee-resignation-last-day,
             .employee-resignation-date {
@@ -1078,7 +1180,11 @@
                 padding: 1px 3px;
             }
             .employee-resignation-signatures {
-                margin-top: 25mm;
+                gap: 28px;
+                margin-top: 27mm;
+            }
+            .employee-resignation-signatures > div {
+                border-top-color: #111827;
             }
             @media (max-width: 767.98px) {
                 .employee-salary-certificate-letterhead {
@@ -2292,9 +2398,15 @@
             warning: @can('employee.warning_form.print') true @else false @endcan,
             contract: @can('employee.contract_form.print') true @else false @endcan,
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
-            leaveLetter: {{ $canViewLeaveRecords ? 'true' : 'false' }},
-            timeLeaveLetter: {{ $canViewTimeLeaveRecords ? 'true' : 'false' }},
-            resignationLetter: {{ $canViewResignationForm ? 'true' : 'false' }},
+            leaveLetter: {{ $canPrintLeaveForm ? 'true' : 'false' }},
+            timeLeaveLetter: {{ $canPrintTimeLeaveForm ? 'true' : 'false' }},
+            resignationLetter: {{ $canPrintResignationForm ? 'true' : 'false' }},
+        };
+
+        const employeeProfileExportPermissions = {
+            leaveForm: {{ $canExportLeaveForm ? 'true' : 'false' }},
+            timeLeaveForm: {{ $canExportTimeLeaveForm ? 'true' : 'false' }},
+            resignationForm: {{ $canExportResignationForm ? 'true' : 'false' }},
         };
 
         function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
@@ -2321,6 +2433,9 @@
                 }
 
                 printField.value = field.value;
+                if (field.matches('input[type="radio"]') && field.name) {
+                    printField.name = `${rootId}_${field.name}`;
+                }
                 if (field.matches('input[type="checkbox"], input[type="radio"]')) {
                     printField.checked = field.checked;
                 }
@@ -2349,6 +2464,329 @@
 
         function printContractForm() {
             printEmployeeProfilePaper('#contract-form .employee-contract-paper', 'employeeContractPrintRoot', 'printing-contract-form', 'contract');
+        }
+
+        async function downloadEmployeeFormWord(button) {
+            if (!employeeProfileExportPermissions[button?.dataset.exportType]) {
+                return;
+            }
+
+            const paper = document.querySelector(button?.dataset.paperSelector || '');
+            if (!button || !paper) {
+                return;
+            }
+
+            const originalContent = button.innerHTML;
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
+
+            try {
+                if (!window.docx) {
+                    throw new Error('The DOCX library is unavailable.');
+                }
+
+                const d = window.docx;
+                const cleanText = element => (element?.textContent || '').replace(/\s+/g, ' ').trim();
+                const fieldValue = element => {
+                    if (!element) {
+                        return '';
+                    }
+                    if (element.matches('input[type="checkbox"], input[type="radio"]')) {
+                        return element.checked ? 'X' : '';
+                    }
+                    return String(element.value || '').trim();
+                };
+                const labelText = label => {
+                    const copy = label.cloneNode(true);
+                    copy.querySelectorAll('input, textarea, select').forEach(field => field.remove());
+                    return cleanText(copy);
+                };
+                const border = { style: d.BorderStyle.SINGLE, size: 4, color: 'CBD5E1' };
+                const noBorder = { style: d.BorderStyle.NIL, size: 0, color: 'FFFFFF' };
+                const borders = { top: border, bottom: border, left: border, right: border };
+                const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+                const cellMargins = { top: 80, right: 120, bottom: 80, left: 120 };
+
+                const paragraph = (text, options = {}) => new d.Paragraph({
+                    alignment: options.alignment,
+                    spacing: options.spacing || { before: 0, after: 0, line: 276 },
+                    border: options.border,
+                    children: [new d.TextRun({
+                        text: String(text ?? ''),
+                        bold: Boolean(options.bold),
+                        color: options.color || '1F2937',
+                        font: 'Khmer OS Battambang',
+                        size: options.size || 18,
+                    })],
+                });
+                const fieldCell = (label, value) => new d.TableCell({
+                    borders,
+                    margins: cellMargins,
+                    verticalAlign: d.VerticalAlign.CENTER,
+                    width: { size: 50, type: d.WidthType.PERCENTAGE },
+                    children: [
+                        paragraph(label, { bold: true, color: '64748B', size: 14 }),
+                        paragraph(value || '________________________', { bold: Boolean(value), size: 17 }),
+                    ],
+                });
+                const emptyFieldCell = () => new d.TableCell({
+                    borders,
+                    margins: cellMargins,
+                    width: { size: 50, type: d.WidthType.PERCENTAGE },
+                    children: [paragraph(' ')],
+                });
+                const sectionHeading = title => new d.Table({
+                    width: { size: 100, type: d.WidthType.PERCENTAGE },
+                    rows: [new d.TableRow({
+                        children: [new d.TableCell({
+                            borders: noBorders,
+                            margins: { top: 70, right: 120, bottom: 70, left: 120 },
+                            shading: { fill: 'E2E8F0', type: d.ShadingType.CLEAR, color: 'auto' },
+                            children: [paragraph(title, { bold: true, color: '17324D', size: 17 })],
+                        })],
+                    })],
+                });
+                const fieldsTable = fields => {
+                    const rows = [];
+                    for (let index = 0; index < fields.length; index += 2) {
+                        const makeCell = field => {
+                            if (!field) {
+                                return emptyFieldCell();
+                            }
+                            const label = cleanText(field.querySelector('span, label'));
+                            const input = field.querySelector('input, textarea, select');
+                            const value = input ? fieldValue(input) : cleanText(field.querySelector('strong'));
+                            return fieldCell(label, value);
+                        };
+                        rows.push(new d.TableRow({ children: [makeCell(fields[index]), makeCell(fields[index + 1])] }));
+                    }
+                    return new d.Table({
+                        width: { size: 100, type: d.WidthType.PERCENTAGE },
+                        layout: d.TableLayoutType.FIXED,
+                        rows,
+                    });
+                };
+                const optionParagraph = options => {
+                    const prefix = cleanText(options.querySelector(':scope > span'));
+                    const labels = Array.from(options.querySelectorAll(':scope > label')).map(label => {
+                        const input = label.querySelector('input');
+                        return `[${input?.checked ? 'X' : ' '}] ${labelText(label)}`;
+                    });
+                    return paragraph([prefix, ...labels].filter(Boolean).join('   '), {
+                        size: 16,
+                        spacing: { before: 90, after: 90, line: 276 },
+                    });
+                };
+                const textareaParagraphs = textarea => {
+                    const value = fieldValue(textarea);
+                    const label = textarea.getAttribute('aria-label') || textarea.getAttribute('placeholder') || '';
+                    return [
+                        ...(label ? [paragraph(label, { bold: true, color: '64748B', size: 14, spacing: { before: 70, after: 20 } })] : []),
+                        paragraph(value || '________________________________________________________________________________', {
+                            size: 16,
+                            spacing: { before: 0, after: value ? 100 : 180, line: 300 },
+                        }),
+                        ...(!value ? [paragraph('________________________________________________________________________________', { size: 16, spacing: { before: 0, after: 100 } })] : []),
+                    ];
+                };
+
+                const children = [];
+                const nationalHeading = paper.querySelector('.employee-resignation-national-heading');
+                if (nationalHeading) {
+                    children.push(
+                        paragraph(cleanText(nationalHeading.querySelector('strong')), { alignment: d.AlignmentType.CENTER, bold: true, color: '17324D', size: 22 }),
+                        paragraph(cleanText(nationalHeading.querySelector('span')), { alignment: d.AlignmentType.CENTER, bold: true, size: 16, spacing: { before: 0, after: 100 } }),
+                    );
+                }
+
+                const company = cleanText(paper.querySelector('.employee-salary-certificate-company-name'));
+                const department = cleanText(paper.querySelector('.employee-salary-certificate-company-subtitle'));
+                const meta = paper.querySelector('.employee-print-form-meta');
+                const metaLabels = Array.from(meta?.querySelectorAll(':scope > span') || []);
+                const metaFields = Array.from(meta?.querySelectorAll(':scope > input') || []);
+                const metaLines = metaLabels.map((label, index) => `${cleanText(label)}: ${fieldValue(metaFields[index]) || '____________'}`);
+                children.push(new d.Table({
+                    width: { size: 100, type: d.WidthType.PERCENTAGE },
+                    borders: noBorders,
+                    rows: [new d.TableRow({ children: [
+                        new d.TableCell({
+                            borders: noBorders,
+                            margins: { top: 60, right: 120, bottom: 90, left: 0 },
+                            width: { size: 64, type: d.WidthType.PERCENTAGE },
+                            children: [
+                                paragraph(company, { bold: true, color: '17324D', size: 25 }),
+                                paragraph(department, { bold: true, color: '64748B', size: 14 }),
+                            ],
+                        }),
+                        new d.TableCell({
+                            borders: noBorders,
+                            margins: { top: 60, right: 0, bottom: 90, left: 120 },
+                            width: { size: 36, type: d.WidthType.PERCENTAGE },
+                            children: metaLines.map(line => paragraph(line, {
+                                alignment: d.AlignmentType.RIGHT,
+                                bold: true,
+                                size: 14,
+                                spacing: { before: 0, after: 40 },
+                            })),
+                        }),
+                    ] })],
+                }));
+                children.push(new d.Paragraph({
+                    border: { bottom: { style: d.BorderStyle.SINGLE, size: 8, color: '17324D' } },
+                    spacing: { before: 0, after: 120 },
+                    children: [],
+                }));
+
+                const title = cleanText(paper.querySelector('.employee-print-form-heading h2'));
+                children.push(paragraph(title, {
+                    alignment: d.AlignmentType.CENTER,
+                    bold: true,
+                    color: '17324D',
+                    size: 30,
+                    spacing: { before: 80, after: 160 },
+                }));
+
+                Array.from(paper.children).forEach(element => {
+                    if (element.matches('.employee-resignation-national-heading, header, .employee-print-form-heading')) {
+                        return;
+                    }
+
+                    if (element.matches('.employee-print-form-routing')) {
+                        children.push(sectionHeading(cleanText(element.querySelector(':scope > strong'))));
+                        const routingFields = Array.from(element.querySelectorAll(':scope > div')).map(item => ({
+                            label: cleanText(item.querySelector('span')),
+                            value: fieldValue(item.querySelector('input')),
+                        }));
+                        children.push(new d.Table({
+                            width: { size: 100, type: d.WidthType.PERCENTAGE },
+                            rows: routingFields.map(item => new d.TableRow({
+                                children: [fieldCell(item.label, item.value)],
+                            })),
+                        }));
+                        children.push(paragraph(' ', { spacing: { before: 0, after: 60 } }));
+                        return;
+                    }
+
+                    if (element.matches('.employee-print-form-section')) {
+                        children.push(sectionHeading(cleanText(element.querySelector(':scope > h3'))));
+                        Array.from(element.children).forEach(sectionChild => {
+                            if (sectionChild.matches('h3')) {
+                                return;
+                            }
+                            if (sectionChild.matches('.employee-print-form-grid')) {
+                                children.push(fieldsTable(Array.from(sectionChild.querySelectorAll(':scope > .employee-print-form-field'))));
+                            } else if (sectionChild.matches('.employee-print-form-options')) {
+                                children.push(optionParagraph(sectionChild));
+                            } else if (sectionChild.matches('textarea')) {
+                                children.push(...textareaParagraphs(sectionChild));
+                            }
+                        });
+                        children.push(paragraph(' ', { spacing: { before: 0, after: 70 } }));
+                        return;
+                    }
+
+                    if (element.matches('.employee-resignation-addressee')) {
+                        children.push(paragraph(cleanText(element.querySelector('span')), { alignment: d.AlignmentType.CENTER, bold: true, size: 16 }));
+                        children.push(paragraph(cleanText(element.querySelector('strong')), { alignment: d.AlignmentType.CENTER, bold: true, color: '17324D', size: 19, spacing: { before: 30, after: 130 } }));
+                        return;
+                    }
+
+                    if (element.matches('.employee-resignation-reference')) {
+                        Array.from(element.querySelectorAll(':scope > div')).forEach(item => {
+                            children.push(paragraph(cleanText(item), { bold: true, size: 16, spacing: { before: 20, after: 40 } }));
+                        });
+                        return;
+                    }
+
+                    if (element.matches('.employee-resignation-body')) {
+                        Array.from(element.children).forEach(bodyChild => {
+                            if (bodyChild.matches('p')) {
+                                children.push(paragraph(cleanText(bodyChild), { size: 17, spacing: { before: 90, after: 90, line: 300 } }));
+                            } else if (bodyChild.matches('label')) {
+                                children.push(paragraph(cleanText(bodyChild), { bold: true, color: '64748B', size: 15, spacing: { before: 70, after: 20 } }));
+                            } else if (bodyChild.matches('textarea')) {
+                                children.push(...textareaParagraphs(bodyChild));
+                            } else if (bodyChild.matches('.employee-resignation-last-day')) {
+                                children.push(paragraph(`${cleanText(bodyChild.querySelector('span'))}: ${fieldValue(bodyChild.querySelector('input')) || '____________'}`, { bold: true, size: 16, spacing: { before: 80, after: 80 } }));
+                            }
+                        });
+                        return;
+                    }
+
+                    if (element.matches('.employee-resignation-date')) {
+                        const labels = Array.from(element.querySelectorAll(':scope > span'));
+                        const inputs = Array.from(element.querySelectorAll(':scope > input'));
+                        const line = labels.map((label, index) => `${cleanText(label)}: ${fieldValue(inputs[index]) || '____________'}`).join('     ');
+                        children.push(paragraph(line, { alignment: d.AlignmentType.RIGHT, bold: true, size: 16, spacing: { before: 100, after: 260 } }));
+                        return;
+                    }
+
+                    if (element.matches('.employee-print-form-signatures')) {
+                        const signatures = Array.from(element.querySelectorAll(':scope > div'));
+                        children.push(new d.Table({
+                            width: { size: 100, type: d.WidthType.PERCENTAGE },
+                            layout: d.TableLayoutType.FIXED,
+                            borders: noBorders,
+                            rows: [new d.TableRow({ children: signatures.map(signature => new d.TableCell({
+                                borders: { top: border, right: noBorder, bottom: noBorder, left: noBorder },
+                                margins: { top: 90, right: 100, bottom: 0, left: 100 },
+                                children: [
+                                    paragraph(cleanText(signature.querySelector('span')), { alignment: d.AlignmentType.CENTER, bold: true, color: '17324D', size: 14 }),
+                                    paragraph(cleanText(signature.querySelector('strong')) || ' ', { alignment: d.AlignmentType.CENTER, size: 15, spacing: { before: 180, after: 20 } }),
+                                    paragraph(cleanText(signature.querySelector('small')), { alignment: d.AlignmentType.CENTER, color: '64748B', size: 13 }),
+                                ],
+                            })) })],
+                        }));
+                        return;
+                    }
+
+                    if (element.matches('.employee-print-form-notes')) {
+                        children.push(paragraph(cleanText(element.querySelector(':scope > strong')), { bold: true, color: '64748B', size: 14, spacing: { before: 130, after: 30 } }));
+                        Array.from(element.querySelectorAll('li')).forEach((item, index) => {
+                            children.push(paragraph(`${index + 1}. ${cleanText(item)}`, { color: '64748B', size: 13, spacing: { before: 0, after: 20 } }));
+                        });
+                    }
+                });
+
+                const documentFile = new d.Document({
+                    styles: {
+                        default: {
+                            document: {
+                                run: { font: 'Khmer OS Battambang', size: 18, color: '1F2937' },
+                                paragraph: { spacing: { after: 0, line: 276 } },
+                            },
+                        },
+                    },
+                    sections: [{
+                        properties: {
+                            page: {
+                                size: { width: 11906, height: 16838, orientation: d.PageOrientation.PORTRAIT },
+                                margin: { top: 567, right: 680, bottom: 567, left: 680, header: 0, footer: 0, gutter: 0 },
+                            },
+                        },
+                        children,
+                    }],
+                });
+
+                const blob = await d.Packer.toBlob(documentFile);
+                const url = URL.createObjectURL(blob);
+                const download = document.createElement('a');
+                download.href = url;
+                download.download = button.dataset.fileName || 'Employee-Form.docx';
+                document.body.appendChild(download);
+                download.click();
+                download.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (error) {
+                console.error('Employee form Word export failed.', error);
+                window.alert('Unable to export the Word document. Please try again.');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalContent;
+                if (window.feather) {
+                    window.feather.replace();
+                }
+            }
         }
 
         async function downloadSalaryCertificateWord() {

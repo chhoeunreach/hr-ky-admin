@@ -421,6 +421,51 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Employee Leave Request Form View",
+                "permission_key" => "employee.leave_form.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Leave Request Form Print",
+                "permission_key" => "employee.leave_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Leave Request Form Export Word",
+                "permission_key" => "employee.leave_form.export",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Time Leave Request Form View",
+                "permission_key" => "employee.time_leave_form.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Time Leave Request Form Print",
+                "permission_key" => "employee.time_leave_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Time Leave Request Form Export Word",
+                "permission_key" => "employee.time_leave_form.export",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Resignation Form View",
+                "permission_key" => "employee.resignation_form.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Resignation Form Print",
+                "permission_key" => "employee.resignation_form.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Resignation Form Export Word",
+                "permission_key" => "employee.resignation_form.export",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Employee Employment View",
                 "permission_key" => "employee.employment.view",
                 "permission_groups_id" => 5

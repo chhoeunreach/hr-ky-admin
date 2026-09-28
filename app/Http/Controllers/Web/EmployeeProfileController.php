@@ -142,15 +142,21 @@ class EmployeeProfileController extends Controller
         $goals = EmployeeGoal::where('employee_id', $employee->id)->latest('due_date')->latest('id')->get();
         $improvementPlans = EmployeeImprovementPlan::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
         $isOwnProfile = auth()->check() && auth()->id() === $employee->id;
-        $canViewLeaveRecords = $this->can('list_leave_request') || $this->can('access_admin_leave') || $isOwnProfile;
-        $canViewTimeLeaveRecords = $this->can('time_leave_list') || $this->can('access_admin_leave') || $isOwnProfile;
+        $canViewLeaveRecords = $this->can('employee.leave_form.view');
+        $canPrintLeaveForm = $this->can('employee.leave_form.print');
+        $canExportLeaveForm = $this->can('employee.leave_form.export');
+        $canViewTimeLeaveRecords = $this->can('employee.time_leave_form.view');
+        $canPrintTimeLeaveForm = $this->can('employee.time_leave_form.print');
+        $canExportTimeLeaveForm = $this->can('employee.time_leave_form.export');
 
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
         $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
         $contractHistories = EmployeeContractHistory::where('employee_id', $employee->id)->latest('created_at')->limit(20)->get();
         $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)->latest('created_at')->limit(100)->get();
         $canViewEmployment = $this->can('employee.employment.view');
-        $canViewResignationForm = $canViewEmployment || $isOwnProfile;
+        $canViewResignationForm = $this->can('employee.resignation_form.view');
+        $canPrintResignationForm = $this->can('employee.resignation_form.print');
+        $canExportResignationForm = $this->can('employee.resignation_form.export');
         $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
@@ -231,6 +237,8 @@ class EmployeeProfileController extends Controller
             'nextEmployee',
             'canViewEmployment',
             'canViewResignationForm',
+            'canPrintResignationForm',
+            'canExportResignationForm',
             'canViewSalary',
             'canViewInterview',
             'canViewKpi',
@@ -242,7 +250,11 @@ class EmployeeProfileController extends Controller
             'canViewDocument',
             'canViewAudit',
             'canViewLeaveRecords',
+            'canPrintLeaveForm',
+            'canExportLeaveForm',
             'canViewTimeLeaveRecords',
+            'canPrintTimeLeaveForm',
+            'canExportTimeLeaveForm',
             'latestSalary',
             'latestReview'
         ));

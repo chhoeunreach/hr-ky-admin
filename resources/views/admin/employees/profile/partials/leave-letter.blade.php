@@ -6,12 +6,29 @@
 @endphp
 
 <div class="employee-complete-toolbar employee-salary-certificate-toolbar mb-3">
-    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printLeaveLetter()">
-        <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
-    </button>
+    @if($canPrintLeaveForm)
+        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printLeaveLetter()">
+            <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
+        </button>
+    @endif
+    @if($canExportLeaveForm)
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm"
+                data-export-type="leaveForm"
+                data-paper-selector="#leave-letter .employee-leave-letter-paper"
+                data-file-name="Leave-Request-{{ $employee->employee_code ?: $employee->id }}-{{ now()->format('Ymd') }}.docx"
+                onclick="downloadEmployeeFormWord(this)">
+            <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
+        </button>
+    @endif
 </div>
 
 <div class="employee-complete-paper employee-leave-letter-paper employee-print-form">
+    <div class="employee-resignation-national-heading">
+        <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
+        <span>{{ __('index.nation_religion_king') }}</span>
+    </div>
+
     <header class="employee-salary-certificate-letterhead">
         <div class="employee-salary-certificate-company">
             <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo">
@@ -22,13 +39,13 @@
         </div>
         <div class="employee-salary-certificate-document-meta employee-print-form-meta">
             <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}">
-            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.request_date') }}">
+            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}">
         </div>
     </header>
 
     <div class="employee-salary-certificate-heading employee-print-form-heading">
-        <span>{{ __('index.staff_form') }}</span>
         <h2>{{ __('index.leave_request_form') }}</h2>
+        <div class="employee-print-form-title-rule"></div>
     </div>
 
     <section class="employee-print-form-routing">
@@ -54,14 +71,14 @@
         <h3>{{ __('index.leave_details') }}</h3>
         <div class="employee-print-form-options">
             <span>{{ __('index.leave_type') }}:</span>
-            <label><input type="checkbox">{{ __('index.annual_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.special_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.sick_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.personal_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.work_accident_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.family_death_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.employee_marriage_leave') }}</label>
-            <label><input type="checkbox">{{ __('index.other') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.annual_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.special_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.sick_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.personal_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.work_accident_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.family_death_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.employee_marriage_leave') }}</label>
+            <label><input type="radio" name="leave_type">{{ __('index.other') }}</label>
         </div>
         <div class="employee-print-form-grid employee-print-form-grid-3">
             <div class="employee-print-form-field is-blank"><span>{{ __('index.leave_from') }}</span><input type="date"></div>
@@ -70,10 +87,10 @@
         </div>
         <div class="employee-print-form-options">
             <span>{{ __('index.leave_duration') }}:</span>
-            <label><input type="checkbox">{{ __('index.full_day') }}</label>
-            <label><input type="checkbox">{{ __('index.half_day') }}</label>
-            <label><input type="checkbox">{{ __('index.morning') }}</label>
-            <label><input type="checkbox">{{ __('index.afternoon') }}</label>
+            <label><input type="radio" name="leave_duration">{{ __('index.full_day') }}</label>
+            <label><input type="radio" name="leave_duration">{{ __('index.half_day') }}</label>
+            <label><input type="radio" name="leave_duration">{{ __('index.morning') }}</label>
+            <label><input type="radio" name="leave_duration">{{ __('index.afternoon') }}</label>
         </div>
     </section>
 
@@ -95,8 +112,8 @@
         <h3>{{ __('index.for_office_use') }}</h3>
         <div class="employee-print-form-options">
             <span>{{ __('index.decision') }}:</span>
-            <label><input type="checkbox">{{ __('index.approved') }}</label>
-            <label><input type="checkbox">{{ __('index.rejected') }}</label>
+            <label><input type="radio" name="leave_decision">{{ __('index.approved') }}</label>
+            <label><input type="radio" name="leave_decision">{{ __('index.rejected') }}</label>
         </div>
         <textarea class="employee-print-form-textarea compact" rows="2" placeholder="{{ __('index.remark') }}" aria-label="{{ __('index.remark') }}"></textarea>
     </section>

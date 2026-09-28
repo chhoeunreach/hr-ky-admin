@@ -2563,7 +2563,6 @@ return [
     'no_time_leave_records_found' => 'No time leave records found for this employee.',
     'form_number' => 'Form No.',
     'request_date' => 'Request Date',
-    'staff_form' => 'Staff Application Form',
     'leave_request_form' => 'Leave Request Form',
     'time_leave_request_form' => 'Time Leave Request Form',
     'direct_supervisor' => 'Direct Supervisor',
@@ -2620,5 +2619,8 @@ return [
     'branch_manager_signature' => 'Branch Manager',
     'hr_signature' => 'Human Resources',
     'resignation_requester' => 'Requested By',
+    'kingdom_of_cambodia' => 'Kingdom of Cambodia',
+    'nation_religion_king' => 'Nation - Religion - King',
+    'export_word' => 'Export Word',
 
 ];
