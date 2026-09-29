@@ -2301,6 +2301,16 @@
             </div>
         </div>
 
+        @php
+            $monthlyExportFilters = array_filter([
+                'month' => $filter['month'],
+                'branch_id' => $filter['branch_id'],
+                'department_id' => $filter['department_id'],
+                'shift_id' => $filter['shift_id'],
+                'search' => $filter['search'],
+            ], fn ($value) => $value !== '' && $value !== []);
+        @endphp
+
         <div class="monthly-table-shell">
             <div class="monthly-table-toolbar">
                 <div>
@@ -2328,10 +2338,10 @@
                     </button>
 
                     @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
-                        <a class="btn btn-success" href="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}">
+                        <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#monthlyReductionExportModal">
                             <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
-                        </a>
-                        <a class="btn btn-outline-success" href="{{ request()->fullUrlWithQuery(['export' => 'bonus_xlsx']) }}">
+                        </button>
+                        <a class="btn btn-outline-success" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'bonus_xlsx'])) }}">
                             <i class="link-icon" data-feather="award"></i> {{ __('index.export_bonus_xlsx') }}
                         </a>
                     @endcanany
@@ -2634,6 +2644,27 @@
             </div>
         </div>
         </div>
+
+        @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
+            <div class="modal fade" id="monthlyReductionExportModal" tabindex="-1" aria-labelledby="monthlyReductionExportModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="monthlyReductionExportModalLabel">{{ __('index.select_reduction_export_option') }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body d-grid gap-2">
+                            <a class="btn btn-outline-primary" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_xlsx'])) }}">
+                                <i class="link-icon" data-feather="clock"></i> {{ __('index.time_option') }}
+                            </a>
+                            <a class="btn btn-success" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_count_xlsx'])) }}">
+                                <i class="link-icon" data-feather="hash"></i> {{ __('index.count_option') }}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endcanany
 
         <div class="modal fade" id="monthlyAttendanceDetailModal" tabindex="-1" aria-labelledby="monthlyAttendanceDetailModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

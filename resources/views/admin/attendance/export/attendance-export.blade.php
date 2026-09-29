@@ -260,6 +260,18 @@
                 <th> Total Absent:</th>
                 <td>{{ $netTotalAbsent }}</td>
             </tr>
+            <tr>
+                <th>Count Option Total Late:</th>
+                <td>{{ $countReductionWarning['total_late'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <th>Effective Late Count:</th>
+                <td>{{ $countReductionWarning['effective_late_count'] ?? 0 }}</td>
+            </tr>
+            <tr>
+                <th>Warning Total Money:</th>
+                <td>&#36;{{ number_format((float) ($countReductionWarning['amount'] ?? 0), 2) }}</td>
+            </tr>
 
         </tfoot>
 </table>

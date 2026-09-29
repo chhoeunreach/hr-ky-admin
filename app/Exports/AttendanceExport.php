@@ -13,13 +13,15 @@ class AttendanceExport implements FromView, ShouldAutoSize
     protected $userDetail;
     protected $multipleAttendance;
     protected $isBsEnabled;
+    protected $countReductionWarning;
 
-    function __construct($attendanceRecord,$userDetail, $multipleAttendance, $isBsEnabled)
+    function __construct($attendanceRecord, $userDetail, $multipleAttendance, $isBsEnabled, array $countReductionWarning = [])
     {
         $this->attendanceRecord = $attendanceRecord;
         $this->userDetail = $userDetail;
         $this->multipleAttendance = $multipleAttendance;
         $this->isBsEnabled = $isBsEnabled;
+        $this->countReductionWarning = $countReductionWarning;
 
     }
 
@@ -32,6 +34,7 @@ class AttendanceExport implements FromView, ShouldAutoSize
             'appTimeSetting'=>$appTimeSetting,
             'multipleAttendance'=> $this->multipleAttendance,
             'isBsEnabled'=> $this->isBsEnabled,
+            'countReductionWarning' => $this->countReductionWarning,
         ]);
     }
 

@@ -29,6 +29,7 @@ use App\Services\Attendance\AttendanceService;
 use App\Services\Attendance\AttendanceTelegramNotificationService;
 use App\Services\Leave\TimeLeaveService;
 use App\Services\TelegramService;
+use App\Support\AttendanceCountReduction;
 use App\Traits\CustomAuthorizesRequests;
 use Carbon\Carbon;
 use Exception;
@@ -811,6 +812,11 @@ class AttendanceController extends Controller
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
             $leaveRequestsByDate = $this->getEmployeeLeaveRequestsByDate($employeeId, $filterParameter);
             $timeLeavesByDate = $this->getEmployeeTimeLeavesByDate($employeeId, $filterParameter);
+            $countReductionWarning = $this->buildCountReductionWarning(
+                $attendanceDetail,
+                $userDetail,
+                $timeLeavesByDate
+            );
 
             $attendanceSummary = AttendanceHelper::getMonthlyDetail($employeeId, $filterParameter['date_in_bs'], $filterParameter['year'], $filterParameter['month']);
 
@@ -823,7 +829,7 @@ class AttendanceController extends Controller
                         : date("F", strtotime($filterParameter['year'].'-'.$filterParameter['month'].'-01'));
                 }
 
-                return \Maatwebsite\Excel\Facades\Excel::download(new AttendanceExport($attendanceDetail, $userDetail,$multipleAttendance,$isBsEnabled), 'attendance-' . $userDetail->name . '-' . $filterParameter['year'] . '-' . $month . '-report.xlsx');
+                return \Maatwebsite\Excel\Facades\Excel::download(new AttendanceExport($attendanceDetail, $userDetail,$multipleAttendance,$isBsEnabled, $countReductionWarning), 'attendance-' . $userDetail->name . '-' . $filterParameter['year'] . '-' . $month . '-report.xlsx');
             }
 
             return view($this->view.'show',compact('attendanceDetail',
@@ -837,6 +843,7 @@ class AttendanceController extends Controller
                     'multipleAttendance',
                     'leaveRequestsByDate',
                     'timeLeavesByDate',
+                    'countReductionWarning',
                 )
             );
 
@@ -1184,6 +1191,66 @@ class AttendanceController extends Controller
             ->get()
             ->keyBy(fn ($timeLeave) => Carbon::parse($timeLeave->issue_date)->format('Y-m-d'))
             ->all();
+    }
+
+    private function buildCountReductionWarning($attendanceDetail, $userDetail, array $timeLeavesByDate): array
+    {
+        $breakdown = AttendanceCountReduction::emptyBreakdown();
+        $lateRecordsForEffectiveCount = 0;
+
+        foreach ($attendanceDetail as $dayData) {
+            $attendance = collect($dayData['data'] ?? [])->first();
+            if (!$attendance) {
+                continue;
+            }
+
+            if (
+                !is_null($attendance['attendance_status'] ?? null)
+                && (int) $attendance['attendance_status'] === Attendance::ATTENDANCE_REJECTED
+            ) {
+                continue;
+            }
+
+            $checkIn = $attendance['check_in_at'] ?? $attendance['night_checkin'] ?? null;
+            $openingTime = $attendance['opening_time'] ?? $userDetail->officeTime?->opening_time;
+            if (!$checkIn || !$openingTime) {
+                continue;
+            }
+
+            $date = Carbon::parse($dayData['attendance_date'])->format('Y-m-d');
+            $openingAt = Carbon::parse($date . ' ' . $openingTime);
+            $checkInAt = preg_match('/^\d{1,2}:\d{2}/', $checkIn)
+                ? Carbon::parse($date . ' ' . $checkIn)
+                : Carbon::parse($checkIn);
+            $closingTime = $attendance['closing_time'] ?? $userDetail->officeTime?->closing_time;
+
+            if ($closingTime) {
+                $closingAt = Carbon::parse($date . ' ' . $closingTime);
+                if ($closingAt->lte($openingAt) && $checkInAt->lt($openingAt)) {
+                    $checkInAt->addDay();
+                }
+            }
+
+            $lateMinutes = (int) $openingAt->diffInMinutes($checkInAt, false);
+            $breakdown = AttendanceCountReduction::addLateMinutes($breakdown, $lateMinutes);
+
+            if ($lateMinutes > AttendanceCountReduction::MIN_LATE_MINUTES) {
+                $lateRecordsForEffectiveCount++;
+            }
+        }
+
+        $approvedLateRequests = collect($timeLeavesByDate)
+            ->filter(fn ($timeLeave) => strtolower((string) $timeLeave->status) === 'approved')
+            ->count();
+        $effectiveLateCount = max($lateRecordsForEffectiveCount - $approvedLateRequests, 0);
+
+        return [
+            'breakdown' => $breakdown,
+            'total_late' => AttendanceCountReduction::lateCount($breakdown),
+            'effective_late_count' => $effectiveLateCount,
+            'amount' => AttendanceCountReduction::payment($breakdown, $effectiveLateCount),
+            'reason' => AttendanceCountReduction::reason($breakdown),
+        ];
     }
 
     public function store(AttendanceTimeAddRequest $request)

@@ -16,6 +16,7 @@ use App\Models\LeaveRequestMaster;
 use App\Models\OfficeTime;
 use App\Models\TimeLeave;
 use App\Models\User;
+use App\Support\AttendanceCountReduction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -80,6 +81,14 @@ class AttendanceMonthlyController extends Controller
             $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
 
             return $this->exportReductionXlsx($rows, $month);
+        }
+
+        if ($request->query('export') === 'reduc_count_xlsx') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+
+            return $this->exportCountReductionXlsx($rows, $month);
         }
 
         if ($request->query('export') === 'bonus_xlsx') {
@@ -309,6 +318,7 @@ class AttendanceMonthlyController extends Controller
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
             $lateMinutesTotal = 0;
+            $countReduction = AttendanceCountReduction::emptyBreakdown();
             $bonusDays = [];
             $bonusEligibleDays = 0;
             $bonusWorkingDays = 0;
@@ -376,6 +386,9 @@ class AttendanceMonthlyController extends Controller
                     if ($lateMinutes !== null) {
                         $lateMinutesTotal += $lateMinutes;
                     }
+
+                    $countLateMinutes = $this->countLateMinutesForAttendance($employee, $firstAttendance);
+                    $countReduction = AttendanceCountReduction::addLateMinutes($countReduction, $countLateMinutes);
                 }
 
                 foreach ($cell['indicators'] ?? [] as $indicator) {
@@ -410,6 +423,7 @@ class AttendanceMonthlyController extends Controller
                 'total_late_records' => $totalLateRecords,
                 'approved_late_requests' => $approvedLateRequests,
                 'effective_late_count' => max($totalLateRecords - $approvedLateRequests, 0),
+                'count_reduction' => $countReduction,
                 'signal_totals' => $signalTotals,
                 'employee_day_off_days' => $employeeDayOffDays,
                 'total_days' => count($days),
@@ -596,6 +610,35 @@ class AttendanceMonthlyController extends Controller
         $lateMinutes = Carbon::parse($shift->opening_time)->diffInMinutes(Carbon::parse($checkIn), false);
 
         return $lateMinutes <= self::LATE_CHECK_IN_GRACE_MINUTES ? null : (int) $lateMinutes;
+    }
+
+    private function countLateMinutesForAttendance(User $employee, Attendance $attendance): ?int
+    {
+        if (!is_null($attendance->attendance_status) && (int) $attendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
+            return null;
+        }
+
+        $shift = $employee->officeTime;
+        $checkIn = $attendance->check_in_at ?: $attendance->night_checkin;
+
+        if (!$shift?->opening_time || !$checkIn) {
+            return null;
+        }
+
+        $date = Carbon::parse($attendance->attendance_date)->format('Y-m-d');
+        $openingAt = Carbon::parse($date . ' ' . $shift->opening_time);
+        $checkInAt = $this->attendanceMoment($date, $checkIn);
+
+        if ($shift->closing_time) {
+            $closingAt = Carbon::parse($date . ' ' . $shift->closing_time);
+            if ($closingAt->lte($openingAt) && $checkInAt->lt($openingAt)) {
+                $checkInAt->addDay();
+            }
+        }
+
+        $lateMinutes = (int) $openingAt->diffInMinutes($checkInAt, false);
+
+        return $lateMinutes < AttendanceCountReduction::MIN_LATE_MINUTES ? null : $lateMinutes;
     }
 
     private function leaveMap(array $userIds, Carbon $startDate, Carbon $endDate): array
@@ -1094,6 +1137,16 @@ class AttendanceMonthlyController extends Controller
         );
     }
 
+    private function exportCountReductionXlsx(Collection $rows, Carbon $month)
+    {
+        $filename = 'monthly-attendance-reduc-count-' . $month->format('Y-m') . '.xlsx';
+
+        return Excel::download(
+            new MonthlyAttendanceReductionExport($this->countReductionExportRows($rows, $month)),
+            $filename
+        );
+    }
+
     private function exportBonusXlsx(Collection $rows, Carbon $month)
     {
         $filename = 'monthly-attendance-bonus-' . $month->format('Y-m') . '.xlsx';
@@ -1193,6 +1246,58 @@ class AttendanceMonthlyController extends Controller
                     $employee->phone,
                     $expenseType,
                     $this->lateReductionReason($row['late_breakdown'] ?? [], (int) ($row['approved_late_requests'] ?? 0), (int) ($row['effective_late_count'] ?? 0)),
+                    round($payment, 2),
+                    'Cash',
+                    $receiver,
+                    $monthYear,
+                    $monthYear,
+                    $number . $expenseType,
+                    $employee->email,
+                    $companyEmail,
+                    $createdAt->format('n/j/Y H:i'),
+                ];
+            })
+            ->filter()
+            ->values();
+    }
+
+    private function countReductionExportRows(Collection $rows, Carbon $month): Collection
+    {
+        $createdAt = now();
+        $dateText = $createdAt->format('n/j/Y');
+        $monthYear = $month->format('M-y');
+        $companyEmail = (string) Company::query()
+            ->where('id', AppHelper::getAuthUserCompanyId())
+            ->value('email');
+        $admin = auth('admin')->user();
+        $webUser = auth()->user();
+        $receiver = (string) ($admin?->name ?? $webUser?->name ?? 'Admin');
+
+        return $rows
+            ->map(function (array $row) use ($dateText, $month, $monthYear, $companyEmail, $receiver, $createdAt) {
+                $reduction = $row['count_reduction'] ?? [];
+                $effectiveLateCount = (int) ($row['effective_late_count'] ?? 0);
+                $payment = AttendanceCountReduction::payment($reduction, $effectiveLateCount);
+
+                if ($payment <= 0) {
+                    return null;
+                }
+
+                $employee = $row['employee'];
+                $employeeId = ($employee->username ?: (string) $employee->id);
+                $number = $employeeId . '-' . $month->format('n-Y');
+                $expenseType = 'កាត់';
+
+                return [
+                    $dateText,
+                    $number,
+                    $employee->username,
+                    $employee->name,
+                    $employee->username,
+                    $employee->branch?->name,
+                    $employee->phone,
+                    $expenseType,
+                    AttendanceCountReduction::reason($reduction),
                     round($payment, 2),
                     'Cash',
                     $receiver,

@@ -267,6 +267,8 @@
         .employee-attendance-card.is-pending .employee-attendance-card-icon { background: #fffbeb; color: #d97706; }
         .employee-attendance-card.is-time .employee-attendance-card-icon { background: #ecfeff; color: #0891b2; }
         .employee-attendance-card.is-danger .employee-attendance-card-icon { background: #fef2f2; color: #dc2626; }
+        .employee-attendance-card.is-warning-money { border-color: #fed7aa; background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%); }
+        .employee-attendance-card.is-warning-money .employee-attendance-card-icon { background: #ffedd5; color: #c2410c; }
         .employee-attendance-card.is-highlight .employee-attendance-card-icon { background: #dbeafe; color: #2563eb; }
 
         .employee-attendance-dashboard-print-button {
@@ -797,10 +799,11 @@
                 'late' => 0,
                 'absent' => (int) ($attendanceSummary['totalAbsent'] ?? 0),
                 'leave' => 0,
-                'off_day' => (int) (($attendanceSummary['totalWeekend'] ?? 0) + ($attendanceSummary['totalHoliday'] ?? 0)),
+                'off_day' => 0,
                 'pending_day_off' => 0,
                 'pending_leave' => 0,
-                'time_leave' => 0,
+                'time_leave_count' => 0,
+                'time_leave_minutes' => 0,
                 'time_leave_request' => 0,
                 'no_checkout' => 0,
             ];
@@ -846,10 +849,24 @@
                 $status = strtolower((string) $timeLeave->status);
 
                 if ($status === 'approved') {
-                    $detailCardStats['time_leave']++;
+                    $startTime = \Carbon\Carbon::parse($timeLeave->issue_date.' '.$timeLeave->start_time);
+                    $endTime = \Carbon\Carbon::parse($timeLeave->issue_date.' '.$timeLeave->end_time);
+                    if ($endTime->lt($startTime)) {
+                        $endTime->addDay();
+                    }
+
+                    $detailCardStats['time_leave_count']++;
+                    $detailCardStats['time_leave_minutes'] += (int) $startTime->diffInMinutes($endTime);
                 } elseif ($status === 'pending') {
                     $detailCardStats['time_leave_request']++;
                 }
+            }
+
+            $timeLeaveHours = intdiv($detailCardStats['time_leave_minutes'], 60);
+            $timeLeaveRemainingMinutes = $detailCardStats['time_leave_minutes'] % 60;
+            $timeLeaveDisplay = $timeLeaveHours.'h';
+            if ($timeLeaveRemainingMinutes > 0) {
+                $timeLeaveDisplay .= ' '.$timeLeaveRemainingMinutes.'m';
             }
 
             foreach ($attendanceDetail as $dayData) {
@@ -893,10 +910,17 @@
                 ['key' => 'late', 'class' => 'is-late', 'icon' => 'L', 'title' => 'Late', 'note' => 'After office rule'],
                 ['key' => 'absent', 'class' => 'is-absent', 'icon' => 'A', 'title' => 'Absent', 'note' => 'No attendance'],
                 ['key' => 'leave', 'class' => 'is-leave', 'icon' => 'LV', 'title' => 'Leave', 'note' => 'Approved leave'],
-                ['key' => 'off_day', 'class' => 'is-off', 'icon' => 'O', 'title' => 'Off Day', 'note' => 'Weekend/holiday'],
+                ['key' => 'off_day', 'class' => 'is-off', 'icon' => 'O', 'title' => 'Off Day', 'note' => 'Approved day off'],
                 ['key' => 'pending_day_off', 'class' => 'is-pending', 'icon' => 'PO', 'title' => 'Pending Day Off', 'note' => 'Waiting approval'],
                 ['key' => 'pending_leave', 'class' => 'is-pending', 'icon' => 'PL', 'title' => 'Pending Leave', 'note' => 'Waiting approval'],
-                ['key' => 'time_leave', 'class' => 'is-time', 'icon' => 'TL', 'title' => 'Time Leave', 'note' => 'Approved hours'],
+                [
+                    'key' => 'time_leave_minutes',
+                    'class' => 'is-time',
+                    'icon' => 'TL',
+                    'title' => 'Time Leave',
+                    'value' => $timeLeaveDisplay,
+                    'note' => number_format($detailCardStats['time_leave_count']).' approved request'.($detailCardStats['time_leave_count'] === 1 ? '' : 's'),
+                ],
                 ['key' => 'time_leave_request', 'class' => 'is-pending', 'icon' => 'TR', 'title' => 'Time Leave Request', 'note' => 'Waiting approval'],
                 ['key' => 'no_checkout', 'class' => 'is-danger', 'icon' => 'NC', 'title' => 'No Checkout', 'note' => 'Open attendance'],
             ];
@@ -929,6 +953,24 @@
                     <span class="text-muted small">
                         Working {{ $attendanceSummary ? $attendanceSummary['totalWorkingHours'] : '-' }}
                     </span>
+                    @can('attendance_csv_export')
+                        <a class="btn btn-sm btn-outline-success employee-attendance-dashboard-print-button"
+                           target="_blank"
+                           href="{{ route('admin.attendances.show', [
+                               'attendance' => $userDetail->id,
+                               'year' => $filterParameter['year'],
+                               'month' => $filterParameter['month'],
+                               'download_excel' => 1,
+                           ]) }}">
+                            <i class="link-icon" data-feather="download"></i> Export Excel
+                        </a>
+                        <button type="button"
+                                id="export-employee-attendance-word"
+                                class="btn btn-sm btn-outline-primary employee-attendance-dashboard-print-button"
+                                data-file-name="attendance-{{ $userDetail->id }}-{{ $filterParameter['year'] }}-{{ $filterParameter['month'] }}.docx">
+                            <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
+                        </button>
+                    @endcan
                     <button type="button"
                             id="print-employee-attendance-dashboard"
                             class="btn btn-sm btn-outline-secondary employee-attendance-dashboard-print-button">
@@ -943,7 +985,7 @@
                         <span class="employee-attendance-card-icon">{{ $card['icon'] }}</span>
                         <div>
                             <p class="employee-attendance-card-title">{{ $card['title'] }}</p>
-                            <p class="employee-attendance-card-value">{{ number_format($detailCardStats[$card['key']] ?? 0) }}</p>
+                            <p class="employee-attendance-card-value">{{ $card['value'] ?? number_format($detailCardStats[$card['key']] ?? 0) }}</p>
                             <p class="employee-attendance-card-note">{{ $card['note'] }}</p>
                         </div>
                     </div>
@@ -974,6 +1016,19 @@
                             {{ $officeOpeningLabel && $officeClosingLabel ? $officeOpeningLabel.' - '.$officeClosingLabel : '-' }}
                         </p>
                         <p class="employee-attendance-card-note">Employee shift rule</p>
+                    </div>
+                </div>
+                <div class="employee-attendance-card is-warning-money">
+                    <span class="employee-attendance-card-icon">&#36;</span>
+                    <div>
+                        <p class="employee-attendance-card-title">Warning Total Money</p>
+                        <p class="employee-attendance-card-value">
+                            &#36;{{ number_format((float) ($countReductionWarning['amount'] ?? 0), 2) }}
+                        </p>
+                        <p class="employee-attendance-card-note">
+                            Count Option · Total late {{ $countReductionWarning['total_late'] ?? 0 }},
+                            effective {{ $countReductionWarning['effective_late_count'] ?? 0 }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1978,9 +2033,12 @@
 
 @section('scripts')
     @include('admin.attendance.common.scripts')
+    <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const printEmployeeAttendanceDashboard = document.getElementById('print-employee-attendance-dashboard');
+            const exportEmployeeAttendanceWord = document.getElementById('export-employee-attendance-word');
             const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
             const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
             const attendanceQuickLeaveUserId = document.getElementById('attendanceQuickLeaveUserId');
@@ -2016,6 +2074,310 @@
             if (printEmployeeAttendanceDashboard) {
                 printEmployeeAttendanceDashboard.addEventListener('click', function () {
                     window.print();
+                });
+            }
+
+            if (exportEmployeeAttendanceWord) {
+                exportEmployeeAttendanceWord.addEventListener('click', async function () {
+                    const button = this;
+                    const originalContent = button.innerHTML;
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
+
+                    try {
+                        if (!window.docx) {
+                            throw new Error('The DOCX library is unavailable.');
+                        }
+
+                        const d = window.docx;
+                        const cleanText = element => (element?.textContent || '').replace(/\s+/g, ' ').trim();
+                        const border = { style: d.BorderStyle.SINGLE, size: 4, color: 'CBD5E1' };
+                        const borders = { top: border, bottom: border, left: border, right: border };
+                        const cellMargins = { top: 70, right: 90, bottom: 70, left: 90 };
+                        const paragraph = (text, options = {}) => new d.Paragraph({
+                            alignment: options.alignment,
+                            spacing: options.spacing || { before: 0, after: 0 },
+                            children: [new d.TextRun({
+                                text: String(text || ''),
+                                bold: Boolean(options.bold),
+                                color: options.color || '1F2937',
+                                font: 'Khmer OS Battambang',
+                                size: options.size || 16,
+                            })],
+                        });
+                        const cardPalettes = {
+                            'is-present': { fill: 'ECFDF3', accent: '16A34A' },
+                            'is-late': { fill: 'FFF7ED', accent: 'F97316' },
+                            'is-absent': { fill: 'FEF2F2', accent: 'DC2626' },
+                            'is-leave': { fill: 'F5F3FF', accent: '7C3AED' },
+                            'is-off': { fill: 'F1F5F9', accent: '64748B' },
+                            'is-total': { fill: 'EFF6FF', accent: '2563EB' },
+                            'is-pending': { fill: 'FFFBEB', accent: 'D97706' },
+                            'is-time': { fill: 'ECFEFF', accent: '0891B2' },
+                            'is-danger': { fill: 'FEF2F2', accent: 'DC2626' },
+                            'is-warning-money': { fill: 'FFF7ED', accent: 'C2410C' },
+                            'is-highlight': { fill: 'EFF6FF', accent: '2563EB' },
+                        };
+                        const getCardPalette = card => {
+                            const className = Object.keys(cardPalettes).find(name => card.classList.contains(name));
+                            return cardPalettes[className] || { fill: 'F8FAFC', accent: '475569' };
+                        };
+                        const dataUrlToBytes = dataUrl => {
+                            const binary = window.atob(dataUrl.split(',')[1]);
+                            const bytes = new Uint8Array(binary.length);
+                            for (let index = 0; index < binary.length; index += 1) {
+                                bytes[index] = binary.charCodeAt(index);
+                            }
+                            return bytes;
+                        };
+                        const captureDashboard = async () => {
+                            if (!window.html2canvas) {
+                                return null;
+                            }
+
+                            const source = document.querySelector('.employee-attendance-print-area');
+                            const sourceTitle = source?.querySelector('.employee-attendance-dashboard-title');
+                            const sourceDashboard = source?.querySelector('.employee-attendance-dashboard');
+                            const sourceLegend = source?.querySelector('.attendance-detail-legend');
+                            if (!sourceTitle || !sourceDashboard) {
+                                return null;
+                            }
+
+                            const captureRoot = document.createElement('div');
+                            captureRoot.className = 'employee-attendance-print-area';
+                            captureRoot.style.cssText = [
+                                'position:fixed',
+                                'left:-12000px',
+                                'top:0',
+                                'width:1120px',
+                                'padding:24px',
+                                'background:#ffffff',
+                                'z-index:-1',
+                            ].join(';');
+
+                            const titleClone = sourceTitle.cloneNode(true);
+                            const dashboardClone = sourceDashboard.cloneNode(true);
+                            titleClone.querySelector('.employee-attendance-dashboard-actions')?.remove();
+                            dashboardClone.style.setProperty('display', 'grid', 'important');
+                            dashboardClone.style.setProperty('grid-template-columns', 'repeat(6, minmax(0, 1fr))', 'important');
+                            dashboardClone.style.setProperty('gap', '8px', 'important');
+                            captureRoot.appendChild(titleClone);
+                            captureRoot.appendChild(dashboardClone);
+                            if (sourceLegend) {
+                                captureRoot.appendChild(sourceLegend.cloneNode(true));
+                            }
+                            document.body.appendChild(captureRoot);
+
+                            try {
+                                const canvas = await window.html2canvas(captureRoot, {
+                                    scale: 2,
+                                    backgroundColor: '#FFFFFF',
+                                    useCORS: true,
+                                    logging: false,
+                                });
+                                const imageWidth = 1000;
+                                return new d.ImageRun({
+                                    type: 'png',
+                                    data: dataUrlToBytes(canvas.toDataURL('image/png')),
+                                    transformation: {
+                                        width: imageWidth,
+                                        height: Math.round(imageWidth * canvas.height / canvas.width),
+                                    },
+                                });
+                            } finally {
+                                captureRoot.remove();
+                            }
+                        };
+                        const tableCell = (text, options = {}) => new d.TableCell({
+                            borders,
+                            margins: cellMargins,
+                            shading: options.shading ? {
+                                type: d.ShadingType.CLEAR,
+                                color: 'auto',
+                                fill: options.shading,
+                            } : undefined,
+                            children: [paragraph(text, {
+                                bold: options.bold,
+                                color: options.color,
+                                size: options.size,
+                                alignment: options.alignment,
+                            })],
+                        });
+
+                        const title = cleanText(document.querySelector('.employee-attendance-dashboard-title h6'));
+                        const subtitle = cleanText(document.querySelector('.employee-attendance-dashboard-title p'));
+                        const cards = Array.from(document.querySelectorAll('.employee-attendance-card')).map(card => ({
+                            title: cleanText(card.querySelector('.employee-attendance-card-title')),
+                            value: cleanText(card.querySelector('.employee-attendance-card-value')),
+                            note: cleanText(card.querySelector('.employee-attendance-card-note')),
+                            icon: cleanText(card.querySelector('.employee-attendance-card-icon')),
+                            palette: getCardPalette(card),
+                        }));
+                        const cardRows = [];
+                        for (let index = 0; index < cards.length; index += 6) {
+                            const rowCards = cards.slice(index, index + 6);
+                            while (rowCards.length < 6) {
+                                rowCards.push({ title: '', value: '', note: '', icon: '', palette: { fill: 'FFFFFF', accent: 'FFFFFF' } });
+                            }
+                            cardRows.push(new d.TableRow({
+                                children: rowCards.map(card => {
+                                    const accentBorder = { style: d.BorderStyle.SINGLE, size: 12, color: card.palette.accent };
+                                    return new d.TableCell({
+                                        borders: { top: border, right: border, bottom: border, left: accentBorder },
+                                        margins: { top: 100, right: 120, bottom: 100, left: 120 },
+                                        shading: { type: d.ShadingType.CLEAR, color: 'auto', fill: card.palette.fill },
+                                        children: [
+                                            paragraph(card.icon, { bold: true, color: card.palette.accent, size: 18 }),
+                                            paragraph(card.title, { bold: true, color: card.palette.accent, size: 14 }),
+                                            paragraph(card.value, { bold: true, color: '0F172A', size: 22 }),
+                                            paragraph(card.note, { color: '64748B', size: 13 }),
+                                        ],
+                                    });
+                                }),
+                            }));
+                        }
+
+                        const attendanceTable = document.querySelector('.attendance-detail-table');
+                        const headerCells = Array.from(attendanceTable?.querySelectorAll('thead th') || [])
+                            .filter(cell => !cell.classList.contains('attendance-print-hide'));
+                        const headerRow = new d.TableRow({
+                            tableHeader: true,
+                            children: headerCells.map(cell => tableCell(cleanText(cell), {
+                                bold: true,
+                                color: 'FFFFFF',
+                                shading: '334155',
+                                size: 14,
+                                alignment: d.AlignmentType.CENTER,
+                            })),
+                        });
+                        const attendanceRows = Array.from(attendanceTable?.querySelectorAll('tbody tr') || [])
+                            .map((row, rowIndex) => {
+                                const values = Array.from(row.children)
+                                    .filter(cell => !cell.classList.contains('attendance-print-hide'))
+                                    .map(cleanText)
+                                    .slice(0, headerCells.length);
+                                while (values.length < headerCells.length) {
+                                    values.push('');
+                                }
+
+                                return new d.TableRow({
+                                    children: values.map((value, cellIndex) => {
+                                        const normalized = value.toLowerCase();
+                                        let color = '1F2937';
+                                        let shading = rowIndex % 2 === 0 ? 'FFFFFF' : 'F8FAFC';
+                                        if (cellIndex === 8 || cellIndex === 9) {
+                                            if (normalized.includes('late')) {
+                                                color = 'C2410C';
+                                                shading = 'FFF7ED';
+                                            } else if (normalized.includes('absent') || normalized.includes('no checkout')) {
+                                                color = 'B91C1C';
+                                                shading = 'FEF2F2';
+                                            } else if (normalized.includes('leave')) {
+                                                color = '6D28D9';
+                                                shading = 'F5F3FF';
+                                            } else if (normalized.includes('present')) {
+                                                color = '15803D';
+                                                shading = 'ECFDF3';
+                                            } else if (normalized.includes('off')) {
+                                                color = '475569';
+                                                shading = 'F1F5F9';
+                                            }
+                                        }
+                                        return tableCell(value, { size: 13, color, shading });
+                                    }),
+                                });
+                            });
+
+                        const children = [];
+                        let dashboardImage = null;
+                        try {
+                            dashboardImage = await captureDashboard();
+                        } catch (captureError) {
+                            console.warn('Dashboard preview could not be embedded in Word.', captureError);
+                        }
+
+                        if (dashboardImage) {
+                            children.push(new d.Paragraph({
+                                alignment: d.AlignmentType.CENTER,
+                                spacing: { before: 0, after: 140 },
+                                children: [dashboardImage],
+                            }));
+                        } else {
+                            children.push(
+                                paragraph(title || 'Employee Attendance Dashboard', {
+                                    bold: true,
+                                    size: 26,
+                                    alignment: d.AlignmentType.CENTER,
+                                    spacing: { before: 0, after: 80 },
+                                }),
+                                paragraph(subtitle, {
+                                    color: '64748B',
+                                    size: 17,
+                                    alignment: d.AlignmentType.CENTER,
+                                    spacing: { before: 0, after: 180 },
+                                }),
+                                new d.Table({
+                                    width: { size: 100, type: d.WidthType.PERCENTAGE },
+                                    rows: cardRows,
+                                })
+                            );
+                        }
+
+                        children.push(
+                            paragraph('Attendance Details', {
+                                bold: true,
+                                size: 20,
+                                spacing: { before: 220, after: 80 },
+                            }),
+                            new d.Table({
+                                width: { size: 100, type: d.WidthType.PERCENTAGE },
+                                rows: [headerRow].concat(attendanceRows),
+                            })
+                        );
+
+                        const documentFile = new d.Document({
+                            styles: {
+                                default: {
+                                    document: {
+                                        run: { font: 'Khmer OS Battambang', size: 16, color: '1F2937' },
+                                        paragraph: { spacing: { after: 0 } },
+                                    },
+                                },
+                            },
+                            sections: [{
+                                properties: {
+                                    page: {
+                                        size: {
+                                            width: 16838,
+                                            height: 11906,
+                                            orientation: d.PageOrientation.LANDSCAPE,
+                                        },
+                                        margin: { top: 500, right: 500, bottom: 500, left: 500 },
+                                    },
+                                },
+                                children,
+                            }],
+                        });
+
+                        const blob = await d.Packer.toBlob(documentFile);
+                        const url = URL.createObjectURL(blob);
+                        const download = document.createElement('a');
+                        download.href = url;
+                        download.download = button.dataset.fileName || 'employee-attendance.docx';
+                        document.body.appendChild(download);
+                        download.click();
+                        download.remove();
+                        window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                    } catch (error) {
+                        console.error('Employee attendance Word export failed.', error);
+                        window.alert('Unable to export the Word document. Please try again.');
+                    } finally {
+                        button.disabled = false;
+                        button.innerHTML = originalContent;
+                        if (window.feather) {
+                            window.feather.replace();
+                        }
+                    }
                 });
             }
 
