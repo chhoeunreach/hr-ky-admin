@@ -267,6 +267,16 @@
         .employee-attendance-card.is-pending .employee-attendance-card-icon { background: #fffbeb; color: #d97706; }
         .employee-attendance-card.is-time .employee-attendance-card-icon { background: #ecfeff; color: #0891b2; }
         .employee-attendance-card.is-danger .employee-attendance-card-icon { background: #fef2f2; color: #dc2626; }
+        .employee-attendance-card.is-department { border-color: #99f6e4; background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%); }
+        .employee-attendance-card.is-department .employee-attendance-card-icon { background: #ccfbf1; color: #0f766e; }
+        .employee-attendance-card.is-position { border-color: #c7d2fe; background: linear-gradient(180deg, #eef2ff 0%, #ffffff 100%); }
+        .employee-attendance-card.is-position .employee-attendance-card-icon { background: #e0e7ff; color: #4338ca; }
+        .employee-attendance-card.is-department .employee-attendance-card-value,
+        .employee-attendance-card.is-position .employee-attendance-card-value {
+            font-size: 13px;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+        }
         .employee-attendance-card.is-warning-money { border-color: #fed7aa; background: linear-gradient(180deg, #fff7ed 0%, #ffffff 100%); }
         .employee-attendance-card.is-warning-money .employee-attendance-card-icon { background: #ffedd5; color: #c2410c; }
         .employee-attendance-card.is-highlight .employee-attendance-card-icon { background: #dbeafe; color: #2563eb; }
@@ -515,6 +525,12 @@
             .employee-attendance-card-value {
                 font-size: 9px;
                 white-space: nowrap;
+            }
+
+            .employee-attendance-card.is-department .employee-attendance-card-value,
+            .employee-attendance-card.is-position .employee-attendance-card-value {
+                font-size: 7px;
+                white-space: normal;
             }
 
             .employee-attendance-card-note {
@@ -795,7 +811,6 @@
             $detailCardStats = [
                 'total' => (int) ($attendanceSummary['totalDays'] ?? 0),
                 'present' => (int) ($attendanceSummary['totalPresent'] ?? 0),
-                'sun' => (int) ($attendanceSummary['totalWeekend'] ?? 0),
                 'late' => 0,
                 'absent' => (int) ($attendanceSummary['totalAbsent'] ?? 0),
                 'leave' => 0,
@@ -905,7 +920,22 @@
 
             $detailCards = [
                 ['key' => 'total', 'class' => 'is-highlight', 'icon' => 'SUM', 'title' => 'Total', 'note' => 'Calendar days'],
-                ['key' => 'sun', 'class' => 'is-off', 'icon' => 'SUN', 'title' => 'Sun', 'note' => 'Weekend days'],
+                [
+                    'key' => 'department',
+                    'class' => 'is-department',
+                    'icon' => 'DEP',
+                    'title' => __('index.department'),
+                    'value' => $userDetail->department?->dept_name ?: __('index.not_applicable'),
+                    'note' => 'Employee department',
+                ],
+                [
+                    'key' => 'position',
+                    'class' => 'is-position',
+                    'icon' => 'POS',
+                    'title' => __('index.position'),
+                    'value' => $userDetail->post?->post_name ?: __('index.not_applicable'),
+                    'note' => 'Employee position',
+                ],
                 ['key' => 'present', 'class' => 'is-present', 'icon' => 'P', 'title' => 'Present', 'note' => 'Check-in days'],
                 ['key' => 'late', 'class' => 'is-late', 'icon' => 'L', 'title' => 'Late', 'note' => 'After office rule'],
                 ['key' => 'absent', 'class' => 'is-absent', 'icon' => 'A', 'title' => 'Absent', 'note' => 'No attendance'],
@@ -2115,6 +2145,8 @@
                             'is-pending': { fill: 'FFFBEB', accent: 'D97706' },
                             'is-time': { fill: 'ECFEFF', accent: '0891B2' },
                             'is-danger': { fill: 'FEF2F2', accent: 'DC2626' },
+                            'is-department': { fill: 'F0FDFA', accent: '0F766E' },
+                            'is-position': { fill: 'EEF2FF', accent: '4338CA' },
                             'is-warning-money': { fill: 'FFF7ED', accent: 'C2410C' },
                             'is-highlight': { fill: 'EFF6FF', accent: '2563EB' },
                         };

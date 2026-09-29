@@ -805,8 +805,12 @@ class AttendanceController extends Controller
             $months = AppHelper::MONTHS;
             $userDetail = $this->userRepository->findUserDetailById(
                 $employeeId,
-                ['id', 'name', 'office_time_id'],
-                ['officeTime:id,opening_time,closing_time,is_late_check_in,checkin_after,is_early_check_out,checkout_before']
+                ['id', 'name', 'office_time_id', 'department_id', 'post_id'],
+                [
+                    'officeTime:id,opening_time,closing_time,is_late_check_in,checkin_after,is_early_check_out,checkout_before',
+                    'department:id,dept_name',
+                    'post:id,post_name',
+                ]
             );
 
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
