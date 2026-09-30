@@ -615,35 +615,34 @@
             }
         });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            document.querySelectorAll('.showLeaveReason').forEach(function (element) {
-                element.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    const url = this.getAttribute('data-href');
+        document.addEventListener('click', function (event) {
+            const element = event.target.closest('.showLeaveReason');
 
-                    fetch(url)
-                        .then(response => response.json())
-                        .then(data => {
+            if (!element) {
+                return;
+            }
 
-                            if (data && data.data) {
-                                const leaveRequest = data.data;
-                                document.getElementById('referredBy').innerText = leaveRequest.name || 'Admin';
-                                document.getElementById('description').innerText = leaveRequest.reasons || 'N/A';
-                                document.getElementById('adminRemark').innerText = leaveRequest.admin_remark || 'N/A';
+            event.preventDefault();
+            const url = element.getAttribute('data-href');
 
-                                const modalElement = document.getElementById('addslider');
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.data) {
+                        const leaveRequest = data.data;
+                        document.getElementById('referredBy').innerText = leaveRequest.name || 'Admin';
+                        document.getElementById('description').innerText = leaveRequest.reasons || 'N/A';
+                        document.getElementById('adminRemark').innerText = leaveRequest.admin_remark || 'N/A';
 
-                                if (modalElement) {
-                                    const modal = new bootstrap.Modal(modalElement);
-                                    modal.show();
-                                } else {
-                                    console.error('Modal element not found');
-                                }
-                            }
-                        })
-                        .catch(error => console.error('Error:', error));
-                });
-            });
+                        const modalElement = document.getElementById('addslider');
+
+                        if (modalElement) {
+                            const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+                            modal.show();
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
         });
 
 
