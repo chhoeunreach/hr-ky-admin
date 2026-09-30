@@ -48,13 +48,14 @@ class LeaveController extends Controller
                 $with = ['leaveType:id,name', 'leaveRequestedBy:id,name', 'branch:id,name', 'department:id,dept_name', 'requestApproval'];
                 $select = ['leave_requests_master.*'];
                 $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequests($filterParameters,$select, $with);
+                $leaveTypes = $this->leaveTypeRepo->getAllActiveLeaveTypes(['id', 'name']);
 
                 $with = ['branches:id,name'];
                 $select = ['id', 'name'];
                 $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
 
                 return view($this->view . 'index',
-                    compact('leaveDetails', 'filterParameters','months','companyDetail') );
+                    compact('leaveDetails', 'filterParameters','months','companyDetail', 'leaveTypes') );
             } catch (Exception $exception) {
                 return redirect()->back()->with('danger', $exception->getMessage());
             }
@@ -219,6 +220,7 @@ class LeaveController extends Controller
             try {
                 $validatedData = $request->validate([
                     'status' => ['required', 'string', Rule::in(LeaveRequestMaster::STATUS)],
+                    'leave_type_id' => ['required', 'exists:leave_types,id'],
                     'admin_remark' => ['nullable', 'required_if:status,rejected', 'string', 'min:10'],
                 ]);
                 DB::beginTransaction();

@@ -10,15 +10,24 @@
                         @csrf
                         @method('put')
                         <div class="row">
-                            <label for="status" class="form-label">{{ __('index.status') }} </label>
+                            <label for="updateStatus" class="form-label">{{ __("index.status") }} </label>
                             <div class="col-lg-12 mb-3">
-                                <select class="form-select" id="status" name="status">
-                                    <option value="{{ \App\Enum\LeaveStatusEnum::approved->value }}">{{ __('index.approve') }}</option>
-                                    <option value="{{ \App\Enum\LeaveStatusEnum::rejected->value }}">{{ __('index.reject') }}</option>
+                                <select class="form-select" id="updateStatus" name="status">
+                                    <option value="{{ \App\Enum\LeaveStatusEnum::approved->value }}">{{ __("index.approve") }}</option>
+                                    <option value="{{ \App\Enum\LeaveStatusEnum::rejected->value }}">{{ __("index.reject") }}</option>
                                 </select>
                             </div>
 
-                            <label for="remark" class="form-label">{{ __('index.admin_remark') }}</label>
+                            <label for="updateLeaveType" class="form-label">{{ __("index.type") }}<span style="color: red">*</span></label>
+                            <div class="col-lg-12 mb-3">
+                                <select class="form-select" id="updateLeaveType" name="leave_type_id" required>
+                                    @foreach($leaveTypes ?? [] as $leaveTypeId => $leaveTypeName)
+                                        <option value="{{ $leaveTypeId }}">{{ ucfirst($leaveTypeName) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <label for="remark" class="form-label">{{ __("index.admin_remark") }}</label>
                             <div class="col-lg-12 mb-3">
                                 <textarea class="form-select" id="remark" minlength="10" name="admin_remark" rows="3"></textarea>
                             </div>

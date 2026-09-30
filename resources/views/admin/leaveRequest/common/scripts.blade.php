@@ -13,11 +13,13 @@
             let status = $(this).data('status');
             let remark = $(this).data('remark');
             let leaveRequestId = $(this).data('id');
+            let leaveTypeId = $(this).data('leave-type-id');
 
             $('.modal-title').html('Leave Status Update');
             $('#updateLeaveStatus').attr('action',url)
-            $('#status').val(status)
+            $('#updateStatus').val(status === 'rejected' ? 'rejected' : 'approved')
             $('#remark').val(remark)
+            $('#updateLeaveType').val(leaveTypeId)
 
             $('#previousApprovers').html('');
             $.ajax({

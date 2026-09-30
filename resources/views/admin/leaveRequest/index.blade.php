@@ -382,6 +382,7 @@
                                                    data-status="{{$value->status}}"
                                                    data-remark="{{$value->admin_remark}}"
                                                    data-id="{{$value->id}}"
+                                                   data-leave-type-id="{{$value->leave_type_id}}"
                                                 >
                                                     <button class="btn btn-{{ $color[$value->status] }} btn-xs">
                                                         {{ucfirst($value->status)}}
@@ -437,6 +438,7 @@
                                                        data-status="{{$value->status}}"
                                                        data-remark="{{$value->admin_remark}}"
                                                        data-id="{{$value->id}}"
+                                                   data-leave-type-id="{{$value->leave_type_id}}"
                                                     >
                                                         <button class="btn btn-{{ $color[$value->status] }} btn-xs">
                                                             {{ucfirst($value->status)}}
