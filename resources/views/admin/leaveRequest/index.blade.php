@@ -273,7 +273,7 @@
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm">
+            <div id="leave-request-list-block" class="card border-0 shadow-sm">
                 <div class="card-body">
                     <form method="get" action="{{ route('admin.leave-request.index') }}" class="leave-request-toolbar mb-4">
                         <input type="hidden" name="branch_id" value="{{ $filterParameters['branch_id'] }}">
@@ -523,7 +523,7 @@
 
 
     </section>
-    <div class="dataTables_paginate mt-3">
+    <div id="leave-request-pagination" class="dataTables_paginate mt-3">
         {{$leaveDetails->appends($_GET)->links()}}
     </div>
 

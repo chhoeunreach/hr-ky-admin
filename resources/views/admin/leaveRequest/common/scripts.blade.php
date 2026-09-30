@@ -62,6 +62,68 @@
             $('#statusUpdate').modal('show');
         });
 
+        const refreshLeaveRequestList = function () {
+            return $.get(window.location.href).then(function (html) {
+                const page = $('<div>').append($.parseHTML(html));
+                const listBlock = page.find('#leave-request-list-block');
+                const pagination = page.find('#leave-request-pagination');
+
+                if (!listBlock.length || !pagination.length) {
+                    return $.Deferred().reject({
+                        responseJSON: { message: 'Unable to refresh the leave request list.' }
+                    }).promise();
+                }
+
+                $('#leave-request-list-block').replaceWith(listBlock);
+                $('#leave-request-pagination').replaceWith(pagination);
+
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            });
+        };
+
+        $('body').on('submit', '#updateLeaveStatus', function (event) {
+            event.preventDefault();
+
+            const form = $(this);
+            const submitButton = form.find('[type="submit"]');
+            const originalButtonText = submitButton.html();
+
+            submitButton.prop('disabled', true).html('Updating...');
+
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                dataType: 'json',
+                headers: {
+                    Accept: 'application/json'
+                }
+            }).done(function (response) {
+                $('#statusUpdate').modal('hide');
+
+                refreshLeaveRequestList().done(function () {
+                    Swal.fire('Success', response.message, 'success');
+                }).fail(function (error) {
+                    Swal.fire(
+                        'Refresh failed',
+                        error.responseJSON?.message || 'The request was updated, but the list could not be refreshed.',
+                        'warning'
+                    );
+                });
+            }).fail(function (error) {
+                const validationErrors = error.responseJSON?.errors;
+                const message = validationErrors
+                    ? Object.values(validationErrors).flat().join('<br>')
+                    : error.responseJSON?.message || 'Unable to update the leave request.';
+
+                Swal.fire('Error', message, 'error');
+            }).always(function () {
+                submitButton.prop('disabled', false).html(originalButtonText);
+            });
+        });
+
         $('.reset').click(function(event){
             event.preventDefault();
             $('#requestedBy').val('');
