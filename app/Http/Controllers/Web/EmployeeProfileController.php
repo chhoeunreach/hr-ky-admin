@@ -46,12 +46,18 @@ class EmployeeProfileController extends Controller
     {
         $this->authorize('employee.profile.view');
         $request->validate([
+            'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'department_ids' => ['nullable', 'array'],
             'department_ids.*' => ['integer', 'exists:departments,id'],
             'report_date' => ['nullable', 'date_format:Y-m-d'],
         ]);
         $departmentIds = $request->input('department_ids', $request->filled('department_id') ? [$request->department_id] : []);
+        $availableDepartments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
+        $departments = $request->filled('branch_id')
+            ? $availableDepartments->where('branch_id', $request->branch_id)->values()
+            : $availableDepartments;
+        $departmentIds = $departments->whereIn('id', $departmentIds)->pluck('id')->all();
         $attendanceReport = $request->boolean('attendance_report');
         $employmentStatus = $request->input('employment_status', 'active');
         $requestedPerPage = $request->input('per_page', 25);
@@ -109,16 +115,16 @@ class EmployeeProfileController extends Controller
             ? $employeeQuery->get()
             : $employeeQuery->paginate($perPage);
 
-        $branches = Branch::select('id', 'name')->orderBy('name')->get();
-        $departments = Department::select('id', 'dept_name')->orderBy('dept_name')->get();
+        $branches = Branch::select('id', 'name', 'logo')->orderBy('name')->get();
         $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
 
         if ($attendanceReport) {
             $canPrintAttendanceReport = $this->can('employee.attendance_daily_report.print') || $this->can('employee.profile.print');
-            return view('admin.employees.profile.attendance-report', compact('employees', 'branches', 'departments', 'departmentIds', 'employmentStatus', 'canPrintAttendanceReport'));
+            $canExportAttendanceReport = $this->can('employee.attendance_daily_report.export') || $this->can('employee.profile.print');
+            return view('admin.employees.profile.attendance-report', compact('employees', 'branches', 'departments', 'availableDepartments', 'departmentIds', 'employmentStatus', 'canPrintAttendanceReport', 'canExportAttendanceReport'));
         }
 
-        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus', 'perPage', 'departmentIds'));
+        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'availableDepartments', 'posts', 'employmentStatus', 'perPage', 'departmentIds'));
     }
 
     public function show(User $employee)

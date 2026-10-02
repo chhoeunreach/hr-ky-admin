@@ -7,11 +7,16 @@
     @php
         $reportDate = request('report_date') ?: now()->format('Y-m-d');
         $departmentNames = $departments->whereIn('id', $departmentIds)->pluck('dept_name')->implode(', ');
-        $reportBranchName = $branches->firstWhere('id', request('branch_id'))?->name ?: __('index.all_branches');
+        $reportBranch = $branches->firstWhere('id', request('branch_id'));
+        $reportBranchName = $reportBranch?->name ?: __('index.all_branches');
+        $reportLogo = $reportBranch?->logo
+            ? asset(\App\Models\Branch::UPLOAD_PATH . $reportBranch->logo)
+            : asset('assets/images/logo.png');
+        $reportOrientation = request('orientation') === 'portrait' ? 'portrait' : 'landscape';
     @endphp
     <section class="content">
         @include('admin.section.flash_message')
-        <form method="get" action="{{ route('admin.employees.profile.index') }}" class="attendance-report-filters no-print mb-4">
+        <form id="attendanceReportFilters" method="get" action="{{ route('admin.employees.profile.index') }}" class="attendance-report-filters no-print mb-4">
             <input type="hidden" name="attendance_report" value="1">
             @foreach(['search', 'post_id', 'review_status'] as $filter)
                 @if(request()->filled($filter))
@@ -52,19 +57,34 @@
                 <div class="col-lg-2 d-flex gap-2">
                     <button type="submit" class="btn btn-primary">{{ __('index.apply') }}</button>
                     <a class="btn btn-outline-secondary" href="{{ route('admin.employees.profile.index', request()->except(['attendance_report', 'page'])) }}" title="{{ __('index.employee_profile') }}"><i data-feather="arrow-left"></i></a>
-                    @if($canPrintAttendanceReport)
-                        <button type="button" class="btn btn-outline-primary" onclick="window.print()" title="{{ __('index.print') }}" aria-label="{{ __('index.print') }}"><i data-feather="printer"></i></button>
-                    @endif
                 </div>
             </div>
         </form>
 
+        <div class="attendance-report-page-controls no-print">
+            <span>A4</span>
+            <div class="btn-group" role="group" aria-label="{{ __('index.page_orientation') }}">
+                @foreach(['portrait', 'landscape'] as $orientation)
+                    <input class="btn-check" type="radio" name="orientation" id="orientation-{{ $orientation }}" value="{{ $orientation }}" form="attendanceReportFilters" @checked($reportOrientation === $orientation)>
+                    <label class="btn btn-outline-secondary btn-sm" for="orientation-{{ $orientation }}">{{ __('index.' . $orientation) }}</label>
+                @endforeach
+            </div>
+            @if($canExportAttendanceReport)
+                <button type="button" id="attendanceReportWordExport" class="btn btn-outline-primary btn-sm" data-file-name="Daily-Attendance-Checklist-{{ $reportDate }}.docx">
+                    <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
+                </button>
+            @endif
+            @if($canPrintAttendanceReport)
+                <button type="button" class="btn btn-primary btn-sm" onclick="window.print()" title="{{ __('index.print') }}" aria-label="{{ __('index.print') }}"><i class="link-icon" data-feather="printer"></i></button>
+            @endif
+        </div>
+        <div id="attendanceReportExportError" class="alert alert-danger no-print" role="alert" hidden>{{ __('index.checklist_export_error') }}</div>
         <div class="attendance-report-scroll">
-            <article class="attendance-confirmation-paper">
+            <article class="attendance-confirmation-paper" data-orientation="{{ $reportOrientation }}">
                 <header class="attendance-report-heading">
                     <div class="attendance-report-letterhead">
                         <div class="attendance-report-brand">
-                            <img src="{{ asset('assets/images/logo.png') }}" alt="{{ config('app.name') }}">
+                            <img src="{{ $reportLogo }}" alt="{{ $reportBranch?->name ?: config('app.name') }}">
                             <div><strong>{{ config('app.name') }}</strong><span>{{ __('index.hr_department') }}</span></div>
                         </div>
                         <div class="attendance-report-national-heading">
@@ -147,7 +167,23 @@
         .attendance-report-filters { padding-bottom: 20px; border-bottom: 1px solid #d6dadd; }
         .attendance-report-filters .select2-selection--multiple { min-height: 38px; }
         .attendance-report-scroll { overflow-x: auto; padding: 2px; }
-        .attendance-confirmation-paper { background: #fff; color: #171717; padding: 32px 36px; min-width: 1000px; max-width: 1280px; margin: 0 auto; border: 1px solid #d6dadd; font-size: 12px; line-height: 1.7; letter-spacing: 0; }
+        .attendance-report-page-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; margin-bottom: 12px; font-size: 12px; }
+        .attendance-report-page-controls .link-icon { width: 16px; height: 16px; }
+        .attendance-report-page-controls > span { margin-right: auto; color: #555; font-weight: 600; }
+        .attendance-confirmation-paper { box-sizing: border-box; background: #fff; color: #171717; padding: 10mm; width: 297mm; min-width: 297mm; min-height: 210mm; margin: 0 auto; border: 1px solid #d6dadd; font-size: 12px; line-height: 1.7; letter-spacing: 0; }
+        .attendance-confirmation-paper[data-orientation="portrait"] { width: 210mm; min-width: 210mm; min-height: 297mm; font-size: 11px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-heading h1 { font-size: 18px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-brand strong { font-size: 13px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-brand img { width: 44px; height: 44px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-national-heading { font-size: 11px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-meta { font-size: 11px; gap: 8px 20px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-table-heading h2 { font-size: 12px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-confirmation-table { font-size: 10px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-confirmation-table th,
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-confirmation-table td { padding: 6px 3px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-summary { gap: 12px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-summary strong { font-size: 10px; }
+        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-signatures { gap: 20px; }
         .attendance-report-heading { text-align: center; border-bottom: 2px solid #252525; padding-bottom: 16px; margin-bottom: 18px; }
         .attendance-report-letterhead { display: flex; justify-content: space-between; align-items: start; gap: 24px; text-align: left; margin-bottom: 20px; }
         .attendance-report-brand { display: flex; align-items: center; gap: 12px; max-width: 55%; }
@@ -158,7 +194,7 @@
         .attendance-report-national-heading span { display: block; margin-top: 4px; }
         .attendance-report-heading h1 { font-size: 22px; line-height: 1.7; margin: 0; font-weight: 700; }
         .attendance-report-heading p { font-size: 12px; color: #555; margin: 4px 0 0; }
-        .attendance-report-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 32px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #c8c8c8; font-size: 12px; }
+        .attendance-report-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 32px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #c8c8c8; font-size: 12px; }
         .attendance-report-meta > div, .attendance-report-meta label { display: flex; align-items: baseline; gap: 10px; margin: 0; min-width: 0; }
         .attendance-report-meta strong { flex-shrink: 0; }
         .attendance-report-meta span { overflow-wrap: anywhere; }
@@ -192,10 +228,10 @@
         .attendance-report-signatures label { display: flex; align-items: baseline; gap: 8px; text-align: left; margin: 6px 0 0; }
         .attendance-report-signatures input { flex: 1; width: 0; }
         @media print {
-            @page { size: A4 landscape; margin: 10mm; }
             .sidebar, .navbar, .footer, #preloader, .breadcrumb, .no-print { display: none !important; }
             .main-wrapper, .page-wrapper, .page-content, .content, .attendance-report-scroll { margin: 0 !important; padding: 0 !important; width: 100% !important; overflow: visible !important; }
-            .attendance-confirmation-paper { padding: 0; min-width: 0; max-width: none; width: 100%; border: 0; }
+            .attendance-confirmation-paper,
+            .attendance-confirmation-paper[data-orientation="portrait"] { padding: 0; min-width: 0; min-height: 0; max-width: none; width: 100%; border: 0; }
             .attendance-report-heading { break-inside: avoid; }
             .attendance-report-table-heading { break-after: avoid; }
             .attendance-report-meta { break-inside: avoid; }
@@ -207,14 +243,26 @@
             body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
     </style>
+    <style id="attendanceReportPageSize">@page { size: A4 {{ $reportOrientation }}; margin: 10mm; }</style>
 @endsection
 
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.jQuery && jQuery.fn.select2) {
-                jQuery('#reportDepartments').select2({ width: '100%', closeOnSelect: false });
-            }
+            const paper = document.querySelector('.attendance-confirmation-paper');
+            const pageStyle = document.getElementById('attendanceReportPageSize');
+            document.querySelectorAll('input[name="orientation"]').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    const orientation = input.value === 'portrait' ? 'portrait' : 'landscape';
+                    paper.dataset.orientation = orientation;
+                    pageStyle.textContent = '@page { size: A4 ' + orientation + '; margin: 10mm; }';
+                });
+            });
         });
     </script>
+    @include('admin.employees.profile.partials.department-filter-script', ['departmentFilterForm' => 'attendanceReportFilters'])
+    @if($canExportAttendanceReport)
+        <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+        <script src="{{ asset('assets/js/attendance-checklist-word.js') }}"></script>
+    @endif
 @endsection

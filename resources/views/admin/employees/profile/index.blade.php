@@ -421,9 +421,6 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.jQuery && jQuery.fn.select2) {
-                jQuery('.employee-department-multiselect').select2({ width: '100%', closeOnSelect: false });
-            }
             const input = document.getElementById('employeeProfileSearch');
             const clearButton = document.getElementById('employeeProfileSearchClear');
             const form = document.getElementById('employeeProfileFilters');
@@ -449,4 +446,5 @@
             });
         });
     </script>
+    @include('admin.employees.profile.partials.department-filter-script', ['departmentFilterForm' => 'employeeProfileFilters'])
 @endsection
