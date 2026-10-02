@@ -11,7 +11,7 @@
         $reportBranchName = $reportBranch?->name ?: __('index.all_branches');
         $reportLogo = $reportBranch?->logo
             ? asset(\App\Models\Branch::UPLOAD_PATH . $reportBranch->logo)
-            : asset('assets/images/logo.png');
+            : null;
         $reportOrientation = request('orientation') === 'portrait' ? 'portrait' : 'landscape';
     @endphp
     <section class="content">
@@ -84,12 +84,10 @@
                 <header class="attendance-report-heading">
                     <div class="attendance-report-letterhead">
                         <div class="attendance-report-brand">
-                            <img src="{{ $reportLogo }}" alt="{{ $reportBranch?->name ?: config('app.name') }}">
-                            <div><strong>{{ config('app.name') }}</strong><span>{{ __('index.hr_department') }}</span></div>
-                        </div>
-                        <div class="attendance-report-national-heading">
-                            <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
-                            <span>{{ __('index.nation_religion_king') }}</span>
+                            @if($reportLogo)
+                                <img src="{{ $reportLogo }}" alt="{{ $reportBranchName }}">
+                            @endif
+                            <div><strong>សាខា: {{ $reportBranchName }}</strong><span>{{ __('index.hr_department') }}</span></div>
                         </div>
                     </div>
                     <h1>{{ __('index.attendance_confirmation_report') }}</h1>
@@ -175,7 +173,6 @@
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-heading h1 { font-size: 18px; }
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-brand strong { font-size: 13px; }
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-brand img { width: 44px; height: 44px; }
-        .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-national-heading { font-size: 11px; }
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-meta { font-size: 11px; gap: 8px 20px; }
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-table-heading h2 { font-size: 12px; }
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-confirmation-table { font-size: 10px; }
@@ -186,12 +183,10 @@
         .attendance-confirmation-paper[data-orientation="portrait"] .attendance-report-signatures { gap: 20px; }
         .attendance-report-heading { text-align: center; border-bottom: 2px solid #252525; padding-bottom: 16px; margin-bottom: 18px; }
         .attendance-report-letterhead { display: flex; justify-content: space-between; align-items: start; gap: 24px; text-align: left; margin-bottom: 20px; }
-        .attendance-report-brand { display: flex; align-items: center; gap: 12px; max-width: 55%; }
+        .attendance-report-brand { display: flex; align-items: center; gap: 12px; max-width: 100%; }
         .attendance-report-brand img { width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
         .attendance-report-brand strong { display: block; font-size: 16px; overflow-wrap: anywhere; }
         .attendance-report-brand span { display: block; color: #555; font-size: 11px; }
-        .attendance-report-national-heading { text-align: center; font-size: 12px; }
-        .attendance-report-national-heading span { display: block; margin-top: 4px; }
         .attendance-report-heading h1 { font-size: 22px; line-height: 1.7; margin: 0; font-weight: 700; }
         .attendance-report-heading p { font-size: 12px; color: #555; margin: 4px 0 0; }
         .attendance-report-meta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 32px; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #c8c8c8; font-size: 12px; }

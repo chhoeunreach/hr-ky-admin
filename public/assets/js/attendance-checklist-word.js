@@ -69,15 +69,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             brandParagraphs.push(paragraph(cleanText(brand.querySelector('strong')), { bold: true, size: 24 }));
             brandParagraphs.push(paragraph(cleanText(brand.querySelector('span')), { size: 18 }));
-            const national = paper.querySelector('.attendance-report-national-heading');
-            const halfWidth = Math.floor(contentWidth / 2);
             children.push(table([new d.TableRow({ cantSplit: true, children: [
-                cell('', halfWidth, { frameless: true, children: brandParagraphs }),
-                cell('', contentWidth - halfWidth, { frameless: true, children: [
-                    paragraph(cleanText(national.querySelector('strong')), { bold: true, center: true, size: 20 }),
-                    paragraph(cleanText(national.querySelector('span')), { center: true, size: 18 }),
-                ] }),
-            ] })], [halfWidth, contentWidth - halfWidth], true));
+                cell('', contentWidth, { frameless: true, children: brandParagraphs }),
+            ] })], [contentWidth], true));
             children.push(paragraph(cleanText(paper.querySelector('h1')), { bold: true, center: true, size: portrait ? 28 : 32, before: 160, keepNext: true }));
             children.push(paragraph(cleanText(paper.querySelector('.attendance-report-heading > p')), { center: true, size: 18, after: 160, keepNext: true }));
             paper.querySelectorAll('.attendance-report-meta > *').forEach(item => {
