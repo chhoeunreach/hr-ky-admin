@@ -73,6 +73,9 @@
             if ($canViewTimeLeaveRecords) {
                 $tabs['time-leave-letter'] = __('index.time_leave_letter');
             }
+            if ($canViewAttendanceDailyReport) {
+                $tabs['attendance-daily-report'] = __('index.attendance_daily_report');
+            }
             if ($canViewInterview) {
                 $tabs['interview'] = __('index.interview');
             }
@@ -201,6 +204,12 @@
                 margin: -6px;
                 padding: 18px 8px;
             }
+            #attendance-daily-report {
+                background: #eef2f7;
+                border-radius: 6px;
+                margin: -6px;
+                padding: 18px 8px;
+            }
             #employeeOverviewPrintRoot,
             #employeeCompletePrintRoot,
             #employeeWarningPrintRoot,
@@ -208,6 +217,7 @@
             #employeeSalaryCertificatePrintRoot,
             #employeeLeaveLetterPrintRoot,
             #employeeTimeLeaveLetterPrintRoot,
+            #employeeAttendanceDailyReportPrintRoot,
             #employeeResignationLetterPrintRoot {
                 display: none;
             }
@@ -827,6 +837,9 @@
             .employee-time-leave-letter-paper {
                 --certificate-accent: #111827;
             }
+            .employee-attendance-daily-report-paper {
+                --certificate-accent: #111827;
+            }
             .employee-leave-letter-body {
                 color: #1e293b;
                 font-size: 11px;
@@ -1309,6 +1322,8 @@
                 #employeeLeaveLetterPrintRoot *,
                 #employeeTimeLeaveLetterPrintRoot,
                 #employeeTimeLeaveLetterPrintRoot *,
+                #employeeAttendanceDailyReportPrintRoot,
+                #employeeAttendanceDailyReportPrintRoot *,
                 #employeeResignationLetterPrintRoot,
                 #employeeResignationLetterPrintRoot * {
                     visibility: visible !important;
@@ -1320,6 +1335,7 @@
                 body.printing-salary-certificate .main-wrapper,
                 body.printing-leave-letter .main-wrapper,
                 body.printing-time-leave-letter .main-wrapper,
+                body.printing-attendance-daily-report .main-wrapper,
                 body.printing-resignation-letter .main-wrapper {
                     display: none !important;
                 }
@@ -1330,6 +1346,7 @@
                 body.printing-salary-certificate #employeeSalaryCertificatePrintRoot,
                 body.printing-leave-letter #employeeLeaveLetterPrintRoot,
                 body.printing-time-leave-letter #employeeTimeLeaveLetterPrintRoot,
+                body.printing-attendance-daily-report #employeeAttendanceDailyReportPrintRoot,
                 body.printing-resignation-letter #employeeResignationLetterPrintRoot {
                     background: #ffffff !important;
                     display: block !important;
@@ -2281,6 +2298,12 @@
                         </div>
                     @endif
 
+                    @if($canViewAttendanceDailyReport)
+                        <div class="tab-pane fade {{ $activeProfileTab === 'attendance-daily-report' ? 'show active' : '' }}" id="attendance-daily-report" role="tabpanel">
+                            @include('admin.employees.profile.partials.attendance-daily-report')
+                        </div>
+                    @endif
+
                     @if($canViewInterview)
                         <div class="tab-pane fade" id="interview" role="tabpanel">
                             @include('admin.employees.profile.partials.interview')
@@ -2381,6 +2404,7 @@
             document.body.classList.remove('printing-salary-certificate');
             document.body.classList.remove('printing-leave-letter');
             document.body.classList.remove('printing-time-leave-letter');
+            document.body.classList.remove('printing-attendance-daily-report');
             document.body.classList.remove('printing-resignation-letter');
             document.getElementById('employeeOverviewPrintRoot')?.remove();
             document.getElementById('employeeCompletePrintRoot')?.remove();
@@ -2389,6 +2413,7 @@
             document.getElementById('employeeSalaryCertificatePrintRoot')?.remove();
             document.getElementById('employeeLeaveLetterPrintRoot')?.remove();
             document.getElementById('employeeTimeLeaveLetterPrintRoot')?.remove();
+            document.getElementById('employeeAttendanceDailyReportPrintRoot')?.remove();
             document.getElementById('employeeResignationLetterPrintRoot')?.remove();
         }
 
@@ -2400,12 +2425,14 @@
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
             leaveLetter: {{ $canPrintLeaveForm ? 'true' : 'false' }},
             timeLeaveLetter: {{ $canPrintTimeLeaveForm ? 'true' : 'false' }},
+            attendanceDailyReport: {{ $canPrintAttendanceDailyReport ? 'true' : 'false' }},
             resignationLetter: {{ $canPrintResignationForm ? 'true' : 'false' }},
         };
 
         const employeeProfileExportPermissions = {
             leaveForm: {{ $canExportLeaveForm ? 'true' : 'false' }},
             timeLeaveForm: {{ $canExportTimeLeaveForm ? 'true' : 'false' }},
+            attendanceDailyReport: {{ $canExportAttendanceDailyReport ? 'true' : 'false' }},
             resignationForm: {{ $canExportResignationForm ? 'true' : 'false' }},
         };
 
@@ -3088,6 +3115,10 @@
 
         function printTimeLeaveLetter() {
             printEmployeeProfilePaper('#time-leave-letter .employee-time-leave-letter-paper', 'employeeTimeLeaveLetterPrintRoot', 'printing-time-leave-letter', 'timeLeaveLetter');
+        }
+
+        function printAttendanceDailyReport() {
+            printEmployeeProfilePaper('#attendance-daily-report .employee-attendance-daily-report-paper', 'employeeAttendanceDailyReportPrintRoot', 'printing-attendance-daily-report', 'attendanceDailyReport');
         }
 
         function printResignationLetter() {

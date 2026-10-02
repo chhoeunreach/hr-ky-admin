@@ -45,6 +45,14 @@ class EmployeeProfileController extends Controller
     public function index(Request $request)
     {
         $this->authorize('employee.profile.view');
+        $request->validate([
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['integer', 'exists:departments,id'],
+            'report_date' => ['nullable', 'date_format:Y-m-d'],
+        ]);
+        $departmentIds = $request->input('department_ids', $request->filled('department_id') ? [$request->department_id] : []);
+        $attendanceReport = $request->boolean('attendance_report');
         $employmentStatus = $request->input('employment_status', 'active');
         $requestedPerPage = $request->input('per_page', 25);
         $perPage = $requestedPerPage === 'all'
@@ -69,7 +77,7 @@ class EmployeeProfileController extends Controller
                 });
             })
             ->when($request->branch_id, fn ($query, $branchId) => $query->where('branch_id', $branchId))
-            ->when($request->department_id, fn ($query, $departmentId) => $query->where('department_id', $departmentId))
+            ->when($departmentIds, fn ($query) => $query->whereIn('department_id', $departmentIds))
             ->when($request->post_id, fn ($query, $postId) => $query->where('post_id', $postId))
             ->when($employmentStatus, function ($query, $status) {
                 $query->where(function ($query) use ($status) {
@@ -97,7 +105,7 @@ class EmployeeProfileController extends Controller
         }
 
         $employeeQuery->latest('id');
-        $employees = $perPage === 'all'
+        $employees = $attendanceReport || $perPage === 'all'
             ? $employeeQuery->get()
             : $employeeQuery->paginate($perPage);
 
@@ -105,7 +113,12 @@ class EmployeeProfileController extends Controller
         $departments = Department::select('id', 'dept_name')->orderBy('dept_name')->get();
         $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
 
-        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus', 'perPage'));
+        if ($attendanceReport) {
+            $canPrintAttendanceReport = $this->can('employee.attendance_daily_report.print') || $this->can('employee.profile.print');
+            return view('admin.employees.profile.attendance-report', compact('employees', 'branches', 'departments', 'departmentIds', 'employmentStatus', 'canPrintAttendanceReport'));
+        }
+
+        return view('admin.employees.profile.index', compact('employees', 'branches', 'departments', 'posts', 'employmentStatus', 'perPage', 'departmentIds'));
     }
 
     public function show(User $employee)
@@ -148,6 +161,9 @@ class EmployeeProfileController extends Controller
         $canViewTimeLeaveRecords = $this->can('employee.time_leave_form.view');
         $canPrintTimeLeaveForm = $this->can('employee.time_leave_form.print');
         $canExportTimeLeaveForm = $this->can('employee.time_leave_form.export');
+        $canViewAttendanceDailyReport = $this->can('employee.attendance_daily_report.view');
+        $canPrintAttendanceDailyReport = $this->can('employee.attendance_daily_report.print');
+        $canExportAttendanceDailyReport = $this->can('employee.attendance_daily_report.export');
 
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
         $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
@@ -255,6 +271,9 @@ class EmployeeProfileController extends Controller
             'canViewTimeLeaveRecords',
             'canPrintTimeLeaveForm',
             'canExportTimeLeaveForm',
+            'canViewAttendanceDailyReport',
+            'canPrintAttendanceDailyReport',
+            'canExportAttendanceDailyReport',
             'latestSalary',
             'latestReview'
         ));

@@ -1,6 +1,6 @@
 @canany(['list_employee','d_card_print','employee.profile.view','employee.performance.create','view_employee_chat','list_logout_request'])
     <li class="nav-item  {{
-                           request()->routeIs('admin.employees.*') ||
+                           (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
                            request()->routeIs('admin.employee.log') ||
                            request()->routeIs('admin.staff-evaluations.*') ||
                            request()->routeIs('admin.live-map*') ||
@@ -23,7 +23,7 @@
         </a>
 
         <div class="{{
-                         request()->routeIs('admin.employees.*') ||
+                         (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
                          request()->routeIs('admin.employee.log') ||
                          request()->routeIs('admin.staff-evaluations.*') ||
                          request()->routeIs('admin.live-map*') ||
@@ -48,7 +48,7 @@
                     <li class="nav-item">
                         <a href="{{ route('admin.employees.profile.index') }}"
                            data-href="{{ route('admin.employees.profile.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.employees.profile.*') ? 'active' : ''}}">{{ __('index.employee_profile') }}</a>
+                           class="nav-link {{ request()->routeIs('admin.employees.profile.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report')) ? 'active' : ''}}">{{ __('index.employee_profile') }}</a>
                     </li>
                 @endcan
                 @can('employee.performance.create')

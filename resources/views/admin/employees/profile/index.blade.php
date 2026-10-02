@@ -211,11 +211,14 @@
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#employeeProfileFilters"
-                            aria-expanded="{{ request()->hasAny(['branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
+                            aria-expanded="{{ request()->hasAny(['branch_id', 'department_id', 'department_ids', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
                             aria-controls="employeeProfileFilters">
                         {{ __('index.filter') }}
                     </button>
                     <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
+                    <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" class="btn btn-outline-primary btn-sm">
+                        <i class="link-icon" data-feather="file-text"></i> {{ __('index.attendance_confirmation_report') }}
+                    </button>
                     <div class="employee-profile-search">
                         <i class="link-icon search-icon" data-feather="search"></i>
                         <input type="search"
@@ -243,7 +246,7 @@
                     @endcan
                 </div>
                 <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
-                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['branch_id', 'department_id', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
+                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['branch_id', 'department_id', 'department_ids', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
                     <div class="row g-2">
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="branch_id">
@@ -254,10 +257,9 @@
                             </select>
                         </div>
                         <div class="col-lg-2 col-md-6">
-                            <select class="form-select" name="department_id">
-                                <option value="">{{ __('index.all_departments') }}</option>
+                            <select class="form-select employee-department-multiselect" name="department_ids[]" multiple aria-label="{{ __('index.department') }}" data-placeholder="{{ __('index.all_departments') }}">
                                 @foreach($departments as $department)
-                                    <option value="{{ $department->id }}" @selected((string) request('department_id') === (string) $department->id)>{{ $department->dept_name }}</option>
+                                    <option value="{{ $department->id }}" @selected(in_array((string) $department->id, array_map('strval', $departmentIds), true))>{{ $department->dept_name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -419,6 +421,9 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            if (window.jQuery && jQuery.fn.select2) {
+                jQuery('.employee-department-multiselect').select2({ width: '100%', closeOnSelect: false });
+            }
             const input = document.getElementById('employeeProfileSearch');
             const clearButton = document.getElementById('employeeProfileSearchClear');
             const form = document.getElementById('employeeProfileFilters');
