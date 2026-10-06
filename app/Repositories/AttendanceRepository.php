@@ -245,6 +245,7 @@ class AttendanceRepository
             'leave_requests_master.id AS leave_request_id',
             'leave_requests_master.leave_from AS leave_request_from',
             'leave_requests_master.leave_to AS leave_request_to',
+            'leave_requests_master.leave_type_id AS leave_type_id',
             'leave_requests_master.status AS leave_request_status',
             'leave_requests_master.admin_remark AS leave_request_admin_remark',
             'leave_requests_master.reasons AS leave_request_reason',
