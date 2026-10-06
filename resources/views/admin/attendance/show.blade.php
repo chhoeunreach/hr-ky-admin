@@ -1393,6 +1393,7 @@
                                                                data-status="{{ $leaveRequest->status }}"
                                                                 data-remark="{{ $leaveRequest->admin_remark }}"
                                                                  data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
+                                                                 data-leave-type-id="{{ $leaveRequest->leave_type_id }}"
                                                                  data-id="{{ $leaveRequest->id }}">
                                                                   <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
                                                                         title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
@@ -1692,6 +1693,7 @@
                                                        data-status="{{ $leaveRequest->status }}"
                                                         data-remark="{{ $leaveRequest->admin_remark }}"
                                                         data-reason="{{ strip_tags((string) $leaveRequest->reasons) }}"
+                                                       data-leave-type-id="{{ $leaveRequest->leave_type_id }}"
                                                         data-id="{{ $leaveRequest->id }}">
                                                           <span class="btn btn-{{ $leaveRequestColor[$leaveRequest->status] ?? 'secondary' }} btn-xs"
                                                                 title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($leaveRequest->leave_to) }}">
@@ -1956,6 +1958,15 @@
                                         <select class="form-select" id="attendanceLeaveStatus" name="status">
                                             <option value="{{ \App\Enum\LeaveStatusEnum::approved->value }}">{{ __('index.approve') }}</option>
                                             <option value="{{ \App\Enum\LeaveStatusEnum::rejected->value }}">{{ __('index.reject') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-lg-12 mb-3" id="attendanceLeaveTypeWrapper">
+                                        <label for="attendanceLeaveTypeId" class="form-label">{{ __('index.leave_type') }}<span style="color: red">*</span></label>
+                                        <select class="form-select" id="attendanceLeaveTypeId" name="leave_type_id" required>
+                                            @foreach($leaveTypes ?? [] as $leaveTypeId => $leaveTypeName)
+                                                <option value="{{ $leaveTypeId }}">{{ ucfirst($leaveTypeName) }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
 
@@ -2556,12 +2567,16 @@
                     const status = this.getAttribute('data-status');
                     const remark = this.getAttribute('data-remark');
                     const reason = this.getAttribute('data-reason');
+                    const leaveTypeId = this.getAttribute('data-leave-type-id');
                     const leaveRequestId = this.getAttribute('data-id');
 
                     document.getElementById('attendanceUpdateLeaveStatus').setAttribute('action', url);
                      document.getElementById('attendanceLeaveStatus').value = status;
                      document.getElementById('attendanceLeaveRemark').value = remark || '';
                      document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                     document.getElementById('attendanceLeaveTypeWrapper').style.display = '';
+                     document.getElementById('attendanceLeaveTypeId').disabled = false;
+                     document.getElementById('attendanceLeaveTypeId').value = leaveTypeId || '';
                      document.getElementById('attendancePreviousApprovers').innerHTML = '';
                      attendanceLeaveStatusUpdateTitle.textContent = '{{ __('index.leave_request_section') }}';
 
@@ -2614,6 +2629,9 @@
                     document.getElementById('attendanceLeaveStatus').value = status;
                     document.getElementById('attendanceLeaveRemark').value = remark || '';
                     document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                    document.getElementById('attendanceLeaveTypeWrapper').style.display = 'none';
+                    document.getElementById('attendanceLeaveTypeId').disabled = true;
+                    document.getElementById('attendanceLeaveTypeId').value = '';
                     document.getElementById('attendancePreviousApprovers').innerHTML = '';
                     attendanceLeaveStatusUpdateTitle.textContent = label;
 

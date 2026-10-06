@@ -13,6 +13,7 @@ use App\Models\Company;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\LeaveRequestMaster;
+use App\Models\LeaveType;
 use App\Models\OfficeTime;
 use App\Models\TimeLeave;
 use App\Models\User;
@@ -121,6 +122,10 @@ class AttendanceMonthlyController extends Controller
             ->get(['id', 'name']);
         $departments = $this->departmentsForFilter($filter['branch_id']);
         $shifts = $this->shiftsForFilter($filter['branch_id'], $filter['department_id']);
+        $leaveTypes = LeaveType::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->pluck('name', 'id');
 
         return view('admin.attendance.monthly', compact(
             'monthlyRows',
@@ -130,7 +135,8 @@ class AttendanceMonthlyController extends Controller
             'month',
             'branches',
             'departments',
-            'shifts'
+            'shifts',
+            'leaveTypes'
         ));
     }
 
@@ -660,6 +666,7 @@ class AttendanceMonthlyController extends Controller
             for ($date = $from->copy(); $date->lte($to); $date->addDay()) {
                 $leaveMap[$leave->requested_by . '|' . $date->format('Y-m-d')][] = [
                     'id' => $leave->id,
+                    'leave_type_id' => $leave->leave_type_id,
                     'status' => $leave->status,
                     'type' => str_contains(strtolower((string) $leave->leaveType?->name), 'day off') ? 'off_day' : 'leave',
                     'label' => $leave->leaveType?->name ?: 'Leave',
@@ -839,6 +846,7 @@ class AttendanceMonthlyController extends Controller
                 'type' => 'leave',
                 'id' => $leave['id'],
                 'title' => ($leave['type'] === 'off_day' ? 'Day Off' : $this->leaveDisplayLabel($leave)) . ' Request',
+                'leave_type_id' => $leave['leave_type_id'] ?? '',
                 'reason' => $leave['reason'] ?: 'N/A',
                 'remark' => $leave['admin_remark'] ?: '',
                 'update_url' => $leave['update_url'],

@@ -2768,6 +2768,15 @@
                                 </select>
                             </div>
 
+                            <div class="mb-3" id="attendanceLeaveTypeWrapper">
+                                <label for="attendanceLeaveTypeId" class="form-label">{{ __('index.leave_type') }}<span style="color: red">*</span></label>
+                                <select class="form-select" id="attendanceLeaveTypeId" name="leave_type_id" required>
+                                    @foreach($leaveTypes ?? [] as $leaveTypeId => $leaveTypeName)
+                                        <option value="{{ $leaveTypeId }}">{{ ucfirst($leaveTypeName) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
                             <div class="mb-3">
                                 <label for="attendanceLeaveRemark" class="form-label">{{ __('index.admin_remark') }}</label>
                                 <textarea class="form-control" id="attendanceLeaveRemark" minlength="10" name="admin_remark" rows="3"></textarea>
@@ -4188,6 +4197,7 @@
                 button.dataset.reason = action.reason || 'N/A';
                 button.dataset.id = action.id || '';
                 button.dataset.label = action.title || i18n.leaveRequest;
+                button.dataset.leaveTypeId = action.leave_type_id || '';
                 button.dataset.approversUrl = action.approvers_url || '';
                 button.dataset.userId = monthlyDetailContext.userId || '';
                 return button;
@@ -4564,7 +4574,15 @@
                 document.getElementById('attendanceLeaveStatusReason').textContent = element.dataset.reason || 'N/A';
                 document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
-                if (element.classList.contains('attendanceLeaveRequestUpdate') && element.dataset.approversUrl) {
+                const leaveTypeWrapper = document.getElementById('attendanceLeaveTypeWrapper');
+                const leaveTypeSelect = document.getElementById('attendanceLeaveTypeId');
+                const isLeaveRequest = element.classList.contains('attendanceLeaveRequestUpdate');
+
+                leaveTypeWrapper.style.display = isLeaveRequest ? '' : 'none';
+                leaveTypeSelect.disabled = !isLeaveRequest;
+                leaveTypeSelect.value = isLeaveRequest ? (element.dataset.leaveTypeId || '') : '';
+
+                if (isLeaveRequest && element.dataset.approversUrl) {
                     fetch(element.dataset.approversUrl)
                         .then(response => response.json())
                         .then(response => {
