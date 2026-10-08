@@ -119,8 +119,9 @@ class AttendanceController extends Controller
                 : $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, $employeeIds);
             $attendanceSummaryRows = $this->attendanceService->getAllCompanyEmployeeAttendanceDetailOfTheDay($filterParameter, [], true);
             $attendanceSummary = $this->buildDailyAttendanceSummary($attendanceSummaryRows);
+            $leaveTypes = $this->leaveTypeRepo->getAllActiveLeaveTypes();
 
-            return view($this->view . 'index', compact('attendanceDetail', 'attendancePaginator', 'attendanceSummary', 'perPage', 'filterParameter','branch' ,'isBsEnabled', 'appTimeSetting','multipleAttendance','attendanceNote'));
+            return view($this->view . 'index', compact('attendanceDetail', 'attendancePaginator', 'attendanceSummary', 'perPage', 'filterParameter','branch' ,'isBsEnabled', 'appTimeSetting','multipleAttendance','attendanceNote', 'leaveTypes'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -270,6 +271,7 @@ class AttendanceController extends Controller
                         'can_update' => $canUpdateLeave,
                         'update_url' => route('admin.leave-request.update-status', $leaveRequest->id),
                         'approvers_url' => url('/admin/leave-request/get-approvers/' . $leaveRequest->id),
+                        'leave_type_id' => $leaveRequest->leave_type_id,
                     ];
                 });
         } else {
@@ -816,6 +818,7 @@ class AttendanceController extends Controller
             $attendanceDetail = $this->attendanceService->getEmployeeAttendanceDetailOfTheMonth($filterParameter);
             $leaveRequestsByDate = $this->getEmployeeLeaveRequestsByDate($employeeId, $filterParameter);
             $timeLeavesByDate = $this->getEmployeeTimeLeavesByDate($employeeId, $filterParameter);
+            $leaveTypes = $this->leaveTypeRepo->getAllActiveLeaveTypes();
             $countReductionWarning = $this->buildCountReductionWarning(
                 $attendanceDetail,
                 $userDetail,
@@ -847,6 +850,7 @@ class AttendanceController extends Controller
                     'multipleAttendance',
                     'leaveRequestsByDate',
                     'timeLeavesByDate',
+                    'leaveTypes',
                     'countReductionWarning',
                 )
             );

@@ -2073,7 +2073,8 @@
                                                                data-remark="{{ $firstAttendance->leave_request_admin_remark }}"
                                                                 data-reason="{{ strip_tags((string) $firstAttendance->leave_request_reason) }}"
                                                                 data-id="{{ $firstAttendance->leave_request_id }}"
-                                                                data-user-id="{{ $firstAttendance->user_id }}">
+                                                                data-user-id="{{ $firstAttendance->user_id }}"
+                                                                data-leave-type-id="{{ $firstAttendance->leave_type_id }}">
                                                                 <span class="attendance-leave-pill {{ $rowIsDayOff ? 'is-day-off' : ($rowIsLeave ? 'is-leave' : 'is-' . $firstAttendance->leave_request_status) }}"
                                                                       title="{{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_from) }} - {{ \App\Helpers\AppHelper::convertLeaveDateFormat($firstAttendance->leave_request_to) }}">
                                                                     <span class="attendance-leave-pill-label">{{ $firstAttendance->leave_request_type ? ucfirst($firstAttendance->leave_request_type) : __('index.leave_request') }}</span>
@@ -2602,6 +2603,15 @@
                                         </select>
                                     </div>
 
+                                    <div class="col-lg-12 mb-3" id="attendanceLeaveTypeWrapper">
+                                        <label for="attendanceLeaveTypeId" class="form-label">{{ __('index.type') }}<span style="color: red">*</span></label>
+                                        <select class="form-select" id="attendanceLeaveTypeId" name="leave_type_id" required>
+                                            @foreach($leaveTypes ?? [] as $leaveTypeId => $leaveTypeName)
+                                                <option value="{{ $leaveTypeId }}">{{ ucfirst($leaveTypeName) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
                                     <label for="attendanceLeaveRemark" class="form-label">{{ __('index.admin_remark') }}</label>
                                     <div class="col-lg-12 mb-3">
                                         <textarea class="form-select" id="attendanceLeaveRemark" minlength="10" name="admin_remark" rows="3"></textarea>
@@ -3121,6 +3131,7 @@
                                         data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
                                         data-user-id="${escapeAttendanceHtml(activeAttendanceDetailUserId)}"
+                                        data-leave-type-id="${escapeAttendanceHtml(record.leave_type_id || '')}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.approve') }}
                                 </button>
@@ -3132,6 +3143,7 @@
                                         data-reason="${escapeAttendanceHtml(record.reason)}"
                                         data-id="${escapeAttendanceHtml(record.id)}"
                                         data-user-id="${escapeAttendanceHtml(activeAttendanceDetailUserId)}"
+                                        data-leave-type-id="${escapeAttendanceHtml(record.leave_type_id || '')}"
                                         data-label="${escapeAttendanceHtml(record.title)}">
                                     {{ __('index.reject') }}
                                 </button>
@@ -3221,6 +3233,7 @@
                 const remark = element.getAttribute('data-remark');
                 const reason = element.getAttribute('data-reason');
                 const leaveRequestId = element.getAttribute('data-id');
+                const leaveTypeId = element.getAttribute('data-leave-type-id');
                 const label = element.getAttribute('data-label') || '{{ __('index.leave_request_section') }}';
 
                 document.getElementById('attendanceLeaveStatusUpdateTitle').textContent = label;
@@ -3229,6 +3242,9 @@
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
                 document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                document.getElementById('attendanceLeaveTypeWrapper').style.display = '';
+                document.getElementById('attendanceLeaveTypeId').disabled = false;
+                document.getElementById('attendanceLeaveTypeId').value = leaveTypeId || '';
                 document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
                 fetch(`/admin/leave-request/get-approvers/${leaveRequestId}`)
@@ -3287,6 +3303,9 @@
                 document.getElementById('attendanceLeaveStatus').value = status;
                 document.getElementById('attendanceLeaveRemark').value = remark || '';
                 document.getElementById('attendanceLeaveStatusReason').textContent = reason || 'N/A';
+                document.getElementById('attendanceLeaveTypeWrapper').style.display = 'none';
+                document.getElementById('attendanceLeaveTypeId').disabled = true;
+                document.getElementById('attendanceLeaveTypeId').value = '';
                 document.getElementById('attendancePreviousApprovers').innerHTML = '';
 
                 const modalElement = document.getElementById('attendanceLeaveStatusUpdate');
