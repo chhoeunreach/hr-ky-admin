@@ -245,7 +245,9 @@ class AppSettingController extends Controller
 
             $versionSettings = AppHelper::getAppVersionSettings();
             $targetVersion = $versionSettings['target_version'] ?? '13.00';
-            $downloadUrl = $versionSettings['android_url'] ?: ($versionSettings['ios_url'] ?: config('app.url'));
+            $androidUrl = $versionSettings['android_url'] ?: config('app.url');
+            $iosUrl = $versionSettings['ios_url'] ?: 'https://testflight.apple.com/join/hPG4ZA38';
+            $downloadUrl = $androidUrl ?: $iosUrl;
             $forceUpdate = !empty($versionSettings['force_update']);
 
             $title = trim($validated['alert_title']);
@@ -326,6 +328,13 @@ class AppSettingController extends Controller
                             'type' => 'app_update',
                             'target_version' => $targetVersion,
                             'download_url' => (string)$downloadUrl,
+                            'android_url' => (string)$androidUrl,
+                            'android_download_url' => (string)$androidUrl,
+                            'play_store_url' => (string)$androidUrl,
+                            'ios_url' => (string)$iosUrl,
+                            'ios_download_url' => (string)$iosUrl,
+                            'app_store_url' => (string)$iosUrl,
+                            'apple_store_url' => (string)$iosUrl,
                             'force_update' => $forceUpdate ? '1' : '0',
                         ],
                         recipients: $fcmTokens

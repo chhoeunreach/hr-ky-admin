@@ -113,7 +113,7 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="external-link" style="width: 14px; height: 14px;"></i></span>
-                                        <input type="url" name="ios_url" id="iosUrlInput" class="form-control form-control-sm" placeholder="https://apps.apple.com/..." value="{{ $appVersionSetting['ios_url'] ?? '' }}">
+                                        <input type="url" name="ios_url" id="iosUrlInput" class="form-control form-control-sm" placeholder="https://testflight.apple.com/join/hPG4ZA38" value="{{ $appVersionSetting['ios_url'] ?? '' }}">
                                     </div>
                                 </div>
                             </div>

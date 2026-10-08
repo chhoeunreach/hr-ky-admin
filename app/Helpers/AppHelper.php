@@ -345,7 +345,7 @@ class AppHelper
             'alert_title' => ($targetLocale === 'km') ? $defaultKmTitle : $defaultEnTitle,
             'alert_message' => ($targetLocale === 'km') ? $defaultKmMessage : $defaultEnMessage,
             'android_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
-            'ios_url' => env('IOS_DOWNLOAD_URL', 'https://apps.apple.com'),
+            'ios_url' => env('IOS_DOWNLOAD_URL', 'https://testflight.apple.com/join/hPG4ZA38'),
         ];
 
         if (!$setting) {
@@ -393,6 +393,11 @@ class AppHelper
             $activeMessage = $messageEn ?: $messageKm;
         }
 
+        $decodedIosUrl = !empty($decoded['ios_url']) ? trim($decoded['ios_url']) : '';
+        if (in_array(rtrim($decodedIosUrl, '/'), ['https://apps.apple.com', 'http://apps.apple.com'], true)) {
+            $decodedIosUrl = '';
+        }
+
         return [
             'enabled' => $isEnabled,
             'target_version' => !empty($decoded['target_version']) ? trim($decoded['target_version']) : $defaults['target_version'],
@@ -405,7 +410,7 @@ class AppHelper
             'alert_title' => $activeTitle,
             'alert_message' => $activeMessage,
             'android_url' => !empty($decoded['android_url']) ? trim($decoded['android_url']) : $fallbackApkUrl,
-            'ios_url' => !empty($decoded['ios_url']) ? trim($decoded['ios_url']) : $defaults['ios_url'],
+            'ios_url' => $decodedIosUrl ?: $defaults['ios_url'],
         ];
     }
 
@@ -476,10 +481,13 @@ class AppHelper
 
         $showAlert = $isEnabled && ($isUpdateAvailable || $isUpdateRequired);
 
+        $androidUrl = $settings['android_url'];
+        $iosUrl = $settings['ios_url'];
+
         return [
             'latest_version' => $targetVersion,
             'min_required_version' => $minVersion,
-            'download_url' => $settings['android_url'] ?: $settings['ios_url'],
+            'download_url' => $androidUrl ?: $iosUrl,
             'force_update' => $isUpdateRequired,
             'update_message' => $message,
             'version_check_enabled' => $isEnabled,
@@ -495,8 +503,13 @@ class AppHelper
             'alert_message_km' => $messageKm,
             'alert_title_en' => $settings['alert_title_en'],
             'alert_message_en' => $messageEn,
-            'android_url' => $settings['android_url'],
-            'ios_url' => $settings['ios_url'],
+            'android_url' => $androidUrl,
+            'android_download_url' => $androidUrl,
+            'play_store_url' => $androidUrl,
+            'ios_url' => $iosUrl,
+            'ios_download_url' => $iosUrl,
+            'app_store_url' => $iosUrl,
+            'apple_store_url' => $iosUrl,
         ];
     }
 

@@ -27,7 +27,7 @@ return new class extends Migration
                 'alert_title' => 'New Version Available',
                 'alert_message' => 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.',
                 'android_url' => 'https://hr.kneayerng.com',
-                'ios_url' => 'https://apps.apple.com',
+                'ios_url' => 'https://testflight.apple.com/join/hPG4ZA38',
             ];
 
             AppSetting::firstOrCreate(
