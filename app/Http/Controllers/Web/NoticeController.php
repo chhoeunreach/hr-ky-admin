@@ -85,14 +85,19 @@ class NoticeController extends Controller
             DB::beginTransaction();
             $notice = $this->noticeService->store($validatedData);
             DB::commit();
-            if ($notice) {
+            if ($notice && $request->boolean('send_work_alert')) {
                 $userIds = $this->getUserIdsForNoticeNotification($validatedData['receiver']);
                 $noticeId = is_object($notice) ? $notice->id : ($notice['id'] ?? null);
-                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags(is_object($notice) ? $notice->description : ($notice['description'] ?? $validatedData['description'])), $userIds, $noticeId);
+                $this->sendNoticeNotification(
+                    ucfirst($validatedData['title']),
+                    $this->plainNoticeDescription(is_object($notice) ? $notice->description : ($notice['description'] ?? $validatedData['description']), $validatedData['title']),
+                    $userIds,
+                    $noticeId
+                );
             }
             return redirect()
                 ->back()
-                ->with('success', __('message.notice_create_sent'));
+                ->with('success', $request->boolean('send_work_alert') ? __('message.notice_create_sent') : __('index.data_created_successfully'));
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
@@ -161,6 +166,13 @@ class NoticeController extends Controller
         }
     }
 
+    private function plainNoticeDescription($description, $fallbackTitle): string
+    {
+        $plainDescription = trim(html_entity_decode(removeHtmlTags((string) $description), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'));
+
+        return $plainDescription !== '' ? $plainDescription : __('index.notice') . ': ' . ucfirst((string) $fallbackTitle);
+    }
+
     public function uploadDescriptionImage(Request $request)
     {
         if (!auth('admin')->check() && auth()->check()) {
@@ -213,11 +225,16 @@ class NoticeController extends Controller
             DB::beginTransaction();
             $updateNotice = $this->noticeService->update($noticeDetail, $validatedData);
             DB::commit();
-            if ($updateNotice) {
+            if ($updateNotice && $request->boolean('send_work_alert')) {
                 $userIds = $this->getUserIdsForNoticeNotification($validatedData['receiver']);
-                $this->sendNoticeNotification(ucfirst($validatedData['title']), removeHtmlTags($validatedData['description']), $userIds, $id);
+                $this->sendNoticeNotification(
+                    ucfirst($validatedData['title']),
+                    $this->plainNoticeDescription($validatedData['description'], $validatedData['title']),
+                    $userIds,
+                    $id
+                );
             }
-            return redirect()->back()->with('success', __('message.notice_update_sent'));
+            return redirect()->back()->with('success', $request->boolean('send_work_alert') ? __('message.notice_update_sent') : __('index.updated_successfully'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage())
                 ->withInput();
@@ -260,7 +277,12 @@ class NoticeController extends Controller
             $select = ['*'];
             $noticeDetail = $this->noticeService->findOrFailNoticeDetailById($noticeId, $select, $with);
             $userIds = $this->getUserIdsForNoticeNotification($noticeDetail->noticeReceiversDetail);
-            $this->sendNoticeNotification(ucfirst($noticeDetail->title), removeHtmlTags($noticeDetail->description), $userIds, $noticeDetail->id);
+            $this->sendNoticeNotification(
+                ucfirst($noticeDetail->title),
+                $this->plainNoticeDescription($noticeDetail->description, $noticeDetail->title),
+                $userIds,
+                $noticeDetail->id
+            );
             DB::beginTransaction();
             $validatedData['is_active'] = 1;
             $validatedData['notice_publish_date'] = Carbon::now()->format('Y-m-d H:i:s');

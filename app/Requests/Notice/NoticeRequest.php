@@ -40,6 +40,7 @@ class NoticeRequest extends FormRequest
             'receiver.*.notice_receiver_id' => 'required|exists:users,id',
             'notice_publish_date' => 'nullable|date|after_or_equal:today',
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],
+            'send_work_alert' => ['nullable', 'boolean'],
         ];
     }
 }
