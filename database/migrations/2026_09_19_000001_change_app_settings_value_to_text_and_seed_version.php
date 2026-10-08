@@ -26,7 +26,7 @@ return new class extends Migration
                 'force_update' => false,
                 'alert_title' => 'New Version Available',
                 'alert_message' => 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.',
-                'android_url' => 'https://hr.kneayerng.com',
+                'android_url' => 'https://hr.kytech.info',
                 'ios_url' => 'https://testflight.apple.com/join/hPG4ZA38',
             ];
 

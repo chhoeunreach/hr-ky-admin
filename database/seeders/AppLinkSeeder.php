@@ -23,7 +23,7 @@ class AppLinkSeeder extends Seeder
             [
                 'name' => 'Official Website',
                 'link_type' => 'website',
-                'url' => 'https://hr.kneayerng.com',
+                'url' => 'https://hr.kytech.info',
                 'description' => 'Visit our official website for company information and online services.',
                 'order' => 1,
                 'status' => 1,

@@ -344,7 +344,7 @@ class AppHelper
             'alert_message_en' => $defaultEnMessage,
             'alert_title' => ($targetLocale === 'km') ? $defaultKmTitle : $defaultEnTitle,
             'alert_message' => ($targetLocale === 'km') ? $defaultKmMessage : $defaultEnMessage,
-            'android_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kneayerng.com'),
+            'android_url' => env('MOBILE_DOWNLOAD_URL', 'https://hr.kytech.info'),
             'ios_url' => env('IOS_DOWNLOAD_URL', 'https://testflight.apple.com/join/hPG4ZA38'),
         ];
 

@@ -104,7 +104,7 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="download" style="width: 14px; height: 14px;"></i></span>
-                                        <input type="url" name="android_url" id="androidUrlInput" class="form-control form-control-sm" placeholder="https://hr.kneayerng.com or Play Store link" value="{{ $appVersionSetting['android_url'] ?? '' }}">
+                                        <input type="url" name="android_url" id="androidUrlInput" class="form-control form-control-sm" placeholder="https://hr.kytech.info or Play Store link" value="{{ $appVersionSetting['android_url'] ?? '' }}">
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
