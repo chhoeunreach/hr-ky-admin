@@ -124,6 +124,7 @@ Route::group([
 
     /** notice Routes **/
     Route::get('notices', [NoticeApiController::class, 'getAllRecentlyReceivedNotice']);
+    Route::get('notices/{id}', [NoticeApiController::class, 'getReceivedNoticeDetail']);
 
     /** Dashboard Routes **/
     Route::get('dashboard', [DashboardApiController::class, 'userDashboardDetail']);

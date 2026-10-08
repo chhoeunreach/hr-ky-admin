@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Resources\Notice\NoticeCollection;
+use App\Resources\Notice\NoticeResource;
 use App\Services\Notice\NoticeService;
 use Exception;
 use Illuminate\Http\JsonResponse;
@@ -30,4 +31,22 @@ class NoticeApiController extends Controller
         }
     }
 
+    public function getReceivedNoticeDetail($id): JsonResponse|NoticeResource
+    {
+        try {
+            $notice = $this->noticeService->findOrFailNoticeDetailById($id);
+
+            $isReceiver = $notice->noticeReceiversDetail()
+                ->where('notice_receiver_id', getAuthUserCode())
+                ->exists();
+
+            if (!$isReceiver) {
+                return AppHelper::sendErrorResponse(__('message.notice_not_found'), 404);
+            }
+
+            return new NoticeResource($notice);
+        } catch (Exception $exception) {
+            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        }
+    }
 }
