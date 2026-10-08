@@ -151,7 +151,6 @@ class NoticeController extends Controller
             $this->authorize('show_notice');
             $select = ['description', 'title'];
             $notice = $this->noticeService->findOrFailNoticeDetailById($id, $select);
-            $notice->description = removeHtmlTags($notice->description);
             $notice->title = ucfirst($notice->title);
             return response()->json([
                 'data' => $notice,

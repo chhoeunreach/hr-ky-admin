@@ -1,5 +1,61 @@
+<script src="{{ asset('assets/vendors/tinymce/tinymce.min.js') }}"></script>
+
+<style>
+    .notice-description-content img {
+        max-width: 100%;
+        height: auto;
+    }
+</style>
+
 <script>
     $(document).ready(function () {
+        if ($('#noticeDescription').length && typeof tinymce !== 'undefined') {
+            tinymce.init({
+                selector: '#noticeDescription',
+                height: 520,
+                menubar: false,
+                branding: false,
+                paste_data_images: true,
+                automatic_uploads: false,
+                convert_urls: false,
+                relative_urls: false,
+                remove_script_host: false,
+                extended_valid_elements: 'img[src|alt|title|width|height|style|class]',
+                plugins: [
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                    'anchor', 'searchreplace', 'visualblocks', 'code',
+                    'fullscreen', 'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                ],
+                toolbar: 'undo redo | blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat code fullscreen',
+                image_advtab: true,
+                file_picker_types: 'image',
+                file_picker_callback: function (callback, value, meta) {
+                    if (meta.filetype !== 'image') {
+                        return;
+                    }
+
+                    const input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.onchange = function () {
+                        const file = this.files[0];
+                        const reader = new FileReader();
+
+                        reader.onload = function () {
+                            callback(reader.result, { alt: file.name });
+                        };
+
+                        reader.readAsDataURL(file);
+                    };
+                    input.click();
+                },
+                content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; } img { max-width: 100%; height: auto; }'
+            });
+
+            $('#notification').on('submit', function () {
+                tinymce.triggerSave();
+            });
+        }
 
         $('#notice').select2({
             placeholder:"{{ __('index.select_notice_receiver') }}"
@@ -75,7 +131,7 @@
 
 
                 $('.modal-title').html(@json(__('index.notice_detail_modal_title', ['title' => '']))+': ' + data.data.title );
-                $('#description').text((data.data.description));
+                $('#description').html(data.data.description);
                 $('#addslider').modal('show');
             })
         }).trigger("change");

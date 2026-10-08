@@ -23,7 +23,7 @@
 
     <div class="col-lg-6 col-md-6 mb-4">
         <label for="description" class="form-label">@lang('index.notice_description') <span style="color: red">*</span></label>
-        <textarea class="form-control"  name="description" id="tinymceExample" rows="7">{!! isset($noticeDetail) ? $noticeDetail->description : old('description') !!}</textarea>
+        <textarea class="form-control" name="description" id="noticeDescription" rows="7">{!! isset($noticeDetail) ? $noticeDetail->description : old('description') !!}</textarea>
     </div>
 
     <div class="col-lg-6">

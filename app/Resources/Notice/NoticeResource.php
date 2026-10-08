@@ -13,6 +13,7 @@ class NoticeResource extends JsonResource
             'id' => $this->id,
             'notice_title' => ucfirst($this->title),
             'description' => removeHtmlTags($this->description),
+            'description_html' => $this->description,
             'notice_published_date' => $this->notice_publish_date,
             'notice_published_date_nepali' => (AppHelper::formatDateForView($this->notice_publish_date)) . ',' . date("h:i A", strtotime($this->notice_publish_date)),
             'show_alert' => (bool)$this->is_active,
