@@ -431,6 +431,7 @@ Route::group([
 
         /** Notice route */
         Route::resource('notices', NoticeController::class);
+        Route::post('notices/upload-image', [NoticeController::class, 'uploadDescriptionImage'])->name('notices.upload-image');
         Route::get('notices/toggle-status/{id}', [NoticeController::class, 'toggleStatus'])->name('notices.toggle-status');
         Route::get('notices/delete/{id}', [NoticeController::class, 'delete'])->name('notices.delete');
         Route::get('notices/send-notice/{id}', [NoticeController::class, 'sendNotice'])->name('notices.send-notice');

@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class NoticeController extends Controller
 {
@@ -158,6 +159,26 @@ class NoticeController extends Controller
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    public function uploadDescriptionImage(Request $request)
+    {
+        if (!auth('admin')->check() && auth()->check()) {
+            abort_unless(
+                auth()->user()->can('create_notice') || auth()->user()->can('edit_notice'),
+                403
+            );
+        }
+
+        $validated = $request->validate([
+            'file' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5120',
+        ]);
+
+        $path = $validated['file']->store('notices', 'public');
+
+        return response()->json([
+            'location' => Storage::disk('public')->url($path),
+        ]);
     }
 
     public function edit($id)

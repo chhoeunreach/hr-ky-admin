@@ -16,11 +16,13 @@
                 menubar: false,
                 branding: false,
                 paste_data_images: true,
-                automatic_uploads: false,
+                automatic_uploads: true,
+                images_upload_credentials: true,
+                images_upload_url: '{{ route('admin.notices.upload-image') }}',
                 convert_urls: false,
                 relative_urls: false,
                 remove_script_host: false,
-                extended_valid_elements: 'img[src|alt|title|width|height|style|class]',
+                extended_valid_elements: 'img[src|alt|title|width|height|style|class],figure[class|style],figcaption[class|style]',
                 plugins: [
                     'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
                     'anchor', 'searchreplace', 'visualblocks', 'code',
@@ -28,6 +30,34 @@
                 ],
                 toolbar: 'undo redo | blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image media table | removeformat code fullscreen',
                 image_advtab: true,
+                images_upload_handler: function (blobInfo) {
+                    const formData = new FormData();
+                    formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                    return new Promise(function (resolve, reject) {
+                        $.ajax({
+                            url: '{{ route('admin.notices.upload-image') }}',
+                            method: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            success: function (response) {
+                                if (response && response.location) {
+                                    resolve(response.location);
+                                    return;
+                                }
+
+                                reject('Image upload failed.');
+                            },
+                            error: function (xhr) {
+                                const message = xhr.responseJSON && xhr.responseJSON.message
+                                    ? xhr.responseJSON.message
+                                    : 'Image upload failed.';
+                                reject(message);
+                            }
+                        });
+                    });
+                },
                 file_picker_types: 'image',
                 file_picker_callback: function (callback, value, meta) {
                     if (meta.filetype !== 'image') {
@@ -42,7 +72,12 @@
                         const reader = new FileReader();
 
                         reader.onload = function () {
-                            callback(reader.result, { alt: file.name });
+                            const id = 'notice-image-' + (new Date()).getTime();
+                            const blobCache = tinymce.activeEditor.editorUpload.blobCache;
+                            const base64 = reader.result.split(',')[1];
+                            const blobInfo = blobCache.create(id, file, base64);
+                            blobCache.add(blobInfo);
+                            callback(blobInfo.blobUri(), { alt: file.name });
                         };
 
                         reader.readAsDataURL(file);
