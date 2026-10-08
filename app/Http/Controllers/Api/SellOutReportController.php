@@ -7,6 +7,7 @@ use App\Models\Department;
 use App\Models\SellOutReport;
 use App\Models\SellOutReportLine;
 use App\Models\TelegramGroup;
+use App\Models\User;
 use App\Requests\SellOutReport\StoreSellOutReportRequest;
 use App\Requests\SellOutReport\UpdateSellOutReportRequest;
 use App\Resources\SellOutReport\SellOutReportResource;
@@ -73,7 +74,7 @@ class SellOutReportController extends Controller
                         });
                 });
             })
-            ->with(['lines', 'photos', 'user.department:id,dept_name'])
+            ->with(['lines', 'photos', 'user.department:id,dept_name', 'user.officeTime'])
             ->withCount(['lines', 'photos'])
             ->latest()
             ->get();
@@ -126,7 +127,7 @@ class SellOutReportController extends Controller
     {
         $report = SellOutReport::query()
             ->where('user_id', auth()->id())
-            ->with(['lines', 'photos'])
+            ->with(['lines', 'photos', 'user.officeTime'])
             ->findOrFail($id);
 
         return response()->json([
@@ -178,7 +179,9 @@ class SellOutReportController extends Controller
             $commission = $this->calculateCommission(
                 $validated['lines'],
                 $serviceType,
-                $validated['customer_phone'] ?? null
+                $validated['customer_phone'] ?? null,
+                $totalAmount,
+                $request->user()
             );
 
             $report = SellOutReport::create([
@@ -250,7 +253,7 @@ class SellOutReportController extends Controller
     {
         $report = SellOutReport::query()
             ->where('user_id', auth()->id())
-            ->with(['lines', 'photos'])
+            ->with(['lines', 'photos', 'user.officeTime'])
             ->findOrFail($id);
 
         if (! $report->created_at->isToday()) {
@@ -270,7 +273,9 @@ class SellOutReportController extends Controller
             $commission = $this->calculateCommission(
                 $validated['lines'],
                 $serviceType,
-                $validated['customer_phone'] ?? null
+                $validated['customer_phone'] ?? null,
+                $totalAmount,
+                $request->user()
             );
 
             $report->update([
@@ -358,7 +363,7 @@ class SellOutReportController extends Controller
     {
         $report = SellOutReport::query()
             ->where('user_id', auth()->id())
-            ->with(['lines', 'photos', 'user'])
+            ->with(['lines', 'photos', 'user.officeTime'])
             ->findOrFail($id);
 
         $sent = $this->sendSellOutReportTelegram($report);
@@ -464,28 +469,38 @@ class SellOutReportController extends Controller
         return $value !== '' ? $value : $default;
     }
 
-    private function calculateCommission(array $lines, string $serviceType, ?string $customerPhone): float
+    private function calculateCommission(
+        array $lines,
+        string $serviceType,
+        ?string $customerPhone,
+        float $totalAmount,
+        ?User $user
+    ): float
     {
         if (! $this->isCommissionableServiceType($serviceType) || ! $this->hasValidCustomerPhone($customerPhone)) {
             return 0;
         }
 
-        if ($this->isSellServiceType($serviceType)) {
-            foreach ($lines as $line) {
-                if ((float) ($line['unit_price'] ?? 0) <= 50) {
-                    return 0;
-                }
-            }
-        }
-
         $totalQty = collect($lines)->sum(fn (array $line): int => (int) $line['qty']);
 
-        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+        if ($this->isSellServiceType($serviceType)) {
+            return $totalQty >= $this->sellQtyThreshold($user) ? $totalQty * 0.25 : 0;
+        }
+
+        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
+            return 0.20;
+        }
+
+        if ($this->isMaterialServiceType($serviceType)) {
+            return $totalAmount >= 10 ? 0.25 : 0;
+        }
+
+        return 0;
     }
 
     private function isCommissionableServiceType(string $serviceType): bool
     {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
     }
 
     private function isSellServiceType(string $serviceType): bool
@@ -498,6 +513,16 @@ class SellOutReportController extends Controller
         return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
     }
 
+    private function isMaterialServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
+    }
+
+    private function isRepairServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
+    }
+
     private function hasValidCustomerPhone(?string $customerPhone): bool
     {
         return mb_strlen(trim((string) $customerPhone)) > 6;
@@ -506,6 +531,14 @@ class SellOutReportController extends Controller
     private function normalizeServiceType(string $serviceType): string
     {
         return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
+    }
+
+    private function sellQtyThreshold(?User $user): int
+    {
+        $user?->loadMissing('officeTime');
+        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
+
+        return $category === 'part_timer' ? 50 : 100;
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool

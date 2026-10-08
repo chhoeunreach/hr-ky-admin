@@ -68,21 +68,25 @@ class SellOutReport extends Model
         $lines = $this->relationLoaded('lines') ? $this->lines : $this->lines()->get();
 
         if ($this->isSellServiceType($serviceType)) {
-            foreach ($lines as $line) {
-                if ((float) ($line->unit_price ?? 0) <= 50) {
-                    return 0;
-                }
-            }
+            $totalQty = $lines->sum(fn (SellOutReportLine $line): int => (int) $line->qty);
+
+            return $totalQty >= $this->sellQtyThreshold() ? $totalQty * 0.25 : 0;
         }
 
-        $totalQty = $lines->sum(fn (SellOutReportLine $line): int => (int) $line->qty);
+        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
+            return 0.20;
+        }
 
-        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+        if ($this->isMaterialServiceType($serviceType)) {
+            return (float) $this->total_amount >= 10 ? 0.25 : 0;
+        }
+
+        return 0;
     }
 
     private function isCommissionableServiceType(string $serviceType): bool
     {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
     }
 
     private function isSellServiceType(string $serviceType): bool
@@ -93,6 +97,24 @@ class SellOutReport extends Model
     private function isIronServiceType(string $serviceType): bool
     {
         return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function isMaterialServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
+    }
+
+    private function isRepairServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
+    }
+
+    private function sellQtyThreshold(): int
+    {
+        $user = $this->relationLoaded('user') ? $this->user : $this->user()->with('officeTime')->first();
+        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
+
+        return $category === 'part_timer' ? 50 : 100;
     }
 
     private function normalizeServiceType(string $serviceType): string

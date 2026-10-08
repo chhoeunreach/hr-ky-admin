@@ -186,7 +186,7 @@ class User extends Authenticatable
     public function officeTime(): BelongsTo
     {
         return $this->belongsTo(OfficeTime::class, 'office_time_id', 'id')
-            ->select('id', 'opening_time', 'closing_time', 'shift', 'shift_type', 'is_late_check_in', 'checkin_after', 'is_early_check_out', 'checkout_before');
+            ->select('id', 'opening_time', 'closing_time', 'shift', 'category', 'shift_type', 'is_late_check_in', 'checkin_after', 'is_early_check_out', 'checkout_before');
     }
 
     public function latestDeviceLocation(): HasOne

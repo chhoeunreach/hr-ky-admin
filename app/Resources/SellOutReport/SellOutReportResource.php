@@ -26,6 +26,7 @@ class SellOutReportResource extends JsonResource
             'created_at' => optional($this->created_at)->format('Y-m-d H:i:s'),
             'department_id' => $this->user?->department_id,
             'department_name' => $this->user?->department?->dept_name ?? '',
+            'seller_work_category' => $this->user?->officeTime?->category ?? '',
         ];
 
         $data['lines_count'] = $this->lines_count ?? $this->lines->count();

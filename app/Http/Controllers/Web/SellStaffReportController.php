@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\SellOutReport;
 use App\Models\SellOutReportLine;
 use App\Models\TelegramGroup;
+use App\Models\User;
 use App\Services\TelegramService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\Request;
@@ -184,7 +185,9 @@ class SellStaffReportController extends Controller
                 'commission' => round($this->calculateCommission(
                     $lines->all(),
                     $validated['service_type'] ?? '',
-                    $validated['customer_phone'] ?? null
+                    $validated['customer_phone'] ?? null,
+                    $totalAmount,
+                    User::query()->with('officeTime')->find(auth()->id())
                 ), 2),
             ]);
 
@@ -209,7 +212,7 @@ class SellStaffReportController extends Controller
     {
         $this->authorize('view_sell_staff_report');
 
-        $report = SellOutReport::with(['lines', 'photos', 'user:id,name,employee_code,username'])
+        $report = SellOutReport::with(['lines', 'photos', 'user:id,name,employee_code,username,office_time_id', 'user.officeTime'])
             ->findOrFail($id);
 
         return view($this->view . 'show', compact('report'));
@@ -219,7 +222,7 @@ class SellStaffReportController extends Controller
     {
         $this->authorize('edit_sell_staff_report');
 
-        $report = SellOutReport::with(['lines', 'photos'])->findOrFail($id);
+        $report = SellOutReport::with(['lines', 'photos', 'user.officeTime'])->findOrFail($id);
 
         return view($this->view . 'edit', compact('report'));
     }
@@ -228,7 +231,7 @@ class SellStaffReportController extends Controller
     {
         $this->authorize('edit_sell_staff_report');
 
-        $report = SellOutReport::with(['lines', 'photos'])->findOrFail($id);
+        $report = SellOutReport::with(['lines', 'photos', 'user.officeTime'])->findOrFail($id);
 
         $validated = $request->validate([
             'original_invoice_no' => ['nullable', 'string', 'max:255'],
@@ -342,7 +345,9 @@ class SellStaffReportController extends Controller
                 'commission' => round($this->calculateCommission(
                     $lines->all(),
                     $validated['service_type'] ?? '',
-                    $validated['customer_phone'] ?? null
+                    $validated['customer_phone'] ?? null,
+                    $totalAmount,
+                    $report->user
                 ), 2),
             ]);
 
@@ -399,7 +404,7 @@ class SellStaffReportController extends Controller
     {
         $this->authorize('view_sell_staff_report');
 
-        $report = SellOutReport::with(['lines', 'photos', 'user:id,name,employee_code,username'])
+        $report = SellOutReport::with(['lines', 'photos', 'user:id,name,employee_code,username,office_time_id', 'user.officeTime'])
             ->findOrFail($id);
 
         $success = $this->sendSellOutReportTelegram($report);
@@ -435,7 +440,7 @@ class SellStaffReportController extends Controller
     private function reportQuery(array $filterData)
     {
         return $this->baseReportQuery($filterData)
-            ->with(['user:id,name,employee_code,username', 'lines:id,sell_out_report_id,product_name,serial_number,qty'])
+            ->with(['user:id,name,employee_code,username,office_time_id', 'user.officeTime', 'lines:id,sell_out_report_id,product_name,serial_number,qty'])
             ->withCount(['lines', 'photos'])
             ->latest();
     }
@@ -627,7 +632,13 @@ class SellStaffReportController extends Controller
         return false;
     }
 
-    private function calculateCommission(array $lines, ?string $serviceType, ?string $customerPhone): float
+    private function calculateCommission(
+        array $lines,
+        ?string $serviceType,
+        ?string $customerPhone,
+        float $totalAmount,
+        ?User $user
+    ): float
     {
         $serviceType = $this->normalizeServiceType((string) $serviceType);
 
@@ -635,22 +646,26 @@ class SellStaffReportController extends Controller
             return 0;
         }
 
-        if ($this->isSellServiceType($serviceType)) {
-            foreach ($lines as $line) {
-                if ((float) ($line['unit_price'] ?? 0) <= 50) {
-                    return 0;
-                }
-            }
-        }
-
         $totalQty = collect($lines)->sum(fn (array $line): int => (int) ($line['qty'] ?? 0));
 
-        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+        if ($this->isSellServiceType($serviceType)) {
+            return $totalQty >= $this->sellQtyThreshold($user) ? $totalQty * 0.25 : 0;
+        }
+
+        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
+            return 0.20;
+        }
+
+        if ($this->isMaterialServiceType($serviceType)) {
+            return $totalAmount >= 10 ? 0.25 : 0;
+        }
+
+        return 0;
     }
 
     private function isCommissionableServiceType(string $serviceType): bool
     {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
     }
 
     private function isSellServiceType(string $serviceType): bool
@@ -663,9 +678,27 @@ class SellStaffReportController extends Controller
         return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
     }
 
+    private function isMaterialServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
+    }
+
+    private function isRepairServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
+    }
+
     private function normalizeServiceType(string $serviceType): string
     {
         return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
+    }
+
+    private function sellQtyThreshold(?User $user): int
+    {
+        $user?->loadMissing('officeTime');
+        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
+
+        return $category === 'part_timer' ? 50 : 100;
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool
