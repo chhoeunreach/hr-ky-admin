@@ -83,7 +83,12 @@ class SellOutReportController extends Controller
             'total_lines' => $reports->sum(fn (SellOutReport $report) => $report->lines->count()),
             'total_qty' => $reports->sum(fn (SellOutReport $report) => $report->lines->sum('qty')),
             'total_amount' => number_format((float) $reports->sum('total_amount'), 2, '.', ''),
-            'total_commission' => number_format((float) $reports->sum('commission'), 2, '.', ''),
+            'total_commission' => number_format(
+                (float) $reports->sum(fn (SellOutReport $report) => $report->calculatedCommission()),
+                2,
+                '.',
+                ''
+            ),
         ];
 
         $staffSummary = $reports
@@ -169,9 +174,12 @@ class SellOutReportController extends Controller
             $totalAmount = collect($validated['lines'])->sum(function (array $line): float {
                 return round((int) $line['qty'] * (float) $line['unit_price'], 2);
             });
-            $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
             $serviceType = $this->filledString($validated['service_type'] ?? null, 'Sale');
-            $commission = $validated['commission'] ?? $this->calculateCommission($totalQty, $serviceType);
+            $commission = $this->calculateCommission(
+                $validated['lines'],
+                $serviceType,
+                $validated['customer_phone'] ?? null
+            );
 
             $report = SellOutReport::create([
                 'user_id' => auth()->id(),
@@ -258,9 +266,12 @@ class SellOutReportController extends Controller
             $totalAmount = collect($validated['lines'])->sum(function (array $line): float {
                 return round((int) $line['qty'] * (float) $line['unit_price'], 2);
             });
-            $totalQty = collect($validated['lines'])->sum(fn (array $line): int => (int) $line['qty']);
             $serviceType = $this->filledString($validated['service_type'] ?? null, 'Sale');
-            $commission = $validated['commission'] ?? $this->calculateCommission($totalQty, $serviceType);
+            $commission = $this->calculateCommission(
+                $validated['lines'],
+                $serviceType,
+                $validated['customer_phone'] ?? null
+            );
 
             $report->update([
                 'seller_name' => $validated['seller_name'],
@@ -453,14 +464,48 @@ class SellOutReportController extends Controller
         return $value !== '' ? $value : $default;
     }
 
-    private function calculateCommission(int $totalQty, string $serviceType): float
+    private function calculateCommission(array $lines, string $serviceType, ?string $customerPhone): float
     {
+        if (! $this->isCommissionableServiceType($serviceType) || ! $this->hasValidCustomerPhone($customerPhone)) {
+            return 0;
+        }
+
+        if ($this->isSellServiceType($serviceType)) {
+            foreach ($lines as $line) {
+                if ((float) ($line['unit_price'] ?? 0) <= 50) {
+                    return 0;
+                }
+            }
+        }
+
+        $totalQty = collect($lines)->sum(fn (array $line): int => (int) $line['qty']);
+
         return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+    }
+
+    private function isCommissionableServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function isSellServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
     }
 
     private function isIronServiceType(string $serviceType): bool
     {
-        return in_array(trim($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
+        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function hasValidCustomerPhone(?string $customerPhone): bool
+    {
+        return mb_strlen(trim((string) $customerPhone)) > 6;
+    }
+
+    private function normalizeServiceType(string $serviceType): string
+    {
+        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool

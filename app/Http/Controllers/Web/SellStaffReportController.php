@@ -179,7 +179,14 @@ class SellStaffReportController extends Controller
                 ]);
             }
 
-            $report->update(['total_amount' => round($totalAmount, 2)]);
+            $report->update([
+                'total_amount' => round($totalAmount, 2),
+                'commission' => round($this->calculateCommission(
+                    $lines->all(),
+                    $validated['service_type'] ?? '',
+                    $validated['customer_phone'] ?? null
+                ), 2),
+            ]);
 
             DB::commit();
 
@@ -330,7 +337,14 @@ class SellStaffReportController extends Controller
                 ]);
             }
 
-            $report->update(['total_amount' => round($totalAmount, 2)]);
+            $report->update([
+                'total_amount' => round($totalAmount, 2),
+                'commission' => round($this->calculateCommission(
+                    $lines->all(),
+                    $validated['service_type'] ?? '',
+                    $validated['customer_phone'] ?? null
+                ), 2),
+            ]);
 
             DB::commit();
 
@@ -611,6 +625,47 @@ class SellStaffReportController extends Controller
         }
 
         return false;
+    }
+
+    private function calculateCommission(array $lines, ?string $serviceType, ?string $customerPhone): float
+    {
+        $serviceType = $this->normalizeServiceType((string) $serviceType);
+
+        if (! $this->isCommissionableServiceType($serviceType) || mb_strlen(trim((string) $customerPhone)) <= 6) {
+            return 0;
+        }
+
+        if ($this->isSellServiceType($serviceType)) {
+            foreach ($lines as $line) {
+                if ((float) ($line['unit_price'] ?? 0) <= 50) {
+                    return 0;
+                }
+            }
+        }
+
+        $totalQty = collect($lines)->sum(fn (array $line): int => (int) ($line['qty'] ?? 0));
+
+        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+    }
+
+    private function isCommissionableServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function isSellServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
+    }
+
+    private function isIronServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function normalizeServiceType(string $serviceType): string
+    {
+        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool

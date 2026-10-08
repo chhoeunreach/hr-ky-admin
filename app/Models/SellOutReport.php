@@ -56,4 +56,47 @@ class SellOutReport extends Model
             ? $this->service_type
             : self::DEFAULT_SERVICE_TYPE;
     }
+
+    public function calculatedCommission(): float
+    {
+        $serviceType = $this->normalizeServiceType($this->display_service_type);
+
+        if (! $this->isCommissionableServiceType($serviceType) || mb_strlen(trim((string) $this->customer_phone)) <= 6) {
+            return 0;
+        }
+
+        $lines = $this->relationLoaded('lines') ? $this->lines : $this->lines()->get();
+
+        if ($this->isSellServiceType($serviceType)) {
+            foreach ($lines as $line) {
+                if ((float) ($line->unit_price ?? 0) <= 50) {
+                    return 0;
+                }
+            }
+        }
+
+        $totalQty = $lines->sum(fn (SellOutReportLine $line): int => (int) $line->qty);
+
+        return $totalQty * ($this->isIronServiceType($serviceType) ? 0.20 : 0.25);
+    }
+
+    private function isCommissionableServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function isSellServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
+    }
+
+    private function isIronServiceType(string $serviceType): bool
+    {
+        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
+    }
+
+    private function normalizeServiceType(string $serviceType): string
+    {
+        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
+    }
 }
