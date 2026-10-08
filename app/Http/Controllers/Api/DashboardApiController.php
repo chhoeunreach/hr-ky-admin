@@ -187,8 +187,10 @@ class DashboardApiController extends Controller
                     'id' => $recentNotice->id,
                     'alert_title' => ucfirst($recentNotice->title),
                     'alert_message' => removeHtmlTags($recentNotice->description),
+                    'alert_message_html' => $recentNotice->description,
                     'notice_title' => ucfirst($recentNotice->title),
                     'description' => removeHtmlTags($recentNotice->description),
+                    'description_html' => $recentNotice->description,
                     'publish_date' => $recentNotice->notice_publish_date,
                     'type' => 'notice',
                 ];
