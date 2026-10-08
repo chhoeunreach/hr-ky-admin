@@ -365,7 +365,20 @@
                                             <small class="text-muted" style="font-size: 11px;">@lang('index.outdated_devices_desc')</small>
                                         </div>
                                     </label>
+                                    <label class="p-2.5 rounded-2 border d-flex align-items-center gap-2.5 cursor-pointer bg-white" style="border-color: #e2e8f0 !important;">
+                                        <input type="radio" name="target_audience" value="employees" class="form-check-input mt-0">
+                                        <span class="fw-medium text-dark" style="font-size: 12.5px;">@lang('index.specific_employees')</span>
+                                    </label>
                                 </div>
+                            </div>
+
+                            <div class="mb-3 d-none" id="employeeTargetWrap">
+                                <label class="form-label fw-medium text-dark small" for="targetEmployeeIds">@lang('index.select_employees') <span class="text-danger">*</span></label>
+                                <select class="form-select" name="employee_ids[]" id="targetEmployeeIds" multiple disabled>
+                                    @foreach($employees as $employee)
+                                        <option value="{{ $employee->id }}">{{ $employee->employee_code ? $employee->employee_code . ' - ' : '' }}{{ $employee->name ?: $employee->username }}</option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <!-- Alert Dialog Content with Language Selector -->
@@ -409,6 +422,33 @@
             $.ajaxSetup({
                 headers: {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            if ($.fn.select2) {
+                $('#targetEmployeeIds').select2({
+                    dropdownParent: $('#sendUpdateAlertModal'),
+                    placeholder: @json(__('index.select_employees')),
+                    width: '100%'
+                });
+            }
+
+            function toggleEmployeeTarget() {
+                var selectedEmployees = $('#sendUpdateAlertForm input[name="target_audience"]:checked').val() === 'employees';
+                $('#employeeTargetWrap').toggleClass('d-none', !selectedEmployees);
+                $('#targetEmployeeIds').prop('disabled', !selectedEmployees);
+            }
+
+            $('#sendUpdateAlertForm input[name="target_audience"]').on('change', toggleEmployeeTarget);
+            toggleEmployeeTarget();
+
+            $('#sendUpdateAlertForm').on('submit', function (event) {
+                if ($('#sendUpdateAlertForm input[name="target_audience"]:checked').val() === 'employees' && !($('#targetEmployeeIds').val() || []).length) {
+                    event.preventDefault();
+                    Swal.fire({
+                        icon: 'warning',
+                        text: @json(__('index.specific_employees_required'))
+                    });
                 }
             });
 

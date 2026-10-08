@@ -39,7 +39,12 @@ class AppSettingController extends Controller
             $select=['id','name','slug','value','status'];
             $appSettings = $this->appSettingRepo->getAllAppSettings($select);
             $appVersionSetting = AppHelper::getAppVersionSettings();
-            return view($this->view.'index', compact('appSettings', 'appVersionSetting'));
+            $employees = User::query()
+                ->where('status', 'verified')
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->get(['id', 'name', 'username', 'employee_code']);
+            return view($this->view.'index', compact('appSettings', 'appVersionSetting', 'employees'));
         }catch(\Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -230,7 +235,12 @@ class AppSettingController extends Controller
             $validated = $request->validate([
                 'alert_title' => ['required', 'string', 'max:150'],
                 'alert_message' => ['required', 'string', 'max:1000'],
-                'target_audience' => ['required', 'in:all,outdated'],
+                'target_audience' => ['required', 'in:all,outdated,employees'],
+                'employee_ids' => ['required_if:target_audience,employees', 'nullable', 'array', 'min:1'],
+                'employee_ids.*' => ['required', 'integer', 'distinct', 'exists:users,id'],
+            ], [
+                'employee_ids.required_if' => __('index.specific_employees_required'),
+                'employee_ids.min' => __('index.specific_employees_required'),
             ]);
 
             $versionSettings = AppHelper::getAppVersionSettings();
@@ -252,7 +262,9 @@ class AppSettingController extends Controller
                 ->whereNotNull('fcm_token')
                 ->where('fcm_token', '!=', '');
 
-            if ($validated['target_audience'] === 'outdated') {
+            if ($validated['target_audience'] === 'employees') {
+                $usersQuery->whereIn('id', $validated['employee_ids']);
+            } elseif ($validated['target_audience'] === 'outdated') {
                 $upToDateUserIds = DB::table('user_locations')
                     ->whereNotNull('app_version')
                     ->where('app_version', '!=', '')

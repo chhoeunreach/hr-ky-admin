@@ -2439,6 +2439,8 @@ return [
     'send_now' => 'Send Alert Now',
     'target_audience' => 'Target Audience',
     'all_mobile_users' => 'All Mobile App Users',
+    'specific_employees' => 'Specific Employees',
+    'specific_employees_required' => 'Please select at least one employee.',
     'outdated_devices_only' => 'Outdated App Devices Only (< :version)',
     'alert_sent_successfully' => 'Update alert notification has been sent successfully to :count user(s).',
     'no_recipients_found' => 'No active mobile app recipients found to receive the alert.',
