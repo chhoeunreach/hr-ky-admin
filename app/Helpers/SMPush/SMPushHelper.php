@@ -143,15 +143,16 @@ class SMPushHelper
         if (!empty($recipients)) {
             SMPushNotification::smSend(
                 title: $title,
-                message: Str::limit($description, 100, '...'),
+                message: $description,
                 data: [
                     'type' => 'notice',
                     'work_alert' => '1',
                     'show_alert' => '1',
                     'title' => $title,
-                    'message' => Str::limit($description, 3700, '...'),
+                    'message' => $description,
                     'alert_title' => $title,
-                    'alert_message' => Str::limit($description, 3700, '...'),
+                    'alert_message' => $description,
+                    'has_full_notice' => '1',
                     'id' => (string)$id,
                     'notice_id' => (string)$id,
                 ],
