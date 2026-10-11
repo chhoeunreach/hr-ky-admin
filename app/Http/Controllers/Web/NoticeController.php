@@ -48,7 +48,7 @@ class NoticeController extends Controller
 
 
             $select = ['*'];
-            $with = ['noticeReceiversDetail'];
+            $with = ['noticeReceiversDetail', 'branch:id,name'];
             $notices = $this->noticeService->getAllCompanyNotices($filterParameters, $select, $with);
 
             $with = ['branches:id,name'];

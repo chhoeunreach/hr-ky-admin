@@ -86,6 +86,7 @@
                         <tr>
                             <th>#</th>
                             <th>@lang('index.title')</th>
+                            <th>@lang('index.branch')</th>
                             <th>@lang('index.publish_date')</th>
                             <th>@lang('index.notice_receiver')</th>
                             @can('show_notice')
@@ -102,6 +103,7 @@
                             <tr>
                                 <td>{{ (($notices->currentPage() - 1) * (\App\Models\Notice::RECORDS_PER_PAGE)) + (++$key) }}</td>
                                 <td>{{ ucfirst($value->title) }}</td>
+                                <td>{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
                                 <td>{{ convertDateTimeFormat($value->notice_publish_date) ?? __('index.not_published_yet') }}</td>
                                 <td class="notice-receiver">
                                     <ul class="mb-0">
