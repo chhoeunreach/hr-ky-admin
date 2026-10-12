@@ -2664,5 +2664,8 @@ return [
     'approved_by' => 'Approved By',
     'signature' => 'Signature',
     'export_word' => 'Export Word',
+    'export_pdf' => 'Export PDF',
+    'column_visibility' => 'Column visibility',
+    'copy_failed' => 'Unable to copy. Please try again.',
 
 ];

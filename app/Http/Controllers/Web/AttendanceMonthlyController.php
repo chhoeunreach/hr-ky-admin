@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Web;
 
-use App\Helpers\AppHelper;
+use App\Exports\MonthlyAttendanceExport;
 use App\Exports\MonthlyAttendanceBonusExport;
 use App\Exports\MonthlyAttendanceReductionExport;
+use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\AttendanceSetting;
@@ -19,6 +20,7 @@ use App\Models\TimeLeave;
 use App\Models\User;
 use App\Support\AttendanceCountReduction;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -74,6 +76,38 @@ class AttendanceMonthlyController extends Controller
             $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
 
             return $this->exportCsv($rows, $month);
+        }
+
+        if ($request->query('export') === 'excel') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+
+            return $this->exportExcel($rows, $month);
+        }
+
+        if ($request->query('export') === 'pdf') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+            [$headings, $exportRows] = $this->monthlyAttendanceExportTable($rows, $month, true);
+            $orientation = $request->query('orientation') === 'portrait' ? 'portrait' : 'landscape';
+
+            return Pdf::loadView('admin.attendance.export.monthly-attendance-pdf', [
+                'headings' => $headings,
+                'rows' => $exportRows,
+                'month' => $month,
+                'generatedAt' => now(),
+            ])->setPaper('a3', $orientation)
+                ->download('monthly-attendance-' . $month->format('Y-m') . '.pdf');
+        }
+
+        if ($request->query('export') === 'word') {
+            $this->authorizeMonthlyAttendanceExport();
+
+            $rows = $this->buildRows($this->filteredEmployees($filter)->get(), $month);
+
+            return $this->exportWord($rows, $month);
         }
 
         if ($request->query('export') === 'reduc_xlsx') {
@@ -1165,6 +1199,135 @@ class AttendanceMonthlyController extends Controller
         );
     }
 
+    private function exportExcel(Collection $rows, Carbon $month)
+    {
+        $filename = 'monthly-attendance-' . $month->format('Y-m') . '.xlsx';
+        [$headings, $exportRows] = $this->monthlyAttendanceDisplayExportTable($rows, $month);
+
+        return Excel::download(
+            new MonthlyAttendanceExport($headings, $exportRows),
+            $filename
+        );
+    }
+
+    private function exportWord(Collection $rows, Carbon $month)
+    {
+        $filename = 'monthly-attendance-' . $month->format('Y-m') . '.doc';
+        [$headings, $exportRows] = $this->monthlyAttendanceDisplayExportTable($rows, $month);
+
+        $html = view('admin.attendance.export.monthly-attendance-word', [
+            'headings' => $headings,
+            'rows' => $exportRows,
+            'month' => $month,
+            'generatedAt' => now(),
+        ])->render();
+
+        return response($html)
+            ->header('Content-Type', 'application/msword; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"')
+            ->header('Cache-Control', 'max-age=0');
+    }
+
+    private function monthlyAttendanceDisplayExportTable(Collection $rows, Carbon $month): array
+    {
+        $calendarDays = $this->calendarDays($month);
+        $headings = ['#', __('index.employee')];
+        foreach ($calendarDays as $day) {
+            $headings[] = $day['day'] . "\n" . $day['weekday'];
+        }
+        foreach (['present', 'late', 'absent', 'leave', 'off_day', 'total', 'bonus', 'pending_day_off', 'pending_leave', 'time_leave', 'time_leave_request', 'no_checkout'] as $key) {
+            $headings[] = __('index.' . $key);
+        }
+
+        [, $summaryRows] = $this->monthlyAttendanceExportTable($rows, $month, true);
+        $statusCodes = ['present' => 'P', 'late' => 'L', 'absent' => 'A', 'leave' => 'LV', 'off_day' => 'O', 'empty' => '-'];
+        $exportRows = $rows->values()->map(function (array $row, int $index) use ($calendarDays, $summaryRows, $statusCodes) {
+            $employee = $row['employee'];
+            $employeeDetails = implode("\n", [
+                ucfirst($employee->name),
+                $employee->username ?: ($employee->employee_code ?: (string) $employee->id),
+            ]);
+            $line = [$index + 1, $employeeDetails];
+            foreach ($row['days'] as $day) {
+                $codes = [$statusCodes[$day['status']] ?? '-'];
+                foreach (array_slice($day['indicators'] ?? [], 0, 2) as $indicator) {
+                    $codes[] = $indicator['short'];
+                }
+                $line[] = implode("\n", $codes);
+            }
+
+            $totals = array_slice($summaryRows[$index], 4 + count($calendarDays));
+            $totals[6] = '$' . number_format($row['bonus_amount'] ?? 0, 0) . "\n"
+                . number_format($row['bonus_eligible_days'] ?? 0) . '/' . number_format($row['bonus_working_days'] ?? 0);
+
+            return array_merge($line, $totals);
+        });
+
+        return [$headings, $exportRows];
+    }
+
+    private function monthlyAttendanceExportTable(Collection $rows, Carbon $month, bool $includeBonus = false): array
+    {
+        $headings = ['Employee Code', 'Employee', 'Department', 'Position'];
+        foreach ($this->calendarDays($month) as $day) {
+            $headings[] = $day['day'];
+        }
+
+        $headings = array_merge($headings, [
+            'Present',
+            'Late',
+            'Absent',
+            'Leave',
+            'Off Day',
+            'Total',
+            'Pending Day Off',
+            'Pending Leave',
+            'Time Leave',
+            'Time Leave Request',
+            'No Checkout',
+        ]);
+
+        if ($includeBonus) {
+            array_splice($headings, -5, 0, ['Bonus']);
+        }
+
+        $exportRows = $rows->map(function (array $row) use ($includeBonus) {
+            $employee = $row['employee'];
+            $line = [
+                $employee->employee_code ?: $employee->username,
+                $employee->name,
+                $employee->department?->dept_name,
+                $employee->post?->post_name,
+            ];
+
+            foreach ($row['days'] as $day) {
+                $line[] = $day['tooltip'] ?? $day['label'];
+            }
+
+            $line = array_merge($line, [
+                $row['totals']['present'],
+                $row['totals']['late'],
+                $row['totals']['absent'],
+                $row['totals']['leave'],
+                $row['totals']['off_day'],
+                $row['total_days'],
+                $row['signal_totals']['pending_day_off'] ?? 0,
+                $row['signal_totals']['pending_leave'] ?? 0,
+                $row['signal_totals']['time_leave'] ?? 0,
+                $row['signal_totals']['time_leave_request'] ?? 0,
+                $row['signal_totals']['no_checkout'] ?? 0,
+            ]);
+
+            if ($includeBonus) {
+                array_splice($line, -5, 0, [$row['bonus_amount'] ?? 0]);
+            }
+
+            return $line;
+        })->values();
+
+        return [$headings, $exportRows];
+    }
+
     private function bonusExportRows(Collection $rows, Carbon $month): Collection
     {
         $createdAt = now();
@@ -1369,49 +1532,11 @@ class AttendanceMonthlyController extends Controller
 
         return response()->streamDownload(function () use ($rows, $month) {
             $handle = fopen('php://output', 'w');
-            $headers = ['Employee Code', 'Employee', 'Department', 'Position'];
-            foreach ($this->calendarDays($month) as $day) {
-                $headers[] = $day['day'];
-            }
-            $headers = array_merge($headers, [
-                'Present',
-                'Late',
-                'Absent',
-                'Leave',
-                'Off Day',
-                'Total',
-                'Pending Day Off',
-                'Pending Leave',
-                'Time Leave',
-                'Time Leave Request',
-                'No Checkout',
-            ]);
+            [$headers, $exportRows] = $this->monthlyAttendanceExportTable($rows, $month);
             fputcsv($handle, $headers);
 
-            foreach ($rows as $row) {
-                $employee = $row['employee'];
-                $line = [
-                    $employee->employee_code ?: $employee->username,
-                    $employee->name,
-                    $employee->department?->dept_name,
-                    $employee->post?->post_name,
-                ];
-                foreach ($row['days'] as $day) {
-                    $line[] = $day['tooltip'] ?? $day['label'];
-                }
-                fputcsv($handle, array_merge($line, [
-                    $row['totals']['present'],
-                    $row['totals']['late'],
-                    $row['totals']['absent'],
-                    $row['totals']['leave'],
-                    $row['totals']['off_day'],
-                    $row['total_days'],
-                    $row['signal_totals']['pending_day_off'] ?? 0,
-                    $row['signal_totals']['pending_leave'] ?? 0,
-                    $row['signal_totals']['time_leave'] ?? 0,
-                    $row['signal_totals']['time_leave_request'] ?? 0,
-                    $row['signal_totals']['no_checkout'] ?? 0,
-                ]));
+            foreach ($exportRows as $line) {
+                fputcsv($handle, $line);
             }
 
             fclose($handle);

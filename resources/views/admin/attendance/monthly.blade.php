@@ -18,24 +18,99 @@
 @section('title', __('index.attendance_monthly'))
 @section('action', __('index.attendance_monthly'))
 
-@section('button')
-    <div class="d-flex flex-wrap gap-2 justify-content-end">
+@section('monthly-export-toolbar')
+    <div class="monthly-export-toolbar">
         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#monthlyAttendanceFilters">
             <i class="link-icon" data-feather="filter"></i> {{ __('index.filter') }}
         </button>
-        @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
-            <a class="btn btn-primary btn-sm" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">
-                <i class="link-icon" data-feather="download"></i> {{ __('index.export') }}
+        @if(auth('admin')->check() || Gate::allows('monthly_attendance_csv_export'))
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="monthlyCopyButton">
+                <i class="link-icon" data-feather="copy"></i> <span>{{ __('index.copy') }}</span>
+            </button>
+            <a class="btn btn-outline-secondary btn-sm" data-monthly-export="csv" href="{{ request()->fullUrlWithQuery(['export' => 'csv']) }}">
+                <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_csv') }}
             </a>
-        @endcanany
-        <button type="button" class="btn btn-outline-primary btn-sm monthly-print-trigger" id="monthlyPrintButton">
+            <a class="btn btn-outline-secondary btn-sm" data-monthly-export="excel" href="{{ request()->fullUrlWithQuery(['export' => 'excel']) }}">
+                <i class="link-icon" data-feather="file"></i> {{ __('index.export_excel') }}
+            </a>
+            <a class="btn btn-outline-secondary btn-sm" data-monthly-export="word" href="{{ request()->fullUrlWithQuery(['export' => 'word']) }}">
+                <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
+            </a>
+        @endif
+        <button type="button" class="btn btn-outline-secondary btn-sm monthly-print-trigger" id="monthlyPrintButton">
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
         </button>
+        <div class="dropdown">
+            <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" id="monthlyColumnButton">
+                <i class="link-icon" data-feather="columns"></i> {{ __('index.column_visibility') }}
+            </button>
+            <div class="dropdown-menu dropdown-menu-end monthly-column-menu" id="monthlyColumnMenu"></div>
+        </div>
+        @if(auth('admin')->check() || Gate::allows('monthly_attendance_csv_export'))
+            <div class="dropdown">
+                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_pdf') }}
+                </button>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" data-monthly-export="pdf" href="{{ request()->fullUrlWithQuery(['export' => 'pdf', 'orientation' => 'landscape']) }}">{{ __('index.landscape') }}</a>
+                    <a class="dropdown-item" data-monthly-export="pdf" href="{{ request()->fullUrlWithQuery(['export' => 'pdf', 'orientation' => 'portrait']) }}">{{ __('index.portrait') }}</a>
+                </div>
+            </div>
+        @endif
+        @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
+            <button class="btn btn-outline-success btn-sm monthly-reduction-export" type="button" data-bs-toggle="modal" data-bs-target="#monthlyReductionExportModal">
+                <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
+            </button>
+            <a class="btn btn-outline-success btn-sm" href="{{ request()->fullUrlWithQuery(['export' => 'bonus_xlsx']) }}">
+                <i class="link-icon" data-feather="award"></i> {{ __('index.export_bonus_xlsx') }}
+            </a>
+        @endcanany
+        <span class="visually-hidden" id="monthlyCopyStatus" role="status" aria-live="polite"></span>
     </div>
 @endsection
 
 @section('styles')
     <style>
+        .monthly-export-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+        .monthly-export-toolbar .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            min-height: 34px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
+        .monthly-export-toolbar .btn-outline-secondary {
+            background: #fff;
+            border-color: #cbd5e1;
+            color: #374151;
+        }
+        .monthly-export-toolbar .btn-outline-secondary:hover,
+        .monthly-export-toolbar .btn-outline-secondary:focus-visible {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+            color: #111827;
+        }
+        .monthly-export-toolbar .link-icon {
+            width: 14px;
+            height: 14px;
+            margin: 0;
+            flex-shrink: 0;
+        }
+        .monthly-column-menu { max-height: 360px; overflow-y: auto; min-width: 220px; }
+        .monthly-attendance-table .monthly-column-hidden { display: none !important; }
+
         .monthly-attendance-page {
             color: #111827;
         }
@@ -322,6 +397,7 @@
             align-items: center;
             justify-content: flex-end;
             gap: 8px;
+            width: 100%;
         }
 
         .monthly-table-search {
@@ -1949,6 +2025,7 @@
             #monthlyResultsBlock .monthly-filter-toggle,
             #monthlyResultsBlock #monthlyAttendanceFilters,
             #monthlyResultsBlock .monthly-table-controls,
+            #monthlyResultsBlock .monthly-export-toolbar,
             #monthlyResultsBlock .monthly-signal-toggle,
             #monthlyResultsBlock .monthly-scroll-shortcuts,
             #monthlyResultsBlock .modal,
@@ -2333,18 +2410,7 @@
                         <input type="hidden" name="shift_id[]" value="{{ $shiftId }}">
                     @endforeach
 
-                    <button type="button" class="btn btn-outline-primary btn-sm monthly-print-trigger">
-                        <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
-                    </button>
-
-                    @canany(['attendance_csv_export', 'monthly_attendance_csv_export'])
-                        <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#monthlyReductionExportModal">
-                            <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
-                        </button>
-                        <a class="btn btn-outline-success" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'bonus_xlsx'])) }}">
-                            <i class="link-icon" data-feather="award"></i> {{ __('index.export_bonus_xlsx') }}
-                        </a>
-                    @endcanany
+                    @yield('monthly-export-toolbar')
 
                     <div class="monthly-inline-field">
                         <label class="monthly-filter-label" for="table_per_page">{{ __('index.rows') }}</label>
@@ -2937,11 +3003,106 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const monthlyPrintTriggers = document.querySelectorAll('.monthly-print-trigger');
-            monthlyPrintTriggers.forEach(function (printButton) {
-                printButton.addEventListener('click', function () {
+            document.addEventListener('click', function (event) {
+                if (event.target.closest('.monthly-print-trigger')) {
                     window.print();
+                }
+                const exportLink = event.target.closest('[data-monthly-export]');
+                if (exportLink) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('export', exportLink.dataset.monthlyExport);
+                    url.searchParams.delete('page');
+                    if (exportLink.dataset.monthlyExport === 'pdf') {
+                        url.searchParams.set('orientation', new URL(exportLink.href).searchParams.get('orientation') || 'landscape');
+                    }
+                    exportLink.href = url.toString();
+                }
+            });
+
+            const hiddenMonthlyColumns = new Set();
+            const applyMonthlyColumnVisibility = () => {
+                const table = document.querySelector('.monthly-attendance-table');
+                table?.querySelectorAll('tr').forEach((row) => {
+                    Array.from(row.cells).forEach((cell, index) => {
+                        cell.classList.toggle('monthly-column-hidden', cell.colSpan === 1 && hiddenMonthlyColumns.has(index));
+                    });
                 });
+                table?.querySelectorAll('.sticky-employee').forEach((cell) => {
+                    cell.style.left = hiddenMonthlyColumns.has(0) ? '0px' : '';
+                });
+                document.querySelectorAll('#monthlyColumnMenu input').forEach((input) => {
+                    const header = table?.tHead?.rows[0]?.cells[Number(input.value)];
+                    input.checked = !!header && !header.classList.contains('monthly-column-hidden') && !header.classList.contains('is-hidden');
+                });
+            };
+            document.addEventListener('show.bs.dropdown', (event) => {
+                if (event.target.id !== 'monthlyColumnButton') return;
+                const menu = document.getElementById('monthlyColumnMenu');
+                menu.replaceChildren();
+                const headers = document.querySelector('.monthly-attendance-table')?.tHead?.rows[0]?.cells || [];
+                Array.from(headers).forEach((header, index) => {
+                    const label = document.createElement('label');
+                    label.className = 'dropdown-item d-flex align-items-center gap-2';
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.className = 'form-check-input m-0';
+                    input.value = index;
+                    input.checked = !header.classList.contains('monthly-column-hidden') && !header.classList.contains('is-hidden');
+                    input.addEventListener('change', () => {
+                        if (input.checked) {
+                            hiddenMonthlyColumns.delete(index);
+                            if (header.classList.contains('monthly-signal-column')) {
+                                setSignalColumnsVisible(true);
+                            }
+                        } else {
+                            hiddenMonthlyColumns.add(index);
+                        }
+                        applyMonthlyColumnVisibility();
+                    });
+                    const text = document.createElement('span');
+                    text.textContent = (header.querySelector('.monthly-sort-header > span') || header).textContent.trim().replace(/\s+/g, ' ');
+                    label.append(input, text);
+                    menu.append(label);
+                });
+            });
+            document.addEventListener('click', async (event) => {
+                if (!event.target.closest('#monthlyCopyButton')) return;
+                const table = document.querySelector('.monthly-attendance-table');
+                if (!table) return;
+                const text = Array.from(table.rows)
+                    .filter((row) => getComputedStyle(row).display !== 'none')
+                    .map((row) => Array.from(row.cells)
+                        .filter((cell) => getComputedStyle(cell).display !== 'none')
+                        .map((cell) => {
+                            const copy = cell.cloneNode(true);
+                            copy.querySelectorAll('.monthly-sort-icon, .monthly-row-chat-badge').forEach((element) => element.remove());
+                            return copy.textContent.trim().replace(/\s+/g, ' ');
+                        }).join('\t')).join('\n');
+                const status = document.getElementById('monthlyCopyStatus');
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        const field = document.createElement('textarea');
+                        field.value = text;
+                        field.style.cssText = 'position:fixed;left:-9999px;top:0';
+                        document.body.append(field);
+                        field.select();
+                        const copied = document.execCommand('copy');
+                        field.remove();
+                        if (!copied) throw new Error('Copy failed');
+                    }
+                    status.textContent = @json(__('index.copied'));
+                    const label = document.querySelector('#monthlyCopyButton span');
+                    label.textContent = @json(__('index.copied'));
+                    setTimeout(() => {
+                        const currentLabel = document.querySelector('#monthlyCopyButton span');
+                        if (currentLabel) currentLabel.textContent = @json(__('index.copy'));
+                    }, 2000);
+                } catch (error) {
+                    status.textContent = @json(__('index.copy_failed'));
+                    window.alert(status.textContent);
+                }
             });
 
             const modal = document.getElementById('monthlyAttendanceDetailModal');
@@ -3257,6 +3418,7 @@
                 }
 
                 localStorage.setItem('monthlyAttendanceSignalsVisible', visible ? '1' : '0');
+                applyMonthlyColumnVisibility();
             };
 
             const applyStoredSignalColumnsVisibility = () => {
@@ -3544,6 +3706,7 @@
                 }
 
                 currentRow.replaceWith(nextRow);
+                applyMonthlyColumnVisibility();
                 syncMonthlySummaryFrom(parsed);
                 applyStoredSignalColumnsVisibility();
                 updateMonthlyScrollShortcuts();

@@ -2734,5 +2734,8 @@ return [
     'approved_by' => 'អនុម័តដោយ',
     'signature' => 'ហត្ថលេខា',
     'export_word' => 'នាំចេញជា Word',
+    'export_pdf' => 'នាំចេញជា PDF',
+    'column_visibility' => 'បង្ហាញជួរឈរ',
+    'copy_failed' => 'មិនអាចចម្លងបានទេ។ សូមព្យាយាមម្ដងទៀត។',
 
 ];
