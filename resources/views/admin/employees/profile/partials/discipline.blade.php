@@ -61,7 +61,7 @@
                         <button type="button" class="btn btn-outline-primary btn-xs" data-bs-toggle="modal" data-bs-target="#disciplineEditModal{{ $record->id }}">
                             <i data-feather="edit-2" class="feather-xs"></i> {{ __('index.edit') }}
                         </button>
-                        <form method="post" action="{{ route('admin.employees.profile.discipline.destroy', [$employee->id, $record->id]) }}" class="d-inline" onsubmit="return confirm('{{ __('index.delete_staff_warning_confirm') }}');">
+                        <form method="post" action="{{ route('admin.employees.profile.discipline.destroy', [$employee->id, $record->id]) }}" class="d-inline" data-confirm-message="{{ __('index.delete_staff_warning_confirm') }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-outline-danger btn-xs">

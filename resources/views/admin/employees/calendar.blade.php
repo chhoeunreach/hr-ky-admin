@@ -1753,7 +1753,7 @@
             $('#exportCalendarCsvBtn').on('click', function () {
                 const allEvents = data.allEvents || [];
                 if (!allEvents.length) {
-                    alert('No events available to export.');
+                    AppDialog.alert('There are no events to export for the selected period.');
                     return;
                 }
 

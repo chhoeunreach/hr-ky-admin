@@ -72,7 +72,6 @@
                 $('#showErrorMessageResponse').removeClass('d-none');
                 $('.errorClient').show();
                 $('.errorClientMessage').text(errorMessage);
-                $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
             });
         });
 

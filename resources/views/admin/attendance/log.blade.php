@@ -185,7 +185,7 @@
                                         </td>
                                         @can('delete_attendance_log')
                                             <td class="text-center">
-                                                <form action="{{ route('admin.attendance.log.delete', $log->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('index.confirm_delete_log') }}');">
+                                                <form action="{{ route('admin.attendance.log.delete', $log->id) }}" method="POST" class="d-inline" data-confirm-message="{{ __('index.confirm_delete_log') }}">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-outline-danger btn-xs" title="{{ __('index.delete') }}">
@@ -251,7 +251,7 @@
                                         <td class="text-center">{{ \App\Helpers\AttendanceHelper::formattedAttendanceDateTime(\App\Helpers\AppHelper::ifDateInBsEnabled(), $log->timestamp) }}</td>
                                         @can('delete_attendance_log')
                                             <td class="text-center">
-                                                <form action="{{ route('admin.attendance.biometric-log.delete', $log->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('index.confirm_delete_log') }}');">
+                                                <form action="{{ route('admin.attendance.biometric-log.delete', $log->id) }}" method="POST" class="d-inline" data-confirm-message="{{ __('index.confirm_delete_log') }}">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-outline-danger btn-xs" title="{{ __('index.delete') }}">

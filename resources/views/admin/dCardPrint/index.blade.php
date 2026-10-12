@@ -4821,7 +4821,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
             $('#printA4Now').on('click', function () {
                 if (!prepareFullPrintRender()) {
-                    alert('Please select at least one employee to print.');
+                    AppDialog.alert('Select at least one employee before printing.', 'warning');
                     return;
                 }
                 printPreparedPages();
@@ -4993,7 +4993,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                         refreshStudio();
                     },
                     error: function (xhr) {
-                        alert((xhr.responseJSON && xhr.responseJSON.message) || 'Could not save uploaded photo.');
+                        AppDialog.alert((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to save the uploaded photo. Please try again.', 'error');
                     },
                     complete: function () {
                         status.hide();
@@ -5057,7 +5057,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                         refreshStudio();
                     },
                     error: function (xhr) {
-                        alert((xhr.responseJSON && xhr.responseJSON.message) || 'Could not save employee row.');
+                        AppDialog.alert((xhr.responseJSON && xhr.responseJSON.message) || 'Unable to save the employee details. Please try again.', 'error');
                     },
                 });
             });
@@ -5273,7 +5273,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 };
 
                 if (navigator.clipboard) {
-                    navigator.clipboard.writeText(text).then(done).catch(() => alert('Could not copy code.'));
+                    navigator.clipboard.writeText(text).then(done).catch(() => AppDialog.alert('Unable to copy the code. Please try again.', 'error'));
                     return;
                 }
 
@@ -5305,7 +5305,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
             $('#exportPng').on('click', function () {
                 if (!window.html2canvas) {
-                    alert('PNG export library is not loaded. Please use browser print.');
+                    AppDialog.alert('Image export is currently unavailable. Please use Print to continue.', 'error');
                     return;
                 }
 
@@ -5318,12 +5318,12 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     link.download = `Knea_Yerng_ID_Card_${Date.now()}_300DPI.png`;
                     link.href = canvas.toDataURL('image/png', 1.0);
                     link.click();
-                }).catch(() => alert('Could not export PNG. Please use browser print.'));
+                }).catch(() => AppDialog.alert('Unable to export the image. Please try again or use Print.', 'error'));
             });
 
             $('#exportPdf').on('click', async function () {
                 if (!prepareFullPrintRender()) {
-                    alert('Please select at least one employee to export.');
+                    AppDialog.alert('Select at least one employee before exporting.', 'warning');
                     return;
                 }
 
@@ -5362,7 +5362,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
                     pdf.save(`Knea_Yerng_A4_ID_Cards_${Date.now()}.pdf`);
                 } catch (error) {
-                    alert('Could not export PDF. Please use Quick Print A4.');
+                    AppDialog.alert('Unable to export the PDF. Please try again or use Quick Print A4.', 'error');
                 } finally {
                     captureRoot.remove();
                 }
@@ -5370,7 +5370,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
 
             $('#printCards').on('click', function () {
                 if (!prepareFullPrintRender()) {
-                    alert('Please select at least one employee to print.');
+                    AppDialog.alert('Select at least one employee before printing.', 'warning');
                     return;
                 }
                 printPreparedPages();
@@ -5728,7 +5728,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                         var existing = saveEmployee.source === 'dcard' && saveEmployee.record_id;
                         requestJson(existing ? 'PUT' : 'POST', existing ? window.digitalHrsEmployeeBaseUrl + '/' + saveEmployee.record_id : window.digitalHrsEmployeeStoreUrl, batchEmployeePayload(saveEmployee), function (ok, response) {
                             if (!ok) {
-                                alert(response.message || 'Could not save employee row.');
+                                AppDialog.alert(response.message || 'Unable to save the employee details. Please try again.', 'error');
                                 return;
                             }
                             employees[saveIndex] = response.employee || saveEmployee;
@@ -6388,7 +6388,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 if (printNow) {
                     printNow.addEventListener('click', function () {
                         if (!renderA4()) {
-                            alert('Please select at least one employee to print.');
+                            AppDialog.alert('Select at least one employee before printing.', 'warning');
                             return;
                         }
                         window.print();
@@ -6399,7 +6399,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                 if (download) {
                     download.addEventListener('click', function () {
                         if (!renderA4()) {
-                            alert('Please select at least one employee to print.');
+                            AppDialog.alert('Select at least one employee before printing.', 'warning');
                             return;
                         }
                         window.print();

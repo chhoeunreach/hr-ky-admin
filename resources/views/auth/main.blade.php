@@ -43,6 +43,7 @@
     <!-- End layout styles -->
 
     <link rel="shortcut icon" href="{{asset('assets/images/favicon.png')}}" />
+    <link rel="stylesheet" href="{{ asset('assets/css/app-dialogs.css') }}?v={{ filemtime(public_path('assets/css/app-dialogs.css')) }}">
 
     @yield('page-styles')
 </head>
@@ -54,10 +55,6 @@
     <script src="{{asset('assets/vendors/core/core.js')}}"></script>
     <script src="{{asset('assets/vendors/feather-icons/feather.min.js')}}"></script>
     <script src="{{asset('assets/js/template.js')}}"></script>
-    <script>
-        $('div.alert.alert-success').not('.alert-important').delay(5000).slideUp(900);
-        $('div.alert.alert-danger').not('.alert-important').delay(1000).slideUp(900);
-    </script>
 
 @yield('page-scripts')
 

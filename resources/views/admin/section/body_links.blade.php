@@ -25,15 +25,9 @@
 <!-- sweet alert -->
 {{--<script defer src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>--}}
 <script src="{{asset('assets/vendors/sweetalert2/sweetalert2.min.js')}}"></script>
+@include('admin.section.dialog_messages')
 
 
 {{--<script src="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.min.js"></script>--}}
 {{--<link rel="stylesheet" type="text/css" href="https://common.olemiss.edu/_js/sweet-alert/sweet-alert.css">--}}
 <script src="{{asset('assets/js/nepaliDatepicker.min.js')}}" type="text/javascript"></script>
-
-<script>
-    $('div.alert.alert-danger').not('.alert-important').delay(10000).slideUp(900);
-    $('div.alert.alert-success').not('.alert-important').delay(5000).slideUp(900);
-</script>
-
-

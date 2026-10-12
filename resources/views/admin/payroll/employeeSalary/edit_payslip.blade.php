@@ -488,7 +488,7 @@
                 }).catch(error => {
                     console.error('Tax calculation error:', error);
                     $('#net_salary').text('Error');
-                    alert('Error calculating tax. Please try again.');
+                    AppDialog.alert('Unable to calculate the tax. Please try again.', 'error');
                 });
             }
 

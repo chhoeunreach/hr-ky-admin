@@ -77,7 +77,7 @@
                         <button type="button" class="btn btn-outline-primary btn-xs" data-bs-toggle="modal" data-bs-target="#overviewEditNoteModal{{ $note->id }}">
                             Edit
                         </button>
-                        <form method="post" action="{{ route('admin.employees.profile.overview-notes.destroy', [$employee->id, $note->id]) }}" class="d-inline" onsubmit="return confirm('Delete this note?');">
+                        <form method="post" action="{{ route('admin.employees.profile.overview-notes.destroy', [$employee->id, $note->id]) }}" class="d-inline" data-confirm-message="{{ __('index.dialog_delete_note') }}">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-outline-danger btn-xs">Delete</button>

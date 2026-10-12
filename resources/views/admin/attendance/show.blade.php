@@ -2413,7 +2413,7 @@
                         window.setTimeout(() => URL.revokeObjectURL(url), 1000);
                     } catch (error) {
                         console.error('Employee attendance Word export failed.', error);
-                        window.alert('Unable to export the Word document. Please try again.');
+                        AppDialog.alert('Unable to export the Word document. Please try again.', 'error');
                     } finally {
                         button.disabled = false;
                         button.innerHTML = originalContent;

@@ -59,7 +59,6 @@
                 $('.error').removeClass('d-none');
                 $('.error').show();
                 $('.errorMessageDelete').text(errorMessage);
-                $('div.alert.alert-danger').not('.alert-important').delay(1000).slideUp(900);
             })
         }).trigger("change");
 

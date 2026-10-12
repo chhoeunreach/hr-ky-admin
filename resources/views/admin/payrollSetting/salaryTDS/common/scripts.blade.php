@@ -77,7 +77,7 @@
                         $('#showSuccessResponse').removeClass('d-none');
                         $('.successSalaryTDS').show();
                         $('.successMessage').text(message);
-                        $('div.alert.alert-success').not('.alert-important').delay(2000).slideUp(900);
+                        $('div.alert.alert-success').not('.alert-important, .app-flash-message').delay(8000).slideUp(900);
                         window.location.href = redirectUrlAfterSuccess;
                     }
                 },
@@ -86,7 +86,6 @@
                     $('#showErrorResponse').removeClass('d-none');
                     $('.errorSalaryTDS').show();
                     $('.errorMessage').text(errorMessage);
-                    $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
                 }
             });
         });

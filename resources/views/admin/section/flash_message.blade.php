@@ -1,56 +1,32 @@
-@if (isset($errors) && count($errors) > 0)
-    <div class="alert alert-danger">
-        @foreach ($errors->all() as $error)
-            <p>{{ $error }}</p>
-        @endforeach
+@if (isset($errors) && $errors->any())
+    <div class="alert alert-danger app-flash-message" role="alert">
+        <i class="icon icon-alert-circle" aria-hidden="true"></i>
+        <div class="app-flash-message-content">
+            <strong class="app-flash-message-title">{{ __('index.dialog_validation_title') }}</strong>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
     </div>
 @endif
 
-
-@if (Session::has('success'))
-    <div style="max-width: 100%" id="message"   class="d-flex justify-content-between alert alert-success {{Session::has('success_important') ? 'alert-important': ''}} ">
-        
-        @if(Session::has('success_important'))
-        @endif
-        {{session('success')}}
-        <button type="button" style="color:white !important;opacity: 1 !important;" class="close bg-dark border-0 rounded-1" data-dismiss="alert" aria-hidden="true">×</button>
-    </div>
-@endif
-
-@if (Session::has('danger'))
-    <div style="max-width: 100%" id="message" class="d-flex justify-content-between alert alert-danger {{Session::has('danger_important') ? 'alert-important': ''}}">
-        
-        @if(Session::has('danger_important'))
-        @endif
-        {{session('danger')}}
-        <button type="button" style="color:white !important;opacity: 1 !important;" class="close bg-dark border-0 rounded-1" data-dismiss="alert" aria-hidden="true">×</button>
-    </div>
-@endif
-
-@if (Session::has('info'))
-    <div style="max-width: 100%" id="message" class="d-flex justify-content-between alert alert-info {{Session::has('info_important') ? 'alert-important': ''}}">
-        
-        @if(Session::has('info_important'))
-        @endif
-        {{session('info')}}
-        <button type="button" style="color:white !important;opacity: 1 !important;" class="close bg-dark border-0 rounded-1" data-dismiss="alert" aria-hidden="true">×</button>
-    </div>
-@endif
-
-@if (Session::has('warning'))
-    <div style="max-width: 100%" id="message" class="d-flex justify-content-between alert alert-warning {{Session::has('warning_important') ? 'alert-important': ''}}">
-        
-        @if(Session::has('warning_important'))
-        @endif
-        {{session('warning')}}
-        <button type="button" style="color:white !important;opacity: 1 !important;" class="close bg-dark border-0 rounded-1" data-dismiss="alert" aria-hidden="true">×</button>
-    </div>
-@endif
-<script>
-    setTimeout(function() {
-        let elementToHide = document.getElementById('message');
-        if (elementToHide) {
-            elementToHide.style.display = 'none';
-        }
-    }, 2000);
-</script>
+@foreach ([
+    'success' => ['class' => 'success', 'icon' => 'check-circle', 'title' => 'dialog_success_title'],
+    'danger' => ['class' => 'danger', 'icon' => 'alert-circle', 'title' => 'dialog_error_title'],
+    'info' => ['class' => 'info', 'icon' => 'info', 'title' => 'dialog_info_title'],
+    'warning' => ['class' => 'warning', 'icon' => 'alert-triangle', 'title' => 'dialog_warning_title'],
+] as $messageType => $presentation)
+    @if (session()->has($messageType))
+        <div class="alert alert-{{ $presentation['class'] }} app-flash-message {{ session()->has($messageType . '_important') ? 'alert-important' : '' }}"
+             role="{{ in_array($messageType, ['danger', 'warning']) ? 'alert' : 'status' }}">
+            <i class="icon icon-{{ $presentation['icon'] }}" aria-hidden="true"></i>
+            <div class="app-flash-message-content">
+                <strong class="app-flash-message-title">{{ __('index.' . $presentation['title']) }}</strong>
+                <span>{{ session($messageType) }}</span>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="{{ __('index.close') }}"></button>
+        </div>
+    @endif
+@endforeach

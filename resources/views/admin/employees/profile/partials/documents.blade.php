@@ -120,7 +120,7 @@
                                 <form action="{{ route('admin.employees.profile.documents.destroy', [$employee->id, $record->id]) }}"
                                       method="POST"
                                       class="d-inline"
-                                      onsubmit="return confirm('{{ __('index.confirm_delete_document') }}');">
+                                      data-confirm-message="{{ __('index.confirm_delete_document') }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-outline-danger" title="{{ __('index.delete_document') }}" aria-label="{{ __('index.delete_document') }}">

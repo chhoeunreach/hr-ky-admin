@@ -613,7 +613,7 @@
                         $('#flashAttendanceMessage').removeClass('d-none');
                         $('.successStartWorking').show();
                         $('.successStartWorkingMessage').text(response.message);
-                        $('div.alert.alert-success').not('.alert-important').delay(500).slideUp(900);
+                        $('div.alert.alert-success').not('.alert-important, .app-flash-message').delay(8000).slideUp(900);
                         let audio = new Audio(audioUrl);
                         audio.play();
                         location.reload();
@@ -626,13 +626,11 @@
                             $('#flashAttendanceMessage').removeClass('d-none');
                             $('.errorStartWorking').show();
                             $('.errorStartWorkingMessage').text(errorMessage);
-                            $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
                         } else {
                             let errorMessage = "Error: " + errorThrown;
                             $('#flashAttendanceMessage').removeClass('d-none');
                             $('.errorStartWorking').show();
                             $('.errorStartWorkingMessage').text(errorMessage);
-                            $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
                         }
                         location.reload();
                     },
@@ -646,7 +644,6 @@
                 $('#flashAttendanceMessage').removeClass('d-none');
                 $('.errorStartWorking').show();
                 $('.errorStartWorkingMessage').text("Error occurred while retrieving location: "+error.message);
-                $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
             });
         });
 
@@ -677,7 +674,7 @@
                     $('#flashAttendanceMessage').removeClass('d-none');
                     $('.successStopWorking').show();
                     $('.successStopWorkingMessage').text(response.message);
-                    $('div.alert.alert-success').not('.alert-important').delay(500).slideUp(900);
+                    $('div.alert.alert-success').not('.alert-important, .app-flash-message').delay(8000).slideUp(900);
                     location.reload();
                 },
                 error: function(jqXHR, textStatus, errorThrown) {
@@ -688,13 +685,11 @@
                         $('#flashAttendanceMessage').removeClass('d-none');
                         $('.errorStopWorking').show();
                         $('.errorStopWorkingMessage').text(errorMessage);
-                        $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
                     } else {
                         let errorMessage = "Error: " + errorThrown;
                         $('#flashAttendanceMessage').removeClass('d-none');
                         $('.errorStopWorking').show();
                         $('.errorStopWorkingMessage').text(errorMessage);
-                        $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
                     }
                     location.reload();
                 },
@@ -708,7 +703,6 @@
                 $('#flashAttendanceMessage').removeClass('d-none');
                 $('.errorStartWorking').show();
                 $('.errorStartWorkingMessage').text("Error occurred while retrieving location: "+error.message);
-                $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
             });
         });
 
@@ -729,7 +723,6 @@
                 $('#flashAttendanceMessage').removeClass('d-none');
                 $('.errorStartWorking').show();
                 $('.errorStartWorkingMessage').text('Geolocation is not supported by this browser.');
-                $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
             }
         }
     });

@@ -277,7 +277,7 @@
                                     @if($employee->telegram_linked_at)
                                         <small>Linked at {{ optional($employee->telegram_linked_at)->format('Y-m-d H:i') }}</small>
                                     @endif
-                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', ['employee' => $employee->id, 'active_employee' => $employee->id]) }}" class="mt-3 telegram-unlink-form">
+                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', ['employee' => $employee->id, 'active_employee' => $employee->id]) }}" class="mt-3 telegram-unlink-form" data-confirm-message="{{ __('index.confirm_unlink_telegram') }}" data-confirm-title="{{ __('index.dialog_unlink_title') }}" data-confirm-button="{{ __('index.dialog_unlink_button') }}" data-confirm-destructive="false">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-outline-danger">
@@ -472,12 +472,6 @@
                 target.select();
                 target.setSelectionRange(0, target.value.length);
                 navigator.clipboard?.writeText(target.value).catch(function () { document.execCommand('copy'); });
-            });
-
-            $('.telegram-unlink-form').on('submit', function (event) {
-                if (!confirm('Unlink this employee from Telegram?')) {
-                    event.preventDefault();
-                }
             });
 
             /* ---------------- Infinite scroll ---------------- */

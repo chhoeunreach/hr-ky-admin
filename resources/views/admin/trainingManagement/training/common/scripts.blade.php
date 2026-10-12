@@ -254,7 +254,7 @@
                     }
                 }).fail(function () {
                     // Handle errors
-                    alert('Failed to fetch trainers. Please try again.');
+                    AppDialog.alert('Unable to load the trainers. Please try again.', 'error');
                 });
             }
         }

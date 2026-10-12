@@ -88,14 +88,13 @@
                     $('#showSuccessResponse').removeClass('d-none');
                     $('.successPaymentMethod').show();
                     $('.successMessage').text(message);
-                    $('div.alert.alert-success').not('.alert-important').delay(2000).slideUp(900);
+                    $('div.alert.alert-success').not('.alert-important, .app-flash-message').delay(8000).slideUp(900);
                 }
             }).error(function(error){
                 let errorMessage = error.responseJSON.message;
                 $('#showErrorResponse').removeClass('d-none');
                 $('.errorPaymentMethod').show();
                 $('.errorMessage').text(errorMessage);
-                $('div.alert.alert-danger').not('.alert-important').delay(5000).slideUp(900);
             });
         });
 

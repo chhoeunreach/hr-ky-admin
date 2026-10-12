@@ -3101,7 +3101,7 @@
                     }, 2000);
                 } catch (error) {
                     status.textContent = @json(__('index.copy_failed'));
-                    window.alert(status.textContent);
+                    AppDialog.alert(status.textContent, 'error');
                 }
             });
 

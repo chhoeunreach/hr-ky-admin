@@ -1,0 +1,65 @@
+.swal2-container { z-index: 20000; }
+.swal2-popup.app-dialog {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 24px;
+    color: #1f2937;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
+    font-family: inherit;
+}
+.app-dialog .swal2-title {
+    padding: 0;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+.app-dialog .swal2-html-container {
+    margin: 12px 0 0;
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.app-dialog .swal2-icon { margin: 0 auto 18px; }
+.app-dialog .swal2-actions { gap: 8px; margin: 22px 0 0; }
+.app-dialog .app-dialog-button {
+    min-height: 38px;
+    margin: 0;
+    padding: 8px 18px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+}
+.app-dialog .app-dialog-primary { background: #2563eb; color: #fff; }
+.app-dialog .app-dialog-primary:hover { background: #1d4ed8; }
+.app-dialog.app-dialog-destructive .app-dialog-primary { background: #dc2626; }
+.app-dialog.app-dialog-destructive .app-dialog-primary:hover { background: #b91c1c; }
+.app-dialog .app-dialog-secondary { background: #fff; border-color: #cbd5e1; color: #374151; }
+.app-dialog .app-dialog-secondary:hover { background: #f3f4f6; }
+.app-dialog .app-dialog-button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.app-dialog .swal2-input, .app-dialog .swal2-textarea { font-size: 14px; border-radius: 5px; }
+.app-flash-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.app-flash-message > i { flex-shrink: 0; margin-top: 4px; font-size: 17px; }
+.app-flash-message-content { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.app-flash-message-title { display: block; margin-bottom: 2px; font-weight: 600; }
+.app-flash-message ul { margin: 4px 0 0; padding-inline-start: 18px; }
+.app-flash-message .btn-close { flex-shrink: 0; margin-top: 3px; }
+@media (max-width: 575px) {
+    .swal2-popup.app-dialog { padding: 20px; }
+    .app-dialog .swal2-title { font-size: 18px; }
+    .app-dialog .swal2-actions { width: 100%; flex-wrap: wrap; }
+    .app-dialog .app-dialog-button { flex: 1; }
+}

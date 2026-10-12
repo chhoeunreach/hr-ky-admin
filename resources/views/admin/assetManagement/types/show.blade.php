@@ -102,7 +102,7 @@
                 }
             }).fail(function (xhr, status, error) {
                 // Handle error
-                alert('Error loading asset details. Please try again.');
+                AppDialog.alert('Unable to load the asset details. Please try again.', 'error');
                 console.error('Error:', error);
             });
         }

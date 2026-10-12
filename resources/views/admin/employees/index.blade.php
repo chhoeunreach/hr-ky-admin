@@ -1204,7 +1204,7 @@
                                                             </div>
                                                             <div class="modal-footer">
                                                                 @if($value->telegram_chat_id)
-                                                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', $value->id) }}" class="m-0 telegram-unlink-form">
+                                                                    <form method="POST" action="{{ route('admin.telegram-employees.unlink', $value->id) }}" class="m-0 telegram-unlink-form" data-confirm-message="{{ __('index.confirm_unlink_telegram') }}" data-confirm-title="{{ __('index.dialog_unlink_title') }}" data-confirm-button="{{ __('index.dialog_unlink_button') }}" data-confirm-destructive="false">
                                                                         @csrf
                                                                         @method('DELETE')
                                                                         <button type="submit" class="btn btn-outline-danger">
@@ -1351,12 +1351,6 @@
 
         $(document).on('hidden.bs.modal', '[id^="telegramConnectModal"]', function () {
             clearInterval(telegramConnectSyncTimer);
-        });
-
-        $(document).on('submit', '.telegram-unlink-form', function (event) {
-            if (!confirm('{{ __('index.confirm_unlink_telegram') }}')) {
-                event.preventDefault();
-            }
         });
 
         // ==========================================

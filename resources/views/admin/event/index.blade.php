@@ -436,7 +436,7 @@
                 }
             }).fail(function (xhr, status, error) {
                 // Handle error
-                alert('Error loading event details. Please try again.');
+                AppDialog.alert('Unable to load the event details. Please try again.', 'error');
                 console.error('Error:', error);
             });
         }
