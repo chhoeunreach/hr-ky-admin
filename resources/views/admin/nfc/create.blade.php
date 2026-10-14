@@ -12,12 +12,13 @@
     <section class="content">
         @include('admin.section.flash_message')
 
-        <nav class="page-breadcrumb d-flex align-items-center justify-content-between">
+        <nav class="page-breadcrumb d-flex flex-wrap gap-2 align-items-center justify-content-between">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{route('admin.dashboard')}}">@lang('index.dashboard')</a></li>
                 <li class="breadcrumb-item"><a href="{{route('admin.nfc.index')}}">@lang('index.nfc_section')</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ __('index.create') }} @lang('index.nfc')</li>
             </ol>
+            @yield('button')
         </nav>
 
         <div class="card">
