@@ -640,6 +640,8 @@ Route::group([
         Route::get('qr/print/{id}', [QrCodeController::class, 'print'])->name('qr.print');
 
         Route::get('/nfc', [NFCController::class, 'index'])->name('nfc.index');
+        Route::get('/nfc/create', [NFCController::class, 'create'])->name('nfc.create');
+        Route::post('/nfc/store', [NFCController::class, 'store'])->name('nfc.store');
         Route::get('/nfc/delete/{id}', [NFCController::class, 'delete'])->name('nfc.destroy');
 
 

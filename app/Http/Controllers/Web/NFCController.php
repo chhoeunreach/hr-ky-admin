@@ -14,6 +14,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class NFCController extends Controller
 {
@@ -49,6 +50,48 @@ class NFCController extends Controller
             return view($this->view . 'index', compact('nfcData','filterData','companyDetail'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function create(): View|Factory|RedirectResponse|Application
+    {
+        try {
+            $this->authorize('create_nfc');
+
+            return view($this->view . 'create');
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        try {
+            $this->authorize('create_nfc');
+
+            $validator = Validator::make($request->all(), [
+                'title' => ['nullable', 'string'],
+                'identifier' => ['required', 'string'],
+            ]);
+
+            if ($validator->fails()) {
+                return redirect()->back()->withErrors($validator)->withInput();
+            }
+
+            $validatedData = $validator->validated();
+
+            if ($this->nfcService->verifyNfc($validatedData['identifier'])) {
+                return redirect()->back()->withInput()->with('danger', __('index.nfc_token_already_exist'));
+            }
+
+            DB::beginTransaction();
+            $this->nfcService->saveNfcDetail($validatedData);
+            DB::commit();
+
+            return redirect()->route('admin.nfc.index')->with('success', __('index.nfc_added_successfully'));
+        } catch (Exception $exception) {
+            DB::rollBack();
+            return redirect()->back()->withInput()->with('danger', $exception->getMessage());
         }
     }
 

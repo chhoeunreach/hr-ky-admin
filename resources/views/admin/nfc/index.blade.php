@@ -10,6 +10,15 @@
         }
     </style>
 @endsection
+@section('button')
+    @can('create_nfc')
+        <a href="{{ route('admin.nfc.create')}}">
+            <button class="btn btn-primary add_nfc">
+                <i class="link-icon" data-feather="plus"></i>{{ __('index.add') }} @lang('index.nfc')
+            </button>
+        </a>
+    @endcan
+@endsection
 @section('main-content')
 
     <section class="content">
