@@ -65,6 +65,7 @@
                 <div class="col-md-5">
                     <label class="form-label small">{{ __('index.file') }}</label>
                     <input class="form-control form-control-sm document-file" type="file" name="documents[__INDEX__][file]" accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+                    <small class="text-muted">Photos are compressed automatically before upload.</small>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label small">{{ __('index.document_date') }}</label>

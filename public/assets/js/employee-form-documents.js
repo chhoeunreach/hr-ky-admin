@@ -146,6 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!original) return;
         const button = row.querySelector('.use-document-photo');
         button.disabled = true;
+        preparedPhotos.delete(row);
+        row.querySelector('.photo-status').textContent = 'Compressing photo...';
         try {
             let file = original;
             if (photoModes.get(row) === 'crop') {
@@ -156,14 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!blob) throw new Error('Crop failed.');
                 file = new File([blob], original.name.replace(/\.[^.]+$/, '') + '-crop.jpg', { type: 'image/jpeg' });
             }
+            file = await EmployeeDocumentCompression.compress(file);
+            if (!row.isConnected || originalPhotos.get(row) !== original) return;
             if (row.querySelector('.document-file').files[0] !== file) {
                 const transfer = new DataTransfer();
                 transfer.items.add(file);
                 row.querySelector('.document-file').files = transfer.files;
             }
             preparedPhotos.set(row, file);
-            if (file === original) destroyCropper(row);
-            row.querySelector('.photo-status').textContent = file === original ? 'Original photo selected.' : 'Cropped photo selected.';
+            if (photoModes.get(row) !== 'crop') destroyCropper(row);
+            row.querySelector('.photo-status').textContent = EmployeeDocumentCompression.describe(original, file);
             if (row.querySelector('.document-type').value === 'national_id') recognize(row, file);
         } catch (error) {
             row.querySelector('.photo-status').textContent = error.message || 'Could not prepare photo.';

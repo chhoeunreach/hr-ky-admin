@@ -257,6 +257,7 @@
                 <div class="col-lg-6 col-md-6">
                     <label class="form-label">{{ __('index.file') }} <span class="text-danger">*</span></label>
                     <input class="form-control form-control-sm document-file" type="file" name="documents[__INDEX__][file]" accept="image/jpeg,image/png,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+                    <small class="text-muted">Photos are compressed automatically before upload.</small>
                 </div>
                 <div class="col-lg-3 col-md-3">
                     <label class="form-label">{{ __('index.document_date') }}</label>
@@ -364,6 +365,7 @@
 @can('employee.document.manage')
     <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
     <script src="{{ asset('assets/vendors/tesseract/tesseract.min.js') }}"></script>
+    <script src="{{ asset('assets/js/employee-document-compression.js') }}?v={{ filemtime(public_path('assets/js/employee-document-compression.js')) }}"></script>
     <script src="{{ asset('assets/js/employee-profile-documents.js') }}?v={{ filemtime(public_path('assets/js/employee-profile-documents.js')) }}"></script>
 @endcan
 

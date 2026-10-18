@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const modalElement = document.getElementById('employeeDocumentPhotoModal');
     const preview = document.getElementById('employeeDocumentPhotoPreview');
     const useButton = document.getElementById('useEmployeeDocumentPhoto');
-    const submitButton = form.querySelector('[type="submit"]');
     document.body.appendChild(modalElement);
     const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
     const ocrFields = new Set();
@@ -20,7 +19,6 @@ document.addEventListener('DOMContentLoaded', function () {
     let objectUrl = null;
     let cropper = null;
     let photoApplied = false;
-    let activeReads = 0;
 
     function addRow() {
         if (rows.children.length >= 20) return;
@@ -142,14 +140,10 @@ document.addEventListener('DOMContentLoaded', function () {
         panel.classList.remove('d-none');
         readingRows.add(row);
         retry.disabled = true;
-        activeReads++;
-        submitButton.disabled = true;
         if (!window.Tesseract) {
             setStatus(row, 'OCR library did not load. Check the browser connection, then try again.');
             readingRows.delete(row);
             retry.disabled = false;
-            activeReads--;
-            submitButton.disabled = activeReads > 0;
             return;
         }
         setStatus(row, 'Reading National ID photo...');
@@ -167,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 },
             });
             const result = await worker.recognize(file);
-            if (row.querySelector('.document-type').value !== 'national_id') return;
+            if (!row.isConnected || photoFiles.get(row) !== file || row.querySelector('.document-type').value !== 'national_id') return;
             let text = (result.data.text || '').trim();
             let count = applyIdText(text, row);
             if (count < 3) {
@@ -175,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     setStatus(row, 'Checking Khmer text on National ID...');
                     await worker.reinitialize(['eng', 'khm'], 1);
                     const khmerText = (await worker.recognize(file)).data.text.trim();
+                    if (!row.isConnected || photoFiles.get(row) !== file || row.querySelector('.document-type').value !== 'national_id') return;
                     if (khmerText && khmerText !== text) {
                         text += `${text ? '\n\n' : ''}${khmerText}`;
                         count += applyIdText(khmerText, row);
@@ -192,13 +187,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (worker) await worker.terminate().catch(() => {});
             readingRows.delete(row);
             retry.disabled = false;
-            activeReads--;
-            submitButton.disabled = activeReads > 0;
         }
     }
 
     addButton.addEventListener('click', addRow);
-    form.addEventListener('submit', function () {
+    form.addEventListener('submit', function (event) {
+        if (currentRow) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            return;
+        }
         const hiddenFields = document.getElementById('employeeDocumentOcrFields');
         hiddenFields.replaceChildren();
         const profileNames = { national_id: 'national_id', nationality: 'nationality', nationalIdExpiryDate: 'national_id_expiry_date' };
@@ -209,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
             input.value = document.getElementById(id).value;
             hiddenFields.appendChild(input);
         });
-    });
+    }, true);
     rows.addEventListener('click', function (event) {
         const retryButton = event.target.closest('.retry-document-ocr');
         if (retryButton) {
@@ -235,6 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
             title.dataset.autoTitle = newAutoTitle;
         }
         if (event.target.matches('.document-file')) {
+            photoFiles.delete(row);
             const file = event.target.files[0];
             if (!file) return;
             setStatus(row, file.name);
@@ -258,26 +257,31 @@ document.addEventListener('DOMContentLoaded', function () {
 
     useButton.addEventListener('click', async function () {
         if (!currentRow || !originalFile) return;
+        const row = currentRow;
+        const source = originalFile;
+        const wasCropped = Boolean(cropper);
         useButton.disabled = true;
+        setStatus(row, 'Compressing photo...');
         try {
-            let file = originalFile;
+            let file = source;
             if (cropper) {
                 const canvas = cropper.getCroppedCanvas({ maxWidth: 3200, maxHeight: 3200, imageSmoothingQuality: 'high' });
                 const blob = canvas && await toBlob(canvas);
                 if (!blob) throw new Error('Crop failed');
-                file = new File([blob], originalFile.name.replace(/\.[^.]+$/, '') + '-crop.jpg', { type: 'image/jpeg' });
-                const transfer = new DataTransfer();
-                transfer.items.add(file);
-                currentRow.querySelector('.document-file').files = transfer.files;
+                file = new File([blob], source.name.replace(/\.[^.]+$/, '') + '-crop.jpg', { type: 'image/jpeg' });
             }
-            const row = currentRow;
+            file = await EmployeeDocumentCompression.compress(file);
+            if (currentRow !== row || originalFile !== source || !row.isConnected) return;
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            row.querySelector('.document-file').files = transfer.files;
             photoFiles.set(row, file);
-            setStatus(row, cropper ? 'Cropped photo selected' : 'Original photo selected');
+            setStatus(row, `${wasCropped ? 'Cropped photo. ' : ''}${EmployeeDocumentCompression.describe(source, file)}`);
             photoApplied = true;
             modal.hide();
             if (row.querySelector('.document-type').value === 'national_id') recognizeId(file, row);
         } catch (error) {
-            setStatus(currentRow, 'Could not prepare photo. Choose the original or try again.');
+            if (currentRow === row) setStatus(row, 'Could not prepare photo. Please try again.');
         } finally {
             useButton.disabled = false;
         }
