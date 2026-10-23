@@ -5,9 +5,19 @@
         : asset('assets/images/logo.png');
 @endphp
 
-<div class="employee-complete-toolbar employee-salary-certificate-toolbar mb-3">
+@include('admin.employees.profile.partials.print-request-selector', [
+    'requestTab' => 'leave-letter', 'requestField' => 'leave_request_id',
+    'printRequests' => $leavePrintRequests, 'selectedPrintRequest' => $selectedLeavePrintRequest,
+    'requestListUrl' => route('admin.leave-request.index', ['requested_by' => $employee->id]),
+    'requestCreateUrl' => route('admin.leave-request.add', ['requested_by' => $employee->id]),
+    'canCreatePrintRequest' => auth('admin')->check() || \Illuminate\Support\Facades\Gate::any(['request_leave', 'access_admin_leave']),
+])
+
+<div class="employee-complete-toolbar employee-request-actions mb-3">
+    <div class="employee-request-action-copy"><strong>{{ __('index.request_step_print') }}</strong><p>{{ $selectedLeavePrintRequest ? __('index.print_optional_help') : __('index.select_saved_request_before_print') }}</p></div>
+    <div class="employee-request-action-buttons">
     @if($canPrintLeaveForm)
-        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printLeaveLetter()">
+        <button type="button" class="btn btn-primary" onclick="printLeaveLetter()" data-print-busy-label="{{ __('index.saving_print_record') }}" data-save-linked-print @disabled(!$selectedLeavePrintRequest)>
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
         </button>
     @endif
@@ -17,13 +27,16 @@
                 data-export-type="leaveForm"
                 data-paper-selector="#leave-letter .employee-leave-letter-paper"
                 data-file-name="Leave-Request-{{ $employee->employee_code ?: $employee->id }}-{{ now()->format('Ymd') }}.docx"
-                onclick="downloadEmployeeFormWord(this)">
+                onclick="downloadEmployeeFormWord(this)" @disabled(!$selectedLeavePrintRequest)>
             <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
         </button>
     @endif
+    </div>
 </div>
 
-<div class="employee-complete-paper employee-leave-letter-paper employee-print-form">
+@if($selectedLeavePrintRequest)
+<div class="employee-complete-toolbar employee-request-preview-heading"><strong>{{ __('index.a4_request_preview') }}</strong><span>{{ __('index.review_before_print') }}</span></div>
+<div class="employee-complete-paper employee-leave-letter-paper employee-print-form" data-source-request-id="{{ $selectedLeavePrintRequest?->id }}" data-request-tab="leave-letter">
     <div class="employee-resignation-national-heading">
         <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
         <span>{{ __('index.nation_religion_king') }}</span>
@@ -38,8 +51,8 @@
             </div>
         </div>
         <div class="employee-salary-certificate-document-meta employee-print-form-meta">
-            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}">
-            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}">
+            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}" value="{{ $selectedLeavePrintRequest?->id }}" readonly>
+            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.request_date') }}" value="{{ $selectedLeavePrintRequest?->leave_requested_date ? \Illuminate\Support\Carbon::parse($selectedLeavePrintRequest->leave_requested_date)->format('d M Y') : $notAvailable }}" readonly>
         </div>
     </header>
 
@@ -69,34 +82,18 @@
 
     <section class="employee-print-form-section">
         <h3>{{ __('index.leave_details') }}</h3>
-        <div class="employee-print-form-options">
-            <span>{{ __('index.leave_type') }}:</span>
-            <label><input type="radio" name="leave_type">{{ __('index.annual_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.special_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.sick_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.personal_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.work_accident_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.family_death_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.employee_marriage_leave') }}</label>
-            <label><input type="radio" name="leave_type">{{ __('index.other') }}</label>
-        </div>
+        <div class="employee-print-form-field"><span>{{ __('index.leave_type') }}</span><strong>{{ $selectedLeavePrintRequest?->leaveType?->name ?: $notAvailable }}</strong></div>
         <div class="employee-print-form-grid employee-print-form-grid-3">
-            <div class="employee-print-form-field is-blank"><span>{{ __('index.leave_from') }}</span><input type="date"></div>
-            <div class="employee-print-form-field is-blank"><span>{{ __('index.leave_to') }}</span><input type="date"></div>
-            <div class="employee-print-form-field is-blank"><span>{{ __('index.number_of_days') }}</span><input type="number" min="0" step="0.5"></div>
+            <div class="employee-print-form-field"><span>{{ __('index.leave_from') }}</span><strong>{{ $selectedLeavePrintRequest?->leave_from ? \Illuminate\Support\Carbon::parse($selectedLeavePrintRequest->leave_from)->format('d M Y') : $notAvailable }}</strong></div>
+            <div class="employee-print-form-field"><span>{{ __('index.leave_to') }}</span><strong>{{ $selectedLeavePrintRequest?->leave_to ? \Illuminate\Support\Carbon::parse($selectedLeavePrintRequest->leave_to)->format('d M Y') : $notAvailable }}</strong></div>
+            <div class="employee-print-form-field is-blank"><span>{{ __('index.number_of_days') }}</span><input type="number" min="0" step="0.5" value="{{ $selectedLeavePrintRequest?->no_of_days }}" readonly></div>
         </div>
-        <div class="employee-print-form-options">
-            <span>{{ __('index.leave_duration') }}:</span>
-            <label><input type="radio" name="leave_duration">{{ __('index.full_day') }}</label>
-            <label><input type="radio" name="leave_duration">{{ __('index.half_day') }}</label>
-            <label><input type="radio" name="leave_duration">{{ __('index.morning') }}</label>
-            <label><input type="radio" name="leave_duration">{{ __('index.afternoon') }}</label>
-        </div>
+
     </section>
 
     <section class="employee-print-form-section">
         <h3>{{ __('index.reason_for_leave') }}</h3>
-        <textarea class="employee-print-form-textarea" rows="3" aria-label="{{ __('index.reason_for_leave') }}"></textarea>
+        <textarea class="employee-print-form-textarea" rows="3" aria-label="{{ __('index.reason_for_leave') }}" readonly>{{ $selectedLeavePrintRequest?->reasons }}</textarea>
     </section>
 
     <section class="employee-print-form-section">
@@ -110,12 +107,8 @@
 
     <section class="employee-print-form-section employee-print-form-approval">
         <h3>{{ __('index.for_office_use') }}</h3>
-        <div class="employee-print-form-options">
-            <span>{{ __('index.decision') }}:</span>
-            <label><input type="radio" name="leave_decision">{{ __('index.approved') }}</label>
-            <label><input type="radio" name="leave_decision">{{ __('index.rejected') }}</label>
-        </div>
-        <textarea class="employee-print-form-textarea compact" rows="2" placeholder="{{ __('index.remark') }}" aria-label="{{ __('index.remark') }}"></textarea>
+        <div class="employee-print-form-options"><span>{{ __('index.status') }}:</span><strong>{{ $selectedLeavePrintRequest ? __('index.' . $selectedLeavePrintRequest->status) : $notAvailable }}</strong></div>
+        <textarea class="employee-print-form-textarea compact" rows="2" placeholder="{{ __('index.remark') }}" aria-label="{{ __('index.remark') }}" readonly>{{ $selectedLeavePrintRequest?->admin_remark }}</textarea>
     </section>
 
     <div class="employee-print-form-signatures">
@@ -131,4 +124,13 @@
             <li>{{ __('index.leave_form_notice_medical') }}</li>
         </ol>
     </div>
+    <div class="employee-request-print-record" data-print-record>{{ __('index.print_record_number') }}: —</div>
 </div>
+
+@else
+<div class="employee-complete-toolbar employee-request-preview-empty">
+    <span class="employee-request-empty-icon" aria-hidden="true">▤</span>
+    <h4>{{ __('index.request_preview_empty_title') }}</h4>
+    <p>{{ __('index.request_preview_empty_help') }}</p>
+</div>
+@endif

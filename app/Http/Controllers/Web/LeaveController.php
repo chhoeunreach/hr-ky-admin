@@ -403,9 +403,12 @@ class LeaveController extends Controller
                     SMPushHelper::sendLeaveNotification($title, $description,$approver);
                 }
 
-                return redirect()
-                    ->route('admin.leave-request.index')
-                    ->with('success', __('message.leave_submitted'));
+                $redirect = $request->query('request_modal') === '1'
+                    ? redirect()->back()
+                    : redirect()->route('admin.leave-request.index');
+
+                return $redirect->with('success', __('message.leave_submitted'))
+                    ->with('saved_request', ['type' => 'leave', 'id' => $leaveRequest['id'], 'employee_id' => $leaveRequest['requested_by']]);
             } catch (Exception $exception) {
                 DB::rollBack();
                 return redirect()->back()

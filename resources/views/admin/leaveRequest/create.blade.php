@@ -1,5 +1,7 @@
 @extends('layouts.master')
 
+@include('admin.leaveRequest.common.embedded-form')
+
 @section('title',__('index.leave_request'))
 
 @section('action',__('index.create'))
@@ -9,12 +11,14 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.leaveRequest.common.breadcrumb')
+        @if(request('request_modal') !== '1')
+            @include('admin.leaveRequest.common.breadcrumb')
+        @endif
 
         <div class="card">
             <div class="card-body">
                 <form class="forms-sample"
-                      action="{{route('admin.employee-leave-request.store')}}"
+                      action="{{ route('admin.employee-leave-request.store', request('request_modal') === '1' ? ['request_modal' => '1'] : []) }}"
                       method="post">
                     @csrf
 

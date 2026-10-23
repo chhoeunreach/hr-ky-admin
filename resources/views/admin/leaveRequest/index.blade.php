@@ -1,13 +1,17 @@
 
 @extends('layouts.master')
 
+@if(request('request_modal') === '1')
+    @section('embedded', '1')
+@endif
+
 @section('title',__('index.leave_requests'))
 
 @section('action',__('index.lists'))
 
 @section('button')
     @canany(['create_leave_request','access_admin_leave'])
-        <a href="{{ route('admin.leave-request.add')}}">
+        <a href="{{ route('admin.leave-request.add', array_filter(['requested_by' => request('requested_by'), 'request_modal' => request('request_modal') === '1' ? '1' : null])) }}" @if(request('request_modal') !== '1') data-open-leave-request-form @endif>
             <button class="btn btn-primary">
                 <i class="link-icon" data-feather="plus"></i>{{ __('index.create_leave_request') }}
             </button>
@@ -17,6 +21,10 @@
 
 @section('styles')
     <style>
+        @if(request('request_modal') === '1')
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+        @endif
         .page-content {
             padding-top: 0.4rem !important;
         }
@@ -167,12 +175,17 @@
     <section class="content">
 
         @include('admin.section.flash_message')
+        @include('admin.employees.profile.partials.request-saved-next-step', ['savedRequestType' => 'leave', 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])
         <div id="leave-request-copy-alert"
              class="alert alert-success d-none position-fixed"
              style="top: 20px; right: 20px; z-index: 1080; min-width: 180px;">
         </div>
 
-        @include('admin.leaveRequest.common.breadcrumb')
+        @if(request('request_modal') === '1')
+            <div class="mb-3">@yield('button')</div>
+        @else
+            @include('admin.leaveRequest.common.breadcrumb')
+        @endif
 
             <div class="card leave-request-filter-card mb-4 border-0 shadow-sm">
                 <div class="card-body p-0">
@@ -193,6 +206,9 @@
 
                     <div class="collapse {{ $activeFilterCount > 0 ? 'show' : '' }}" id="leaveRequestFilters">
                         <form class="forms-sample px-4 pb-4" action="{{route('admin.leave-request.index')}}" method="get">
+                            @if(request('request_modal') === '1')
+                                <input type="hidden" name="request_modal" value="1">
+                            @endif
                             <input type="hidden" name="search" value="{{ $filterParameters['search'] }}">
                             <input type="hidden" name="per_page" value="{{ $filterParameters['per_page'] }}">
 
@@ -264,7 +280,7 @@
                                 <div class="col-xxl col-xl-3 mb-4">
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="submit" class="btn btn-secondary">{{ __('index.filter') }}</button>
-                                        <a class="btn btn-primary" href="{{route('admin.leave-request.index')}}">{{ __('index.reset') }}</a>
+                                        <a class="btn btn-primary" href="{{ route('admin.leave-request.index', request('request_modal') === '1' ? array_filter(['request_modal' => '1', 'requested_by' => request('requested_by')]) : []) }}">{{ __('index.reset') }}</a>
                                     </div>
                                 </div>
                             </div>
@@ -276,6 +292,9 @@
             <div id="leave-request-list-block" class="card border-0 shadow-sm">
                 <div class="card-body">
                     <form method="get" action="{{ route('admin.leave-request.index') }}" class="leave-request-toolbar mb-4">
+                        @if(request('request_modal') === '1')
+                            <input type="hidden" name="request_modal" value="1">
+                        @endif
                         <input type="hidden" name="branch_id" value="{{ $filterParameters['branch_id'] }}">
                         <input type="hidden" name="department_id" value="{{ $filterParameters['department_id'] }}">
                         <input type="hidden" name="requested_by" value="{{ $filterParameters['requested_by'] }}">
@@ -357,7 +376,7 @@
 
                                 @if(auth('admin')->user())
                                     <tr>
-                                        <td class="text-center">{{ $loop->iteration }}</td>
+                                        <td class="text-center">{{ $loop->iteration }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
                                         <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                         <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                         <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
@@ -408,7 +427,7 @@
                                     @endphp
                                     @if(($approver == auth()->user()->id && $value->status =='pending')  || ($inRole && $value->status =='pending'))
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $loop->iteration }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
                                             <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
@@ -449,7 +468,7 @@
                                         </tr>
                                     @elseif( ($value->requestApproval->where('leave_request_id', $value->id)->contains('approved_by', auth()->user()->id) || ($approver == auth()->user()->id && $value->status != 'pending')) || ($inRole && $value->status !='pending'))
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
+                                            <td>{{ $loop->iteration }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
                                             <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>

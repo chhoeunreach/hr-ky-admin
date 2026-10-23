@@ -158,7 +158,7 @@
                             @if( isset($authEmployee))
                                 @can('request_leave')
                                     <li class="dropdown-item py-2">
-                                        <a href="{{ route('admin.leave-request.create') }}" class="text-body ms-0">
+                                        <a href="{{ route('admin.leave-request.create') }}" class="text-body ms-0" data-open-leave-request-form>
                                             <i class="me-2 icon-md" data-feather="info"></i>
                                             <span>{{ __('index.request_leave') }}</span>
                                         </a>

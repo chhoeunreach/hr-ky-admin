@@ -72,21 +72,43 @@
 </div>
 
 <div class="main-wrapper">
-    @include('admin.section.sidebar')
+    @hasSection('embedded')
+    @else
+        @include('admin.section.sidebar')
+    @endif
     <div class="page-wrapper">
-        @include('admin.section.nav')
+        @hasSection('embedded')
+        @else
+            @include('admin.section.nav')
+        @endif
 
         <div class="page-content">
-            @include('admin.section.page_header')
+            @hasSection('embedded')
+            @else
+                @include('admin.section.page_header')
+            @endif
             @yield('main-content')
         </div>
 
         <!-- partial -->
-        @include('admin.section.footer')
+        @hasSection('embedded')
+        @else
+            @include('admin.section.footer')
+        @endif
     </div>
 </div>
 
+@hasSection('embedded')
+@else
+    @include('admin.employees.profile.partials.request-form-modal')
+@endif
+
 @include('admin.section.body_links')
+
+@hasSection('embedded')
+@else
+    <script src="{{ asset('assets/js/employee-request-form-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-request-form-modal.js')) }}"></script>
+@endif
 
 @include('layouts.nav_notification_scripts')
 @include('layouts.nav_search_scripts')

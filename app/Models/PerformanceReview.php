@@ -40,6 +40,20 @@ class PerformanceReview extends Model
         'approved_at' => 'datetime',
     ];
 
+    public function completesMilestone(\Illuminate\Support\Carbon $dueDate): bool
+    {
+        if ($this->status !== 'completed') {
+            return false;
+        }
+
+        // The selected period also identifies reviews completed ahead of schedule.
+        if ($this->period_end) {
+            return $this->period_end->greaterThanOrEqualTo($dueDate);
+        }
+
+        return $this->review_date && $this->review_date->greaterThanOrEqualTo($dueDate->copy()->subDays(30));
+    }
+
     public function employee()
     {
         return $this->belongsTo(User::class, 'employee_id', 'id');

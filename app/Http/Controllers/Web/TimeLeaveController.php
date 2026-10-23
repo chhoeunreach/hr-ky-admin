@@ -247,7 +247,8 @@ class TimeLeaveController extends Controller
             );
             return redirect()
                 ->route('admin.time-leave-request.index')
-                ->with('success', __('message.time_leve_submit'));
+                ->with('success', __('message.time_leve_submit'))
+                ->with('saved_request', ['type' => 'time_leave', 'id' => $leaveRequest['id'], 'employee_id' => $leaveRequest['requested_by']]);
         } catch (Exception $exception) {
             DB::rollBack();
             return redirect()->back()

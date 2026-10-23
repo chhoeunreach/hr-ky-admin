@@ -13,6 +13,7 @@ class EmployeeSalaryHistory extends Model
 
     protected $fillable = [
         'employee_id',
+        'performance_review_id',
         'effective_date',
         'old_base_salary',
         'increase_amount',
@@ -33,5 +34,10 @@ class EmployeeSalaryHistory extends Model
     public function employee()
     {
         return $this->belongsTo(User::class, 'employee_id', 'id');
+    }
+
+    public function performanceReview()
+    {
+        return $this->belongsTo(PerformanceReview::class);
     }
 }

@@ -1,6 +1,10 @@
 @if($canViewSalary)
     @php
         $payrollSalary = $employee->employeeSalary;
+        $completedSalaryReviews = $reviews->where('status', 'completed');
+        $selectedSalaryReview = $completedSalaryReviews->firstWhere('id', old('performance_review_id', request('salary_review')));
+        $salaryBase = $profile->current_base_salary ?? ($payrollSalary?->payment_type === 'weekly'
+            ? $payrollSalary?->weekly_basic_salary : $payrollSalary?->monthly_basic_salary);
         $currencySymbol = \App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol();
         $formatPayrollMoney = fn ($amount) => filled($amount)
             ? $currencySymbol . number_format((float) $amount, 2)
@@ -147,7 +151,12 @@
                     </td>
                     <td class="fw-bold text-dark">${{ number_format((float)$record->new_base_salary, 2) }}</td>
                     <td><span class="badge bg-secondary">{{ \Illuminate\Support\Facades\Lang::has('index.' . $record->approval_status) ? __('index.' . $record->approval_status) : ucfirst($record->approval_status) }}</span></td>
-                    <td>{{ $record->reason ?: '—' }}</td>
+                    <td>
+                        {{ $record->reason ?: '—' }}
+                        @if($record->performanceReview)
+                            <a class="d-block small" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'evaluation']) }}">{{ __('index.linked_review') }} #{{ $record->performance_review_id }} · {{ $record->performanceReview->total_score }}</a>
+                        @endif
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="text-center py-4 text-muted">{{ __('index.no_records_found') }}</td></tr>
@@ -159,16 +168,26 @@
     @can('employee.salary.history.manage')
         <div class="modal fade" id="addSalaryHistoryModal" tabindex="-1" aria-labelledby="addSalaryHistoryModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <form method="post" action="{{ route('admin.employees.profile.salary.store', $employee->id) }}" class="modal-content">
+                <form method="post" action="{{ route('admin.employees.profile.salary.store', $employee->id) }}" class="modal-content" data-salary-increase-form data-salary-increase-error="{{ __('index.salary_increase_must_be_greater') }}">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title fw-bold" id="addSalaryHistoryModalLabel">
                             <i data-feather="plus-circle" class="me-2 text-primary"></i>{{ __('index.add_salary_history') }}
                         </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body p-4">
                         <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="salaryPerformanceReview" class="form-label fw-semibold">{{ __('index.linked_performance_review') }}</label>
+                                <select id="salaryPerformanceReview" class="form-control" name="performance_review_id">
+                                    <option value="">{{ __('index.no_linked_review') }}</option>
+                                    @foreach($completedSalaryReviews as $salaryReview)
+                                        <option value="{{ $salaryReview->id }}" @selected($selectedSalaryReview?->id === $salaryReview->id)>#{{ $salaryReview->id }} · {{ __('index.' . $salaryReview->review_type) }} · {{ $salaryReview->review_date?->format('Y-m-d') }} · {{ $salaryReview->total_score }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="form-text">{{ __('index.linked_salary_increase_help') }}</p>
+                            </div>
                             @foreach([
                                 'effective_date' => [__('index.effective_date'), 'date'],
                                 'old_base_salary' => [__('index.old_base_salary'), 'number'],
@@ -180,24 +199,24 @@
                             ] as $field => [$label, $type])
                                 <div class="col-lg-4 col-md-6 mb-3">
                                     <label class="form-label fw-semibold">{{ $label }}</label>
-                                    <input class="form-control" type="{{ $type }}" step="0.01" name="{{ $field }}" @if($field === 'new_base_salary') required @endif>
+                                    <input class="form-control" type="{{ $type }}" @if($type === 'number') step="0.01" min="0" @endif name="{{ $field }}" value="{{ old($field, match ($field) { 'old_base_salary' => $salaryBase, 'effective_date' => now()->toDateString(), default => null }) }}" @if($field === 'new_base_salary') required @endif>
                                 </div>
                             @endforeach
                             <div class="col-lg-4 col-md-6 mb-3">
                                 <label class="form-label fw-semibold">{{ __('index.status') }}</label>
                                 <select class="form-control" name="approval_status">
                                     @foreach(['draft', 'pending', 'approved', 'rejected', 'cancelled'] as $status)
-                                        <option value="{{ $status }}">{{ \Illuminate\Support\Facades\Lang::has('index.' . $status) ? __('index.' . $status) : ucfirst($status) }}</option>
+                                        <option value="{{ $status }}" @selected(old('approval_status', $selectedSalaryReview ? 'pending' : 'draft') === $status)>{{ \Illuminate\Support\Facades\Lang::has('index.' . $status) ? __('index.' . $status) : ucfirst($status) }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">{{ __('index.reason') }}</label>
-                                <textarea class="form-control" name="reason" rows="2" placeholder="{{ __('index.reason') }}"></textarea>
+                                <textarea class="form-control" name="reason" rows="2" placeholder="{{ __('index.reason') }}">{{ old('reason') }}</textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">{{ __('index.notes') }}</label>
-                                <textarea class="form-control" name="note" rows="2" placeholder="{{ __('index.notes') }}"></textarea>
+                                <textarea class="form-control" name="note" rows="2" placeholder="{{ __('index.notes') }}">{{ old('note') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -212,5 +231,5 @@
         </div>
     @endcan
 @else
-    <p class="text-muted mb-0">Salary information is restricted.</p>
+    <p class="text-muted mb-0">{{ __('index.salary_information_restricted') }}</p>
 @endif

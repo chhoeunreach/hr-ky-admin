@@ -33,6 +33,7 @@
     <section class="content">
 
         @include('admin.section.flash_message')
+        @include('admin.employees.profile.partials.request-saved-next-step', ['savedRequestType' => 'time_leave', 'printPermission' => 'employee.time_leave_form.print', 'printTab' => 'time-leave-letter', 'printRequestField' => 'time_leave_request_id'])
 
         @include('admin.timeLeaveRequest.common.breadcrumb')
 
@@ -155,7 +156,7 @@
                             ?>
                         @forelse($timeLeaves as $key => $value)
                             <tr>
-                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $loop->iteration }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.time_leave_form.print', 'printTab' => 'time-leave-letter', 'printRequestField' => 'time_leave_request_id'])</td>
                                 <td>{{ AppHelper::timeLeaverequestDate($value->issue_date) }}</td>
                                 <td>{{ AppHelper::convertLeaveTimeFormat($value->start_time) }}</td>
                                 <td>{{ AppHelper::convertLeaveTimeFormat($value->end_time) }}</td>

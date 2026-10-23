@@ -17,7 +17,7 @@
                 'Overdue' => 'danger',
                 default => 'secondary',
             };
-            $reviewStatus = function ($employee, string $label, array $reviewTypes, string $reviewType, int $months = null) {
+            $reviewStatus = function ($employee, string $label, array $reviewTypes, string $reviewType, ?int $months = null) {
                 if (!$employee->joining_date) {
                     return ['label' => $label, 'status' => 'N/A', 'date' => null, 'review_type' => $reviewType, 'period_start' => null, 'period_end' => null];
                 }
@@ -36,7 +36,7 @@
 
                 $done = $employee->employeePerformanceReviews
                     ->filter(fn ($review) => in_array($review->review_type, $reviewTypes, true))
-                    ->contains(fn ($review) => $review->review_date && \Illuminate\Support\Carbon::parse($review->review_date)->greaterThanOrEqualTo($dueDate->copy()->subDays(30)));
+                    ->contains(fn ($review) => $review->completesMilestone($dueDate));
 
                 if ($done) {
                     return ['label' => $label, 'status' => 'Done', 'date' => $dueDate->format('Y-m-d'), 'review_type' => $reviewType, 'period_start' => $joinDate->format('Y-m-d'), 'period_end' => $dueDate->format('Y-m-d')];
@@ -320,10 +320,10 @@
                         @forelse($employees as $employee)
                             @php
                                 $reviewMilestones = [
-                                    $reviewStatus($employee, '3M', ['quarterly', 'probation'], 'quarterly', 3),
-                                    $reviewStatus($employee, '6M', ['six_month'], 'six_month', 6),
-                                    $reviewStatus($employee, '12M', ['annual'], 'annual', 12),
-                                    $reviewStatus($employee, 'Yearly', ['annual'], 'annual', null),
+                                    $reviewStatus($employee, __('index.review_three_months'), ['quarterly', 'probation'], 'quarterly', 3),
+                                    $reviewStatus($employee, __('index.review_six_months'), ['six_month'], 'six_month', 6),
+                                    $reviewStatus($employee, __('index.review_twelve_months'), ['annual'], 'annual', 12),
+                                    $reviewStatus($employee, __('index.review_yearly'), ['annual'], 'annual', null),
                                 ];
                             @endphp
                             <tr>
@@ -368,7 +368,7 @@
                                     <div class="d-flex flex-wrap gap-1">
                                         @foreach($reviewMilestones as $milestone)
                                             @php
-                                                $canCreateFromBadge = in_array($milestone['status'], ['Due', 'Overdue'], true);
+                                                $canCreateFromBadge = in_array($milestone['status'], ['Upcoming', 'Due', 'Overdue'], true);
                                                 $reviewUrl = route('admin.employees.profile.show', [
                                                      'employee' => $employee->id,
                                                      'tab' => 'evaluation',
@@ -382,18 +382,25 @@
                                             @endphp
                                             @can('employee.performance.create')
                                                 @if($canCreateFromBadge)
-                                                    <a class="badge bg-{{ $reviewBadgeClass($milestone['status']) }} text-decoration-none"
-                                                       href="{{ $reviewUrl }}"
-                                                       title="Create review due: {{ $milestone['date'] ?: 'N/A' }}">
+                                                    <button type="button" class="badge border-0 bg-{{ $reviewBadgeClass($milestone['status']) }}"
+                                                            data-bs-toggle="modal" data-bs-target="#quickCompleteReviewModal"
+                                                            data-action="{{ route('admin.employees.profile.reviews.store', $employee->id) }}"
+                                                            data-employee="{{ $employee->name ?: $employee->english_name }}"
+                                                            data-label="{{ $milestone['label'] }}"
+                                                            data-review-type="{{ $milestone['review_type'] }}"
+                                                            data-period-start="{{ $milestone['period_start'] }}"
+                                                            data-period-end="{{ $milestone['period_end'] }}"
+                                                            data-review-url="{{ $reviewUrl }}"
+                                                            title="{{ __('index.quick_review_due', ['date' => $milestone['date']]) }}">
                                                         {{ $milestone['label'] }}: {{ $statusLabel }}
-                                                    </a>
+                                                    </button>
                                                 @else
-                                                    <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="Due: {{ $milestone['date'] ?: 'N/A' }}">
+                                                    <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="{{ __('index.review_due', ['date' => $milestone['date'] ?: 'N/A']) }}">
                                                         {{ $milestone['label'] }}: {{ $statusLabel }}
                                                     </span>
                                                 @endif
                                             @else
-                                                <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="Due: {{ $milestone['date'] ?: 'N/A' }}">
+                                                <span class="badge bg-{{ $reviewBadgeClass($milestone['status']) }}" title="{{ __('index.review_due', ['date' => $milestone['date'] ?: 'N/A']) }}">
                                                     {{ $milestone['label'] }}: {{ $statusLabel }}
                                                 </span>
                                             @endcan
@@ -415,12 +422,37 @@
                 @endif
             </div>
         </div>
+        @can('employee.performance.create')
+            @include('admin.employees.profile.partials.quick-complete-review')
+        @endcan
     </section>
 @endsection
 
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            const reviewModal = document.getElementById('quickCompleteReviewModal');
+            if (reviewModal) {
+                reviewModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    if (!button) return;
+                    const reviewForm = reviewModal.querySelector('form');
+                    reviewForm.reset();
+                    reviewForm.action = button.dataset.action;
+                    reviewModal.querySelector('[data-review-summary]').textContent =
+                        button.dataset.employee + ' · ' + button.dataset.label + ' · ' +
+                        button.dataset.periodStart + ' → ' + button.dataset.periodEnd;
+                    ['review_type', 'period_start', 'period_end'].forEach(function (name) {
+                        const key = name.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+                        reviewForm.elements[name].value = button.dataset[key];
+                    });
+                    reviewModal.querySelector('[data-full-review]').href = button.dataset.reviewUrl;
+                    reviewForm.querySelector('[type="submit"]').disabled = false;
+                });
+                reviewModal.querySelector('form').addEventListener('submit', function () {
+                    this.querySelector('[type="submit"]').disabled = true;
+                });
+            }
             const input = document.getElementById('employeeProfileSearch');
             const clearButton = document.getElementById('employeeProfileSearchClear');
             const form = document.getElementById('employeeProfileFilters');

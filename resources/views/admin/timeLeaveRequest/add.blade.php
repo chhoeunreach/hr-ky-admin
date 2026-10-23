@@ -10,6 +10,10 @@
         @include('admin.section.flash_message')
 
         @include('admin.leaveRequest.common.breadcrumb')
+        <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
+        <div class="employee-request-create-heading"><h3>{{ __('index.create_time_leave_request') }}</h3><p>{{ __('index.create_request_save_help') }}</p></div>
+        @include('admin.employees.profile.partials.request-workflow-steps', ['currentStep' => 1])
+
         <div class="row">
 {{--            <div class="col-lg-2">--}}
 {{--                @include('admin.leaveRequest.common.leave_menu')--}}
@@ -31,7 +35,7 @@
                                                     data-branch-name="{{ $employee->branch->name ?? '' }}"
                                                     data-department-id="{{ $employee->department_id }}"
                                                     data-department-name="{{ $employee->department->dept_name ?? '' }}"
-                                                {{ old('requested_by') == $employee->id ? 'selected' : '' }}>
+                                                {{ old('requested_by', request('requested_by')) == $employee->id ? 'selected' : '' }}>
                                                 {{ ucfirst($employee->name) }}{{ $employee->username ? ' (' . $employee->username . ')' : '' }}
                                             </option>
                                         @endforeach
@@ -85,10 +89,11 @@
                                     <textarea class="form-control" name="reasons" rows="6" >{{  old('reasons') }}</textarea>
                                 </div>
 
-                                <div class="col-lg-12 mb-4 text-start">
+                                <div class="col-lg-12 mb-4 text-start employee-request-save-actions">
                                     <button type="submit" class="btn btn-primary">
-                                        {{__('index.submit')}}
+                                        {{ __('index.request_step_save') }}
                                     </button>
+                                    <span class="text-muted small ms-2">{{ __('index.saving_does_not_print') }}</span>
                                 </div>
                             </div>
                         </form>

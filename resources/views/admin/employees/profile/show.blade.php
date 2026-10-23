@@ -1,5 +1,20 @@
 @extends('layouts.master')
 
+@if(request('request_modal') === '1' && request('tab') === 'leave-letter')
+    @section('embedded', '1')
+    @section('styles')
+        <style>
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .employee-360 > :not(style):not(link):not(.card),
+            .employee-360 > .card > .card-header { display: none !important; }
+            .employee-request-header-actions > .btn-outline-secondary { display: none !important; }
+            .employee-360 > .card { margin-bottom: 0; }
+            .employee-360 > .card > .card-body { padding: 0; }
+        </style>
+    @endsection
+@endif
+
 @section('title', __('index.employee_360_profile'))
 
 @section('action', __('index.employee_profile'))
@@ -30,18 +45,18 @@
                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar)
                 : asset('assets/images/img.png');
             $defaultItems = [
-                ['Work Quality - Graphic Design', 'Clean, accurate design aligned with brand standards', 15],
-                ['Task Completion', 'Complete assigned thumbnails, posters, and tasks on schedule', 10],
-                ['Thumbnail & Poster', 'Create attractive visuals that match requirements', 10],
-                ['IT Support', 'Support PC, Mac, and network issues effectively', 10],
-                ['Stream Live Control', 'Prepare and manage stable live streams', 10],
-                ['Content & Video Editing', 'Support technical content and quality video editing', 10],
-                ['Responsibility', 'Stay focused, careful, and accountable for assigned work', 10],
-                ['Teamwork', 'Cooperate and support teammates', 5],
-                ['Accepting Guidance', 'Listen to and apply manager guidance', 5],
-                ['Persistence & Patience', 'Work under pressure without giving up easily', 5],
-                ['Learning / Training', 'Learn new skills and technical methods quickly', 5],
-                ['Communication & Initiative', 'Communicate well and seek ways to improve work', 5],
+                [__('index.review_criteria_work_quality'), __('index.review_standard_work_quality'), 15],
+                [__('index.review_criteria_task_completion'), __('index.review_standard_task_completion'), 10],
+                [__('index.review_criteria_thumbnail_poster'), __('index.review_standard_thumbnail_poster'), 10],
+                [__('index.review_criteria_it_support'), __('index.review_standard_it_support'), 10],
+                [__('index.review_criteria_live_stream'), __('index.review_standard_live_stream'), 10],
+                [__('index.review_criteria_content_editing'), __('index.review_standard_content_editing'), 10],
+                [__('index.review_criteria_responsibility'), __('index.review_standard_responsibility'), 10],
+                [__('index.review_criteria_teamwork'), __('index.review_standard_teamwork'), 5],
+                [__('index.review_criteria_guidance'), __('index.review_standard_guidance'), 5],
+                [__('index.review_criteria_persistence'), __('index.review_standard_persistence'), 5],
+                [__('index.review_criteria_learning'), __('index.review_standard_learning'), 5],
+                [__('index.review_criteria_communication'), __('index.review_standard_communication'), 5],
             ];
             $tabs = [
                 'overview' => __('index.overview'),
@@ -1972,6 +1987,7 @@
                 }
             }
         </style>
+        <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
 
         @include('admin.employees.profile.partials.overview-header')
 
@@ -2317,7 +2333,7 @@
                     @endif
 
                     @if($canViewPerformance)
-                        <div class="tab-pane fade" id="evaluation" role="tabpanel">
+                        <div class="tab-pane fade {{ $activeProfileTab === 'evaluation' ? 'show active' : '' }}" id="evaluation" role="tabpanel">
                             @include('admin.employees.profile.partials.evaluation')
                         </div>
                     @endif
@@ -2360,7 +2376,8 @@
                     @endif
 
                     @if($canViewAudit)
-                        <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="tab-pane fade {{ $activeProfileTab === 'history' ? 'show active' : '' }}" id="history" role="tabpanel">
+                            <a id="employeePrintSavedNotice" class="alert alert-success d-none" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'history']) }}">{{ __('index.print_record_saved') }}</a>
                             <div class="table-responsive">
                                 <table class="table table-sm employee-360-table">
                                     <thead>
@@ -2369,22 +2386,49 @@
                                         <th>{{ __('index.module') }}</th>
                                         <th>{{ __('index.action') }}</th>
                                         <th>{{ __('index.record') }}</th>
+                                        <th>{{ __('index.print_record_user') }}</th>
+                                        <th>{{ __('index.print_record_details') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
                                     @forelse($auditLogs as $log)
                                         <tr>
                                             <td>{{ $log->created_at }}</td>
-                                            <td>{{ ucfirst($log->module) }}</td>
-                                            <td>{{ ucfirst($log->action) }}</td>
-                                            <td>{{ $log->record_id }}</td>
+                                            <td>{{ data_get($log->new_values, 'document_title', ucwords(str_replace('_', ' ', $log->module))) }}</td>
+                                            <td>{{ ucwords(str_replace('_', ' ', $log->action)) }}</td>
+                                            <td>{{ $log->record_id ?: $log->id }}</td>
+                                            <td>{{ data_get($log->new_values, 'performed_by_name') ?: $log->performed_by }}</td>
+                                            <td>
+                                                @if($log->module === 'document_print')
+                                                    <details>
+                                                        <summary>{{ __('index.print_record_details') }}</summary>
+                                                        <p class="text-muted mt-2">{{ __('index.print_request_notice') }}</p>
+                                                        @if(data_get($log->new_values, 'source_request_id'))
+                                                            <p>
+                                                                {{ __('index.linked_saved_request') }}:
+                                                                <a href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => data_get($log->new_values, 'source_request_type') === 'leave' ? 'leave-letter' : 'time-leave-letter', data_get($log->new_values, 'source_request_type') === 'leave' ? 'leave_request_id' : 'time_leave_request_id' => data_get($log->new_values, 'source_request_id')]) }}">#{{ data_get($log->new_values, 'source_request_id') }}</a>
+                                                            </p>
+                                                        @endif
+                                                        <div style="white-space: pre-wrap; max-height: 300px; overflow: auto;">{{ data_get($log->new_values, 'document_text') }}</div>
+                                                        <table class="table table-sm mt-2">
+                                                            @foreach(data_get($log->new_values, 'fields', []) as $field)
+                                                                <tr>
+                                                                    <th>{{ $field['label'] }}</th>
+                                                                    <td>{{ $field['value'] ?? '' }}@if(isset($field['checked'])) ({{ $field['checked'] ? __('index.print_record_checked') : __('index.print_record_unchecked') }})@endif</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </table>
+                                                    </details>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @empty
-                                        <tr><td colspan="4" class="text-center">{{ __('index.no_records_found') }}</td></tr>
+                                        <tr><td colspan="6" class="text-center">{{ __('index.no_records_found') }}</td></tr>
                                     @endforelse
                                     </tbody>
                                 </table>
                             </div>
+                            {{ $auditLogs->links() }}
                         </div>
                     @endif
                 </div>
@@ -2394,6 +2438,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/employee-profile-review.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
     <script>
         function cleanupEmployeeCompletePrintRoot() {
@@ -2436,8 +2481,10 @@
             resignationForm: {{ $canExportResignationForm ? 'true' : 'false' }},
         };
 
-        function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
-            if (!employeeProfilePrintPermissions[printType]) {
+        let employeePrintPending = false;
+
+        async function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
+            if (!employeeProfilePrintPermissions[printType] || employeePrintPending) {
                 return;
             }
 
@@ -2445,7 +2492,12 @@
 
             const paper = document.querySelector(sourceSelector);
             if (!paper) {
-                window.print();
+                return;
+            }
+            const linkedPrint = ['leaveLetter', 'timeLeaveLetter'].includes(printType);
+            const sourceRequestId = linkedPrint ? Number(paper.dataset.sourceRequestId) : null;
+            if (linkedPrint && (!Number.isInteger(sourceRequestId) || sourceRequestId < 1)) {
+                window.alert(@json(__('index.select_saved_request_before_print')));
                 return;
             }
 
@@ -2466,15 +2518,79 @@
                 if (field.matches('input[type="checkbox"], input[type="radio"]')) {
                     printField.checked = field.checked;
                 }
+                if (linkedPrint && !field.matches('input[type="checkbox"], input[type="radio"]')) {
+                    const value = document.createElement(field.matches('textarea') ? 'div' : 'span');
+                    value.className = 'employee-request-print-value';
+                    value.textContent = field.tagName === 'SELECT' ? field.selectedOptions[0]?.textContent || '' : field.value;
+                    printField.replaceWith(value);
+                }
             });
             printRoot.id = rootId;
             printRoot.appendChild(printPaper);
             document.body.appendChild(printRoot);
-            document.body.classList.add(bodyClass);
 
-            window.setTimeout(function () {
+            employeePrintPending = true;
+            const printButton = paper.closest?.('.tab-pane')?.querySelector('[data-save-linked-print]');
+            const printButtonContent = printButton?.innerHTML;
+            if (printButton) {
+                printButton.disabled = true;
+                printButton.setAttribute('aria-busy', 'true');
+                printButton.textContent = printButton.dataset.printBusyLabel;
+            }
+            try {
+                const fields = Array.from(sourceFields).map(function (field, index) {
+                    return {
+                        label: field.getAttribute('aria-label') || field.closest('label')?.textContent?.trim()
+                            || field.closest('.employee-print-form-field')?.querySelector('span')?.textContent?.trim()
+                            || field.name || field.id || `Field ${index + 1}`,
+                        value: field.value,
+                        checked: field.matches('input[type="checkbox"], input[type="radio"]') ? field.checked : null,
+                    };
+                });
+                const response = await fetch(@json(route('admin.employees.profile.print-records.store', $employee)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': @json(csrf_token()),
+                    },
+                    body: JSON.stringify({form_type: printType, document_text: printPaper.innerText, fields,
+                        ...(linkedPrint ? {source_request_id: sourceRequestId} : {})}),
+                });
+                const result = response.ok ? await response.json() : null;
+                if (result?.recorded !== true || (linkedPrint && (!Number.isInteger(result.print_record_id) || result.print_record_id < 1))) {
+                    throw new Error('Print record was not saved.');
+                }
+                if (linkedPrint) {
+                    const recordLabel = @json(__('index.print_record_number')) + ': #' + result.print_record_id;
+                    printPaper.querySelector('[data-print-record]').textContent = recordLabel;
+                    paper.querySelector('[data-print-record]').textContent = recordLabel;
+                    const notice = document.querySelector('[data-print-request-result="' + paper.dataset.requestTab + '"]');
+                    if (notice) notice.textContent = @json(__('index.linked_print_record_saved')) + ' #' + result.print_record_id;
+                }
+                const savedNotice = document.getElementById('employeePrintSavedNotice');
+                savedNotice?.classList.remove('d-none');
+                savedNotice?.classList.add('d-block');
+                if (document.fonts) await document.fonts.ready;
+                if (linkedPrint) {
+                    await Promise.all(Array.from(printPaper.querySelectorAll('img')).map(function (img) {
+                        return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
+                    }));
+                }
+                document.body.classList.add(bodyClass);
                 window.print();
-            }, 50);
+            } catch (error) {
+                cleanupEmployeeCompletePrintRoot();
+                window.alert(@json(__('index.print_record_failed')));
+            } finally {
+                employeePrintPending = false;
+                if (printButton) {
+                    printButton.innerHTML = printButtonContent;
+                    printButton.disabled = false;
+                    printButton.removeAttribute('aria-busy');
+                }
+            }
         }
 
         function printEmployeeCompleteForm() {
@@ -3241,15 +3357,6 @@
                 bootstrap.Modal.getOrCreateInstance(completeFormUpdateModal).show();
             }
         @endif
-
-        document.querySelectorAll('[data-review-score]').forEach((input) => {
-            input.addEventListener('input', function () {
-                const max = Number(this.dataset.maxScore || 0);
-                if (Number(this.value) > max) {
-                    this.value = max;
-                }
-            });
-        });
 
         document.addEventListener('shown.bs.modal', () => {
             if (window.feather) feather.replace();

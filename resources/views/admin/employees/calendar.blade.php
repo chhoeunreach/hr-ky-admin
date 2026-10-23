@@ -11,7 +11,7 @@
                 <i class="link-icon" data-feather="list"></i>{{ __('index.employee_lists') }}
             </button>
         </a>
-        <a href="{{ route('admin.leave-request.add') }}">
+        <a href="{{ route('admin.leave-request.add') }}" data-open-leave-request-form>
             <button class="btn btn-primary d-flex align-items-center gap-2">
                 <i class="link-icon" data-feather="plus"></i>{{ __('index.leave_request') }}
             </button>

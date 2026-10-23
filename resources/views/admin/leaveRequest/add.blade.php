@@ -1,5 +1,7 @@
 @extends('layouts.master')
 
+@include('admin.leaveRequest.common.embedded-form')
+
 @section('title',__('index.leave_request'))
 
 @section('action',__('index.create'))
@@ -9,7 +11,14 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.leaveRequest.common.breadcrumb')
+        @if(request('request_modal') !== '1')
+            @include('admin.leaveRequest.common.breadcrumb')
+        @endif
+        @include('admin.employees.profile.partials.request-saved-next-step', ['savedRequestType' => 'leave', 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])
+        <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
+        <div class="employee-request-create-heading"><h3>{{ __('index.create_leave_request') }}</h3><p>{{ __('index.create_request_save_help') }}</p></div>
+        @include('admin.employees.profile.partials.request-workflow-steps', ['currentStep' => 1])
+
         <div class="row">
 {{--            <div class="col-lg-2">--}}
 {{--                @include('admin.leaveRequest.common.leave_menu')--}}
@@ -18,7 +27,7 @@
                 <div class="card">
                     <div class="card-body pb-0">
                         <form class="forms-sample"
-                              action="{{route('admin.leave-request.save')}}" method="post">
+                              action="{{ route('admin.leave-request.save', request('request_modal') === '1' ? ['request_modal' => '1'] : []) }}" method="post">
                             @csrf
 
                             <div class="row">
@@ -90,10 +99,11 @@
                                     <textarea class="form-control" name="reasons" rows="6" >{{  old('reasons') }}</textarea>
                                 </div>
 
-                                <div class="col-lg-12 mb-4 text-start">
+                                <div class="col-lg-12 mb-4 text-start employee-request-save-actions">
                                     <button type="submit" class="btn btn-primary">
-                                        {{ __('index.submit') }}
+                                        {{ __('index.request_step_save') }}
                                     </button>
+                                    <span class="text-muted small ms-2">{{ __('index.saving_does_not_print') }}</span>
                                 </div>
                             </div>
                         </form>

@@ -37,6 +37,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeProfileController extends Controller
 {
@@ -70,7 +71,7 @@ class EmployeeProfileController extends Controller
                 'department:id,dept_name',
                 'post:id,post_name',
                 'employee360Profile:id,employee_id,employment_status,last_working_date',
-                'employeePerformanceReviews:id,employee_id,review_type,review_date,next_review_date,status',
+                'employeePerformanceReviews:id,employee_id,review_type,period_end,review_date,next_review_date,status',
             ])
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($query) use ($search) {
@@ -149,7 +150,7 @@ class EmployeeProfileController extends Controller
         $leaveBalance = $this->leaveBalance($employee);
 
         $employmentHistory = EmployeeEmploymentHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
-        $salaryHistory = EmployeeSalaryHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
+        $salaryHistory = EmployeeSalaryHistory::with('performanceReview')->where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
         $firstSalary = $salaryHistory->last();
         $interviews = EmployeeInterview::where('employee_id', $employee->id)->latest('interview_date')->latest('id')->get();
         $responsibilities = EmployeeJobResponsibility::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
@@ -161,12 +162,22 @@ class EmployeeProfileController extends Controller
         $goals = EmployeeGoal::where('employee_id', $employee->id)->latest('due_date')->latest('id')->get();
         $improvementPlans = EmployeeImprovementPlan::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
         $isOwnProfile = auth()->check() && auth()->id() === $employee->id;
-        $canViewLeaveRecords = $this->can('employee.leave_form.view');
+        $canViewLeaveRecords = $this->can('employee.leave_form.view') || $this->can('employee.leave_form.print');
         $canPrintLeaveForm = $this->can('employee.leave_form.print');
         $canExportLeaveForm = $this->can('employee.leave_form.export');
-        $canViewTimeLeaveRecords = $this->can('employee.time_leave_form.view');
+        $canViewTimeLeaveRecords = $this->can('employee.time_leave_form.view') || $this->can('employee.time_leave_form.print');
         $canPrintTimeLeaveForm = $this->can('employee.time_leave_form.print');
         $canExportTimeLeaveForm = $this->can('employee.time_leave_form.export');
+        $leavePrintRequests = $canViewLeaveRecords
+            ? LeaveRequestMaster::with('leaveType')->where('requested_by', $employee->id)->latest('id')->get()
+            : collect();
+        $timeLeavePrintRequests = $canViewTimeLeaveRecords
+            ? TimeLeave::where('requested_by', $employee->id)->latest('id')->get()
+            : collect();
+        $selectedLeavePrintRequest = $leavePrintRequests->firstWhere('id', request('leave_request_id'));
+        $selectedTimeLeavePrintRequest = $timeLeavePrintRequests->firstWhere('id', request('time_leave_request_id'));
+        abort_if(request()->filled('leave_request_id') && !$selectedLeavePrintRequest, 404);
+        abort_if(request()->filled('time_leave_request_id') && !$selectedTimeLeavePrintRequest, 404);
         $canViewAttendanceDailyReport = $this->can('employee.attendance_daily_report.view');
         $canPrintAttendanceDailyReport = $this->can('employee.attendance_daily_report.print');
         $canExportAttendanceDailyReport = $this->can('employee.attendance_daily_report.export');
@@ -174,15 +185,17 @@ class EmployeeProfileController extends Controller
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
         $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
         $contractHistories = EmployeeContractHistory::where('employee_id', $employee->id)->latest('created_at')->limit(20)->get();
-        $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)->latest('created_at')->limit(100)->get();
+        $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)
+            ->latest('created_at')->latest('id')->paginate(25, ['*'], 'history_page')
+            ->withQueryString()->appends(['tab' => 'history']);
         $canViewEmployment = $this->can('employee.employment.view');
         $canViewResignationForm = $this->can('employee.resignation_form.view');
         $canPrintResignationForm = $this->can('employee.resignation_form.print');
         $canExportResignationForm = $this->can('employee.resignation_form.export');
-        $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view');
+        $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
-        $canViewPerformance = $this->can('employee.performance.view') || $isOwnProfile;
+        $canViewPerformance = $this->can('employee.performance.view') || $this->can('employee.performance.create') || $isOwnProfile;
         $canViewTraining = $this->can('employee.training.view') || $isOwnProfile;
         $canViewReward = $this->can('employee.reward.view');
         $canViewDiscipline = $this->can('employee.discipline.view');
@@ -227,10 +240,14 @@ class EmployeeProfileController extends Controller
             $discipline,
             $salaryHistory,
             $latestSalary,
-            $auditLogs
+            $auditLogs->getCollection()
         );
 
         return view('admin.employees.profile.show', compact(
+            'leavePrintRequests',
+            'timeLeavePrintRequests',
+            'selectedLeavePrintRequest',
+            'selectedTimeLeavePrintRequest',
             'employee',
             'profile',
             'summary',
@@ -283,6 +300,75 @@ class EmployeeProfileController extends Controller
             'latestSalary',
             'latestReview'
         ));
+    }
+
+    public function recordPrint(Request $request, User $employee)
+    {
+        $linkedPrint = in_array($request->input('form_type'), ['leaveLetter', 'timeLeaveLetter'], true);
+        $forms = [
+            'complete' => ['employee.complete_form.print', 'Employee Complete Form'],
+            'overview' => ['employee.warning_overview.print', 'Warning Overview'],
+            'warning' => ['employee.warning_form.print', 'Staff Warning Form'],
+            'contract' => ['employee.contract_form.print', 'Employment Contract'],
+            'salaryCertificate' => [null, 'Salary Certificate'],
+            'leaveLetter' => ['employee.leave_form.print', __('index.leave_request_form')],
+            'timeLeaveLetter' => ['employee.time_leave_form.print', __('index.time_leave_request_form')],
+            'attendanceDailyReport' => ['employee.attendance_daily_report.print', 'Attendance Daily Report'],
+            'resignationLetter' => ['employee.resignation_form.print', 'Resignation Form'],
+        ];
+        $data = $request->validate([
+            'form_type' => ['required', Rule::in(array_keys($forms))],
+            'source_request_id' => [$linkedPrint ? 'required' : 'prohibited', 'integer', 'min:1'],
+            'document_text' => ['required', 'string', 'max:120000'],
+            'fields' => ['present', 'array', 'max:500'],
+            'fields.*' => ['array:label,value,checked'],
+            'fields.*.label' => ['required', 'string', 'max:500'],
+            'fields.*.value' => ['nullable', 'string', 'max:20000'],
+            'fields.*.checked' => ['nullable', 'boolean'],
+        ], [
+            'source_request_id.required' => __('index.select_saved_request_before_print'),
+        ]);
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
+        [$ability, $title] = $forms[$data['form_type']];
+        if ($ability) {
+            $this->authorizeEmployeeProfile($employee, $ability);
+        } else {
+            abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
+        }
+
+        // Persist before the browser is allowed to open its print dialog.
+        // This records a request; browsers cannot confirm physical printer completion.
+        $record = DB::transaction(function () use ($data, $employee, $request, $title, $linkedPrint) {
+            $source = null;
+            $sourceType = null;
+            if ($linkedPrint) {
+                $sourceType = $data['form_type'] === 'leaveLetter' ? 'leave' : 'time_leave';
+                $query = $sourceType === 'leave' ? LeaveRequestMaster::query() : TimeLeave::query();
+                $source = $query->where('requested_by', $employee->id)->whereKey($data['source_request_id'])
+                    ->lockForUpdate()->first();
+                if (!$source) {
+                    throw ValidationException::withMessages(['source_request_id' => __('index.invalid_print_request_link')]);
+                }
+            }
+            return $this->audit($employee, 'document_print', 'print_requested', null, null, [
+                'form_type' => $data['form_type'],
+                'document_title' => $title,
+                'document_text' => $data['document_text'],
+                'fields' => $data['fields'],
+                'performed_by_name' => auth()->user()?->name ?? auth('admin')->user()?->name,
+                'employee_name' => $employee->name,
+                'employee_code' => $employee->employee_code,
+                'paper_size' => 'A4',
+                'document_locale' => app()->getLocale(),
+                'source_request_type' => $sourceType,
+                'source_request_id' => $source?->id,
+                'source_request_snapshot' => $source?->only($sourceType === 'leave'
+                    ? ['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'no_of_days', 'leave_requested_date', 'reasons', 'status', 'admin_remark']
+                    : ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark']),
+            ], $request);
+        });
+
+        return response()->json(['recorded' => true, 'print_record_id' => $record->id], 201);
     }
 
     public function downloadSalaryCertificateWord(User $employee)
@@ -434,20 +520,44 @@ class EmployeeProfileController extends Controller
     {
         $this->authorizeEmployeeProfile($employee, 'employee.salary.history.manage');
 
+        $linkedReview = $request->filled('performance_review_id');
         $data = $request->validate([
-            'effective_date' => ['nullable', 'date'],
-            'old_base_salary' => ['nullable', 'numeric', 'min:0'],
+            'performance_review_id' => ['nullable', 'integer', Rule::exists('performance_reviews', 'id')
+                ->where('employee_id', $employee->id)->where('status', 'completed')],
+            'effective_date' => [$linkedReview ? 'required' : 'nullable', 'date'],
+            'old_base_salary' => [$linkedReview ? 'required' : 'nullable', 'numeric', 'min:0'],
             'increase_amount' => ['nullable', 'numeric', 'min:0'],
             'increase_percentage' => ['nullable', 'numeric', 'min:0'],
-            'new_base_salary' => ['required', 'numeric', 'min:0'],
+            'new_base_salary' => $linkedReview ? ['required', 'numeric', 'gt:old_base_salary'] : ['required', 'numeric', 'min:0'],
             'allowance_before' => ['nullable', 'numeric', 'min:0'],
             'allowance_after' => ['nullable', 'numeric', 'min:0'],
             'reason' => ['nullable', 'string'],
             'reviewed_by' => ['nullable', 'exists:users,id'],
             'approved_by' => ['nullable', 'exists:users,id'],
-            'approval_status' => ['required', Rule::in(['draft', 'pending', 'approved', 'rejected', 'cancelled'])],
+            'approval_status' => ['required', Rule::in($linkedReview ? ['pending'] : ['draft', 'pending', 'approved', 'rejected', 'cancelled'])],
             'note' => ['nullable', 'string'],
+        ], [
+            'new_base_salary.gt' => __('index.salary_increase_must_be_greater'),
+            'performance_review_id.exists' => __('index.salary_review_must_be_completed'),
+            'approval_status.in' => $linkedReview ? __('index.salary_increase_pending_required') : __('validation.in', ['attribute' => __('index.status')]),
+        ], [
+            'performance_review_id' => __('index.linked_performance_review'),
+            'effective_date' => __('index.effective_date'),
+            'old_base_salary' => __('index.old_base_salary'),
+            'new_base_salary' => __('index.new_base_salary'),
+            'increase_amount' => __('index.increase_amount'),
+            'increase_percentage' => __('index.increase_percentage'),
+            'allowance_before' => __('index.allowance_before'),
+            'allowance_after' => __('index.allowance_after'),
+            'approval_status' => __('index.status'),
+            'reason' => __('index.reason'),
+            'note' => __('index.note'),
         ]);
+        if ($linkedReview) {
+            $data['increase_amount'] = round((float) $data['new_base_salary'] - (float) $data['old_base_salary'], 2);
+            $data['increase_percentage'] = (float) $data['old_base_salary'] > 0
+                ? round($data['increase_amount'] / (float) $data['old_base_salary'] * 100, 2) : null;
+        }
         $data['employee_id'] = $employee->id;
         $data['requested_by'] = auth()->id();
 
@@ -469,7 +579,12 @@ class EmployeeProfileController extends Controller
             }
         });
 
-        return back()->with('success', 'Salary history added.');
+        if ($linkedReview) {
+            return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary'])
+                ->with('success', __('index.salary_increase_requested'));
+        }
+
+        return back()->with('success', __('index.salary_history_added'));
     }
 
     public function storeInterview(Request $request, User $employee): RedirectResponse
@@ -532,11 +647,13 @@ class EmployeeProfileController extends Controller
     {
         $this->authorizeEmployeeProfile($employee, 'employee.performance.create');
 
+        $quickComplete = $request->boolean('quick_complete');
         $data = $request->validate([
+            'quick_complete' => ['sometimes', 'boolean'],
             'review_type' => ['required', Rule::in(['monthly', 'quarterly', 'six_month', 'annual', 'probation', 'special'])],
-            'period_start' => ['nullable', 'date'],
-            'period_end' => ['nullable', 'date'],
-            'review_date' => ['nullable', 'date'],
+            'period_start' => [$quickComplete ? 'required' : 'nullable', 'date'],
+            'period_end' => $quickComplete ? ['required', 'date', 'after_or_equal:period_start'] : ['nullable', 'date'],
+            'review_date' => [$quickComplete ? 'required' : 'nullable', 'date'],
             'status' => ['required', Rule::in(['draft', 'submitted', 'employee_acknowledged', 'manager_approved', 'hr_approved', 'completed', 'rejected'])],
             'strengths' => ['nullable', 'string'],
             'areas_for_improvement' => ['nullable', 'string'],
@@ -551,12 +668,44 @@ class EmployeeProfileController extends Controller
             'max_score' => ['required', 'array'],
             'max_score.*' => ['required', 'numeric', 'min:0'],
             'score' => ['required', 'array'],
-            'score.*' => ['required', 'numeric', 'min:0'],
+            'score.*' => $quickComplete ? ['required', 'numeric', 'min:0', 'max:100'] : ['required', 'numeric', 'min:0'],
             'comment' => ['nullable', 'array'],
             'comment.*' => ['nullable', 'string'],
+        ], [], [
+            'review_type' => __('index.type'),
+            'period_start' => __('index.period_start'),
+            'period_end' => __('index.period_end'),
+            'review_date' => __('index.review_date'),
+            'status' => __('index.status'),
+            'strengths' => __('index.strengths'),
+            'areas_for_improvement' => __('index.areas_for_improvement'),
+            'manager_comment' => __('index.manager_comment'),
+            'employee_comment' => __('index.comment'),
+            'final_recommendation' => __('index.final_recommendation'),
+            'next_review_date' => __('index.next_review'),
+            'criteria' => __('index.criteria'),
+            'criteria.*' => __('index.criteria'),
+            'description.*' => __('index.standard'),
+            'max_score' => __('index.max'),
+            'max_score.*' => __('index.max'),
+            'score' => __('index.score'),
+            'score.*' => __('index.score'),
+            'comment.*' => __('index.comment'),
         ]);
 
-        DB::transaction(function () use ($employee, $data, $request) {
+        DB::transaction(function () use ($employee, $data, $request, $quickComplete) {
+            if ($quickComplete) {
+                User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+                $alreadyCompleted = PerformanceReview::where('employee_id', $employee->id)
+                    ->where('review_type', $data['review_type'])
+                    ->whereDate('period_start', $data['period_start'])
+                    ->whereDate('period_end', $data['period_end'])
+                    ->where('status', 'completed')->exists();
+                if ($alreadyCompleted) {
+                    return;
+                }
+                $data['status'] = 'completed';
+            }
             $items = [];
             $totalScore = 0;
             foreach ($data['criteria'] as $index => $criteria) {
@@ -595,7 +744,12 @@ class EmployeeProfileController extends Controller
             $this->audit($employee, 'performance', 'create', $review->id, null, $review->load('items')->toArray(), $request);
         });
 
-        return back()->with('success', 'Performance review added.');
+        if ($quickComplete) {
+            return back()->with('success', __('index.performance_review_completed'));
+        }
+
+        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'evaluation'])
+            ->with('success', __('index.performance_review_added'));
     }
 
     public function storeTraining(Request $request, User $employee): RedirectResponse
@@ -1043,9 +1197,10 @@ class EmployeeProfileController extends Controller
 
         $activity = $auditLogs->take(8)->map(function ($log) {
             return [
-                'title' => ucwords(str_replace('_', ' ', (string) $log->module)) . ' · ' . ucfirst((string) $log->action),
+                'title' => data_get($log->new_values, 'document_title', ucwords(str_replace('_', ' ', (string) $log->module)))
+                    . ' · ' . ucwords(str_replace('_', ' ', (string) $log->action)),
                 'date' => $log->created_at,
-                'by' => $log->performed_by,
+                'by' => data_get($log->new_values, 'performed_by_name', $log->performed_by),
             ];
         })->values();
 
@@ -1195,10 +1350,10 @@ class EmployeeProfileController extends Controller
     private function employeeReviewMilestones(User $employee): array
     {
         return [
-            $this->employeeReviewMilestone($employee, '3M', ['quarterly', 'probation'], 'quarterly', 3),
-            $this->employeeReviewMilestone($employee, '6M', ['six_month'], 'six_month', 6),
-            $this->employeeReviewMilestone($employee, '12M', ['annual'], 'annual', 12),
-            $this->employeeReviewMilestone($employee, 'Yearly', ['annual'], 'annual'),
+            $this->employeeReviewMilestone($employee, __('index.review_three_months'), ['quarterly', 'probation'], 'quarterly', 3),
+            $this->employeeReviewMilestone($employee, __('index.review_six_months'), ['six_month'], 'six_month', 6),
+            $this->employeeReviewMilestone($employee, __('index.review_twelve_months'), ['annual'], 'annual', 12),
+            $this->employeeReviewMilestone($employee, __('index.review_yearly'), ['annual'], 'annual'),
         ];
     }
 
@@ -1222,7 +1377,7 @@ class EmployeeProfileController extends Controller
 
         $done = $employee->employeePerformanceReviews
             ->filter(fn ($review) => in_array($review->review_type, $reviewTypes, true))
-            ->contains(fn ($review) => $review->review_date && Carbon::parse($review->review_date)->greaterThanOrEqualTo($dueDate->copy()->subDays(30)));
+            ->contains(fn ($review) => $review->completesMilestone($dueDate));
 
         $base = [
             'label' => $label,
@@ -1374,9 +1529,9 @@ class EmployeeProfileController extends Controller
         return array_merge($data, $extra, ['employee_id' => $employee->id]);
     }
 
-    private function audit(User $employee, string $module, string $action, ?int $recordId, ?array $old, ?array $new, Request $request): void
+    private function audit(User $employee, string $module, string $action, ?int $recordId, ?array $old, ?array $new, Request $request): EmployeeProfileAuditLog
     {
-        EmployeeProfileAuditLog::create([
+        return EmployeeProfileAuditLog::create([
             'employee_id' => $employee->id,
             'module' => $module,
             'action' => $action,
