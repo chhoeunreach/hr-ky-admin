@@ -15,8 +15,27 @@ class Resignation extends Model
 
     protected $fillable = [
         'employee_id','resignation_date','last_working_day','reason','status','admin_remark','created_by','updated_by','document','branch_id',
-        'department_id'
+        'department_id', 'letter_details'
     ];
+
+    protected $casts = ['letter_details' => 'array'];
+
+    public static function employeeLetterInformation(User $employee): array
+    {
+        $employee->loadMissing(['branch:id,name', 'department:id,dept_name', 'post:id,post_name']);
+
+        return [
+            'khmer_name' => $employee->name,
+            'latin_name' => $employee->english_name,
+            'gender' => $employee->gender,
+            'department' => $employee->department?->dept_name,
+            'employee_code' => $employee->employee_code ?: $employee->username,
+            'branch' => $employee->branch?->name,
+            'phone' => $employee->phone,
+            'joining_date' => $employee->joining_date ? \Illuminate\Support\Carbon::parse($employee->joining_date)->format('Y-m-d') : null,
+            'position' => $employee->post?->post_name,
+        ];
+    }
 
     const RECORDS_PER_PAGE = 20;
     const UPLOAD_PATH = 'uploads/resignation/';

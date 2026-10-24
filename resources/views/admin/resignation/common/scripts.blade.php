@@ -74,6 +74,30 @@
         const employeeId = "{{ $filterParameters['employee_id'] ?? ($resignationDetail->employee_id ?? '') }}";
 
 
+        let letterEmployeeId = @json((string) old('employee_id', $resignationDetail->employee_id ?? ($profileEmployee ?? null)?->id ?? ''));
+        const updateLetterEmployee = async () => {
+            const selectedId = String($('#employee_id').val() || '');
+            if (selectedId === letterEmployeeId) return;
+            letterEmployeeId = selectedId;
+            const fields = document.querySelectorAll('[data-letter-employee-field]');
+            fields.forEach(field => { field.value = ''; });
+            if (!selectedId || fields.length === 0) return;
+            try {
+                const response = await fetch(@json(url('admin/resignation/employee-information')) + '/' + encodeURIComponent(selectedId), {
+                    headers: {'Accept': 'application/json'}, credentials: 'same-origin',
+                });
+                if (!response.ok) throw new Error('Employee information unavailable');
+                const result = await response.json();
+                if (String($('#employee_id').val() || '') !== selectedId) return;
+                fields.forEach(field => { field.value = result.data[field.dataset.letterEmployeeField] || ''; });
+                const madeAt = document.getElementById('letter_made_at');
+                if (madeAt) madeAt.value = result.data.branch || '';
+            } catch (error) {
+                // The fields remain available for manual completion.
+            }
+        };
+        $('#employee_id').on('change', updateLetterEmployee);
+
         const loadDepartments = async (selectedBranchId) => {
 
             if (!selectedBranchId) return;
@@ -119,7 +143,7 @@
                 const data = await response.json(); // Missing in original code
 
 
-                console.log(employeeId);
+
                 if (data.data && data.data.length > 0) {
                     // Populate dropdown with employee options
                     data.data.forEach(user => {
@@ -128,6 +152,7 @@
                 } else {
                     $('#employee_id').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
                 }
+                await updateLetterEmployee();
 
             } catch (error) {
                 $('#employee_id').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');

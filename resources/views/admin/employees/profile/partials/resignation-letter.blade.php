@@ -6,10 +6,11 @@
     $joiningDate = $employee->joining_date
         ? \Illuminate\Support\Carbon::parse($employee->joining_date)->format('Y-m-d')
         : '';
-    $genderLabel = match (strtolower((string) $employee->gender)) {
+    $letterDetails = $selectedResignationPrintRequest?->letter_details ?? [];
+    $genderLabel = match (strtolower((string) ($letterDetails['gender'] ?? $employee->gender))) {
         'male' => __('index.male'),
         'female' => __('index.female'),
-        default => $employee->gender,
+        default => $letterDetails['gender'] ?? $employee->gender,
     };
 @endphp
 
@@ -72,15 +73,15 @@
     <section class="employee-print-form-section employee-resignation-information">
         <h3>{{ __('index.employee_information') }}</h3>
         <div class="employee-print-form-grid employee-print-form-grid-3">
-            <div class="employee-print-form-field"><span>{{ __('index.khmer_name') }}</span><input type="text" value="{{ $employee->name }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.latin_name') }}</span><input type="text" value="{{ $employee->english_name }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.gender') }}</span><input type="text" value="{{ $genderLabel }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.department') }}</span><input type="text" value="{{ $employee->department?->dept_name }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.employee_id') }}</span><input type="text" value="{{ $employee->employee_code ?: $employee->username }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.branch') }}</span><input type="text" value="{{ $employee->branch?->name }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.phone') }}</span><input type="text" value="{{ $employee->phone }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.joining_date') }}</span><input type="date" value="{{ $joiningDate }}"></div>
-            <div class="employee-print-form-field"><span>{{ __('index.position') }}</span><input type="text" value="{{ $employee->post?->post_name }}"></div>
+            <div class="employee-print-form-field"><span>{{ __('index.khmer_name') }}</span><input type="text" value="{{ $letterDetails['khmer_name'] ?? ($employee->name) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.latin_name') }}</span><input type="text" value="{{ $letterDetails['latin_name'] ?? ($employee->english_name) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.gender') }}</span><input type="text" value="{{ $genderLabel }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.department') }}</span><input type="text" value="{{ $letterDetails['department'] ?? ($employee->department?->dept_name) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.employee_id') }}</span><input type="text" value="{{ $letterDetails['employee_code'] ?? ($employee->employee_code ?: $employee->username) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.branch') }}</span><input type="text" value="{{ $letterDetails['branch'] ?? ($employee->branch?->name) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.phone') }}</span><input type="text" value="{{ $letterDetails['phone'] ?? ($employee->phone) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.joining_date') }}</span><input type="date" value="{{ $letterDetails['joining_date'] ?? ($joiningDate) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.position') }}</span><input type="text" value="{{ $letterDetails['position'] ?? ($employee->post?->post_name) }}" readonly></div>
         </div>
     </section>
 
@@ -101,7 +102,7 @@
         <textarea id="employeeResignationReason" class="employee-print-form-textarea" rows="4" readonly>{{ html_entity_decode(strip_tags($selectedResignationPrintRequest->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') }}</textarea>
 
         <label for="employeeReturnedProperty">{{ __('index.company_property_returned') }}</label>
-        <textarea id="employeeReturnedProperty" class="employee-print-form-textarea compact" rows="2"></textarea>
+        <textarea id="employeeReturnedProperty" class="employee-print-form-textarea compact" rows="2" readonly>{{ $letterDetails['returned_property'] ?? '' }}</textarea>
 
         <div class="employee-resignation-last-day">
             <span>{{ __('index.resignation_last_working_day') }}</span>
@@ -112,14 +113,14 @@
     </div>
 
     <div class="employee-resignation-date">
-        <span>{{ __('index.made_at') }}</span><input type="text">
-        <span>{{ __('index.date') }}</span><input type="date">
+        <span>{{ __('index.made_at') }}</span><input type="text" value="{{ $letterDetails['made_at'] ?? '' }}" readonly>
+        <span>{{ __('index.date') }}</span><input type="date" value="{{ $letterDetails['letter_date'] ?? $selectedResignationPrintRequest->resignation_date }}" readonly>
     </div>
 
     <div class="employee-print-form-signatures employee-resignation-signatures">
         <div><span>{{ __('index.branch_manager_signature') }}</span><strong></strong><small>{{ __('index.date') }}: ____________</small></div>
         <div><span>{{ __('index.hr_signature') }}</span><strong></strong><small>{{ __('index.date') }}: ____________</small></div>
-        <div><span>{{ __('index.resignation_requester') }}</span><strong></strong><small>{{ $employee->name ?: $employee->english_name ?: $notAvailable }}</small></div>
+        <div><span>{{ __('index.resignation_requester') }}</span><strong></strong><small>{{ $letterDetails['khmer_name'] ?? ($employee->name ?: $employee->english_name ?: $notAvailable) }}</small></div>
     </div>
     <div class="employee-request-print-record" data-print-record>{{ __('index.print_record_number') }}: —</div>
 </div>

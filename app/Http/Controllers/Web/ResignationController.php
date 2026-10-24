@@ -8,6 +8,7 @@ use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Resignation;
 use App\Repositories\CompanyRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\UserRepository;
@@ -97,10 +98,18 @@ class ResignationController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view.'create', compact('resignationStatus','companyDetail','isBsEnabled', 'filterParameters'));
+            return view($this->view.'create', compact('resignationStatus','companyDetail','isBsEnabled', 'filterParameters', 'profileEmployee'));
         }catch(Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    public function employeeInformation(User $employee)
+    {
+        abort_unless(auth('admin')->check() || \Illuminate\Support\Facades\Gate::any(['create_resignation', 'update_resignation']), 403);
+        abort_if(!auth('admin')->check() && auth()->user()?->branch_id && $employee->branch_id != auth()->user()->branch_id, 404);
+
+        return response()->json(['data' => Resignation::employeeLetterInformation($employee)]);
     }
 
 

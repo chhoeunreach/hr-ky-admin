@@ -62,6 +62,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
             }
             $table->timestamps();
         });
+        (require database_path('migrations/2026_10_24_000001_add_letter_details_to_resignations_table.php'))->up();
         DB::table('resignations')->insert(['id' => 3, 'employee_id' => 20, 'resignation_date' => '2026-10-24', 'last_working_day' => '2026-11-24', 'reason' => '<p>Career change</p>', 'status' => 'onReview']);
         Schema::create('employee_profile_audit_logs', function (Blueprint $table) {
             $table->id();
@@ -78,6 +79,17 @@ class EmployeeProfilePrintRecordTest extends TestCase
         });
         $this->actingAs((new User())->forceFill(['id' => 10, 'name' => 'HR Officer']));
         Gate::before(fn ($user, $ability) => in_array($ability, $this->abilities, true));
+
+        Route::get('/_test/resignation-employee-information', function () {
+            $employee = (new User())->forceFill([
+                'id' => 20, 'branch_id' => 2, 'name' => 'Employee', 'english_name' => 'Employee Latin',
+                'employee_code' => 'EMP020', 'joining_date' => '2024-01-01', 'phone' => '012345678',
+            ]);
+            $employee->setRelation('branch', (new \App\Models\Branch())->forceFill(['name' => 'Head Office']));
+            $employee->setRelation('department', (new \App\Models\Department())->forceFill(['dept_name' => 'HR']));
+            $employee->setRelation('post', (new \App\Models\Post())->forceFill(['post_name' => 'Officer']));
+            return app(\App\Http\Controllers\Web\ResignationController::class)->employeeInformation($employee);
+        });
 
         // Exercise validation, authorization and persistence without unrelated profile tables.
         Route::post('/_test/profile-print', function (Request $request) {
@@ -201,6 +213,61 @@ class EmployeeProfilePrintRecordTest extends TestCase
         $this->assertSame(2, $log->new_values['source_request_id']);
         $this->assertSame('09:00', $log->new_values['source_request_snapshot']['start_time']);
         $this->assertSame('approved', $log->new_values['source_request_snapshot']['status']);
+    }
+
+    public function test_employee_information_requires_resignation_permission_and_respects_branch(): void
+    {
+        $this->getJson('/_test/resignation-employee-information')->assertForbidden();
+        $this->abilities[] = 'create_resignation';
+        $this->getJson('/_test/resignation-employee-information')->assertOk()
+            ->assertJsonPath('data.employee_code', 'EMP020')
+            ->assertJsonPath('data.latin_name', 'Employee Latin')
+            ->assertJsonPath('data.department', 'HR')->assertJsonPath('data.position', 'Officer');
+        auth()->user()->branch_id = 3;
+        $this->getJson('/_test/resignation-employee-information')->assertNotFound();
+    }
+
+    public function test_complete_resignation_information_is_saved_rendered_and_validated(): void
+    {
+        $this->abilities[] = 'create_resignation';
+        $this->abilities[] = 'employee.resignation_form.print';
+        $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
+        foreach (['branch', 'department', 'post'] as $relation) {
+            $employee->setRelation($relation, null);
+        }
+        $details = [
+            'khmer_name' => 'Saved employee name', 'latin_name' => 'Saved Latin name',
+            'gender' => 'female', 'employee_code' => 'EMP020', 'phone' => '012345678',
+            'joining_date' => '2024-01-01', 'position' => 'Officer',
+            'department' => 'HR', 'branch' => 'Head Office',
+            'returned_property' => 'Laptop and ID card returned', 'made_at' => 'Phnom Penh',
+            'letter_date' => '2026-10-24',
+        ];
+        $resignation = \App\Models\Resignation::firstOrFail();
+        $resignation->update(['letter_details' => $details]);
+        $this->assertSame($details, $resignation->fresh()->letter_details);
+        $rules = array_filter((new \App\Requests\Resignation\ResignationRequest())->rules(),
+            fn ($key) => str_starts_with($key, 'letter_details'), ARRAY_FILTER_USE_KEY);
+        $this->assertTrue(\Illuminate\Support\Facades\Validator::make(['letter_details' => $details], $rules)->passes());
+        $invalid = array_replace($details, ['joining_date' => 'invalid', 'letter_date' => 'invalid', 'made_at' => str_repeat('x', 256)]);
+        $validator = \Illuminate\Support\Facades\Validator::make(['letter_details' => $invalid], $rules);
+        $this->assertTrue($validator->fails());
+        $this->assertCount(3, $validator->errors());
+        $this->view('admin.resignation.common.scripts', ['profileEmployee' => $employee])
+            ->assertSee('employee-information', false)->assertSee('data-letter-employee-field', false);
+        $this->view('admin.resignation.common.form', [
+            'profileEmployee' => $employee, 'resignationDetail' => null, 'companyDetail' => null,
+            'isBsEnabled' => false, 'resignationStatus' => \App\Enum\ResignationStatusEnum::cases(),
+        ])->assertSee('letter_details[returned_property]', false)->assertSee('letter_details[made_at]', false)
+            ->assertSee('letter_details[letter_date]', false)->assertSee('value="EMP020"', false);
+        $this->view('admin.employees.profile.partials.resignation-letter', [
+            'employee' => $employee, 'resignationPrintRequests' => collect([$resignation]),
+            'selectedResignationPrintRequest' => $resignation,
+            'canPrintResignationForm' => true, 'canExportResignationForm' => true,
+        ])->assertSee('Saved employee name')->assertSee('Laptop and ID card returned')->assertSee('Phnom Penh')
+            ->assertSee('value="2024-01-01" readonly', false)->assertSee('value="2026-10-24" readonly', false);
+        $this->postJson('/_test/profile-print', $this->payload('resignationLetter'))->assertCreated();
+        $this->assertSame($details, EmployeeProfileAuditLog::firstOrFail()->new_values['source_request_snapshot']['letter_details']);
     }
 
     public function test_resignation_print_records_its_saved_source(): void

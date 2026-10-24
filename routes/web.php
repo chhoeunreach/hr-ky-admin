@@ -754,6 +754,7 @@ Route::group([
         Route::put('termination/status-update/{terminationId}', [TerminationController::class, 'updateTerminationStatus'])->name('termination.update-status');
 
         /** resignation */
+        Route::get('resignation/employee-information/{employee}', [ResignationController::class, 'employeeInformation'])->name('resignation.employee-information');
         Route::resource('resignation', ResignationController::class,[
             'except' => ['destroy']
         ]);

@@ -375,7 +375,7 @@ class EmployeeProfileController extends Controller
                 'source_request_id' => $source?->id,
                 'source_request_snapshot' => $source?->only(match ($sourceType) {
                     'leave' => ['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'no_of_days', 'leave_requested_date', 'reasons', 'status', 'admin_remark'],
-                    'resignation' => ['id', 'employee_id', 'resignation_date', 'last_working_day', 'reason', 'status', 'admin_remark'],
+                    'resignation' => ['id', 'employee_id', 'resignation_date', 'last_working_day', 'reason', 'status', 'admin_remark', 'letter_details'],
                     default => ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark'],
                 }),
             ], $request);

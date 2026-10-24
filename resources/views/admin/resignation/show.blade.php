@@ -56,6 +56,12 @@
                                 {!! $resignationDetail->reason !!}
                             </td>
                         </tr>
+                        @foreach(['returned_property' => 'company_property_returned', 'made_at' => 'made_at', 'letter_date' => 'date'] as $field => $label)
+                            <tr>
+                                <th class="w-30">{{ __('index.' . $label) }}</th>
+                                <td style="white-space: pre-wrap">{{ $resignationDetail->letter_details[$field] ?? __('index.not_available') }}</td>
+                            </tr>
+                        @endforeach
                         @if(isset($resignationDetail->document))
                             <tr>
                                 <th class="w-30">{{ __('index.document') }}</th>

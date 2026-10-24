@@ -1,9 +1,18 @@
+@php
+    $letterEmployee = $profileEmployee ?? ($resignationDetail ?? null)?->employee ?? null;
+    $letterDetails = array_replace(
+        $letterEmployee ? \App\Models\Resignation::employeeLetterInformation($letterEmployee) : [],
+        ['made_at' => $letterEmployee?->branch?->name, 'letter_date' => now()->format('Y-m-d')],
+        $resignationDetail->letter_details ?? [],
+        old('letter_details', [])
+    );
+@endphp
 
 <div class="row">
     @if(!isset(auth()->user()->branch_id))
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="branch_id" name="branch_id">
+        <select class="form-select" id="branch_id" name="branch_id" required>
 
             <option {{isset($resignationDetail) || !empty($filterParameters['branch_id']) ? '' : 'selected'}}  disabled>{{ __('index.select_branch') }}</option>
 
@@ -20,7 +29,7 @@
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="department_id" class="form-label">{{ __('index.department') }} <span
                 style="color: red">*</span></label>
-        <select class="form-select" id="department_id" name="department_id">
+        <select class="form-select" id="department_id" name="department_id" required>
 
             @if(isset($resignationDetail))
                 @foreach($filteredDepartment as $department)
@@ -37,7 +46,7 @@
     </div>
     <div class="col-lg-4  col-md-6 mb-4">
         <label for="employee_id" class="form-label">{{ __('index.employee') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="employee_id" name="employee_id">
+        <select class="form-select" id="employee_id" name="employee_id" required>
             @if(isset($resignationDetail))
                 @foreach($filteredUsers as $user)
                     <option value="{{ $user->id }}" {{ $user->id ==  $resignationDetail->employee_id ? 'selected' : '' }}>
@@ -50,6 +59,21 @@
         </select>
     </div>
 
+
+    <div class="col-12"><h5 class="mb-3">{{ __('index.employee_information') }}</h5></div>
+    @foreach([
+        'khmer_name' => 'khmer_name', 'latin_name' => 'latin_name', 'gender' => 'gender',
+        'department' => 'department', 'employee_code' => 'employee_id', 'branch' => 'branch',
+        'phone' => 'phone', 'joining_date' => 'joining_date', 'position' => 'position',
+    ] as $field => $label)
+        <div class="col-lg-4 col-md-6 mb-3">
+            <label for="letter_{{ $field }}" class="form-label">{{ __('index.' . $label) }}</label>
+            <input class="form-control" id="letter_{{ $field }}" name="letter_details[{{ $field }}]"
+                   type="{{ $field === 'joining_date' ? 'date' : 'text' }}"
+                   value="{{ $letterDetails[$field] ?? '' }}" data-letter-employee-field="{{ $field }}" maxlength="255">
+        </div>
+    @endforeach
+    <div class="col-12"><h5 class="mt-2 mb-3">{{ __('index.resignation_request_form') }}</h5></div>
 
     <div class="col-lg-4 col-md-6 event-date-time mb-3">
         <label for="resignation_date" class="form-label">@lang('index.resignation_date') <span style="color: red">*</span> </label>
@@ -66,10 +90,10 @@
 
 
         @if($isBsEnabled)
-            <input type="text" id="last_working_day" name="last_working_day" value="{{ ( isset( $resignationDetail) ?  $resignationDetail->last_working_day: old('last_working_day') )}}"
+            <input type="text" id="last_working_day" name="last_working_day" required value="{{ ( isset( $resignationDetail) ?  $resignationDetail->last_working_day: old('last_working_day') )}}"
                    placeholder="yyyy-mm-dd" class="form-control nepaliDate"/>
         @else
-            <input type="date" class="form-control" name="last_working_day" value="{{ ( isset( $resignationDetail) ?  $resignationDetail->last_working_day: old('last_working_day') )}}"
+            <input type="date" class="form-control" name="last_working_day" required value="{{ ( isset( $resignationDetail) ?  $resignationDetail->last_working_day: old('last_working_day') )}}"
                    autocomplete="off" >
 
         @endif
@@ -79,6 +103,18 @@
     <div class="col-lg-6 mb-4">
         <label for="tinymceExample" class="form-label">{{ __('index.reason') }} <span style="color: red">*</span></label>
         <textarea class="form-control" name="reason" id="tinymceExample" rows="1">{{ ( isset($resignationDetail) ? $resignationDetail->reason: old('reason') )}}</textarea>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <label for="letter_returned_property" class="form-label">{{ __('index.company_property_returned') }}</label>
+        <textarea class="form-control" id="letter_returned_property" name="letter_details[returned_property]" rows="3" maxlength="10000">{{ $letterDetails['returned_property'] ?? '' }}</textarea>
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <label for="letter_made_at" class="form-label">{{ __('index.made_at') }}</label>
+        <input class="form-control" id="letter_made_at" name="letter_details[made_at]" value="{{ $letterDetails['made_at'] ?? '' }}" maxlength="255">
+    </div>
+    <div class="col-lg-4 col-md-6 mb-4">
+        <label for="letter_date" class="form-label">{{ __('index.date') }}</label>
+        <input type="date" class="form-control" id="letter_date" name="letter_details[letter_date]" value="{{ $letterDetails['letter_date'] ?? '' }}">
     </div>
     <div class="col-lg-6 mb-4">
         <label for="tinymceExample" class="form-label">{{ __('index.document') }}</label>
