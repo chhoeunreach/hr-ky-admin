@@ -8,7 +8,7 @@
         @include('admin.resignation.common.breadcrumb')
         <div class="card">
             <div class="card-body">
-                <form id="" class="forms-sample" action="{{route('admin.resignation.update',$resignationDetail->id)}}" enctype="multipart/form-data"  method="post">
+                <form id="resignationForm" class="forms-sample" action="{{route('admin.resignation.update',$resignationDetail->id)}}" enctype="multipart/form-data"  method="post">
                     @method('PUT')
                     @csrf
                     @include('admin.resignation.common.form')

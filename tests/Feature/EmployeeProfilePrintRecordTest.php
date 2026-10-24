@@ -227,6 +227,25 @@ class EmployeeProfilePrintRecordTest extends TestCase
         $this->getJson('/_test/resignation-employee-information')->assertNotFound();
     }
 
+    public function test_resignation_form_renders_errors_and_preserves_input_in_both_languages(): void
+    {
+        $this->abilities[] = 'create_resignation';
+        request()->setLaravelSession(app('session.store'));
+        session()->flashInput(['reason' => 'Personal reasons', 'status' => 'onReview', 'resignation_date' => '2026-10-24']);
+        $errors = new \Illuminate\Support\ViewErrorBag();
+        $errors->put('default', new \Illuminate\Support\MessageBag(['last_working_day' => 'Choose a later final working day.']));
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->view('admin.resignation.common.form', [
+                'profileEmployee' => null, 'resignationDetail' => null, 'companyDetail' => null,
+                'isBsEnabled' => false, 'resignationStatus' => \App\Enum\ResignationStatusEnum::cases(), 'errors' => $errors,
+            ])->assertSee('Personal reasons')->assertSee('Choose a later final working day.')
+                ->assertSee('value="onReview" selected', false)->assertSee('id="resignation_date"', false)
+                ->assertSee('id="last_working_day"', false)->assertSee(__('index.resignation_save_request'))
+                ->assertSee(__('index.resignation_place_of_signing'))->assertDontSee('index.');
+        }
+    }
+
     public function test_complete_resignation_information_is_saved_rendered_and_validated(): void
     {
         $this->abilities[] = 'create_resignation';
@@ -257,6 +276,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
             ->assertSee('employee-information', false)->assertSee('data-letter-employee-field', false);
         $this->view('admin.resignation.common.form', [
             'profileEmployee' => $employee, 'resignationDetail' => null, 'companyDetail' => null,
+            'errors' => new \Illuminate\Support\ViewErrorBag(),
             'isBsEnabled' => false, 'resignationStatus' => \App\Enum\ResignationStatusEnum::cases(),
         ])->assertSee('letter_details[returned_property]', false)->assertSee('letter_details[made_at]', false)
             ->assertSee('letter_details[letter_date]', false)->assertSee('value="EMP020"', false);

@@ -57,7 +57,7 @@ class ResignationRequest extends FormRequest
             'letter_details.returned_property' => ['nullable', 'string', 'max:10000'],
             'letter_details.joining_date' => ['nullable', 'date_format:Y-m-d'],
             'letter_details.letter_date' => ['nullable', 'date_format:Y-m-d'],
-            'status'=>['nullable'],
+            'status'=>['nullable', Rule::enum(ResignationStatusEnum::class)],
             'document' => ['nullable','file', 'mimes:jpeg,png,jpg,webp,pdf','max:2048'],
 
         ];

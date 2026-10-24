@@ -1,0 +1,31 @@
+.resignation-form { max-width: 1120px; margin: 0 auto; color: var(--bs-body-color, #243247); }
+.resignation-form-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; padding: 8px 0 28px; }
+.resignation-form-header h4 { font-size: 22px; font-weight: 600; margin: 0 0 8px; }
+.resignation-form-header p, .resignation-section-heading p, .resignation-form-footer p { color: #68778b; font-size: 13px; line-height: 1.65; margin: 0; }
+.resignation-required-note { color: #68778b; white-space: nowrap; font-size: 12px; padding-top: 5px; }
+.resignation-required, .resignation-required-note span { color: #d14343; }
+.resignation-form-section { padding: 26px 0 30px; border-top: 1px solid #e6eaf0; }
+.resignation-section-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; }
+.resignation-section-number { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px; height: 34px; border-radius: 9px; background: rgba(15, 118, 110, .08); color: var(--primary-color, #0f766e); font-size: 12px; font-weight: 600; }
+.resignation-section-heading h5 { font-size: 15px; font-weight: 600; margin: 1px 0 5px; }
+.resignation-form .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.resignation-form .form-control, .resignation-form .form-select { min-height: 42px; border-radius: 6px; }
+.resignation-form textarea.form-control { min-height: 118px; resize: vertical; line-height: 1.7; }
+.resignation-form .form-control:focus, .resignation-form .form-select:focus { box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb, 101, 113, 255), .1); }
+.resignation-employee-details { margin-top: 22px; padding: 20px; border: 1px solid #e6eaf0; border-radius: 8px; background: rgba(128, 143, 165, .035); }
+.resignation-field-help { color: #68778b; font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
+.resignation-employee-details > .resignation-field-help:first-child { margin-top: 0; }
+.resignation-form .select2-container { width: 100% !important; }
+.resignation-form .select2-container--default .select2-selection--single { min-height: 42px; border-radius: 6px; display: flex; align-items: center; }
+.resignation-form .select2-container--default .select2-selection--single .select2-selection__arrow { height: 40px; }
+.resignation-form-footer { display: flex; justify-content: space-between; align-items: center; gap: 24px; border-top: 1px solid #e6eaf0; padding: 24px 0 8px; }
+.resignation-form-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.resignation-form-actions .btn { min-height: 42px; padding: 10px 18px; }
+@media (max-width: 767px) {
+    .resignation-form-header, .resignation-form-footer { flex-direction: column; gap: 14px; }
+    .resignation-form-header h4 { font-size: 20px; }
+    .resignation-form-section { padding: 22px 0; }
+    .resignation-employee-details { padding: 16px; }
+    .resignation-form-actions { width: 100%; }
+    .resignation-form-actions .btn { flex: 1; }
+}

@@ -1,6 +1,3 @@
-<script src="{{asset('assets/vendors/tinymce/tinymce.min.js')}}"></script>
-<script src="{{asset('assets/js/tinymce.js')}}"></script>
-
 <script>
     $('document').ready(function(){
 
@@ -33,14 +30,6 @@
             })
         })
 
-        tinymce.init({
-            selector: '#tinymceExample',
-            height: 200,
-        });
-
-
-
-
         $('body').on('click', '.resignationStatusUpdate', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
@@ -57,146 +46,158 @@
         });
 
 
-        $('.nepaliDate').nepaliDatePicker({
-            language: "english",
-            dateFormat: "YYYY-MM-DD",
-            ndpYear: true,
-            ndpMonth: true,
-            ndpYearCount: 20,
-            disableAfter: "2089-12-30",
-        });
+        if ($('.nepaliDate').length && $.fn.nepaliDatePicker) {
+            $('.nepaliDate').nepaliDatePicker({
+                language: 'english', dateFormat: 'YYYY-MM-DD', ndpYear: true,
+                ndpMonth: true, ndpYearCount: 20, disableAfter: '2089-12-30',
+            });
+        }
 
-        // Define variables
-        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-        const branchId = "{{ $filterParameters['branch_id'] ?? null }}";
-        const departmentId = "{{ $filterParameters['department_id'] ?? ($resignationDetail->department_id ?? '') }}";
-        const employeeId = "{{ $filterParameters['employee_id'] ?? ($resignationDetail->employee_id ?? '') }}";
-
-
-        let letterEmployeeId = @json((string) old('employee_id', $resignationDetail->employee_id ?? ($profileEmployee ?? null)?->id ?? ''));
+        const initialBranchId = @json((string) old('branch_id', $filterParameters['branch_id'] ?? $resignationDetail->branch_id ?? auth()->user()?->branch_id ?? ''));
+        const initialDepartmentId = @json((string) old('department_id', $filterParameters['department_id'] ?? $resignationDetail->department_id ?? ''));
+        const initialEmployeeId = @json((string) old('employee_id', $filterParameters['employee_id'] ?? $resignationDetail->employee_id ?? ''));
+        const form = document.getElementById('resignationForm');
+        let pendingLoads = 0;
+        let departmentLoadId = 0;
+        let employeeLoadId = 0;
+        let informationLoadId = 0;
+        let letterEmployeeId = initialEmployeeId;
+        const setLoading = delta => {
+            pendingLoads += delta;
+            form?.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = pendingLoads > 0; });
+        };
+        const resetSelect = (selector, label) => {
+            $(selector).empty().append(new Option(label, '', true, true));
+            $(selector).find('option:first').prop('disabled', true);
+            $(selector).trigger('change.select2');
+        };
+        const status = document.getElementById('resignationEmployeeStatus');
+        const clearEmployeeDetails = () => {
+            informationLoadId++;
+            letterEmployeeId = '';
+            document.querySelectorAll('[data-letter-employee-field]').forEach(field => { field.value = ''; });
+            if (status) status.textContent = '';
+        };
         const updateLetterEmployee = async () => {
             const selectedId = String($('#employee_id').val() || '');
-            if (selectedId === letterEmployeeId) return;
-            letterEmployeeId = selectedId;
             const fields = document.querySelectorAll('[data-letter-employee-field]');
-            fields.forEach(field => { field.value = ''; });
-            if (!selectedId || fields.length === 0) return;
+            if (!fields.length || (selectedId && selectedId === letterEmployeeId)) return;
+            clearEmployeeDetails();
+            if (!selectedId) return;
+            const loadId = ++informationLoadId;
+            setLoading(1);
+            if (status) status.textContent = @json(__('index.resignation_employee_loading'));
             try {
                 const response = await fetch(@json(url('admin/resignation/employee-information')) + '/' + encodeURIComponent(selectedId), {
                     headers: {'Accept': 'application/json'}, credentials: 'same-origin',
                 });
                 if (!response.ok) throw new Error('Employee information unavailable');
                 const result = await response.json();
-                if (String($('#employee_id').val() || '') !== selectedId) return;
-                fields.forEach(field => { field.value = result.data[field.dataset.letterEmployeeField] || ''; });
-                const madeAt = document.getElementById('letter_made_at');
-                if (madeAt) madeAt.value = result.data.branch || '';
+                if (loadId !== informationLoadId || String($('#employee_id').val() || '') !== selectedId) return;
+                fields.forEach(field => {
+                    const value = result.data[field.dataset.letterEmployeeField] || '';
+                    field.value = field.dataset.letterEmployeeField === 'gender' ? value.toLowerCase() : value;
+                });
+                letterEmployeeId = selectedId;
+                if (status) status.textContent = '';
             } catch (error) {
-                // The fields remain available for manual completion.
+                if (loadId === informationLoadId && status) status.textContent = @json(__('index.resignation_employee_load_error'));
+            } finally {
+                setLoading(-1);
+            }
+        };
+
+        const loadDepartments = async (branchId, selectedDepartmentId = '') => {
+            const loadId = ++departmentLoadId;
+            resetSelect('#department_id', @json(__('index.select_department')));
+            $('#department_id').prop('disabled', true);
+            if (!branchId) return;
+            setLoading(1);
+            try {
+                const response = await fetch(@json(url('admin/departments/get-All-Departments')) + '/' + encodeURIComponent(branchId), {headers: {'Accept': 'application/json'}});
+                if (!response.ok) throw new Error('Departments unavailable');
+                const result = await response.json();
+                if (loadId !== departmentLoadId) return;
+                (result.data || []).forEach(department => {
+                    $('#department_id').append(new Option(department.dept_name, department.id, false, String(department.id) === selectedDepartmentId));
+                });
+                if (!result.data?.length) resetSelect('#department_id', @json(__('index.no_departments_found')));
+            } catch (error) {
+                if (loadId === departmentLoadId) resetSelect('#department_id', @json(__('index.error_loading_departments')));
+            } finally {
+                if (loadId === departmentLoadId) $('#department_id').prop('disabled', false).trigger('change.select2');
+                setLoading(-1);
+            }
+        };
+        const loadEmployees = async (selectedEmployeeId = '') => {
+            const departmentId = $('#department_id').val();
+            const loadId = ++employeeLoadId;
+            resetSelect('#employee_id', @json(__('index.select_employee')));
+            $('#employee_id').prop('disabled', true);
+            if (!departmentId) return;
+            setLoading(1);
+            try {
+                const response = await fetch(@json(url('admin/employees/get-all-employees')) + '/' + encodeURIComponent(departmentId), {headers: {'Accept': 'application/json'}});
+                if (!response.ok) throw new Error('Employees unavailable');
+                const result = await response.json();
+                if (loadId !== employeeLoadId) return;
+                (result.data || []).forEach(employee => {
+                    $('#employee_id').append(new Option(employee.name, employee.id, false, String(employee.id) === selectedEmployeeId));
+                });
+                if (!result.data?.length) resetSelect('#employee_id', @json(__('index.no_employees_found')));
+                await updateLetterEmployee();
+            } catch (error) {
+                if (loadId === employeeLoadId) resetSelect('#employee_id', @json(__('index.error_loading_employees')));
+            } finally {
+                if (loadId === employeeLoadId) $('#employee_id').prop('disabled', false).trigger('change.select2');
+                setLoading(-1);
             }
         };
         $('#employee_id').on('change', updateLetterEmployee);
-
-        const loadDepartments = async (selectedBranchId) => {
-
-            if (!selectedBranchId) return;
-
-
-            try {
-                $('#department_id').empty().append('<option selected disabled>{{ __("index.select_department") }}</option>');
-
-                const response = await $.ajax({
-                    type: 'GET',
-                    url: `{{ url('admin/departments/get-All-Departments') }}/${selectedBranchId}`,
-                });
-
-                if (!response || !response.data || response.data.length === 0) {
-                    $('#department_id').append('<option disabled>{{ __("index.no_departments_found") }}</option>');
-                    return;
-                }
-
-
-                response.data.forEach(data => {
-                    $('#department_id').append(`<option value="${data.id}" ${data.id == departmentId ? 'selected' : ''}>${data.dept_name}</option>`);
-                });
-            } catch (error) {
-                $('#department_id').append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
-            }
-        };
-
-        const loadEmployees = async () => {
-            const selectedDepartmentId = $('#department_id').val();
-            if (!selectedDepartmentId) return;
-
-            try {
-                $('#employee_id').empty().append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-
-                const response = await fetch(`{{ url('admin/employees/get-all-employees') }}/${selectedDepartmentId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    }
-                });
-
-                const data = await response.json(); // Missing in original code
-
-
-
-                if (data.data && data.data.length > 0) {
-                    // Populate dropdown with employee options
-                    data.data.forEach(user => {
-                        $('#employee_id').append(`<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''} >${user.name}</option>`);
-                    });
-                } else {
-                    $('#employee_id').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
-                }
-                await updateLetterEmployee();
-
-            } catch (error) {
-                $('#employee_id').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
-            }
-        };
-
+        $('#department_id').on('change', () => {
+            clearEmployeeDetails();
+            loadEmployees();
+        });
+        $('#branch_id').on('change', async () => {
+            const branchId = $('#branch_id').val();
+            employeeLoadId++;
+            resetSelect('#employee_id', @json(__('index.select_employee')));
+            $('#employee_id').prop('disabled', true);
+            clearEmployeeDetails();
+            await loadDepartments(branchId);
+        });
         const initializeDropdowns = async () => {
-            let selectedBranchId;
-
-            if (isAdmin) {
-                selectedBranchId = $('#branch_id').val() || branchId || defaultBranchId;
-
-                $('#branch_id').on('change', async () => {
-                    const newBranchId = $('#branch_id').val();
-                    await loadDepartments(newBranchId);
-                    $('#employee_id').empty().append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-                    await loadEmployees();
-                });
-
-                // Trigger initial load if branch is selected
-                if (selectedBranchId) {
-                    $('#branch_id').val(selectedBranchId);
-                    await loadDepartments(selectedBranchId);
-                    await loadEmployees();
-                }
-            } else {
-                selectedBranchId = defaultBranchId;
-                if (selectedBranchId) {
-                    await loadDepartments(selectedBranchId);
-                    await loadEmployees();
-                }
-            }
-
-            // Attach department change listener
-            $('#department_id').on('change', loadEmployees);
-
-            // Trigger initial employee load if department is pre-selected
-            if (departmentId) {
-                $('#department_id').trigger('change');
+            $('#employee_id').prop('disabled', true);
+            await loadDepartments(initialBranchId, initialDepartmentId);
+            if ($('#branch_id').length && String($('#branch_id').val() || '') !== initialBranchId) return;
+            // Restore saved selections only during the initial load.
+            if (initialDepartmentId) {
+                $('#department_id').val(initialDepartmentId).trigger('change.select2');
+                await loadEmployees(initialEmployeeId);
             }
         };
-
-        // Initialize everything
+        // Avoid browser-dependent date ordering by matching the server's final-day rule.
+        const requestDate = document.getElementById('resignation_date');
+        const lastDay = document.getElementById('last_working_day');
+        if (requestDate?.type === 'date' && lastDay) {
+            const updateLastDayMinimum = () => {
+                if (!requestDate.value) { lastDay.removeAttribute('min'); return; }
+                const nextDay = new Date(requestDate.value + 'T00:00:00Z');
+                nextDay.setUTCDate(nextDay.getUTCDate() + 1);
+                lastDay.min = nextDay.toISOString().slice(0, 10);
+            };
+            requestDate.addEventListener('change', updateLastDayMinimum);
+            updateLastDayMinimum();
+        }
+        const remark = document.getElementById('admin_remark');
+        if (remark) {
+            const updateRemarkRequired = () => { remark.required = ['approved', 'onReview', 'rejected'].includes($('#status').val()); };
+            $('#status').on('change', updateRemarkRequired);
+            updateRemarkRequired();
+        }
+        form?.addEventListener('submit', event => {
+            if (pendingLoads > 0) event.preventDefault();
+        });
         initializeDropdowns();
     });
-
 </script>

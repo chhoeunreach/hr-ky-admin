@@ -194,7 +194,7 @@ class ResignationController extends Controller
         $this->authorize('update_resignation');
         try{
             $resignationDetail = $this->resignationService->findResignationById($id);
-            $resignationStatus = TerminationStatusEnum::cases();
+            $resignationStatus = ResignationStatusEnum::cases();
 
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
