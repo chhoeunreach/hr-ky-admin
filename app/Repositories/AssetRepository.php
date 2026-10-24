@@ -12,7 +12,7 @@ class AssetRepository
 
     public function getAllAssetsPaginated($filterParameters,$select=['*'],$with=[])
     {
-        return Asset::select($select)->with($with)
+        $query = Asset::select($select)->with($with)
             ->when(isset($filterParameters['type_id']), function($query) use ($filterParameters){
                 $query->where('type_id', $filterParameters['type_id']);
             })
@@ -34,8 +34,18 @@ class AssetRepository
             ->when(isset($filterParameters['purchased_to']), function($query) use ($filterParameters){
                 $query->whereDate('purchased_date','<=',date('Y-m-d',strtotime($filterParameters['purchased_to'])));
             })
-            ->latest()
-            ->paginate( getRecordPerPage());
+            ->when(isset($filterParameters['q']) && $filterParameters['q'] !== '', function ($query) use ($filterParameters) {
+                $query->where(function ($search) use ($filterParameters) {
+                    foreach (['name', 'asset_code', 'asset_serial_no', 'note'] as $column) {
+                        $search->orWhere($column, 'like', '%' . $filterParameters['q'] . '%');
+                    }
+                });
+            })
+            ->latest();
+
+        return !empty($filterParameters['exporting']) || ($filterParameters['per_page'] ?? null) === 'all'
+            ? $query->get()
+            : $query->paginate($filterParameters['per_page'] ?? getRecordPerPage())->withQueryString();
     }
 
     public function getReturnAssetsPaginated($select=['*'],$with=[])

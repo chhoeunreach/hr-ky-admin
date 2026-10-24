@@ -70,7 +70,7 @@ class ResignationRequest extends FormRequest
             'employee_id' => ['required','exists:users,id'],
             'resignation_date' => ['required','date','date_format:Y-m-d'],
             'last_working_day' => ['required','date','date_format:Y-m-d','after:resignation_date'],
-            'reason' => ['required', 'string'],
+            'reason' => ['nullable', 'string'],
             'letter_details' => ['nullable', 'array:khmer_name,latin_name,gender,department,employee_code,branch,phone,joining_date,position,returned_property,made_at,letter_date'],
             'letter_details.returned_property' => ['nullable', 'string', 'max:10000'],
             'letter_details.joining_date' => ['nullable', 'date_format:Y-m-d'],

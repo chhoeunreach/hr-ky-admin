@@ -14,6 +14,8 @@
     };
 @endphp
 
+<link rel="stylesheet" href="{{ asset('assets/css/resignation-letter.css') }}?v={{ filemtime(public_path('assets/css/resignation-letter.css')) }}">
+
 @include('admin.employees.profile.partials.print-request-selector', [
     'requestTab' => 'resignation-letter', 'requestField' => 'resignation_request_id',
     'printRequests' => $resignationPrintRequests, 'selectedPrintRequest' => $selectedResignationPrintRequest,
@@ -44,7 +46,8 @@
 </div>
 
 @if($selectedResignationPrintRequest)
-<div class="employee-complete-toolbar employee-request-preview-heading"><strong>{{ __('index.a4_request_preview') }}</strong><span>{{ __('index.review_before_print') }}</span></div>
+<div class="employee-complete-toolbar employee-request-preview-heading"><strong>{{ __('index.resignation_a4_document_preview') }}</strong><span>{{ __('index.review_before_print') }}</span></div>
+<div class="employee-resignation-preview" role="region" aria-label="{{ __('index.resignation_a4_document_preview') }}" tabindex="0">
 <div class="employee-complete-paper employee-leave-letter-paper employee-resignation-letter-paper employee-print-form" data-source-request-id="{{ $selectedResignationPrintRequest->id }}" data-request-tab="resignation-letter">
     <div class="employee-resignation-national-heading">
         <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
@@ -60,8 +63,8 @@
             </div>
         </div>
         <div class="employee-salary-certificate-document-meta employee-print-form-meta">
-            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}" value="{{ $selectedResignationPrintRequest->id }}" readonly>
-            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}" value="{{ $selectedResignationPrintRequest->resignation_date }}" readonly>
+            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}" value="{{ $selectedResignationPrintRequest->id }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $selectedResignationPrintRequest->id }}</output>
+            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}" value="{{ $selectedResignationPrintRequest->resignation_date }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $selectedResignationPrintRequest->resignation_date }}</output>
         </div>
     </header>
 
@@ -73,15 +76,15 @@
     <section class="employee-print-form-section employee-resignation-information">
         <h3>{{ __('index.employee_information') }}</h3>
         <div class="employee-print-form-grid employee-print-form-grid-3">
-            <div class="employee-print-form-field"><span>{{ __('index.khmer_name') }}</span><input type="text" value="{{ $letterDetails['khmer_name'] ?? ($employee->name) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.latin_name') }}</span><input type="text" value="{{ $letterDetails['latin_name'] ?? ($employee->english_name) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.gender') }}</span><input type="text" value="{{ $genderLabel }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.department') }}</span><input type="text" value="{{ $letterDetails['department'] ?? ($employee->department?->dept_name) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.employee_id') }}</span><input type="text" value="{{ $letterDetails['employee_code'] ?? ($employee->employee_code ?: $employee->username) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.branch') }}</span><input type="text" value="{{ $letterDetails['branch'] ?? ($employee->branch?->name) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.phone') }}</span><input type="text" value="{{ $letterDetails['phone'] ?? ($employee->phone) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.joining_date') }}</span><input type="date" value="{{ $letterDetails['joining_date'] ?? ($joiningDate) }}" readonly></div>
-            <div class="employee-print-form-field"><span>{{ __('index.position') }}</span><input type="text" value="{{ $letterDetails['position'] ?? ($employee->post?->post_name) }}" readonly></div>
+            <div class="employee-print-form-field"><span>{{ __('index.khmer_name') }}</span><input type="text" value="{{ $letterDetails['khmer_name'] ?? ($employee->name) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['khmer_name'] ?? ($employee->name) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.latin_name') }}</span><input type="text" value="{{ $letterDetails['latin_name'] ?? ($employee->english_name) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['latin_name'] ?? ($employee->english_name) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.gender') }}</span><input type="text" value="{{ $genderLabel }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $genderLabel }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.department') }}</span><input type="text" value="{{ $letterDetails['department'] ?? ($employee->department?->dept_name) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['department'] ?? ($employee->department?->dept_name) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.employee_id') }}</span><input type="text" value="{{ $letterDetails['employee_code'] ?? ($employee->employee_code ?: $employee->username) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['employee_code'] ?? ($employee->employee_code ?: $employee->username) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.branch') }}</span><input type="text" value="{{ $letterDetails['branch'] ?? ($employee->branch?->name) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['branch'] ?? ($employee->branch?->name) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.phone') }}</span><input type="text" value="{{ $letterDetails['phone'] ?? ($employee->phone) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['phone'] ?? ($employee->phone) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.joining_date') }}</span><input type="date" value="{{ $letterDetails['joining_date'] ?? ($joiningDate) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['joining_date'] ?? ($joiningDate) }}</output></div>
+            <div class="employee-print-form-field"><span>{{ __('index.position') }}</span><input type="text" value="{{ $letterDetails['position'] ?? ($employee->post?->post_name) }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['position'] ?? ($employee->post?->post_name) }}</output></div>
         </div>
     </section>
 
@@ -98,23 +101,23 @@
     <div class="employee-resignation-body">
         <p>{{ __('index.resignation_intro') }}</p>
 
-        <label for="employeeResignationReason">{{ __('index.resignation_reason') }}</label>
-        <textarea id="employeeResignationReason" class="employee-print-form-textarea" rows="4" readonly>{{ html_entity_decode(strip_tags($selectedResignationPrintRequest->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') }}</textarea>
+        <div class="employee-resignation-field-label">{{ __('index.resignation_reason') }}</div>
+        <textarea id="employeeResignationReason" class="employee-print-form-textarea" rows="4" readonly hidden data-print-static-source>{{ html_entity_decode(strip_tags($selectedResignationPrintRequest->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') }}</textarea><div class="employee-resignation-value employee-resignation-multiline">{{ html_entity_decode(strip_tags($selectedResignationPrintRequest->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') }}</div>
 
-        <label for="employeeReturnedProperty">{{ __('index.company_property_returned') }}</label>
-        <textarea id="employeeReturnedProperty" class="employee-print-form-textarea compact" rows="2" readonly>{{ $letterDetails['returned_property'] ?? '' }}</textarea>
+        <div class="employee-resignation-field-label">{{ __('index.company_property_returned') }}</div>
+        <textarea id="employeeReturnedProperty" class="employee-print-form-textarea compact" rows="2" readonly hidden data-print-static-source>{{ $letterDetails['returned_property'] ?? '' }}</textarea><div class="employee-resignation-value employee-resignation-multiline">{{ $letterDetails['returned_property'] ?? '' }}</div>
 
         <div class="employee-resignation-last-day">
             <span>{{ __('index.resignation_last_working_day') }}</span>
-            <input type="date" aria-label="{{ __('index.resignation_last_working_day') }}" value="{{ $selectedResignationPrintRequest->last_working_day }}" readonly>
+            <input type="date" aria-label="{{ __('index.resignation_last_working_day') }}" value="{{ $selectedResignationPrintRequest->last_working_day }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $selectedResignationPrintRequest->last_working_day }}</output>
         </div>
 
         <p>{{ __('index.resignation_closing') }}</p>
     </div>
 
     <div class="employee-resignation-date">
-        <span>{{ __('index.made_at') }}</span><input type="text" value="{{ $letterDetails['made_at'] ?? '' }}" readonly>
-        <span>{{ __('index.date') }}</span><input type="date" value="{{ $letterDetails['letter_date'] ?? $selectedResignationPrintRequest->resignation_date }}" readonly>
+        <span>{{ __('index.made_at') }}</span><input type="text" value="{{ $letterDetails['made_at'] ?? '' }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['made_at'] ?? '' }}</output>
+        <span>{{ __('index.date') }}</span><input type="date" value="{{ $letterDetails['letter_date'] ?? $selectedResignationPrintRequest->resignation_date }}" readonly hidden data-print-static-source><output class="employee-resignation-value">{{ $letterDetails['letter_date'] ?? $selectedResignationPrintRequest->resignation_date }}</output>
     </div>
 
     <div class="employee-print-form-signatures employee-resignation-signatures">
@@ -123,6 +126,7 @@
         <div><span>{{ __('index.resignation_requester') }}</span><strong></strong><small>{{ $letterDetails['khmer_name'] ?? ($employee->name ?: $employee->english_name ?: $notAvailable) }}</small></div>
     </div>
     <div class="employee-request-print-record" data-print-record>{{ __('index.print_record_number') }}: —</div>
+</div>
 </div>
 @else
 <div class="employee-complete-toolbar employee-request-preview-empty">

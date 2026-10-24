@@ -1,0 +1,102 @@
+/* Keep the document geometry identical in the preview and print output. */
+.employee-resignation-preview {
+    background: #eef1f5;
+    border: 1px solid #dde3eb;
+    border-radius: 8px;
+    overflow-x: auto;
+    padding: 24px;
+}
+.employee-resignation-preview:focus-visible { outline: 2px solid var(--primary-color, #0f766e); outline-offset: 2px; }
+.employee-resignation-letter-paper.employee-print-form {
+    box-sizing: border-box;
+    width: 210mm;
+    max-width: none;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 10mm;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+    color: #111827;
+    font-size: 9pt;
+    line-height: 1.55;
+    box-shadow: 0 3px 18px rgba(15, 23, 42, .12);
+}
+.employee-resignation-letter-paper.employee-print-form *,
+.employee-resignation-letter-paper.employee-print-form *::before,
+.employee-resignation-letter-paper.employee-print-form *::after { box-sizing: border-box; }
+.employee-resignation-letter-paper [data-print-static-source] { display: none !important; }
+.employee-resignation-letter-paper .employee-resignation-value {
+    display: block;
+    min-width: 0;
+    min-height: 1.55em;
+    margin: 0;
+    padding: 0;
+    color: #111827;
+    font: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.employee-resignation-letter-paper .employee-resignation-national-heading { margin-bottom: 3mm; line-height: 1.6; }
+.employee-resignation-letter-paper .employee-resignation-national-heading strong { font-size: 12pt; }
+.employee-resignation-letter-paper .employee-resignation-national-heading span { font-size: 10pt; }
+.employee-resignation-letter-paper .employee-salary-certificate-letterhead { display: flex; flex-direction: row; justify-content: space-between; gap: 4mm; margin-bottom: 0; padding-bottom: 2mm; }
+.employee-resignation-letter-paper .employee-salary-certificate-company { min-width: 0; gap: 3mm; }
+.employee-resignation-letter-paper .employee-salary-certificate-logo { width: 13mm; height: 13mm; object-fit: contain; }
+.employee-resignation-letter-paper .employee-salary-certificate-company-name { font-size: 11pt; overflow-wrap: anywhere; }
+.employee-resignation-letter-paper .employee-salary-certificate-company-subtitle { font-size: 8pt; }
+.employee-resignation-letter-paper .employee-salary-certificate-document-meta { display: grid; grid-template-columns: auto minmax(23mm, 1fr); width: auto; max-width: 74mm; gap: 1mm 3mm; padding: 2mm; font-size: 8pt; text-align: left; }
+.employee-resignation-letter-paper .employee-print-form-heading { margin: 3mm 0; }
+.employee-resignation-letter-paper .employee-print-form-heading h2 { font-size: 13pt; line-height: 1.6; }
+.employee-resignation-letter-paper .employee-print-form-section { margin-top: 2mm; padding: 2mm 3mm; }
+.employee-resignation-letter-paper .employee-print-form-section h3 { margin: -2mm -3mm 2mm; padding: 1mm 3mm; font-size: 9pt; }
+.employee-resignation-letter-paper .employee-print-form-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5mm 4mm; }
+.employee-resignation-letter-paper .employee-print-form-field { grid-template-columns: minmax(0, 1fr); align-items: start; gap: .5mm; min-height: 0; padding: 1mm 0; }
+.employee-resignation-letter-paper .employee-print-form-field > span { font-size: 8pt; }
+.employee-resignation-letter-paper .employee-resignation-addressee { margin: 3mm 0; gap: 1mm; font-size: 9pt; }
+.employee-resignation-letter-paper .employee-resignation-addressee strong { font-size: 9pt; }
+.employee-resignation-letter-paper .employee-resignation-reference { margin: 2mm 0; padding: 2mm; gap: 1mm; }
+.employee-resignation-letter-paper .employee-resignation-reference > div { grid-template-columns: 22mm minmax(0, 1fr); gap: 2mm; }
+.employee-resignation-letter-paper .employee-resignation-body { font-size: 9pt; line-height: 1.65; }
+.employee-resignation-letter-paper .employee-resignation-body p { margin: 2mm 0; }
+.employee-resignation-letter-paper .employee-resignation-field-label { font-weight: 700; margin: 2mm 0 1mm; }
+.employee-resignation-letter-paper .employee-resignation-multiline { border-bottom: 1px dotted #94a3b8; min-height: 8mm; padding: 1mm 0; orphans: 3; widows: 3; }
+.employee-resignation-letter-paper .employee-resignation-last-day,
+.employee-resignation-letter-paper .employee-resignation-date { display: grid; align-items: baseline; justify-content: end; gap: 2mm; margin-top: 3mm; }
+.employee-resignation-letter-paper .employee-resignation-last-day { grid-template-columns: minmax(0, auto) 30mm; }
+.employee-resignation-letter-paper .employee-resignation-date { grid-template-columns: auto minmax(20mm, 45mm) auto 30mm; }
+.employee-resignation-letter-paper .employee-resignation-signatures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5mm; margin-top: 14mm; break-inside: avoid; }
+.employee-resignation-letter-paper .employee-resignation-signatures > div { min-width: 0; }
+.employee-resignation-letter-paper .employee-resignation-signatures span,
+.employee-resignation-letter-paper .employee-resignation-signatures small { font-size: 8pt; overflow-wrap: anywhere; }
+.employee-resignation-letter-paper .employee-request-print-record { font-size: 7pt; margin-top: 4mm; }
+
+@page employee-resignation-letter { size: A4 portrait; margin: 10mm; }
+@media print {
+    #employeeResignationLetterPrintRoot { page: employee-resignation-letter; }
+    #employeeResignationLetterPrintRoot .employee-resignation-letter-paper {
+        width: 190mm !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+    #employeeResignationLetterPrintRoot .employee-resignation-information,
+    #employeeResignationLetterPrintRoot .employee-salary-certificate-letterhead,
+    #employeeResignationLetterPrintRoot .employee-resignation-reference,
+    #employeeResignationLetterPrintRoot .employee-resignation-date { break-inside: avoid; }
+    #employeeResignationLetterPrintRoot .employee-resignation-field-label { break-after: avoid; }
+    #employeeResignationLetterPrintRoot .employee-resignation-signatures { break-inside: avoid; }
+}
+/* A narrow screen scrolls the sheet without changing its document layout. */
+@media screen and (max-width: 767px) {
+    .employee-360 .employee-resignation-letter-paper[data-source-request-id] { min-height: 297mm; padding: 10mm; }
+    .employee-360 .employee-resignation-letter-paper[data-source-request-id] .employee-salary-certificate-letterhead { flex-direction: row; }
+    .employee-360 .employee-resignation-letter-paper[data-source-request-id] .employee-salary-certificate-document-meta { width: auto; }
+    .employee-resignation-preview { padding: 12px; }
+}

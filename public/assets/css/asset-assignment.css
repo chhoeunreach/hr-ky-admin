@@ -1,0 +1,11 @@
+.asset-assignment-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; padding: 18px; margin-bottom: 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+.asset-assignment-summary span { display: block; color: #64748b; font-size: 12px; margin-bottom: 5px; }
+.asset-assignment-summary strong { display: block; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+#assetAssignmentModal .select2-container { width: 100% !important; }
+#assetAssignmentModal .select2-selection--single { min-height: 42px; height: auto; padding: 6px 2px; }
+#assetAssignmentModal .select2-selection__rendered { white-space: normal; line-height: 1.65; overflow-wrap: anywhere; padding-right: 24px; }
+#assetAssignmentModal .select2-results__option { white-space: normal; overflow-wrap: anywhere; }
+#assetAssignmentModal .select2-selection__arrow { top: 9px; }
+#assetAssignmentModal .form-label { font-size: 13px; font-weight: 500; }
+#assetAssignmentModal .modal-footer .btn { min-height: 40px; }
+@media (max-width: 575px) { .asset-assignment-summary { grid-template-columns: 1fr; } }

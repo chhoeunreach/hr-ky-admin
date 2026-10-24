@@ -258,7 +258,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
             $rules = array_intersect_key($request->rules(), array_flip(['resignation_date', 'last_working_day', 'reason', 'letter_details.made_at']));
             $validator = \Illuminate\Support\Facades\Validator::make([
                 'resignation_date' => '2026-10-24', 'last_working_day' => '2026-10-23',
-                'reason' => '', 'letter_details' => ['made_at' => str_repeat('x', 256)],
+                'reason' => [], 'letter_details' => ['made_at' => str_repeat('x', 256)],
             ], $rules, [], $request->attributes());
             $this->assertTrue($validator->fails());
             $messages = implode(' ', $validator->errors()->all());
@@ -281,6 +281,50 @@ class EmployeeProfilePrintRecordTest extends TestCase
                 }
             }
         }
+    }
+
+    public function test_saving_resignation_from_a_modal_returns_the_parent_destination(): void
+    {
+        $this->abilities[] = 'create_resignation';
+        Schema::create('app_settings', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug');
+            $table->integer('status')->default(0);
+        });
+        foreach (['users', 'branches', 'departments'] as $table) {
+            Schema::create($table, fn (Blueprint $blueprint) => $blueprint->id());
+        }
+        DB::table('users')->insert(['id' => 20]);
+        DB::table('branches')->insert(['id' => 2]);
+        DB::table('departments')->insert(['id' => 5]);
+        auth()->user()->branch_id = 2;
+        $saved = (new \App\Models\Resignation())->forceFill(['id' => 3, 'employee_id' => 20, 'resignation_date' => '2026-10-24', 'last_working_day' => '2026-11-24']);
+        $this->mock(\App\Services\Resignation\ResignationService::class, function ($mock) use ($saved) {
+            $mock->shouldReceive('saveResignationDetail')->andReturn($saved);
+        });
+        $this->mock(\App\Repositories\UserRepository::class, function ($mock) {
+            $mock->shouldReceive('findUserDetailById')->andReturn((new User())->forceFill(['id' => 20, 'name' => 'Employee']));
+        });
+        $this->mock(\App\Services\Notification\NotificationService::class, function ($mock) {
+            $mock->shouldReceive('store')->andReturn(null);
+        });
+        Route::post('/_test/resignation-create', [\App\Http\Controllers\Web\ResignationController::class, 'store'])
+            ->middleware([\Illuminate\Session\Middleware\StartSession::class, \Illuminate\View\Middleware\ShareErrorsFromSession::class]);
+        $data = ['branch_id' => 2, 'department_id' => 5, 'employee_id' => 20, 'resignation_date' => '2026-10-24', 'last_working_day' => '2026-11-24', 'reason' => 'Personal reasons', 'status' => 'pending'];
+        $this->post('/_test/resignation-create?request_modal=1', $data)
+            ->assertOk()->assertViewIs('admin.resignation.modal-saved')
+            ->assertViewHas('redirectUrl', route('admin.resignation.index'));
+        $previewUrl = route('admin.employees.profile.show', ['employee' => 20, 'tab' => 'resignation-letter', 'resignation_request_id' => 3]);
+        $this->post('/_test/resignation-create?request_modal=1', $data + ['return_to_profile' => '1'])
+            ->assertOk()->assertViewIs('admin.resignation.modal-saved')->assertViewHas('redirectUrl', $previewUrl);
+        $this->post('/_test/resignation-create', $data)->assertRedirect(route('admin.resignation.index'));
+        $this->post('/_test/resignation-create?request_modal=1', array_replace($data, ['reason' => '']))
+            ->assertOk()->assertViewIs('admin.resignation.modal-saved');
+        $this->post('/_test/resignation-create?request_modal=1', array_diff_key($data, ['reason' => true]))
+            ->assertOk()->assertViewIs('admin.resignation.modal-saved');
+        $createUrl = route('admin.resignation.create', ['request_modal' => '1']);
+        $this->from($createUrl)->post('/_test/resignation-create?request_modal=1', array_replace($data, ['reason' => ['invalid']]))
+            ->assertRedirect($createUrl)->assertSessionHasErrors('reason');
     }
 
     public function test_complete_resignation_information_is_saved_rendered_and_validated(): void

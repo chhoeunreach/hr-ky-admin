@@ -12,11 +12,11 @@ const source = blade.slice(start, end)
     .replace('@json(csrf_token())', "'csrf-token'")
     .replace(/@json\(__\('index\.([a-z_]+)'\)\)/g, (_, key) => JSON.stringify(key));
 
-function setup(fetch, {sourceRequestId = '1'} = {}) {
+function setup(fetch, {sourceRequestId = '1', staticSource = false} = {}) {
     const calls = [];
     const field = {
         value: 'Family event', name: 'reason', id: '', tagName: 'TEXTAREA',
-        getAttribute: () => 'Reason', closest: () => null, matches: selector => selector === 'textarea',
+        getAttribute: () => 'Reason', closest: () => null, matches: selector => selector === 'textarea' || (staticSource && selector.includes('[data-print-static-source]')),
     };
     const record = {};
     const printedRecord = {};
@@ -123,4 +123,17 @@ test('resignation requires a saved request and waits for print persistence', asy
     assert.equal(payload.source_request_id, 3);
     assert.equal(payload.form_type, 'resignationLetter');
     assert.deepEqual(saved.calls, ['cleanup', 'save', 'print']);
+});
+
+
+test('resignation keeps its visible preview values instead of duplicating hidden export fields', async () => {
+    let payload;
+    const {calls, run, printField} = setup(async (url, options) => {
+        payload = JSON.parse(options.body);
+        return {ok: true, json: async () => ({recorded: true, print_record_id: 43})};
+    }, {staticSource: true, sourceRequestId: '3'});
+    await run('resignationLetter');
+    assert.equal(printField.printedValue, undefined);
+    assert.equal(payload.fields[0].value, 'Family event');
+    assert.equal(calls.at(-1), 'print');
 });

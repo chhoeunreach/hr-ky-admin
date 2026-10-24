@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Exports\AssetTableExport;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Repositories\CompanyRepository;
 use App\Repositories\UserRepository;
 use App\Requests\AssetManagement\AssetDetailRequest;
@@ -38,8 +40,19 @@ class AssetController extends Controller
     public function index(Request $request)
     {
         $this->authorize('list_assets');
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:200'],
+            'per_page' => ['nullable', \Illuminate\Validation\Rule::in(['10', '25', '50', '100', 'all'])],
+            'export' => ['nullable', \Illuminate\Validation\Rule::in(['csv', 'excel', 'word', 'print', 'pdf', 'json'])],
+            'columns' => ['nullable', 'array', 'min:1'],
+            'columns.*' => ['string', \Illuminate\Validation\Rule::in(array_keys($this->assetTableColumns()))],
+            'orientation' => ['nullable', \Illuminate\Validation\Rule::in(['portrait', 'landscape'])],
+        ]);
         try {
             $filterParameters = [
+                'q' => $request->input('q'),
+                'per_page' => $request->input('per_page') ?: '25',
+                'exporting' => $request->filled('export'),
                 'branch_id' => $request->branch_id ?? null,
                 'name' => $request->name ?? null,
                 'purchased_from' => $request->purchased_from ?? null,
@@ -55,6 +68,9 @@ class AssetController extends Controller
             $select = ['*'];
             $with = ['type:id,name','latestAssignment.user:id,name'];
             $assetLists = $this->assetService->getAllAssetsPaginated($filterParameters,$select,$with);
+            if ($request->filled('export')) {
+                return $this->exportAssetTable($request, $assetLists);
+            }
 
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
@@ -63,6 +79,57 @@ class AssetController extends Controller
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
+    }
+
+    private function assetTableColumns(): array
+    {
+        $columns = [
+            'number' => '#', 'employee' => __('index.employee'), 'name' => __('index.name'), 'asset_code' => __('index.asset_code'),
+            'asset_serial_no' => __('index.asset_serial_number'), 'description' => __('index.description'),
+            'type' => __('index.type'), 'is_working' => __('index.is_working'), 'is_available' => __('index.is_available'),
+        ];
+        if (auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('assign_asset')) {
+            $columns['assigned_to'] = __('index.assign_to');
+        }
+        return $columns;
+    }
+
+    private function exportAssetTable(Request $request, $assets)
+    {
+        $columns = $this->assetTableColumns();
+        $selected = $request->input('columns') ?: array_keys($columns);
+        $columns = array_intersect_key($columns, array_flip($selected));
+        $headings = array_values($columns);
+        $rows = $assets->values()->map(function ($asset, $index) use ($columns) {
+            $data = [
+                'employee' => $asset->latestAssignment && !$asset->latestAssignment->returned_date ? $asset->latestAssignment->user?->name : null,
+                'number' => (string) ($index + 1), 'name' => $asset->name,
+                'asset_code' => $asset->asset_code, 'asset_serial_no' => $asset->asset_serial_no,
+                'description' => trim(html_entity_decode(strip_tags(preg_replace('/<\/(p|div)>|<br\s*\/?>/i', "\n", $asset->note ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
+                'type' => $asset->type?->name, 'is_working' => __('index.' . $asset->is_working),
+                'is_available' => $asset->is_available ? __('index.yes') : __('index.no'),
+                'assigned_to' => $asset->latestAssignment && !$asset->latestAssignment->returned_date ? $asset->latestAssignment->user?->name : null,
+            ];
+            return array_values(array_map(fn ($key) => (string) ($data[$key] ?? ''), array_keys($columns)));
+        })->all();
+        $format = $request->input('export');
+        if ($format === 'json') return response()->json(compact('headings', 'rows'));
+        $filename = 'assets-' . now()->format('Ymd');
+        if (in_array($format, ['csv', 'excel'], true)) {
+            if ($format === 'csv') {
+                $rows = array_map(fn ($row) => array_map(fn ($value) => preg_match('/^[=+\-@\t\r]/', $value) ? "'" . $value : $value, $row), $rows);
+            }
+            return Excel::download(new AssetTableExport($headings, $rows), $filename . ($format === 'csv' ? '.csv' : '.xlsx'));
+        }
+        $view = view('admin.assetManagement.assetDetail.exports.table', [
+            'headings' => $headings, 'rows' => $rows, 'format' => $format,
+            'orientation' => $request->input('orientation') ?: 'landscape',
+        ]);
+        if ($format === 'word') {
+            return response($view->render())->header('Content-Type', 'application/msword; charset=UTF-8')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '.doc"');
+        }
+        return $view;
     }
 
     /**

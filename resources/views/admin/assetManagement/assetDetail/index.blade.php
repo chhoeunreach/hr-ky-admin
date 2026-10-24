@@ -27,6 +27,8 @@
                 <h6 class="card-title mb-0">{{  __('index.assets_filter') }}</h6>
             </div>
             <form class="forms-sample card-body pb-0" action="{{route('admin.assets.index')}}" method="get">
+                <input type="hidden" name="q" value="{{ $filterParameters['q'] }}">
+                <input type="hidden" name="per_page" value="{{ $filterParameters['per_page'] }}">
 
                 <div class="row align-items-center">
                     @if(!isset(auth()->user()->branch_id))
@@ -111,28 +113,37 @@
                 <h6 class="card-title mb-0">{{ __('index.asset_lists') }}</h6>
             </div>
             <div class="card-body">
+                @include('admin.assetManagement.assetDetail.common.toolkit')
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="assetsTable" class="table">
                         <thead>
                         <tr>
-                            <th class="text-center">#</th>
-                            <th>{{  __('index.name') }}</th>
-                            <th class="text-center">{{  __('index.type') }}</th>
-                            <th class="text-center">{{  __('index.is_working') }}</th>
-                            <th class="text-center">{{  __('index.is_available') }}</th>
+                            <th data-asset-column="number" class="text-center">#</th>
+                            <th data-asset-column="employee">{{ __('index.employee') }}</th>
+                            <th data-asset-column="name">{{  __('index.name') }}</th>
+                            <th data-asset-column="asset_code">{{ __('index.asset_code') }}</th>
+                            <th data-asset-column="asset_serial_no">{{ __('index.asset_serial_number') }}</th>
+                            <th data-asset-column="description">{{ __('index.description') }}</th>
+                            <th data-asset-column="type" class="text-center">{{  __('index.type') }}</th>
+                            <th data-asset-column="is_working" class="text-center">{{  __('index.is_working') }}</th>
+                            <th data-asset-column="is_available" class="text-center">{{  __('index.is_available') }}</th>
                             @can('assign_asset')
-                                <th class="text-center">{{  __('index.assign_to') }}</th>
+                                <th data-asset-column="assigned_to" class="text-center">{{  __('index.assign_to') }}</th>
                             @endcan
                             @canany(['show_asset','edit_assets','delete_assets','asset_assign_list'])
-                                <th class="text-center">{{  __('index.action') }}</th>
+                                <th data-asset-column="actions" class="text-center">{{  __('index.action') }}</th>
                             @endcanany
                         </tr>
                         </thead>
                         <tbody>
                         @forelse($assetLists as $key => $value)
-                            <tr>
-                                <td class="text-center">{{++$key}}</td>
+                            <tr data-asset-row>
+                                <td class="text-center">{{ $assetLists instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $assetLists->firstItem() + $loop->index : $loop->iteration }}</td>
+                                <td>{{ $value->latestAssignment && !$value->latestAssignment->returned_date ? ($value->latestAssignment->user?->name ?: __('index.not_available')) : __('index.not_available') }}</td>
                                 <td>{{ucfirst($value->name)}}</td>
+                                <td>{{ $value->asset_code ?: __('index.not_available') }}</td>
+                                <td>{{ $value->asset_serial_no ?: __('index.not_available') }}</td>
+                                <td style="min-width: 220px; max-width: 360px; white-space: pre-line; overflow-wrap: anywhere;">{{ trim(html_entity_decode(strip_tags(preg_replace('/<\/(p|div)>|<br\s*\/?>/i', "\n", $value->note ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?: __('index.not_available') }}</td>
                                 <td class="text-center">
                                     <a href="{{route('admin.asset-types.show',$value->type_id)}}">{{ucfirst($value->type->name)}}</a>
                                 </td>
@@ -147,6 +158,7 @@
 
                                         @if( ($value->is_working == 'yes') && ($value->is_available == 1))
                                             <a class="assignAsset btn btn-sm btn-info"
+                                               data-options-url="{{ route('admin.asset-assignment.options', $value->id) }}"
                                                data-id="{{$value->id}}"
                                                data-branch-id="{{$value->branch_id}}"
                                                data-href="{{route('admin.asset-assignment.store',$value->id)}}"
@@ -159,6 +171,7 @@
 
                                     </td>
                                 @endcan
+                                @canany(['show_asset','edit_assets','delete_assets','asset_assign_list'])
                                 <td class="text-center">
                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                         @can('edit_assets')
@@ -199,10 +212,11 @@
                                         @endcan
                                     </ul>
                                 </td>
+                                @endcanany
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="100%">
+                                <td colspan="11">
                                     <p class="text-center"><b>{{  __('index.no_records_found') }}</b></p>
                                 </td>
                             </tr>
@@ -213,9 +227,12 @@
             </div>
         </div>
 
-        {{--        <div class="dataTables_paginate mt-3">--}}
-        {{--            {{$assetLists->appends($_GET)->links()}}--}}
-        {{--        </div>--}}
+        <div class="assets-table-footer">
+            <span>{{ __('index.assets_total_results', ['count' => $assetLists instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $assetLists->total() : $assetLists->count()]) }}</span>
+            @if($assetLists instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator)
+                {{ $assetLists->links() }}
+            @endif
+        </div>
     </section>
 
     @include('admin.assetManagement.assetDetail.common.assignment')
@@ -223,6 +240,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/assets-toolkit.js') }}?v={{ filemtime(public_path('assets/js/assets-toolkit.js')) }}"></script>
 
 
     <script>

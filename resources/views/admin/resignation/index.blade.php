@@ -7,10 +7,8 @@
 
 @section('button')
     @can('create_resignation')
-        <a href="{{ route('admin.resignation.create')}}">
-            <button class="btn btn-primary">
+        <a class="btn btn-primary" href="{{ route('admin.resignation.create') }}" data-open-request-form data-request-modal-title="{{ __('index.resignation_create_title') }}">
                 <i class="link-icon" data-feather="plus"></i>{{ __('index.add_resignation') }}
-            </button>
         </a>
     @endcan
 @endsection

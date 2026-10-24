@@ -1,6 +1,12 @@
 <script>
     $('document').ready(function(){
 
+        document.querySelector('[data-close-request-form]')?.addEventListener('click', event => {
+            if (window.parent !== window) {
+                event.preventDefault();
+                window.parent.postMessage({type: 'employee-request-form-close'}, window.location.origin);
+            }
+        });
         const selectLanguage = {
             noResults: () => @json(__('index.resignation_no_results')),
             searching: () => @json(__('index.resignation_searching')),

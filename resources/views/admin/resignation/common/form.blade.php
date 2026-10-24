@@ -119,8 +119,8 @@
                 @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-12">
-                <label for="resignation_reason" class="form-label">{{ __('index.resignation_reason_label') }} <span class="resignation-required">*</span></label>
-                <textarea class="form-control @error('reason') is-invalid @enderror" name="reason" id="resignation_reason" rows="4" required placeholder="{{ __('index.resignation_reason_placeholder') }}">{{ old('reason', html_entity_decode(strip_tags($resignationDetail->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')) }}</textarea>
+                <label for="resignation_reason" class="form-label">{{ __('index.resignation_reason_label') }} ({{ __('index.optional') }})</label>
+                <textarea class="form-control @error('reason') is-invalid @enderror" name="reason" id="resignation_reason" rows="4" placeholder="{{ __('index.resignation_reason_placeholder') }}">{{ old('reason', html_entity_decode(strip_tags($resignationDetail->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')) }}</textarea>
                 @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             @if($editingResignation)
@@ -211,7 +211,7 @@
     <footer class="resignation-form-footer">
         <p>{{ __('index.resignation_save_help') }}</p>
         <div class="resignation-form-actions">
-            <a class="btn btn-outline-secondary" href="{{ route('admin.resignation.index') }}">{{ __('index.cancel') }}</a>
+            <a class="btn btn-outline-secondary" href="{{ route('admin.resignation.index') }}" @if(request('request_modal') === '1') data-close-request-form @endif>{{ __('index.cancel') }}</a>
             @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::any(['update_resignation', 'create_resignation']))
                 <button type="submit" class="btn btn-primary"><i class="link-icon" data-feather="check"></i> {{ $editingResignation ? __('index.resignation_save_changes') : __('index.resignation_save_request') }}</button>
             @endif

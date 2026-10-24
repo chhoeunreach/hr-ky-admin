@@ -1,6 +1,23 @@
 <?php
 
 return [
+    'asset_assignment_branch_help' => 'Fills automatically from the selected employee, or choose a branch to filter employees.',
+    'asset_assignment_choose_branch' => 'Select a branch to load its departments and employees.',
+    'asset_assignment_no_branches' => 'No accessible branches are available.',
+    'asset_assignment_selection_help' => 'Select an employee directly. Branch and department fill automatically. You can also use branch or department to filter the employee list.',
+    'asset_assignment_employee_search' => 'Search by Khmer name, Latin name, employee code or username.',
+    'asset_assignment_all_departments' => 'All departments',
+    'asset_assignment_loading' => 'Loading departments and employees…',
+    'asset_assignment_load_error' => 'Unable to load employees. Please retry.',
+    'asset_assignment_retry' => 'Retry',
+    'asset_assignment_saving' => 'Assigning asset…',
+    'assets_table_tools' => 'Asset table tools',
+    'assets_search_placeholder' => 'Name, code, serial number or description',
+    'assets_export_error' => 'Unable to export the asset list. Please try again.',
+    'assets_total_results' => ':count matching assets',
+    'assets_save_pdf_help' => 'Choose Save as PDF in the print dialog to download this document.',
+    'resignation_a4_document_preview' => 'A4 document preview',
+    'optional' => 'Optional',
     'resignation_reason_label' => 'Reason for resignation',
     'resignation_choose_file' => 'Choose file',
     'resignation_no_file' => 'No file selected',

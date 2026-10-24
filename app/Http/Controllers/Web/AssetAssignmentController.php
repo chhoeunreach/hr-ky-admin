@@ -7,6 +7,10 @@ use App\Enum\AssetReturnConditionEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Asset;
+use App\Models\Branch;
+use App\Models\Department;
+use App\Models\User;
 use App\Repositories\CompanyRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\UserRepository;
@@ -22,6 +26,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AssetAssignmentController extends Controller
 {
@@ -74,22 +79,62 @@ class AssetAssignmentController extends Controller
         }
     }
 
+    private function assignmentBranches(Asset $asset)
+    {
+        return $asset->branch
+            ? collect([$asset->branch])
+            : Branch::orderBy('name')->get(['id', 'name']);
+    }
+
+    public function options(Request $request, $assetId)
+    {
+        $this->authorize('assign_asset');
+        $asset = Asset::with('branch:id,name')->findOrFail($assetId);
+        $branches = $this->assignmentBranches($asset);
+        $request->validate(['branch_id' => ['nullable', 'integer', Rule::in($branches->pluck('id')->all())]], [], ['branch_id' => __('index.branch')]);
+        $branchId = $request->input('branch_id') ?: ($asset->branch?->id
+            ?? ($branches->contains('id', auth()->user()?->branch_id) ? auth()->user()?->branch_id : null)
+            ?? ($branches->count() === 1 ? $branches->first()->id : null));
+        $filterBranchId = $request->input('branch_id') ?: $asset->branch?->id;
+        $branchIds = $filterBranchId ? [$filterBranchId] : $branches->pluck('id')->all();
+        $departments = Department::whereIn('branch_id', $branchIds)->where('is_active', 1)
+            ->orderBy('dept_name')->get(['id', 'dept_name', 'branch_id']);
+        $employees = User::whereIn('branch_id', $branchIds)->whereIn('department_id', $departments->pluck('id'))
+            ->where('is_active', 1)->where('status', 'verified')->orderBy('name')
+            ->get(['id', 'name', 'english_name', 'employee_code', 'username', 'department_id', 'branch_id']);
+
+        return response()->json([
+            'asset' => $asset->only(['id', 'name', 'asset_code', 'asset_serial_no', 'branch_id']) + ['branch_name' => $asset->branch?->name],
+            'branches' => $branches->values(), 'selected_branch_id' => $branchId,
+            'branch_locked' => (bool) $asset->branch,
+            'departments' => $departments, 'employees' => $employees,
+        ]);
+    }
+
     public function store(Request $request, $id)
     {
+        $this->authorize('assign_asset');
+        $assetDetail = Asset::with('branch:id,name')->findOrFail($id);
+        $branches = $this->assignmentBranches($assetDetail);
+        $branchId = $assetDetail->branch?->id ?? $request->input('branch_id');
         try {
             $validatedData = $request->validate([
-                'asset_id' => 'required|exists:assets,id',
-                'user_id' => 'required|exists:users,id',
-                'branch_id' => 'nullable|exists:branches,id',
-                'department_id' => 'required|exists:departments,id',
+                'asset_id' => ['required', 'integer', Rule::in([$assetDetail->id])],
+                'user_id' => ['required', 'integer', Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', $branchId)->where('department_id', $request->input('department_id'))
+                    ->where('is_active', 1)->where('status', 'verified')->whereNull('deleted_at'))],
+                'branch_id' => ['required', 'integer', Rule::in($branches->pluck('id')->all())],
+                'department_id' => ['required', 'integer', Rule::exists('departments', 'id')->where(fn ($query) => $query
+                    ->where('branch_id', $branchId)->where('is_active', 1))],
                 'assigned_date' => 'required|date',
+            ], [], [
+                'asset_id' => __('index.asset_name'), 'user_id' => __('index.employee'),
+                'branch_id' => __('index.branch'), 'department_id' => __('index.department'),
+                'assigned_date' => __('index.assigned_date'),
             ]);
 
 
-            $assetDetail = $this->assetService->findAssetById($id);
-            if (!auth('admin')->check() && auth()->check()) {
-                $validatedData['branch_id'] = $assetDetail->branch_id;
-            }
+            $validatedData['branch_id'] = $branchId;
             if ($assetDetail->is_working != 'yes') {
                if($assetDetail->is_working == 'no'){
                     $errormessage = 'Asset ' . $assetDetail->name . ' is not working' ;
@@ -112,7 +157,8 @@ class AssetAssignmentController extends Controller
 
              if($assetAssignmentDetail){
                  $this->assetService->updateAssetDetail($id,[
-                     'is_available'=>0
+                     'is_available'=>0,
+                     ...(!$assetDetail->branch ? ['branch_id' => $branchId] : []),
                  ]);
              }
             DB::commit();
@@ -127,6 +173,8 @@ class AssetAssignmentController extends Controller
             return response()->json([
                 'message' => __('message.asset_assignment_saved'),
             ], 200);
+        } catch (ValidationException $exception) {
+            return response()->json(['message' => $exception->getMessage(), 'errors' => $exception->errors()], 422);
         } catch (Exception $exception) {
             DB::rollBack();
             return response()->json([

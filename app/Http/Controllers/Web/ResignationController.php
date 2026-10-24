@@ -115,7 +115,7 @@ class ResignationController extends Controller
 
     /**
      * @param ResignationRequest $request
-     * @return RedirectResponse
+     * @return RedirectResponse|\Illuminate\Contracts\View\View
      * @throws AuthorizationException
      * @throws FirebaseException
      * @throws MessagingException
@@ -148,14 +148,18 @@ class ResignationController extends Controller
                 }
 
             }
-            if ($resignationDetail && $request->boolean('return_to_profile')) {
-                return redirect()->route('admin.employees.profile.show', [
+            $redirectUrl = $resignationDetail && $request->boolean('return_to_profile')
+                ? route('admin.employees.profile.show', [
                     'employee' => $resignationDetail->employee_id,
                     'tab' => 'resignation-letter',
                     'resignation_request_id' => $resignationDetail->id,
-                ])->with('success', __('message.add_resignation'));
+                ])
+                : route('admin.resignation.index');
+            if ($request->input('request_modal') === '1') {
+                session()->flash('success', __('message.add_resignation'));
+                return view('admin.resignation.modal-saved', compact('redirectUrl'));
             }
-            return redirect()->route('admin.resignation.index')->with('success',__('message.add_resignation') );
+            return redirect()->to($redirectUrl)->with('success', __('message.add_resignation'));
         }catch(Exception $exception){
             DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage());

@@ -2525,7 +2525,7 @@
                 if (field.matches('input[type="checkbox"], input[type="radio"]')) {
                     printField.checked = field.checked;
                 }
-                if (linkedPrint && !field.matches('input[type="checkbox"], input[type="radio"]')) {
+                if (linkedPrint && !field.matches('input[type="checkbox"], input[type="radio"], [data-print-static-source]')) {
                     const value = document.createElement(field.matches('textarea') ? 'div' : 'span');
                     value.className = 'employee-request-print-value';
                     value.textContent = field.tagName === 'SELECT' ? field.selectedOptions[0]?.textContent || '' : field.value;

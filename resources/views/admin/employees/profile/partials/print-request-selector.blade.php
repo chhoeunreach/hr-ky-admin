@@ -9,7 +9,7 @@
             <a class="btn btn-outline-secondary btn-sm" href="{{ $requestListUrl }}"
                @if($requestTab === 'leave-letter') data-open-leave-request-form data-request-modal-title="{{ __('index.request_list') }}" @endif>{{ __('index.request_list') }}</a>
             @if($canCreatePrintRequest)
-                <a class="btn btn-primary btn-sm" href="{{ $requestCreateUrl }}{{ request('request_modal') === '1' ? (str_contains($requestCreateUrl, '?') ? '&' : '?') . 'request_modal=1' : '' }}" @if($requestTab === 'leave-letter' && request('request_modal') !== '1') data-open-leave-request-form @endif><span aria-hidden="true">＋</span> {{ __('index.create_request_before_print') }}</a>
+                <a class="btn btn-primary btn-sm" href="{{ $requestCreateUrl }}{{ request('request_modal') === '1' ? (str_contains($requestCreateUrl, '?') ? '&' : '?') . 'request_modal=1' : '' }}" @if($requestTab === 'leave-letter' && request('request_modal') !== '1') data-open-leave-request-form @elseif($requestTab === 'resignation-letter' && request('request_modal') !== '1') data-open-request-form data-request-modal-title="{{ __('index.resignation_create_title') }}" @endif><span aria-hidden="true">＋</span> {{ __('index.create_request_before_print') }}</a>
             @endif
         </div>
     </header>
