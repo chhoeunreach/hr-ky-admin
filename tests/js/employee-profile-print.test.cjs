@@ -34,7 +34,7 @@ function setup(fetch, {sourceRequestId = '1'} = {}) {
         cloneNode: () => clone,
     };
     const context = vm.createContext({
-        employeeProfilePrintPermissions: {leaveLetter: true, timeLeaveLetter: true},
+        employeeProfilePrintPermissions: {leaveLetter: true, timeLeaveLetter: true, resignationLetter: true},
         cleanupEmployeeCompletePrintRoot: () => calls.push('cleanup'),
         document: {
             querySelector: selector => selector === '#paper' ? paper : notice,
@@ -107,4 +107,20 @@ test('prints the saved record number and full text rather than a clipped textare
     assert.equal(printedRecord.textContent, 'print_record_number: #41');
     assert.equal(printField.printedValue, 'Family event');
     assert.equal(calls.at(-1), 'print');
+});
+
+
+test('resignation requires a saved request and waits for print persistence', async () => {
+    const missing = setup(async () => {throw new Error('must not save');}, {sourceRequestId: ''});
+    await missing.run('resignationLetter');
+    assert.deepEqual(missing.calls, ['cleanup', 'error']);
+    let payload;
+    const saved = setup(async (url, options) => {
+        payload = JSON.parse(options.body);
+        return {ok: true, json: async () => ({recorded: true, print_record_id: 42})};
+    }, {sourceRequestId: '3'});
+    await saved.run('resignationLetter');
+    assert.equal(payload.source_request_id, 3);
+    assert.equal(payload.form_type, 'resignationLetter');
+    assert.deepEqual(saved.calls, ['cleanup', 'save', 'print']);
 });

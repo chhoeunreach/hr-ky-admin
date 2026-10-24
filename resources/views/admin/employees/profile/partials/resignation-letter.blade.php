@@ -13,9 +13,19 @@
     };
 @endphp
 
-<div class="employee-complete-toolbar employee-salary-certificate-toolbar mb-3">
+@include('admin.employees.profile.partials.print-request-selector', [
+    'requestTab' => 'resignation-letter', 'requestField' => 'resignation_request_id',
+    'printRequests' => $resignationPrintRequests, 'selectedPrintRequest' => $selectedResignationPrintRequest,
+    'requestListUrl' => route('admin.resignation.index', ['employee_id' => $employee->id]),
+    'requestCreateUrl' => route('admin.resignation.create', ['employee_id' => $employee->id, 'return_to_profile' => 1]),
+    'canCreatePrintRequest' => auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('create_resignation'),
+])
+
+<div class="employee-complete-toolbar employee-request-actions mb-3">
+    <div class="employee-request-action-copy"><strong>{{ __('index.request_step_print') }}</strong><p>{{ $selectedResignationPrintRequest ? __('index.print_optional_help') : __('index.select_saved_request_before_print') }}</p></div>
+    <div class="employee-request-action-buttons">
     @if($canPrintResignationForm)
-        <button type="button" class="btn btn-outline-primary btn-sm" onclick="printResignationLetter()">
+        <button type="button" class="btn btn-primary" onclick="printResignationLetter()" data-print-busy-label="{{ __('index.saving_print_record') }}" data-save-linked-print @disabled(!$selectedResignationPrintRequest)>
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
         </button>
     @endif
@@ -25,13 +35,16 @@
                 data-export-type="resignationForm"
                 data-paper-selector="#resignation-letter .employee-resignation-letter-paper"
                 data-file-name="Resignation-Letter-{{ $employee->employee_code ?: $employee->id }}-{{ now()->format('Ymd') }}.docx"
-                onclick="downloadEmployeeFormWord(this)">
+                onclick="downloadEmployeeFormWord(this)" @disabled(!$selectedResignationPrintRequest)>
             <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_word') }}
         </button>
     @endif
+    </div>
 </div>
 
-<div class="employee-complete-paper employee-leave-letter-paper employee-resignation-letter-paper employee-print-form">
+@if($selectedResignationPrintRequest)
+<div class="employee-complete-toolbar employee-request-preview-heading"><strong>{{ __('index.a4_request_preview') }}</strong><span>{{ __('index.review_before_print') }}</span></div>
+<div class="employee-complete-paper employee-leave-letter-paper employee-resignation-letter-paper employee-print-form" data-source-request-id="{{ $selectedResignationPrintRequest->id }}" data-request-tab="resignation-letter">
     <div class="employee-resignation-national-heading">
         <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
         <span>{{ __('index.nation_religion_king') }}</span>
@@ -46,8 +59,8 @@
             </div>
         </div>
         <div class="employee-salary-certificate-document-meta employee-print-form-meta">
-            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}">
-            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}">
+            <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}" value="{{ $selectedResignationPrintRequest->id }}" readonly>
+            <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="date" aria-label="{{ __('index.request_date') }}" value="{{ $selectedResignationPrintRequest->resignation_date }}" readonly>
         </div>
     </header>
 
@@ -85,14 +98,14 @@
         <p>{{ __('index.resignation_intro') }}</p>
 
         <label for="employeeResignationReason">{{ __('index.resignation_reason') }}</label>
-        <textarea id="employeeResignationReason" class="employee-print-form-textarea" rows="4"></textarea>
+        <textarea id="employeeResignationReason" class="employee-print-form-textarea" rows="4" readonly>{{ html_entity_decode(strip_tags($selectedResignationPrintRequest->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') }}</textarea>
 
         <label for="employeeReturnedProperty">{{ __('index.company_property_returned') }}</label>
         <textarea id="employeeReturnedProperty" class="employee-print-form-textarea compact" rows="2"></textarea>
 
         <div class="employee-resignation-last-day">
             <span>{{ __('index.resignation_last_working_day') }}</span>
-            <input type="date" aria-label="{{ __('index.resignation_last_working_day') }}">
+            <input type="date" aria-label="{{ __('index.resignation_last_working_day') }}" value="{{ $selectedResignationPrintRequest->last_working_day }}" readonly>
         </div>
 
         <p>{{ __('index.resignation_closing') }}</p>
@@ -108,4 +121,12 @@
         <div><span>{{ __('index.hr_signature') }}</span><strong></strong><small>{{ __('index.date') }}: ____________</small></div>
         <div><span>{{ __('index.resignation_requester') }}</span><strong></strong><small>{{ $employee->name ?: $employee->english_name ?: $notAvailable }}</small></div>
     </div>
+    <div class="employee-request-print-record" data-print-record>{{ __('index.print_record_number') }}: —</div>
 </div>
+@else
+<div class="employee-complete-toolbar employee-request-preview-empty">
+    <span class="employee-request-empty-icon" aria-hidden="true">▤</span>
+    <h4>{{ __('index.request_preview_empty_title') }}</h4>
+    <p>{{ __('index.request_preview_empty_help') }}</p>
+</div>
+@endif

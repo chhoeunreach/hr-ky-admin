@@ -2406,7 +2406,14 @@
                                                         @if(data_get($log->new_values, 'source_request_id'))
                                                             <p>
                                                                 {{ __('index.linked_saved_request') }}:
-                                                                <a href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => data_get($log->new_values, 'source_request_type') === 'leave' ? 'leave-letter' : 'time-leave-letter', data_get($log->new_values, 'source_request_type') === 'leave' ? 'leave_request_id' : 'time_leave_request_id' => data_get($log->new_values, 'source_request_id')]) }}">#{{ data_get($log->new_values, 'source_request_id') }}</a>
+                                                                @php
+                                                                    [$sourceTab, $sourceField] = match (data_get($log->new_values, 'source_request_type')) {
+                                                                        'leave' => ['leave-letter', 'leave_request_id'],
+                                                                        'resignation' => ['resignation-letter', 'resignation_request_id'],
+                                                                        default => ['time-leave-letter', 'time_leave_request_id'],
+                                                                    };
+                                                                @endphp
+                                                                <a href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => $sourceTab, $sourceField => data_get($log->new_values, 'source_request_id')]) }}">#{{ data_get($log->new_values, 'source_request_id') }}</a>
                                                             </p>
                                                         @endif
                                                         <div style="white-space: pre-wrap; max-height: 300px; overflow: auto;">{{ data_get($log->new_values, 'document_text') }}</div>
@@ -2494,7 +2501,7 @@
             if (!paper) {
                 return;
             }
-            const linkedPrint = ['leaveLetter', 'timeLeaveLetter'].includes(printType);
+            const linkedPrint = ['leaveLetter', 'timeLeaveLetter', 'resignationLetter'].includes(printType);
             const sourceRequestId = linkedPrint ? Number(paper.dataset.sourceRequestId) : null;
             if (linkedPrint && (!Number.isInteger(sourceRequestId) || sourceRequestId < 1)) {
                 window.alert(@json(__('index.select_saved_request_before_print')));

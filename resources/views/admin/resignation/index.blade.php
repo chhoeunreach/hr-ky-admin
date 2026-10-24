@@ -116,7 +116,7 @@
                             ?>
                         @forelse($resignationLists as $key => $value)
                             <tr>
-                                <td>{{++$key}}</td>
+                                <td>{{++$key}} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.resignation_form.print', 'printTab' => 'resignation-letter', 'printRequestField' => 'resignation_request_id'])</td>
                                 <td>{{ $value->employee->name }}</td>
                                 <td>{{ \App\Helpers\AppHelper::formatDateForView($value->resignation_date) }}</td>
                                 <td>{{ \App\Helpers\AppHelper::formatDateForView($value->last_working_day) }}</td>

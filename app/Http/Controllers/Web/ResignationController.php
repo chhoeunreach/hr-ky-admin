@@ -7,6 +7,7 @@ use App\Enum\TerminationStatusEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Repositories\CompanyRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\UserRepository;
@@ -73,9 +74,21 @@ class ResignationController extends Controller
      * Show the form for creating a new resource.
      *
      */
-    public function create()
+    public function create(Request $request)
     {
         $this->authorize('create_resignation');
+
+        $request->validate(['employee_id' => ['nullable', 'integer', 'exists:users,id']]);
+        $profileEmployee = $request->filled('employee_id')
+            ? User::whereKey($request->employee_id)
+                ->when(!auth('admin')->check() && auth()->user()?->branch_id, fn ($query) => $query->where('branch_id', auth()->user()->branch_id))
+                ->firstOrFail()
+            : null;
+        $filterParameters = [
+            'branch_id' => old('branch_id', $profileEmployee?->branch_id),
+            'department_id' => old('department_id', $profileEmployee?->department_id),
+            'employee_id' => old('employee_id', $profileEmployee?->id),
+        ];
 
         try{
             $resignationStatus = ResignationStatusEnum::cases();
@@ -84,7 +97,7 @@ class ResignationController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view.'create', compact('resignationStatus','companyDetail','isBsEnabled'));
+            return view($this->view.'create', compact('resignationStatus','companyDetail','isBsEnabled', 'filterParameters'));
         }catch(Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -125,6 +138,13 @@ class ResignationController extends Controller
                     $this->sendResignationStatusNotification($notification,$employee->supervisor_id);
                 }
 
+            }
+            if ($resignationDetail && $request->boolean('return_to_profile')) {
+                return redirect()->route('admin.employees.profile.show', [
+                    'employee' => $resignationDetail->employee_id,
+                    'tab' => 'resignation-letter',
+                    'resignation_request_id' => $resignationDetail->id,
+                ])->with('success', __('message.add_resignation'));
             }
             return redirect()->route('admin.resignation.index')->with('success',__('message.add_resignation') );
         }catch(Exception $exception){

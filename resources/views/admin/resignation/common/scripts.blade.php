@@ -149,7 +149,9 @@
 
                 // Trigger initial load if branch is selected
                 if (selectedBranchId) {
-                    $('#branch_id').trigger('change');
+                    $('#branch_id').val(selectedBranchId);
+                    await loadDepartments(selectedBranchId);
+                    await loadEmployees();
                 }
             } else {
                 selectedBranchId = defaultBranchId;

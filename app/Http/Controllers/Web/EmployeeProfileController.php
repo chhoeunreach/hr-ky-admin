@@ -26,6 +26,7 @@ use App\Models\EmployeeWarningOverviewNote;
 use App\Models\LeaveRequestMaster;
 use App\Models\PerformanceReview;
 use App\Models\Post;
+use App\Models\Resignation;
 use App\Models\TimeLeave;
 use App\Models\User;
 use App\Traits\CustomAuthorizesRequests;
@@ -192,6 +193,11 @@ class EmployeeProfileController extends Controller
         $canViewResignationForm = $this->can('employee.resignation_form.view');
         $canPrintResignationForm = $this->can('employee.resignation_form.print');
         $canExportResignationForm = $this->can('employee.resignation_form.export');
+        $resignationPrintRequests = ($canViewResignationForm || $canPrintResignationForm || $canExportResignationForm)
+            ? Resignation::where('employee_id', $employee->id)->latest('id')->get()
+            : collect();
+        $selectedResignationPrintRequest = $resignationPrintRequests->firstWhere('id', request('resignation_request_id'));
+        abort_if(request()->filled('resignation_request_id') && !$selectedResignationPrintRequest, 404);
         $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
@@ -244,6 +250,8 @@ class EmployeeProfileController extends Controller
         );
 
         return view('admin.employees.profile.show', compact(
+            'resignationPrintRequests',
+            'selectedResignationPrintRequest',
             'leavePrintRequests',
             'timeLeavePrintRequests',
             'selectedLeavePrintRequest',
@@ -304,7 +312,7 @@ class EmployeeProfileController extends Controller
 
     public function recordPrint(Request $request, User $employee)
     {
-        $linkedPrint = in_array($request->input('form_type'), ['leaveLetter', 'timeLeaveLetter'], true);
+        $linkedPrint = in_array($request->input('form_type'), ['leaveLetter', 'timeLeaveLetter', 'resignationLetter'], true);
         $forms = [
             'complete' => ['employee.complete_form.print', 'Employee Complete Form'],
             'overview' => ['employee.warning_overview.print', 'Warning Overview'],
@@ -342,9 +350,12 @@ class EmployeeProfileController extends Controller
             $source = null;
             $sourceType = null;
             if ($linkedPrint) {
-                $sourceType = $data['form_type'] === 'leaveLetter' ? 'leave' : 'time_leave';
-                $query = $sourceType === 'leave' ? LeaveRequestMaster::query() : TimeLeave::query();
-                $source = $query->where('requested_by', $employee->id)->whereKey($data['source_request_id'])
+                [$sourceType, $query, $employeeColumn] = match ($data['form_type']) {
+                    'leaveLetter' => ['leave', LeaveRequestMaster::query(), 'requested_by'],
+                    'timeLeaveLetter' => ['time_leave', TimeLeave::query(), 'requested_by'],
+                    'resignationLetter' => ['resignation', Resignation::query(), 'employee_id'],
+                };
+                $source = $query->where($employeeColumn, $employee->id)->whereKey($data['source_request_id'])
                     ->lockForUpdate()->first();
                 if (!$source) {
                     throw ValidationException::withMessages(['source_request_id' => __('index.invalid_print_request_link')]);
@@ -362,9 +373,11 @@ class EmployeeProfileController extends Controller
                 'document_locale' => app()->getLocale(),
                 'source_request_type' => $sourceType,
                 'source_request_id' => $source?->id,
-                'source_request_snapshot' => $source?->only($sourceType === 'leave'
-                    ? ['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'no_of_days', 'leave_requested_date', 'reasons', 'status', 'admin_remark']
-                    : ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark']),
+                'source_request_snapshot' => $source?->only(match ($sourceType) {
+                    'leave' => ['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'no_of_days', 'leave_requested_date', 'reasons', 'status', 'admin_remark'],
+                    'resignation' => ['id', 'employee_id', 'resignation_date', 'last_working_day', 'reason', 'status', 'admin_remark'],
+                    default => ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark'],
+                }),
             ], $request);
         });
 

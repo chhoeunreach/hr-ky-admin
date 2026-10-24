@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'onReview' => 'Under Review',
     'print_record_failed' => 'The print record could not be saved. Printing has been stopped. Please try again.',
     'print_record_user' => 'Requested by',
     'print_record_details' => 'Saved form details',

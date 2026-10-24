@@ -16,6 +16,9 @@
             <div class="card-body">
                 <form id="" class="forms-sample" action="{{route('admin.resignation.store')}}" enctype="multipart/form-data"  method="POST">
                     @csrf
+                    @if(request()->boolean('return_to_profile'))
+                        <input type="hidden" name="return_to_profile" value="1">
+                    @endif
                     @include('admin.resignation.common.form')
                 </form>
             </div>

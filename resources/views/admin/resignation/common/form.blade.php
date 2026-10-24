@@ -5,12 +5,12 @@
         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
         <select class="form-select" id="branch_id" name="branch_id">
 
-            <option {{isset($resignationDetail) ? '' : 'selected'}}  disabled>{{ __('index.select_branch') }}</option>
+            <option {{isset($resignationDetail) || !empty($filterParameters['branch_id']) ? '' : 'selected'}}  disabled>{{ __('index.select_branch') }}</option>
 
             @if(isset($companyDetail))
                 @foreach($companyDetail->branches()->get() as $key => $branch)
                     <option value="{{$branch->id}}"
-                        {{ ((isset($resignationDetail) && ($resignationDetail->branch_id ) == $branch->id) || (isset(auth()->user()->branch_id) && auth()->user()->branch_id == $branch->id)) ? 'selected': '' }}>
+                        {{ (($resignationDetail->branch_id ?? $filterParameters['branch_id'] ?? auth()->user()?->branch_id) == $branch->id) ? 'selected': '' }}>
                         {{ucfirst($branch->name)}}</option>
                 @endforeach
             @endif

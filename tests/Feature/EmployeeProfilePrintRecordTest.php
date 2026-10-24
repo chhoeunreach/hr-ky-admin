@@ -54,6 +54,15 @@ class EmployeeProfilePrintRecordTest extends TestCase
         });
         DB::table('leave_requests_master')->insert(['id' => 1, 'requested_by' => 20, 'leave_from' => '2026-10-25', 'leave_to' => '2026-10-26', 'reasons' => 'Family event', 'status' => 'pending']);
         DB::table('time_leaves')->insert(['id' => 2, 'requested_by' => 20, 'issue_date' => '2026-10-25', 'start_time' => '09:00', 'end_time' => '10:00', 'reasons' => 'Appointment', 'status' => 'approved']);
+        Schema::create('resignations', function (Blueprint $table) {
+            $table->id();
+            $table->integer('employee_id');
+            foreach (['resignation_date', 'last_working_day', 'reason', 'status', 'admin_remark'] as $field) {
+                $table->string($field)->nullable();
+            }
+            $table->timestamps();
+        });
+        DB::table('resignations')->insert(['id' => 3, 'employee_id' => 20, 'resignation_date' => '2026-10-24', 'last_working_day' => '2026-11-24', 'reason' => '<p>Career change</p>', 'status' => 'onReview']);
         Schema::create('employee_profile_audit_logs', function (Blueprint $table) {
             $table->id();
             $table->integer('employee_id');
@@ -89,6 +98,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
         ], match ($type) {
             'leaveLetter' => ['source_request_id' => 1],
             'timeLeaveLetter' => ['source_request_id' => 2],
+            'resignationLetter' => ['source_request_id' => 3],
             default => [],
         });
     }
@@ -165,7 +175,8 @@ class EmployeeProfilePrintRecordTest extends TestCase
     {
         $this->abilities[] = 'employee.leave_form.print';
         $this->abilities[] = 'employee.time_leave_form.print';
-        foreach (['leaveLetter', 'timeLeaveLetter'] as $type) {
+        $this->abilities[] = 'employee.resignation_form.print';
+        foreach (['leaveLetter', 'timeLeaveLetter', 'resignationLetter'] as $type) {
             $payload = $this->payload($type);
             unset($payload['source_request_id']);
             $this->postJson('/_test/profile-print', $payload)->assertUnprocessable();
@@ -175,6 +186,8 @@ class EmployeeProfilePrintRecordTest extends TestCase
         DB::table('time_leaves')->where('id', 2)->update(['requested_by' => 30]);
         $this->postJson('/_test/profile-print', $this->payload())->assertUnprocessable();
         $this->postJson('/_test/profile-print', $this->payload('timeLeaveLetter'))->assertUnprocessable();
+        DB::table('resignations')->where('id', 3)->update(['employee_id' => 30]);
+        $this->postJson('/_test/profile-print', $this->payload('resignationLetter'))->assertUnprocessable();
         $this->assertSame(0, EmployeeProfileAuditLog::count());
     }
 
@@ -188,6 +201,43 @@ class EmployeeProfilePrintRecordTest extends TestCase
         $this->assertSame(2, $log->new_values['source_request_id']);
         $this->assertSame('09:00', $log->new_values['source_request_snapshot']['start_time']);
         $this->assertSame('approved', $log->new_values['source_request_snapshot']['status']);
+    }
+
+    public function test_resignation_print_records_its_saved_source(): void
+    {
+        $this->abilities[] = 'employee.resignation_form.print';
+        $response = $this->postJson('/_test/profile-print', $this->payload('resignationLetter'))->assertCreated();
+        $log = EmployeeProfileAuditLog::firstOrFail();
+        $response->assertJsonPath('print_record_id', $log->id);
+        $this->assertSame('resignation', $log->new_values['source_request_type']);
+        $this->assertSame(3, $log->new_values['source_request_id']);
+        $this->assertSame('2026-11-24', $log->new_values['source_request_snapshot']['last_working_day']);
+        $this->assertSame('<p>Career change</p>', $log->new_values['source_request_snapshot']['reason']);
+    }
+
+    public function test_resignation_preview_requires_selection_and_uses_saved_details(): void
+    {
+        $this->abilities[] = 'create_resignation';
+        $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
+        foreach (['branch', 'department', 'post'] as $relation) {
+            $employee->setRelation($relation, null);
+        }
+        $resignation = \App\Models\Resignation::firstOrFail();
+        $vars = [
+            'employee' => $employee, 'resignationPrintRequests' => collect([$resignation]),
+            'selectedResignationPrintRequest' => $resignation,
+            'canPrintResignationForm' => true, 'canExportResignationForm' => true,
+        ];
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->view('admin.employees.profile.partials.resignation-letter', $vars)
+                ->assertSee('data-source-request-id="3"', false)->assertSee('Career change')
+                ->assertDontSee('&lt;p&gt;', false)->assertSee('value="2026-11-24" readonly', false)
+                ->assertSee('resignation_request_id')->assertSee('return_to_profile=1', false)->assertDontSee('index.');
+            $this->view('admin.employees.profile.partials.resignation-letter', array_replace($vars, ['selectedResignationPrintRequest' => null]))
+                ->assertSee('data-save-linked-print disabled', false)
+                ->assertSee(__('index.request_preview_empty_title'))->assertDontSee('data-source-request-id', false);
+        }
     }
 
     public function test_saved_request_forms_render_linked_details_in_english_and_khmer(): void

@@ -1,7 +1,7 @@
 <div class="employee-complete-toolbar employee-request-workspace mb-3">
     <header class="employee-request-workspace-header">
         <div>
-            <span class="employee-request-eyebrow">{{ $requestTab === 'leave-letter' ? __('index.leave_request_form') : __('index.time_leave_request_form') }}</span>
+            <span class="employee-request-eyebrow">{{ match ($requestTab) { 'leave-letter' => __('index.leave_request_form'), 'resignation-letter' => __('index.resignation_request_form'), default => __('index.time_leave_request_form') } }}</span>
             <h3>{{ __('index.request_workspace_title') }}</h3>
             <p>{{ __('index.request_workspace_help') }}</p>
         </div>
@@ -31,7 +31,7 @@
             <select class="form-select" id="{{ $requestField }}" name="{{ $requestField }}" required onchange="this.form.requestSubmit()">
                 <option value="" disabled @selected(!$selectedPrintRequest)>{{ __('index.select_saved_request') }}</option>
                 @foreach($printRequests as $printRequest)
-                    <option value="{{ $printRequest->id }}" @selected($selectedPrintRequest?->id === $printRequest->id)>#{{ $printRequest->id }} · {{ $printRequest->leave_from ?? $printRequest->issue_date }}{{ $printRequest->leave_to ? ' → ' . $printRequest->leave_to : '' }} · {{ __('index.' . $printRequest->status) }}</option>
+                    <option value="{{ $printRequest->id }}" @selected($selectedPrintRequest?->id === $printRequest->id)>#{{ $printRequest->id }} · {{ $printRequest->leave_from ?? $printRequest->issue_date ?? $printRequest->resignation_date }}{{ $printRequest->leave_to ? ' → ' . $printRequest->leave_to : '' }} · {{ __('index.' . $printRequest->status) }}</option>
                 @endforeach
             </select>
         </div>
@@ -43,7 +43,7 @@
     @if($selectedPrintRequest)
         <dl class="employee-request-summary">
             <div><dt>{{ __('index.linked_saved_request') }}</dt><dd>#{{ $selectedPrintRequest->id }}</dd></div>
-            <div><dt>{{ __('index.date') }}</dt><dd>{{ $selectedPrintRequest->leave_from ?? $selectedPrintRequest->issue_date }}{{ $selectedPrintRequest->leave_to ? ' → ' . $selectedPrintRequest->leave_to : '' }}</dd></div>
+            <div><dt>{{ __('index.date') }}</dt><dd>{{ $selectedPrintRequest->leave_from ?? $selectedPrintRequest->issue_date ?? $selectedPrintRequest->resignation_date }}{{ $selectedPrintRequest->leave_to ? ' → ' . $selectedPrintRequest->leave_to : '' }}</dd></div>
             <div><dt>{{ __('index.status') }}</dt><dd><span class="badge bg-{{ match ($selectedPrintRequest->status) { 'approved' => 'success', 'rejected', 'cancelled' => 'danger', default => 'warning text-dark' } }}">{{ __('index.' . $selectedPrintRequest->status) }}</span></dd></div>
             <div><dt>{{ __('index.request_step_print') }}</dt><dd>{{ __('index.print_optional') }}</dd></div>
         </dl>
