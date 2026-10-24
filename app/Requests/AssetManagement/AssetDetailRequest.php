@@ -20,7 +20,7 @@ class AssetDetailRequest extends FormRequest
 
     public function prepareForValidation()
     {
-        if (!auth('admin')->check() && auth()->check()) {
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
             $this->merge(['branch_id' => auth()->user()->branch_id]);
         }
     }
@@ -31,15 +31,22 @@ class AssetDetailRequest extends FormRequest
      */
     public function rules()
     {
+        $assetId = $this->route('asset');
+        $existingTypeId = $this->isMethod('put') && $assetId
+            ? Asset::findOrFail($assetId)->type_id : null;
         $rules = [
             'branch_id' => ['required','exists:branches,id'],
             'name' => ['required','string'],
             'type_id' => ['required',
                 Rule::exists('asset_types','id')
-                    ->where('is_active',1)
+                    ->where(fn ($query) => $query->where(function ($types) use ($existingTypeId) {
+                        $types->where('is_active', 1);
+                        if ($existingTypeId) $types->orWhere('id', $existingTypeId);
+                    }))
             ],
             'asset_code' => ['nullable','string'],
             'asset_serial_no' => ['nullable','string'],
+            'phone_numbers' => ['nullable', 'string', 'max:2000'],
             'is_working' => ['nullable','string',Rule::in(Asset::IS_WORKING)],
             'warranty_available' => ['required','boolean', Rule::in([1, 0])],
             'is_available' => ['required', 'boolean', Rule::in([1, 0])],
@@ -52,7 +59,7 @@ class AssetDetailRequest extends FormRequest
 
         if ($this->isMethod('put')) {
             $rules['purchased_date'] = ['required','date'];
-            $rules['image'] = ['sometimes','file', 'mimes:jpeg,png,jpg,webp','max:5048'];
+            $rules['image'] = ['nullable','file', 'mimes:jpeg,png,jpg,webp','max:5048'];
         } else {
             $rules['purchased_date'] = ['required','date','before_or_equal:today'];
             $rules['image'] = ['required','file','mimes:jpeg,png,jpg,webp','max:5048'];

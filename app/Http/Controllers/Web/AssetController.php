@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AssetType;
 use App\Exports\AssetTableExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Repositories\CompanyRepository;
@@ -42,6 +43,8 @@ class AssetController extends Controller
         $this->authorize('list_assets');
         $request->validate([
             'q' => ['nullable', 'string', 'max:200'],
+            'sort' => ['nullable', \Illuminate\Validation\Rule::in(Asset::SORTABLE_COLUMNS)],
+            'direction' => ['nullable', \Illuminate\Validation\Rule::in(['asc', 'desc'])],
             'per_page' => ['nullable', \Illuminate\Validation\Rule::in(['10', '25', '50', '100', 'all'])],
             'export' => ['nullable', \Illuminate\Validation\Rule::in(['csv', 'excel', 'word', 'print', 'pdf', 'json'])],
             'columns' => ['nullable', 'array', 'min:1'],
@@ -51,6 +54,8 @@ class AssetController extends Controller
         try {
             $filterParameters = [
                 'q' => $request->input('q'),
+                'sort' => $request->input('sort'),
+                'direction' => $request->input('direction') ?: 'asc',
                 'per_page' => $request->input('per_page') ?: '25',
                 'exporting' => $request->filled('export'),
                 'branch_id' => $request->branch_id ?? null,
@@ -66,7 +71,7 @@ class AssetController extends Controller
             }
 
             $select = ['*'];
-            $with = ['type:id,name','latestAssignment.user:id,name'];
+            $with = ['type:id,name','latestAssignment.user:id,name,avatar'];
             $assetLists = $this->assetService->getAllAssetsPaginated($filterParameters,$select,$with);
             if ($request->filled('export')) {
                 return $this->exportAssetTable($request, $assetLists);
@@ -84,7 +89,7 @@ class AssetController extends Controller
     private function assetTableColumns(): array
     {
         $columns = [
-            'number' => '#', 'employee' => __('index.employee'), 'name' => __('index.name'), 'asset_code' => __('index.asset_code'),
+            'number' => '#', 'employee' => __('index.employee'), 'name' => __('index.name'), 'phone_numbers' => __('index.phone_number'), 'asset_code' => __('index.asset_code'),
             'asset_serial_no' => __('index.asset_serial_number'), 'description' => __('index.description'),
             'type' => __('index.type'), 'is_working' => __('index.is_working'), 'is_available' => __('index.is_available'),
         ];
@@ -104,6 +109,7 @@ class AssetController extends Controller
             $data = [
                 'employee' => $asset->latestAssignment && !$asset->latestAssignment->returned_date ? $asset->latestAssignment->user?->name : null,
                 'number' => (string) ($index + 1), 'name' => $asset->name,
+                'phone_numbers' => $asset->phone_numbers,
                 'asset_code' => $asset->asset_code, 'asset_serial_no' => $asset->asset_serial_no,
                 'description' => trim(html_entity_decode(strip_tags(preg_replace('/<\/(p|div)>|<br\s*\/?>/i', "\n", $asset->note ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
                 'type' => $asset->type?->name, 'is_working' => __('index.' . $asset->is_working),
@@ -159,6 +165,10 @@ class AssetController extends Controller
             DB::beginTransaction();
             $this->assetService->saveAssetDetail($validatedData);
             DB::commit();
+            if ($request->input('asset_modal') === '1') {
+                session()->flash('success', __('message.asset_saved'));
+                return view($this->view . 'common.modal-saved', ['message' => __('message.asset_saved')]);
+            }
             return redirect()->route('admin.assets.index')->with('success', __('message.asset_saved'));
         } catch (Exception $exception) {
             DB::rollBack();
@@ -182,7 +192,7 @@ class AssetController extends Controller
             $assetDetail->asset_code = $assetDetail->asset_code ?? '';
             $assetDetail->asset_serial_no = $assetDetail->asset_serial_no ?? '';
             $assetDetail->is_working = ucfirst($assetDetail->is_working);
-            $assetDetail->assetType = $assetDetail->type->name;
+            $assetDetail->assetType = $assetDetail->type?->name ?: __('index.not_available');
             $assetDetail->image = $assetDetail->image ? asset(Asset::UPLOAD_PATH.$assetDetail->image):'';
             $assetDetail->purchased_date = isset($assetDetail->purchased_date) ? AppHelper::formatDateForView($assetDetail->purchased_date):'';
             $assetDetail->warranty_available = $assetDetail->warranty_available ?? '';
@@ -205,12 +215,14 @@ class AssetController extends Controller
     {
         $this->authorize('edit_assets');
         try {
-            $assetDetail = $this->assetService->findAssetById($id);
+            $assetDetail = $this->assetService->findAssetById($id, ['*'], ['type:id,name', 'latestAssignment.user:id,name,avatar']);
+            $branchId = old('branch_id', $assetDetail->branch_id ?: auth()->user()?->branch_id);
+            $assetTypes = $this->assetFormTypes($branchId, $assetDetail);
 
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view . 'edit', compact('assetDetail','companyDetail'));
+            return view($this->view . 'edit', compact('assetDetail','companyDetail','assetTypes'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -227,6 +239,10 @@ class AssetController extends Controller
             DB::beginTransaction();
             $this->assetService->updateAssetDetail($id, $validatedData);
             DB::commit();
+            if ($request->input('asset_modal') === '1') {
+                session()->flash('success', __('message.asset_update'));
+                return view($this->view . 'common.modal-saved', ['message' => __('message.asset_update')]);
+            }
             return redirect()->route('admin.assets.index')
                 ->with('success', __('message.asset_update'));
         } catch (Exception $exception) {
@@ -258,15 +274,28 @@ class AssetController extends Controller
 
 
 
-    /**
-     * @param $branchId
-     * @return JsonResponse
-     */
-    public function getBranchAssetData($branchId)
+    private function assetFormTypes($branchId, ?Asset $asset = null)
+    {
+        $types = $branchId ? $this->assetTypeService->getBranchAssetTypes($branchId, ['id', 'name']) : collect();
+        if ($types->isEmpty()) {
+            $types = $this->assetTypeService->getAllActiveAssetTypes(['id', 'name']);
+        }
+        // An existing asset may use a legacy type from before its branch changed.
+        if ($asset && (string) $asset->branch_id === (string) $branchId && $asset->type_id && !$types->contains('id', $asset->type_id)) {
+            $currentType = AssetType::withoutGlobalScope('branch')->find($asset->type_id, ['id', 'name']);
+            if ($currentType) {
+                $types->push($currentType);
+            }
+        }
+        return $types->sortBy('name')->values();
+    }
+
+    public function getBranchAssetData(Request $request, $branchId)
     {
         try {
 
-            $types = $this->assetTypeService->getBranchAssetTypes($branchId, ['id','name']);
+            $asset = $request->filled('asset_id') ? Asset::findOrFail($request->input('asset_id')) : null;
+            $types = $this->assetFormTypes($branchId, $asset);
 
             return response()->json([
                 'types' => $types,

@@ -830,6 +830,7 @@ Route::group([
 
 
         /** Asset Assignment */
+        Route::get('asset-receipt/{assetId}', [AssetAssignmentController::class, 'receipt'])->name('assets.receipt');
         Route::get('asset-assignment/{assetId}/options', [AssetAssignmentController::class, 'options'])->name('asset-assignment.options');
         Route::post('asset-assignment/{assetId}', [AssetAssignmentController::class, 'store'])->name('asset-assignment.store');
         Route::get('asset-assignments/{assetId}', [AssetAssignmentController::class, 'index'])->name('asset-assignment.index');

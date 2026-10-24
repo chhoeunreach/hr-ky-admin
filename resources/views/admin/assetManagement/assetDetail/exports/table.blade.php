@@ -34,6 +34,6 @@
             @endforelse
         </tbody>
     </table>
-    @if($format !== 'word')<script>window.addEventListener('load', async () => { if (document.fonts) await document.fonts.ready; window.print(); });</script>@endif
+    @if($format !== 'word' && request('asset_modal') !== '1')<script>window.addEventListener('load', async () => { if (document.fonts) await document.fonts.ready; window.print(); });</script>@endif
 </body>
 </html>

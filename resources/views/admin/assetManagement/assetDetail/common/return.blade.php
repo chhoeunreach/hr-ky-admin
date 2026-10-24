@@ -7,6 +7,9 @@
             <div class="modal-body">
                 <form id="assetReturnForm" method="POST" action="" class="needs-validation" novalidate>
                     @csrf
+                    @if(request('asset_modal') === '1')
+                        <input type="hidden" name="asset_modal" value="1">
+                    @endif
                     <div class="mb-3">
                         <label for="is_working" class="form-label">{{ __('index.is_working') }}</label>
                         <select name="is_working" id="is_working" class="form-select" required>

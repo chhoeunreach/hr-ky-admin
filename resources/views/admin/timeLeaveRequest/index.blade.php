@@ -102,7 +102,7 @@
                                 value="" {{!isset($filterParameters['status']) ? 'selected': ''}} >{{ __('index.all_status') }}</option>
                             @foreach(LeaveRequestMaster::STATUS as  $value)
                                 <option
-                                    value="{{$value}}" {{ (isset($filterParameters['status']) && $value == $filterParameters['status'] ) ?'selected':'' }} > {{ucfirst($value)}} </option>
+                                    value="{{$value}}" {{ (isset($filterParameters['status']) && $value == $filterParameters['status'] ) ?'selected':'' }} > {{ __('index.' . $value) }} </option>
                             @endforeach
                         </select>
                     </div>
@@ -160,7 +160,7 @@
                                 <td>{{ AppHelper::timeLeaverequestDate($value->issue_date) }}</td>
                                 <td>{{ AppHelper::convertLeaveTimeFormat($value->start_time) }}</td>
                                 <td>{{ AppHelper::convertLeaveTimeFormat($value->end_time) }}</td>
-                                <td>{{$value->leaveRequestedBy ? ucfirst($value->leaveRequestedBy->name) : 'N/A'}} </td>
+                                <td>{{$value->leaveRequestedBy ? ucfirst($value->leaveRequestedBy->name) : __('index.not_available')}} </td>
 
                                 @can('time_leave_list')
                                     <td class="text-center">
@@ -181,7 +181,7 @@
                                            data-remark="{{$value->admin_remark}}"
                                         >
                                             <button class="btn btn-{{ $color[$value->status] }} btn-xs">
-                                                {{ ucfirst($value->status) }}
+                                                {{ __('index.' . $value->status) }}
                                             </button>
                                         </a>
                                     </td>
@@ -228,9 +228,9 @@
                         .then(data => {
                             if (data && data.data) {
                                 const leaveRequest = data.data;
-                                document.getElementById('referral').innerText = leaveRequest.name || 'Admin';
-                                document.getElementById('description').innerText = leaveRequest.reasons || 'N/A';
-                                document.getElementById('adminRemark').innerText = leaveRequest.admin_remark || 'N/A';
+                                document.getElementById('referral').innerText = leaveRequest.name || @json(__('index.admin'));
+                                document.getElementById('description').innerText = leaveRequest.reasons || @json(__('index.not_available'));
+                                document.getElementById('adminRemark').innerText = leaveRequest.admin_remark || @json(__('index.not_available'));
 
                                 const modal = new bootstrap.Modal(document.getElementById('addslider'));
                                 modal.show();

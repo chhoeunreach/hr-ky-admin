@@ -8,7 +8,7 @@
 
 @section('button')
     @can('create_assets')
-        <a href="{{ route('admin.assets.create')}}">
+        <a data-open-asset-modal href="{{ route('admin.assets.create')}}">
             <button class="btn btn-primary">
                 <i class="link-icon" data-feather="plus"></i>{{  __('index.add_asset') }}
             </button>
@@ -29,6 +29,8 @@
             <form class="forms-sample card-body pb-0" action="{{route('admin.assets.index')}}" method="get">
                 <input type="hidden" name="q" value="{{ $filterParameters['q'] }}">
                 <input type="hidden" name="per_page" value="{{ $filterParameters['per_page'] }}">
+                <input type="hidden" name="sort" value="{{ request('sort') }}">
+                <input type="hidden" name="direction" value="{{ request('direction') }}">
 
                 <div class="row align-items-center">
                     @if(!isset(auth()->user()->branch_id))
@@ -118,17 +120,19 @@
                     <table id="assetsTable" class="table">
                         <thead>
                         <tr>
-                            <th data-asset-column="number" class="text-center">#</th>
-                            <th data-asset-column="employee">{{ __('index.employee') }}</th>
-                            <th data-asset-column="name">{{  __('index.name') }}</th>
-                            <th data-asset-column="asset_code">{{ __('index.asset_code') }}</th>
-                            <th data-asset-column="asset_serial_no">{{ __('index.asset_serial_number') }}</th>
-                            <th data-asset-column="description">{{ __('index.description') }}</th>
-                            <th data-asset-column="type" class="text-center">{{  __('index.type') }}</th>
-                            <th data-asset-column="is_working" class="text-center">{{  __('index.is_working') }}</th>
-                            <th data-asset-column="is_available" class="text-center">{{  __('index.is_available') }}</th>
+                            <th data-asset-column="number" class="text-center" aria-sort="{{ request('sort') === 'number' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'number', 'label' => '#'])</th>
+                            <th data-asset-column="employee" aria-sort="{{ request('sort') === 'employee' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'employee', 'label' => __('index.employee')])</th>
+                            <th data-asset-column="name" aria-sort="{{ request('sort') === 'name' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'name', 'label' => __('index.name')])</th>
+                            <th data-asset-column="phone_numbers" aria-sort="{{ request('sort') === 'phone_numbers' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'phone_numbers', 'label' => __('index.phone_number')])</th>
+                            <th data-asset-column="asset_code" aria-sort="{{ request('sort') === 'asset_code' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'asset_code', 'label' => __('index.asset_code')])</th>
+                            <th data-asset-column="asset_serial_no" aria-sort="{{ request('sort') === 'asset_serial_no' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'asset_serial_no', 'label' => __('index.asset_serial_number')])</th>
+                            <th data-asset-column="description" aria-sort="{{ request('sort') === 'description' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'description', 'label' => __('index.description')])</th>
+                            <th data-asset-column="type" class="text-center" aria-sort="{{ request('sort') === 'type' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'type', 'label' => __('index.type')])</th>
+                            <th data-asset-column="is_working" class="text-center" aria-sort="{{ request('sort') === 'is_working' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'is_working', 'label' => __('index.is_working')])</th>
+                            <th data-asset-column="is_available" class="text-center" aria-sort="{{ request('sort') === 'is_available' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'is_available', 'label' => __('index.is_available')])</th>
+                            <th data-asset-column="receipt" class="text-center">{{ __('index.asset_receipt') }}</th>
                             @can('assign_asset')
-                                <th data-asset-column="assigned_to" class="text-center">{{  __('index.assign_to') }}</th>
+                                <th data-asset-column="assigned_to" class="text-center" aria-sort="{{ request('sort') === 'assigned_to' ? (request('direction', 'asc') === 'desc' ? 'descending' : 'ascending') : 'none' }}">@include('admin.assetManagement.assetDetail.common.sort-heading', ['column' => 'assigned_to', 'label' => __('index.assign_to')])</th>
                             @endcan
                             @canany(['show_asset','edit_assets','delete_assets','asset_assign_list'])
                                 <th data-asset-column="actions" class="text-center">{{  __('index.action') }}</th>
@@ -139,13 +143,18 @@
                         @forelse($assetLists as $key => $value)
                             <tr data-asset-row>
                                 <td class="text-center">{{ $assetLists instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator ? $assetLists->firstItem() + $loop->index : $loop->iteration }}</td>
-                                <td>{{ $value->latestAssignment && !$value->latestAssignment->returned_date ? ($value->latestAssignment->user?->name ?: __('index.not_available')) : __('index.not_available') }}</td>
+                                <td>@include('admin.assetManagement.assetDetail.common.employee-profile', ['employee' => $value->latestAssignment && !$value->latestAssignment->returned_date ? $value->latestAssignment->user : null])</td>
                                 <td>{{ucfirst($value->name)}}</td>
+                                <td class="asset-phone-number">@include('admin.assetManagement.assetDetail.common.phone-number', ['phoneNumber' => $value->phone_numbers])</td>
                                 <td>{{ $value->asset_code ?: __('index.not_available') }}</td>
                                 <td>{{ $value->asset_serial_no ?: __('index.not_available') }}</td>
-                                <td style="min-width: 220px; max-width: 360px; white-space: pre-line; overflow-wrap: anywhere;">{{ trim(html_entity_decode(strip_tags(preg_replace('/<\/(p|div)>|<br\s*\/?>/i', "\n", $value->note ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8')) ?: __('index.not_available') }}</td>
+                                <td class="asset-description-cell">@include('admin.assetManagement.assetDetail.common.description', ['note' => $value->note])</td>
                                 <td class="text-center">
-                                    <a href="{{route('admin.asset-types.show',$value->type_id)}}">{{ucfirst($value->type->name)}}</a>
+                                    @if($value->type)
+                                        <a data-open-asset-modal href="{{ route('admin.asset-types.show', $value->type_id) }}">{{ ucfirst($value->type->name) }}</a>
+                                    @else
+                                        {{ __('index.not_available') }}
+                                    @endif
                                 </td>
 
                                 <td class="text-center">{{ucfirst($value->is_working)}}</td>
@@ -153,20 +162,36 @@
                                 <td class="text-center">
                                     {{($value->is_available) == 1 ? __('index.yes'): __('index.no')}}
                                 </td>
+                                <td class="text-center">
+                                    @if($value->latestAssignment && !$value->latestAssignment->returned_date)
+                                        <a class="btn btn-outline-secondary btn-sm" data-open-asset-modal href="{{ route('admin.assets.receipt', $value->id) }}" title="{{ __('index.asset_print_receipt') }}">
+                                            <i data-feather="printer"></i> {{ __('index.asset_receipt') }}
+                                        </a>
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                                 @can('assign_asset')
                                     <td class="text-center">
 
-                                        @if( ($value->is_working == 'yes') && ($value->is_available == 1))
-                                            <a class="assignAsset btn btn-sm btn-info"
+                                        @if($value->latestAssignment && !$value->latestAssignment->returned_date)
+                                            <span class="badge bg-secondary">{{ __('index.asset_already_assigned') }}</span>
+                                            @can('asset_assign_list')
+                                                <a class="d-block small mt-2" data-open-asset-modal href="{{ route('admin.asset-assignment.index', $value->id) }}">{{ __('index.assignment_history_return') }}</a>
+                                            @endcan
+                                        @elseif($value->is_working === 'yes' && $value->is_available == 1)
+                                            <button type="button" class="assignAsset btn btn-sm btn-info"
                                                data-options-url="{{ route('admin.asset-assignment.options', $value->id) }}"
-                                               data-id="{{$value->id}}"
-                                               data-branch-id="{{$value->branch_id}}"
-                                               data-href="{{route('admin.asset-assignment.store',$value->id)}}"
-                                               title="{{  __('index.assign') }}">
-                                                 {{ __('index.assign_to_user') }}
-                                            </a>
-                                        @elseif(isset($value->latestAssignment) && is_null($value->latestAssignment->returned_date))
-                                            {{ $value?->latestAssignment?->user?->name }}
+                                               data-id="{{ $value->id }}"
+                                               data-branch-id="{{ $value->branch_id }}"
+                                               data-href="{{ route('admin.asset-assignment.store', $value->id) }}">
+                                                {{ __('index.assign_to_user') }}
+                                            </button>
+                                        @else
+                                            <span class="text-muted small d-block">{{ $value->is_working !== 'yes' ? __('index.asset_not_working_assignment') : __('index.asset_unavailable_assignment') }}</span>
+                                            @can('edit_assets')
+                                                <a class="d-block small mt-2" data-open-asset-modal href="{{ route('admin.assets.edit', $value->id) }}">{{ __('index.asset_edit_availability') }}</a>
+                                            @endcan
                                         @endif
 
                                     </td>
@@ -176,7 +201,7 @@
                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                         @can('edit_assets')
                                             <li class="me-2">
-                                                <a href="{{route('admin.assets.edit',$value->id)}}"
+                                                <a data-open-asset-modal href="{{route('admin.assets.edit',$value->id)}}"
                                                    title="{{  __('index.edit') }}">
                                                     <i class="link-icon" data-feather="edit"></i>
                                                 </a>
@@ -185,7 +210,7 @@
 
                                         @can('asset_assign_list')
                                             <li class="me-2">
-                                                <a href="{{route('admin.asset-assignment.index',$value->id)}}"
+                                                <a data-open-asset-modal href="{{route('admin.asset-assignment.index',$value->id)}}"
                                                    title="{{  __('index.assignment_history_return') }}">
                                                     <i class="link-icon" data-feather="list"></i>
                                                 </a>
@@ -216,7 +241,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11">
+                                <td colspan="13">
                                     <p class="text-center"><b>{{  __('index.no_records_found') }}</b></p>
                                 </td>
                             </tr>

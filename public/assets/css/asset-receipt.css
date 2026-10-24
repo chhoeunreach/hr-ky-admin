@@ -1,0 +1,41 @@
+* { box-sizing: border-box; }
+body { margin: 0; background: #edf1f6; color: #172b4d; font: 10pt/1.45 'Kantumruy Pro', 'Khmer OS Battambang', 'Noto Sans Khmer', Arial, sans-serif; }
+.asset-receipt-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; max-width: 230mm; padding: 20px; margin: 0 auto; }
+.asset-receipt-toolbar div { display: flex; flex-direction: column; text-align: center; }
+.asset-receipt-toolbar span { color: #64748b; font-size: 9pt; }
+.asset-receipt-toolbar button, .asset-receipt-toolbar a { padding: 10px 16px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; color: #172b4d; text-decoration: none; font: inherit; cursor: pointer; }
+.asset-receipt-toolbar button { background: #0f766e; color: #fff; border-color: #0f766e; }
+.asset-receipt-preview { padding: 0 20px 30px; overflow-x: auto; }
+.asset-receipt-paper { width: 210mm; min-height: 297mm; padding: 12mm; background: #fff; margin: 0 auto; box-shadow: 0 3px 18px #172b4d20; }
+.asset-receipt-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10mm; border-bottom: 1px solid #334155; padding-bottom: 4mm; }
+.asset-receipt-header > div { display: flex; flex-direction: column; }
+.asset-receipt-header > div strong { font-size: 13pt; }
+.asset-receipt-header span { font-size: 9pt; color: #64748b; }
+dl { margin: 0; }
+.asset-receipt-header dl > div { display: grid; grid-template-columns: auto auto; gap: 4mm; }
+dt { font-size: 9pt; color: #64748b; } dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+h1 { font-size: 17pt; text-align: center; margin: 4mm 0; }
+section { margin-top: 4mm; break-inside: auto; }
+h2 { margin: 0 0 3mm; padding: 1.5mm 2mm; background: #f1f5f9; border: 1px solid #cbd5e1; font-size: 10.5pt; break-after: avoid; }
+h3 { margin: 3mm 0 1mm; font-size: 10pt; break-after: avoid; }
+.asset-receipt-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2mm 8mm; margin: 2mm 0; }
+.asset-receipt-grid > div { border-bottom: 1px dotted #cbd5e1; padding-bottom: 1mm; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 9pt; }
+th, td { border: 1px solid #cbd5e1; padding: 2mm; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+th { background: #f8fafc; }
+.asset-receipt-description { white-space: pre-wrap; overflow-wrap: anywhere; min-height: 9mm; border-bottom: 1px dotted #cbd5e1; }
+p { margin: 2mm 0; text-align: justify; }
+.asset-receipt-remarks { height: 9mm; border-bottom: 1px dotted #94a3b8; }
+.asset-receipt-signatures { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6mm; margin-top: 5mm; text-align: center; break-inside: avoid; }
+.asset-receipt-signatures > div { min-width: 0; display: flex; flex-direction: column; font-size: 9pt; overflow-wrap: anywhere; }
+.asset-receipt-signature-space { height: 15mm; }
+.asset-receipt-signatures small { font-size: 8pt; margin-top: 2mm; }
+footer { margin-top: 5mm; border-top: 1px solid #e2e8f0; padding-top: 2mm; font-size: 8pt; color: #64748b; text-align: right; }
+@page asset-receipt { size: A4 portrait; margin: 12mm; }
+@media print {
+    body { background: #fff; color: #111; margin: 0; }
+    .asset-receipt-toolbar { display: none; }
+    .asset-receipt-preview { padding: 0; overflow: visible; }
+    .asset-receipt-paper { page: asset-receipt; width: 186mm; max-width: 100%; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    thead { display: table-header-group; } tr, .asset-receipt-grid > div { break-inside: avoid; }
+}

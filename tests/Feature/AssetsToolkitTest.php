@@ -39,6 +39,8 @@ class AssetsToolkitTest extends TestCase
         foreach (['branches', 'users', 'asset_types'] as $name) {
             Schema::create($name, function (Blueprint $table) { $table->id(); $table->string('name'); $table->integer('branch_id')->nullable(); });
         }
+        Schema::table('users', fn (Blueprint $table) => $table->string('avatar')->nullable());
+        Schema::table('asset_types', fn (Blueprint $table) => $table->boolean('is_active')->default(1));
         Schema::create('asset_assignments', function (Blueprint $table) {
             $table->id(); $table->integer('branch_id'); $table->integer('asset_id'); $table->integer('user_id');
             $table->date('assigned_date'); $table->date('returned_date')->nullable();
@@ -50,6 +52,7 @@ class AssetsToolkitTest extends TestCase
             $table->boolean('is_available'); $table->date('purchased_date'); $table->timestamps();
             $table->integer('updated_by')->nullable();
         });
+        (require database_path('migrations/2026_10_24_000002_add_phone_numbers_to_assets_table.php'))->up();
         DB::table('branches')->insert([['id' => 1, 'name' => 'Other branch'], ['id' => 2, 'name' => 'Current branch']]);
         DB::table('asset_types')->insert(['id' => 1, 'name' => 'Laptop', 'branch_id' => 2]);
         for ($index = 1; $index <= 32; $index++) {
@@ -129,6 +132,100 @@ class AssetsToolkitTest extends TestCase
                 ->assertSee(__('index.assets_search_placeholder'))->assertSee('value="25" selected', false)
                 ->assertDontSee('index.');
         }
+    }
+
+    public function test_empty_branch_type_list_offers_active_types_and_preserves_legacy_selection(): void
+    {
+        Route::get('/_test/asset-types/{branchId}', [AssetController::class, 'getBranchAssetData']);
+        DB::table('asset_types')->insert(['id' => 2, 'name' => 'Legacy phone', 'branch_id' => 1, 'is_active' => 0]);
+        DB::table('assets')->where('id', 1)->update(['type_id' => 2]);
+        $this->getJson('/_test/asset-types/2?asset_id=1')->assertOk()
+            ->assertJsonCount(2, 'types')->assertJsonPath('types.1.name', 'Legacy phone');
+        $this->getJson('/_test/asset-types/1')->assertOk()
+            ->assertJsonCount(1, 'types')->assertJsonPath('types.0.name', 'Laptop');
+    }
+
+    public function test_edit_can_save_legacy_type_without_replacing_the_existing_image(): void
+    {
+        $this->abilities[] = 'edit_assets';
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(0);
+            $table->date('warranty_end_date')->nullable();
+        });
+        DB::table('asset_types')->insert([
+            ['id' => 2, 'name' => 'Legacy phone', 'branch_id' => 1, 'is_active' => 0],
+            ['id' => 3, 'name' => 'Inactive type', 'branch_id' => 2, 'is_active' => 0],
+        ]);
+        DB::table('assets')->where('id', 1)->update(['type_id' => 2, 'image' => 'existing-phone.jpg']);
+        Route::put('/_test/asset-edit/{asset}', [AssetController::class, 'update']);
+        $data = ['branch_id' => 2, 'type_id' => 2, 'name' => 'Updated phone', 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'is_working' => 'yes', 'image' => null, 'phone_numbers' => "012345678\n098765432"];
+        $this->from('/_test/asset-edit/1')->put('/_test/asset-edit/1', array_replace($data, ['type_id' => 3]))
+            ->assertRedirect('/_test/asset-edit/1')->assertSessionHasErrors('type_id');
+        $this->putJson('/_test/asset-edit/1', $data)->assertRedirect(route('admin.assets.index'));
+        $saved = DB::table('assets')->find(1);
+        $this->assertSame('Updated phone', $saved->name);
+        $this->assertSame(2, $saved->type_id);
+        $this->assertSame('existing-phone.jpg', $saved->image);
+        $this->assertSame("012345678\n098765432", $saved->phone_numbers);
+        $this->putJson('/_test/asset-edit/1', array_replace($data, ['type_id' => 1]))
+            ->assertRedirect(route('admin.assets.index'));
+        $this->assertSame(1, DB::table('assets')->find(1)->type_id);
+        $this->put('/_test/asset-edit/1', array_replace($data, ['asset_modal' => '1', 'name' => 'Saved from modal', 'type_id' => 1]))
+            ->assertOk()->assertSee('asset-action-saved')->assertSessionHas('success', __('message.asset_update'));
+        $this->assertSame('Saved from modal', DB::table('assets')->find(1)->name);
+    }
+
+    public function test_asset_phone_numbers_save_as_lines_and_export_as_text(): void
+    {
+        $asset = \App\Models\Asset::findOrFail(1);
+        $asset->update(['phone_numbers' => "012345678, 098765432\r\n+855 12 345 678"]);
+        $expected = "012345678\n098765432\n+855 12 345 678";
+        $this->assertSame($expected, $asset->fresh()->phone_numbers);
+        $query = http_build_query(['q' => '000123', 'columns' => ['phone_numbers']]);
+        $this->getJson('/_test/assets-toolkit?export=json&'.$query)->assertOk()
+            ->assertJsonPath('rows.0.0', $expected)->assertJsonPath('headings.0', __('index.phone_number'));
+        $response = $this->get('/_test/assets-toolkit?export=excel&'.$query)->assertOk();
+        $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($response->baseResponse->getFile()->getPathname())->getActiveSheet();
+        $this->assertSame($expected, $sheet->getCell('A2')->getValue());
+        $this->assertSame('s', $sheet->getCell('A2')->getDataType());
+    }
+
+    public function test_sorting_applies_before_pagination_and_exports_and_rejects_unknown_columns(): void
+    {
+        DB::table('assets')->where('id', 1)->update(['name' => 'AAA phone']);
+        DB::table('assets')->where('id', 31)->update(['name' => 'ZZZ phone']);
+        $repository = app(AssetRepository::class);
+        $ascending = $repository->getAllAssetsPaginated(['sort' => 'name', 'direction' => 'asc', 'per_page' => 10]);
+        $this->assertSame(1, $ascending->first()->id);
+        $this->assertSame(31, $ascending->total());
+        $descending = $repository->getAllAssetsPaginated(['sort' => 'name', 'direction' => 'desc', 'per_page' => 10]);
+        $this->assertSame(31, $descending->first()->id);
+        $this->getJson('/_test/assets-toolkit?export=json&sort=name&direction=desc&columns[]=name&per_page=10')
+            ->assertOk()->assertJsonCount(31, 'rows')->assertJsonPath('rows.0.0', 'ZZZ phone');
+        $this->getJson('/_test/assets-toolkit?export=json&sort=receipt')->assertUnprocessable();
+        $this->getJson('/_test/assets-toolkit?export=json&sort=name&direction=invalid')->assertUnprocessable();
+    }
+
+    public function test_employee_and_type_sorts_use_current_related_values(): void
+    {
+        $this->setupAssignmentSelection();
+        DB::table('users')->where('id', 10)->update(['name' => 'Alpha employee']);
+        DB::table('users')->where('id', 11)->update(['name' => 'Zulu employee']);
+        DB::table('asset_assignments')->insert([
+            ['asset_id' => 1, 'branch_id' => 2, 'user_id' => 11, 'assigned_date' => '2026-10-20', 'returned_date' => null],
+            ['asset_id' => 2, 'branch_id' => 2, 'user_id' => 10, 'assigned_date' => '2026-10-20', 'returned_date' => null],
+            ['asset_id' => 3, 'branch_id' => 2, 'user_id' => 11, 'assigned_date' => '2026-10-19', 'returned_date' => null],
+            ['asset_id' => 3, 'branch_id' => 2, 'user_id' => 10, 'assigned_date' => '2026-10-20', 'returned_date' => '2026-10-21'],
+        ]);
+        $repository = app(AssetRepository::class);
+        $sorted = $repository->getAllAssetsPaginated(['sort' => 'employee', 'direction' => 'desc', 'per_page' => 'all']);
+        $this->assertSame([1, 2], $sorted->take(2)->pluck('id')->all());
+        $this->getJson('/_test/assets-toolkit?export=json&sort=employee&direction=desc&columns[]=employee')
+            ->assertOk()->assertJsonPath('rows.0.0', 'Zulu employee')->assertJsonPath('rows.1.0', 'Alpha employee');
+        DB::table('asset_types')->insert(['id' => 2, 'name' => 'Camera', 'branch_id' => 2]);
+        DB::table('assets')->where('id', 1)->update(['type_id' => 2]);
+        $this->assertSame(1, $repository->getAllAssetsPaginated(['sort' => 'type', 'direction' => 'asc', 'per_page' => 10])->first()->id);
     }
 
     private function setupAssignmentSelection(): void
@@ -232,6 +329,68 @@ class AssetsToolkitTest extends TestCase
             ->assertJsonPath('headings.1', __('index.name'))->assertJsonPath('rows.0.0', 'Employee 10');
         DB::table('asset_assignments')->update(['returned_date' => '2026-10-25']);
         $this->getJson($url)->assertOk()->assertJsonPath('rows.0.0', '');
+    }
+
+    public function test_edit_page_exposes_assignment_and_renders_the_existing_type(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->abilities[] = 'edit_assets';
+        $asset = \App\Models\Asset::with(['type', 'latestAssignment.user'])->findOrFail(1);
+        $this->view('admin.assetManagement.assetDetail.common.employee-assignment', ['assetDetail' => $asset])
+            ->assertSee(__('index.asset_no_employee'))->assertSee('class="assignAsset btn btn-primary"', false)
+            ->assertSee('data-options-url=', false);
+        $view = $this->view('admin.assetManagement.assetDetail.common.form', [
+            'assetDetail' => $asset, 'assetTypes' => collect([$asset->type]),
+            'errors' => new \Illuminate\Support\ViewErrorBag(),
+        ])->assertSee('value="1" selected', false)->assertSee('Laptop')->assertSee('name="is_working"', false);
+        $this->assertSame(1, substr_count((string) $view, 'id="branch_id"'));
+        $request = new \App\Requests\AssetManagement\AssetDetailRequest();
+        $request->setMethod('PUT');
+        $rules = $request->rules();
+        $validator = \Illuminate\Support\Facades\Validator::make([
+            'branch_id' => 2, 'type_id' => 1, 'name' => 'Laptop', 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'image' => null,
+        ], $rules);
+        $this->assertTrue($validator->passes(), $validator->errors()->toJson());
+    }
+
+    public function test_asset_update_keeps_the_selected_branch_for_accounts_without_a_default_branch(): void
+    {
+        auth()->user()->branch_id = null;
+        $request = \App\Requests\AssetManagement\AssetDetailRequest::create('/_test/asset-edit', 'PUT', ['branch_id' => 2]);
+        $request->prepareForValidation();
+        $this->assertSame(2, $request->input('branch_id'));
+    }
+
+    public function test_receipt_prints_saved_employee_asset_and_assignment_details_in_both_languages(): void
+    {
+        $this->setupAssignmentSelection();
+        Route::get('/_test/asset-receipt/{assetId}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'receipt']);
+        $this->get('/_test/asset-receipt/1')->assertNotFound();
+        DB::table('asset_assignments')->insert([
+            'id' => 7, 'asset_id' => 1, 'branch_id' => 2, 'department_id' => 5, 'user_id' => 10,
+            'assigned_date' => '2026-10-24', 'returned_date' => null,
+        ]);
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->get('/_test/asset-receipt/1')->assertOk()->assertSee(__('index.asset_receipt'))
+                ->assertSee('AR-000007')->assertSee('Employee 10')->assertSee('EMP10')->assertSee('HR')
+                ->assertSee('000123')->assertSee('SERIAL-1')->assertSee('2026-10-24')
+                ->assertSee(__('index.asset_received_by'))->assertSee(__('index.asset_issued_by'))->assertDontSee('index.');
+        }
+        $this->get('/_test/asset-receipt/32')->assertNotFound();
+        $this->assertSame(1, DB::table('asset_assignments')->count());
+    }
+
+    public function test_push_notification_failure_does_not_report_a_saved_assignment_as_failed(): void
+    {
+        $this->setupAssignmentSelection();
+        Schema::table('users', fn (Blueprint $table) => $table->dropColumn('fcm_token'));
+        $this->postJson('/_test/asset-assignment/1', [
+            'asset_id' => 1, 'branch_id' => 2, 'department_id' => 5, 'user_id' => 10, 'assigned_date' => '2026-10-24',
+        ])->assertOk();
+        $this->assertSame(1, DB::table('asset_assignments')->count());
+        $this->assertSame(0, DB::table('assets')->where('id', 1)->value('is_available'));
     }
 
     public function test_word_and_pdf_preserve_visible_columns_and_translated_headers(): void

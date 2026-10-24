@@ -9,7 +9,7 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.leaveRequest.common.breadcrumb')
+        @include('admin.timeLeaveRequest.common.breadcrumb')
         <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
         <div class="employee-request-create-heading"><h3>{{ __('index.create_time_leave_request') }}</h3><p>{{ __('index.create_request_save_help') }}</p></div>
         @include('admin.employees.profile.partials.request-workflow-steps', ['currentStep' => 1])
@@ -28,7 +28,7 @@
                                 <div class="col-lg-4 col-md-6 mb-4">
                                     <label for="requestedBy" class="form-label">{{__('index.requested_for')}}<span style="color: red">*</span></label>
                                     <select class="form-select" id="requestedBy" name="requested_by" required>
-                                        <option selected disabled> {{__('index.select_employee')}}</option>
+                                        <option value="" selected disabled> {{__('index.select_employee')}}</option>
                                         @foreach($employees ?? [] as $employee)
                                             <option value="{{ $employee->id }}"
                                                     data-branch-id="{{ $employee->branch_id }}"
@@ -71,22 +71,22 @@
                                     </div>
                                 @else
                                     <div class="col-lg-4 col-md-6 mb-4">
-                                        <label for="leave_from" class="form-label">{{__('index.leave_date')}}<span style="color: red">*</span></label>
-                                        <input class="form-control" type="date" name="issue_date" value="{{old('issue_date')}}" required  />
+                                        <label for="issue_date" class="form-label">{{__('index.leave_date')}}<span style="color: red">*</span></label>
+                                        <input class="form-control" type="date" id="issue_date" name="issue_date" value="{{old('issue_date')}}" required  />
                                     </div>
                                 @endif
                                 <div class="col-lg-4 col-md-6 mb-4">
-                                    <label for="start_time" class="form-label">{{__('index.from')}} <span style="color: red">*</span></label>
-                                    <input class="form-control" type="time" name="leave_from" value="{{old('leave_from')}}" required  />
+                                    <label for="start_time" class="form-label">{{__('index.from_time')}} <span style="color: red">*</span></label>
+                                    <input class="form-control" type="time" id="start_time" name="leave_from" value="{{old('leave_from')}}" required  />
                                 </div>
                                 <div class="col-lg-4 col-md-6 mb-4">
-                                    <label for="end_time" class="form-label">{{__('index.to')}}</label>
-                                    <input class="form-control end_time" type="time" name="leave_to" value="{{old('leave_to')}}"  />
+                                    <label for="end_time" class="form-label">{{__('index.to_time')}}</label>
+                                    <input class="form-control end_time" type="time" id="end_time" name="leave_to" required value="{{old('leave_to')}}"  />
                                 </div>
 
                                 <div class="col-lg-4 mb-4">
                                     <label for="note" class="form-label">{{__('index.reason')}}<span style="color: red">*</span></label>
-                                    <textarea class="form-control" name="reasons" rows="6" >{{  old('reasons') }}</textarea>
+                                    <textarea class="form-control" name="reasons" id="note" required minlength="10" rows="6" >{{  old('reasons') }}</textarea>
                                 </div>
 
                                 <div class="col-lg-12 mb-4 text-start employee-request-save-actions">

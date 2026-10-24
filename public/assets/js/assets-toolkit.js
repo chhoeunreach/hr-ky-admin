@@ -9,13 +9,13 @@
     const searchForm = document.getElementById('assetsToolkitSearch');
     const search = document.getElementById('assetsSearch');
     const rowCount = document.getElementById('assetsRows');
-    const storageKey = 'hr-assets-visible-columns-v2';
+    const storageKey = 'hr-assets-visible-columns-v4';
     let savedColumns;
     try {
         const stored = JSON.parse(localStorage.getItem(storageKey));
         if (Array.isArray(stored) && stored.every(key => typeof key === 'string')) savedColumns = stored;
     } catch (_) {}
-    const selectedColumns = () => headings.filter(heading => !heading.hidden && heading.dataset.assetColumn !== 'actions').map(heading => heading.dataset.assetColumn);
+    const selectedColumns = () => headings.filter(heading => !heading.hidden && !['actions', 'receipt'].includes(heading.dataset.assetColumn)).map(heading => heading.dataset.assetColumn);
     const setColumn = (heading, index, visible) => {
         heading.hidden = !visible;
         rows.forEach(row => { if (row.cells[index]) row.cells[index].hidden = !visible; });

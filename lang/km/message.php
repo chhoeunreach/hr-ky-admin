@@ -307,10 +307,11 @@ return [
     'image_delete'=>'Image Deleted  Successfully',
 
     /** Time Leave */
-    'time_leave_not_found'=>'Leave request not found',
-    'time_leve_fetch_error'=>'An error occurred while fetching the leave request details',
-    'status_update' => 'Status Updated Successfully',
-    'time_leve_submit'=>'Leave request submitted Successfully',
+    'time_leave_end_after_start' => 'ម៉ោងបញ្ចប់ត្រូវតែក្រោយម៉ោងចាប់ផ្តើម។',
+    'time_leave_not_found'=>'រកមិនឃើញសំណើឈប់សម្រាកជាម៉ោងទេ។',
+    'time_leve_fetch_error'=>'មានកំហុសកើតឡើងពេលទាញយកព័ត៌មានសំណើឈប់សម្រាកជាម៉ោង។',
+    'status_update' => 'បានធ្វើបច្ចុប្បន្នភាពស្ថានភាពដោយជោគជ័យ។',
+    'time_leve_submit'=>'បានដាក់សំណើឈប់សម្រាកជាម៉ោងដោយជោគជ័យ។',
 
     /** Undertime */
     'ut_create'=>'UnderTime created Successfully',

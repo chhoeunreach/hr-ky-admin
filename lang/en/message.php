@@ -307,6 +307,7 @@ return [
     'image_delete'=>'Image Deleted  Successfully',
 
     /** Time Leave */
+    'time_leave_end_after_start' => 'The end time must be after the start time.',
     'time_leave_not_found'=>'Leave request not found',
     'time_leve_fetch_error'=>'An error occurred while fetching the leave request details',
     'status_update' => 'Status Updated Successfully',

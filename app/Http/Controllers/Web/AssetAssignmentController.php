@@ -111,6 +111,16 @@ class AssetAssignmentController extends Controller
         ]);
     }
 
+    public function receipt($assetId)
+    {
+        $this->authorize('list_assets');
+        $asset = Asset::with(['branch', 'type', 'latestAssignment.user', 'latestAssignment.branch', 'latestAssignment.department'])->findOrFail($assetId);
+        $assignment = $asset->latestAssignment;
+        abort_unless($assignment && !$assignment->returned_date, 404);
+
+        return view('admin.assetManagement.assetDetail.receipt', compact('asset', 'assignment'));
+    }
+
     public function store(Request $request, $id)
     {
         $this->authorize('assign_asset');
@@ -168,7 +178,13 @@ class AssetAssignmentController extends Controller
                 'asset' => $assetDetail->name
             ]);
 
-            SMPushHelper::sendLeaveNotification($notificationTitle, $message,$validatedData['user_id']);
+            try {
+                SMPushHelper::sendLeaveNotification($notificationTitle, $message, $validatedData['user_id']);
+            } catch (\Throwable $notificationError) {
+                \Illuminate\Support\Facades\Log::warning('Asset assignment saved; push notification failed.', [
+                    'asset_id' => $assetDetail->id, 'error' => $notificationError->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'message' => __('message.asset_assignment_saved'),
@@ -260,6 +276,10 @@ class AssetAssignmentController extends Controller
             DB::commit();
 
 
+            if ($request->input('asset_modal') === '1') {
+                session()->flash('success', __('message.asset_assignment_return'));
+                return view($this->view . 'common.modal-saved', ['message' => __('message.asset_assignment_return')]);
+            }
             return redirect()->route('admin.assets.index')->with('success', __('message.asset_assignment_return'));
         } catch (Exception $exception) {
             DB::rollBack();

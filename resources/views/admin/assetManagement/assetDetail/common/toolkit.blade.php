@@ -5,7 +5,7 @@
         @foreach(['csv' => 'export_csv', 'excel' => 'export_excel', 'word' => 'export_word'] as $format => $label)
             <a class="btn btn-outline-secondary btn-sm" data-assets-export="{{ $format }}" href="{{ request()->fullUrlWithQuery(['export' => $format, 'page' => null]) }}"><i data-feather="file-text"></i> {{ __('index.' . $label) }}</a>
         @endforeach
-        <a class="btn btn-outline-secondary btn-sm" data-assets-export="print" href="{{ request()->fullUrlWithQuery(['export' => 'print', 'page' => null]) }}" target="_blank" rel="noopener"><i data-feather="printer"></i> {{ __('index.print') }}</a>
+        <a class="btn btn-outline-secondary btn-sm" data-open-asset-modal data-assets-export="print" href="{{ request()->fullUrlWithQuery(['export' => 'print', 'page' => null]) }}"><i data-feather="printer"></i> {{ __('index.print') }}</a>
         <div class="dropdown">
             <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"><i data-feather="columns"></i> {{ __('index.column_visibility') }}</button>
             <div class="dropdown-menu assets-column-menu" data-assets-columns></div>
@@ -14,7 +14,7 @@
             <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"><i data-feather="file-text"></i> {{ __('index.export_pdf') }}</button>
             <div class="dropdown-menu">
                 @foreach(['landscape', 'portrait'] as $orientation)
-                    <a class="dropdown-item" data-assets-export="pdf" data-orientation="{{ $orientation }}" href="{{ request()->fullUrlWithQuery(['export' => 'pdf', 'orientation' => $orientation, 'page' => null]) }}" target="_blank" rel="noopener">{{ __('index.' . $orientation) }}</a>
+                    <a class="dropdown-item" data-open-asset-modal data-asset-modal-title="{{ __('index.export_pdf') }} — {{ __('index.' . $orientation) }}" data-assets-export="pdf" data-orientation="{{ $orientation }}" href="{{ request()->fullUrlWithQuery(['export' => 'pdf', 'orientation' => $orientation, 'page' => null]) }}">{{ __('index.' . $orientation) }}</a>
                 @endforeach
             </div>
         </div>

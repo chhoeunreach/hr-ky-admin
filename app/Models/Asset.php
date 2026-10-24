@@ -21,6 +21,7 @@ class Asset extends Model
         'image',
         'asset_code',
         'asset_serial_no',
+        'phone_numbers',
         'is_working',
         'purchased_date',
         'warranty_available',
@@ -41,6 +42,8 @@ class Asset extends Model
     ];
 
     const RECORDS_PER_PAGE = 20;
+
+    const SORTABLE_COLUMNS = ['number', 'employee', 'name', 'phone_numbers', 'asset_code', 'asset_serial_no', 'description', 'type', 'is_working', 'is_available', 'assigned_to'];
 
     const UPLOAD_PATH = 'uploads/asset/';
 
@@ -66,6 +69,12 @@ class Asset extends Model
                 });
             });
         }
+    }
+
+    public function setPhoneNumbersAttribute($value): void
+    {
+        $numbers = array_values(array_filter(array_map('trim', preg_split('/[\r\n,;\/|]+/u', (string) $value)), fn ($number) => $number !== ''));
+        $this->attributes['phone_numbers'] = $numbers ? implode("\n", $numbers) : null;
     }
 
     public function createdBy(): BelongsTo

@@ -3,6 +3,9 @@
 namespace App\Repositories;
 
 use App\Models\Asset;
+use App\Models\AssetAssignment;
+use App\Models\AssetType;
+use App\Models\User;
 use App\Models\Project;
 use App\Traits\ImageService;
 
@@ -40,8 +43,25 @@ class AssetRepository
                         $search->orWhere($column, 'like', '%' . $filterParameters['q'] . '%');
                     }
                 });
-            })
-            ->latest();
+            });
+
+        $sort = $filterParameters['sort'] ?? null;
+        $direction = ($filterParameters['direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc';
+        if ($sort && in_array($sort, Asset::SORTABLE_COLUMNS, true)) {
+            if (in_array($sort, ['employee', 'assigned_to'], true)) {
+                $latestEmployee = AssetAssignment::selectRaw('CASE WHEN returned_date IS NULL THEN user_id ELSE NULL END')
+                    ->whereColumn('asset_id', 'assets.id')->orderByDesc('assigned_date')->orderByDesc('id')->limit(1);
+                $query->orderBy(User::select('name')->where('users.id', $latestEmployee)->limit(1), $direction);
+            } elseif ($sort === 'type') {
+                $query->orderBy(AssetType::select('name')->whereColumn('asset_types.id', 'assets.type_id')->limit(1), $direction);
+            } else {
+                $column = ['number' => 'id', 'description' => 'note'][$sort] ?? $sort;
+                $query->orderBy('assets.' . $column, $direction);
+            }
+        } else {
+            $query->latest('assets.created_at');
+        }
+        $query->orderBy('assets.id', $sort === 'number' ? $direction : 'desc');
 
         return !empty($filterParameters['exporting']) || ($filterParameters['per_page'] ?? null) === 'all'
             ? $query->get()
@@ -81,11 +101,13 @@ class AssetRepository
 
     public function update($assetDetail,$validatedData)
     {
-        if (isset($validatedData['avatar'])) {
+        if (isset($validatedData['image'])) {
             if($assetDetail['image']){
                 $this->removeImage(Asset::UPLOAD_PATH, $assetDetail['image']);
             }
             $validatedData['image'] = $this->storeImage($validatedData['image'], Asset::UPLOAD_PATH,500,500);
+        } else {
+            unset($validatedData['image']);
         }
         return $assetDetail->update($validatedData);
     }

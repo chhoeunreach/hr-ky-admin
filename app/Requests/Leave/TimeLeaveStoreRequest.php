@@ -54,28 +54,21 @@ class TimeLeaveStoreRequest extends FormRequest
 
     }
 
-    /**
-     * Get custom error messages for validator errors.
-     *
-     * @return array
-     */
-    public function messages(): array
+    public function attributes(): array
     {
         return [
-            'issue_date.required' => 'leave issue date field is required.',
-            'requested_by.required' => 'Requested For field is required.',
-            'issue_date.date' => 'leave issue date must be a valid date.',
-            'issue_date.after_or_equal' => 'Leave issue date cannot be in past days.',
-            'leave_from.required' => 'The leave from field is required when leave issue date is after today.',
-            'leave_to.required' => 'The leave to field is required when leave issue date is after today.',
-            'leave_from.after_or_equal' => 'The leave from time must be after or equal to the current time.',
-            'leave_to.after' => 'The leave to time must be after the leave from time.',
-            'reasons.required' => 'The reasons field is required.',
-            'reasons.string' => 'The reasons must be a string.',
-            'reasons.min' => 'The reasons must be at least :min characters.',
+            'branch_id' => __('index.branch'),
+            'department_id' => __('index.department'),
+            'issue_date' => __('index.leave_date'),
+            'requested_by' => __('index.requested_for'),
+            'leave_from' => __('index.from_time'),
+            'leave_to' => __('index.to_time'),
+            'reasons' => __('index.reason_for_time_leave'),
         ];
     }
 
-
-
+    public function messages(): array
+    {
+        return ['leave_to.after' => __('message.time_leave_end_after_start')];
+    }
 }

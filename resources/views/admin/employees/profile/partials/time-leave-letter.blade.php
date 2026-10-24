@@ -44,7 +44,7 @@
 
     <header class="employee-salary-certificate-letterhead">
         <div class="employee-salary-certificate-company">
-            <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo">
+            <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="{{ $employee->branch?->name ?: config('app.name') }}">
             <div>
                 <div class="employee-salary-certificate-company-name">{{ $employee->branch?->name ?: config('app.name') }}</div>
                 <div class="employee-salary-certificate-company-subtitle">{{ __('index.hr_department') }}</div>

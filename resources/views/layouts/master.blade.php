@@ -2,6 +2,9 @@
     $locale = \Illuminate\Support\Facades\App::getLocale();
     $themeColor = \App\Helpers\AppHelper::getThemeColor();
 @endphp
+@if(request('asset_modal') === '1')
+    @section('embedded', '1')
+@endif
 <!DOCTYPE html>
 <html lang="{{ $locale ?? 'en' }}" class="locale-{{ $locale ?? 'en' }}">
 <head>
@@ -64,6 +67,13 @@
     </style>
     @include('admin.section.head_links')
     @yield('styles')
+    @if(request('asset_modal') === '1')
+        <style>
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .content { margin: 0 !important; }
+        </style>
+    @endif
 </head>
 
 <body>
@@ -101,6 +111,9 @@
 @hasSection('embedded')
 @else
     @include('admin.employees.profile.partials.request-form-modal')
+    @if(request()->routeIs('admin.assets.*', 'admin.asset-assignment.*'))
+        @include('admin.assetManagement.assetDetail.common.action-modal')
+    @endif
 @endif
 
 @include('admin.section.body_links')
@@ -108,6 +121,9 @@
 @hasSection('embedded')
 @else
     <script src="{{ asset('assets/js/employee-request-form-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-request-form-modal.js')) }}"></script>
+    @if(request()->routeIs('admin.assets.*', 'admin.asset-assignment.*'))
+        <script src="{{ asset('assets/js/asset-action-modal.js') }}?v={{ filemtime(public_path('assets/js/asset-action-modal.js')) }}"></script>
+    @endif
 @endif
 
 @include('layouts.nav_notification_scripts')
