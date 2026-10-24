@@ -246,6 +246,43 @@ class EmployeeProfilePrintRecordTest extends TestCase
         }
     }
 
+    public function test_resignation_edit_form_and_validation_use_the_selected_language(): void
+    {
+        $this->abilities[] = 'update_resignation';
+        $resignation = \App\Models\Resignation::firstOrFail();
+        $resignation->setRelation('employee', null);
+        $resignation->document = 'resignation.pdf';
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $request = new \App\Requests\Resignation\ResignationRequest();
+            $rules = array_intersect_key($request->rules(), array_flip(['resignation_date', 'last_working_day', 'reason', 'letter_details.made_at']));
+            $validator = \Illuminate\Support\Facades\Validator::make([
+                'resignation_date' => '2026-10-24', 'last_working_day' => '2026-10-23',
+                'reason' => '', 'letter_details' => ['made_at' => str_repeat('x', 256)],
+            ], $rules, [], $request->attributes());
+            $this->assertTrue($validator->fails());
+            $messages = implode(' ', $validator->errors()->all());
+            $this->assertStringContainsString(__('index.last_working_day'), $messages);
+            $this->assertStringContainsString(__('index.resignation_reason_label'), $messages);
+            $this->assertStringContainsString(__('index.resignation_place_of_signing'), $messages);
+            $errors = new \Illuminate\Support\ViewErrorBag();
+            $errors->put('default', $validator->errors());
+            $view = $this->view('admin.resignation.common.form', [
+                'profileEmployee' => null, 'resignationDetail' => $resignation, 'companyDetail' => null,
+                'filteredDepartment' => [], 'filteredUsers' => [], 'isBsEnabled' => false,
+                'resignationStatus' => \App\Enum\ResignationStatusEnum::cases(), 'errors' => $errors,
+            ])->assertSee(__('index.resignation_edit_title'))->assertSee(__('index.admin_remark'))
+                ->assertSee(__('index.resignation_choose_file'))->assertSee(__('index.resignation_no_file'))
+                ->assertSee(__('index.resignation_preview_pdf'))->assertSee(__('index.resignation_date'))
+                ->assertSee(__('index.resignation_save_changes'))->assertDontSee('index.');
+            if ($locale === 'km') {
+                foreach (['Resignation Date', 'Last Working Date', 'Employee ID', 'Select Employee', 'Admin Remark', 'Preview PDF', 'Choose file'] as $fallback) {
+                    $view->assertDontSee($fallback);
+                }
+            }
+        }
+    }
+
     public function test_complete_resignation_information_is_saved_rendered_and_validated(): void
     {
         $this->abilities[] = 'create_resignation';

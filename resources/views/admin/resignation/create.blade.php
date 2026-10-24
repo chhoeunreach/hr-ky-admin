@@ -14,7 +14,7 @@
 
         <div class="card">
             <div class="card-body">
-                <form id="resignationForm" class="forms-sample" action="{{route('admin.resignation.store')}}" enctype="multipart/form-data"  method="POST">
+                <form id="resignationForm" lang="{{ app()->getLocale() }}" class="forms-sample" action="{{route('admin.resignation.store')}}" enctype="multipart/form-data"  method="POST">
                     @csrf
                     @if(request()->boolean('return_to_profile'))
                         <input type="hidden" name="return_to_profile" value="1">

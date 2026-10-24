@@ -1,5 +1,8 @@
 @php
     $editingResignation = isset($resignationDetail);
+    $defaultResignationDate = $isBsEnabled
+        ? \App\Helpers\AppHelper::dateInYmdFormatEngToNep(now()->toDateString())
+        : now()->toDateString();
     $selectedBranchId = old('branch_id', $resignationDetail->branch_id ?? $filterParameters['branch_id'] ?? auth()->user()?->branch_id);
     $selectedDepartmentId = old('department_id', $resignationDetail->department_id ?? $filterParameters['department_id'] ?? '');
     $selectedEmployeeId = old('employee_id', $resignationDetail->employee_id ?? $filterParameters['employee_id'] ?? '');
@@ -102,7 +105,7 @@
                 <div class="col-md-4 event-date-time">
                     <label for="{{ $field }}" class="form-label">{{ __('index.' . $label) }} <span class="resignation-required">*</span></label>
                     <input type="{{ $isBsEnabled ? 'text' : 'date' }}" class="form-control {{ $isBsEnabled ? 'nepaliDate' : '' }} @error($field) is-invalid @enderror"
-                           id="{{ $field }}" name="{{ $field }}" required value="{{ old($field, ($resignationDetail ?? null)?->{$field} ?? '') }}" @if($isBsEnabled) placeholder="yyyy-mm-dd" @endif>
+                           id="{{ $field }}" name="{{ $field }}" required value="{{ old($field, ($resignationDetail ?? null)?->{$field} ?? ($field === 'resignation_date' ? $defaultResignationDate : '')) }}" @if($isBsEnabled) placeholder="yyyy-mm-dd" @endif>
                     @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
             @endforeach
@@ -116,7 +119,7 @@
                 @error('status')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-12">
-                <label for="resignation_reason" class="form-label">{{ __('index.resignation_reason') }} <span class="resignation-required">*</span></label>
+                <label for="resignation_reason" class="form-label">{{ __('index.resignation_reason_label') }} <span class="resignation-required">*</span></label>
                 <textarea class="form-control @error('reason') is-invalid @enderror" name="reason" id="resignation_reason" rows="4" required placeholder="{{ __('index.resignation_reason_placeholder') }}">{{ old('reason', html_entity_decode(strip_tags($resignationDetail->reason ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8')) }}</textarea>
                 @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
@@ -143,7 +146,11 @@
             </div>
             <div class="col-md-5">
                 <label for="document" class="form-label">{{ __('index.resignation_supporting_document') }}</label>
-                <input class="form-control @error('document') is-invalid @enderror" type="file" id="document" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp" aria-describedby="resignationDocumentHelp">
+                <div class="resignation-file-control">
+                    <input class="visually-hidden" type="file" id="document" name="document" accept=".pdf,.jpg,.jpeg,.png,.webp" aria-describedby="resignationDocumentHelp resignationSelectedFile">
+                    <label class="btn btn-outline-secondary btn-sm mb-0" for="document">{{ __('index.resignation_choose_file') }}</label>
+                    <span id="resignationSelectedFile" role="status" aria-live="polite">{{ __('index.resignation_no_file') }}</span>
+                </div>
                 <p class="resignation-field-help" id="resignationDocumentHelp">{{ __('index.resignation_document_help') }}</p>
                 @error('document')<div class="invalid-feedback">{{ $message }}</div>@enderror
         @if(isset($resignationDetail->document))
@@ -153,17 +160,17 @@
             @if(in_array($fileExtension, ['jpeg', 'jpg', 'png', 'webp']))
                 <img class="wd-200 ht-100" style="object-fit: cover;"
                      src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                     alt="Certificate" data-bs-toggle="modal" data-bs-target="#certificateModal-{{ $resignationDetail->id }}">
+                     alt="{{ __('index.resignation_supporting_document') }}" data-bs-toggle="modal" data-bs-target="#certificateModal-{{ $resignationDetail->id }}">
 
-                <div class="modal fade" id="certificateModal-{{ $resignationDetail->id }}" tabindex="-1" aria-labelledby="imageModalLabel-{{ $resignationDetail->index }}" aria-hidden="true">
+                <div class="modal fade" id="certificateModal-{{ $resignationDetail->id }}" tabindex="-1" aria-labelledby="imageModalLabel-{{ $resignationDetail->id }}" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="imageModalLabel-{{ $resignationDetail->id }}">View Image <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button></h5>
+                                <h5 class="modal-title" id="imageModalLabel-{{ $resignationDetail->id }}">{{ __('index.resignation_view_image') }} <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="{{ __('index.resignation_close') }}"></button></h5>
 
                             </div>
                             <div class="modal-body text-center">
-                                <img class="img-fluid" src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}" alt="IBAN">
+                                <img class="img-fluid" src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}" alt="{{ __('index.resignation_supporting_document') }}">
                             </div>
                         </div>
                     </div>
@@ -172,10 +179,10 @@
                 <embed src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
                        type="application/pdf" width="150" height="100" />
                 <a href="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                   target="_blank" class="mt-2">Preview PDF</a>
+                   target="_blank" class="mt-2">{{ __('index.resignation_preview_pdf') }}</a>
             @else
                 <a href="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                   download class="mt-2">Download Document</a>
+                   download class="mt-2">{{ __('index.resignation_download_document') }}</a>
             @endif
         @endif
             </div>

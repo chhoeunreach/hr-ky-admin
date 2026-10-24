@@ -1,9 +1,12 @@
 <script>
     $('document').ready(function(){
 
-        $("#branch_id").select2();
-        $("#employee_id").select2();
-        $("#department_id").select2();
+        const selectLanguage = {
+            noResults: () => @json(__('index.resignation_no_results')),
+            searching: () => @json(__('index.resignation_searching')),
+            errorLoading: () => @json(__('index.resignation_employee_load_error')),
+        };
+        $('#branch_id, #employee_id, #department_id').select2({language: selectLanguage});
 
 
         $.ajaxSetup({
@@ -36,7 +39,7 @@
             let status = $(this).data('status');
             let reason = $(this).data('reason');
 
-            $('.modal-title').html('Resignation Status Update');
+            $('#statusUpdate .modal-title').text(@json(__('index.resignation_status_update')));
             $('#updateResignationStatus').attr('action',url)
             $('#status').val(status)
             $('#admin_remark').val(reason)
@@ -195,6 +198,25 @@
             $('#status').on('change', updateRemarkRequired);
             updateRemarkRequired();
         }
+        const attachment = document.getElementById('document');
+        const selectedFile = document.getElementById('resignationSelectedFile');
+        attachment?.addEventListener('change', () => {
+            if (selectedFile) selectedFile.textContent = attachment.files?.[0]?.name || @json(__('index.resignation_no_file'));
+        });
+        form?.addEventListener('invalid', event => {
+            const field = event.target;
+            field.setCustomValidity('');
+            if (field.validity.valueMissing) {
+                field.setCustomValidity(@json(__('index.resignation_required_field')));
+            } else if (field.id === 'last_working_day' && field.validity.rangeUnderflow) {
+                field.setCustomValidity(@json(__('index.resignation_last_day_error')));
+            } else if (!field.validity.valid) {
+                field.setCustomValidity(@json(__('index.resignation_invalid_field')));
+            }
+        }, true);
+        ['input', 'change'].forEach(type => {
+            form?.addEventListener(type, event => event.target.setCustomValidity?.(''));
+        });
         form?.addEventListener('submit', event => {
             if (pendingLoads > 0) event.preventDefault();
         });

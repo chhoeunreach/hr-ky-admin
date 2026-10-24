@@ -124,7 +124,7 @@
                                     @if(($value->status ==  ResignationStatusEnum::approved->value)  && strtotime(date('Y-m-d')) > strtotime($value->last_working_day))
 
                                         <button class="btn btn-{{ $color[$value->status] }} btn-xs">
-                                            {{ ucfirst($value->status) }}
+                                            {{ __('index.' . $value->status) }}
                                         </button>
 
                                     @else
@@ -136,7 +136,7 @@
                                            data-id="{{$value->id}}"
                                         >
                                             <button class="btn btn-{{ $color[$value->status] }} btn-xs">
-                                                {{ ucfirst($value->status) }}
+                                                {{ __('index.' . $value->status) }}
                                             </button>
                                         </a>
                                     @endif

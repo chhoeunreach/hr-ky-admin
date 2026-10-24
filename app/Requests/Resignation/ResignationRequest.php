@@ -44,6 +44,24 @@ class ResignationRequest extends FormRequest
      *
      * @return array
      */
+    public function attributes(): array
+    {
+        $labels = [
+            'branch_id' => 'branch', 'department_id' => 'department', 'employee_id' => 'employee',
+            'resignation_date' => 'resignation_date', 'last_working_day' => 'last_working_day',
+            'reason' => 'resignation_reason_label', 'status' => 'status', 'document' => 'resignation_supporting_document',
+            'admin_remark' => 'admin_remark', 'letter_details' => 'resignation_letter_information',
+            'letter_details.khmer_name' => 'khmer_name', 'letter_details.latin_name' => 'latin_name',
+            'letter_details.gender' => 'gender', 'letter_details.department' => 'department',
+            'letter_details.employee_code' => 'employee_id', 'letter_details.branch' => 'branch',
+            'letter_details.phone' => 'phone', 'letter_details.joining_date' => 'joining_date',
+            'letter_details.position' => 'position', 'letter_details.returned_property' => 'company_property_returned',
+            'letter_details.made_at' => 'resignation_place_of_signing', 'letter_details.letter_date' => 'resignation_letter_date',
+        ];
+
+        return array_map(fn ($label) => __('index.' . $label), $labels);
+    }
+
     public function rules()
     {
         $rules = [

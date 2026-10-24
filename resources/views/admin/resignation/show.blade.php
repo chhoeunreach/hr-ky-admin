@@ -72,17 +72,17 @@
                                     @if(in_array($fileExtension, ['jpeg', 'jpg', 'png', 'webp']))
                                         <img class="wd-200 ht-100" style="object-fit: cover;"
                                              src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                                             alt="Certificate" data-bs-toggle="modal" data-bs-target="#certificateModal-{{ $resignationDetail->id }}">
+                                             alt="{{ __('index.resignation_supporting_document') }}" data-bs-toggle="modal" data-bs-target="#certificateModal-{{ $resignationDetail->id }}">
 
-                                        <div class="modal fade" id="certificateModal-{{ $resignationDetail->id }}" tabindex="-1" aria-labelledby="imageModalLabel-{{ $resignationDetail->index }}" aria-hidden="true">
+                                        <div class="modal fade" id="certificateModal-{{ $resignationDetail->id }}" tabindex="-1" aria-labelledby="imageModalLabel-{{ $resignationDetail->id }}" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title" id="imageModalLabel-{{ $resignationDetail->id }}">View Image <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Close"></button></h5>
+                                                        <h5 class="modal-title" id="imageModalLabel-{{ $resignationDetail->id }}">{{ __('index.resignation_view_image') }} <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="{{ __('index.resignation_close') }}"></button></h5>
 
                                                     </div>
                                                     <div class="modal-body text-center">
-                                                        <img class="img-fluid" src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}" alt="IBAN">
+                                                        <img class="img-fluid" src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}" alt="{{ __('index.resignation_supporting_document') }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -91,10 +91,10 @@
                                         <embed src="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
                                                type="application/pdf" width="150" height="100" />
                                         <a href="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                                           target="_blank" class="mt-2">Preview PDF</a>
+                                           target="_blank" class="mt-2">{{ __('index.resignation_preview_pdf') }}</a>
                                     @else
                                         <a href="{{ asset(\App\Models\Resignation::UPLOAD_PATH . $resignationDetail->document) }}"
-                                           download class="mt-2">Download Document</a>
+                                           download class="mt-2">{{ __('index.resignation_download_document') }}</a>
                                     @endif
                                 </td>
                             </tr>
@@ -112,7 +112,7 @@
                         ?>
                         <tr>
                             <th class="w-30">{{ __('index.status') }}</th>
-                            <td> <span class="badge bg-{{ $color[$resignationDetail->status] }}" style="font-size: 1em">{{ ucfirst($resignationDetail->status) }}</span></td>
+                            <td> <span class="badge bg-{{ $color[$resignationDetail->status] }}" style="font-size: 1em">{{ __('index.' . $resignationDetail->status) }}</span></td>
                         </tr>
                         </tbody>
                     </table>

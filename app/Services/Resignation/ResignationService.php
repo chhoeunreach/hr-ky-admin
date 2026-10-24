@@ -44,7 +44,7 @@ class ResignationService
 
         if(isset($resignationData) && $resignationData->status != ResignationStatusEnum::cancelled->value){
             throw new Exception(__('index.resignation_exist_error',[
-            'status' => ucfirst($resignationData->status)]),404);
+            'status' => __('index.' . $resignationData->status)]),404);
         }
 
 

@@ -2,7 +2,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header text-center">
-                <h5 class="modal-title">Resignation Status Update</h5>
+                <h5 class="modal-title">{{ __('index.resignation_status_update') }}</h5>
             </div>
             <div class="modal-body">
                 <div class="container">
@@ -14,7 +14,7 @@
                             <div class="col-lg-12 mb-3">
                                 <select class="form-select" id="status" name="status">
                                     @foreach(\App\Enum\ResignationStatusEnum::cases() as $case)
-                                        <option value="{{ $case->value }}">{{ ucfirst($case->value) }}</option>
+                                        <option value="{{ $case->value }}">{{ __('index.' . $case->value) }}</option>
                                     @endforeach
                                 </select>
                             </div>

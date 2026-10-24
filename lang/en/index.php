@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'resignation_reason_label' => 'Reason for resignation',
+    'resignation_choose_file' => 'Choose file',
+    'resignation_no_file' => 'No file selected',
+    'resignation_view_image' => 'View image',
+    'resignation_preview_pdf' => 'Preview PDF',
+    'resignation_download_document' => 'Download document',
+    'resignation_close' => 'Close',
+    'resignation_status_update' => 'Update resignation status',
+    'resignation_no_results' => 'No results found',
+    'resignation_searching' => 'Searching…',
+    'resignation_letter_information' => 'Letter information',
+    'resignation_required_field' => 'Please complete this field.',
+    'resignation_invalid_field' => 'Please enter a valid value.',
+    'resignation_last_day_error' => 'The last working day must be after the resignation date.',
     'resignation_create_title' => 'Create resignation request',
     'resignation_edit_title' => 'Edit resignation request',
     'resignation_form_help' => 'Complete the employee, resignation and handover details before saving the letter.',
