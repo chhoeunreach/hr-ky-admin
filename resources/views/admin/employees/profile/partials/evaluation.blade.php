@@ -64,6 +64,9 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                 </div>
                 <div class="modal-body p-4">
+                    @isset($evaluationDefaults)
+                        <p class="small text-muted">{{ $evaluationDefaults['label'] }} · {{ __('index.department_evaluation_defaults_help') }}</p>
+                    @endisset
                     @if(old('review_form') && $errors->any())
                         <div class="alert alert-danger" role="alert">
                             <ul class="mb-0">
@@ -130,7 +133,7 @@
                                     'criteria' => $criteria,
                                     'description' => old('description.' . $index, $defaultItems[$index][1] ?? ''),
                                     'max' => old('max_score.' . $index, $defaultItems[$index][2] ?? 10),
-                                    'score' => old('score.' . $index, 0),
+                                    'score' => old('score.' . $index, ''),
                                     'comment' => old('comment.' . $index, ''),
                                 ])
                             @endforeach
@@ -138,7 +141,7 @@
                         </table>
                     </div>
                     <template data-review-criterion-template>
-                        @include('admin.employees.profile.partials.review-criterion-row', ['criteria' => '', 'description' => '', 'max' => 10, 'score' => 0, 'comment' => ''])
+                        @include('admin.employees.profile.partials.review-criterion-row', ['criteria' => '', 'description' => '', 'max' => 10, 'score' => '', 'comment' => ''])
                     </template>
 
                     <div class="row">

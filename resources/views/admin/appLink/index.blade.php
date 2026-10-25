@@ -5,7 +5,7 @@
 @section('action', 'List')
 
 @section('button')
-    <a href="{{ route('admin.app-links.create') }}">
+    <a href="{{ route('admin.app-links.create') }}" data-open-request-form data-request-modal-title="{{ __('index.link_create') }}">
         <button class="btn btn-primary">
             <i class="link-icon" data-feather="plus"></i> Add New Link
         </button>
@@ -42,7 +42,7 @@
                             <select class="form-select" name="account_type" data-account-type data-platform-id="filter_link_type"
                                     data-selected="{{ $filterParameters['account_type'] ?? '' }}">
                                 <option value="">{{ __('index.link_all_account_types') }}</option>
-                                @foreach(\App\Models\AppLink::ACCOUNT_TYPES as $platform => $types)
+                                @foreach(\App\Models\AppLink::accountTypes() as $platform => $types)
                                     <optgroup label="{{ $linkTypes[$platform] }}">
                                         @foreach($types as $key => $label)
                                             <option value="{{ $key }}" @selected(($filterParameters['account_type'] ?? '') === $key)>{{ $label }}</option>
@@ -134,7 +134,7 @@
                                         {{ $linkTypes[$value->link_type] ?? ucfirst($value->link_type) }}
                                     </span>
                                 </td>
-                                <td>{{ \App\Models\AppLink::ACCOUNT_TYPES[$value->link_type][$value->account_type] ?? '—' }}</td>
+                                <td>{{ \App\Models\AppLink::accountTypes()[$value->link_type][$value->account_type] ?? '—' }}</td>
                                 <td>{{ $value->username ?: '—' }}</td>
                                 <td><span title="{{ __('index.link_password_saved') }}">{{ $value->getRawOriginal('password') ? '••••••••' : '—' }}</span></td>
                                 <td>{{ $value->phone_number ?: '—' }}</td>

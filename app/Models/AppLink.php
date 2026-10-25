@@ -26,10 +26,30 @@ class AppLink extends Model
 
     const RECORDS_PER_PAGE = 20;
 
-    public const ACCOUNT_TYPES = [
-        'telegram' => ['personal' => 'Personal', 'group' => 'Group', 'channel' => 'Channel'],
-        'facebook' => ['person' => 'Person', 'page' => 'Page', 'group' => 'Group'],
+    public const DEFAULT_ACCOUNT_TYPES = [
+        'personal' => 'Personal Account', 'page' => 'Page', 'group' => 'Group', 'channel' => 'Channel',
     ];
+
+    public const ACCOUNT_TYPES = [
+        'telegram' => ['personal' => 'Personal Account', 'group' => 'Group', 'channel' => 'Channel'],
+        'facebook' => ['person' => 'Personal Account', 'page' => 'Page', 'group' => 'Group', 'channel' => 'Channel'],
+    ];
+
+    public static function accountTypes(): array
+    {
+        $types = [];
+        foreach (array_keys(self::LINK_TYPES) as $platform) {
+            $types[$platform] = self::ACCOUNT_TYPES[$platform] ?? self::DEFAULT_ACCOUNT_TYPES;
+        }
+        foreach ($types as &$choices) {
+            foreach ($choices as $key => &$label) {
+                $label = __('index.link_type_'.($key === 'person' ? 'personal' : $key));
+            }
+            unset($label);
+        }
+        unset($choices);
+        return $types;
+    }
 
     protected $hidden = ['username', 'phone_number', 'email', 'password'];
 

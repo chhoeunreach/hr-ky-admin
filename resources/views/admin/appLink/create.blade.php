@@ -1,5 +1,7 @@
 @extends('layouts.master')
 
+@include('admin.leaveRequest.common.embedded-form')
+
 @section('title', 'Add New Link')
 
 @section('action', 'Create')
@@ -16,14 +18,16 @@
     <section class="content">
         @include('admin.section.flash_message')
 
-        @include('admin.appLink.common.breadcrumb')
+        @if(request('request_modal') !== '1')
+            @include('admin.appLink.common.breadcrumb')
+        @endif
 
         <div class="card">
             <div class="card-header">
                 <h6 class="card-title mb-0">Add New Link</h6>
             </div>
             <div class="card-body">
-                <form class="forms-sample" action="{{ route('admin.app-links.store') }}" enctype="multipart/form-data" method="POST">
+                <form class="forms-sample" action="{{ route('admin.app-links.store', request('request_modal') === '1' ? ['request_modal' => '1'] : []) }}" enctype="multipart/form-data" method="POST">
                     @csrf
                     @include('admin.appLink.common.form')
                 </form>

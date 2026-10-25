@@ -28,7 +28,7 @@
                 data-platform-id="link_type" data-account-required="1"
                 data-selected="{{ old('account_type', $linkDetail->account_type ?? '') }}">
             <option value="">{{ __('index.link_select_account_type') }}</option>
-            @foreach(\App\Models\AppLink::ACCOUNT_TYPES[$selectedPlatform] ?? [] as $key => $label)
+            @foreach(\App\Models\AppLink::accountTypes()[$selectedPlatform] ?? \App\Models\AppLink::accountTypes()['other'] as $key => $label)
                 <option value="{{ $key }}" @selected(old('account_type', $linkDetail->account_type ?? '') === $key)>{{ $label }}</option>
             @endforeach
         </select>
@@ -80,7 +80,7 @@
         @php $selectedManagers = array_map('strval', (array) old('manager_ids', isset($linkDetail) ? $linkDetail->managers->modelKeys() : [])); @endphp
         <select id="manager_ids" name="manager_ids[]" class="form-select" multiple size="5" data-placeholder="{{ __('index.link_select_managers') }}">
             @foreach($managerOptions ?? [] as $manager)
-                <option value="{{ $manager->id }}" @selected(in_array((string) $manager->id, $selectedManagers, true))>
+                <option value="{{ $manager->id }}" data-display-name="{{ $manager->name }}" @selected(in_array((string) $manager->id, $selectedManagers, true))>
                     {{ $manager->name }}{{ $manager->english_name ? ' / '.$manager->english_name : '' }}{{ $manager->employee_code ? ' · '.$manager->employee_code : '' }}
                 </option>
             @endforeach

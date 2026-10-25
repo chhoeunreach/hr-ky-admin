@@ -79,6 +79,24 @@ class DepartmentController extends Controller
     /**
      * @throws AuthorizationException
      */
+    public function performanceDefaults($id)
+    {
+        $this->authorize('list_department');
+        $department = \App\Models\Department::findOrFail($id);
+        $defaults = app(\App\Services\DepartmentPerformanceDefaults::class)->forName($department->dept_name);
+        return view('admin.department.performance-defaults', compact('department', 'defaults'));
+    }
+
+    public function applyPerformanceDefaults($id)
+    {
+        $this->authorize('edit_department');
+        $this->authorize('employee.kpi.manage');
+        $department = \App\Models\Department::findOrFail($id);
+        abort_unless($department->is_active, 422);
+        $counts = app(\App\Services\DepartmentPerformanceDefaults::class)->applyToDepartment($department);
+        return back()->with('success', __('index.department_defaults_applied', $counts));
+    }
+
     public function create()
     {
         $this->authorize('create_department');

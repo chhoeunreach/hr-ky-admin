@@ -143,6 +143,8 @@ class EmployeeProfileController extends Controller
             'employeeSalary',
         ]);
 
+        $evaluationDefaults = app(\App\Services\DepartmentPerformanceDefaults::class)->forEmployee($employee);
+        $defaultItems = array_map(fn ($criterion) => [$criterion['criteria'], $criterion['description'], $criterion['max_score']], $evaluationDefaults['evaluation_criteria']);
         $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
         $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->first();
         $latestReview = PerformanceReview::with(['items', 'evaluator:id,name,employee_code'])->where('employee_id', $employee->id)->latest('review_date')->latest('id')->first();
@@ -185,7 +187,7 @@ class EmployeeProfileController extends Controller
 
         $documents = EmployeeDocument::where('employee_id', $employee->id)->latest('document_date')->latest('id')->get();
         $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
-        $contractHistories = EmployeeContractHistory::where('employee_id', $employee->id)->latest('created_at')->limit(20)->get();
+        $contractHistories = EmployeeContractHistory::with('creator:id,name')->where('employee_id', $employee->id)->orderByDesc('id')->get();
         $auditLogs = EmployeeProfileAuditLog::where('employee_id', $employee->id)
             ->latest('created_at')->latest('id')->paginate(25, ['*'], 'history_page')
             ->withQueryString()->appends(['tab' => 'history']);
@@ -276,6 +278,8 @@ class EmployeeProfileController extends Controller
             'documents',
             'contract',
             'contractHistories',
+            'evaluationDefaults',
+            'defaultItems',
             'auditLogs',
             'warningOverviewRecords',
             'overviewNotes',
@@ -310,10 +314,9 @@ class EmployeeProfileController extends Controller
         ));
     }
 
-    public function recordPrint(Request $request, User $employee)
+    private function printableProfileForms(): array
     {
-        $linkedPrint = in_array($request->input('form_type'), ['leaveLetter', 'timeLeaveLetter', 'resignationLetter'], true);
-        $forms = [
+        return [
             'complete' => ['employee.complete_form.print', 'Employee Complete Form'],
             'overview' => ['employee.warning_overview.print', 'Warning Overview'],
             'warning' => ['employee.warning_form.print', 'Staff Warning Form'],
@@ -324,9 +327,39 @@ class EmployeeProfileController extends Controller
             'attendanceDailyReport' => ['employee.attendance_daily_report.print', 'Attendance Daily Report'],
             'resignationLetter' => ['employee.resignation_form.print', 'Resignation Form'],
         ];
+    }
+
+    public function savePrintForm(Request $request, User $employee)
+    {
+        return $this->recordPrint($request, $employee, true);
+    }
+
+    public function printFormHistory(Request $request, User $employee)
+    {
+        $forms = $this->printableProfileForms();
+        $request->validate(['form_type' => ['required', Rule::in(array_keys($forms))], 'latest' => ['nullable', 'boolean']]);
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
+        $ability = $forms[$request->input('form_type')][0];
+        if ($ability) $this->authorizeEmployeeProfile($employee, $ability);
+        else abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
+        $records = EmployeeProfileAuditLog::where('employee_id', $employee->id)->where('module', 'document_form')
+            ->where('new_values->form_type', $request->input('form_type'))->orderByDesc('id')->paginate($request->boolean('latest') ? 1 : 25);
+        return response()->json($records->through(fn ($record) => [
+            'id' => $record->id, 'action' => $record->action, 'created_at' => $record->created_at,
+            'created_by' => data_get($record->new_values, 'performed_by_name'),
+            'document_text' => data_get($record->new_values, 'document_text'),
+            'fields' => data_get($record->new_values, 'fields', []),
+        ]))->header('Cache-Control', 'private, no-store');
+    }
+
+    public function recordPrint(Request $request, User $employee, bool $saveOnly = false)
+    {
+        $linkedPrint = in_array($request->input('form_type'), ['leaveLetter', 'timeLeaveLetter', 'resignationLetter', 'contract'], true);
+        $forms = $this->printableProfileForms();
         $data = $request->validate([
             'form_type' => ['required', Rule::in(array_keys($forms))],
             'source_request_id' => [$linkedPrint ? 'required' : 'prohibited', 'integer', 'min:1'],
+            'saved_form_id' => [$saveOnly || $linkedPrint ? 'nullable' : 'required', 'integer', 'min:1'],
             'document_text' => ['required', 'string', 'max:120000'],
             'fields' => ['present', 'array', 'max:500'],
             'fields.*' => ['array:label,value,checked'],
@@ -335,6 +368,7 @@ class EmployeeProfileController extends Controller
             'fields.*.checked' => ['nullable', 'boolean'],
         ], [
             'source_request_id.required' => __('index.select_saved_request_before_print'),
+            'saved_form_id.required' => __('index.create_form_before_print'),
         ]);
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
         [$ability, $title] = $forms[$data['form_type']];
@@ -346,7 +380,7 @@ class EmployeeProfileController extends Controller
 
         // Persist before the browser is allowed to open its print dialog.
         // This records a request; browsers cannot confirm physical printer completion.
-        $record = DB::transaction(function () use ($data, $employee, $request, $title, $linkedPrint) {
+        $record = DB::transaction(function () use ($data, $employee, $request, $title, $linkedPrint, $saveOnly) {
             $source = null;
             $sourceType = null;
             if ($linkedPrint) {
@@ -354,6 +388,7 @@ class EmployeeProfileController extends Controller
                     'leaveLetter' => ['leave', LeaveRequestMaster::query(), 'requested_by'],
                     'timeLeaveLetter' => ['time_leave', TimeLeave::query(), 'requested_by'],
                     'resignationLetter' => ['resignation', Resignation::query(), 'employee_id'],
+                    'contract' => ['contract', EmployeeContract::query(), 'employee_id'],
                 };
                 $source = $query->where($employeeColumn, $employee->id)->whereKey($data['source_request_id'])
                     ->lockForUpdate()->first();
@@ -361,7 +396,20 @@ class EmployeeProfileController extends Controller
                     throw ValidationException::withMessages(['source_request_id' => __('index.invalid_print_request_link')]);
                 }
             }
-            return $this->audit($employee, 'document_print', 'print_requested', null, null, [
+            $saved = null;
+            if (!empty($data['saved_form_id'])) {
+                $saved = EmployeeProfileAuditLog::where('employee_id', $employee->id)->where('module', 'document_form')
+                    ->where('new_values->form_type', $data['form_type'])->whereKey($data['saved_form_id'])->lockForUpdate()->first();
+                if (!$saved) throw ValidationException::withMessages(['saved_form_id' => __('index.create_form_before_print')]);
+            }
+            if (!$saveOnly && !$linkedPrint && (data_get($saved?->new_values, 'document_text') !== $data['document_text']
+                || data_get($saved?->new_values, 'fields') !== $data['fields'])) {
+                throw ValidationException::withMessages(['saved_form_id' => __('index.save_changes_before_print')]);
+            }
+            return $this->audit($employee, $saveOnly ? 'document_form' : 'document_print',
+                $saveOnly ? ($saved ? 'update' : 'create') : 'print_requested',
+                $saveOnly && $saved ? ($saved->record_id ?: $saved->id) : null, $saveOnly ? $saved?->new_values : null, [
+                'saved_form_id' => $saved?->id,
                 'form_type' => $data['form_type'],
                 'document_title' => $title,
                 'document_text' => $data['document_text'],
@@ -376,12 +424,13 @@ class EmployeeProfileController extends Controller
                 'source_request_snapshot' => $source?->only(match ($sourceType) {
                     'leave' => ['id', 'requested_by', 'leave_type_id', 'leave_from', 'leave_to', 'no_of_days', 'leave_requested_date', 'reasons', 'status', 'admin_remark'],
                     'resignation' => ['id', 'employee_id', 'resignation_date', 'last_working_day', 'reason', 'status', 'admin_remark', 'letter_details'],
+                    'contract' => array_merge(['id', 'updated_at'], (new EmployeeContract())->getFillable()),
                     default => ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark'],
                 }),
             ], $request);
         });
 
-        return response()->json(['recorded' => true, 'print_record_id' => $record->id], 201);
+        return response()->json($saveOnly ? ['saved' => true, 'saved_form_id' => $record->id] : ['recorded' => true, 'print_record_id' => $record->id], 201);
     }
 
     public function downloadSalaryCertificateWord(User $employee)
@@ -453,7 +502,7 @@ class EmployeeProfileController extends Controller
             'probation_period' => ['nullable', 'integer', 'min:0'],
             'probation_end_date' => ['nullable', 'date'],
             'contract_start_date' => ['nullable', 'date'],
-            'contract_end_date' => ['nullable', 'date'],
+            'contract_end_date' => ['nullable', 'date', 'after_or_equal:contract_start_date'],
             'weekly_day_off' => ['nullable', 'string', 'max:255'],
             'starting_salary' => ['nullable', 'numeric', 'min:0'],
             'current_base_salary' => ['nullable', 'numeric', 'min:0'],
@@ -620,40 +669,117 @@ class EmployeeProfileController extends Controller
         return back()->with('success', 'Interview record added.');
     }
 
+    public function applyDepartmentDefaults(User $employee): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
+        $counts = app(\App\Services\DepartmentPerformanceDefaults::class)->applyToEmployee($employee);
+        return back()->with('success', __('index.employee_defaults_applied', $counts));
+    }
+
+    private function responsibilityData(Request $request): array
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string'],
+            'kpi_target' => ['nullable', 'string', 'max:255'], 'weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'status' => ['required', Rule::in(['active', 'inactive'])],
+            'start_date' => ['nullable', 'date'], 'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+        ]);
+        if (array_key_exists('weight', $data)) $data['weight'] ??= 0;
+        return $data;
+    }
+
+    private function kpiData(Request $request): array
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'], 'description' => ['nullable', 'string'],
+            'target_value' => ['nullable', 'numeric'], 'actual_value' => ['nullable', 'numeric'],
+            'unit' => ['required', Rule::in(['number', 'percentage', 'currency', 'minutes', 'hours', 'days', 'custom'])],
+            'weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'achievement_percentage' => ['nullable', 'numeric', 'min:0'], 'score' => ['nullable', 'numeric', 'min:0'],
+            'manager_comment' => ['nullable', 'string'],
+        ]);
+        if (array_key_exists('weight', $data)) $data['weight'] ??= 0;
+        return $data;
+    }
+
     public function storeResponsibility(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
-        $record = EmployeeJobResponsibility::create($this->withEmployee($employee, $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'kpi_target' => ['nullable', 'string', 'max:255'],
-            'weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'status' => ['required', 'string', 'max:255'],
-            'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date'],
-        ]), ['assigned_by' => auth()->id()]));
-        $this->audit($employee, 'kpi', 'create', $record->id, null, $record->toArray(), $request);
+        $request->merge(['performance_record_type' => 'responsibility', 'performance_record_id' => null]);
+        $data = $this->responsibilityData($request);
+        $data['weight'] ??= 0;
+        DB::transaction(function () use ($data, $employee, $request) {
+            $record = EmployeeJobResponsibility::create($data + ['employee_id' => $employee->id, 'assigned_by' => auth()->id()]);
+            $this->audit($employee, 'responsibility', 'create', $record->id, null, $record->fresh()->toArray(), $request);
+        });
+        return back()->with('success', __('index.responsibility_saved'));
+    }
 
-        return back()->with('success', 'Responsibility added.');
+    public function updateResponsibility(Request $request, User $employee, EmployeeJobResponsibility $responsibility): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
+        abort_unless((int) $responsibility->employee_id === (int) $employee->id, 404);
+        $request->merge(['performance_record_type' => 'responsibility', 'performance_record_id' => $responsibility->id]);
+        $data = $this->responsibilityData($request);
+        DB::transaction(function () use ($data, $employee, $responsibility, $request) {
+            $record = EmployeeJobResponsibility::where('employee_id', $employee->id)->lockForUpdate()->findOrFail($responsibility->id);
+            $old = $record->toArray();
+            $record->update($data);
+            $this->audit($employee, 'responsibility', 'update', $record->id, $old, $record->fresh()->toArray(), $request);
+        });
+        return back()->with('success', __('index.responsibility_saved'));
+    }
+
+    public function destroyResponsibility(Request $request, User $employee, EmployeeJobResponsibility $responsibility): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
+        abort_unless((int) $responsibility->employee_id === (int) $employee->id, 404);
+        DB::transaction(function () use ($employee, $responsibility, $request) {
+            $record = EmployeeJobResponsibility::where('employee_id', $employee->id)->lockForUpdate()->findOrFail($responsibility->id);
+            $this->audit($employee, 'responsibility', 'delete', $record->id, $record->toArray(), null, $request);
+            $record->delete();
+        });
+        return back()->with('success', __('index.responsibility_deleted'));
     }
 
     public function storeKpi(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
-        $record = EmployeeKpi::create($this->withEmployee($employee, $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'target_value' => ['nullable', 'numeric'],
-            'actual_value' => ['nullable', 'numeric'],
-            'unit' => ['required', Rule::in(['number', 'percentage', 'currency', 'minutes', 'hours', 'days', 'custom'])],
-            'weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'achievement_percentage' => ['nullable', 'numeric', 'min:0'],
-            'score' => ['nullable', 'numeric', 'min:0'],
-            'manager_comment' => ['nullable', 'string'],
-        ]), ['created_by' => auth()->id()]));
-        $this->audit($employee, 'kpi', 'create', $record->id, null, $record->toArray(), $request);
+        $request->merge(['performance_record_type' => 'kpi', 'performance_record_id' => null]);
+        $data = $this->kpiData($request);
+        $data['weight'] ??= 0;
+        DB::transaction(function () use ($data, $employee, $request) {
+            $record = EmployeeKpi::create($data + ['employee_id' => $employee->id, 'created_by' => auth()->id()]);
+            $this->audit($employee, 'kpi', 'create', $record->id, null, $record->fresh()->toArray(), $request);
+        });
+        return back()->with('success', __('index.employee_kpi_saved'));
+    }
 
-        return back()->with('success', 'KPI added.');
+    public function updateKpi(Request $request, User $employee, EmployeeKpi $kpi): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
+        abort_unless((int) $kpi->employee_id === (int) $employee->id, 404);
+        $request->merge(['performance_record_type' => 'kpi', 'performance_record_id' => $kpi->id]);
+        $data = $this->kpiData($request);
+        DB::transaction(function () use ($data, $employee, $kpi, $request) {
+            $record = EmployeeKpi::where('employee_id', $employee->id)->lockForUpdate()->findOrFail($kpi->id);
+            $old = $record->toArray();
+            $record->update($data);
+            $this->audit($employee, 'kpi', 'update', $record->id, $old, $record->fresh()->toArray(), $request);
+        });
+        return back()->with('success', __('index.employee_kpi_saved'));
+    }
+
+    public function destroyKpi(Request $request, User $employee, EmployeeKpi $kpi): RedirectResponse
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.kpi.manage');
+        abort_unless((int) $kpi->employee_id === (int) $employee->id, 404);
+        DB::transaction(function () use ($employee, $kpi, $request) {
+            $record = EmployeeKpi::where('employee_id', $employee->id)->lockForUpdate()->findOrFail($kpi->id);
+            $this->audit($employee, 'kpi', 'delete', $record->id, $record->toArray(), null, $request);
+            $record->delete();
+        });
+        return back()->with('success', __('index.employee_kpi_deleted'));
     }
 
     public function storeReview(Request $request, User $employee): RedirectResponse
@@ -661,103 +787,117 @@ class EmployeeProfileController extends Controller
         $this->authorizeEmployeeProfile($employee, 'employee.performance.create');
 
         $quickComplete = $request->boolean('quick_complete');
-        $data = $request->validate([
-            'quick_complete' => ['sometimes', 'boolean'],
-            'review_type' => ['required', Rule::in(['monthly', 'quarterly', 'six_month', 'annual', 'probation', 'special'])],
-            'period_start' => [$quickComplete ? 'required' : 'nullable', 'date'],
-            'period_end' => $quickComplete ? ['required', 'date', 'after_or_equal:period_start'] : ['nullable', 'date'],
-            'review_date' => [$quickComplete ? 'required' : 'nullable', 'date'],
-            'status' => ['required', Rule::in(['draft', 'submitted', 'employee_acknowledged', 'manager_approved', 'hr_approved', 'completed', 'rejected'])],
-            'strengths' => ['nullable', 'string'],
-            'areas_for_improvement' => ['nullable', 'string'],
-            'manager_comment' => ['nullable', 'string'],
-            'employee_comment' => ['nullable', 'string'],
-            'final_recommendation' => ['nullable', 'string'],
-            'next_review_date' => ['nullable', 'date'],
-            'criteria' => ['required', 'array', 'min:1'],
-            'criteria.*' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'array'],
-            'description.*' => ['nullable', 'string'],
-            'max_score' => ['required', 'array'],
-            'max_score.*' => ['required', 'numeric', 'min:0'],
-            'score' => ['required', 'array'],
-            'score.*' => $quickComplete ? ['required', 'numeric', 'min:0', 'max:100'] : ['required', 'numeric', 'min:0'],
-            'comment' => ['nullable', 'array'],
-            'comment.*' => ['nullable', 'string'],
-        ], [], [
-            'review_type' => __('index.type'),
-            'period_start' => __('index.period_start'),
-            'period_end' => __('index.period_end'),
-            'review_date' => __('index.review_date'),
-            'status' => __('index.status'),
-            'strengths' => __('index.strengths'),
-            'areas_for_improvement' => __('index.areas_for_improvement'),
-            'manager_comment' => __('index.manager_comment'),
-            'employee_comment' => __('index.comment'),
-            'final_recommendation' => __('index.final_recommendation'),
-            'next_review_date' => __('index.next_review'),
-            'criteria' => __('index.criteria'),
-            'criteria.*' => __('index.criteria'),
-            'description.*' => __('index.standard'),
-            'max_score' => __('index.max'),
-            'max_score.*' => __('index.max'),
-            'score' => __('index.score'),
-            'score.*' => __('index.score'),
-            'comment.*' => __('index.comment'),
-        ]);
-
-        DB::transaction(function () use ($employee, $data, $request, $quickComplete) {
-            if ($quickComplete) {
-                User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
-                $alreadyCompleted = PerformanceReview::where('employee_id', $employee->id)
-                    ->where('review_type', $data['review_type'])
-                    ->whereDate('period_start', $data['period_start'])
-                    ->whereDate('period_end', $data['period_end'])
-                    ->where('status', 'completed')->exists();
-                if ($alreadyCompleted) {
-                    return;
-                }
-                $data['status'] = 'completed';
-            }
-            $items = [];
-            $totalScore = 0;
-            foreach ($data['criteria'] as $index => $criteria) {
-                $maxScore = (float) ($data['max_score'][$index] ?? 0);
-                $score = min((float) ($data['score'][$index] ?? 0), $maxScore);
-                $totalScore += $score;
-                $items[] = [
-                    'criteria' => $criteria,
-                    'description' => $data['description'][$index] ?? null,
-                    'max_score' => $maxScore,
-                    'score' => $score,
-                    'weight' => $maxScore,
-                    'comment' => $data['comment'][$index] ?? null,
-                    'sort_order' => $index + 1,
-                ];
-            }
-
-            $review = PerformanceReview::create([
-                'employee_id' => $employee->id,
-                'review_type' => $data['review_type'],
-                'period_start' => $data['period_start'] ?? null,
-                'period_end' => $data['period_end'] ?? null,
-                'review_date' => $data['review_date'] ?? now()->toDateString(),
-                'evaluator_id' => auth()->id(),
-                'total_score' => $totalScore,
-                'grade' => $this->grade($totalScore),
-                'status' => $data['status'],
-                'strengths' => $data['strengths'] ?? null,
-                'areas_for_improvement' => $data['areas_for_improvement'] ?? null,
-                'manager_comment' => $data['manager_comment'] ?? null,
-                'employee_comment' => $data['employee_comment'] ?? null,
-                'final_recommendation' => $data['final_recommendation'] ?? null,
-                'next_review_date' => $data['next_review_date'] ?? null,
+        try {
+            $data = $request->validate([
+                'quick_complete' => ['sometimes', 'boolean'],
+                'review_type' => ['required', Rule::in(['monthly', 'quarterly', 'six_month', 'annual', 'probation', 'special'])],
+                'period_start' => [$quickComplete ? 'required' : 'nullable', 'date'],
+                'period_end' => $quickComplete ? ['required', 'date', 'after_or_equal:period_start'] : ['nullable', 'date'],
+                'review_date' => [$quickComplete ? 'required' : 'nullable', 'date'],
+                'status' => ['required', Rule::in(['draft', 'submitted', 'employee_acknowledged', 'manager_approved', 'hr_approved', 'completed', 'rejected'])],
+                'strengths' => ['nullable', 'string'],
+                'areas_for_improvement' => ['nullable', 'string'],
+                'manager_comment' => ['nullable', 'string'],
+                'employee_comment' => ['nullable', 'string'],
+                'final_recommendation' => ['nullable', 'string'],
+                'next_review_date' => ['nullable', 'date'],
+                'criteria' => ['required', 'array', 'min:1'],
+                'criteria.*' => ['required', 'string', 'max:255'],
+                'description' => ['nullable', 'array'],
+                'description.*' => ['nullable', 'string'],
+                'max_score' => ['required', 'array'],
+                'max_score.*' => ['required', 'numeric', 'min:0'],
+                'score' => ['required', 'array'],
+                'score.*' => $quickComplete ? ['required', 'numeric', 'min:0', 'max:100'] : ['required', 'numeric', 'min:0'],
+                'comment' => ['nullable', 'array'],
+                'comment.*' => ['nullable', 'string'],
+            ], [], [
+                'review_type' => __('index.type'),
+                'period_start' => __('index.period_start'),
+                'period_end' => __('index.period_end'),
+                'review_date' => __('index.review_date'),
+                'status' => __('index.status'),
+                'strengths' => __('index.strengths'),
+                'areas_for_improvement' => __('index.areas_for_improvement'),
+                'manager_comment' => __('index.manager_comment'),
+                'employee_comment' => __('index.comment'),
+                'final_recommendation' => __('index.final_recommendation'),
+                'next_review_date' => __('index.next_review'),
+                'criteria' => __('index.criteria'),
+                'criteria.*' => __('index.criteria'),
+                'description.*' => __('index.standard'),
+                'max_score' => __('index.max'),
+                'max_score.*' => __('index.max'),
+                'score' => __('index.score'),
+                'score.*' => __('index.score'),
+                'comment.*' => __('index.comment'),
             ]);
-            $review->items()->createMany($items);
-            $this->audit($employee, 'performance', 'create', $review->id, null, $review->load('items')->toArray(), $request);
-        });
+
+            DB::transaction(function () use ($employee, $data, $request, $quickComplete) {
+                if ($quickComplete) {
+                    User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+                    $alreadyCompleted = PerformanceReview::where('employee_id', $employee->id)
+                        ->where('review_type', $data['review_type'])
+                        ->whereDate('period_start', $data['period_start'])
+                        ->whereDate('period_end', $data['period_end'])
+                        ->where('status', 'completed')->exists();
+                    if ($alreadyCompleted) {
+                        return;
+                    }
+                    $data['status'] = 'completed';
+                }
+                $items = [];
+                $totalScore = 0;
+                foreach ($data['criteria'] as $index => $criteria) {
+                    $maxScore = (float) ($data['max_score'][$index] ?? 0);
+                    $score = min((float) ($data['score'][$index] ?? 0), $maxScore);
+                    $totalScore += $score;
+                    $items[] = [
+                        'criteria' => $criteria,
+                        'description' => $data['description'][$index] ?? null,
+                        'max_score' => $maxScore,
+                        'score' => $score,
+                        'weight' => $maxScore,
+                        'comment' => $data['comment'][$index] ?? null,
+                        'sort_order' => $index + 1,
+                    ];
+                }
+
+                $review = PerformanceReview::create([
+                    'employee_id' => $employee->id,
+                    'review_type' => $data['review_type'],
+                    'period_start' => $data['period_start'] ?? null,
+                    'period_end' => $data['period_end'] ?? null,
+                    'review_date' => $data['review_date'] ?? now()->toDateString(),
+                    'evaluator_id' => auth()->id(),
+                    'total_score' => $totalScore,
+                    'grade' => $this->grade($totalScore),
+                    'status' => $data['status'],
+                    'strengths' => $data['strengths'] ?? null,
+                    'areas_for_improvement' => $data['areas_for_improvement'] ?? null,
+                    'manager_comment' => $data['manager_comment'] ?? null,
+                    'employee_comment' => $data['employee_comment'] ?? null,
+                    'final_recommendation' => $data['final_recommendation'] ?? null,
+                    'next_review_date' => $data['next_review_date'] ?? null,
+                ]);
+                $review->items()->createMany($items);
+                $this->audit($employee, 'performance', 'create', $review->id, null, $review->load('items')->toArray(), $request);
+            });
+        } catch (ValidationException $exception) {
+            if ($request->input('employee_modal') === '1') {
+                $exception->redirectTo(route('admin.employees.profile.show', [
+                    'employee' => $employee->id, 'tab' => 'evaluation', 'review_create' => 1, 'employee_modal' => '1',
+                ]));
+            }
+            throw $exception;
+        }
 
         if ($quickComplete) {
+            if ($request->input('employee_modal') === '1') {
+                return redirect()->route('admin.employees.profile.show', [
+                    'employee' => $employee->id, 'tab' => 'evaluation', 'employee_modal' => '1',
+                ])->with('success', __('index.performance_review_completed'));
+            }
             return back()->with('success', __('index.performance_review_completed'));
         }
 
@@ -1065,17 +1205,16 @@ class EmployeeProfileController extends Controller
 
         $data['attachments'] = array_values(array_filter($data['attachments'] ?? []));
 
-        $contract = EmployeeContract::firstOrNew(['employee_id' => $employee->id]);
-        $old = $contract->exists ? $contract->getOriginal() : null;
-        if ($contract->exists) {
-            $this->recordContractHistory($contract, 'updated');
-        }
-        $data[$contract->exists ? 'updated_by' : 'created_by'] = auth()->id();
-        $contract->fill($data);
-        $contract->employee_id = $employee->id;
-        $contract->save();
-
-        $this->audit($employee, 'document', $old ? 'update_contract' : 'create_contract', $contract->id, $old, $contract->fresh()->toArray(), $request);
+        DB::transaction(function () use ($employee, $data, $request) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $contract = EmployeeContract::where('employee_id', $employee->id)->lockForUpdate()->first()
+                ?? new EmployeeContract(['employee_id' => $employee->id]);
+            $old = $contract->exists ? $contract->getOriginal() : null;
+            $data[$contract->exists ? 'updated_by' : 'created_by'] = auth()->id();
+            $contract->fill($data)->save();
+            $this->recordContractHistory($contract->fresh(), $old ? 'updated' : 'created');
+            $this->audit($employee, 'document', $old ? 'update_contract' : 'create_contract', $contract->id, $old, $contract->fresh()->toArray(), $request);
+        });
 
         return back()->with('success', 'Employee contract saved.');
     }
@@ -1355,7 +1494,7 @@ class EmployeeProfileController extends Controller
             'employee_id' => $contract->employee_id,
             'employee_contract_id' => $contract->id,
             'action' => $action,
-            'snapshot' => $contract->toArray(),
+            'snapshot' => $contract->toArray() + ['performed_by_name' => auth('admin')->user()?->name ?: auth()->user()?->name],
             'created_by' => auth()->id(),
         ]);
     }

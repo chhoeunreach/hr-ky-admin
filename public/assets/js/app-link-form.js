@@ -9,7 +9,7 @@
         const required = select.dataset.accountRequired === '1';
         const update = initial => {
             const selected = initial ? select.dataset.selected : '';
-            const choices = types[platform.value] || (required ? {} : Object.assign({}, ...Object.values(types)));
+            const choices = types[platform.value] || (required ? types.other || {} : Object.assign({}, ...Object.values(types)));
             select.replaceChildren(new Option(placeholder, ''));
             Object.entries(choices).forEach(([key, label]) => select.add(new Option(label, key)));
             select.value = Object.hasOwn(choices, selected) ? selected : '';
@@ -18,12 +18,31 @@
             const wrapper = select.closest('[data-account-type-wrapper]');
             if (wrapper) wrapper.hidden = select.disabled;
         };
-        platform.addEventListener('change', () => update(false));
+        platform.addEventListener('change', () => {
+            select.dataset.selected = select.value;
+            update(true);
+        });
         update(true);
     });
+    document.querySelector('[data-close-link-form]')?.addEventListener('click', () => {
+        window.parent.postMessage({type: 'employee-request-form-close'}, window.location.origin);
+    });
     const managers = document.getElementById('manager_ids');
-    if (managers && window.jQuery?.fn.select2) {
-        window.jQuery(managers).select2({width: '100%', placeholder: managers.dataset.placeholder});
+    const initializeManagers = () => {
+        if (!managers || !window.jQuery?.fn.select2) return;
+        window.jQuery(managers).select2({
+            width: '100%',
+            placeholder: managers.dataset.placeholder,
+            closeOnSelect: false,
+            allowClear: true,
+            templateSelection: person => person.element?.dataset.displayName || person.text,
+        });
+    };
+    // The layout loads Select2 after page scripts, before DOMContentLoaded.
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeManagers, {once: true});
+    } else {
+        initializeManagers();
     }
     const password = document.getElementById('password');
     const toggle = document.querySelector('[data-toggle-link-password]');

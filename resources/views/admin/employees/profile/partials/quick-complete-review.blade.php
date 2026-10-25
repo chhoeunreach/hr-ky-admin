@@ -1,6 +1,6 @@
 <div class="modal fade" id="quickCompleteReviewModal" tabindex="-1" aria-labelledby="quickCompleteReviewTitle" aria-hidden="true">
     <div class="modal-dialog">
-        <form method="post" class="modal-content">
+        <form method="post" class="modal-content" data-employee-modal-submit>
             @csrf
             <input type="hidden" name="quick_complete" value="1">
             <input type="hidden" name="status" value="completed">
@@ -30,7 +30,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <a class="btn btn-outline-primary me-auto" data-full-review>{{ __('index.full_review') }}</a>
+                <a class="btn btn-outline-primary me-auto" data-full-review data-open-employee-form>{{ __('index.full_review') }}</a>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
                 <button type="submit" class="btn btn-success">{{ __('index.mark_review_completed') }}</button>
             </div>

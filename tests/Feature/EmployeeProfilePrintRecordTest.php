@@ -34,6 +34,11 @@ class EmployeeProfilePrintRecordTest extends TestCase
         config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:']);
         DB::purge('sqlite');
         app()->setLocale('en');
+        Schema::create('users', function (Blueprint $table) { $table->id(); $table->string('name'); $table->softDeletes(); });
+        DB::table('users')->insert([['id' => 10, 'name' => 'HR Officer'], ['id' => 20, 'name' => 'Employee'], ['id' => 30, 'name' => 'Other employee']]);
+        (require database_path('migrations/2026_08_30_000001_create_employee_contracts_table.php'))->up();
+        (require database_path('migrations/2026_08_30_000002_add_history_and_soft_deletes_to_employee_contracts.php'))->up();
+        DB::table('employee_contracts')->insert(['id' => 4, 'employee_id' => 20, 'status' => 'active', 'contract_no' => 'CON-20']);
         Schema::create('leave_requests_master', function (Blueprint $table) {
             $table->id();
             $table->integer('requested_by');
@@ -91,6 +96,15 @@ class EmployeeProfilePrintRecordTest extends TestCase
             return app(\App\Http\Controllers\Web\ResignationController::class)->employeeInformation($employee);
         });
 
+        Route::post('/_test/profile-form', function (Request $request) {
+            return app(EmployeeProfileController::class)->savePrintForm($request, (new User())->forceFill(['id' => 20, 'name' => 'Employee']));
+        });
+        Route::get('/_test/profile-form-history', function (Request $request) {
+            return app(EmployeeProfileController::class)->printFormHistory($request, (new User())->forceFill(['id' => 20]));
+        });
+        Route::post('/_test/profile-contract', function (Request $request) {
+            return app(EmployeeProfileController::class)->saveContract($request, (new User())->forceFill(['id' => 20]));
+        });
         // Exercise validation, authorization and persistence without unrelated profile tables.
         Route::post('/_test/profile-print', function (Request $request) {
             $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
@@ -111,8 +125,56 @@ class EmployeeProfilePrintRecordTest extends TestCase
             'leaveLetter' => ['source_request_id' => 1],
             'timeLeaveLetter' => ['source_request_id' => 2],
             'resignationLetter' => ['source_request_id' => 3],
+            'contract' => ['source_request_id' => 4],
             default => [],
         });
+    }
+
+    public function test_new_forms_require_saved_revisions_and_retain_create_and_update_history(): void
+    {
+        $this->abilities[] = 'employee.warning_form.print';
+        $payload = $this->payload('warning');
+        $this->postJson('/_test/profile-print', $payload)->assertUnprocessable();
+        $created = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
+        $this->postJson('/_test/profile-print', $payload + ['saved_form_id' => $created])->assertCreated();
+        $changed = array_replace($payload, ['document_text' => 'Updated warning form']);
+        $this->postJson('/_test/profile-print', $changed + ['saved_form_id' => $created])->assertUnprocessable();
+        $updated = $this->postJson('/_test/profile-form', $changed + ['saved_form_id' => $created])->assertCreated()->json('saved_form_id');
+        $this->assertNotSame($created, $updated);
+        $this->assertSame($created, EmployeeProfileAuditLog::findOrFail($updated)->record_id);
+        $this->assertSame($payload['document_text'], EmployeeProfileAuditLog::findOrFail($created)->new_values['document_text']);
+        $this->postJson('/_test/profile-print', $changed + ['saved_form_id' => $updated])->assertCreated();
+        $this->getJson('/_test/profile-form-history?form_type=warning')->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson('/_test/profile-form-history?form_type=warning&latest=1')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $updated)->assertJsonPath('data.0.fields', $payload['fields']);
+        $this->abilities = ['employee.profile.view'];
+        $this->getJson('/_test/profile-form-history?form_type=warning')->assertForbidden();
+        $this->postJson('/_test/profile-form', $payload)->assertForbidden();
+    }
+
+    public function test_saved_form_cannot_be_reused_for_another_employee_or_form_type(): void
+    {
+        $this->abilities[] = 'employee.warning_form.print';
+        $payload = $this->payload('warning');
+        $id = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
+        EmployeeProfileAuditLog::whereKey($id)->update(['employee_id' => 30]);
+        $this->postJson('/_test/profile-print', $payload + ['saved_form_id' => $id])->assertUnprocessable();
+    }
+
+    public function test_contract_must_be_created_before_print_and_records_creation_and_updates(): void
+    {
+        $this->abilities[] = 'employee.contract_form.print';
+        DB::table('employee_contracts')->delete();
+        $this->postJson('/_test/profile-print', $this->payload('contract'))->assertUnprocessable();
+        $this->abilities[] = 'employee.document.manage';
+        $this->post('/_test/profile-contract', ['contract_no' => 'CON-NEW', 'status' => 'draft', 'job_title' => 'Sales'])
+            ->assertRedirect();
+        $contract = \App\Models\EmployeeContract::firstOrFail();
+        $this->assertSame('created', $contract->histories()->firstOrFail()->action);
+        $this->post('/_test/profile-contract', ['contract_no' => 'CON-UPDATED', 'status' => 'active', 'job_title' => 'Supervisor'])->assertRedirect();
+        $this->assertSame(2, $contract->histories()->count());
+        $this->assertSame('CON-NEW', $contract->histories()->oldest('id')->first()->snapshot['contract_no']);
+        $this->assertSame('CON-UPDATED', $contract->histories()->latest('id')->first()->snapshot['contract_no']);
+        $this->postJson('/_test/profile-print', array_replace($this->payload('contract'), ['source_request_id' => $contract->id]))->assertCreated();
     }
 
     public function test_each_form_saves_a_record_with_its_own_permission(): void
@@ -130,10 +192,14 @@ class EmployeeProfilePrintRecordTest extends TestCase
         ];
         foreach ($forms as $type => $permission) {
             $this->abilities = ['employee.profile.view', $permission];
-            $this->postJson('/_test/profile-print', $this->payload($type))
-                ->assertCreated()->assertJson(['recorded' => true]);
+            $payload = $this->payload($type);
+            if (!isset($payload['source_request_id'])) {
+                $saved = $this->postJson('/_test/profile-form', $payload)->assertCreated();
+                $payload['saved_form_id'] = $saved->json('saved_form_id');
+            }
+            $this->postJson('/_test/profile-print', $payload)->assertCreated()->assertJson(['recorded' => true]);
         }
-        $this->assertSame(9, EmployeeProfileAuditLog::count());
+        $this->assertSame(14, EmployeeProfileAuditLog::count());
         $log = EmployeeProfileAuditLog::where('new_values->form_type', 'leaveLetter')->firstOrFail();
         $this->assertSame(20, $log->employee_id);
         $this->assertSame(10, $log->performed_by);
@@ -291,10 +357,9 @@ class EmployeeProfilePrintRecordTest extends TestCase
             $table->string('slug');
             $table->integer('status')->default(0);
         });
-        foreach (['users', 'branches', 'departments'] as $table) {
+        foreach (['branches', 'departments'] as $table) {
             Schema::create($table, fn (Blueprint $blueprint) => $blueprint->id());
         }
-        DB::table('users')->insert(['id' => 20]);
         DB::table('branches')->insert(['id' => 2]);
         DB::table('departments')->insert(['id' => 5]);
         auth()->user()->branch_id = 2;

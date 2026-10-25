@@ -245,13 +245,20 @@ Route::group([
         Route::get('employees/profile-directory', [EmployeeProfileController::class, 'index'])->name('employees.profile.index');
         Route::prefix('employees/{employee}/profile')->name('employees.profile.')->group(function () {
             Route::get('/', [EmployeeProfileController::class, 'show'])->name('show');
+            Route::post('form-records', [EmployeeProfileController::class, 'savePrintForm'])->name('form-records.store');
+            Route::get('form-records', [EmployeeProfileController::class, 'printFormHistory'])->name('form-records.index');
             Route::post('print-records', [EmployeeProfileController::class, 'recordPrint'])->name('print-records.store');
             Route::get('salary-certificate/word', [EmployeeProfileController::class, 'downloadSalaryCertificateWord'])->name('salary-certificate.word');
             Route::put('/', [EmployeeProfileController::class, 'updateProfile'])->name('update');
             Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
             Route::post('salary-history', [EmployeeProfileController::class, 'storeSalary'])->name('salary.store');
             Route::post('interviews', [EmployeeProfileController::class, 'storeInterview'])->name('interviews.store');
+            Route::post('department-defaults', [EmployeeProfileController::class, 'applyDepartmentDefaults'])->name('department-defaults.apply');
+            Route::put('responsibilities/{responsibility}', [EmployeeProfileController::class, 'updateResponsibility'])->name('responsibilities.update');
+            Route::delete('responsibilities/{responsibility}', [EmployeeProfileController::class, 'destroyResponsibility'])->name('responsibilities.destroy');
             Route::post('responsibilities', [EmployeeProfileController::class, 'storeResponsibility'])->name('responsibilities.store');
+            Route::put('kpis/{kpi}', [EmployeeProfileController::class, 'updateKpi'])->name('kpis.update');
+            Route::delete('kpis/{kpi}', [EmployeeProfileController::class, 'destroyKpi'])->name('kpis.destroy');
             Route::post('kpis', [EmployeeProfileController::class, 'storeKpi'])->name('kpis.store');
             Route::post('performance-reviews', [EmployeeProfileController::class, 'storeReview'])->name('reviews.store');
             Route::post('training', [EmployeeProfileController::class, 'storeTraining'])->name('training.store');
@@ -296,6 +303,8 @@ Route::group([
 
 
         /** Department route */
+        Route::get('departments/{id}/performance-defaults', [DepartmentController::class, 'performanceDefaults'])->name('departments.performance-defaults');
+        Route::post('departments/{id}/performance-defaults', [DepartmentController::class, 'applyPerformanceDefaults'])->name('departments.performance-defaults.apply');
         Route::resource('departments', DepartmentController::class);
         Route::get('departments/toggle-status/{id}', [DepartmentController::class, 'toggleStatus'])->name('departments.toggle-status');
         Route::get('departments/delete/{id}', [DepartmentController::class, 'delete'])->name('departments.delete');

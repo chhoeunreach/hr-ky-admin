@@ -216,7 +216,7 @@
                         {{ __('index.filter') }}
                     </button>
                     <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
-                    <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" class="btn btn-outline-primary btn-sm">
+                    <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" data-employee-report class="btn btn-outline-primary btn-sm">
                         <i class="link-icon" data-feather="file-text"></i> {{ __('index.attendance_confirmation_report') }}
                     </button>
                     <div class="employee-profile-search">
@@ -331,7 +331,7 @@
                                     <div class="d-flex flex-wrap gap-1">
                                         <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">{{ __('index.employee_360') }}</a>
                                         @canany(['employee.salary.view', 'employee.salary.history.view'])
-                                            <a class="btn btn-outline-success btn-xs" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary-certificate']) }}">{{ __('index.salary_certificate') }}</a>
+                                            <a class="btn btn-outline-success btn-xs" data-open-employee-form href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary-certificate']) }}">{{ __('index.salary_certificate') }}</a>
                                         @endcanany
                                     </div>
                                 </td>

@@ -206,7 +206,10 @@
                         @forelse($departments as $key => $value)
                             <tr>
                                 <td>{{ ($departments->firstItem() ?? 0) + $key }}</td>
-                                <td>{{ ucfirst($value->dept_name) }}</td>
+                                <td>{{ ucfirst($value->dept_name) }}
+                                    <a class="d-block small mt-1" data-open-request-form data-request-modal-title="{{ __('index.department_performance_defaults') }}"
+                                       href="{{ route('admin.departments.performance-defaults', ['id' => $value->id, 'employee_modal' => '1']) }}">{{ __('index.department_performance_defaults') }}</a>
+                                </td>
                                 <td>{{ isset($value->departmentHead) ? $value->departmentHead->name : __('index.not_available') }}</td>
                                 <td class="text-center">
                                     <p class="btn btn-info btn-sm mb-0" id="showDepartmentEmployees" data-employee='@json($value->employees)'>

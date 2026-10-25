@@ -56,9 +56,16 @@ class AppLinkController extends Controller
             $validatedData['order'] = $request->order ?? 0;
 
             $this->appLinkRepo->store($validatedData);
+            if ($request->query('request_modal') === '1') {
+                session()->flash('success', __('message.link_added_successfully'));
+                return view($this->view.'modal-saved', ['redirectUrl' => route('admin.app-links.index')]);
+            }
             return redirect()->route('admin.app-links.index')->with('success', __('message.link_added_successfully') ?? 'Link added successfully.');
         } catch (Exception $exception) {
-            return redirect()->back()->with('danger', 'Unable to save the link. Please try again.')->withInput($request->except('password'));
+            $redirect = $request->query('request_modal') === '1'
+                ? redirect()->route('admin.app-links.create', ['request_modal' => '1'])
+                : redirect()->back();
+            return $redirect->with('danger', 'Unable to save the link. Please try again.')->withInput($request->except('password'));
         }
     }
 

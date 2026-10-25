@@ -64,9 +64,10 @@
                   action="{{ route('admin.employees.profile.contract.save', $employee->id) }}"
                   class="modal-content">
                 @csrf
+                <input type="hidden" name="contract_form_modal" value="1">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold" id="contractEditModalLabel">
-                        <i data-feather="file-text" class="me-2 text-primary"></i>Contract Add / Update Before Print
+                        <i data-feather="file-text" class="me-2 text-primary"></i>{{ $contract->exists ? __('index.update_saved_contract') : __('index.create_saved_contract') }}
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -240,17 +241,21 @@
 <div class="employee-complete-toolbar mb-3">
     @can('employee.document.manage')
         <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#contractEditModal">
-            <i data-feather="edit-2" class="me-1"></i> Edit / Update Contract
+            <i data-feather="edit-2" class="me-1"></i> {{ $contract->exists ? __('index.update_saved_contract') : __('index.create_saved_contract') }}
         </button>
     @endcan
     @can('employee.contract_form.print')
-        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="printContractForm()">
-            <i class="link-icon" data-feather="printer"></i> Print Saved Contract
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="printContractForm()" @disabled(!$contract->exists || $errors->any())>
+            <i class="link-icon" data-feather="printer"></i> {{ __('index.print_saved_contract') }}
         </button>
     @endcan
 </div>
 
-<div class="employee-complete-paper employee-contract-paper">
+@if(!$contract->exists)
+    <p class="alert alert-info no-print">{{ __('index.create_contract_before_print') }}</p>
+@endif
+<div class="employee-complete-paper employee-contract-paper" data-source-request-id="{{ $contract->exists ? $contract->id : '' }}" data-request-tab="contract-form">
+    <span class="small text-muted" data-print-record></span>
     <div class="employee-complete-header">
         <img class="employee-complete-logo" src="{{ $formLogo }}" alt="Kneayerng Phone Shop Logo">
         <div class="employee-complete-khmer-brand">ហាងទូរស័ព្ទ គ្នាយើង</div>
@@ -410,7 +415,7 @@
 @can('employee.document.manage')
     @if(($contractHistories ?? collect())->isNotEmpty())
         <div class="employee-360-section mt-3">
-            <h6>Permanent Contract History</h6>
+            <h6>{{ __('index.saved_contract_history') }}</h6>
             <div class="table-responsive">
                 <table class="table table-sm employee-360-table mb-0">
                     <thead>
@@ -420,6 +425,7 @@
                         <th>Contract No</th>
                         <th>Status</th>
                         <th>Job Title</th>
+                        <th>{{ __('index.print_record_user') }}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -430,6 +436,7 @@
                             <td>{{ data_get($history->snapshot, 'contract_no', '-') }}</td>
                             <td>{{ data_get($history->snapshot, 'status', '-') }}</td>
                             <td>{{ data_get($history->snapshot, 'job_title', '-') }}</td>
+                            <td>{{ $history->creator?->name ?: data_get($history->snapshot, 'performed_by_name', $history->created_by) }}</td>
                         </tr>
                     @endforeach
                     </tbody>

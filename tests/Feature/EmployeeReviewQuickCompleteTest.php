@@ -154,6 +154,21 @@ class EmployeeReviewQuickCompleteTest extends TestCase
         $this->assertFalse($review->completesMilestone(Carbon::parse('2027-08-07')));
     }
 
+    public function test_quick_review_modal_returns_to_the_employee_form_after_saving(): void
+    {
+        $this->from('/admin/employees/profile-directory')->post('/_test/quick-review', $this->payload() + ['employee_modal' => '1'])
+            ->assertRedirect(route('admin.employees.profile.show', ['employee' => 20, 'tab' => 'evaluation', 'employee_modal' => '1']));
+        $this->assertSame(1, PerformanceReview::count());
+    }
+
+    public function test_invalid_modal_review_reopens_the_form_without_leaving_the_directory(): void
+    {
+        $this->from('/admin/employees/profile-directory')->post('/_test/quick-review', array_replace($this->payload(), ['score' => [101], 'employee_modal' => '1']))
+            ->assertRedirect(route('admin.employees.profile.show', ['employee' => 20, 'tab' => 'evaluation', 'review_create' => 1, 'employee_modal' => '1']))
+            ->assertSessionHasErrors('score.0');
+        $this->assertSame(0, PerformanceReview::count());
+    }
+
     public function test_permission_is_required(): void
     {
         $this->allowed = false;
@@ -201,7 +216,7 @@ class EmployeeReviewQuickCompleteTest extends TestCase
             ->assertSee('data-reopen="1"', false)
             ->assertSee('name="criteria[]" value="Custom criterion"', false)
             ->assertSee('name="criteria[]" value="Another criterion"', false)
-            ->assertSee('name="description[]" value="Custom standard"', false)
+            ->assertSee('name="description[]"', false)->assertSee('Custom standard')
             ->assertSee('name="max_score[]" value="75"', false)
             ->assertSee('name="score[]" value="60"', false)
             ->assertSee('name="comment[]" value="Good work"', false);

@@ -54,7 +54,7 @@ class AppLinkAccountTest extends TestCase
 
     public function test_supported_platform_account_types_save_and_passwords_are_encrypted(): void
     {
-        foreach (AppLink::ACCOUNT_TYPES as $platform => $types) {
+        foreach (AppLink::accountTypes() as $platform => $types) {
             foreach ($types as $type => $label) {
                 $this->post('/_test/links', $this->data(['link_type' => $platform, 'account_type' => $type]))
                     ->assertRedirect(route('admin.app-links.index'))->assertSessionHasNoErrors();
@@ -71,8 +71,8 @@ class AppLinkAccountTest extends TestCase
 
     public function test_account_types_are_validated_for_the_selected_platform(): void
     {
-        foreach ([['link_type' => 'telegram', 'account_type' => 'page'], ['link_type' => 'facebook', 'account_type' => 'channel'],
-            ['account_type' => null], ['link_type' => 'website', 'account_type' => 'group']] as $invalid) {
+        foreach ([['link_type' => 'telegram', 'account_type' => 'page'], ['link_type' => 'facebook', 'account_type' => 'invalid'],
+            ['account_type' => null], ['link_type' => 'website', 'account_type' => 'invalid']] as $invalid) {
             $this->post('/_test/links', $this->data($invalid))->assertSessionHasErrors('account_type');
         }
         $this->postJson('/_test/links', $this->data(['link_type' => ['telegram']]))->assertUnprocessable();
@@ -134,9 +134,52 @@ class AppLinkAccountTest extends TestCase
                 ->assertSee('name="username"', false)->assertSee('name="password"', false)
                 ->assertSee('name="phone_number"', false)->assertSee('name="email"', false)
                 ->assertSee('name="account_type"', false)->assertSee('name="clear_password"', false)
-                ->assertSee('Channel')->assertSee(__('index.link_keep_password'))
+                ->assertSee(__('index.link_type_channel'))->assertSee(__('index.link_keep_password'))
                 ->assertDontSee('Example-test-password!')->assertDontSee($link->getRawOriginal('password'));
         }
+    }
+
+    public function test_create_form_shows_account_types_before_a_platform_is_selected(): void
+    {
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $view = $this->view('admin.appLink.common.form', [
+                'linkTypes' => AppLink::LINK_TYPES,
+                'errors' => new \Illuminate\Support\ViewErrorBag(),
+                'managerOptions' => [],
+            ]);
+            foreach (['personal', 'page', 'group', 'channel'] as $type) {
+                $view->assertSee('value="'.$type.'"', false)->assertSee(__('index.link_type_'.$type));
+            }
+        }
+    }
+
+    public function test_modal_create_saves_and_notifies_the_parent_list(): void
+    {
+        $this->post('/_test/links?request_modal=1', $this->data())
+            ->assertOk()->assertViewIs('admin.appLink.modal-saved')
+            ->assertSee('employee-request-form-saved')
+            ->assertViewHas('redirectUrl', route('admin.app-links.index'))
+            ->assertSessionHas('success');
+        $this->assertSame(1, AppLink::count());
+    }
+
+    public function test_modal_validation_returns_to_the_embedded_form(): void
+    {
+        $createUrl = route('admin.app-links.create', ['request_modal' => '1']);
+        $this->from($createUrl)->post('/_test/links?request_modal=1', $this->data(['name' => '']))
+            ->assertRedirect($createUrl)->assertSessionHasErrors('name');
+        $this->assertSame(0, AppLink::count());
+    }
+
+    public function test_modal_save_failure_keeps_the_embedded_form_and_hides_password(): void
+    {
+        $repo = \Mockery::mock(AppLinkRepository::class);
+        $repo->shouldReceive('store')->once()->andThrow(new \RuntimeException('Example-test-password!'));
+        $this->app->instance(AppLinkRepository::class, $repo);
+        $this->post('/_test/links?request_modal=1', $this->data())
+            ->assertRedirect(route('admin.app-links.create', ['request_modal' => '1']))
+            ->assertSessionHas('danger')->assertSessionMissing('_old_input.password');
     }
 
     public function test_contact_details_validate_and_can_be_edited(): void

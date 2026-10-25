@@ -53,6 +53,6 @@
     });
 </script>
 
-<script type="application/json" id="appLinkAccountTypes">@json(\App\Models\AppLink::ACCOUNT_TYPES)</script>
+<script type="application/json" id="appLinkAccountTypes">@json(\App\Models\AppLink::accountTypes())</script>
 <script src="{{ asset('assets/js/app-link-form.js') }}?v={{ filemtime(public_path('assets/js/app-link-form.js')) }}"
         data-show="{{ __('index.link_show_password') }}" data-hide="{{ __('index.link_hide_password') }}"></script>

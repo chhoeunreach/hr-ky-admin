@@ -1,5 +1,5 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6 class="mb-0 fw-bold"><i data-feather="briefcase" class="me-2 text-primary"></i>{{ __('index.employment_history') ?? 'Employment History' }}</h6>
+    <h6 class="mb-0 fw-bold"><i data-feather="briefcase" class="me-2 text-primary"></i>{{ __('index.employment_history') }}</h6>
     @can('employee.employment.manage')
         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addEmploymentHistoryModal">
             <i data-feather="plus" class="me-1"></i> {{ __('index.add_employment_history') }}

@@ -22,7 +22,7 @@
 @section('button')
     <div class="d-md-flex">
         @can('employee.performance.create')
-            <a href="{{ route('admin.staff-evaluations.ai-create', ['employee_id' => $employee->id]) }}" class="btn btn-success me-2">
+            <a data-open-employee-form href="{{ route('admin.staff-evaluations.ai-create', ['employee_id' => $employee->id]) }}" class="btn btn-success me-2">
                 {{ __('index.ai_evaluation_form') }}
             </a>
         @endcan
@@ -44,20 +44,6 @@
             $avatar = $employee->avatar
                 ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $employee->avatar)
                 : asset('assets/images/img.png');
-            $defaultItems = [
-                [__('index.review_criteria_work_quality'), __('index.review_standard_work_quality'), 15],
-                [__('index.review_criteria_task_completion'), __('index.review_standard_task_completion'), 10],
-                [__('index.review_criteria_thumbnail_poster'), __('index.review_standard_thumbnail_poster'), 10],
-                [__('index.review_criteria_it_support'), __('index.review_standard_it_support'), 10],
-                [__('index.review_criteria_live_stream'), __('index.review_standard_live_stream'), 10],
-                [__('index.review_criteria_content_editing'), __('index.review_standard_content_editing'), 10],
-                [__('index.review_criteria_responsibility'), __('index.review_standard_responsibility'), 10],
-                [__('index.review_criteria_teamwork'), __('index.review_standard_teamwork'), 5],
-                [__('index.review_criteria_guidance'), __('index.review_standard_guidance'), 5],
-                [__('index.review_criteria_persistence'), __('index.review_standard_persistence'), 5],
-                [__('index.review_criteria_learning'), __('index.review_standard_learning'), 5],
-                [__('index.review_criteria_communication'), __('index.review_standard_communication'), 5],
-            ];
             $tabs = [
                 'overview' => __('index.overview'),
                 'complete-form' => __('index.complete_form'),
@@ -2399,7 +2385,7 @@
                                             <td>{{ $log->record_id ?: $log->id }}</td>
                                             <td>{{ data_get($log->new_values, 'performed_by_name') ?: $log->performed_by }}</td>
                                             <td>
-                                                @if($log->module === 'document_print')
+                                                @if(in_array($log->module, ['document_print', 'document_form'], true))
                                                     <details>
                                                         <summary>{{ __('index.print_record_details') }}</summary>
                                                         <p class="text-muted mt-2">{{ __('index.print_request_notice') }}</p>
@@ -2410,6 +2396,7 @@
                                                                     [$sourceTab, $sourceField] = match (data_get($log->new_values, 'source_request_type')) {
                                                                         'leave' => ['leave-letter', 'leave_request_id'],
                                                                         'resignation' => ['resignation-letter', 'resignation_request_id'],
+                                                                        'contract' => ['contract-form', 'contract_id'],
                                                                         default => ['time-leave-letter', 'time_leave_request_id'],
                                                                     };
                                                                 @endphp
@@ -2426,6 +2413,8 @@
                                                             @endforeach
                                                         </table>
                                                     </details>
+                                                @elseif(in_array($log->module, ['responsibility', 'kpi'], true))
+                                                    @include('admin.employees.profile.partials.performance-record-history')
                                                 @endif
                                             </td>
                                         </tr>
@@ -2488,6 +2477,7 @@
             resignationForm: {{ $canExportResignationForm ? 'true' : 'false' }},
         };
 
+        window.EmployeeFormPrintPermissions = employeeProfilePrintPermissions;
         let employeePrintPending = false;
 
         async function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
@@ -2501,10 +2491,16 @@
             if (!paper) {
                 return;
             }
-            const linkedPrint = ['leaveLetter', 'timeLeaveLetter', 'resignationLetter'].includes(printType);
+            const linkedPrint = ['leaveLetter', 'timeLeaveLetter', 'resignationLetter', 'contract'].includes(printType);
             const sourceRequestId = linkedPrint ? Number(paper.dataset.sourceRequestId) : null;
             if (linkedPrint && (!Number.isInteger(sourceRequestId) || sourceRequestId < 1)) {
                 window.alert(@json(__('index.select_saved_request_before_print')));
+                return;
+            }
+
+            const savedFormId = linkedPrint ? null : window.EmployeeSavedForms?.recordId(printType, paper);
+            if (!linkedPrint && !savedFormId) {
+                window.alert(@json(__('index.save_changes_before_print')));
                 return;
             }
 
@@ -2562,8 +2558,8 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': @json(csrf_token()),
                     },
-                    body: JSON.stringify({form_type: printType, document_text: printPaper.innerText, fields,
-                        ...(linkedPrint ? {source_request_id: sourceRequestId} : {})}),
+                    body: JSON.stringify({form_type: printType, document_text: linkedPrint ? printPaper.innerText : paper.innerText, fields,
+                        ...(linkedPrint ? {source_request_id: sourceRequestId} : {saved_form_id: savedFormId})}),
                 });
                 const result = response.ok ? await response.json() : null;
                 if (result?.recorded !== true || (linkedPrint && (!Number.isInteger(result.print_record_id) || result.print_record_id < 1))) {
@@ -3354,6 +3350,11 @@
             }
         }
 
+        @if(old('contract_form_modal'))
+            employeeGotoTab('contract-form');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('contractEditModal')).show();
+        @endif
+
         @if(old('complete_profile_modal'))
             const completeTabButton = document.querySelector('[data-bs-target="#complete-form"]');
             if (completeTabButton && window.bootstrap?.Tab) {
@@ -3370,4 +3371,5 @@
         });
         if (window.feather) feather.replace();
     </script>
+    @include('admin.employees.profile.partials.saved-print-forms')
 @endsection

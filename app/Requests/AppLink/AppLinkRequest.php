@@ -22,7 +22,7 @@ class AppLinkRequest extends FormRequest
     public function rules()
     {
         $platform = $this->input('link_type');
-        $types = is_string($platform) ? (AppLink::ACCOUNT_TYPES[$platform] ?? []) : [];
+        $types = is_string($platform) ? (AppLink::accountTypes()[$platform] ?? []) : [];
         return [
             'name' => 'required|string|max:255',
             'link_type' => ['required', Rule::in(array_keys(AppLink::LINK_TYPES))],

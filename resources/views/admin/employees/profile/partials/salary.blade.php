@@ -25,13 +25,13 @@
             </h6>
             @if($payrollSalary)
                 @can('edit_salary')
-                    <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employee-salaries.edit-salary', $employee->id) }}">
+                    <a class="btn btn-outline-primary btn-sm" data-open-employee-form href="{{ route('admin.employee-salaries.edit-salary', $employee->id) }}">
                         <i data-feather="edit-2" class="me-1"></i> {{ __('index.edit_salary') }}
                     </a>
                 @endcan
             @else
                 @can('add_salary')
-                    <a class="btn btn-primary btn-sm" href="{{ route('admin.employee-salaries.add', $employee->id) }}">
+                    <a class="btn btn-primary btn-sm" data-open-employee-form href="{{ route('admin.employee-salaries.add', $employee->id) }}">
                         <i data-feather="plus" class="me-1"></i> {{ __('index.add_salary') }}
                     </a>
                 @endcan

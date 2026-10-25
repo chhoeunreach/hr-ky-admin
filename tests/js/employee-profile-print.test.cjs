@@ -12,7 +12,7 @@ const source = blade.slice(start, end)
     .replace('@json(csrf_token())', "'csrf-token'")
     .replace(/@json\(__\('index\.([a-z_]+)'\)\)/g, (_, key) => JSON.stringify(key));
 
-function setup(fetch, {sourceRequestId = '1', staticSource = false} = {}) {
+function setup(fetch, {sourceRequestId = '1', staticSource = false, genericAllowed = false, savedFormId = null} = {}) {
     const calls = [];
     const field = {
         value: 'Family event', name: 'reason', id: '', tagName: 'TEXTAREA',
@@ -28,13 +28,13 @@ function setup(fetch, {sourceRequestId = '1', staticSource = false} = {}) {
         querySelector: () => printedRecord,
     };
     const paper = {
-        dataset: {sourceRequestId, requestTab: 'leave-letter'},
+        innerText: 'Leave Request Form', dataset: {sourceRequestId, requestTab: 'leave-letter'},
         querySelectorAll: () => [field],
         querySelector: () => record,
         cloneNode: () => clone,
     };
     const context = vm.createContext({
-        employeeProfilePrintPermissions: {leaveLetter: true, timeLeaveLetter: true, resignationLetter: true},
+        employeeProfilePrintPermissions: {leaveLetter: true, timeLeaveLetter: true, resignationLetter: true, warning: genericAllowed, contract: genericAllowed},
         cleanupEmployeeCompletePrintRoot: () => calls.push('cleanup'),
         document: {
             querySelector: selector => selector === '#paper' ? paper : notice,
@@ -42,7 +42,7 @@ function setup(fetch, {sourceRequestId = '1', staticSource = false} = {}) {
             getElementById: () => null,
             body: {appendChild() {}, classList: {add() {}}},
         },
-        window: {print: () => calls.push('print'), alert: () => calls.push('error')},
+        window: {EmployeeSavedForms: {recordId: () => savedFormId}, print: () => calls.push('print'), alert: () => calls.push('error')},
         fetch: async (...args) => {calls.push('save'); return fetch(...args);},
     });
     vm.runInContext(source, context);
@@ -136,4 +136,20 @@ test('resignation keeps its visible preview values instead of duplicating hidden
     assert.equal(printField.printedValue, undefined);
     assert.equal(payload.fields[0].value, 'Family event');
     assert.equal(calls.at(-1), 'print');
+});
+
+test('ordinary forms cannot print until a saved form exists', async () => {
+    const {calls, run} = setup(async () => {throw new Error('must not print');}, {genericAllowed: true});
+    await run('warning'); assert.deepEqual(calls, ['cleanup', 'error']);
+});
+
+test('saved forms include their saved revision when requesting print', async () => {
+    let payload;
+    const {calls, run} = setup(async (url, options) => {payload = JSON.parse(options.body); return {ok: true, json: async () => ({recorded: true, print_record_id: 50})};}, {genericAllowed: true, savedFormId: 41});
+    await run('warning'); assert.equal(payload.saved_form_id, 41); assert.equal(calls.at(-1), 'print');
+});
+
+test('contracts cannot print until a contract has been created', async () => {
+    const {calls, run} = setup(async () => {throw new Error('must not print');}, {genericAllowed: true, sourceRequestId: ''});
+    await run('contract'); assert.deepEqual(calls, ['cleanup', 'error']);
 });
