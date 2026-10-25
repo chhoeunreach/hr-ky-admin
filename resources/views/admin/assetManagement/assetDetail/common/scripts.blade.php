@@ -152,10 +152,4 @@
 </script>
 <script src="{{ asset('assets/js/asset-assignment.js') }}?v={{ filemtime(public_path('assets/js/asset-assignment.js')) }}"></script>
 
-<script>
-    document.querySelectorAll('[data-asset-actions]').forEach(button => {
-        new bootstrap.Dropdown(button, {
-            popperConfig: defaults => ({...defaults, strategy: 'fixed'}),
-        });
-    });
-</script>
+<script src="{{ asset('assets/js/asset-actions-dropdown.js') }}?v={{ filemtime(public_path('assets/js/asset-actions-dropdown.js')) }}"></script>

@@ -40,7 +40,7 @@ a.asset-employee-profile:hover span { text-decoration: underline; }
 #assetsTable .asset-sort-link:hover { text-decoration: underline; }
 
 .asset-actions-cell { width: 1%; white-space: nowrap; }
-.asset-actions-menu { min-width: 180px; padding: 6px; border-radius: 8px; }
+.asset-actions-menu { min-width: 180px; padding: 6px; border-radius: 8px; z-index: 1060; max-height: calc(100vh - 24px); overflow-y: auto; box-shadow: 0 8px 28px rgba(15,23,42,.16); }
 .asset-actions-menu .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 5px; }
 .asset-actions-menu svg { width: 16px; height: 16px; flex-shrink: 0; }
 
