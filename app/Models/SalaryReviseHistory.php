@@ -24,6 +24,7 @@ class SalaryReviseHistory extends Model
         'base_salary',
         'remark',
         'created_by',
+        'created_by_name',
         'updated_by',
         'increment_percent',
         'fiscal_year_id',
@@ -43,11 +44,12 @@ class SalaryReviseHistory extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->created_by = Auth::user()->id ?? null;
+            $model->created_by = Auth::guard('admin')->check() ? null : Auth::id();
+            $model->created_by_name = (Auth::guard('admin')->user() ?? Auth::user())?->name;
         });
 
         static::updating(function ($model) {
-            $model->updated_by = Auth::user()->id ?? null;
+            $model->updated_by = Auth::guard('admin')->check() ? null : Auth::id();
         });
     }
 
@@ -65,7 +67,7 @@ class SalaryReviseHistory extends Model
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'created_by', 'id');
+        return $this->belongsTo(User::class, 'created_by', 'id')->withTrashed();
     }
 
     public function updatedBy(): BelongsTo

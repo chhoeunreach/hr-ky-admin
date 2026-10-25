@@ -81,10 +81,13 @@ class EmployeeSalaryImport implements ToModel, WithHeadingRow
         $salaryData['annual_fixed_allowance'] = $annualAllowance;
         $salaryData['weekly_fixed_allowance'] = round($annualAllowance / 52, 2);
 
-        EmployeeSalary::updateOrCreate(
-            ['employee_id' => $employee->id],
-            $salaryData
-        );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($employee, $salaryData) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $existing = EmployeeSalary::where('employee_id', $employee->id)->lockForUpdate()->first();
+            $before = $existing?->toArray();
+            $salary = EmployeeSalary::updateOrCreate(['employee_id' => $employee->id], $salaryData);
+            app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->syncProfile($salary, $before);
+        });
 
         return null;
     }

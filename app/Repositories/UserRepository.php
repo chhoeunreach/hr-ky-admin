@@ -526,6 +526,7 @@ class UserRepository
             ->where('users.is_active',self::IS_ACTIVE)
             ->where('users.status',self::STATUS_VERIFIED)
             ->where('roles.name','!=',self::ADMIN)
+            ->when(isset($filterParameters['employee_id']), fn ($query) => $query->where('users.id', $filterParameters['employee_id']))
             ->when(isset($filterParameters['employee_name']), function($query) use ($filterParameters){
                 $query->where('users.name', 'like', '%' . $filterParameters['employee_name'] . '%');
             })

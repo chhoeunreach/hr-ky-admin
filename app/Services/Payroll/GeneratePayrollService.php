@@ -132,7 +132,7 @@ class GeneratePayrollService
 
 
                 if (isset($employeePayrollData[0])) {
-                    $salaryReviseData = $this->salaryReviseHistoryService->getEmployeeSalaryHistory($employee->employee_id);
+                    $salaryReviseData = $this->salaryReviseHistoryService->getEmployeeSalaryHistory($employee->employee_id, $lastDay);
 
 
                     /** calculation of payroll if salary cycle is weekly */

@@ -54,25 +54,23 @@
                 Array.from(status.options).forEach(function (option) {
                     option.disabled = linked && option.value !== 'pending';
                 });
-                oldSalary.required = linked;
-                fields.namedItem('effective_date').required = linked;
-                amount.readOnly = linked;
-                percentage.readOnly = linked;
-                if (linked) {
+                oldSalary.required = true;
+                fields.namedItem('effective_date').required = true;
+                amount.readOnly = true;
+                percentage.readOnly = true;
+                {
                     const before = Number(oldSalary.value);
                     const after = Number(newSalary.value);
                     amount.value = oldSalary.value !== '' && newSalary.value !== '' ? (after - before).toFixed(2) : '';
                     percentage.value = amount.value !== '' && before > 0 ? ((after - before) / before * 100).toFixed(2) : '';
                     newSalary.setCustomValidity(newSalary.value !== '' && after <= before ? salaryForm.dataset.salaryIncreaseError : '');
-                } else {
-                    newSalary.setCustomValidity('');
                 }
             }
             review.addEventListener('change', updateSalaryRequest);
             oldSalary.addEventListener('input', updateSalaryRequest);
             newSalary.addEventListener('input', updateSalaryRequest);
             updateSalaryRequest();
-            if (params.has('salary_review') && review.value && window.bootstrap?.Modal) {
+            if (((params.has('salary_review') && review.value) || document.getElementById('addSalaryHistoryModal')?.dataset?.reopen === '1') && window.bootstrap?.Modal) {
                 window.bootstrap.Modal.getOrCreateInstance(document.getElementById('addSalaryHistoryModal')).show();
             }
         }

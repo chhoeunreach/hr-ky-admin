@@ -83,8 +83,8 @@ test('salary action opens a linked pending request with calculated increase', ()
     assert.ok(fields.new_base_salary.error);
     fields.performance_review_id.value = '';
     fields.performance_review_id.change();
-    assert.equal(fields.increase_amount.readOnly, false);
-    assert.equal(fields.new_base_salary.error, '');
+    assert.equal(fields.increase_amount.readOnly, true);
+    assert.ok(fields.new_base_salary.error);
 });
 
 test('criteria can be added, scored, and removed while keeping at least one row', () => {

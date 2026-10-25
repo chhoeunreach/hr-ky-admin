@@ -146,14 +146,19 @@ class EmployeeProfileController extends Controller
         $evaluationDefaults = app(\App\Services\DepartmentPerformanceDefaults::class)->forEmployee($employee);
         $defaultItems = array_map(fn ($criterion) => [$criterion['criteria'], $criterion['description'], $criterion['max_score']], $evaluationDefaults['evaluation_criteria']);
         $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
-        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->first();
+        if ($employee->employeeSalary) {
+            $salaryAmounts = app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary);
+            $profile->current_base_salary = $salaryAmounts['base'];
+            $profile->allowances = $salaryAmounts['allowance'];
+        }
+        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->where('approval_status', 'approved')->latest('effective_date')->latest('id')->first();
         $latestReview = PerformanceReview::with(['items', 'evaluator:id,name,employee_code'])->where('employee_id', $employee->id)->latest('review_date')->latest('id')->first();
         $summary = $this->buildSummary($employee, $profile, $latestSalary, $latestReview);
         $attendanceSummary = $this->attendanceSummary($employee, request('from'), request('to'));
         $leaveBalance = $this->leaveBalance($employee);
 
         $employmentHistory = EmployeeEmploymentHistory::where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
-        $salaryHistory = EmployeeSalaryHistory::with('performanceReview')->where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
+        $salaryHistory = EmployeeSalaryHistory::with(['performanceReview', 'requestedBy', 'approvedBy'])->where('employee_id', $employee->id)->latest('effective_date')->latest('id')->get();
         $firstSalary = $salaryHistory->last();
         $interviews = EmployeeInterview::where('employee_id', $employee->id)->latest('interview_date')->latest('id')->get();
         $responsibilities = EmployeeJobResponsibility::where('employee_id', $employee->id)->latest('start_date')->latest('id')->get();
@@ -200,7 +205,7 @@ class EmployeeProfileController extends Controller
             : collect();
         $selectedResignationPrintRequest = $resignationPrintRequests->firstWhere('id', request('resignation_request_id'));
         abort_if(request()->filled('resignation_request_id') && !$selectedResignationPrintRequest, 404);
-        $canViewSalary = $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage');
+        $canViewSalary = $this->can('view_salary_list') || $this->can('salary_increment') || $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
         $canViewPerformance = $this->can('employee.performance.view') || $this->can('employee.performance.create') || $isOwnProfile;
@@ -450,7 +455,12 @@ class EmployeeProfileController extends Controller
         ]);
 
         $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
-        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)
+        if ($employee->employeeSalary) {
+            $salaryAmounts = app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary);
+            $profile->current_base_salary = $salaryAmounts['base'];
+            $profile->allowances = $salaryAmounts['allowance'];
+        }
+        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->where('approval_status', 'approved')
             ->latest('effective_date')
             ->latest('id')
             ->first();
@@ -531,6 +541,11 @@ class EmployeeProfileController extends Controller
             ])->all();
         }
 
+        // Payroll owns the current base and allowance once salary is configured.
+        if ($employee->employeeSalary) {
+            unset($data['current_base_salary'], $data['allowances']);
+        }
+
         if (in_array($data['employment_status'] ?? null, ['resigned', 'terminated', 'inactive'], true) && empty($data['last_working_date'])) {
             $data['last_working_date'] = now()->toDateString();
         }
@@ -581,22 +596,26 @@ class EmployeeProfileController extends Controller
     public function storeSalary(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.salary.history.manage');
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+        }
 
+        $request->merge(['salary_form' => '1']);
         $linkedReview = $request->filled('performance_review_id');
         $data = $request->validate([
             'performance_review_id' => ['nullable', 'integer', Rule::exists('performance_reviews', 'id')
                 ->where('employee_id', $employee->id)->where('status', 'completed')],
-            'effective_date' => [$linkedReview ? 'required' : 'nullable', 'date'],
-            'old_base_salary' => [$linkedReview ? 'required' : 'nullable', 'numeric', 'min:0'],
+            'effective_date' => ['required', 'date'],
+            'old_base_salary' => ['required', 'numeric', 'min:0'],
             'increase_amount' => ['nullable', 'numeric', 'min:0'],
             'increase_percentage' => ['nullable', 'numeric', 'min:0'],
-            'new_base_salary' => $linkedReview ? ['required', 'numeric', 'gt:old_base_salary'] : ['required', 'numeric', 'min:0'],
+            'new_base_salary' => ['required', 'numeric', 'gt:old_base_salary', 'max:99999999.99'],
             'allowance_before' => ['nullable', 'numeric', 'min:0'],
             'allowance_after' => ['nullable', 'numeric', 'min:0'],
             'reason' => ['nullable', 'string'],
             'reviewed_by' => ['nullable', 'exists:users,id'],
             'approved_by' => ['nullable', 'exists:users,id'],
-            'approval_status' => ['required', Rule::in($linkedReview ? ['pending'] : ['draft', 'pending', 'approved', 'rejected', 'cancelled'])],
+            'approval_status' => ['required', Rule::in($linkedReview ? ['pending'] : ['draft', 'pending', 'approved'])],
             'note' => ['nullable', 'string'],
         ], [
             'new_base_salary.gt' => __('index.salary_increase_must_be_greater'),
@@ -615,29 +634,29 @@ class EmployeeProfileController extends Controller
             'reason' => __('index.reason'),
             'note' => __('index.note'),
         ]);
-        if ($linkedReview) {
+        if (($data['approval_status'] ?? '') === 'approved') {
+            $this->authorizeEmployeeProfile($employee, 'salary_increment');
+        }
+        if ($linkedReview || isset($data['old_base_salary'])) {
             $data['increase_amount'] = round((float) $data['new_base_salary'] - (float) $data['old_base_salary'], 2);
             $data['increase_percentage'] = (float) $data['old_base_salary'] > 0
                 ? round($data['increase_amount'] / (float) $data['old_base_salary'] * 100, 2) : null;
         }
         $data['employee_id'] = $employee->id;
-        $data['requested_by'] = auth()->id();
+        $data['requested_by'] = auth('admin')->check() ? null : auth()->id();
+        $data['requested_by_name'] = (auth('admin')->user() ?? auth()->user())?->name;
+        $data['approved_by'] = null;
+        $data['approved_by_name'] = null;
+        $data['reviewed_by'] = null;
 
         DB::transaction(function () use ($data, $employee, $request) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $record = EmployeeSalaryHistory::create($data);
             $this->audit($employee, 'salary', 'create', $record->id, null, $record->toArray(), $request);
 
             if ($record->approval_status === 'approved') {
-                $profile = EmployeeProfile::firstOrNew(['employee_id' => $employee->id]);
-                $old = $profile->exists ? $profile->getOriginal() : null;
-                $profile->current_base_salary = $record->new_base_salary;
-                $profile->allowances = $record->allowance_after;
-                $profile->updated_by = auth()->id();
-                if (!$profile->exists) {
-                    $profile->created_by = auth()->id();
-                }
-                $profile->save();
-                $this->audit($employee, 'salary', 'approve', $record->id, $old, $profile->fresh()->toArray(), $request);
+                $record->update(['approval_status' => 'pending']);
+                app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->approve($record);
             }
         });
 
@@ -647,6 +666,35 @@ class EmployeeProfileController extends Controller
         }
 
         return back()->with('success', __('index.salary_history_added'));
+    }
+
+    public function updateSalaryStatus(Request $request, User $employee, EmployeeSalaryHistory $salary): RedirectResponse
+    {
+        $status = $request->validate(['approval_status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'cancelled'])]])['approval_status'];
+        $this->authorizeEmployeeProfile($employee, in_array($status, ['approved', 'rejected'], true) ? 'salary_increment' : 'employee.salary.history.manage');
+        abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+        }
+        DB::transaction(function () use ($request, $employee, $salary, $status) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $record = EmployeeSalaryHistory::whereKey($salary->id)->lockForUpdate()->firstOrFail();
+            if (!in_array($record->approval_status, ['draft', 'pending'], true)
+                || ($status === 'pending' && $record->approval_status !== 'draft')) {
+                throw ValidationException::withMessages(['approval_status' => __('index.salary_manage_closed')]);
+            }
+            if ($status === 'approved') {
+                app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->approve($record);
+            } else {
+                $old = $record->toArray();
+                $record->approval_status = $status;
+                $record->reviewed_by = auth('admin')->check() ? null : auth()->id();
+                $record->save();
+                $this->audit($employee, 'salary', $status, $record->id, $old, $record->toArray(), $request);
+            }
+        });
+        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary'])
+            ->with('success', __('index.salary_manage_status_saved'));
     }
 
     public function storeInterview(Request $request, User $employee): RedirectResponse
@@ -1344,8 +1392,8 @@ class EmployeeProfileController extends Controller
         $activeWarnings = $discipline->whereNotIn('status', ['resolved', 'cancelled'])->count();
         $totalWarnings = $discipline->count();
 
-        $currentBaseSalary = $profile->current_base_salary ?: ($latestSalary?->new_base_salary ?? null);
-        $allowances = $profile->allowances ?: ($latestSalary?->allowance_after ?? null);
+        $currentBaseSalary = $employee->employeeSalary ? app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary)['base'] : ($profile->current_base_salary ?? ($latestSalary?->new_base_salary ?? null));
+        $allowances = $employee->employeeSalary ? app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary)['allowance'] : ($profile->allowances ?? ($latestSalary?->allowance_after ?? null));
 
         $activity = $auditLogs->take(8)->map(function ($log) {
             return [
@@ -1477,7 +1525,7 @@ class EmployeeProfileController extends Controller
             'years_of_service' => $joiningDate ? $joiningDate->diffForHumans($serviceEndDate, true) : null,
             'employment_status' => $profile->employment_status ?: ($employee->is_active ? 'active' : 'inactive'),
             'probation_status' => $profile->probation_end_date && Carbon::parse($profile->probation_end_date)->isFuture() ? 'Probation' : 'Completed',
-            'current_base_salary' => $profile->current_base_salary,
+            'current_base_salary' => $employee->employeeSalary ? app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary)['base'] : $profile->current_base_salary,
             'last_salary_increase' => $latestSalary?->increase_amount,
             'last_evaluation_score' => $latestReview?->total_score,
             'evaluation_grade' => $latestReview?->grade,
@@ -1689,8 +1737,8 @@ class EmployeeProfileController extends Controller
             'action' => $action,
             'record_id' => $recordId,
             'old_values' => $old,
-            'new_values' => $new,
-            'performed_by' => auth()->id(),
+            'new_values' => $new === null ? null : $new + ['performed_by_name' => (auth('admin')->user() ?? auth()->user())?->name],
+            'performed_by' => auth('admin')->check() ? null : auth()->id(),
             'ip_address' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 65535),
             'created_at' => now(),

@@ -88,6 +88,7 @@ class EmployeeSalaryController extends Controller
 
             $filterParameters = [
                 'employee_name' => $request->employee_name ?? null,
+                'employee_id' => $request->filled('employee_id') ? $request->integer('employee_id') : null,
                 'department_id' => $request->department_id ?? null,
                 'branch_id' => $request->branch_id ?? null
             ];
@@ -97,10 +98,11 @@ class EmployeeSalaryController extends Controller
             $employeeLists = $this->userRepository->getAllVerifiedActiveEmployeeWithSalaryGroup($filterParameters);
 
 
+            $employeeSalaries = \App\Models\EmployeeSalary::whereIn('employee_id', $employeeLists->pluck('employee_id'))->get()->keyBy('employee_id');
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view.'index',compact('employeeLists','filterParameters','companyDetail'));
+            return view($this->view.'index',compact('employeeLists','employeeSalaries','filterParameters','companyDetail'));
         }catch(Exception $exception){
             return redirect()
                 ->back()
@@ -455,9 +457,14 @@ class EmployeeSalaryController extends Controller
                 $validatedData['salary_group_id'] = $employeeSalaryGroup->salary_group_id;
             }
 
-            DB::beginTransaction();
-                $this->employeeSalaryRepository->store($validatedData);
-            DB::commit();
+            DB::transaction(function () use ($employeeId, $validatedData) {
+                \App\Models\User::whereKey($employeeId)->lockForUpdate()->firstOrFail();
+                if ($this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId)) {
+                    throw ValidationException::withMessages(['employee_id' => __('index.salary_manage_already_exists')]);
+                }
+                $salary = $this->employeeSalaryRepository->store($validatedData);
+                app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->syncProfile($salary);
+            });
 
             return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_add'));
 
@@ -523,9 +530,13 @@ class EmployeeSalaryController extends Controller
             }
             $employeeSalaryGroup = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
             $validatedData['salary_group_id'] = $employeeSalaryGroup?->salary_group_id;
-            DB::beginTransaction();
-            $this->employeeSalaryRepository->update($employeeSalary, $validatedData);
-            DB::commit();
+            DB::transaction(function () use ($employeeId, $validatedData) {
+                \App\Models\User::whereKey($employeeId)->lockForUpdate()->firstOrFail();
+                $salary = \App\Models\EmployeeSalary::where('employee_id', $employeeId)->lockForUpdate()->firstOrFail();
+                $before = $salary->toArray();
+                $this->employeeSalaryRepository->update($salary, $validatedData);
+                app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->syncProfile($salary->fresh(), $before);
+            });
 
             return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_update'));
 
@@ -702,9 +713,7 @@ class EmployeeSalaryController extends Controller
                 return redirect()->route('admin.employee-salaries.index')->with('danger', __('message.account_not_found'));
             }
 
-            DB::beginTransaction();
-                $this->employeeSalaryRepository->delete($employeeSalary);
-            DB::commit();
+            app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->remove($employeeSalary);
 
             return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_delete'));
 

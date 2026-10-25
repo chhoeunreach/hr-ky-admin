@@ -251,6 +251,7 @@ Route::group([
             Route::get('salary-certificate/word', [EmployeeProfileController::class, 'downloadSalaryCertificateWord'])->name('salary-certificate.word');
             Route::put('/', [EmployeeProfileController::class, 'updateProfile'])->name('update');
             Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
+            Route::patch('salary-history/{salary}/status', [EmployeeProfileController::class, 'updateSalaryStatus'])->name('salary.status');
             Route::post('salary-history', [EmployeeProfileController::class, 'storeSalary'])->name('salary.store');
             Route::post('interviews', [EmployeeProfileController::class, 'storeInterview'])->name('interviews.store');
             Route::post('department-defaults', [EmployeeProfileController::class, 'applyDepartmentDefaults'])->name('department-defaults.apply');

@@ -32,6 +32,7 @@
 @can('employee.salary.manage')
     <div class="employee-360-section">
         <h6>{{ __('index.salary_and_benefits') }}</h6>
+        @if($employee->employeeSalary)<p class="small text-muted">{{ __('index.salary_manage_help') }}</p>@endif
         <div class="row">
             @foreach([
                 'starting_salary' => __('index.starting_salary'),
@@ -46,7 +47,7 @@
             ] as $field => $label)
                 <div class="col-lg-3 col-md-6 mb-3">
                     <label class="form-label">{{ $label }}</label>
-                    <input class="form-control" name="{{ $field }}" value="{{ old($field, $profile->{$field}) }}">
+                    <input class="form-control" name="{{ $field }}" value="{{ $employee->employeeSalary && in_array($field, ['current_base_salary', 'allowances']) ? $profile->{$field} : old($field, $profile->{$field}) }}" @readonly($employee->employeeSalary && in_array($field, ['current_base_salary', 'allowances']))>
                 </div>
             @endforeach
             <div class="col-md-12 mb-3">

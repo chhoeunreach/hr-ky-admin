@@ -146,7 +146,7 @@ class TaxReportService
             $totals['pf_deduction'] = 0;
 
             $employeeData = $this->userRepo->getEmployeeAccountDetailsToGeneratePayslip($employee->id);
-            $salaryReviseData = $this->salaryReviseHistoryService->getEmployeeSalaryHistory($employee->id);
+            $salaryReviseData = $this->salaryReviseHistoryService->getEmployeeSalaryHistory($employee->id, $lastDay);
 
             if ($employeeData[0]->salary_group_id) {
                 $components = $this->groupRepository->findSalaryGroupDetailForPayroll(

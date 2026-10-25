@@ -1,182 +1,99 @@
 @extends('layouts.master')
-@section('title',__('index.salary_increment'))
-@section('action',__('index.increment'))
+@section('title', __('index.salary_increment'))
+@section('action', __('index.increment'))
 @section('button')
-    <div class="float-end">
-        <a href="{{route('admin.employee-salaries.index')}}" >
-            <button class="btn btn-sm btn-primary" ><i class="link-icon" data-feather="arrow-left"></i> {{__('index.back')}}</button>
-        </a>
-    </div>
+    <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id]) }}">{{ __('index.back') }}</a>
 @endsection
-
 @section('main-content')
-
-    <section class="content">
-
-        @include('admin.section.flash_message')
-
-        @include('admin.payroll.employeeSalary.common.breadcrumb')
-
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ucfirst($employeeDetail?->name)}}: {{ __('index.salary_increment') }}</h6>
+<section class="content">
+    @include('admin.section.flash_message')
+    @php
+        $periods = $employeeSalary->payment_type === 'weekly' ? 52 : 12;
+        $currency = \App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol();
+    @endphp
+    <div class="card">
+        <div class="card-header d-flex flex-wrap justify-content-between gap-2 align-items-center">
+            <div><h5 class="mb-1">{{ $employeeDetail->name }} · {{ __('index.salary_increment') }}</h5>
+                <p class="text-muted small mb-0">{{ __('index.salary_manage_increase_help') }}</p>
             </div>
-            <div class="card-body">
-                <form class="forms-sample" action="{{route('admin.employee-salaries.updated-salary-store')}}" method="POST">
-                    @csrf
-                    <input type="hidden" class="form-control"
-                           readonly
-                           required
-                           name="employee_id"
-                           value="{{$employeeDetail->id}}" >
-
-                    <div class="row" x-data="calculateSalaryIncrement('{{$employeeSalary->annual_salary}}')">
-                        <div class="col-lg-6 mb-3">
-                            <label for="current_salary" class="form-label">{{ __('index.current_salary') }}({{\App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol()}}.)<span style="color: red">*</span></label>
-                            <input type="number"
-                                   class="form-control"
-                                   id="current_salary"
-                                   name="current_salary"
-                                   value="{{$employeeSalary->annual_salary}}"
-                                   readonly >
+            @can('employee.profile.view')
+                <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employees.profile.show', ['employee' => $employeeDetail->id, 'tab' => 'salary']) }}">{{ __('index.employee_profile') }}</a>
+            @endcan
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ route('admin.employee-salaries.updated-salary-store') }}" data-payroll-increase
+                  data-annual="{{ $employeeSalary->annual_salary }}" data-basic-type="{{ $employeeSalary->basic_salary_type }}"
+                  data-basic-value="{{ $employeeSalary->basic_salary_value }}" data-periods="{{ $periods }}"
+                  data-earnings='@json(app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->earningStructure($employeeSalary))'
+                  data-currency="{{ $currency }}" data-error="{{ __('index.salary_manage_invalid_amount') }}">
+                @csrf
+                <input type="hidden" name="employee_id" value="{{ $employeeDetail->id }}">
+                <input type="hidden" name="current_salary" value="{{ $employeeSalary->annual_salary }}">
+                <fieldset class="mb-4">
+                    <legend class="h6 border-bottom pb-2">1. {{ __('index.salary_manage_choose') }}</legend>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="increase_type">{{ __('index.calculation_type') }}</label>
+                            <select class="form-select" name="increase_type" id="increase_type">
+                                <option value="amount" @selected(old('increase_type', 'amount') === 'amount')>{{ __('index.increase_amount') }}</option>
+                                <option value="percent" @selected(old('increase_type') === 'percent')>{{ __('index.increase_percentage') }}</option>
+                            </select>
                         </div>
-
-                        <div class="col-lg-6 mb-3">
-                            <label for="increment_percent" class="form-label">{{ __('index.annual_increment_percent') }}<span style="color: red">*</span></label>
-                            <input type="number"
-                                   class="form-control"
-                                   id="increment_percent"
-                                   min="0"
-                                   step="0.01"
-                                   required
-                                   @input="calculatePercent()"
-                                   name="increment_percent"
-                                   x-model="increment_percent"
-                                   value="{{old('increment_percent')}}" >
+                        <div class="col-md-4" data-amount-options>
+                            <label class="form-label" for="increase_period">{{ __('index.payment_type') }}</label>
+                            <select class="form-select" name="increase_period" id="increase_period">
+                                <option value="period" @selected(old('increase_period', 'period') === 'period')>{{ __('index.'.$employeeSalary->payment_type) }}</option>
+                                <option value="annual" @selected(old('increase_period') === 'annual')>{{ __('index.annual_salary') }}</option>
+                            </select>
                         </div>
-
-                        <div class="col-lg-6 mb-3">
-                            <label for="increment_amount" class="form-label">{{ __('index.annual_increment_amount') }}<span style="color: red">*</span></label>
-                            <input type="number"
-                                   class="form-control"
-                                   id="increment_amount"
-                                   min="0"
-                                   step="0.01"
-                                   required
-                                   @input="calculateAmount()"
-                                   name="increment_amount"
-                                   x-model="increment_amount"
-                                   value="{{old('increment_amount')}}" >
-                            <span id="increment-amount-error" style="color: red;"></span>
-
+                        <div class="col-md-4" data-amount-options>
+                            <label class="form-label" for="increment_amount">{{ __('index.increase_amount') }} ({{ $currency }})</label>
+                            <input type="number" min="0.01" step="0.01" id="increment_amount" name="increment_amount" class="form-control" value="{{ old('increment_amount') }}">
                         </div>
-
-                        <div class="col-lg-6 mb-3">
-                            <label for="revised_salary" class="form-label">{{ __('index.revised_salary_label') }}({{\App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol()}}.)<span style="color: red">*</span></label>
-                            <input type="number"
-                                   class="form-control"
-                                   id="revised_salary"
-                                   name="revised_salary"
-                                   x-model="revised_salary"
-                                   value="{{old('revised_salary')}}"
-                                   readonly >
-                        </div>
-
-                        {{--                        <div class="col-lg-6 mb-3">--}}
-                        {{--                            <label for="fiscal_year_id " class="form-label">{{ __('index.fiscal_year_label') }}<span style="color: red">*</span></label>--}}
-                        {{--                            <select class="form-select" id="fiscal_year_id" name="fiscal_year_id" required>--}}
-                        {{--                                <option value="" {{isset($fiscalYearDetail) ? '': 'selected'}}  disabled>{{ __('index.select_fiscal_year') }}</option>--}}
-
-                        {{--                                <option value="{{$fiscalYear->id}}"--}}
-                        {{--                                        data-start-date="{{ \App\Helpers\AppHelper::timeLeaverequestDate($fiscalYear->start_date) }}"--}}
-                        {{--                                        data-end-date="{{ \App\Helpers\AppHelper::timeLeaverequestDate($fiscalYear->end_date) }}"--}}
-                        {{--                                    {{ isset($fiscalYearDetail) && ($fiscalYearDetail->year ) == $fiscalYear->id || old('year') == $fiscalYear->id ? 'selected': '' }}>--}}
-                        {{--                                    {{ $fiscalYear->year }}--}}
-                        {{--                                </option>--}}
-
-                        {{--                            </select>--}}
-                        {{--                        </div>--}}
-                        <div class="col-lg-6 mb-3">
-                            <label for="date_from" class="form-label">{{ __('index.applicable_from_label') }}</label>
-
-                            <input type="date"
-                                   class="form-control"
-                                   id="startDate"
-                                   name="date_from"
-                                   value="{{old('date_from')}}"
-                            >
-
-
-                        </div>
-                        {{--                        <div class="col-lg-6 mb-3">--}}
-                        {{--                            <label for="date_to" class="form-label"> {{ __('index.applicable_to_label') }}</label>--}}
-                        {{--                            <input type="@if($dateInBs) text @else date @endif"--}}
-                        {{--                                   class="form-control"--}}
-                        {{--                                   id="date_to"--}}
-                        {{--                                   name="date_to"--}}
-                        {{--                                   value="{{old('date_to')}}"--}}
-                        {{--                            >--}}
-                        {{--                        </div>--}}
-
-                        <div class="col-lg-6 mb-3">
-                            <label for="note" class="form-label">{{ __('index.remark') }}</label>
-                            <textarea class="form-control"
-                                      name="remark"
-                                      id="tinymceExample">{{old('remark')}}</textarea>
-                        </div>
-
-                        <div class="text-md-start">
-                            <button type="submit" class="btn btn-primary"><i class="link-icon" data-feather="edit-2"></i>
-                                {{ __('index.submit') }}
-                            </button>
+                        <div class="col-md-4" data-percent-options>
+                            <label class="form-label" for="increment_percent">{{ __('index.increase_percentage') }} (%)</label>
+                            <input type="number" min="0.01" max="10000" step="0.01" id="increment_percent" name="increment_percent" class="form-control" value="{{ old('increment_percent') }}">
                         </div>
                     </div>
-                </form>
-            </div>
+                </fieldset>
+                <fieldset class="mb-4">
+                    <legend class="h6 border-bottom pb-2">2. {{ __('index.salary_manage_preview') }}</legend>
+                    <p class="small text-muted">{{ __('index.salary_manage_basic_help') }}</p>
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead><tr><th>{{ __('index.salary_component') }}</th><th class="text-end">{{ __('index.asset_activity_before') }}</th><th class="text-end">{{ __('index.asset_activity_after') }}</th></tr></thead>
+                            <tbody>
+                                @foreach(['gross' => 'total', 'basic' => 'basic_salary', 'allowance' => 'fixed_allowance', 'earnings' => 'salary_manage_earnings', 'annual' => 'annual_salary'] as $key => $label)
+                                    <tr><th>{{ __('index.'.$label) }} @if($key !== 'annual')<small class="text-muted">({{ __('index.'.$employeeSalary->payment_type) }})</small>@endif</th>
+                                        <td class="text-end" data-salary-before="{{ $key }}"></td><td class="text-end fw-semibold" data-salary-after="{{ $key }}"></td></tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+                <fieldset class="mb-4">
+                    <legend class="h6 border-bottom pb-2">3. {{ __('index.salary_manage_confirm') }}</legend>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="date_from">{{ __('index.effective_date') }} *</label>
+                            <input type="date" class="form-control" id="date_from" name="date_from" required max="{{ now()->toDateString() }}" value="{{ old('date_from', now()->toDateString()) }}">
+                            <p class="form-text">{{ __('index.salary_manage_date_help') }}</p>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="salary_increase_reason">{{ __('index.reason') }} *</label>
+                            <textarea class="form-control" id="salary_increase_reason" name="remark" required maxlength="2000" rows="3">{{ old('remark') }}</textarea>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" class="btn btn-primary">{{ __('index.salary_manage_apply') }}</button>
+                    <a class="btn btn-outline-secondary" href="{{ route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id]) }}">{{ __('index.cancel') }}</a>
+                </div>
+            </form>
         </div>
-    </section>
+    </div>
+</section>
 @endsection
-
 @section('scripts')
-    @include('admin.payroll.employeeSalary.common.scripts')
-
-    <script>
-        function calculateSalaryIncrement(annualSalary){
-            return{
-                increment_percent: 0,
-                increment_amount: 0,
-                revised_salary: 0,
-                calculatePercent(){
-                    this.increment_amount = (Number(this.increment_percent) /100) * Number(annualSalary);
-                    this.increment_amount = this.increment_amount.toFixed(2);
-
-                    this.revised_salary = Number(this.increment_amount) + Number(annualSalary);
-                    this.revised_salary = this.revised_salary.toFixed(2);
-                },
-                calculateAmount(){
-
-                    this.increment_percent = (Number(this.increment_amount) * 100) / Number(annualSalary);
-                    this.increment_percent = this.increment_percent.toFixed(2);
-
-
-                    this.revised_salary = Number(this.increment_amount) + Number(annualSalary);
-                    this.revised_salary = this.revised_salary.toFixed(2);
-                }
-            }
-        }
-
-
-        $('#date_from').nepaliDatePicker({
-            language: "english",
-            dateFormat: "YYYY-MM-DD",
-            ndpYear: true,
-            ndpMonth: true,
-            ndpYearCount: 20,
-            readOnlyInput: true,
-            disableAfter: "2089-12-30",
-        });
-
-
-
-    </script>
+    <script defer src="{{ asset('assets/js/employee-salary-increase.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-increase.js')) }}"></script>
 @endsection

@@ -16,7 +16,16 @@
             <div class="card-header">
                 <h6 class="card-title mb-0">{{ __('index.employee_salary_filter') }}</h6>
             </div>
+            @if(request()->filled('employee_id'))
+                <div class="card-body pb-0 d-flex flex-wrap gap-2">
+                    @can('employee.profile.view')
+                        <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employees.profile.show', ['employee' => request()->integer('employee_id'), 'tab' => 'salary']) }}">{{ __('index.employee_profile') }} · {{ __('index.salary') }}</a>
+                    @endcan
+                    <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.employee-salaries.index') }}">{{ __('index.salary_manage_all') }}</a>
+                </div>
+            @endif
             <form class="forms-sample card-body pb-0" action="{{route('admin.employee-salaries.index')}}" method="get">
+                @if(request()->filled('employee_id'))<input type="hidden" name="employee_id" value="{{ request()->integer('employee_id') }}">@endif
                 <div class="row align-items-center">
                     @if(!isset(auth()->user()->branch_id))
                     <div class="col-lg-3 col-md-6 mb-4">
@@ -69,6 +78,7 @@
                         <tr>
                             <th>#</th>
                             <th>{{ __('index.employee_name') }}</th>
+                            <th class="text-end">{{ __('index.current_salary') }}</th>
                             <th class="text-center">{{ __('index.marital_status') }}</th>
 {{--                            <th>Gross Salary({{\App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol()}}.)</th>--}}
                             <th class="text-center">{{ __('index.salary_cycle') }}</th>
@@ -78,9 +88,24 @@
                         </thead>
                         <tbody>
                             @forelse($employeeLists as $key => $value)
+                                @php $savedSalary = $employeeSalaries->get($value->employee_id); @endphp
                                 <tr>
                                     <td>{{++$key}}</td>
-                                    <td>{{ucfirst($value->employee_name)}}</td>
+                                    <td>
+                                        @can('employee.profile.view')
+                                            <a href="{{ route('admin.employees.profile.show', ['employee' => $value->employee_id, 'tab' => 'salary']) }}">{{ $value->employee_name }}</a>
+                                        @else
+                                            {{ $value->employee_name }}
+                                        @endcan
+                                    </td>
+                                    <td class="text-end">
+                                        @if($savedSalary)
+                                            <strong>{{ \App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol() }}{{ number_format((float) $savedSalary->annual_salary / ($savedSalary->payment_type === 'weekly' ? 52 : 12), 2) }}</strong>
+                                            <small class="d-block text-muted">{{ __('index.'.$savedSalary->payment_type) }}</small>
+                                        @else
+                                            <span class="text-muted">{{ __('index.salary_manage_setup_required') }}</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">{{ in_array($value->marital_status, ['single', 'married'], true) ? __('index.marital_status_' . $value->marital_status) : ucfirst($value->marital_status ?? '') }}</td>
 {{--                        <td>{{ number_format($value->salary) }}</td>--}}
                             <td class="text-center">
@@ -123,7 +148,7 @@
                                 <div class="dropdown-menu p-0" aria-labelledby="payslipDropdown{{ $value->employee_id }}">
                                     <ul class="list-unstyled mb-0">
                                         @php
-                                            $employeeSalaryStatus = \App\Helpers\AttendanceHelper::checkEmployeeSalary($value->employee_id)
+                                            $employeeSalaryStatus = $savedSalary ? 1 : 0
                                         @endphp
 
                                         @if($employeeSalaryStatus == 0)

@@ -1,0 +1,342 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Http\Controllers\Web\EmployeeProfileController;
+use App\Http\Controllers\Web\SalaryHistoryController;
+use App\Models\EmployeeProfile;
+use App\Models\EmployeeProfileAuditLog;
+use App\Models\EmployeeSalary;
+use App\Models\EmployeeSalaryHistory;
+use App\Models\SalaryReviseHistory;
+use App\Models\User;
+use App\Services\Payroll\EmployeeSalaryManagementService;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
+use Tests\TestCase;
+
+class EmployeeSalaryManagementTest extends TestCase
+{
+    private array $abilities = ['salary_increment', 'employee.salary.history.manage'];
+
+    public function createApplication()
+    {
+        $app = require __DIR__.'/../../bootstrap/app.php';
+        $app->afterBootstrapping(\Illuminate\Foundation\Bootstrap\LoadConfiguration::class, function ($app) {
+            $app['config']->set('database.default', 'sqlite');
+            $app['config']->set('database.connections.sqlite.database', ':memory:');
+        });
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        return $app;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::purge('sqlite');
+        app()->setLocale('en');
+        $this->travelTo(now()->setDate(2026, 10, 25)->setTime(12, 0));
+        Schema::create('users', function (Blueprint $table) {
+            $table->id(); $table->string('name'); $table->integer('branch_id')->nullable();
+            $table->boolean('is_active')->default(true); $table->string('status')->default('verified');
+            $table->softDeletes(); $table->timestamps();
+        });
+        DB::table('users')->insert([['id' => 1, 'name' => 'Salary manager'], ['id' => 20, 'name' => 'Employee'], ['id' => 21, 'name' => 'Other employee']]);
+        $this->actingAs(User::findOrFail(1));
+        Gate::before(fn ($user, $ability) => in_array($ability, $this->abilities, true));
+        Schema::create('employee_salaries', function (Blueprint $table) {
+            $table->id();
+            foreach ((new EmployeeSalary)->getFillable() as $field) $table->string($field)->nullable();
+            $table->timestamps();
+        });
+        Schema::create('employee_profiles', function (Blueprint $table) {
+            $table->id(); $table->integer('employee_id')->unique();
+            $table->decimal('current_base_salary', 15, 2)->nullable(); $table->decimal('allowances', 15, 2)->nullable();
+            $table->integer('created_by')->nullable(); $table->integer('updated_by')->nullable(); $table->timestamps();
+        });
+        Schema::create('employee_salary_history', function (Blueprint $table) {
+            $table->id();
+            foreach ((new EmployeeSalaryHistory)->getFillable() as $field) $table->string($field)->nullable();
+            $table->timestamps();
+        });
+        Schema::create('salary_revise_histories', function (Blueprint $table) {
+            $table->id();
+            foreach ((new SalaryReviseHistory)->getFillable() as $field) $table->string($field)->nullable();
+        });
+        Schema::create('employee_profile_audit_logs', function (Blueprint $table) {
+            $table->id();
+            foreach ((new EmployeeProfileAuditLog)->getFillable() as $field) $table->text($field)->nullable();
+        });
+        Route::post('/_test/salary-increase', [SalaryHistoryController::class, 'store']);
+        Route::post('/_test/profile-salary', fn (Request $request) => app(EmployeeProfileController::class)->storeSalary($request, User::findOrFail(20)));
+        Route::patch('/_test/salary-status/{employee}/{salary}', function (Request $request, $employee, $salary) {
+            return app(EmployeeProfileController::class)->updateSalaryStatus($request, User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
+        });
+    }
+
+    private function salary(array $overrides = []): EmployeeSalary
+    {
+        return EmployeeSalary::create(array_replace([
+            'employee_id' => 20, 'payroll_type' => 'annual', 'payment_type' => 'monthly',
+            'annual_salary' => 12000, 'basic_salary_type' => 'percent', 'basic_salary_value' => 80,
+            'annual_basic_salary' => 9600, 'monthly_basic_salary' => 800, 'weekly_basic_salary' => 184.62,
+            'annual_fixed_allowance' => 2400, 'monthly_fixed_allowance' => 200, 'weekly_fixed_allowance' => 46.15,
+            'hour_rate' => null, 'weekly_hours' => null, 'monthly_hours' => null,
+        ], $overrides));
+    }
+
+    private function increase(array $overrides = []): array
+    {
+        return array_replace(['employee_id' => 20, 'current_salary' => 12000, 'increase_type' => 'amount',
+            'increase_period' => 'period', 'increment_amount' => 100, 'date_from' => '2026-10-25', 'remark' => 'Annual review'], $overrides);
+    }
+
+    private function requestRecord(array $overrides = []): EmployeeSalaryHistory
+    {
+        return EmployeeSalaryHistory::create(array_replace([
+            'employee_id' => 20, 'effective_date' => '2026-10-25', 'old_base_salary' => 800,
+            'new_base_salary' => 900, 'allowance_before' => 200, 'allowance_after' => 200,
+            'approval_status' => 'pending', 'requested_by' => 1, 'reason' => 'Performance review',
+        ], $overrides));
+    }
+
+    public function test_monthly_increase_updates_payroll_profile_and_both_histories_using_server_calculations(): void
+    {
+        $salary = $this->salary();
+        $this->post('/_test/salary-increase', $this->increase(['revised_salary' => 999999]))->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertEquals(13200, $salary->fresh()->annual_salary);
+        $this->assertEquals(880, $salary->fresh()->monthly_basic_salary);
+        $this->assertEquals(220, EmployeeProfile::firstOrFail()->allowances);
+        $this->assertEquals(880, EmployeeProfile::firstOrFail()->current_base_salary);
+        $this->assertEquals(1200, SalaryReviseHistory::firstOrFail()->increment_amount);
+        $this->assertEquals(80, EmployeeSalaryHistory::firstOrFail()->increase_amount);
+        $this->assertSame('approved', EmployeeSalaryHistory::firstOrFail()->approval_status);
+        $this->assertEquals(1, EmployeeSalaryHistory::firstOrFail()->approved_by);
+        $this->assertSame(2, EmployeeProfileAuditLog::count());
+    }
+
+    public function test_percentage_increase_preserves_fixed_basic_and_updates_allowance(): void
+    {
+        $salary = $this->salary(['basic_salary_type' => 'fixed', 'basic_salary_value' => 800]);
+        app(EmployeeSalaryManagementService::class)->revise($this->increase(['increase_type' => 'percent', 'increment_percent' => 10]));
+        $this->assertEquals(13200, $salary->fresh()->annual_salary);
+        $this->assertEquals(800, $salary->fresh()->monthly_basic_salary);
+        $this->assertEquals(300, EmployeeProfile::firstOrFail()->allowances);
+    }
+
+    public function test_weekly_hourly_increase_updates_weekly_monthly_and_hour_rate(): void
+    {
+        $salary = $this->salary(['payroll_type' => 'hourly', 'payment_type' => 'weekly', 'annual_salary' => 10400,
+            'basic_salary_value' => 100, 'annual_basic_salary' => 10400, 'weekly_basic_salary' => 200,
+            'weekly_fixed_allowance' => 0, 'hour_rate' => 5, 'weekly_hours' => 40]);
+        app(EmployeeSalaryManagementService::class)->revise($this->increase(['current_salary' => 10400, 'increment_amount' => 20]));
+        $this->assertEquals(11440, $salary->fresh()->annual_salary);
+        $this->assertEquals(220, $salary->fresh()->weekly_basic_salary);
+        $this->assertEquals(5.5, $salary->fresh()->hour_rate);
+        $this->assertEquals(953.33, $salary->fresh()->monthly_basic_salary);
+        $this->assertEquals(220, EmployeeProfile::firstOrFail()->current_base_salary);
+    }
+
+    public function test_approval_updates_payroll_and_preserves_original_request(): void
+    {
+        $salary = $this->salary(); $record = $this->requestRecord();
+        $this->patch('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertEquals(13200, $salary->fresh()->annual_salary);
+        $this->assertEquals(900, EmployeeProfile::firstOrFail()->current_base_salary);
+        $this->assertSame('approved', $record->fresh()->approval_status);
+        $this->assertEquals(12.5, $record->fresh()->increase_percentage);
+        $this->assertSame(1, EmployeeSalaryHistory::count());
+        $this->assertSame(1, SalaryReviseHistory::count());
+        $this->patchJson('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertUnprocessable();
+        $this->assertSame(1, SalaryReviseHistory::count());
+    }
+
+    public function test_future_and_stale_approvals_leave_payroll_unchanged(): void
+    {
+        $salary = $this->salary();
+        foreach ([['effective_date' => '2026-11-01'], ['old_base_salary' => 700], ['allowance_before' => 100]] as $override) {
+            $record = $this->requestRecord($override);
+            $this->patchJson('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertUnprocessable();
+            $this->assertSame('pending', $record->fresh()->approval_status);
+        }
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame(0, SalaryReviseHistory::count());
+    }
+
+    public function test_cancellation_and_rejection_keep_history_without_changing_salary(): void
+    {
+        $salary = $this->salary();
+        foreach (['cancelled', 'rejected'] as $status) {
+            $record = $this->requestRecord();
+            $this->patch('/_test/salary-status/20/'.$record->id, ['approval_status' => $status])->assertRedirect();
+            $this->assertSame($status, $record->fresh()->approval_status);
+        }
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame(2, EmployeeProfileAuditLog::count());
+    }
+
+    public function test_approval_requires_permission_and_employee_ownership(): void
+    {
+        $this->salary(); $record = $this->requestRecord();
+        $this->patchJson('/_test/salary-status/21/'.$record->id, ['approval_status' => 'approved'])->assertNotFound();
+        $this->abilities = ['employee.salary.history.manage'];
+        $this->patchJson('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertForbidden();
+        $this->postJson('/_test/salary-increase', $this->increase())->assertForbidden();
+    }
+
+    public function test_invalid_or_stale_increases_do_not_create_history(): void
+    {
+        $salary = $this->salary();
+        foreach ([['current_salary' => 10000], ['increment_amount' => -10], ['date_from' => '2026-11-01'],
+            ['date_from' => 'invalid'], ['increment_amount' => 99999999], ['remark' => '']] as $override) {
+            $this->postJson('/_test/salary-increase', $this->increase($override))->assertUnprocessable();
+        }
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame(0, SalaryReviseHistory::count());
+    }
+
+    public function test_audit_failure_rolls_back_salary_profile_and_both_histories(): void
+    {
+        $salary = $this->salary();
+        EmployeeProfileAuditLog::creating(function () {throw new \RuntimeException('Audit unavailable');});
+        try {
+            app(EmployeeSalaryManagementService::class)->revise($this->increase());
+            $this->fail('Expected audit failure');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Audit unavailable', $exception->getMessage());
+        } finally {
+            EmployeeProfileAuditLog::flushEventListeners();
+        }
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame(0, EmployeeProfile::count());
+        $this->assertSame(0, EmployeeSalaryHistory::count());
+        $this->assertSame(0, SalaryReviseHistory::count());
+    }
+
+    public function test_multiple_increases_resolve_the_correct_salary_for_past_payroll_periods(): void
+    {
+        $this->salary();
+        $service = app(EmployeeSalaryManagementService::class);
+        $service->revise($this->increase(['date_from' => '2026-10-10']));
+        $service->revise($this->increase(['date_from' => '2026-10-20', 'current_salary' => 13200]));
+        $repository = app(\App\Repositories\SalaryReviseHistoryRepository::class);
+        $this->assertEquals(12000, $repository->getSalaryHistoryByEmployee(20, '2026-10-05')->base_salary);
+        $this->assertEquals(13200, $repository->getSalaryHistoryByEmployee(20, '2026-10-15')->base_salary);
+        $this->assertNull($repository->getSalaryHistoryByEmployee(20, '2026-10-25'));
+        $this->postJson('/_test/salary-increase', $this->increase(['date_from' => '2026-10-15', 'current_salary' => 14400]))->assertUnprocessable();
+        $this->assertSame(2, SalaryReviseHistory::count());
+    }
+
+    public function test_salary_group_earnings_are_kept_separate_from_fixed_allowance(): void
+    {
+        Schema::create('salary_groups', function (Blueprint $table) {$table->id(); $table->string('name');});
+        Schema::create('salary_components', function (Blueprint $table) {
+            $table->id(); $table->string('component_type'); $table->string('value_type');
+            $table->double('annual_component_value'); $table->boolean('status');
+        });
+        Schema::create('salary_group_component', function (Blueprint $table) {$table->integer('salary_group_id'); $table->integer('salary_component_id');});
+        DB::table('salary_groups')->insert(['id' => 1, 'name' => 'Employee benefits']);
+        DB::table('salary_components')->insert(['id' => 1, 'component_type' => 'earning', 'value_type' => 'ctc', 'annual_component_value' => 5, 'status' => true]);
+        DB::table('salary_group_component')->insert(['salary_group_id' => 1, 'salary_component_id' => 1]);
+        $salary = $this->salary(['salary_group_id' => 1, 'monthly_fixed_allowance' => 150, 'annual_fixed_allowance' => 1800]);
+        app(EmployeeSalaryManagementService::class)->revise($this->increase());
+        $this->assertEquals(165, $salary->fresh()->monthly_fixed_allowance);
+        $this->assertEquals(165, EmployeeProfile::firstOrFail()->allowances);
+        $this->assertEquals(880, $salary->fresh()->monthly_basic_salary);
+    }
+
+    public function test_zero_salary_can_receive_an_amount_increase_without_division_by_zero(): void
+    {
+        $salary = $this->salary(['annual_salary' => 0, 'basic_salary_value' => 100]);
+        app(EmployeeSalaryManagementService::class)->revise($this->increase(['current_salary' => 0, 'increment_amount' => 100]));
+        $this->assertEquals(1200, $salary->fresh()->annual_salary);
+        $this->assertEquals(0, SalaryReviseHistory::firstOrFail()->increment_percent);
+    }
+
+    public function test_removing_payroll_preserves_history_and_clears_current_profile_amounts(): void
+    {
+        $salary = $this->salary();
+        $service = app(EmployeeSalaryManagementService::class);
+        $service->revise($this->increase());
+        $service->remove($salary->fresh());
+        $this->assertSame(0, EmployeeSalary::count());
+        $this->assertNull(EmployeeProfile::firstOrFail()->current_base_salary);
+        $this->assertSame(1, EmployeeSalaryHistory::count());
+        $this->assertSame(1, SalaryReviseHistory::count());
+        $this->assertSame(1, EmployeeProfileAuditLog::where('action', 'payroll_delete')->count());
+    }
+
+    public function test_profile_request_is_pending_and_does_not_accept_spoofed_approvers_or_totals(): void
+    {
+        $salary = $this->salary();
+        $this->post('/_test/profile-salary', [
+            'effective_date' => '2026-11-01', 'old_base_salary' => 800, 'new_base_salary' => 900,
+            'increase_amount' => 9999, 'increase_percentage' => 9999, 'approved_by' => 21,
+            'approval_status' => 'pending', 'reason' => 'Monthly review',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $record = EmployeeSalaryHistory::firstOrFail();
+        $this->assertEquals(100, $record->increase_amount);
+        $this->assertEquals(12.5, $record->increase_percentage);
+        $this->assertNull($record->approved_by);
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame(0, SalaryReviseHistory::count());
+    }
+
+    public function test_profile_request_cannot_apply_salary_without_increment_permission(): void
+    {
+        $salary = $this->salary(); $this->abilities = ['employee.salary.history.manage'];
+        $this->postJson('/_test/profile-salary', [
+            'effective_date' => '2026-10-25', 'old_base_salary' => 800, 'new_base_salary' => 900,
+            'approval_status' => 'approved',
+        ])->assertForbidden();
+        $this->assertSame(0, EmployeeSalaryHistory::count());
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+    }
+
+    public function test_salary_increases_cannot_cross_the_managers_branch(): void
+    {
+        $salary = $this->salary(); $record = $this->requestRecord();
+        auth()->user()->branch_id = 1;
+        DB::table('users')->where('id', 20)->update(['branch_id' => 2]);
+        $this->postJson('/_test/salary-increase', $this->increase())->assertForbidden();
+        $this->patchJson('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertForbidden();
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+    }
+
+    public function test_system_administrator_history_keeps_the_name_without_using_an_employee_id(): void
+    {
+        $this->salary();
+        auth()->logout();
+        $admin = (new \App\Models\Admin)->forceFill(['id' => 99, 'name' => 'System administrator']);
+        $this->actingAs($admin, 'admin');
+        app(EmployeeSalaryManagementService::class)->revise($this->increase());
+        $revision = SalaryReviseHistory::firstOrFail();
+        $this->assertNull($revision->created_by);
+        $this->assertSame('System administrator', $revision->created_by_name);
+        $record = EmployeeSalaryHistory::firstOrFail();
+        $this->assertNull($record->approved_by);
+        $this->assertSame('System administrator', $record->approved_by_name);
+        $this->assertNull(EmployeeProfileAuditLog::firstOrFail()->performed_by);
+    }
+
+    public function test_actor_snapshot_migration_preserves_existing_history(): void
+    {
+        DB::table('salary_revise_histories')->insert(['employee_id' => 20, 'created_by' => 1, 'base_salary' => 12000]);
+        Schema::table('salary_revise_histories', fn (Blueprint $table) => $table->dropColumn('created_by_name'));
+        Schema::table('employee_salary_history', fn (Blueprint $table) => $table->dropColumn(['requested_by_name', 'approved_by_name']));
+        $migration = require database_path('migrations/2026_10_25_000007_add_salary_history_actor_snapshots.php');
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('salary_revise_histories', 'created_by_name'));
+        $this->assertTrue(Schema::hasColumn('employee_salary_history', 'approved_by_name'));
+        $this->assertEquals(12000, DB::table('salary_revise_histories')->value('base_salary'));
+        DB::table('salary_revise_histories')->insert(['employee_id' => 20, 'created_by' => null, 'created_by_name' => 'Administrator']);
+        $this->assertSame(2, DB::table('salary_revise_histories')->count());
+        $migration->down();
+        $this->assertSame(2, DB::table('salary_revise_histories')->count());
+    }
+}

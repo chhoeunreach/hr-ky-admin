@@ -13,6 +13,7 @@ use App\Services\FiscalYear\FiscalYearService;
 use App\Services\Payroll\SalaryReviseHistoryService;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
+use Illuminate\Validation\ValidationException;
 
 class SalaryHistoryController extends Controller
 {
@@ -28,11 +29,12 @@ class SalaryHistoryController extends Controller
 
     public function getEmployeeAllSalaryHistory($employeeId)
     {
+        $this->authorize('show_salary_history');
+        $this->checkEmployeeBranch($employeeId);
         try{
-            $this->authorize('show_salary_history');
             $select = ['*'];
 
-            $salaryReviseLists = $this->salaryHistoryService->getEmployeeAllSalaryHistory($employeeId,$select);
+            $salaryReviseLists = $this->salaryHistoryService->getEmployeeAllSalaryHistory($employeeId,$select,['createdBy']);
             $employeeDetail = $this->userRepo->findUserDetailById($employeeId,['id','name']);
             $currency = AppHelper::getCompanyPaymentCurrencySymbol();
             return view($this->view.'salary_history',compact('salaryReviseLists','employeeDetail','currency'));
@@ -43,15 +45,14 @@ class SalaryHistoryController extends Controller
 
     public function create($employeeId)
     {
+        $this->authorize('salary_increment');
+        $this->checkEmployeeBranch($employeeId);
         try{
-            $this->authorize('salary_increment');
-            $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId,['annual_salary']);
+            $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
 
+            abort_unless($employeeSalary, 404);
             $employeeDetail = $this->userRepo->findUserDetailById($employeeId,['id','name']);
-            $dateInBs = AppHelper::ifDateInBsEnabled();
-
-             $fiscalYear = $this->fiscalYearService->getActiveFiscalYear();
-            return view($this->view.'increment_salary',compact('employeeDetail','employeeSalary','fiscalYear','dateInBs'));
+            return view($this->view.'increment_salary',compact('employeeDetail','employeeSalary'));
         }catch(Exception $exception){
             return redirect()->back()->with('danger',$exception->getMessage());
         }
@@ -59,14 +60,17 @@ class SalaryHistoryController extends Controller
 
     public function store(ReviseSalaryRequest $request)
     {
+        $this->authorize('salary_increment');
+        $this->checkEmployeeBranch($request->integer('employee_id'));
         try{
-            $this->authorize('salary_increment');
             $validatedData = $request->validated();
 
             $this->salaryHistoryService->store($validatedData);
             return redirect()
                 ->route('admin.employee-salaries.index')
                 ->with('success',__('message.salary_history_update'));
+        }catch(ValidationException $exception){
+            throw $exception;
         }catch(Exception $exception){
             return redirect()
                 ->back()
@@ -74,4 +78,12 @@ class SalaryHistoryController extends Controller
                 ->withInput();
         }
     }
+    private function checkEmployeeBranch(int $employeeId): void
+    {
+        $employee = \App\Models\User::findOrFail($employeeId);
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+        }
+    }
+
 }

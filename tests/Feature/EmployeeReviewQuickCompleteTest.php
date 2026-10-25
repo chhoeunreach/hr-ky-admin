@@ -98,7 +98,7 @@ class EmployeeReviewQuickCompleteTest extends TestCase
             foreach (['old_base_salary', 'new_base_salary', 'increase_amount', 'increase_percentage', 'allowance_before', 'allowance_after'] as $field) {
                 $table->decimal($field, 15, 2)->nullable();
             }
-            foreach (['effective_date', 'approval_status', 'reason', 'note'] as $field) {
+            foreach (['effective_date', 'approval_status', 'reason', 'note', 'requested_by_name', 'approved_by_name'] as $field) {
                 $table->string($field)->nullable();
             }
             foreach (['requested_by', 'reviewed_by', 'approved_by'] as $field) {

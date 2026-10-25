@@ -23,8 +23,10 @@ class EmployeeSalaryHistory extends Model
         'allowance_after',
         'reason',
         'requested_by',
+        'requested_by_name',
         'reviewed_by',
         'approved_by',
+        'approved_by_name',
         'approval_status',
         'note',
     ];
@@ -39,5 +41,15 @@ class EmployeeSalaryHistory extends Model
     public function performanceReview()
     {
         return $this->belongsTo(PerformanceReview::class);
+    }
+
+    public function requestedBy()
+    {
+        return $this->belongsTo(User::class, 'requested_by')->withTrashed();
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by')->withTrashed();
     }
 }

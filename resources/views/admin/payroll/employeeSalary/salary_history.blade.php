@@ -5,7 +5,10 @@
 @section('action',__('index.log'))
 
 @section('button')
-    <div class="float-end">
+    <div class="float-end d-flex gap-2">
+        @can('employee.profile.view')
+            <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employees.profile.show', ['employee' => $employeeDetail->id, 'tab' => 'salary']) }}">{{ __('index.employee_profile') }}</a>
+        @endcan
         <a href="{{route('admin.employee-salaries.index')}}" >
             <button class="btn btn-sm btn-primary" ><i class="link-icon" data-feather="arrow-left"></i> {{ __('index.back') }}</button>
         </a>
@@ -34,10 +37,11 @@
                             <th class="text-center">{{ __('index.salary_revised_on') }}</th>
                             <th class="text-center">{{ __('index.increment_by') }}</th>
                             <th class="text-center">{{ __('index.increment_value') }} ({{ $currency }})</th>
-                            <th class="text-center">{{ __('index.new_salary') }} ({{$currency}})</th>
-                            <th class="text-center">{{ __('index.old_salary') }} ({{$currency}})</th>
+                            <th class="text-center">{{ __('index.new_salary') }} · {{ __('index.annual_salary') }} ({{$currency}})</th>
+                            <th class="text-center">{{ __('index.old_salary') }} · {{ __('index.annual_salary') }} ({{$currency}})</th>
                             <th class="text-center">{{ __('index.applicable_from') }}</th>
                             <th class="text-center">{{ __('index.remark') }}</th>
+                            <th>{{ __('index.link_created_by') }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -47,8 +51,8 @@
                                 <td class="text-center">{{ \App\Helpers\AppHelper::timeLeaverequestDate($value->salary_revised_on) }}</td>
                                 <td class="text-center">{{ $value->increment_percent.'%' }}</td>
                                 <td class="text-center">{{ $value->increment_amount }}</td>
-                                <td class="text-center">{{ number_format($value->revised_salary) }}</td>
-                                <td class="text-center">{{ number_format($value->base_salary) }}</td>
+                                <td class="text-center">{{ number_format($value->revised_salary, 2) }}</td>
+                                <td class="text-center">{{ number_format($value->base_salary, 2) }}</td>
                                 <td class="text-center">{{ \App\Helpers\AppHelper::timeLeaverequestDate($value->date_from) }}</td>
                                 <td class="text-center">
                                     <a href="#"
@@ -57,6 +61,7 @@
                                         <i class="link-icon" data-feather="eye"></i>
                                     </a>
                                 </td>
+                                <td>{{ $value->created_by_name ?: $value->createdBy?->name ?: '—' }}</td>
                             </tr>
                         @empty
                             <tr>

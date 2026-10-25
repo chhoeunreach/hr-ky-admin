@@ -18,10 +18,11 @@ class SalaryReviseHistoryRepository
             ->get();
     }
 
-    public function getSalaryHistoryByEmployee($employeeId)
+    public function getSalaryHistoryByEmployee($employeeId, $periodEnd = null)
     {
         return SalaryReviseHistory::where('employee_id',$employeeId)
-            ->orderBy('id')
+            ->when($periodEnd, fn ($query) => $query->where('date_from', '>', $periodEnd))
+            ->orderBy('date_from')->orderBy('id')
             ->first();
     }
 
