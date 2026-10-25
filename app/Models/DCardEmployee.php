@@ -29,4 +29,37 @@ class DCardEmployee extends Model
     protected $casts = [
         'joining_date' => 'date:Y-m-d',
     ];
+
+    public function getProfilePhotoUrlAttribute(?string $value): ?string
+    {
+        $path = $this->normalizePhotoPath($value);
+
+        if ($path && preg_match('#^/(?:storage/d-card-employees/photos/|uploads/user/avatar/|assets/images/)#', $path)) {
+            return request()->root() . $path;
+        }
+
+        return $path;
+    }
+
+    public function setProfilePhotoUrlAttribute(?string $value): void
+    {
+        $this->attributes['profile_photo_url'] = $this->normalizePhotoPath($value);
+    }
+
+    private function normalizePhotoPath(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return $value;
+        }
+
+        $value = trim($value);
+        $path = parse_url($value, PHP_URL_PATH);
+
+        // These photos belong to this application, even when an old host was saved.
+        if (is_string($path) && preg_match('#^/?(?:storage/d-card-employees/photos/|uploads/user/avatar/|assets/images/)#', $path)) {
+            return '/' . ltrim($path, '/');
+        }
+
+        return $value;
+    }
 }

@@ -210,7 +210,7 @@ class DCardPrintController extends Controller
             }
 
             $path = $request->file('profile_photo')->store('d-card-employees/photos', 'public');
-            $data['profile_photo_url'] = asset('storage/' . $path);
+            $data['profile_photo_url'] = '/storage/' . $path;
         }
 
         return $data;
