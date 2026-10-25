@@ -23,6 +23,7 @@ class AppLinkController extends Controller
         try {
             $filterParameters = [
                 'link_type' => $request->link_type ?? null,
+                'account_type' => $request->account_type ?? null,
                 'status' => $request->status ?? null,
                 'search' => $request->search ?? null,
             ];
@@ -40,7 +41,8 @@ class AppLinkController extends Controller
     {
         try {
             $linkTypes = AppLink::LINK_TYPES;
-            return view($this->view . 'create', compact('linkTypes'));
+            $managerOptions = AppLink::managerOptions();
+            return view($this->view . 'create', compact('linkTypes', 'managerOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -50,13 +52,13 @@ class AppLinkController extends Controller
     {
         try {
             $validatedData = $request->validated();
-            $validatedData['status'] = $request->has('status') ? 1 : 0;
+            $validatedData['status'] = $request->boolean('status') ? 1 : 0;
             $validatedData['order'] = $request->order ?? 0;
 
             $this->appLinkRepo->store($validatedData);
             return redirect()->route('admin.app-links.index')->with('success', __('message.link_added_successfully') ?? 'Link added successfully.');
         } catch (Exception $exception) {
-            return redirect()->back()->with('danger', $exception->getMessage())->withInput();
+            return redirect()->back()->with('danger', 'Unable to save the link. Please try again.')->withInput($request->except('password'));
         }
     }
 
@@ -68,7 +70,8 @@ class AppLinkController extends Controller
                 return redirect()->route('admin.app-links.index')->with('danger', 'Link not found.');
             }
             $linkTypes = AppLink::LINK_TYPES;
-            return view($this->view . 'edit', compact('linkDetail', 'linkTypes'));
+            $managerOptions = AppLink::managerOptions($linkDetail);
+            return view($this->view . 'edit', compact('linkDetail', 'linkTypes', 'managerOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -83,13 +86,13 @@ class AppLinkController extends Controller
             }
 
             $validatedData = $request->validated();
-            $validatedData['status'] = $request->has('status') ? 1 : 0;
+            $validatedData['status'] = $request->boolean('status') ? 1 : 0;
             $validatedData['order'] = $request->order ?? 0;
 
             $this->appLinkRepo->update($link, $validatedData);
             return redirect()->route('admin.app-links.index')->with('success', __('message.link_updated_successfully') ?? 'Link updated successfully.');
         } catch (Exception $exception) {
-            return redirect()->back()->with('danger', $exception->getMessage())->withInput();
+            return redirect()->back()->with('danger', 'Unable to update the link. Please try again.')->withInput($request->except('password'));
         }
     }
 

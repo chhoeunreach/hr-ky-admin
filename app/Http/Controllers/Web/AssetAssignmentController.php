@@ -49,6 +49,7 @@ class AssetAssignmentController extends Controller
      */
     public function index($assetId)
     {
+        $this->authorize('asset_assign_list');
         try {
 
             $assetDetail = $this->assetService->findAssetById($assetId,['id','name']);
@@ -56,7 +57,8 @@ class AssetAssignmentController extends Controller
             $with = ['asset:id,name','user:id,name'];
             $select = ['*'];
             $assignmentList = $this->assignmentService->getAssignmentsPaginated($assetId, $select, $with);
-            return view($this->view . 'assignment_list', compact('assignmentList','assetDetail'));
+            $activities = \App\Models\AssetActivity::where('asset_id', $assetDetail->id)->orderByDesc('id')->paginate(25)->withQueryString();
+            return view($this->view . 'assignment_list', compact('assignmentList','assetDetail', 'activities'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -75,7 +77,7 @@ class AssetAssignmentController extends Controller
         } catch (Exception $exception) {
             return response()->json([
                 'error' => $exception->getMessage(),
-            ], $exception->getCode() ?: 500);
+            ], 500);
         }
     }
 
@@ -107,13 +109,14 @@ class AssetAssignmentController extends Controller
             'asset' => $asset->only(['id', 'name', 'asset_code', 'asset_serial_no', 'branch_id']) + ['branch_name' => $asset->branch?->name],
             'branches' => $branches->values(), 'selected_branch_id' => $branchId,
             'branch_locked' => (bool) $asset->branch,
+            'current_assignment' => $asset->assignment()->whereNull('returned_date')->first(['id', 'user_id', 'assigned_date']),
             'departments' => $departments, 'employees' => $employees,
         ]);
     }
 
     public function receipt($assetId)
     {
-        $this->authorize('list_assets');
+        $this->authorize('print_assets');
         $asset = Asset::with(['branch', 'type', 'latestAssignment.user', 'latestAssignment.branch', 'latestAssignment.department'])->findOrFail($assetId);
         $assignment = $asset->latestAssignment;
         abort_unless($assignment && !$assignment->returned_date, 404);
@@ -121,7 +124,12 @@ class AssetAssignmentController extends Controller
         return view('admin.assetManagement.assetDetail.receipt', compact('asset', 'assignment'));
     }
 
-    public function store(Request $request, $id)
+    public function updateEmployee(Request $request, $id)
+    {
+        return $this->store($request, $id, true);
+    }
+
+    public function store(Request $request, $id, bool $transfer = false)
     {
         $this->authorize('assign_asset');
         $assetDetail = Asset::with('branch:id,name')->findOrFail($id);
@@ -136,7 +144,7 @@ class AssetAssignmentController extends Controller
                 'branch_id' => ['required', 'integer', Rule::in($branches->pluck('id')->all())],
                 'department_id' => ['required', 'integer', Rule::exists('departments', 'id')->where(fn ($query) => $query
                     ->where('branch_id', $branchId)->where('is_active', 1))],
-                'assigned_date' => 'required|date',
+                'assigned_date' => 'required|date|before_or_equal:today',
             ], [], [
                 'asset_id' => __('index.asset_name'), 'user_id' => __('index.employee'),
                 'branch_id' => __('index.branch'), 'department_id' => __('index.department'),
@@ -145,24 +153,31 @@ class AssetAssignmentController extends Controller
 
 
             $validatedData['branch_id'] = $branchId;
-            if ($assetDetail->is_working != 'yes') {
-               if($assetDetail->is_working == 'no'){
-                    $errormessage = 'Asset ' . $assetDetail->name . ' is not working' ;
-                } else{
-                   $errormessage ='Asset ' . $assetDetail->name . ' is under maintenance';
-               }
-                return response()->json([
-                    'error' => $errormessage,
-                ], 400);
-            }
-            if ($assetDetail->is_available == 0) {
-                return response()->json([
-                    'error' => 'Asset ' . $assetDetail->name . ' is not available',
-                ], 400);
-            }
-
-            $validatedData['status'] = AssetAssignmentStatusEnum::assigned->value;
             DB::beginTransaction();
+            $assetDetail = Asset::whereKey($id)->lockForUpdate()->firstOrFail();
+            if ($assetDetail->branch_id && (int) $assetDetail->branch_id !== (int) $branchId) {
+                throw ValidationException::withMessages(['branch_id' => __('index.asset_return_before_change')]);
+            }
+            $current = $assetDetail->assignment()->whereNull('returned_date')->lockForUpdate()->first();
+            if ($assetDetail->is_working !== 'yes' || (!$transfer && (!$assetDetail->is_available || $current))) {
+                throw ValidationException::withMessages(['asset_id' => __('index.asset_assign_condition_help')]);
+            }
+            if ($transfer) {
+                if (!$current || (int) $current->user_id === (int) $validatedData['user_id']) {
+                    throw ValidationException::withMessages(['user_id' => __('index.asset_select_new_employee')]);
+                }
+                if ($validatedData['assigned_date'] < $current->assigned_date) {
+                    throw ValidationException::withMessages(['assigned_date' => __('index.asset_transfer_date_invalid')]);
+                }
+                $current->update([
+                    'returned_date' => $validatedData['assigned_date'],
+                    'status' => AssetAssignmentStatusEnum::returned->value,
+                    'return_condition' => AssetReturnConditionEnum::working->value,
+                    'notes' => __('index.asset_employee_changed'),
+                ]);
+            }
+            if (!$assetDetail->branch_id) $assetDetail->update(['branch_id' => $branchId]);
+            $validatedData['status'] = AssetAssignmentStatusEnum::assigned->value;
              $assetAssignmentDetail = $this->assignmentService->saveDetail($validatedData);
 
              if($assetAssignmentDetail){
@@ -190,12 +205,13 @@ class AssetAssignmentController extends Controller
                 'message' => __('message.asset_assignment_saved'),
             ], 200);
         } catch (ValidationException $exception) {
+            if (DB::transactionLevel() > 0) DB::rollBack();
             return response()->json(['message' => $exception->getMessage(), 'errors' => $exception->errors()], 422);
         } catch (Exception $exception) {
             DB::rollBack();
             return response()->json([
                 'error' => $exception->getMessage(),
-            ], $exception->getCode() ?: 500);
+            ], 500);
         }
     }
 
@@ -239,6 +255,7 @@ class AssetAssignmentController extends Controller
 
     public function returnlist()
     {
+        $this->authorize('asset_assign_list');
         try {
             $select = ['*'];
             $with = ['asset.type:id,name','user:id,name'];
@@ -253,12 +270,13 @@ class AssetAssignmentController extends Controller
 
     public function storeReturn(Request $request, $id)
     {
+        $this->authorize('assign_asset');
         try {
             $validatedData = $request->validate([
                 'is_working' => 'required|in:yes,no',
                 'notes' => [
                     'nullable',
-                    'string'
+                    'string', 'max:5000'
                 ],
             ]);
             $validatedData['return_condition'] = $validatedData['is_working'] == 'yes' ? AssetReturnConditionEnum::working->value :  AssetReturnConditionEnum::requireMaintenance->value ;

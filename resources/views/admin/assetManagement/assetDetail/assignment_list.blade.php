@@ -73,7 +73,7 @@
                                                    class="d-flex align-items-center justify-content-center show-assignment"
                                                    data-asset="{{ $value->asset->name }}"
                                                    data-employee="{{ $value->user->name }}"
-                                                   data-notes="{!! $value->notes !!} "
+                                                   data-notes="{{ $value->notes }}"
                                                    data-status="{{ ucfirst($value->status) }}"
                                                    data-assigned_date="{{  AppHelper::formatDateForView($value->assigned_date) }}"
                                                    data-returned_date="{{  isset($value->returned_date) ? AppHelper::formatDateForView($value->returned_date) : '' }}"
@@ -83,7 +83,7 @@
                                                 </a>
                                             </li>
 
-                                        @if(is_null($value->returned_date) || ($value->return_condition == \App\Enum\AssetAssignmentStatusEnum::assigned->value))
+                                        @if(is_null($value->returned_date) && (auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('assign_asset')))
                                             <li>
                                                 <a class="btn btn-sm btn-info return-asset"
                                                    data-title="{{$value->asset->name}} Asset Detail"
@@ -91,7 +91,7 @@
                                                    title="{{ __('index.return') }}"
                                                    data-bs-toggle="modal"
                                                    data-bs-target="#assetReturnModal">
-                                                    Return
+                                                    {{ __('index.return_asset') }}
                                                 </a>
                                             </li>
                                         @endif
@@ -112,6 +112,7 @@
             </div>
         </div>
 
+        @include('admin.assetManagement.assetDetail.common.activity')
     </section>
     @include('admin.assetManagement.assetDetail.common.return')
     @include('admin.assetManagement.assetDetail.common.assignment_detail')

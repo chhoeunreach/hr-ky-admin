@@ -20,6 +20,7 @@
     <h1>{{ __('index.asset_lists') }}</h1>
     @if($format !== 'word')
         <div class="export-controls">
+            <p>A4 · {{ __('index.' . $orientation) }}</p>
             @if($format === 'pdf')<p>{{ __('index.assets_save_pdf_help') }}</p>@endif
             <button type="button" onclick="window.print()">{{ $format === 'pdf' ? __('index.export_pdf') : __('index.print') }}</button>
         </div>

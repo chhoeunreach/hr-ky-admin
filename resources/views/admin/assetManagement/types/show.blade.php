@@ -76,26 +76,27 @@
                 if (response && response.data) {
                     const data = response.data;
                     var daysUsed = data.used_for;
-                    $('.assetTitle').html('Asset Detail');
+                    $('#assetDetail .assetTitle').text(data.name);
                     $('.name').text(data.name);
                     $('.type').text(data.assetType);
                     $('.asset_code').text(data.asset_code);
                     $('.asset_serial_no').text(data.asset_serial_no);
+                    $('#assetDetail .phone_numbers').text(data.phone_numbers || '—');
+                    ['icloud', 'asset_password_status', 'screen_time_status', 'set_by_name'].forEach(field => {
+                        $('#assetDetail .' + field).text(data[field] || '—');
+                    });
                     $('.is_working').text(data.is_working);
                     $('.purchased_date').text(data.purchased_date);
                     $('.is_available').text(data.is_available);
                     $('.note').text(data.note);
 
                     if (daysUsed > 0) {
-                        $('.used_for').text(daysUsed+ ' days');
+                        $('.used_for').text(daysUsed+ ' days').parent().show();
                     } else {
                         $('.used_for').parent().hide();
                     }
-                    if (data.image) {
-                        $('.image').attr('src', data.image).show();
-                    } else {
-                        $('.image').parent().hide();
-                    }
+                    const gallery = document.querySelector('#assetDetail .asset-images');
+                    window.AssetGallery.render(gallery, data.image_urls || (data.image ? [data.image] : []), data.name);
 
                     const modal = new bootstrap.Modal(document.getElementById('assetDetail'));
                     modal.show();

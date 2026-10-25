@@ -26,6 +26,7 @@ class AppLinkApiController extends Controller
                     'id' => $link->id,
                     'name' => $link->name,
                     'link_type' => $link->link_type,
+                    'account_type' => $link->account_type,
                     'url' => $link->url,
                     'image' => $link->image_url,
                     'description' => $link->description,

@@ -70,6 +70,7 @@
     'searching' => __('index.resignation_searching'), 'unavailable' => __('index.not_available'),
     'saving' => __('index.asset_assignment_saving'), 'saveError' => __('index.asset_assignment_error'),
     'success' => __('index.asset_assigned_success'), 'successTitle' => __('index.success'),
+    'assignLabel' => __('index.assign_asset'), 'transferLabel' => __('index.asset_change_employee'),
     'ok' => __('index.ok'), 'today' => now()->toDateString(),
 ];
 @endphp

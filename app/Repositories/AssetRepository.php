@@ -39,7 +39,7 @@ class AssetRepository
             })
             ->when(isset($filterParameters['q']) && $filterParameters['q'] !== '', function ($query) use ($filterParameters) {
                 $query->where(function ($search) use ($filterParameters) {
-                    foreach (['name', 'asset_code', 'asset_serial_no', 'note'] as $column) {
+                    foreach (['name', 'asset_code', 'asset_serial_no', 'phone_numbers', 'icloud', 'note'] as $column) {
                         $search->orWhere($column, 'like', '%' . $filterParameters['q'] . '%');
                     }
                 });
@@ -95,31 +95,85 @@ class AssetRepository
 
     public function store($validatedData)
     {
-        $validatedData['image'] = $this->storeImage($validatedData['image'], Asset::UPLOAD_PATH,500,500);
-        return Asset::create($validatedData)->fresh();
+        unset($validatedData['clear_asset_password'], $validatedData['clear_screen_time_passcode']);
+        $files = $this->saveImages($validatedData);
+        unset($validatedData['remove_images']);
+        $validatedData['image'] = $files[0] ?? null;
+        $validatedData['images'] = $files;
+        try {
+            return Asset::create($validatedData)->fresh();
+        } catch (\Throwable $exception) {
+            foreach ($files as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
+            throw $exception;
+        }
     }
 
-    public function update($assetDetail,$validatedData)
+    public function update($assetDetail, $validatedData)
     {
-        if (isset($validatedData['image'])) {
-            if($assetDetail['image']){
-                $this->removeImage(Asset::UPLOAD_PATH, $assetDetail['image']);
-            }
-            $validatedData['image'] = $this->storeImage($validatedData['image'], Asset::UPLOAD_PATH,500,500);
-        } else {
-            unset($validatedData['image']);
+        foreach (['asset_password', 'screen_time_passcode'] as $field) {
+            if (!empty($validatedData['clear_'.$field])) $validatedData[$field] = null;
+            elseif (!isset($validatedData[$field]) || $validatedData[$field] === '') unset($validatedData[$field]);
+            unset($validatedData['clear_'.$field]);
         }
-        return $assetDetail->update($validatedData);
+        if (!isset($validatedData['image']) && empty($validatedData['images']) && empty($validatedData['remove_images'])) {
+            unset($validatedData['image'], $validatedData['images'], $validatedData['remove_images']);
+            return $assetDetail->update($validatedData);
+        }
+        $existing = $assetDetail->imageFiles();
+        $remove = $validatedData['remove_images'] ?? [];
+        // A legacy single-image upload replaces the cover; gallery uploads append.
+        if (isset($validatedData['image']) && $assetDetail->image) $remove[] = $assetDetail->image;
+        $keep = array_values(array_diff($existing, $remove));
+        $count = count($keep) + count($validatedData['images'] ?? []) + (isset($validatedData['image']) ? 1 : 0);
+        if ($count > 10) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['images' => __('index.asset_images_limit')]);
+        }
+        $added = $this->saveImages($validatedData);
+        $files = array_merge($keep, $added);
+        unset($validatedData['remove_images']);
+        $validatedData['image'] = $files[0] ?? null;
+        $validatedData['images'] = $files;
+        try {
+            $result = $assetDetail->update($validatedData);
+        } catch (\Throwable $exception) {
+            foreach ($added as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
+            throw $exception;
+        }
+        \Illuminate\Support\Facades\DB::afterCommit(function () use ($existing, $files) {
+            foreach (array_diff($existing, $files) as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
+        });
+        return $result;
+    }
+
+    private function saveImages(array $data): array
+    {
+        $uploads = $data['images'] ?? [];
+        if (isset($data['image'])) array_unshift($uploads, $data['image']);
+        if (count($uploads) > 10) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['images' => __('index.asset_images_limit')]);
+        }
+        $files = [];
+        try {
+            \Illuminate\Support\Facades\File::ensureDirectoryExists(public_path(Asset::UPLOAD_PATH));
+            foreach ($uploads as $upload) {
+                $filename = \Illuminate\Support\Str::uuid().'.'.$upload->extension();
+                $upload->move(public_path(Asset::UPLOAD_PATH), $filename);
+                $files[] = $filename;
+            }
+        } catch (\Throwable $exception) {
+            foreach ($files as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
+            throw $exception;
+        }
+        return $files;
     }
 
     public function delete($assetDetail)
     {
-        if($assetDetail['image']){
-            $this->removeImage(Asset::UPLOAD_PATH, $assetDetail['image']);
-        }
-        return $assetDetail->delete();
+        $files = $assetDetail->imageFiles();
+        $result = $assetDetail->delete();
+        \Illuminate\Support\Facades\DB::afterCommit(function () use ($files) {
+            foreach ($files as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
+        });
+        return $result;
     }
-
-
-
 }

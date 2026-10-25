@@ -4,8 +4,8 @@
 <script>
     $('document').ready(function(){
 
-        $("#branch_id").select2({});
-        $("#type").select2({});
+        $("#branch_id").select2({width: '100%'});
+        $("#type").select2({width: '100%'});
         $("#assigned_to").select2({});
 
 
@@ -151,3 +151,11 @@
 
 </script>
 <script src="{{ asset('assets/js/asset-assignment.js') }}?v={{ filemtime(public_path('assets/js/asset-assignment.js')) }}"></script>
+
+<script>
+    document.querySelectorAll('[data-asset-actions]').forEach(button => {
+        new bootstrap.Dropdown(button, {
+            popperConfig: defaults => ({...defaults, strategy: 'fixed'}),
+        });
+    });
+</script>

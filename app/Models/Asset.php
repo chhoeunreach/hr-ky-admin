@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class Asset extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\RecordsAssetActivity;
 
     protected $table = 'assets';
 
@@ -19,9 +19,14 @@ class Asset extends Model
         'name',
         'type_id',
         'image',
+        'images',
         'asset_code',
         'asset_serial_no',
         'phone_numbers',
+        'icloud',
+        'asset_password',
+        'screen_time_passcode',
+        'set_by',
         'is_working',
         'purchased_date',
         'warranty_available',
@@ -35,6 +40,25 @@ class Asset extends Model
     ];
 
     const IS_WORKING = ['yes','no'];
+
+    protected $casts = ['images' => 'array', 'asset_password' => 'encrypted', 'screen_time_passcode' => 'encrypted'];
+    protected $hidden = ['asset_password', 'screen_time_passcode'];
+
+    public function setBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'set_by')->withTrashed();
+    }
+
+    public static function setupPeople(?self $asset = null)
+    {
+        return User::where(fn ($query) => $query->where('is_active', 1)->orWhere('id', $asset?->set_by))
+            ->orderBy('name')->get(['id', 'name', 'employee_code']);
+    }
+
+    public function imageFiles(): array
+    {
+        return array_values(array_unique(array_filter(array_merge([$this->image], $this->images ?? []))));
+    }
 
     const BOOLEAN_DATA = [
         0 => 'no',

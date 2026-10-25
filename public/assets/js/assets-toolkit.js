@@ -9,15 +9,28 @@
     const searchForm = document.getElementById('assetsToolkitSearch');
     const search = document.getElementById('assetsSearch');
     const rowCount = document.getElementById('assetsRows');
-    const storageKey = 'hr-assets-visible-columns-v4';
+    const storageKey = 'hr-assets-visible-columns-v5';
     let savedColumns;
     try {
-        const stored = JSON.parse(localStorage.getItem(storageKey));
+        let stored = JSON.parse(localStorage.getItem(storageKey));
+        if (!stored) {
+            const previous = JSON.parse(localStorage.getItem('hr-assets-visible-columns-v4'));
+            if (Array.isArray(previous)) stored = [...previous, 'icloud', 'asset_password', 'screen_time_passcode', 'set_by'];
+        }
         if (Array.isArray(stored) && stored.every(key => typeof key === 'string')) savedColumns = stored;
     } catch (_) {}
     const selectedColumns = () => headings.filter(heading => !heading.hidden && !['actions', 'receipt'].includes(heading.dataset.assetColumn)).map(heading => heading.dataset.assetColumn);
+    const actionHeading = headings.find(heading => heading.dataset.assetColumn === 'actions');
+    const updatePinnedOffset = () => {
+        const width = actionHeading && !actionHeading.hidden ? (actionHeading.getBoundingClientRect?.().width || 0) : 0;
+        table.style?.setProperty('--asset-actions-width', width + 'px');
+    };
+    if (window.ResizeObserver && actionHeading) {
+        new window.ResizeObserver(updatePinnedOffset).observe(actionHeading);
+    }
     const setColumn = (heading, index, visible) => {
         heading.hidden = !visible;
+        updatePinnedOffset();
         rows.forEach(row => { if (row.cells[index]) row.cells[index].hidden = !visible; });
     };
     headings.forEach((heading, index) => {

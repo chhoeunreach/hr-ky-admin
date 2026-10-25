@@ -23,17 +23,31 @@
                 <form class="forms-sample" action="{{ route('admin.app-links.index') }}" method="get">
                     <div class="row align-items-center">
                         <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
-                            <input type="text" name="search" class="form-control" placeholder="Search by name, url, description..."
+                            <input type="text" name="search" class="form-control" placeholder="Search name, username, phone, email, URL..."
                                    value="{{ $filterParameters['search'] ?? '' }}">
                         </div>
 
                         <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
-                            <select class="form-select" name="link_type">
-                                <option value="">All Link Types</option>
+                            <select class="form-select" name="link_type" id="filter_link_type">
+                                <option value="">{{ __('index.link_all_platforms') }}</option>
                                 @foreach($linkTypes as $key => $label)
                                     <option value="{{ $key }}" {{ (isset($filterParameters['link_type']) && $filterParameters['link_type'] == $key) ? 'selected' : '' }}>
                                         {{ $label }}
                                     </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-lg-3 col-md-6 mb-3 mb-lg-0">
+                            <select class="form-select" name="account_type" data-account-type data-platform-id="filter_link_type"
+                                    data-selected="{{ $filterParameters['account_type'] ?? '' }}">
+                                <option value="">{{ __('index.link_all_account_types') }}</option>
+                                @foreach(\App\Models\AppLink::ACCOUNT_TYPES as $platform => $types)
+                                    <optgroup label="{{ $linkTypes[$platform] }}">
+                                        @foreach($types as $key => $label)
+                                            <option value="{{ $key }}" @selected(($filterParameters['account_type'] ?? '') === $key)>{{ $label }}</option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </select>
                         </div>
@@ -69,8 +83,15 @@
                             <th>#</th>
                             <th>Photo</th>
                             <th>Name</th>
-                            <th>Type</th>
+                            <th>{{ __('index.link_platform') }}</th>
+                            <th>{{ __('index.link_account_type') }}</th>
+                            <th>{{ __('index.link_username') }}</th>
+                            <th>{{ __('index.link_password') }}</th>
+                            <th>{{ __('index.phone_number') }}</th>
+                            <th>{{ __('index.email') }}</th>
                             <th>URL</th>
+                            <th>{{ __('index.link_created_by') }}</th>
+                            <th>{{ __('index.link_managed_by') }}</th>
                             <th>Order</th>
                             <th class="text-center">Status</th>
                             <th class="text-center">Action</th>
@@ -113,11 +134,17 @@
                                         {{ $linkTypes[$value->link_type] ?? ucfirst($value->link_type) }}
                                     </span>
                                 </td>
+                                <td>{{ \App\Models\AppLink::ACCOUNT_TYPES[$value->link_type][$value->account_type] ?? '—' }}</td>
+                                <td>{{ $value->username ?: '—' }}</td>
+                                <td><span title="{{ __('index.link_password_saved') }}">{{ $value->getRawOriginal('password') ? '••••••••' : '—' }}</span></td>
+                                <td>{{ $value->phone_number ?: '—' }}</td>
+                                <td>{{ $value->email ?: '—' }}</td>
                                 <td>
                                     <a href="{{ $value->url }}" target="_blank" rel="noopener noreferrer" class="text-truncate d-inline-block" style="max-width: 250px;">
                                         {{ $value->url }} <i data-feather="external-link" style="width: 12px; height: 12px;"></i>
                                     </a>
                                 </td>
+                                @include('admin.appLink.common.ownership')
                                 <td>{{ $value->order }}</td>
                                 <td class="text-center">
                                     <label class="switch">
@@ -142,7 +169,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="15" class="text-center py-4">
                                     <b>@lang('index.no_records_found')</b>
                                 </td>
                             </tr>

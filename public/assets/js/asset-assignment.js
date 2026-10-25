@@ -10,7 +10,8 @@
         const branch = form.querySelector('[name="branch_id"]');
         const date = form.querySelector('[name="assigned_date"]');
         const submit = form.querySelector('[type="submit"]');
-        const submitLabel = submit.textContent;
+        let submitLabel = submit.textContent;
+        let transfer = false;
         const status = modal.querySelector('[data-assignment-status]');
         const error = modal.querySelector('[data-assignment-error]');
         const errorText = modal.querySelector('[data-assignment-error-text]');
@@ -88,7 +89,9 @@
                 if (!response.ok) throw new Error('Options unavailable');
                 const result = await response.json();
                 if (current !== generation) return;
-                employees = result.employees;
+                employees = result.employees.filter(user => !transfer || String(user.id) !== String(result.current_assignment?.user_id));
+                date.min = transfer ? (result.current_assignment?.assigned_date || '') : '';
+                date.max = text.today;
                 departments = result.departments;
                 branches = result.branches;
                 form.querySelector('[name="asset_id"]').value = result.asset.id;
@@ -149,6 +152,10 @@
             event.preventDefault();
             if (saving) return;
             form.reset();
+            transfer = trigger.dataset.assignmentMode === 'transfer';
+            submitLabel = (transfer ? text.transferLabel : text.assignLabel) || submitLabel;
+            const heading = modal.querySelector('.modal-title');
+            if (heading) heading.textContent = submitLabel;
             form.setAttribute('action', trigger.dataset.href);
             date.value = text.today;
             optionsUrl = trigger.dataset.optionsUrl;

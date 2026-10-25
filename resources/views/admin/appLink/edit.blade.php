@@ -24,6 +24,7 @@
             </div>
             <div class="card-body">
                 <form class="forms-sample" action="{{ route('admin.app-links.update', $linkDetail->id) }}" enctype="multipart/form-data" method="POST">
+                    @method('PUT')
                     @csrf
                     @include('admin.appLink.common.form')
                 </form>

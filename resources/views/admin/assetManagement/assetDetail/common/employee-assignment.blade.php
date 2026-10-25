@@ -17,8 +17,17 @@
                     <i data-feather="user-plus"></i> {{ __('index.assign_asset') }}
                 </button>
             @elseif($hasCurrentAssignment)
+                @if($assetDetail->is_working === 'yes')
+                    <button type="button" class="assignAsset btn btn-primary"
+                        data-options-url="{{ route('admin.asset-assignment.options', $assetDetail->id) }}"
+                        data-assignment-mode="transfer" data-href="{{ route('admin.asset-assignment.employee', $assetDetail->id) }}">{{ __('index.asset_change_employee') }}</button>
+                @endif
+                @can('print_assets')
                 <a class="btn btn-outline-primary" data-open-asset-modal href="{{ route('admin.assets.receipt', $assetDetail->id) }}"><i data-feather="printer"></i> {{ __('index.asset_print_receipt') }}</a>
+                @endcan
+                @can('asset_assign_list')
                 <a class="btn btn-outline-secondary" data-open-asset-modal href="{{ route('admin.asset-assignment.index', $assetDetail->id) }}">{{ __('index.assignment_history_return') }}</a>
+                @endcan
             @else
                 <span class="text-muted small">{{ __('index.asset_assign_condition_help') }}</span>
             @endif

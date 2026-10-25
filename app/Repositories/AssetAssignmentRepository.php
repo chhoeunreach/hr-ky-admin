@@ -89,13 +89,18 @@ class AssetAssignmentRepository
 
     public function changeRepairStatus($assignmentDetail)
     {
+        $asset = Asset::whereKey($assignmentDetail->asset_id)->lockForUpdate()->firstOrFail();
+        $assignmentDetail = AssetAssignment::whereKey($assignmentDetail->id)->lockForUpdate()->firstOrFail();
+        if (!$assignmentDetail->returned_date || $asset->assignment()->whereNull('returned_date')->exists()
+            || (int) $asset->assignment()->orderByDesc('id')->value('id') !== (int) $assignmentDetail->id) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['asset_id' => __('index.asset_return_before_change')]);
+        }
         $prevRepairStatus = $assignmentDetail->return_condition;
         $assignmentDetail->update([
             'return_condition'=> ($prevRepairStatus == AssetReturnConditionEnum::requireMaintenance->value) ? AssetReturnConditionEnum::repaired->value : AssetReturnConditionEnum::requireMaintenance->value
         ]);
 
-
-        return Asset::where('id',$assignmentDetail->asset_id)->update([
+        return $asset->update([
             'is_working' => ($prevRepairStatus == AssetReturnConditionEnum::requireMaintenance->value) ? 'yes' : 'no',
             'is_available' => ($prevRepairStatus == AssetReturnConditionEnum::requireMaintenance->value) ? 1 : 0,
         ]);

@@ -31,6 +31,7 @@ class AssetsToolkitTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-25 10:00:00'));
         DB::purge('sqlite');
         app()->setLocale('en');
         Schema::create('app_settings', function (Blueprint $table) {
@@ -44,7 +45,7 @@ class AssetsToolkitTest extends TestCase
         Schema::create('asset_assignments', function (Blueprint $table) {
             $table->id(); $table->integer('branch_id'); $table->integer('asset_id'); $table->integer('user_id');
             $table->date('assigned_date'); $table->date('returned_date')->nullable();
-            $table->integer('department_id')->nullable(); $table->string('status')->nullable(); $table->timestamps();
+            $table->integer('department_id')->nullable(); $table->string('status')->nullable(); $table->string('return_condition')->nullable(); $table->text('notes')->nullable(); $table->timestamps();
         });
         Schema::create('assets', function (Blueprint $table) {
             $table->id(); $table->integer('branch_id')->nullable(); $table->integer('type_id');
@@ -53,6 +54,9 @@ class AssetsToolkitTest extends TestCase
             $table->integer('updated_by')->nullable();
         });
         (require database_path('migrations/2026_10_24_000002_add_phone_numbers_to_assets_table.php'))->up();
+        (require database_path('migrations/2026_10_25_000001_create_asset_activities_table.php'))->up();
+        (require database_path('migrations/2026_10_25_000002_add_images_to_assets_table.php'))->up();
+        (require database_path('migrations/2026_10_25_000006_add_device_setup_to_assets_table.php'))->up();
         DB::table('branches')->insert([['id' => 1, 'name' => 'Other branch'], ['id' => 2, 'name' => 'Current branch']]);
         DB::table('asset_types')->insert(['id' => 1, 'name' => 'Laptop', 'branch_id' => 2]);
         for ($index = 1; $index <= 32; $index++) {
@@ -365,6 +369,7 @@ class AssetsToolkitTest extends TestCase
     public function test_receipt_prints_saved_employee_asset_and_assignment_details_in_both_languages(): void
     {
         $this->setupAssignmentSelection();
+        $this->abilities[] = 'print_assets';
         Route::get('/_test/asset-receipt/{assetId}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'receipt']);
         $this->get('/_test/asset-receipt/1')->assertNotFound();
         DB::table('asset_assignments')->insert([
@@ -391,6 +396,241 @@ class AssetsToolkitTest extends TestCase
         ])->assertOk();
         $this->assertSame(1, DB::table('asset_assignments')->count());
         $this->assertSame(0, DB::table('assets')->where('id', 1)->value('is_available'));
+    }
+
+    public function test_reassignment_preserves_history_and_rejects_duplicate_or_backdated_changes(): void
+    {
+        $this->setupAssignmentSelection();
+        Route::post('/_test/asset-transfer/{id}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'updateEmployee']);
+        $data = ['asset_id' => 1, 'branch_id' => 2, 'department_id' => 5, 'user_id' => 10, 'assigned_date' => '2026-10-24'];
+        $this->postJson('/_test/asset-assignment/1', $data)->assertOk();
+        $this->postJson('/_test/asset-assignment/1', $data)->assertUnprocessable();
+        $this->postJson('/_test/asset-transfer/1', $data)->assertUnprocessable();
+        $change = array_replace($data, ['department_id' => 6, 'user_id' => 11]);
+        $this->postJson('/_test/asset-transfer/1', array_replace($change, ['assigned_date' => '2026-10-23']))->assertUnprocessable();
+        $this->assertSame(0, DB::transactionLevel());
+        $this->assertSame(1, DB::table('asset_assignments')->count());
+        $this->postJson('/_test/asset-transfer/1', $change)->assertOk();
+        $this->assertSame(2, DB::table('asset_assignments')->count());
+        $this->assertSame(11, DB::table('asset_assignments')->whereNull('returned_date')->value('user_id'));
+        $this->assertSame('2026-10-24', DB::table('asset_assignments')->where('user_id', 10)->value('returned_date'));
+        $this->assertSame(0, DB::table('assets')->where('id', 1)->value('is_available'));
+        $events = \App\Models\AssetActivity::orderBy('id')->get();
+        $this->assertSame(2, $events->where('event', 'assignment_created')->count());
+        $returned = $events->firstWhere('event', 'assignment_updated');
+        $this->assertSame('Employee 10', $returned->after['employee_name']);
+        $this->assertSame('Asset officer', $returned->actor_name);
+        $this->assertNull($returned->before['returned_date']);
+        $this->assertSame('2026-10-24', $returned->after['returned_date']);
+        $this->abilities = ['list_assets'];
+        $this->postJson('/_test/asset-transfer/1', $data)->assertForbidden();
+    }
+
+    public function test_activity_keeps_asset_changes_and_deleted_snapshots_with_branch_permissions(): void
+    {
+        $this->abilities[] = 'asset_assign_list';
+        Route::get('/_test/asset-activity', function (Request $request) {
+            $view = app(AssetController::class)->activity($request);
+            return view('admin.assetManagement.assetDetail.common.activity', $view->getData());
+        });
+        $asset = \App\Models\Asset::findOrFail(1);
+        $asset->update(['name' => 'Renamed laptop']);
+        $activity = \App\Models\AssetActivity::firstOrFail();
+        $this->assertSame('Laptop 1', $activity->before['name']);
+        $this->assertSame('Renamed laptop', $activity->after['name']);
+        $asset->delete();
+        $this->assertSame(2, \App\Models\AssetActivity::count());
+        $this->get('/_test/asset-activity')->assertOk()->assertSee('Renamed laptop')->assertSee('Asset officer');
+        \App\Models\AssetActivity::create(['asset_id' => 32, 'branch_id' => 1, 'asset_name' => 'Private other branch', 'event' => 'asset_deleted']);
+        $this->get('/_test/asset-activity')->assertOk()->assertDontSee('Private other branch');
+        $this->get('/_test/asset-activity?asset_id=32')->assertOk()->assertDontSee('Private other branch');
+        $this->abilities = ['list_assets'];
+        $this->getJson('/_test/asset-activity')->assertForbidden();
+    }
+
+    public function test_returns_are_authorized_and_cannot_modify_an_old_assignment(): void
+    {
+        $this->setupAssignmentSelection();
+        Route::post('/_test/asset-return/{id}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'storeReturn']);
+        $this->postJson('/_test/asset-assignment/1', ['asset_id' => 1, 'branch_id' => 2, 'department_id' => 5, 'user_id' => 10, 'assigned_date' => '2026-10-24'])->assertOk();
+        $id = DB::table('asset_assignments')->value('id');
+        $this->abilities = ['list_assets'];
+        $this->postJson('/_test/asset-return/'.$id, ['is_working' => 'yes'])->assertForbidden();
+        $this->abilities[] = 'assign_asset';
+        $this->post('/_test/asset-return/'.$id, ['is_working' => 'yes'])->assertRedirect(route('admin.assets.index'));
+        $count = \App\Models\AssetActivity::count();
+        $this->post('/_test/asset-return/'.$id, ['is_working' => 'no'])->assertSessionHas('danger');
+        $this->assertSame($count, \App\Models\AssetActivity::count());
+        $this->assertSame('yes', DB::table('assets')->where('id', 1)->value('is_working'));
+        $this->assertSame(1, DB::table('assets')->where('id', 1)->value('is_available'));
+    }
+
+    public function test_multiple_images_can_be_added_retained_and_removed(): void
+    {
+        $this->abilities[] = 'create_assets';
+        $this->abilities[] = 'edit_assets';
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(0);
+            $table->date('warranty_end_date')->nullable(); $table->integer('created_by')->nullable();
+        });
+        $temp = sys_get_temp_dir().'/asset-images-'.uniqid();
+        app()->usePublicPath($temp);
+        Route::post('/_test/asset-create', [AssetController::class, 'store']);
+        Route::put('/_test/asset-edit/{asset}', [AssetController::class, 'update']);
+        $data = ['branch_id' => 2, 'type_id' => 1, 'name' => 'Photo laptop', 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'is_working' => 'yes'];
+        try {
+            $this->post('/_test/asset-create', $data + ['images' => [
+                \Illuminate\Http\UploadedFile::fake()->image('front.jpg', 1800, 1200),
+                \Illuminate\Http\UploadedFile::fake()->image('back.png'),
+            ]])->assertRedirect(route('admin.assets.index'))->assertSessionHasNoErrors();
+            $asset = \App\Models\Asset::where('name', 'Photo laptop')->firstOrFail();
+            $original = $asset->imageFiles();
+            $this->assertCount(2, $original);
+            $dimensions = getimagesize(public_path(\App\Models\Asset::UPLOAD_PATH.$original[0]));
+            $this->assertSame([1800, 1200], array_slice($dimensions, 0, 2));
+            foreach ($original as $file) $this->assertFileExists(public_path(\App\Models\Asset::UPLOAD_PATH.$file));
+            $this->put('/_test/asset-edit/'.$asset->id, $data + ['images' => [\Illuminate\Http\UploadedFile::fake()->image('side.webp')]])
+                ->assertRedirect(route('admin.assets.index'))->assertSessionHasNoErrors();
+            $this->assertCount(3, $asset->fresh()->imageFiles());
+            $this->put('/_test/asset-edit/'.$asset->id, $data + ['remove_images' => [$original[0]]])
+                ->assertRedirect(route('admin.assets.index'))->assertSessionHasNoErrors();
+            $saved = $asset->fresh();
+            $this->assertCount(2, $saved->imageFiles());
+            $this->assertSame($original[1], $saved->image);
+            $this->assertFileDoesNotExist(public_path(\App\Models\Asset::UPLOAD_PATH.$original[0]));
+            $this->put('/_test/asset-edit/'.$asset->id, $data + ['remove_images' => ['../other.jpg']])->assertSessionHasErrors('remove_images.0');
+            $this->post('/_test/asset-create', $data + ['images' => [\Illuminate\Http\UploadedFile::fake()->create('bad.txt', 1, 'text/plain')]])->assertSessionHasErrors('images.0');
+            $this->post('/_test/asset-create', $data + ['images' => array_fill(0, 11, \Illuminate\Http\UploadedFile::fake()->image('many.jpg'))])->assertSessionHasErrors('images');
+            $activity = \App\Models\AssetActivity::where('asset_id', $asset->id)->where('event', 'asset_created')->firstOrFail();
+            $this->assertCount(2, json_decode($activity->after['images'], true));
+        } finally {
+            \Illuminate\Support\Facades\File::deleteDirectory($temp);
+        }
+    }
+
+    public function test_asset_details_offer_gallery_and_full_image_controls_in_both_languages(): void
+    {
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->view('admin.assetManagement.assetDetail.show')
+                ->assertSee(__('index.asset_overview'))->assertSee(__('index.asset_image_gallery'))
+                ->assertSee(__('index.asset_image_original'))->assertSee(__('index.asset_image_download'))
+                ->assertSee(__('index.asset_image_zoom'))->assertSee(__('index.asset_image_previous'))
+                ->assertSee('id="assetImageViewer"', false)->assertSee('data-asset-gallery', false)
+                ->assertDontSee('index.');
+        }
+    }
+
+    public function test_action_dropdown_follows_individual_permissions_and_precedes_employee(): void
+    {
+        $asset = \App\Models\Asset::with('type')->findOrFail(1);
+        $assignment = (new \App\Models\AssetAssignment())->forceFill(['user_id' => 10]);
+        $assignment->setRelation('user', auth()->user());
+        $asset->setRelation('latestAssignment', $assignment);
+        $labels = ['print_assets' => __('index.print'), 'show_asset' => __('index.view'),
+            'edit_assets' => __('index.edit'), 'delete_assets' => __('index.delete')];
+        foreach ($labels as $permission => $label) {
+            $this->abilities = ['list_assets', $permission];
+            $html = (string) $this->view('admin.assetManagement.assetDetail.common.actions', ['value' => $asset]);
+            $this->assertStringContainsString($label, $html);
+            foreach ($labels as $otherPermission => $otherLabel) {
+                if ($otherPermission !== $permission) $this->assertStringNotContainsString('> '.$otherLabel, $html);
+            }
+        }
+        $this->abilities = ['list_assets', ...array_keys($labels)];
+        $html = (string) $this->view('admin.assetManagement.assetDetail.common.table', ['assetLists' => collect([$asset])]);
+        $dom = new \DOMDocument();
+        @$dom->loadHTML('<?xml encoding="UTF-8">'.$html);
+        $xpath = new \DOMXPath($dom);
+        $headings = $xpath->query('//thead/tr/th');
+        $this->assertSame('actions', $headings->item(0)->getAttribute('data-asset-column'));
+        $this->assertSame('employee', $headings->item(1)->getAttribute('data-asset-column'));
+        $this->assertSame($headings->length, $xpath->query('//tbody/tr[1]/td')->length);
+        $this->assertSame(1, $xpath->query('//tbody/tr[1]/td[1]//button[@data-asset-actions]')->length);
+        $this->abilities = ['list_assets'];
+        $html = (string) $this->view('admin.assetManagement.assetDetail.common.table', ['assetLists' => collect([$asset])]);
+        $this->assertStringNotContainsString('data-asset-actions', $html);
+        $this->assertStringNotContainsString('data-asset-column="actions"', $html);
+    }
+
+    public function test_receipt_requires_print_permission_even_when_user_can_list_or_view_assets(): void
+    {
+        Route::get('/_test/print-permission/{assetId}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'receipt']);
+        $this->abilities = ['list_assets', 'show_asset'];
+        $this->getJson('/_test/print-permission/1')->assertForbidden();
+        $this->abilities[] = 'print_assets';
+        $this->getJson('/_test/print-permission/1')->assertNotFound();
+    }
+
+    public function test_print_permission_migration_adds_role_option_without_granting_existing_roles(): void
+    {
+        Schema::create('permission_groups', function (Blueprint $table) { $table->id(); $table->string('name'); });
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id(); $table->string('name'); $table->string('permission_key')->unique(); $table->integer('permission_groups_id')->nullable();
+        });
+        Schema::create('permission_roles', function (Blueprint $table) { $table->integer('permission_id'); $table->integer('role_id'); });
+        DB::table('permission_groups')->insert(['id' => 26, 'name' => 'Asset Management']);
+        DB::table('permissions')->insert(['name' => 'List Assets', 'permission_key' => 'list_assets', 'permission_groups_id' => 26]);
+        $migration = require database_path('migrations/2026_10_25_000003_add_print_assets_permission.php');
+        $migration->up(); $migration->up();
+        $permission = DB::table('permissions')->where('permission_key', 'print_assets')->first();
+        $this->assertSame('Print Assets', $permission->name);
+        $this->assertSame(26, $permission->permission_groups_id);
+        $this->assertSame(1, DB::table('permissions')->where('permission_key', 'print_assets')->count());
+        $this->assertSame(0, DB::table('permission_roles')->count());
+        DB::table('permission_roles')->insert(['permission_id' => $permission->id, 'role_id' => 1]);
+        $migration->down();
+        $this->assertSame(0, DB::table('permission_roles')->count());
+        $this->assertSame(0, DB::table('permissions')->where('permission_key', 'print_assets')->count());
+    }
+
+    public function test_device_setup_credentials_are_encrypted_preserved_and_masked_in_exports_and_history(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->abilities[] = 'edit_assets';
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(0); $table->date('warranty_end_date')->nullable();
+        });
+        Route::put('/_test/device-setup/{asset}', [AssetController::class, 'update']);
+        $data = ['branch_id' => 2, 'type_id' => 1, 'name' => 'Device setup', 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'is_working' => 'yes', 'icloud' => 'device@example.test',
+            'asset_password' => 'Example-device-password!', 'screen_time_passcode' => '0012', 'set_by' => 11];
+        $this->put('/_test/device-setup/1', $data)->assertSessionHasNoErrors()->assertRedirect(route('admin.assets.index'));
+        $asset = \App\Models\Asset::findOrFail(1);
+        $this->assertSame('Example-device-password!', $asset->asset_password);
+        $this->assertSame('0012', $asset->screen_time_passcode);
+        $this->assertNotSame('0012', $asset->getRawOriginal('screen_time_passcode'));
+        $this->assertNotSame('Example-device-password!', $asset->getRawOriginal('asset_password'));
+        $this->assertSame('Employee 11', $asset->setBy->name);
+        $this->assertArrayNotHasKey('asset_password', $asset->toArray());
+        $this->assertArrayNotHasKey('screen_time_passcode', $asset->toArray());
+        $activity = \App\Models\AssetActivity::firstOrFail();
+        $this->assertSame('[redacted]', $activity->after['asset_password']);
+        $this->assertSame('[redacted]', $activity->after['screen_time_passcode']);
+        $query = http_build_query(['export' => 'json', 'q' => 'device@example.test', 'columns' => ['icloud', 'asset_password', 'screen_time_passcode', 'set_by']]);
+        $this->getJson('/_test/assets-toolkit?'.$query)->assertOk()->assertJsonCount(1, 'rows')
+            ->assertJsonPath('rows.0', ['device@example.test', '••••••••', '••••', 'Employee 11'])
+            ->assertDontSee('Example-device-password!')->assertDontSee('0012');
+        $this->put('/_test/device-setup/1', array_replace($data, ['asset_password' => '', 'screen_time_passcode' => '']))->assertSessionHasNoErrors();
+        $this->assertSame('Example-device-password!', $asset->fresh()->asset_password);
+        $this->assertSame('0012', $asset->fresh()->screen_time_passcode);
+        $this->view('admin.assetManagement.assetDetail.common.device-form', ['assetDetail' => $asset, 'setByOptions' => \App\Models\Asset::setupPeople($asset), 'errors' => new \Illuminate\Support\ViewErrorBag()])
+            ->assertSee('Employee 11')->assertSee('name="screen_time_passcode"', false)->assertDontSee('Example-device-password!');
+        $this->put('/_test/device-setup/1', array_replace($data, ['asset_password' => '', 'screen_time_passcode' => '', 'clear_asset_password' => 1, 'clear_screen_time_passcode' => 1]))->assertSessionHasNoErrors();
+        $this->assertNull($asset->fresh()->asset_password);
+        $this->assertNull($asset->fresh()->screen_time_passcode);
+        $this->put('/_test/device-setup/1', array_replace($data, ['set_by' => 12]))->assertSessionHasErrors('set_by');
+    }
+
+    public function test_description_preview_limits_unicode_text_to_16_characters_and_keeps_full_text(): void
+    {
+        $short = str_repeat('ក', 16);
+        $this->view('admin.assetManagement.assetDetail.common.description', ['note' => $short])->assertSee($short)->assertDontSee('<details', false);
+        $long = $short.'EXTRA';
+        $this->view('admin.assetManagement.assetDetail.common.description', ['note' => '<p>'.$long.'</p>'])
+            ->assertSee('class="asset-description-excerpt">'.$short.'…</span>', false)
+            ->assertSee('class="asset-description-full">'.$long.'</div>', false);
     }
 
     public function test_word_and_pdf_preserve_visible_columns_and_translated_headers(): void

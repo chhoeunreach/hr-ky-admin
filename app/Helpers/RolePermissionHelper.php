@@ -1308,6 +1308,12 @@ class RolePermissionHelper
             ],
 
             [
+                "name" => "Print Assets",
+                "permission_key" => "print_assets",
+                "permission_groups_id" => 26
+            ],
+
+            [
                 "name" => "Show Assets Detail",
                 "permission_key" => "show_asset",
                 "permission_groups_id" => 26

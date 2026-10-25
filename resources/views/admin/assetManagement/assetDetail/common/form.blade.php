@@ -69,6 +69,8 @@
         @error('phone_numbers')<div class="text-danger small">{{ $message }}</div>@enderror
     </div>
 
+    @include('admin.assetManagement.assetDetail.common.device-form')
+
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="purchased_date" class="form-label">{{ __('index.purchased_date') }} <span style="color: red">*</span></label>
         <input type="date"
@@ -128,21 +130,24 @@
     @endif
     <div class="col-lg-6 col-md-6 mb-4">
         <label for="image" class="form-label">{{ __('index.upload_image') }} @if(!isset($assetDetail))<span style="color: red">*</span>@endif </label>
-        <input class="form-control"
-               type="file"
-               id="image"
-               name="image"
-               accept=".jpeg,.png,.jpg,.webp"
-               value="{{ isset($assetDetail) ? $assetDetail->image : old('image') }}"
-            {{isset($assetDetail) ? '': 'required'}}
-        >
-        <img class="mt-3 {{(isset($assetDetail) && $assetDetail->image) ? '': 'd-none'}}"
-             id="image-preview"
-             src="{{ (isset($assetDetail) && $assetDetail->image) ? asset(\App\Models\Asset::UPLOAD_PATH.$assetDetail->image) : ''}}"
-             style="object-fit: contain"
-             width="200"
-             height="200"
-        >
+        <input class="form-control" type="file" id="images" name="images[]" multiple
+               accept="image/jpeg,image/png,image/webp" {{ isset($assetDetail) ? '' : 'required' }}>
+        <div class="form-text">{{ __('index.asset_images_help') }}</div>
+        @error('images')<div class="text-danger small">{{ $message }}</div>@enderror
+        @foreach($errors->get('images.*') as $messages)
+            @foreach($messages as $message)<div class="text-danger small">{{ $message }}</div>@endforeach
+        @endforeach
+        <div class="d-flex flex-wrap gap-3 mt-3" data-asset-gallery>
+            @foreach(isset($assetDetail) ? $assetDetail->imageFiles() : [] as $file)
+                <label class="border rounded p-2">
+                    <a data-asset-image href="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" target="_blank" rel="noopener">
+                        <img src="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" alt="{{ __('index.asset_image') }}" width="110" height="90" style="object-fit:contain">
+                    </a>
+                    <span class="d-block small mt-2"><input type="checkbox" name="remove_images[]" value="{{ $file }}" @checked(in_array($file, old('remove_images', [])))> {{ __('index.delete') }}</span>
+                </label>
+            @endforeach
+        </div>
+        <div id="asset-image-previews" data-asset-gallery class="d-flex flex-wrap gap-3 mt-3" aria-live="polite"></div>
     </div>
 
     <div class="col-lg-6 mb-4">

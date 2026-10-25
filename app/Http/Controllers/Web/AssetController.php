@@ -71,7 +71,7 @@ class AssetController extends Controller
             }
 
             $select = ['*'];
-            $with = ['type:id,name','latestAssignment.user:id,name,avatar'];
+            $with = ['type:id,name','latestAssignment.user:id,name,avatar', 'setBy:id,name'];
             $assetLists = $this->assetService->getAllAssetsPaginated($filterParameters,$select,$with);
             if ($request->filled('export')) {
                 return $this->exportAssetTable($request, $assetLists);
@@ -86,10 +86,24 @@ class AssetController extends Controller
         }
     }
 
+    public function activity(Request $request)
+    {
+        $this->authorize('asset_assign_list');
+        $request->validate(['asset_id' => ['nullable', 'integer'], 'event' => ['nullable', 'in:asset_created,asset_updated,asset_deleted,assignment_created,assignment_updated,assignment_deleted']]);
+        $activities = \App\Models\AssetActivity::query()
+            ->when(!auth('admin')->check() && auth()->user()?->branch_id, fn ($query) => $query->where('branch_id', auth()->user()->branch_id))
+            ->when($request->filled('asset_id'), fn ($query) => $query->where('asset_id', $request->integer('asset_id')))
+            ->when($request->filled('event'), fn ($query) => $query->where('event', $request->input('event')))
+            ->orderByDesc('id')->paginate(25)->withQueryString();
+        return view($this->view.'activity', compact('activities'));
+    }
+
     private function assetTableColumns(): array
     {
         $columns = [
-            'number' => '#', 'employee' => __('index.employee'), 'name' => __('index.name'), 'phone_numbers' => __('index.phone_number'), 'asset_code' => __('index.asset_code'),
+            'employee' => __('index.employee'), 'name' => __('index.name'), 'phone_numbers' => __('index.phone_number'),
+            'icloud' => __('index.asset_icloud'), 'asset_password' => __('index.asset_device_password'),
+            'screen_time_passcode' => __('index.asset_screen_time_passcode'), 'set_by' => __('index.asset_set_by'), 'asset_code' => __('index.asset_code'),
             'asset_serial_no' => __('index.asset_serial_number'), 'description' => __('index.description'),
             'type' => __('index.type'), 'is_working' => __('index.is_working'), 'is_available' => __('index.is_available'),
         ];
@@ -108,8 +122,10 @@ class AssetController extends Controller
         $rows = $assets->values()->map(function ($asset, $index) use ($columns) {
             $data = [
                 'employee' => $asset->latestAssignment && !$asset->latestAssignment->returned_date ? $asset->latestAssignment->user?->name : null,
-                'number' => (string) ($index + 1), 'name' => $asset->name,
+                'name' => $asset->name,
                 'phone_numbers' => $asset->phone_numbers,
+                'icloud' => $asset->icloud, 'asset_password' => $asset->getRawOriginal('asset_password') ? '••••••••' : '',
+                'screen_time_passcode' => $asset->getRawOriginal('screen_time_passcode') ? '••••' : '', 'set_by' => $asset->setBy?->name,
                 'asset_code' => $asset->asset_code, 'asset_serial_no' => $asset->asset_serial_no,
                 'description' => trim(html_entity_decode(strip_tags(preg_replace('/<\/(p|div)>|<br\s*\/?>/i', "\n", $asset->note ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8')),
                 'type' => $asset->type?->name, 'is_working' => __('index.' . $asset->is_working),
@@ -148,7 +164,8 @@ class AssetController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view . 'create',compact('companyDetail'));
+            $setByOptions = Asset::setupPeople();
+            return view($this->view . 'create',compact('companyDetail', 'setByOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -188,6 +205,10 @@ class AssetController extends Controller
             $assetDetail = $this->assetService->findAssetById($id,$select,$with,);
 
 
+            $assetDetail->asset_password_status = $assetDetail->getRawOriginal('asset_password') ? '••••••••' : '—';
+            $assetDetail->screen_time_status = $assetDetail->getRawOriginal('screen_time_passcode') ? '••••' : '—';
+            $assetDetail->set_by_name = $assetDetail->setBy?->name ?: '—';
+            $assetDetail->image_urls = array_map(fn ($file) => asset(Asset::UPLOAD_PATH.$file), $assetDetail->imageFiles());
             $assetDetail->name = ucfirst($assetDetail->name);
             $assetDetail->asset_code = $assetDetail->asset_code ?? '';
             $assetDetail->asset_serial_no = $assetDetail->asset_serial_no ?? '';
@@ -222,7 +243,8 @@ class AssetController extends Controller
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view . 'edit', compact('assetDetail','companyDetail','assetTypes'));
+            $setByOptions = Asset::setupPeople($assetDetail);
+            return view($this->view . 'edit', compact('assetDetail','companyDetail','assetTypes', 'setByOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -248,13 +270,27 @@ class AssetController extends Controller
         } catch (Exception $exception) {
             DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage())
-                ->withInput();
+                ->withInput($request->except(['asset_password', 'screen_time_passcode']));
         }
     }
 
     /**
      * @throws AuthorizationException
      */
+    public function changeAvailabilityStatus($id)
+    {
+        $this->authorize('edit_assets');
+        try {
+            DB::transaction(function () use ($id) {
+                $asset = Asset::whereKey($id)->lockForUpdate()->firstOrFail();
+                $this->assetService->updateAssetDetail($id, ['is_available' => !$asset->is_available]);
+            });
+            return redirect()->back()->with('success', __('message.status_changed'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
     public function delete($id)
     {
         $this->authorize('delete_assets');

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AssetAssignment extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\RecordsAssetActivity;
     protected $table = 'asset_assignments';
 
     protected $fillable = [

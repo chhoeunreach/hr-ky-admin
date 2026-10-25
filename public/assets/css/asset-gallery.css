@@ -1,0 +1,44 @@
+.asset-detail-modal .modal-dialog { max-width: 1080px; }
+.asset-detail-modal .modal-content { border-radius: 18px; overflow: hidden; }
+.asset-detail-modal .modal-header { padding: 24px 28px; border-bottom: 1px solid rgba(128,144,160,.18); }
+.asset-detail-modal .asset-detail-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: #78889a; margin-bottom: 7px; }
+.asset-detail-modal .assetTitle { font-size: 22px; font-weight: 650; margin: 0; overflow-wrap: anywhere; }
+.asset-detail-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.15fr); gap: 28px; }
+.asset-detail-modal .asset-overview { border: 1px solid rgba(128,144,160,.18); border-radius: 12px; padding: 18px; }
+.asset-detail-modal .table { margin: 0; }
+.asset-detail-modal .table th { width: 42%; font-size: 12px; font-weight: 500; padding: 12px 8px 12px 0; white-space: normal; }
+.asset-detail-modal .table td { font-size: 13px; padding: 12px 0 12px 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.asset-detail-modal .table tr + tr { border-top: 1px solid rgba(128,144,160,.12); }
+.asset-detail-modal .asset-images { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.asset-gallery-card { position: relative; display: flex; align-items: center; justify-content: center; min-height: 155px; aspect-ratio: 4/3; overflow: hidden; background: #f3f6fa; border: 1px solid #e2e8f0; border-radius: 12px; transition: border-color .15s, box-shadow .15s; }
+.asset-gallery-card:first-child { grid-column: 1/-1; aspect-ratio: 16/10; }
+.asset-gallery-card:hover, .asset-gallery-card:focus-visible { border-color: #597bea; box-shadow: 0 0 0 3px rgba(89,123,234,.12); }
+.asset-gallery-card img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+.asset-gallery-number { position: absolute; bottom: 10px; left: 10px; padding: 3px 9px; border-radius: 6px; background: rgba(15,23,42,.75); color: #fff; font-size: 11px; }
+.asset-gallery-empty { grid-column: 1/-1; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 48px 20px; text-align: center; color: #78889a; }
+.asset-image-viewer { position: fixed; inset: 0; width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; border: 0; padding: 0; background: #0b1120; color: #e2e8f0; }
+.asset-image-viewer[open] { display: flex; flex-direction: column; }
+.asset-image-viewer::backdrop { background: rgba(4,9,20,.96); }
+.asset-viewer-header, .asset-viewer-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 24px; flex-shrink: 0; background: #111b2e; }
+.asset-viewer-header h5 { color: #f8fafc; font-size: 16px; margin: 0 0 4px; overflow-wrap: anywhere; }
+.asset-viewer-header [data-image-counter], .asset-viewer-footer span { color: #94a3b8; font-size: 12px; }
+.asset-viewer-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.asset-image-viewer button, .asset-viewer-tools a { display: inline-flex; align-items: center; justify-content: center; border: 1px solid #334155; border-radius: 8px; background: transparent; color: #e2e8f0; text-decoration: none; padding: 8px 12px; font: inherit; font-size: 12px; cursor: pointer; }
+.asset-image-viewer button:hover, .asset-viewer-tools a:hover { background: #25334c; color: #fff; }
+.asset-image-viewer button:focus-visible, .asset-viewer-tools a:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
+.asset-image-viewer button:disabled { opacity: .35; cursor: default; }
+.asset-viewer-stage { flex: 1; min-height: 0; display: grid; place-items: center; overflow: auto; padding: 24px; }
+.asset-viewer-stage img { max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
+.asset-viewer-stage.is-zoomed { display: block; }
+.asset-viewer-stage.is-zoomed img { width: auto; height: auto; max-width: none; max-height: none; margin: auto; }
+.asset-viewer-stage [data-image-error] { text-align: center; color: #fda4af; }
+@media (max-width: 767px) {
+    .asset-detail-layout { grid-template-columns: minmax(0,1fr); gap: 20px; }
+    .asset-detail-modal .modal-header { padding: 20px; }
+    .asset-viewer-header { align-items: flex-start; flex-direction: column; padding: 12px; }
+    .asset-viewer-tools { width: 100%; gap: 6px; }
+    .asset-viewer-tools [data-image-close] { margin-left: auto; }
+    .asset-viewer-footer { padding: 12px; }
+    .asset-viewer-footer span { display: none; }
+    .asset-viewer-stage { padding: 10px; }
+}

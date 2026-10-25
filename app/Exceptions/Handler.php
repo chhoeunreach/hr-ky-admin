@@ -41,6 +41,8 @@ class Handler extends ExceptionHandler
         'current_password',
         'password',
         'password_confirmation',
+        'asset_password',
+        'screen_time_passcode',
     ];
 
     /**

@@ -56,8 +56,14 @@ class AssetService
      */
     public function updateAssetDetail($id, $validatedData)
     {
-        $assetDetail = $this->findAssetById($id);
+        $assetDetail = \App\Models\Asset::whereKey($id)->lockForUpdate()->firstOrFail();
 
+        if ($assetDetail->assignment()->whereNull('returned_date')->exists()) {
+            if ((!empty($validatedData['branch_id']) && (int) $validatedData['branch_id'] !== (int) $assetDetail->branch_id)
+                || !empty($validatedData['is_available'])) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['is_available' => __('index.asset_return_before_change')]);
+            }
+        }
         return $this->assetRepo->update($assetDetail, $validatedData);
 
     }
@@ -68,8 +74,11 @@ class AssetService
     public function deleteAsset($id)
     {
 
-            $assetDetail = $this->findAssetById($id);
+            $assetDetail = \App\Models\Asset::whereKey($id)->lockForUpdate()->firstOrFail();
 
+        if ($assetDetail->assignment()->whereNull('returned_date')->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['asset_id' => __('index.asset_return_before_change')]);
+        }
         return $this->assetRepo->delete($assetDetail);
 
     }
