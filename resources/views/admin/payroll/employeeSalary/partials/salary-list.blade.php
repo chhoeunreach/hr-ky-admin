@@ -40,7 +40,7 @@
                                         @else
                                             <div class="salary-employee-profile">
                                         @endcan
-                                            <img class="salary-employee-avatar" src="{{ $value->avatar_url }}" alt="" width="38" height="38" loading="lazy"
+                                            <img class="salary-employee-avatar" src="{{ $value->avatar_url }}" alt="" width="52" height="52" loading="lazy"
                                                  onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
                                             <span class="salary-employee-identity">
                                                 <span class="fw-semibold">{{ $value->employee_name }}</span>
