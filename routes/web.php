@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\AssetTypeController;
 use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AttendanceController;
 use App\Http\Controllers\Web\AttendanceMonthlyController;
+use App\Http\Controllers\Web\MonthlyPayrollController;
 use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
 use App\Http\Controllers\Web\AwardTypeController;
@@ -408,6 +409,7 @@ Route::group([
         Route::get('attendances/leave-details', [AttendanceController::class, 'leaveDetails'])->name('attendances.leave-details');
         Route::get('attendances/copy-export', [AttendanceController::class, 'copyExport'])->name('attendances.copy-export');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
+        Route::get('monthly-payroll', [MonthlyPayrollController::class, 'index'])->name('monthly-payroll.index');
         Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
         Route::get('attendance-monthly/controls', [AttendanceSettingController::class, 'monthlyControls'])->name('attendance-monthly.controls');
         Route::put('attendance-monthly/controls', [AttendanceSettingController::class, 'updateMonthlyControls'])->name('attendance-monthly.controls.update');

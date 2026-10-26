@@ -1,0 +1,46 @@
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; color: #171717; background: #edf0f5; font: 8pt 'Kantumruy Pro', 'Noto Sans Khmer', Arial, sans-serif; }
+button, select { font: inherit; }
+.payroll-print-controls { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #dbe2ea; background: #fff; font-size: 13px; }
+.payroll-print-controls label { display: flex; align-items: center; gap: 7px; }
+.payroll-print-controls select, .payroll-print-controls button { min-height: 34px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 12px; background: #fff; color: #172b4d; }
+.payroll-print-controls button { background: #0f766e; color: #fff; border-color: #0f766e; cursor: pointer; }
+.payroll-print-controls button:disabled { opacity: .5; cursor: wait; }
+.payroll-print-help { color: #64748b; margin: 0; }
+.payroll-print-scroll { overflow-x: auto; padding: 20px; }
+.payroll-print-sheet { width: var(--payroll-sheet-width, 420mm); min-height: 200mm; margin: 0 auto; padding: 6mm; background: #fff; box-shadow: 0 3px 18px #0f172b18; }
+.payroll-report-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4mm; }
+.payroll-report-heading h1 { font-size: 15pt; margin: 0 0 2mm; }
+.payroll-report-heading p { margin: 0; line-height: 1.6; }
+.payroll-report-period { font-size: 10pt; white-space: nowrap; text-align: right; }
+.payroll-source-note { margin: 0 0 4mm; color: #555; font-size: 7pt; line-height: 1.6; }
+.payroll-employee-block { break-inside: avoid; page-break-inside: avoid; margin: 0 0 1mm; }
+.payroll-sample-table { width: 100%; table-layout: fixed; border-collapse: collapse; border: .25mm dashed #555; }
+.payroll-sample-table th, .payroll-sample-table td { border: .25mm dashed #555; padding: 1mm .65mm; overflow-wrap: anywhere; vertical-align: middle; line-height: 1.65; }
+.payroll-sample-table th { background: #fce4ce; font-weight: 600; text-align: center; font-size: 6.5pt; }
+.payroll-sample-table td { font-size: 7pt; height: 16mm; }
+.payroll-sample-table .number, .payroll-sample-table .day-count { text-align: center; }
+.payroll-sample-table .money { text-align: right; font-variant-numeric: tabular-nums; }
+.payroll-sample-table .earning, .payroll-sample-table .paid-days { color: #173bff; }
+.payroll-sample-table .deduction, .payroll-sample-table .unpaid-days { color: #dc2638; }
+.payroll-sample-table .net-pay { color: #e38300; font-weight: 700; }
+.payroll-sample-table .salary-note { color: #173bff; white-space: pre-wrap; }
+.payroll-sample-table .employee-photo { padding: .4mm; text-align: center; }
+.payroll-sample-table .employee-photo img { display: block; width: 100%; height: 15mm; object-fit: cover; object-position: center top; }
+.payroll-sample-table .employee-name small { display: block; color: #666; font-size: 6pt; }
+.payroll-print-totals { width: 100%; margin-top: 4mm; border-collapse: collapse; break-inside: avoid; }
+.payroll-print-totals th, .payroll-print-totals td { border: .25mm solid #94a3b8; padding: 2mm; text-align: left; }
+.payroll-print-totals th { background: #fce4ce; }
+.payroll-print-totals td { text-align: right; font-weight: 700; }
+.payroll-print-signatures { display: flex; justify-content: space-around; gap: 15mm; margin-top: 12mm; break-inside: avoid; text-align: center; }
+.payroll-print-signatures div { min-width: 45mm; padding-top: 3mm; border-top: .2mm solid #94a3b8; }
+.payroll-print-empty { padding: 10mm; text-align: center; border: .25mm dashed #555; }
+@media print {
+    body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .payroll-print-controls { display: none !important; }
+    .payroll-print-scroll { overflow: visible; padding: 0; }
+    .payroll-print-sheet { width: 100%; min-height: 0; margin: 0; padding: 0; box-shadow: none; }
+    .payroll-employee-block { break-inside: avoid; page-break-inside: avoid; }
+    thead { display: table-header-group; }
+}

@@ -1448,6 +1448,8 @@ class RolePermissionHelper
                 "permission_key" => "view_payroll_list",
                 "permission_groups_id" => 30
             ],
+            ["name" => "View Monthly Payroll", "permission_key" => "view_monthly_payroll", "permission_groups_id" => 30],
+            ["name" => "Export Monthly Payroll", "permission_key" => "export_monthly_payroll", "permission_groups_id" => 30],
             [
                 "name" => "Generate Payroll",
                 "permission_key" => "generate_payroll",

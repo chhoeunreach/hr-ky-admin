@@ -1,4 +1,4 @@
-@canany(['view_payroll_list','view_tada_list','view_salary_list','view_advance_salary_list','view_tax_report','view_sell_staff_report','salary_component','salary_group','ssf','pf','bonus','salary_tds','advance_salary_limit','overtime_setting','undertime_setting','payment_method'])
+@canany(['view_monthly_payroll','view_payroll_list','view_tada_list','view_salary_list','view_advance_salary_list','view_tax_report','view_sell_staff_report','salary_component','salary_group','ssf','pf','bonus','salary_tds','advance_salary_limit','overtime_setting','undertime_setting','payment_method'])
     <li class="nav-item  {{
                     request()->routeIs('admin.bonus.*') ||
                 request()->routeIs('admin.advance-salaries.*') ||
@@ -6,6 +6,7 @@
                 request()->routeIs('admin.payroll.tax-report.*')||
                 request()->routeIs('admin.sell-staff-report.*')||
                 request()->routeIs('admin.employee-salary.payroll*')||
+                request()->routeIs('admin.monthly-payroll.*')||
                  request()->routeIs('admin.salary-components.*') ||
                       request()->routeIs('admin.payment-methods.*') ||
                       request()->routeIs('admin.salary-groups.*') ||
@@ -35,6 +36,7 @@
                 request()->routeIs('admin.payroll.tax-report.*')||
                 request()->routeIs('admin.sell-staff-report.*')||
                 request()->routeIs('admin.employee-salary.payroll*')||
+                request()->routeIs('admin.monthly-payroll.*')||
                  request()->routeIs('admin.salary-components.*') ||
                       request()->routeIs('admin.payment-methods.*') ||
                       request()->routeIs('admin.salary-groups.*') ||
@@ -48,6 +50,12 @@
                ? '' : 'collapse'  }} " id="payroll">
 
             <ul class="nav sub-menu">
+                @can('view_monthly_payroll')
+                    <li class="nav-item">
+                        <a href="{{ route('admin.monthly-payroll.index') }}" data-href="{{ route('admin.monthly-payroll.index') }}"
+                           class="nav-link {{ request()->routeIs('admin.monthly-payroll.*') ? 'active' : '' }}">{{ __('index.monthly_payroll') }}</a>
+                    </li>
+                @endcan
                 @can('view_payroll_list')
                     <li class="nav-item">
                         <a href="{{ route('admin.employee-salary.payroll') }}"

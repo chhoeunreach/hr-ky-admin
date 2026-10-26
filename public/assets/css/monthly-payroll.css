@@ -1,0 +1,22 @@
+.monthly-payroll-page { --bs-font-sans-serif: 'Kantumruy Pro', 'Noto Sans Khmer', Arial, sans-serif; font-family: var(--bs-font-sans-serif); }
+.monthly-payroll-page :where(button, input, select, textarea, .btn, .table, .badge) { font-family: var(--bs-font-sans-serif); }
+.monthly-payroll-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.monthly-payroll-toolbar .form-select { width: 85px; }
+.monthly-payroll-toolbar svg { width: 15px; height: 15px; margin-right: 5px; }
+.monthly-payroll-scroll { max-height: 75vh; border: 1px solid rgba(148,163,184,.3); border-radius: 8px; }
+.monthly-payroll-table { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.monthly-payroll-table th, .monthly-payroll-table td { border-right: 1px dashed #94a3b8; border-bottom: 1px dashed #94a3b8; padding: 10px; min-width: 90px; }
+.monthly-payroll-table thead th { background: #fce8d5; color: #573b27; position: sticky; top: 0; z-index: 3; font-weight: 600; line-height: 1.7; }
+.monthly-payroll-table tbody td { background: var(--bs-body-bg, #fff); }
+.monthly-payroll-table .monthly-code { position: sticky; left: 0; z-index: 2; min-width: 100px; }
+.monthly-payroll-table thead .monthly-code { z-index: 4; }
+.monthly-payroll-table .monthly-name { min-width: 190px; }
+.monthly-payroll-table .monthly-remark { min-width: 200px; max-width: 300px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.monthly-payroll-table .money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.monthly-payroll-table .earning { color: #047857; }
+.monthly-payroll-table .deduction { color: #dc2626; }
+.monthly-payroll-table .monthly-net { color: #c56b00; font-weight: 700; background: #fff8ed; }
+#monthlyPayrollResults td img.monthly-payroll-avatar { width: 46px; height: 46px; min-width: 46px; max-width: 46px; aspect-ratio: 1; object-fit: cover; border-radius: 50%; box-sizing: border-box; border: 3px solid var(--employee-avatar-ring, var(--bs-primary)); }
+#monthlyPayrollResults[aria-busy="true"] { opacity: .5; }
+.monthly-payroll-footer nav p { display: none; }
+@media(max-width:767px) { .monthly-payroll-table th,.monthly-payroll-table td { padding: 8px; } }
