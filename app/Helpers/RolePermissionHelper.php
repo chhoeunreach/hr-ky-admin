@@ -1563,6 +1563,11 @@ class RolePermissionHelper
                 "permission_groups_id" => 33
             ],
             [
+                "name" => "Export Employee Salary",
+                "permission_key" => "export_salary",
+                "permission_groups_id" => 33
+            ],
+            [
                 "name" => "Add Employee Salary",
                 "permission_key" => "add_salary",
                 "permission_groups_id" => 33

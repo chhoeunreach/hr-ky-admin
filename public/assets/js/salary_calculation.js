@@ -5,11 +5,11 @@ function createEmployeeSalary(percentType, salaryComponents, employeeSalary) {
             this.payroll_type = employeeSalary?.payroll_type || 'annual';
             this.payment_type = employeeSalary?.payment_type || 'monthly';
             this.salary_base = this.payroll_type == 'hourly';
-            this.annual_salary = employeeSalary?.annual_salary || '';
+            this.annual_salary = employeeSalary?.annual_salary ?? '';
             this.hour_rate = employeeSalary?.hour_rate || '';
             this.weekly_hours = employeeSalary?.weekly_hours || '';
             this.monthly_hours = employeeSalary?.monthly_hours || '';
-            this.basic_salary_value = employeeSalary?.basic_salary_value || 60;
+            this.basic_salary_value = employeeSalary?.basic_salary_value ?? 60;
             this.basic_salary_type = employeeSalary?.basic_salary_type || percentType;
             this.monthly_basic_salary = employeeSalary?.monthly_basic_salary || 0;
             this.annual_basic_salary = employeeSalary?.annual_basic_salary || 0;
@@ -19,27 +19,6 @@ function createEmployeeSalary(percentType, salaryComponents, employeeSalary) {
             this.weekly_fixed_allowance = employeeSalary?.weekly_fixed_allowance || 0;
             this.salary_group_id = employeeSalary?.salary_group_id || '';
 
-            // Calculate salary components
-            let componentData = calculateSalaryComponent(
-                salaryComponents,
-                this.monthly_fixed_allowance,
-                this.annual_fixed_allowance,
-                this.annual_salary,
-                this.monthly_basic_salary,
-                this.weekly_fixed_allowance
-            );
-
-            this.incomes = componentData[0];
-            this.deductions = componentData[1];
-            this.monthly_fixed_allowance = Number(componentData[2]).toFixed(2);
-
-            this.annual_fixed_allowance = Number(componentData[3]).toFixed(2);
-            this.weekly_fixed_allowance = Number(componentData[4]).toFixed(2);
-
-            // Calculate totals
-            this.calculateTotals();
-
-            // Trigger field visibility and calculations
             this.updateFields();
             this.calculateSalary();
         },
@@ -71,9 +50,8 @@ function createEmployeeSalary(percentType, salaryComponents, employeeSalary) {
         net_annual_salary: 0,
 
         calculateTotals() {
-            let totalInc = this.incomes.reduce((monthly, field) => monthly + Number(field.monthly || 0), 0);
-            this.monthly_total = Number(this.monthly_basic_salary) + Number(this.monthly_fixed_allowance) + Number(totalInc);
-            this.annual_total = Number(this.monthly_total * 12).toFixed(2);
+            this.annual_total = Number(this.annual_salary).toFixed(2);
+            this.monthly_total = Number(this.annual_total / 12).toFixed(2);
             this.weekly_total = Number(this.annual_total / 52).toFixed(2);
 
             let totalDed = this.deductions.reduce((monthly, field) => monthly + Number(field.monthly || 0), 0);
@@ -159,29 +137,23 @@ function createEmployeeSalary(percentType, salaryComponents, employeeSalary) {
                 return;
             }
 
-            let monthlySalary = this.annual_salary / 12;
             if (this.basic_salary_type == percentType) {
-                this.monthly_basic_salary = (this.basic_salary_value / 100) * monthlySalary;
-                this.monthly_basic_salary = Number(this.monthly_basic_salary).toFixed(2);
-                this.annual_basic_salary = (this.basic_salary_value == 100) ? this.annual_salary : Number(this.monthly_basic_salary * 12).toFixed(2);
-                this.monthly_fixed_allowance = (this.basic_salary_value == 100) ? 0 : monthlySalary - this.monthly_basic_salary;
+                this.annual_basic_salary = Number(this.annual_salary * this.basic_salary_value / 100).toFixed(2);
+                this.monthly_basic_salary = Number(this.annual_basic_salary / 12).toFixed(2);
             } else {
                 this.monthly_basic_salary = Number(this.basic_salary_value).toFixed(2);
                 this.annual_basic_salary = Number(this.basic_salary_value * 12).toFixed(2);
-                this.monthly_fixed_allowance = monthlySalary - this.basic_salary_value;
             }
 
-            this.annual_fixed_allowance = Number(this.monthly_fixed_allowance * 12).toFixed(2);
+            this.annual_fixed_allowance = Number(this.annual_salary - this.annual_basic_salary).toFixed(2);
+            this.monthly_fixed_allowance = Number(this.annual_fixed_allowance / 12).toFixed(2);
             this.weekly_fixed_allowance = Number(this.annual_fixed_allowance / 52).toFixed(2);
             this.weekly_basic_salary = Number(this.annual_basic_salary / 52).toFixed(2);
 
             let componentData = calculateSalaryComponent(
                 salaryComponents,
-                this.monthly_fixed_allowance,
-                this.annual_fixed_allowance,
                 this.annual_salary,
-                this.monthly_basic_salary,
-                this.weekly_fixed_allowance
+                this.annual_basic_salary
             );
 
             this.incomes = componentData[0];
@@ -191,36 +163,25 @@ function createEmployeeSalary(percentType, salaryComponents, employeeSalary) {
             this.weekly_fixed_allowance = Number(componentData[4]).toFixed(2);
 
             this.calculateTotals();
+            const basicInput = this.$el?.querySelector('[name="basic_salary_value"]');
+            basicInput?.setCustomValidity(Number(this.annual_fixed_allowance) < 0 ? this.$el.dataset.salaryError : '');
         }
     };
 }
 
-function calculateComponent(valueType, annualValue, annualSalary, basicSalary) {
-    let componentValue = 0;
-    if (valueType == 'fixed') {
-        componentValue = annualValue / 12;
-    } else if (valueType == 'ctc') {
-        componentValue = ((annualValue / 100) * annualSalary) / 12;
-    } else if (valueType == 'basic') {
-        componentValue = (annualValue / 100) * basicSalary;
-    } else {
-        componentValue = 0;
-    }
-    return Number(componentValue).toFixed(2);
-}
-
-function calculateSalaryComponent(salaryComponents, monthlyFixedAllowance, annualFixedAllowance, annualSalary, basicSalary, weeklyFixedAllowance) {
+function calculateSalaryComponent(salaryComponents, annualSalary, annualBasicSalary) {
     let incomes = [];
     let deductions = [];
 
     if (salaryComponents && salaryComponents.length > 0) {
         salaryComponents.forEach(component => {
+            if (component.status !== undefined && !Number(component.status)) return;
             let extraIncome = 0;
             let extraDeduction = 0;
 
             if (component.component_type == 'deductions') {
-                extraDeduction = calculateComponent(component.value_type, component.annual_component_value, annualSalary, basicSalary);
-                let annualD = (component.value_type == 'fixed') ? component.annual_component_value : extraDeduction * 12;
+                let annualD = annualComponent(component, annualSalary, annualBasicSalary);
+                extraDeduction = Number(annualD / 12).toFixed(2);
                 let weeklyDeduction = annualD / 52;
                 deductions.push({
                     name: component.name,
@@ -233,8 +194,8 @@ function calculateSalaryComponent(salaryComponents, monthlyFixedAllowance, annua
             }
 
             if (component.component_type == 'earning') {
-                extraIncome = calculateComponent(component.value_type, component.annual_component_value, annualSalary, basicSalary);
-                let annualI = (component.value_type == 'fixed') ? component.annual_component_value : extraIncome * 12;
+                let annualI = annualComponent(component, annualSalary, annualBasicSalary);
+                extraIncome = Number(annualI / 12).toFixed(2);
                 let weeklyIncome = annualI / 52;
                 incomes.push({
                     name: component.name,
@@ -245,16 +206,22 @@ function calculateSalaryComponent(salaryComponents, monthlyFixedAllowance, annua
                     weekly: Number(weeklyIncome).toFixed(2),
                 });
 
-                let tempMonthlyFixedAllowance = monthlyFixedAllowance - extraIncome;
-                let tempAnnualFixedAllowance = tempMonthlyFixedAllowance * 12;
-                let tempWeeklyFixedAllowance = tempAnnualFixedAllowance / 52;
-
-                monthlyFixedAllowance = tempMonthlyFixedAllowance < 0 ? 0 : tempMonthlyFixedAllowance;
-                annualFixedAllowance = tempAnnualFixedAllowance < 0 ? 0 : tempAnnualFixedAllowance;
-                weeklyFixedAllowance = tempWeeklyFixedAllowance < 0 ? 0 : tempWeeklyFixedAllowance;
             }
         });
     }
 
-    return [incomes, deductions, monthlyFixedAllowance, annualFixedAllowance, weeklyFixedAllowance];
+    const annualEarnings = (salaryComponents || []).filter(component => component.component_type === 'earning'
+        && (component.status === undefined || Number(component.status)))
+        .reduce((total, component) => total + annualComponent(component, annualSalary, annualBasicSalary), 0);
+    // Derive the remaining allowance from the annual salary to avoid rounding each month first.
+    const annualFixedAllowance = Number((Number(annualSalary) - Number(annualBasicSalary) - Number(annualEarnings.toFixed(2))).toFixed(2));
+    return [incomes, deductions, annualFixedAllowance / 12, annualFixedAllowance, annualFixedAllowance / 52];
+}
+
+function annualComponent(component, annualSalary, annualBasicSalary) {
+    const value = Number(component.annual_component_value || 0);
+    const amount = component.value_type === 'fixed' ? value
+        : component.value_type === 'ctc' ? Number(annualSalary) * value / 100
+        : component.value_type === 'basic' ? Number(annualBasicSalary) * value / 100 : 0;
+    return amount;
 }

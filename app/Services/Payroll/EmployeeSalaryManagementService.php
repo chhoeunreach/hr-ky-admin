@@ -14,6 +14,40 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeSalaryManagementService
 {
+    public function setupAmounts(array $data): array
+    {
+        $annual = round((float) $data['annual_salary'], 2);
+        if ($data['payroll_type'] === 'hourly') {
+            $hoursField = $data['payment_type'] === 'weekly' ? 'weekly_hours' : 'monthly_hours';
+            $rate = (float) ($data['hour_rate'] ?? 0);
+            $hours = (float) ($data[$hoursField] ?? 0);
+            if ($rate <= 0 || $hours <= 0) $this->invalid($hoursField, 'salary_manage_hours_required');
+            $annual = round($rate * $hours * ($data['payment_type'] === 'weekly' ? 52 : 12), 2);
+        }
+        if (!is_finite($annual) || $annual < 0 || $annual > 99999999.99) {
+            $this->invalid('annual_salary', 'salary_manage_invalid_amount');
+        }
+        $basicValue = (float) $data['basic_salary_value'];
+        $percent = $data['basic_salary_type'] === 'percent';
+        if ($basicValue < 0 || ($percent && $basicValue > 100)) {
+            $this->invalid('basic_salary_value', 'salary_setup_basic_invalid');
+        }
+        $annualBasic = round($percent ? $annual * $basicValue / 100 : $basicValue * 12, 2);
+        $structure = $this->earningStructure(new EmployeeSalary($data));
+        $earnings = round($structure['fixed'] + $annualBasic * $structure['basic'] / 100 + $annual * $structure['ctc'] / 100, 2);
+        $allowance = round($annual - $annualBasic - $earnings, 2);
+        if ($annualBasic > $annual || $allowance < 0) {
+            $this->invalid('basic_salary_value', 'salary_setup_components_exceed');
+        }
+
+        return array_merge($data, [
+            'annual_salary' => $annual, 'annual_basic_salary' => $annualBasic,
+            'monthly_basic_salary' => round($annualBasic / 12, 2), 'weekly_basic_salary' => round($annualBasic / 52, 2),
+            'annual_fixed_allowance' => $allowance,
+            'monthly_fixed_allowance' => round($allowance / 12, 2), 'weekly_fixed_allowance' => round($allowance / 52, 2),
+        ]);
+    }
+
     public function earningStructure(EmployeeSalary $salary): array
     {
         $structure = ['fixed' => 0.0, 'basic' => 0.0, 'ctc' => 0.0];

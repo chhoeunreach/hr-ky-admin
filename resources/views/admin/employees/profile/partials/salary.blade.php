@@ -20,8 +20,19 @@
             : '—';
     @endphp
 
-    <div class="alert alert-light border mb-3">
-        <p class="fw-semibold mb-1">{{ __('index.salary_manage_steps') }}</p>
+    <div class="border rounded p-3 mb-3">
+        <ol class="row list-unstyled g-3 mb-3">
+            @foreach([
+                ['salary_workflow_setup', 'salary_workflow_setup_help'],
+                ['salary_workflow_request', 'salary_workflow_request_help'],
+                ['salary_workflow_approve', 'salary_workflow_approve_help'],
+            ] as $step => [$heading, $help])
+                <li class="col-md-4 d-flex gap-2">
+                    <span class="badge rounded-pill bg-light text-primary border align-self-start">{{ $step + 1 }}</span>
+                    <div><strong class="d-block small">{{ __('index.'.$heading) }}</strong><small class="text-muted">{{ __('index.'.$help) }}</small></div>
+                </li>
+            @endforeach
+        </ol>
         <p class="small text-muted mb-2">{{ __('index.salary_manage_help') }}</p>
         <div class="d-flex flex-wrap gap-2">
             @can('view_salary_list')
@@ -143,13 +154,20 @@
         @endif
     </div>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0 fw-bold"><i data-feather="dollar-sign" class="me-2 text-primary"></i>{{ __('index.salary_history') }}</h6>
+        <div>
+            <h6 class="mb-1 fw-bold"><i data-feather="dollar-sign" class="me-2 text-primary"></i>{{ __('index.salary_history') }}</h6>
+            <small class="text-muted">{{ __('index.salary_history_cycle_help', ['cycle' => $payrollSalary ? __('index.'.$payrollSalary->payment_type) : '—']) }}</small>
+            <span class="badge bg-warning text-dark ms-2">{{ __('index.pending') }}: {{ $salaryHistory->where('approval_status', 'pending')->count() }}</span>
+        </div>
         @can('employee.salary.history.manage')
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalaryHistoryModal">
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addSalaryHistoryModal" @disabled(!$payrollSalary)>
                 <i data-feather="plus" class="me-1"></i> {{ __('index.salary_manage_request') }}
             </button>
         @endcan
     </div>
+    @if(!$payrollSalary)
+        <p class="alert alert-light border">{{ __('index.salary_manage_setup_required') }}</p>
+    @endif
 
     <div class="table-responsive">
         <table class="table table-sm employee-360-table align-middle">
@@ -203,6 +221,9 @@
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <form method="post" action="{{ route('admin.employees.profile.salary.store', $employee->id) }}" class="modal-content" data-salary-increase-form data-salary-increase-error="{{ __('index.salary_increase_must_be_greater') }}">
                     @csrf
+                    @if(request('employee_modal') === '1')
+                        <input type="hidden" name="employee_modal" value="1">
+                    @endif
                     <input type="hidden" name="salary_form" value="1">
                     <div class="modal-header">
                         <h5 class="modal-title fw-bold" id="addSalaryHistoryModalLabel">
@@ -236,8 +257,8 @@
                                 'allowance_after' => [__('index.allowance_after'), 'number'],
                             ] as $field => [$label, $type])
                                 <div class="col-lg-4 col-md-6 mb-3">
-                                    <label class="form-label fw-semibold">{{ $label }}</label>
-                                    <input class="form-control" type="{{ $type }}" @if($type === 'number') step="0.01" min="0" @endif name="{{ $field }}" value="{{ old($field, match ($field) { 'old_base_salary' => $salaryBase, 'effective_date' => now()->toDateString(), 'allowance_before', 'allowance_after' => $salaryAllowance, default => null }) }}" @if(in_array($field, ['old_base_salary', 'increase_amount', 'increase_percentage', 'allowance_before'])) readonly @endif @if(in_array($field, ['new_base_salary', 'effective_date', 'old_base_salary'])) required @endif>
+                                    <label for="salaryRequest_{{ $field }}" class="form-label fw-semibold">{{ $label }}</label>
+                                    <input id="salaryRequest_{{ $field }}" class="form-control" type="{{ $type }}" @if($type === 'number') step="0.01" min="0" @endif name="{{ $field }}" value="{{ old($field, match ($field) { 'old_base_salary' => $salaryBase, 'effective_date' => now()->toDateString(), 'allowance_before', 'allowance_after' => $salaryAllowance, default => null }) }}" @if(in_array($field, ['old_base_salary', 'increase_amount', 'increase_percentage', 'allowance_before'])) readonly @endif @if(in_array($field, ['new_base_salary', 'effective_date', 'old_base_salary'])) required @endif>
                                 </div>
                             @endforeach
                             <div class="col-lg-4 col-md-6 mb-3">
@@ -250,11 +271,11 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">{{ __('index.reason') }}</label>
-                                <textarea class="form-control" name="reason" rows="2" placeholder="{{ __('index.reason') }}">{{ old('reason') }}</textarea>
+                                <textarea class="form-control" name="reason" maxlength="2000" rows="2" placeholder="{{ __('index.reason') }}">{{ old('reason') }}</textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-semibold">{{ __('index.notes') }}</label>
-                                <textarea class="form-control" name="note" rows="2" placeholder="{{ __('index.notes') }}">{{ old('note') }}</textarea>
+                                <textarea class="form-control" name="note" maxlength="5000" rows="2" placeholder="{{ __('index.notes') }}">{{ old('note') }}</textarea>
                             </div>
                         </div>
                     </div>

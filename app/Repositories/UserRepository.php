@@ -504,7 +504,7 @@ class UserRepository
     {
 
 
-       return User::query()
+       $query = User::query()
             ->select(
                 'users.id as employee_id',
                 'users.name as employee_name',
@@ -523,6 +523,7 @@ class UserRepository
             ->leftJoin('employee_accounts','users.id','employee_accounts.user_id')
             ->leftJoin('salary_group_employees','users.id','salary_group_employees.employee_id')
             ->leftJoin('salary_groups','salary_group_employees.salary_group_id','salary_groups.id')
+            ->leftJoin('employee_salaries', 'users.id', 'employee_salaries.employee_id')
             ->where('users.is_active',self::IS_ACTIVE)
             ->where('users.status',self::STATUS_VERIFIED)
             ->where('roles.name','!=',self::ADMIN)
@@ -530,13 +531,26 @@ class UserRepository
             ->when(isset($filterParameters['employee_name']), function($query) use ($filterParameters){
                 $query->where('users.name', 'like', '%' . $filterParameters['employee_name'] . '%');
             })
+            ->when(!empty($filterParameters['q']), function ($query) use ($filterParameters) {
+                $query->where(function ($search) use ($filterParameters) {
+                    $term = '%'.$filterParameters['q'].'%';
+                    $search->where('users.name', 'like', $term)->orWhere('users.email', 'like', $term)
+                        ->orWhere('salary_groups.name', 'like', $term)->orWhere('employee_accounts.salary_cycle', 'like', $term);
+                });
+            })
+            ->when(!empty($filterParameters['payment_type']), fn ($query) => $query->where('employee_salaries.payment_type', $filterParameters['payment_type']))
+            ->when(($filterParameters['salary_status'] ?? '') === 'configured', fn ($query) => $query->whereNotNull('employee_salaries.id'))
+            ->when(($filterParameters['salary_status'] ?? '') === 'missing', fn ($query) => $query->whereNull('employee_salaries.id'))
             ->when(isset($filterParameters['department_id']), function($query) use ($filterParameters){
                 $query->where('users.department_id',$filterParameters['department_id']);
             })
            ->when(isset($filterParameters['branch_id']), function($query) use ($filterParameters){
                 $query->where('users.branch_id',$filterParameters['branch_id']);
             })
-          ->get();
+          ->orderBy('users.name')->orderBy('users.id');
+
+       if (($filterParameters['per_page'] ?? 'all') === 'all' || !empty($filterParameters['exporting'])) return $query->get();
+       return $query->paginate((int) $filterParameters['per_page'])->withQueryString();
     }
 
     public function getEmployeeAccountDetailsToGeneratePayslip($employeeId, $filterData=[]): Collection|array

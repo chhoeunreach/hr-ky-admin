@@ -13,6 +13,15 @@
 @endsection
 
 @section('main-content')
+    @php
+        $salaryFormData = array_replace(
+            isset($employeeSalary) ? $employeeSalary->toArray() : [],
+            \Illuminate\Support\Arr::only(session()->getOldInput(), [
+                'payroll_type', 'payment_type', 'annual_salary', 'hour_rate', 'weekly_hours',
+                'monthly_hours', 'basic_salary_type', 'basic_salary_value',
+            ])
+        );
+    @endphp
 
     <section class="content">
         @include('admin.section.flash_message')
@@ -30,12 +39,12 @@
                         <input type="hidden" name="employee_modal" value="1">
                     @endif
                     <input type="hidden" readonly name="employee_id" value="{{ $employee->id }}">
-                    <div class="payroll-fil" x-data="createEmployeeSalary('{{ $percentType }}', {{ json_encode($salaryComponents) }})">
+                    <div class="payroll-fil" data-salary-error="{{ __('index.salary_setup_components_exceed') }}" x-data="createEmployeeSalary('{{ $percentType }}', {{ json_encode($salaryComponents) }}, {{ json_encode($salaryFormData) }})">
 
                         <div class="d-flex align-items-center mb-3">
                             <div class="p-2 col-md-6">
                                 <label for="payroll_type" class="form-label">{{ __('index.payroll_type') }}</label>
-                                <select class="form-control" name="payroll_type" id="payroll_type" x-model="payroll_type" @change="updateFields()">
+                                <select class="form-control" name="payroll_type" required id="payroll_type" x-model="payroll_type" @change="updateFields()">
                                     <option selected disabled>{{ __('index.select_payroll_type') }}</option>
                                     <option value="annual">{{ __('index.annual') }}</option>
                                     <option value="hourly">{{ __('index.hourly') }}</option>
@@ -43,7 +52,7 @@
                             </div>
                             <div class="p-2 col-md-6">
                                 <label for="payment_type" class="form-label">{{ __('index.payment_type') }}</label>
-                                <select class="form-control" name="payment_type" id="payment_type" x-model="payment_type" @change="updateFields()">
+                                <select class="form-control" name="payment_type" required id="payment_type" x-model="payment_type" @change="updateFields()">
                                     <option selected disabled>{{ __('index.select_salary_cycle') }}</option>
                                     <option value="monthly">{{ __('index.monthly') }}</option>
                                     <option value="weekly">{{ __('index.weekly') }}</option>
@@ -67,10 +76,11 @@
                             </div>
                             <div class="col-lg-4 col-md-4 mb-4">
                                 <label for="annualSalary" class="form-label">{{ __('index.annual_salary') }}</label>
-                                <input type="number" min="0" step="0.1" x-model="annual_salary" class="form-control" @input="calculateSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.annual_salary') }}" name="annual_salary" id="annualSalary" x-bind:readonly="payroll_type === 'hourly'">
+                                <input type="number" min="0" step="0.1" x-model="annual_salary" class="form-control" @input="calculateSalary()" oninput="validity.valid||(value='');" placeholder="{{ __('index.annual_salary') }}" name="annual_salary" required max="99999999.99" id="annualSalary" x-bind:readonly="payroll_type === 'hourly'">
                             </div>
                         </div>
 
+                        <p class="alert alert-danger" x-show="Number(annual_fixed_allowance) < 0" x-cloak>{{ __('index.salary_setup_components_exceed') }}</p>
                         <div class="table-responsive">
                             <table class="table border-end">
                                 <thead>
@@ -90,7 +100,7 @@
                                     <td>{{ __('index.basic_salary') }}</td>
                                     <td>
                                         <div style="display: flex;">
-                                            <input type="number" min="0" step="0.1" x-bind:max="basic_salary_type === '{{ $percentType }}' ? 100 : null" class="form-control" @input="calculateSalary()" x-model="basic_salary_value" name="basic_salary_value" id="basicSalaryValue" style="width: 60%;">
+                                            <input type="number" min="0" step="0.1" x-bind:max="basic_salary_type === '{{ $percentType }}' ? 100 : null" class="form-control" @input="calculateSalary()" x-model="basic_salary_value" name="basic_salary_value" required id="basicSalaryValue" style="width: 60%;">
                                             <select class="form-control" x-model="basic_salary_type" @change="calculateSalary()" name="basic_salary_type" style="width: 35%;">
                                                 <option value="{{ $percentType }}">{{ __('index.percent_of_salary') }}</option>
                                                 <option value="{{ $fixedType }}">{{ __('index.fixed') }}</option>
@@ -207,5 +217,5 @@
 
 @section('scripts')
     @include('admin.payroll.employeeSalary.common.scripts')
-    <script src="{{asset('assets/js/salary_calculation.js')}}"></script>
+    <script src="{{asset('assets/js/salary_calculation.js')}}?v={{ filemtime(public_path('assets/js/salary_calculation.js')) }}"></script>
 @endsection

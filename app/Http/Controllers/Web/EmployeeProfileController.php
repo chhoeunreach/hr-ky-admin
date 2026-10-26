@@ -612,11 +612,11 @@ class EmployeeProfileController extends Controller
             'new_base_salary' => ['required', 'numeric', 'gt:old_base_salary', 'max:99999999.99'],
             'allowance_before' => ['nullable', 'numeric', 'min:0'],
             'allowance_after' => ['nullable', 'numeric', 'min:0'],
-            'reason' => ['nullable', 'string'],
+            'reason' => ['nullable', 'string', 'max:2000'],
             'reviewed_by' => ['nullable', 'exists:users,id'],
             'approved_by' => ['nullable', 'exists:users,id'],
             'approval_status' => ['required', Rule::in($linkedReview ? ['pending'] : ['draft', 'pending', 'approved'])],
-            'note' => ['nullable', 'string'],
+            'note' => ['nullable', 'string', 'max:5000'],
         ], [
             'new_base_salary.gt' => __('index.salary_increase_must_be_greater'),
             'performance_review_id.exists' => __('index.salary_review_must_be_completed'),
@@ -751,8 +751,12 @@ class EmployeeProfileController extends Controller
         DB::transaction(function () use ($request, $employee, $salary, $status) {
             User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
             $record = EmployeeSalaryHistory::whereKey($salary->id)->lockForUpdate()->firstOrFail();
-            if (!in_array($record->approval_status, ['draft', 'pending'], true)
-                || ($status === 'pending' && $record->approval_status !== 'draft')) {
+            $allowed = match ($record->approval_status) {
+                'draft' => ['pending', 'cancelled'],
+                'pending' => ['approved', 'rejected', 'cancelled'],
+                default => [],
+            };
+            if (!in_array($status, $allowed, true)) {
                 throw ValidationException::withMessages(['approval_status' => __('index.salary_manage_closed')]);
             }
             if ($status === 'approved') {

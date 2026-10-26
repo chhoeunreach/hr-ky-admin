@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\Web\EmployeeProfileController;
+use App\Http\Controllers\Web\EmployeeSalaryController;
 use App\Http\Controllers\Web\SalaryHistoryController;
 use App\Models\EmployeeProfile;
 use App\Models\EmployeeProfileAuditLog;
@@ -86,6 +87,13 @@ class EmployeeSalaryManagementTest extends TestCase
         Route::delete('/_test/salary-history/{employee}/{salary}', function (Request $request, $employee, $salary) {
             return app(EmployeeProfileController::class)->deleteSalaryHistory($request, User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
         });
+        Route::get('/_test/salary-setup/{employee}', fn ($employee) => app(EmployeeSalaryController::class)->createSalary($employee));
+        Route::get('/_test/salary-edit/{employee}', fn ($employee) => app(EmployeeSalaryController::class)->editSalary($employee));
+        Route::post('/_test/salary-setup/{employee}', fn (Request $request, $employee) => app(EmployeeSalaryController::class)->saveSalary($request, $employee));
+        Route::put('/_test/salary-edit/{employee}', fn (Request $request, $employee) => app(EmployeeSalaryController::class)->updateSalary($request, $employee));
+        Route::delete('/_test/salary-setup/{employee}', fn ($employee) => app(EmployeeSalaryController::class)->deleteSalary($employee));
+        Route::patch('/_test/salary-cycle/{employee}', fn ($employee) => app(EmployeeSalaryController::class)->changeSalaryCycle($employee, 'monthly'));
+        Route::get('/_test/salary-directory', [EmployeeSalaryController::class, 'index']);
     }
 
     private function salary(array $overrides = []): EmployeeSalary
@@ -112,6 +120,219 @@ class EmployeeSalaryManagementTest extends TestCase
             'new_base_salary' => 900, 'allowance_before' => 200, 'allowance_after' => 200,
             'approval_status' => 'pending', 'requested_by' => 1, 'reason' => 'Performance review',
         ], $overrides));
+    }
+
+    private function setupSalaryGroup(): void
+    {
+        Schema::create('salary_groups', function (Blueprint $table) {
+            $table->id(); $table->string('name'); $table->boolean('is_active');
+        });
+        Schema::create('salary_components', function (Blueprint $table) {
+            $table->id(); $table->string('component_type'); $table->string('value_type');
+            $table->double('annual_component_value'); $table->boolean('status');
+        });
+        Schema::create('salary_group_component', function (Blueprint $table) {
+            $table->integer('salary_group_id'); $table->integer('salary_component_id');
+        });
+        Schema::create('salary_group_employees', function (Blueprint $table) {
+            $table->id(); $table->integer('salary_group_id'); $table->integer('employee_id');
+        });
+        DB::table('salary_groups')->insert(['id' => 1, 'name' => 'Benefits', 'is_active' => true]);
+        DB::table('salary_components')->insert([
+            ['id' => 1, 'component_type' => 'earning', 'value_type' => 'ctc', 'annual_component_value' => 5, 'status' => true],
+            ['id' => 2, 'component_type' => 'earning', 'value_type' => 'fixed', 'annual_component_value' => 120, 'status' => true],
+        ]);
+        DB::table('salary_group_component')->insert([
+            ['salary_group_id' => 1, 'salary_component_id' => 1], ['salary_group_id' => 1, 'salary_component_id' => 2],
+        ]);
+        DB::table('salary_group_employees')->insert(['salary_group_id' => 1, 'employee_id' => 20]);
+    }
+
+    private function setupSalaryDirectory(): void
+    {
+        \Illuminate\Support\Facades\Cache::put('payment_currency_symbol', '$');
+        $this->setupSalaryGroup();
+        Schema::create('roles', function (Blueprint $table) {$table->id(); $table->string('name');});
+        DB::table('roles')->insert(['id' => 1, 'name' => 'Staff']);
+        Schema::table('users', function (Blueprint $table) {
+            $table->integer('role_id')->default(1); $table->integer('department_id')->default(1);
+            $table->string('email')->nullable(); $table->string('marital_status')->nullable();
+        });
+        Schema::create('employee_accounts', function (Blueprint $table) {
+            $table->id(); $table->integer('user_id'); $table->decimal('salary')->nullable();
+            $table->string('salary_cycle')->nullable(); $table->boolean('allow_generate_payroll')->default(true);
+        });
+        DB::table('users')->where('id', 1)->update(['is_active' => false]);
+        DB::table('users')->where('id', 20)->update(['branch_id' => 1, 'email' => 'employee@ky.test']);
+        DB::table('users')->where('id', 21)->update(['branch_id' => 2]);
+        for ($id = 30; $id < 60; $id++) {
+            DB::table('users')->insert(['id' => $id, 'name' => 'Staff '.$id, 'branch_id' => 1]);
+        }
+        $this->salary();
+        auth()->user()->branch_id = 1;
+        $this->abilities = ['view_salary_list', 'export_salary'];
+    }
+
+    public function test_salary_directory_renders_the_toolbar_and_paginated_rows(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->mock(\App\Repositories\CompanyRepository::class, fn ($mock) => $mock->shouldReceive('getCompanyDetail')->andReturn(null));
+        // Render this page without unrelated dashboard, notification and navigation data.
+        $layoutRoot = sys_get_temp_dir().'/salary-layout-'.bin2hex(random_bytes(5));
+        mkdir($layoutRoot.'/layouts', 0777, true);
+        file_put_contents($layoutRoot.'/layouts/master.blade.php', "@yield('main-content')");
+        $this->app['view']->getFinder()->prependLocation($layoutRoot);
+        try {
+            $this->get('/_test/salary-directory?per_page=10')->assertOk()
+                ->assertSee('employeeSalaryToolkit')->assertSee('salarySearch')->assertSee('salaryRows')
+                ->assertSee(__('index.export_excel'))->assertSee(__('index.column_visibility'))
+                ->assertSee('Staff 38')->assertDontSee('Staff 39');
+        } finally {
+            unlink($layoutRoot.'/layouts/master.blade.php');
+            rmdir($layoutRoot.'/layouts'); rmdir($layoutRoot);
+        }
+    }
+
+    public function test_salary_directory_paginates_and_filters_by_search_cycle_and_setup(): void
+    {
+        $this->setupSalaryDirectory();
+        $repository = app(\App\Repositories\UserRepository::class);
+        $page = $repository->getAllVerifiedActiveEmployeeWithSalaryGroup(['branch_id' => 1, 'per_page' => '10']);
+        $this->assertCount(10, $page);
+        $this->assertSame(31, $page->total());
+        $filtered = $repository->getAllVerifiedActiveEmployeeWithSalaryGroup([
+            'branch_id' => 1, 'q' => 'employee@ky.test', 'per_page' => 'all', 'payment_type' => 'monthly', 'salary_status' => 'configured',
+        ]);
+        $this->assertCount(1, $filtered);
+        $this->assertEquals(20, $filtered->first()->employee_id);
+        $this->assertCount(30, $repository->getAllVerifiedActiveEmployeeWithSalaryGroup(['branch_id' => 1, 'salary_status' => 'missing', 'per_page' => 'all']));
+    }
+
+    public function test_recommended_salary_columns_export_the_breakdown_for_the_selected_payment_cycle(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->getJson('/_test/salary-directory?export=json&employee_id=20')
+            ->assertOk()->assertJsonCount(6, 'headings')
+            ->assertJsonPath('rows.0', ['Employee', '1000.00', '800.00', '200.00', __('index.monthly'), __('index.salary_setup_ready')]);
+        EmployeeSalary::where('employee_id', 20)->update([
+            'payment_type' => 'weekly', 'annual_salary' => 10400,
+            'weekly_basic_salary' => 160, 'weekly_fixed_allowance' => 40,
+        ]);
+        $this->getJson('/_test/salary-directory?export=json&employee_id=20')
+            ->assertOk()->assertJsonPath('rows.0', ['Employee', '200.00', '160.00', '40.00', __('index.weekly'), __('index.salary_setup_ready')]);
+    }
+
+    public function test_salary_export_requires_export_permission_and_ignores_foreign_branch_override(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->abilities = ['view_salary_list'];
+        $this->getJson('/_test/salary-directory?export=json')->assertForbidden();
+        $this->abilities[] = 'export_salary';
+        $response = $this->getJson('/_test/salary-directory?export=json&branch_id=2&per_page=10&page=2&columns[]=employee&columns[]=salary');
+        $response->assertOk()->assertJsonCount(31, 'rows')->assertJsonCount(2, 'headings');
+        $this->assertSame(['Employee', '1000.00'], $response->json('rows.0'));
+        $this->assertNotContains('Other employee', array_column($response->json('rows'), 0));
+        $this->getJson('/_test/salary-directory?export=json&q=employee@ky.test')->assertOk()->assertJsonCount(1, 'rows');
+        $this->getJson('/_test/salary-directory?export=json&columns[]=password')->assertUnprocessable();
+    }
+
+    public function test_salary_csv_and_excel_export_selected_columns_and_escape_csv_formulas(): void
+    {
+        $this->setupSalaryDirectory();
+        DB::table('users')->where('id', 20)->update(['name' => '=FORMULA']);
+        \Maatwebsite\Excel\Facades\Excel::fake();
+        $this->get('/_test/salary-directory?export=csv&employee_id=20&columns[]=employee')->assertOk();
+        \Maatwebsite\Excel\Facades\Excel::assertDownloaded('employee-salaries-20261025.csv', function ($export) {
+            $this->assertSame([["'=FORMULA"]], $export->array());
+            return true;
+        });
+        $this->get('/_test/salary-directory?export=excel&employee_id=20&columns[]=employee')->assertOk();
+        \Maatwebsite\Excel\Facades\Excel::assertDownloaded('employee-salaries-20261025.xlsx', fn ($export) => $export->array() === [['=FORMULA']]);
+        $this->get('/_test/salary-directory?export=pdf&employee_id=20&orientation=portrait&columns[]=employee')
+            ->assertOk()->assertSee('A4 portrait', false)->assertDontSee('Salary Group');
+    }
+
+    public function test_salary_setup_and_edit_save_server_calculated_earnings_and_allowance(): void
+    {
+        $this->setupSalaryGroup(); $this->abilities = ['add_salary', 'edit_salary'];
+        $data = ['payroll_type' => 'annual', 'payment_type' => 'monthly', 'annual_salary' => 12000,
+            'basic_salary_type' => 'percent', 'basic_salary_value' => 80, 'annual_fixed_allowance' => 99999];
+        $this->post('/_test/salary-setup/20', $data)->assertRedirect()->assertSessionHasNoErrors();
+        $salary = EmployeeSalary::firstOrFail();
+        $this->assertEquals(1680, $salary->annual_fixed_allowance);
+        $this->assertEquals(140, EmployeeProfile::firstOrFail()->allowances);
+        $data['annual_salary'] = 13200;
+        $this->put('/_test/salary-edit/20', $data)->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertEquals(1860, $salary->fresh()->annual_fixed_allowance);
+        $this->assertEquals(155, EmployeeProfile::firstOrFail()->allowances);
+    }
+
+    public function test_setup_rejects_earning_components_exceeding_total_salary(): void
+    {
+        $this->setupSalaryGroup(); $this->abilities = ['add_salary'];
+        $this->post('/_test/salary-setup/20', [
+            'payroll_type' => 'annual', 'payment_type' => 'monthly', 'annual_salary' => 12000,
+            'basic_salary_type' => 'percent', 'basic_salary_value' => 100,
+        ])->assertRedirect()->assertSessionHasErrors('basic_salary_value');
+        $this->assertSame(0, EmployeeSalary::count());
+    }
+
+    public function test_salary_setup_routes_enforce_roles_and_branch_scope_before_processing(): void
+    {
+        $routes = [
+            ['get', '/_test/salary-setup/20'], ['get', '/_test/salary-edit/20'],
+            ['post', '/_test/salary-setup/20'], ['put', '/_test/salary-edit/20'],
+            ['delete', '/_test/salary-setup/20'], ['patch', '/_test/salary-cycle/20'],
+        ];
+        $this->abilities = [];
+        foreach ($routes as [$method, $url]) $this->json($method, $url)->assertForbidden();
+        $this->abilities = ['add_salary', 'edit_salary', 'delete_salary', 'change_salary_cycle'];
+        auth()->user()->branch_id = 1;
+        DB::table('users')->where('id', 20)->update(['branch_id' => 2]);
+        foreach ($routes as [$method, $url]) $this->json($method, $url)->assertForbidden();
+    }
+
+    public function test_setup_uses_annual_basic_salary_before_rounding_monthly_amounts(): void
+    {
+        $amounts = app(EmployeeSalaryManagementService::class)->setupAmounts([
+            'payroll_type' => 'annual', 'payment_type' => 'monthly', 'annual_salary' => 1000,
+            'basic_salary_type' => 'percent', 'basic_salary_value' => 80,
+        ]);
+        $this->assertEquals(800, $amounts['annual_basic_salary']);
+        $this->assertEquals(66.67, $amounts['monthly_basic_salary']);
+        $this->assertEquals(200, $amounts['annual_fixed_allowance']);
+        $this->assertEquals(16.67, $amounts['monthly_fixed_allowance']);
+    }
+
+    public function test_hourly_setup_calculates_annual_salary_from_rate_and_hours(): void
+    {
+        $amounts = app(EmployeeSalaryManagementService::class)->setupAmounts([
+            'payroll_type' => 'hourly', 'payment_type' => 'weekly', 'annual_salary' => 1,
+            'hour_rate' => 5, 'weekly_hours' => 40, 'basic_salary_type' => 'percent', 'basic_salary_value' => 100,
+        ]);
+        $this->assertEquals(10400, $amounts['annual_salary']);
+        $this->assertEquals(200, $amounts['weekly_basic_salary']);
+        $this->assertEquals(0, $amounts['weekly_fixed_allowance']);
+    }
+
+    public function test_setup_rejects_hourly_amounts_above_the_supported_limit(): void
+    {
+        $this->expectException(ValidationException::class);
+        app(EmployeeSalaryManagementService::class)->setupAmounts([
+            'payroll_type' => 'hourly', 'payment_type' => 'weekly', 'annual_salary' => 1,
+            'hour_rate' => 99999999, 'weekly_hours' => 40, 'basic_salary_type' => 'percent', 'basic_salary_value' => 100,
+        ]);
+    }
+
+    public function test_draft_requests_must_be_submitted_before_approval(): void
+    {
+        $salary = $this->salary(); $record = $this->requestRecord(['approval_status' => 'draft']);
+        $this->patchJson('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertUnprocessable();
+        $this->assertSame('draft', $record->fresh()->approval_status);
+        $this->patch('/_test/salary-status/20/'.$record->id, ['approval_status' => 'pending'])->assertSessionHasNoErrors();
+        $this->patch('/_test/salary-status/20/'.$record->id, ['approval_status' => 'approved'])->assertSessionHasNoErrors();
+        $this->assertSame('approved', $record->fresh()->approval_status);
+        $this->assertEquals(13200, $salary->fresh()->annual_salary);
     }
 
     public function test_salary_history_manage_does_not_grant_edit_or_delete(): void

@@ -81,16 +81,29 @@ class EmployeeSalaryController extends Controller
         protected EmployeePayslipAdditionalRepository $additionalRepository
     ){}
 
-    public function index(Request $request): Factory|View|RedirectResponse|Application
+    public function index(Request $request): Factory|View|\Symfony\Component\HttpFoundation\Response|Application
     {
+        $this->authorize('view_salary_list');
+        if ($request->filled('export')) $this->authorize('export_salary');
+        $request->validate([
+            'employee_id' => ['nullable', 'integer', 'min:1'],
+            'branch_id' => ['nullable', 'integer', 'min:1'], 'department_id' => ['nullable', 'integer', 'min:1'],
+            'employee_name' => ['nullable', 'string', 'max:200'], 'q' => ['nullable', 'string', 'max:200'],
+            'payment_type' => ['nullable', 'in:monthly,weekly'], 'salary_status' => ['nullable', 'in:configured,missing'],
+            'per_page' => ['nullable', 'in:10,25,50,100,all'], 'export' => ['nullable', 'in:csv,excel,print,pdf,json'],
+            'orientation' => ['nullable', 'in:portrait,landscape'], 'columns' => ['nullable', 'array', 'min:1'],
+            'columns.*' => ['string', \Illuminate\Validation\Rule::in(array_keys($this->salaryTableColumns()))],
+        ]);
         try{
-            $this->authorize('view_salary_list');
 
             $filterParameters = [
                 'employee_name' => $request->employee_name ?? null,
                 'employee_id' => $request->filled('employee_id') ? $request->integer('employee_id') : null,
                 'department_id' => $request->department_id ?? null,
-                'branch_id' => $request->branch_id ?? null
+                'branch_id' => $request->branch_id ?? null,
+                'q' => trim((string) $request->input('q', '')),
+                'payment_type' => $request->input('payment_type'), 'salary_status' => $request->input('salary_status'),
+                'per_page' => $request->input('per_page') ?: '25', 'exporting' => $request->filled('export'),
             ];
             if(!auth('admin')->check() && auth()->check()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
@@ -99,10 +112,13 @@ class EmployeeSalaryController extends Controller
 
 
             $employeeSalaries = \App\Models\EmployeeSalary::whereIn('employee_id', $employeeLists->pluck('employee_id'))->get()->keyBy('employee_id');
+            if ($request->filled('export')) return $this->exportSalaryTable($request, $employeeLists, $employeeSalaries);
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            return view($this->view.'index',compact('employeeLists','employeeSalaries','filterParameters','companyDetail'));
+            $salaryColumns = $this->salaryTableColumns();
+            $defaultSalaryColumns = $this->defaultSalaryColumns();
+            return view($this->view.'index',compact('employeeLists','employeeSalaries','filterParameters','companyDetail', 'salaryColumns', 'defaultSalaryColumns'));
         }catch(Exception $exception){
             return redirect()
                 ->back()
@@ -110,10 +126,55 @@ class EmployeeSalaryController extends Controller
         }
     }
 
+    private function salaryTableColumns(): array
+    {
+        $currency = ' ('.AppHelper::getCompanyPaymentCurrencySymbol().')';
+        return ['number' => '#', 'employee' => __('index.employee_name'), 'salary' => __('index.salary_table_gross').$currency,
+            'basic_salary' => __('index.basic_salary').$currency, 'allowance' => __('index.fixed_allowance').$currency,
+            'payment_type' => __('index.salary_table_payment_cycle'), 'status' => __('index.status'), 'marital_status' => __('index.marital_status'),
+            'salary_cycle' => __('index.salary_table_account_cycle'), 'salary_group' => __('index.salary_group')];
+    }
+
+    private function defaultSalaryColumns(): array
+    {
+        return ['employee', 'salary', 'basic_salary', 'allowance', 'payment_type', 'status'];
+    }
+
+    private function exportSalaryTable(Request $request, $employees, $salaries)
+    {
+        $columns = array_intersect_key($this->salaryTableColumns(), array_flip($request->input('columns') ?: $this->defaultSalaryColumns()));
+        $headings = array_values($columns);
+        $rows = $employees->values()->map(function ($employee, $index) use ($salaries, $columns) {
+            $salary = $salaries->get($employee->employee_id);
+            $data = ['number' => (string) ($index + 1), 'employee' => $employee->employee_name,
+                'salary' => $salary ? number_format((float) $salary->annual_salary / ($salary->payment_type === 'weekly' ? 52 : 12), 2, '.', '') : '',
+                'basic_salary' => $salary ? number_format((float) ($salary->payment_type === 'weekly' ? $salary->weekly_basic_salary : $salary->monthly_basic_salary), 2, '.', '') : '',
+                'allowance' => $salary ? number_format((float) ($salary->payment_type === 'weekly' ? $salary->weekly_fixed_allowance : $salary->monthly_fixed_allowance), 2, '.', '') : '',
+                'payment_type' => $salary ? __('index.'.$salary->payment_type) : '',
+                'status' => __($salary ? 'index.salary_setup_ready' : 'index.salary_setup_missing'),
+                'marital_status' => in_array($employee->marital_status, ['single', 'married'], true) ? __('index.marital_status_'.$employee->marital_status) : ucfirst($employee->marital_status ?? ''),
+                'salary_cycle' => $employee->salary_cycle ? __('index.'.$employee->salary_cycle) : '',
+                'salary_group' => $employee->salary_group_name ?? ''];
+            return array_map(fn ($key) => (string) ($data[$key] ?? ''), array_keys($columns));
+        })->all();
+        $format = $request->input('export');
+        if ($format === 'json') return response()->json(compact('headings', 'rows'));
+        if (in_array($format, ['csv', 'excel'], true)) {
+            if ($format === 'csv') $rows = array_map(fn ($row) => array_map(fn ($value) => preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value, $row), $rows);
+            return Excel::download(new \App\Exports\EmployeeSalaryTableExport($headings, $rows),
+                'employee-salaries-'.now()->format('Ymd').($format === 'csv' ? '.csv' : '.xlsx'));
+        }
+        return view($this->view.'exports.table', [
+            'headings' => $headings, 'rows' => $rows, 'format' => $format,
+            'orientation' => $request->input('orientation') ?: 'landscape',
+        ]);
+    }
+
     public function changeSalaryCycle($employeeId,$salaryCycle)
     {
+        $this->authorize('change_salary_cycle');
+        $this->checkSalaryEmployeeBranch($employeeId);
         try{
-            $this->authorize('change_salary_cycle');
 
             if (!$this->userRepository->findUserDetailById($employeeId, ['id'])) {
                 throw new Exception(__('message.account_not_found'), 404);
@@ -404,8 +465,9 @@ class EmployeeSalaryController extends Controller
      */
     public function createSalary($employeeId): Factory|View|RedirectResponse|Application
     {
+        $this->authorize('add_salary');
+        $this->checkSalaryEmployeeBranch($employeeId);
         try{
-            $this->authorize('add_salary');
             $salaryComponents = [];
             $employee = $this->userRepository->findUserDetailById($employeeId,['id','name']);
             $percentType = EmployeeBasicSalaryTypeEnum::percent->value;
@@ -441,6 +503,7 @@ class EmployeeSalaryController extends Controller
     public function saveSalary(Request $request, $employeeId): RedirectResponse
     {
         $this->authorize('add_salary');
+        $this->checkSalaryEmployeeBranch($employeeId);
         $validatedData = $this->validatedSalaryData($request, $employeeId);
         try{
             if (!$this->userRepository->findUserDetailById($employeeId, ['id'])) {
@@ -448,13 +511,6 @@ class EmployeeSalaryController extends Controller
             }
             if ($this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId)) {
                 throw ValidationException::withMessages(['employee_id' => 'This employee already has a salary record.']);
-            }
-
-            $employeeSalaryGroup = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
-
-            if($employeeSalaryGroup)
-            {
-                $validatedData['salary_group_id'] = $employeeSalaryGroup->salary_group_id;
             }
 
             DB::transaction(function () use ($employeeId, $validatedData) {
@@ -484,8 +540,9 @@ class EmployeeSalaryController extends Controller
      */
     public function editSalary($employeeId): Factory|View|RedirectResponse|Application
     {
+        $this->authorize('edit_salary');
+        $this->checkSalaryEmployeeBranch($employeeId);
         try{
-            $this->authorize('edit_salary');
             $salaryComponents = [];
             $employee = $this->userRepository->findUserDetailById($employeeId,['id','name']);
             $percentType = EmployeeBasicSalaryTypeEnum::percent->value;
@@ -522,14 +579,13 @@ class EmployeeSalaryController extends Controller
     public function updateSalary(Request $request, $employeeId): RedirectResponse
     {
         $this->authorize('edit_salary');
+        $this->checkSalaryEmployeeBranch($employeeId);
         $validatedData = $this->validatedSalaryData($request, $employeeId);
         try{
             $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
             if (!$employeeSalary) {
                 return redirect()->route('admin.employee-salaries.index')->with('danger', __('message.account_not_found'));
             }
-            $employeeSalaryGroup = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
-            $validatedData['salary_group_id'] = $employeeSalaryGroup?->salary_group_id;
             DB::transaction(function () use ($employeeId, $validatedData) {
                 \App\Models\User::whereKey($employeeId)->lockForUpdate()->firstOrFail();
                 $salary = \App\Models\EmployeeSalary::where('employee_id', $employeeId)->lockForUpdate()->firstOrFail();
@@ -560,57 +616,32 @@ class EmployeeSalaryController extends Controller
         return redirect()->route('admin.employee-salaries.index');
     }
 
+    private function checkSalaryEmployeeBranch(int $employeeId): void
+    {
+        $employee = \App\Models\User::findOrFail($employeeId);
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+        }
+    }
+
     private function validatedSalaryData(Request $request, $employeeId): array
     {
         $data = $request->validate([
             'payroll_type' => ['required', 'in:annual,hourly'],
             'payment_type' => ['required', 'in:monthly,weekly'],
-            'annual_salary' => ['required', 'numeric', 'min:0'],
+            'annual_salary' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'basic_salary_type' => ['required', 'in:percent,fixed'],
-            'basic_salary_value' => ['required', 'numeric', 'min:0'],
+            'basic_salary_value' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'hour_rate' => ['nullable', 'numeric', 'min:0'],
             'weekly_hours' => ['nullable', 'numeric', 'min:0'],
             'monthly_hours' => ['nullable', 'numeric', 'min:0'],
         ]);
 
-        $annualSalary = round((float) $data['annual_salary'], 2);
-        if ($data['payroll_type'] === 'hourly') {
-            $hoursField = $data['payment_type'] === 'weekly' ? 'weekly_hours' : 'monthly_hours';
-            $hourRate = (float) ($data['hour_rate'] ?? 0);
-            $hours = (float) ($data[$hoursField] ?? 0);
-            if ($hourRate <= 0 || $hours <= 0) {
-                throw ValidationException::withMessages([$hoursField => 'Hourly salaries require a positive rate and working hours.']);
-            }
-            $annualSalary = round($hourRate * $hours * ($data['payment_type'] === 'weekly' ? 52 : 12), 2);
-        }
-        $basicValue = (float) $data['basic_salary_value'];
-        if ($data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue > 100) {
-            throw ValidationException::withMessages(['basic_salary_value' => 'Basic salary percentage cannot exceed 100.']);
-        }
-        if ($data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::fixed->value && $basicValue > $annualSalary / 12) {
-            throw ValidationException::withMessages(['basic_salary_value' => 'Basic salary cannot exceed the monthly salary.']);
-        }
-
-        $monthlyBasic = $data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value
-            ? round($annualSalary / 12 * $basicValue / 100, 2)
-            : round($basicValue, 2);
-        $annualBasic = $data['basic_salary_type'] === EmployeeBasicSalaryTypeEnum::percent->value && $basicValue == 100
-            ? $annualSalary
-            : round($monthlyBasic * 12, 2);
-        $annualAllowance = round($annualSalary - $annualBasic, 2);
-
-        return array_merge($data, [
-            'employee_id' => $employeeId,
-            'annual_salary' => $annualSalary,
-            'monthly_basic_salary' => $monthlyBasic,
-            'annual_basic_salary' => $annualBasic,
-            'weekly_basic_salary' => round($annualBasic / 52, 2),
-            'monthly_fixed_allowance' => round($annualAllowance / 12, 2),
-            'annual_fixed_allowance' => $annualAllowance,
-            'weekly_fixed_allowance' => round($annualAllowance / 52, 2),
-        ]);
+        $group = $this->salaryGroupEmployeeRepository->getSalaryGroupFromEmployeeId($employeeId);
+        return app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->setupAmounts(
+            $data + ['employee_id' => $employeeId, 'salary_group_id' => $group?->salary_group_id]
+        );
     }
-
 
     public function printPayslip($employeePayslipId): Factory|View|RedirectResponse|Application
     {
@@ -715,8 +746,9 @@ class EmployeeSalaryController extends Controller
      */
     public function deleteSalary($employeeId): RedirectResponse
     {
+        $this->authorize('delete_salary');
+        $this->checkSalaryEmployeeBranch($employeeId);
         try{
-            $this->authorize('delete_salary');
 
 
             $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
