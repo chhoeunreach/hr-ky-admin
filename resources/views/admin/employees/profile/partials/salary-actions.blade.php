@@ -25,6 +25,22 @@
     @if($salaryRecord->effective_date?->isFuture())
         <small class="text-muted d-block mt-1">{{ __('index.salary_manage_due') }} {{ $salaryRecord->effective_date->format('Y-m-d') }}</small>
     @endif
-@else
-    <span class="text-muted">—</span>
 @endif
+<div class="d-flex flex-wrap gap-1 mt-1">
+    @can('employee.salary.history.edit')
+        <a class="btn btn-outline-primary btn-sm" data-open-employee-form
+           data-employee-form-title="{{ __('index.edit_salary_history') }} · {{ $employee->name }}"
+           href="{{ route('admin.employees.profile.salary.edit', [$employee->id, $salaryRecord->id]) }}">{{ __('index.edit') }}</a>
+    @endcan
+    @can('employee.salary.history.delete')
+        <form method="post" action="{{ route('admin.employees.profile.salary.destroy', [$employee->id, $salaryRecord->id]) }}"
+              data-confirm="{{ __('index.salary_history_delete_confirm') }}" onsubmit="return window.confirm(this.dataset.confirm)">
+            @csrf
+            @method('DELETE')
+            @if(request('employee_modal') === '1')
+                <input type="hidden" name="employee_modal" value="1">
+            @endif
+            <button class="btn btn-outline-danger btn-sm" type="submit">{{ __('index.delete') }}</button>
+        </form>
+    @endcan
+</div>

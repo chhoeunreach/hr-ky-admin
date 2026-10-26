@@ -366,7 +366,7 @@
                                                     <i class="link-icon text-primary" data-feather="user" aria-hidden="true"></i>{{ __('index.employee_360') }}
                                                 </a>
                                             </li>
-                                            @canany(['view_salary_list', 'salary_increment', 'employee.salary.view', 'employee.salary.history.view', 'employee.salary.history.manage'])
+                                            @canany(['view_salary_list', 'salary_increment', 'employee.salary.view', 'employee.salary.history.view', 'employee.salary.history.manage', 'employee.salary.history.edit', 'employee.salary.history.delete'])
                                                 <li>
                                                     <a class="dropdown-item" data-open-employee-form data-employee-form-title="{{ $employee->name }} · {{ __('index.salary') }}" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary']) }}">
                                                         <i class="link-icon text-success" data-feather="dollar-sign" aria-hidden="true"></i>{{ __('index.salary') }}

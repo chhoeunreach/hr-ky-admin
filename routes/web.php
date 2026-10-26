@@ -253,6 +253,9 @@ Route::group([
             Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
             Route::patch('salary-history/{salary}/status', [EmployeeProfileController::class, 'updateSalaryStatus'])->name('salary.status');
             Route::post('salary-history', [EmployeeProfileController::class, 'storeSalary'])->name('salary.store');
+            Route::get('salary-history/{salary}/edit', [EmployeeProfileController::class, 'editSalaryHistory'])->name('salary.edit');
+            Route::put('salary-history/{salary}', [EmployeeProfileController::class, 'updateSalaryHistory'])->name('salary.update');
+            Route::delete('salary-history/{salary}', [EmployeeProfileController::class, 'deleteSalaryHistory'])->name('salary.destroy');
             Route::post('interviews', [EmployeeProfileController::class, 'storeInterview'])->name('interviews.store');
             Route::post('department-defaults', [EmployeeProfileController::class, 'applyDepartmentDefaults'])->name('department-defaults.apply');
             Route::put('responsibilities/{responsibility}', [EmployeeProfileController::class, 'updateResponsibility'])->name('responsibilities.update');

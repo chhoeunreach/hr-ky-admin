@@ -496,6 +496,16 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Edit Employee Salary History",
+                "permission_key" => "employee.salary.history.edit",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Delete Employee Salary History",
+                "permission_key" => "employee.salary.history.delete",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Employee Interview View",
                 "permission_key" => "employee.interview.view",
                 "permission_groups_id" => 5

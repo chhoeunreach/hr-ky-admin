@@ -3024,4 +3024,9 @@ return [
     'asset_phone_numbers_help' => 'Enter phone/SIM numbers for this asset, one number per line.',
     'asset_sort_asc' => 'Sort :column ascending',
     'asset_sort_desc' => 'Sort :column descending',
+    'edit_salary_history' => 'Edit Salary History',
+    'salary_history_updated' => 'Salary history updated successfully.',
+    'salary_history_deleted' => 'Salary history deleted successfully.',
+    'salary_history_applied_help' => 'Finalized salary amounts are locked. You can correct the reason and notes here.',
+    'salary_history_delete_confirm' => 'Delete this salary history entry? Current payroll salary will stay unchanged.',
 ];

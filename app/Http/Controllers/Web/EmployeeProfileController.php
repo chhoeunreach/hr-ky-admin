@@ -205,7 +205,7 @@ class EmployeeProfileController extends Controller
             : collect();
         $selectedResignationPrintRequest = $resignationPrintRequests->firstWhere('id', request('resignation_request_id'));
         abort_if(request()->filled('resignation_request_id') && !$selectedResignationPrintRequest, 404);
-        $canViewSalary = $this->can('view_salary_list') || $this->can('salary_increment') || $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage');
+        $canViewSalary = $this->can('view_salary_list') || $this->can('salary_increment') || $this->can('employee.salary.view') || $this->can('employee.salary.history.view') || $this->can('employee.salary.history.manage') || $this->can('employee.salary.history.edit') || $this->can('employee.salary.history.delete');
         $canViewInterview = $this->can('employee.interview.view');
         $canViewKpi = $this->can('employee.kpi.view');
         $canViewPerformance = $this->can('employee.performance.view') || $this->can('employee.performance.create') || $isOwnProfile;
@@ -668,6 +668,76 @@ class EmployeeProfileController extends Controller
         }
 
         return back()->with('success', __('index.salary_history_added'));
+    }
+
+    private function authorizeSalaryHistory(User $employee, EmployeeSalaryHistory $salary, string $ability): void
+    {
+        $this->authorizeEmployeeProfile($employee, $ability);
+        abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+        }
+    }
+
+    public function editSalaryHistory(User $employee, EmployeeSalaryHistory $salary)
+    {
+        $this->authorizeSalaryHistory($employee, $salary, 'employee.salary.history.edit');
+        return view('admin.employees.profile.salary-history-edit', compact('employee', 'salary'));
+    }
+
+    public function updateSalaryHistory(Request $request, User $employee, EmployeeSalaryHistory $salary): RedirectResponse
+    {
+        $this->authorizeSalaryHistory($employee, $salary, 'employee.salary.history.edit');
+        DB::transaction(function () use ($request, $employee, $salary) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $record = EmployeeSalaryHistory::whereKey($salary->id)->lockForUpdate()->firstOrFail();
+            $rules = ['reason' => ['nullable', 'string', 'max:2000'], 'note' => ['nullable', 'string', 'max:5000']];
+            if (in_array($record->approval_status, ['draft', 'pending'], true)) {
+                $rules += [
+                    'effective_date' => ['required', 'date'],
+                    'old_base_salary' => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+                    'new_base_salary' => ['required', 'numeric', 'gt:old_base_salary', 'max:99999999.99'],
+                    'allowance_before' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+                    'allowance_after' => ['nullable', 'numeric', 'min:0', 'max:99999999.99'],
+                ];
+            } else {
+                foreach (['effective_date', 'old_base_salary', 'new_base_salary', 'allowance_before', 'allowance_after'] as $field) {
+                    $rules[$field] = ['prohibited'];
+                }
+            }
+            $data = $request->validate($rules);
+            if (isset($data['new_base_salary'])) {
+                $data['increase_amount'] = round((float) $data['new_base_salary'] - (float) $data['old_base_salary'], 2);
+                $data['increase_percentage'] = (float) $data['old_base_salary'] > 0
+                    ? round($data['increase_amount'] / (float) $data['old_base_salary'] * 100, 2) : null;
+            }
+            $old = $record->toArray();
+            $record->fill($data)->save();
+            $this->audit($employee, 'salary', 'update', $record->id, $old, $record->toArray(), $request);
+        });
+
+        return $this->salaryHistoryRedirect($request, $employee)->with('success', __('index.salary_history_updated'));
+    }
+
+    public function deleteSalaryHistory(Request $request, User $employee, EmployeeSalaryHistory $salary): RedirectResponse
+    {
+        $this->authorizeSalaryHistory($employee, $salary, 'employee.salary.history.delete');
+        DB::transaction(function () use ($request, $employee, $salary) {
+            User::whereKey($employee->id)->lockForUpdate()->firstOrFail();
+            $record = EmployeeSalaryHistory::whereKey($salary->id)->lockForUpdate()->firstOrFail();
+            $this->audit($employee, 'salary', 'delete', $record->id, $record->toArray(), null, $request);
+            $record->delete();
+        });
+
+        return $this->salaryHistoryRedirect($request, $employee)->with('success', __('index.salary_history_deleted'));
+    }
+
+    private function salaryHistoryRedirect(Request $request, User $employee): RedirectResponse
+    {
+        return redirect()->route('admin.employees.profile.show', [
+            'employee' => $employee->id, 'tab' => 'salary',
+            ...($request->input('employee_modal') === '1' ? ['employee_modal' => '1'] : []),
+        ]);
     }
 
     public function updateSalaryStatus(Request $request, User $employee, EmployeeSalaryHistory $salary): RedirectResponse

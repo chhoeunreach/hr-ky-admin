@@ -77,6 +77,15 @@ class EmployeeSalaryManagementTest extends TestCase
         Route::patch('/_test/salary-status/{employee}/{salary}', function (Request $request, $employee, $salary) {
             return app(EmployeeProfileController::class)->updateSalaryStatus($request, User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
         });
+        Route::put('/_test/salary-history/{employee}/{salary}', function (Request $request, $employee, $salary) {
+            return app(EmployeeProfileController::class)->updateSalaryHistory($request, User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
+        });
+        Route::get('/_test/salary-history/{employee}/{salary}/edit', function ($employee, $salary) {
+            return app(EmployeeProfileController::class)->editSalaryHistory(User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
+        });
+        Route::delete('/_test/salary-history/{employee}/{salary}', function (Request $request, $employee, $salary) {
+            return app(EmployeeProfileController::class)->deleteSalaryHistory($request, User::findOrFail($employee), EmployeeSalaryHistory::findOrFail($salary));
+        });
     }
 
     private function salary(array $overrides = []): EmployeeSalary
@@ -103,6 +112,103 @@ class EmployeeSalaryManagementTest extends TestCase
             'new_base_salary' => 900, 'allowance_before' => 200, 'allowance_after' => 200,
             'approval_status' => 'pending', 'requested_by' => 1, 'reason' => 'Performance review',
         ], $overrides));
+    }
+
+    public function test_salary_history_manage_does_not_grant_edit_or_delete(): void
+    {
+        $record = $this->requestRecord();
+        $this->getJson('/_test/salary-history/20/'.$record->id.'/edit')->assertForbidden();
+        $this->putJson('/_test/salary-history/20/'.$record->id, ['reason' => 'Changed'])->assertForbidden();
+        $this->deleteJson('/_test/salary-history/20/'.$record->id)->assertForbidden();
+        $this->assertSame('Performance review', $record->fresh()->reason);
+    }
+
+    public function test_history_edit_recalculates_pending_amounts_without_approving_or_changing_payroll(): void
+    {
+        $salary = $this->salary(); $record = $this->requestRecord();
+        $this->abilities = ['employee.salary.history.edit'];
+        $this->put('/_test/salary-history/20/'.$record->id, [
+            'effective_date' => '2026-10-26', 'old_base_salary' => 800, 'new_base_salary' => 1000,
+            'allowance_before' => 200, 'allowance_after' => 250, 'reason' => 'Corrected request', 'note' => 'Updated',
+            'increase_amount' => 999, 'increase_percentage' => 999, 'approval_status' => 'approved',
+            'employee_modal' => '1',
+        ])->assertRedirect(route('admin.employees.profile.show', ['employee' => 20, 'tab' => 'salary', 'employee_modal' => '1']))
+            ->assertSessionHasNoErrors();
+        $this->assertEquals(200, $record->fresh()->increase_amount);
+        $this->assertEquals(25, $record->fresh()->increase_percentage);
+        $this->assertSame('pending', $record->fresh()->approval_status);
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $this->assertSame('update', EmployeeProfileAuditLog::firstOrFail()->action);
+        $this->deleteJson('/_test/salary-history/20/'.$record->id)->assertForbidden();
+    }
+
+    public function test_history_edit_validates_amounts_and_locks_finalized_values(): void
+    {
+        $record = $this->requestRecord(); $this->abilities = ['employee.salary.history.edit'];
+        $this->put('/_test/salary-history/20/'.$record->id, [
+            'effective_date' => 'invalid', 'old_base_salary' => 800, 'new_base_salary' => 700,
+        ])->assertRedirect()->assertSessionHasErrors(['effective_date', 'new_base_salary']);
+        $record->update(['approval_status' => 'approved']);
+        $this->put('/_test/salary-history/20/'.$record->id, ['new_base_salary' => 2000])
+            ->assertRedirect()->assertSessionHasErrors('new_base_salary');
+        session()->forget('errors');
+        $this->put('/_test/salary-history/20/'.$record->id, ['reason' => 'Corrected reason', 'note' => 'Reviewed'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertSame('Corrected reason', $record->fresh()->reason);
+        $this->assertEquals(900, $record->fresh()->new_base_salary);
+    }
+
+    public function test_history_delete_requires_its_own_permission_and_keeps_audit_and_payroll(): void
+    {
+        $salary = $this->salary(); $record = $this->requestRecord(['approval_status' => 'approved']);
+        $this->abilities = ['employee.salary.history.delete'];
+        $this->putJson('/_test/salary-history/20/'.$record->id, ['reason' => 'Change'])->assertForbidden();
+        $this->delete('/_test/salary-history/20/'.$record->id, ['employee_modal' => '1'])
+            ->assertRedirect(route('admin.employees.profile.show', ['employee' => 20, 'tab' => 'salary', 'employee_modal' => '1']));
+        $this->assertNull($record->fresh());
+        $this->assertEquals(12000, $salary->fresh()->annual_salary);
+        $audit = EmployeeProfileAuditLog::firstOrFail();
+        $this->assertSame('delete', $audit->action);
+        $this->assertEquals(900, $audit->old_values['new_base_salary']);
+    }
+
+    public function test_history_update_and_delete_enforce_employee_and_branch_scope(): void
+    {
+        $record = $this->requestRecord();
+        $this->abilities = ['employee.salary.history.edit', 'employee.salary.history.delete'];
+        $this->getJson('/_test/salary-history/21/'.$record->id.'/edit')->assertNotFound();
+        $this->putJson('/_test/salary-history/21/'.$record->id)->assertNotFound();
+        $this->deleteJson('/_test/salary-history/21/'.$record->id)->assertNotFound();
+        auth()->user()->branch_id = 1;
+        DB::table('users')->where('id', 20)->update(['branch_id' => 2]);
+        $this->getJson('/_test/salary-history/20/'.$record->id.'/edit')->assertForbidden();
+        $this->putJson('/_test/salary-history/20/'.$record->id)->assertForbidden();
+        $this->deleteJson('/_test/salary-history/20/'.$record->id)->assertForbidden();
+        $this->assertNotNull($record->fresh());
+    }
+
+    public function test_history_permissions_are_registered_for_roles_without_automatic_assignment(): void
+    {
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id(); $table->string('permission_key')->unique();
+            $table->string('name'); $table->integer('permission_groups_id');
+        });
+        Schema::create('permission_roles', function (Blueprint $table) {
+            $table->integer('permission_id'); $table->integer('role_id');
+        });
+        DB::table('permissions')->insert([
+            'permission_key' => 'employee.salary.history.manage', 'name' => 'Manage', 'permission_groups_id' => 5,
+        ]);
+        $migration = require database_path('migrations/2026_10_26_000001_add_salary_history_edit_delete_permissions.php');
+        $migration->up(); $migration->up();
+        $this->assertSame(3, DB::table('permissions')->count());
+        $this->assertSame(0, DB::table('permission_roles')->count());
+        $keys = array_column(\App\Helpers\RolePermissionHelper::permissionArray(), 'permission_key');
+        foreach (['edit', 'delete'] as $action) {
+            $this->assertContains('employee.salary.history.'.$action, $keys);
+        }
+        $migration->down();
+        $this->assertSame(1, DB::table('permissions')->count());
     }
 
     public function test_modal_payroll_increase_returns_to_embedded_employee_salary(): void

@@ -177,6 +177,9 @@
                     <td><span class="badge {{ $record->approval_status === 'approved' ? 'bg-success' : ($record->approval_status === 'pending' ? 'bg-warning text-dark' : 'bg-secondary') }}">{{ \Illuminate\Support\Facades\Lang::has('index.' . $record->approval_status) ? __('index.' . $record->approval_status) : ucfirst($record->approval_status) }}</span></td>
                     <td>
                         {{ $record->reason ?: '—' }}
+                        @if($record->note)
+                            <small class="d-block text-muted">{{ __('index.notes') }}: {{ $record->note }}</small>
+                        @endif
                         @if(($record->approved_by_name ?: $record->approvedBy?->name))
                             <small class="d-block text-muted">{{ __('index.approved_by') }}: {{ $record->approved_by_name ?: $record->approvedBy?->name }}</small>
                         @elseif(($record->requested_by_name ?: $record->requestedBy?->name))
