@@ -193,6 +193,29 @@ class EmployeeSalaryManagementTest extends TestCase
         }
     }
 
+    public function test_salary_fragment_refresh_returns_only_the_filtered_results_block(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->mock(\App\Repositories\CompanyRepository::class, fn ($mock) => $mock->shouldNotReceive('getCompanyDetail'));
+        $this->get('/_test/salary-directory?per_page=10&q=Staff&page=2', ['X-Salary-Fragment' => '1', 'Accept' => 'application/json'])
+            ->assertOk()->assertSee('employeeSalaryResults')->assertSee('employeeSalaryToolkit')
+            ->assertSee('Staff 40')->assertDontSee('Staff 30')->assertDontSee('<html', false)
+            ->assertDontSee('id="employeeSalaryFilters"', false);
+        $this->abilities = [];
+        $this->get('/_test/salary-directory', ['X-Salary-Fragment' => '1', 'Accept' => 'application/json'])->assertForbidden();
+    }
+
+    public function test_salary_delete_and_cycle_changes_return_json_for_block_refresh(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->abilities = ['delete_salary', 'change_salary_cycle'];
+        DB::table('employee_accounts')->insert(['user_id' => 20, 'salary_cycle' => 'monthly']);
+        $this->patchJson('/_test/salary-cycle/20')->assertOk()->assertJsonStructure(['message']);
+        $this->deleteJson('/_test/salary-setup/20')->assertOk()->assertJsonStructure(['message']);
+        $this->assertSame(0, EmployeeSalary::where('employee_id', 20)->count());
+        $this->deleteJson('/_test/salary-setup/20')->assertNotFound();
+    }
+
     public function test_salary_directory_paginates_and_filters_by_search_cycle_and_setup(): void
     {
         $this->setupSalaryDirectory();

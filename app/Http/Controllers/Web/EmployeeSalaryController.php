@@ -113,13 +113,19 @@ class EmployeeSalaryController extends Controller
 
             $employeeSalaries = \App\Models\EmployeeSalary::whereIn('employee_id', $employeeLists->pluck('employee_id'))->get()->keyBy('employee_id');
             if ($request->filled('export')) return $this->exportSalaryTable($request, $employeeLists, $employeeSalaries);
+            $salaryColumns = $this->salaryTableColumns();
+            $defaultSalaryColumns = $this->defaultSalaryColumns();
+            if ($request->header('X-Salary-Fragment') === '1') {
+                return view($this->view.'partials.salary-list', compact('employeeLists', 'employeeSalaries', 'filterParameters', 'salaryColumns', 'defaultSalaryColumns'));
+            }
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
-            $salaryColumns = $this->salaryTableColumns();
-            $defaultSalaryColumns = $this->defaultSalaryColumns();
             return view($this->view.'index',compact('employeeLists','employeeSalaries','filterParameters','companyDetail', 'salaryColumns', 'defaultSalaryColumns'));
         }catch(Exception $exception){
+            if ($request->header('X-Salary-Fragment') === '1') {
+                return response()->json(['message' => __('index.salary_refresh_error')], 500);
+            }
             return redirect()
                 ->back()
                 ->with('danger', $exception->getMessage());
@@ -188,9 +194,11 @@ class EmployeeSalaryController extends Controller
                 throw new Exception(__('message.invalid_cycle'),400);
             }
             $updateCycle = $this->userAccountRepo->updateEmployeeSalaryCycle($employeeAccountDetail,$salaryCycle);
+            if (request()->expectsJson()) return response()->json(['message' => __('message.salary_cycle_update', ['cycle' => __('index.'.$updateCycle->salary_cycle)])]);
             return redirect()->back()->with('success',__('message.salary_cycle_update',['cycle'=>__('index.' . $updateCycle->salary_cycle)]));
 
         }catch(Exception $exception){
+            if (request()->expectsJson()) return response()->json(['message' => $exception->getMessage()], 422);
             return redirect()
                 ->back()
                 ->with('danger', $exception->getMessage());
@@ -744,7 +752,7 @@ class EmployeeSalaryController extends Controller
      * @param $employeeId
      * @return RedirectResponse
      */
-    public function deleteSalary($employeeId): RedirectResponse
+    public function deleteSalary($employeeId): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $this->authorize('delete_salary');
         $this->checkSalaryEmployeeBranch($employeeId);
@@ -753,16 +761,19 @@ class EmployeeSalaryController extends Controller
 
             $employeeSalary = $this->employeeSalaryRepository->getEmployeeSalaryByEmployeeId($employeeId);
             if (!$employeeSalary) {
+                if (request()->expectsJson()) return response()->json(['message' => __('message.account_not_found')], 404);
                 return redirect()->route('admin.employee-salaries.index')->with('danger', __('message.account_not_found'));
             }
 
             app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->remove($employeeSalary);
+            if (request()->expectsJson()) return response()->json(['message' => __('message.salary_delete')]);
 
             return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_delete'));
 
 
         }catch(Exception $exception){
             DB::rollBack();
+            if (request()->expectsJson()) return response()->json(['message' => $exception->getMessage()], 422);
             return redirect()
                 ->back()
                 ->with('danger', $exception->getMessage());

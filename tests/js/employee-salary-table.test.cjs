@@ -27,7 +27,7 @@ function setup(stored = null, failed = false, defaultHidden = []) {
         querySelectorAll: () => [link, pdf]};
     const table = {querySelectorAll: selector => selector.startsWith('thead') ? headings : rows, querySelector: () => null};
     vm.runInNewContext(source, {
-        document: {getElementById: id => ({employeeSalaryToolkit: toolkit, employeeSalaryTable: table,
+        document: {addEventListener() {}, getElementById: id => ({employeeSalaryToolkit: toolkit, employeeSalaryTable: table,
             employeeSalaryFilters: form, salarySearch: search, salaryRows: count}[id]),
             querySelector: () => status, querySelectorAll: () => [],
             createElement: () => element(), createTextNode: text => ({textContent: text})},

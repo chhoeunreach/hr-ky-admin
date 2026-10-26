@@ -3119,4 +3119,6 @@ return [
     'salary_reset_columns' => 'កំណត់ជួរឈរដែលបានណែនាំឡើងវិញ',
     'salary_table_payment_cycle' => 'វដ្តបើកប្រាក់ខែ',
     'salary_table_account_cycle' => 'វដ្តប្រាក់ខែគណនី',
+    'salary_refresh_error' => 'មិនអាចផ្ទុកបញ្ជីប្រាក់ខែឡើងវិញបានទេ។ សូមព្យាយាមម្ដងទៀត។',
+    'salary_refresh_success' => 'បានផ្ទុកបញ្ជីប្រាក់ខែឡើងវិញ។',
 ];

@@ -30,7 +30,7 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.action = form.dataset.urlTemplate.replace('__CYCLE__', encodeURIComponent(salaryCycle));
-                    form.submit();
+                    if (form.dispatchEvent(new CustomEvent('employee-salary:submit', {bubbles: true, cancelable: true}))) form.submit();
                 } else {
                     select.value = currentCycle;
                 }
@@ -57,7 +57,7 @@
             })
         })
 
-        $('.deleteEmployeeSalaryForm').on('submit', function (event) {
+        $('body').on('submit', '.deleteEmployeeSalaryForm', function (event) {
             event.preventDefault();
             const form = this;
             Swal.fire({
@@ -70,7 +70,7 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit();
+                    if (form.dispatchEvent(new CustomEvent('employee-salary:submit', {bubbles: true, cancelable: true}))) form.submit();
                 }
             })
         })
@@ -81,11 +81,10 @@
 
 
     $(document).ready(function () {
-        const loadDepartments = async () => {
+        const loadDepartments = async (departmentId = null) => {
             const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
             const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
             const selectedBranchId = isAdmin ? $('#branch_id').val() : defaultBranchId;
-            const departmentId = @json($filterParameters['department_id'] ?? old('department_id'));
 
             const department = $('#department_id');
             department.empty().append('<option value="">{{ __('index.all') }}</option>');
@@ -116,11 +115,12 @@
 
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
         if (isAdmin) {
-            $('#branch_id').on('change', loadDepartments);
-            $('#branch_id').trigger('change');
+            $('#branch_id').on('change', () => loadDepartments());
+            loadDepartments(@json($filterParameters['department_id'] ?? old('department_id')));
         } else {
-            loadDepartments();
+            loadDepartments(@json($filterParameters['department_id'] ?? old('department_id')));
         }
+        document.addEventListener('employee-salary:filters-restored', event => loadDepartments(event.detail.departmentId));
     });
 
 </script>

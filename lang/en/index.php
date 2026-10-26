@@ -3049,4 +3049,6 @@ return [
     'salary_reset_columns' => 'Reset to recommended columns',
     'salary_table_payment_cycle' => 'Payment Cycle',
     'salary_table_account_cycle' => 'Account Salary Cycle',
+    'salary_refresh_error' => 'Unable to refresh salaries. Please try again.',
+    'salary_refresh_success' => 'Salary list refreshed.',
 ];
