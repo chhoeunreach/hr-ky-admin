@@ -541,14 +541,21 @@
                         min-width: 0;
                     }
 
-                    .employee-avatar-img {
-                        width: 36px;
-                        height: 36px;
+                    #employeeTable td img.employee-avatar-img {
+                        width: 52px;
+                        height: 52px;
+                        min-width: 52px;
+                        max-width: 52px;
+                        min-height: 52px;
+                        max-height: 52px;
+                        aspect-ratio: 1;
+                        box-sizing: border-box;
                         border-radius: 50%;
                         object-fit: cover;
-                        flex-shrink: 0;
-                        border: 1.5px solid rgba(0, 0, 0, 0.08);
-                        background-color: #f1f5f9;
+                        object-position: center;
+                        flex: 0 0 52px;
+                        border: 3px solid var(--employee-avatar-ring, var(--bs-primary, var(--primary-color, #0f766e)));
+                        background-color: var(--bs-body-bg, #fff);
                         display: block;
                         transition: transform 0.2s ease, box-shadow 0.2s ease;
                     }
@@ -850,6 +857,8 @@
                                                 <img src="{{ $profileImage }}"
                                                      alt="{{ ucfirst($value->name) }}"
                                                      class="employee-avatar-img"
+                                                     style="--employee-avatar-ring: {{ \App\Support\EmployeeAvatar::borderColor($value->id) }};"
+                                                     width="52" height="52"
                                                      loading="lazy"
                                                      onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
                                                 <div class="employee-name-info">
@@ -875,6 +884,8 @@
                                                 <img src="{{ $profileImage }}"
                                                      alt="{{ ucfirst($value->name) }}"
                                                      class="employee-avatar-img"
+                                                     style="--employee-avatar-ring: {{ \App\Support\EmployeeAvatar::borderColor($value->id) }};"
+                                                     width="52" height="52"
                                                      loading="lazy"
                                                      onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
                                                 <div class="employee-name-info">

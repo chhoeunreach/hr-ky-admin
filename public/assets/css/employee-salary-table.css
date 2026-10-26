@@ -29,7 +29,7 @@
 .salary-professional-table [data-salary-column="employee"] { min-width: 180px; }
 .salary-employee-profile { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 180px; }
 a.salary-employee-profile:hover .fw-semibold { color: var(--primary-color, #0f766e); text-decoration: underline; }
-#employeeSalaryTable td img.salary-employee-avatar { width: 52px; height: 52px; min-width: 52px; max-width: 52px; min-height: 52px; max-height: 52px; aspect-ratio: 1; flex: 0 0 52px; box-sizing: border-box; border-radius: 50%; object-fit: cover; object-position: center; border: 3px solid #5546ed; background: #f7f6ff; }
+#employeeSalaryTable td img.salary-employee-avatar { width: 52px; height: 52px; min-width: 52px; max-width: 52px; min-height: 52px; max-height: 52px; aspect-ratio: 1; flex: 0 0 52px; box-sizing: border-box; border-radius: 50%; object-fit: cover; object-position: center; border: 3px solid var(--employee-avatar-ring, var(--bs-primary, var(--primary-color, #0f766e))); background: var(--bs-body-bg, #fff); }
 .salary-employee-identity { display: flex; flex-direction: column; gap: 3px; max-width: 260px; white-space: normal; overflow-wrap: anywhere; }
 .salary-employee-identity small { font-size: 12px; }
 .salary-professional-table .salary-cycle-select { min-width: 110px; }

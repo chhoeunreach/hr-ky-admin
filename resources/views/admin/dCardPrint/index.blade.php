@@ -747,8 +747,16 @@
 @endsection
 
 @section('scripts')
+    @php
+        $avatarBorderColors = array_map([\App\Support\EmployeeAvatar::class, 'borderColor'], range(0, 4));
+    @endphp
     <script>
         window.digitalHrsEmployees = @json($employees);
+        window.digitalHrsAvatarColors = @json($avatarBorderColors);
+        window.digitalHrsAvatarColor = function (employee) {
+            var id = Number(employee.record_id) || Number(String(employee.id || '').replace(/\D/g, '')) || 0;
+            return window.digitalHrsAvatarColors[Math.abs(id) % window.digitalHrsAvatarColors.length];
+        };
         window.digitalHrsDefaultPhoto = '{{ asset('assets/images/img.png') }}';
         window.digitalHrsEmployeeStoreUrl = '{{ route('admin.d-card-print.employees.store') }}';
         window.digitalHrsEmployeeBaseUrl = '{{ url('admin/d-card-print/employees') }}';
@@ -1471,12 +1479,20 @@
             min-width: 120px;
         }
 
-        .batch-photo {
-            width: 36px;
-            height: 42px;
+        .d-card-studio img.batch-photo {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            max-width: 52px;
+            min-height: 52px;
+            max-height: 52px;
+            aspect-ratio: 1;
+            box-sizing: border-box;
             object-fit: cover;
-            border-radius: 4px;
-            background: #f3f4f6;
+            object-position: center;
+            border-radius: 50%;
+            border: 3px solid var(--employee-avatar-ring, var(--bs-primary, #5546ed));
+            background: var(--bs-body-bg, #fff);
         }
 
         .a4-studio-board {
@@ -1852,19 +1868,28 @@
             background: var(--d-card-brand-soft);
         }
 
-        .d-card-studio .employee-option img {
-            width: 42px;
-            height: 42px;
+        .d-card-studio .employee-option .employee-photo-thumb img {
+            width: 52px;
+            height: 52px;
+            min-width: 52px;
+            max-width: 52px;
+            min-height: 52px;
+            max-height: 52px;
+            aspect-ratio: 1;
+            box-sizing: border-box;
             border-radius: 50%;
             object-fit: cover;
-            background: #f3f4f6;
+            object-position: center;
+            border: 3px solid var(--employee-avatar-ring, var(--bs-primary, #5546ed));
+            background: var(--bs-body-bg, #fff);
         }
 
         .d-card-studio .employee-photo-thumb {
             border-radius: 50%;
-            height: 42px;
+            height: 52px;
             position: relative;
-            width: 42px;
+            width: 52px;
+            flex: 0 0 52px;
         }
 
         .d-card-studio .employee-photo-thumb img {
@@ -4163,7 +4188,7 @@
                     return `
                         <div class="employee-option ${employee.selected !== false ? 'is-selected' : ''}" data-index="${index}">
                             <input type="checkbox" class="employee-check" data-index="${index}" ${employee.selected !== false ? 'checked' : ''}>
-                            <div class="employee-photo-thumb">
+                            <div class="employee-photo-thumb" style="--employee-avatar-ring: ${window.digitalHrsAvatarColor(employee)};">
                                 <img src="${employee.photo_url}" alt="${escapeHtml(employee.name)}">
                                 <span class="employee-photo-hover" title="Quick update photo">Update</span>
                                 <div class="employee-photo-quick">
@@ -4198,7 +4223,7 @@
                     <tr>
                         <td><input type="checkbox" class="batch-selected" data-index="${index}" ${employee.selected !== false ? 'checked' : ''}></td>
                         <td>
-                            <img class="batch-photo mb-1" src="${employee.photo_url}" alt="">
+                            <img class="batch-photo mb-1" style="--employee-avatar-ring: ${window.digitalHrsAvatarColor(employee)};" src="${employee.photo_url}" alt="">
                             <input class="form-control form-control-sm batch-edit" data-index="${index}" data-field="photo_url" value="${escapeHtml(employee.photo_url || '')}" placeholder="Photo URL">
                         </td>
                         <td><input class="form-control form-control-sm batch-edit" data-index="${index}" data-field="employee_code" value="${escapeHtml(employee.employee_code)}"></td>
@@ -5677,7 +5702,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                         return [
                             '<tr>',
                             '<td><input type="checkbox" class="batch-fallback-selected" data-index="' + index + '"' + (employee.selected !== false ? ' checked' : '') + '></td>',
-                            '<td><img class="batch-photo mb-1" src="' + escapeText(employee.photo_url || window.digitalHrsDefaultPhoto) + '" alt=""><input class="form-control form-control-sm batch-fallback-edit" data-index="' + index + '" data-field="photo_url" value="' + escapeText(employee.photo_url || '') + '" placeholder="Photo URL"></td>',
+                            '<td><img class="batch-photo mb-1" style="--employee-avatar-ring: ' + window.digitalHrsAvatarColor(employee) + ';" src="' + escapeText(employee.photo_url || window.digitalHrsDefaultPhoto) + '" alt=""><input class="form-control form-control-sm batch-fallback-edit" data-index="' + index + '" data-field="photo_url" value="' + escapeText(employee.photo_url || '') + '" placeholder="Photo URL"></td>',
                             '<td><input class="form-control form-control-sm batch-fallback-edit" data-index="' + index + '" data-field="employee_code" value="' + escapeText(employee.employee_code || '') + '"></td>',
                             '<td><input class="form-control form-control-sm batch-fallback-edit mb-1" data-index="' + index + '" data-field="name" value="' + escapeText(employee.name || '') + '"><input class="form-control form-control-sm batch-fallback-edit" data-index="' + index + '" data-field="english_name" value="' + escapeText(employee.english_name || '') + '" placeholder="English"></td>',
                             '<td><input class="form-control form-control-sm batch-fallback-edit mb-1" data-index="' + index + '" data-field="position_khmer" value="' + escapeText(employee.position_khmer || employee.post || '') + '" placeholder="Position Khmer"><input class="form-control form-control-sm batch-fallback-edit" data-index="' + index + '" data-field="position_english" value="' + escapeText(employee.position_english || '') + '" placeholder="Position EN"></td>',
@@ -6104,7 +6129,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => ['admin.aut
                     return [
                         '<div class="employee-option' + (employee.selected !== false ? ' is-selected' : '') + '" data-index="' + index + '">',
                         '<input type="checkbox" class="a4-fallback-check" data-index="' + index + '"' + (employee.selected !== false ? ' checked' : '') + '>',
-                        '<div class="employee-photo-thumb">',
+                        '<div class="employee-photo-thumb" style="--employee-avatar-ring: ' + window.digitalHrsAvatarColor(employee) + ';">',
                         '<img src="' + escapeText(employee.photo_url || window.digitalHrsDefaultPhoto) + '" alt="">',
                         '<span class="employee-photo-hover">Update</span>',
                         '<div class="employee-photo-quick">',
