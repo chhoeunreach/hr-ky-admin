@@ -27,6 +27,11 @@
 .salary-professional-table td.text-end { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .salary-professional-table .badge { font-size: 11px; font-weight: 500; padding: 7px 10px; }
 .salary-professional-table [data-salary-column="employee"] { min-width: 180px; }
+.salary-employee-profile { display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; min-width: 180px; }
+a.salary-employee-profile:hover .fw-semibold { color: var(--primary-color, #0f766e); text-decoration: underline; }
+.salary-employee-avatar { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 1px solid rgba(148,163,184,.25); }
+.salary-employee-identity { display: flex; flex-direction: column; gap: 3px; max-width: 260px; white-space: normal; overflow-wrap: anywhere; }
+.salary-employee-identity small { font-size: 12px; }
 .salary-professional-table .salary-cycle-select { min-width: 110px; }
 .salary-column-menu { max-height: min(520px, 75vh); overflow-y: auto; }
 .salary-professional-table [hidden] { display: none !important; }

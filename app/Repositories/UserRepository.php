@@ -509,6 +509,8 @@ class UserRepository
                 'users.id as employee_id',
                 'users.name as employee_name',
                 'users.email as employee_email',
+                'users.username',
+                'users.avatar',
                 'roles.id as role_id',
                 'roles.name as role_name',
                 'users.marital_status as marital_status',
@@ -529,12 +531,15 @@ class UserRepository
             ->where('roles.name','!=',self::ADMIN)
             ->when(isset($filterParameters['employee_id']), fn ($query) => $query->where('users.id', $filterParameters['employee_id']))
             ->when(isset($filterParameters['employee_name']), function($query) use ($filterParameters){
-                $query->where('users.name', 'like', '%' . $filterParameters['employee_name'] . '%');
+                $query->where(function ($search) use ($filterParameters) {
+                    $term = '%'.$filterParameters['employee_name'].'%';
+                    $search->where('users.name', 'like', $term)->orWhere('users.username', 'like', $term);
+                });
             })
             ->when(!empty($filterParameters['q']), function ($query) use ($filterParameters) {
                 $query->where(function ($search) use ($filterParameters) {
                     $term = '%'.$filterParameters['q'].'%';
-                    $search->where('users.name', 'like', $term)->orWhere('users.email', 'like', $term)
+                    $search->where('users.name', 'like', $term)->orWhere('users.username', 'like', $term)->orWhere('users.email', 'like', $term)
                         ->orWhere('salary_groups.name', 'like', $term)->orWhere('employee_accounts.salary_cycle', 'like', $term);
                 });
             })

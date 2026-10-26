@@ -36,9 +36,20 @@
                                     <td hidden>{{ $rowOffset + $key }}</td>
                                     <td>
                                         @can('employee.profile.view')
-                                            <a href="{{ route('admin.employees.profile.show', ['employee' => $value->employee_id, 'tab' => 'salary']) }}">{{ $value->employee_name }}</a>
+                                            <a class="salary-employee-profile" href="{{ route('admin.employees.profile.show', ['employee' => $value->employee_id, 'tab' => 'salary']) }}">
                                         @else
-                                            {{ $value->employee_name }}
+                                            <div class="salary-employee-profile">
+                                        @endcan
+                                            <img class="salary-employee-avatar" src="{{ $value->avatar_url }}" alt="" width="38" height="38" loading="lazy"
+                                                 onerror="this.onerror=null; this.src='{{ asset('assets/images/img.png') }}';">
+                                            <span class="salary-employee-identity">
+                                                <span class="fw-semibold">{{ $value->employee_name }}</span>
+                                                <small class="text-muted" title="{{ __('index.username') }}">{{ $value->username ?: '—' }}</small>
+                                            </span>
+                                        @can('employee.profile.view')
+                                            </a>
+                                        @else
+                                            </div>
                                         @endcan
                                     </td>
                                     <td class="text-end">

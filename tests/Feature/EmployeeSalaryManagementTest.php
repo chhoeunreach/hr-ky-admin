@@ -237,13 +237,14 @@ class EmployeeSalaryManagementTest extends TestCase
         Schema::table('users', function (Blueprint $table) {
             $table->integer('role_id')->default(1); $table->integer('department_id')->default(1);
             $table->string('email')->nullable(); $table->string('marital_status')->nullable();
+            $table->string('username')->nullable(); $table->string('avatar')->nullable();
         });
         Schema::create('employee_accounts', function (Blueprint $table) {
             $table->id(); $table->integer('user_id'); $table->decimal('salary')->nullable();
             $table->string('salary_cycle')->nullable(); $table->boolean('allow_generate_payroll')->default(true);
         });
         DB::table('users')->where('id', 1)->update(['is_active' => false]);
-        DB::table('users')->where('id', 20)->update(['branch_id' => 1, 'email' => 'employee@ky.test']);
+        DB::table('users')->where('id', 20)->update(['branch_id' => 1, 'email' => 'employee@ky.test', 'username' => 'ky.employee20']);
         DB::table('users')->where('id', 21)->update(['branch_id' => 2]);
         for ($id = 30; $id < 60; $id++) {
             DB::table('users')->insert(['id' => $id, 'name' => 'Staff '.$id, 'branch_id' => 1]);
@@ -266,6 +267,7 @@ class EmployeeSalaryManagementTest extends TestCase
             $this->get('/_test/salary-directory?per_page=10')->assertOk()
                 ->assertSee('employeeSalaryToolkit')->assertSee('salarySearch')->assertSee('salaryRows')
                 ->assertSee(__('index.export_excel'))->assertSee(__('index.column_visibility'))
+                ->assertSee('salary-employee-avatar')->assertSee('ky.employee20')
                 ->assertSee('Staff 38')->assertDontSee('Staff 39');
         } finally {
             unlink($layoutRoot.'/layouts/master.blade.php');
@@ -308,6 +310,7 @@ class EmployeeSalaryManagementTest extends TestCase
         ]);
         $this->assertCount(1, $filtered);
         $this->assertEquals(20, $filtered->first()->employee_id);
+        $this->assertCount(1, $repository->getAllVerifiedActiveEmployeeWithSalaryGroup(['branch_id' => 1, 'q' => 'ky.employee20', 'per_page' => 'all']));
         $this->assertCount(30, $repository->getAllVerifiedActiveEmployeeWithSalaryGroup(['branch_id' => 1, 'salary_status' => 'missing', 'per_page' => 'all']));
     }
 
