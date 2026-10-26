@@ -2445,6 +2445,7 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/employee-salary-history-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-history-modal.js')) }}"></script>
     <script src="{{ asset('assets/js/employee-profile-review.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
     <script>

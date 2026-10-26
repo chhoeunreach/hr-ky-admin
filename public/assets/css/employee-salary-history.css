@@ -1,0 +1,8 @@
+#salaryReviewHistoryModal { --bs-font-sans-serif: 'Kantumruy Pro', 'Noto Sans Khmer', Arial, sans-serif; font-family: var(--bs-font-sans-serif); }
+#salaryReviewHistoryModal :where(button, textarea, .btn, .table, .badge) { font-family: var(--bs-font-sans-serif); }
+#salaryReviewHistoryModal .salary-review-table th { background: var(--bs-tertiary-bg, rgba(148,163,184,.1)); font-size: 12px; white-space: normal; min-width: 100px; }
+#salaryReviewHistoryModal .salary-review-table td { font-size: 13px; padding: 12px 8px; }
+#salaryReviewHistoryModal .text-end { white-space: nowrap; font-variant-numeric: tabular-nums; }
+#salaryReviewHistoryModal .salary-review-remark { min-width: 160px; max-width: 320px; white-space: pre-wrap; overflow-wrap: anywhere; }
+#salaryReviewHistoryModal .modal-body[aria-busy="true"] [data-history-body] { opacity: .5; pointer-events: none; }
+#salaryReviewHistoryModal [data-history-status]:not(:empty) { margin-bottom: 1rem; }

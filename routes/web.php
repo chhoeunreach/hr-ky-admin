@@ -598,6 +598,10 @@ Route::group([
         Route::get('employee-salaries/salary-update/{accountId}', [SalaryHistoryController::class, 'create'])->name('employee-salaries.increase-salary');
         Route::post('employee-salaries/salary-history/store', [SalaryHistoryController::class, 'store'])->name('employee-salaries.updated-salary-store');
         Route::get('employee-salaries/salary-increment-history/{employeeId}', [SalaryHistoryController::class, 'getEmployeeAllSalaryHistory'])->name('employee-salaries.salary-revise-history.show');
+        Route::get('employee-salaries/salary-increment-history/{employeeId}/{history}/edit', [SalaryHistoryController::class, 'edit'])->name('employee-salaries.salary-revise-history.edit');
+        Route::get('employee-salaries/salary-increment-history/{employeeId}/{history}/delete-confirmation', [SalaryHistoryController::class, 'confirmDelete'])->name('employee-salaries.salary-revise-history.confirm-delete');
+        Route::put('employee-salaries/salary-increment-history/{employeeId}/{history}', [SalaryHistoryController::class, 'update'])->name('employee-salaries.salary-revise-history.update');
+        Route::delete('employee-salaries/salary-increment-history/{employeeId}/{history}', [SalaryHistoryController::class, 'destroy'])->name('employee-salaries.salary-revise-history.destroy');
 
         Route::get('advance-salaries/setting/', [AdvanceSalaryController::class, 'setting'])->name('advance-salaries.setting');
         Route::post('advance-salaries/setting/{id}', [AdvanceSalaryController::class, 'updateSetting'])->name('advance-salaries.setting.store');

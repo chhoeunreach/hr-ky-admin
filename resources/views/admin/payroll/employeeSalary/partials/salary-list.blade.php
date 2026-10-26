@@ -127,7 +127,7 @@
                                             @can('show_salary_history')
                                                 <li>
                                                     <a href="{{route('admin.employee-salaries.salary-revise-history.show',$value->employee_id)}}"
-                                                        class="dropdown-item py-2 viewSalaryReviseHistory" data-open-employee-form data-employee-form-title="{{ __('index.salary_review_history') }} · {{ $value->employee_name }}"
+                                                        class="dropdown-item py-2" data-open-salary-history
                                                         title="{{ __('index.salary_review_history') }}">
                                                         {{ __('index.salary_review_history') }}
                                                     </a>

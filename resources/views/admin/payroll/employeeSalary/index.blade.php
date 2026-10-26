@@ -94,6 +94,7 @@
             'formModalContext' => 'salary', 'formModalRefreshEvent' => 'employee-salary:changed',
         ])
         @include('admin.payroll.employeeSalary.partials.delete-modal')
+        @include('admin.payroll.employeeSalary.partials.history-modal')
     </section>
 
 @endsection
@@ -104,5 +105,6 @@
     <script src="{{ asset('assets/js/employee-salary-refresh.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-refresh.js')) }}"></script>
     <script src="{{ asset('assets/js/employee-profile-form-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-profile-form-modal.js')) }}"></script>
     <script src="{{ asset('assets/js/employee-salary-modals.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-modals.js')) }}"></script>
+    <script src="{{ asset('assets/js/employee-salary-history-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-history-modal.js')) }}"></script>
 @endsection
 

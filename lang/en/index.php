@@ -3052,4 +3052,11 @@ return [
     'salary_refresh_error' => 'Unable to refresh salaries. Please try again.',
     'salary_refresh_success' => 'Salary list refreshed.',
     'salary_delete_help' => 'Delete this employee’s salary setup? Current salary and allowances will be cleared from the profile. Salary history will be kept.',
+    'salary_review_help' => 'Applied salary revisions. All salary amounts shown are annual.',
+    'salary_review_load_error' => 'Unable to load salary history. Please try again.',
+    'salary_review_retry' => 'Try again',
+    'salary_review_edit' => 'Edit salary revision',
+    'salary_review_delete' => 'Delete salary revision',
+    'salary_review_edit_help' => 'Correct the remark for this applied revision. Salary amounts and effective dates are locked.',
+    'salary_review_delete_help' => 'Remove this revision from the history list? Current salary will stay unchanged. The original revision will be retained for historical payroll calculations and auditing.',
 ];

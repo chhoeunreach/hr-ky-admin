@@ -1,6 +1,6 @@
 @extends('admin.payroll.employeeSalary.common.form-layout')
 
-@section('title',__('index.salary_increment'))
+@section('title',__('index.salary_review_history'))
 
 @section('action',__('index.log'))
 
@@ -29,85 +29,9 @@
             </div>
             <div class="card-body">
 
-                <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
-                        <thead>
-                        <tr>
-                            <th>#</th>
-                            <th class="text-center">{{ __('index.salary_revised_on') }}</th>
-                            <th class="text-center">{{ __('index.increment_by') }}</th>
-                            <th class="text-center">{{ __('index.increment_value') }} ({{ $currency }})</th>
-                            <th class="text-center">{{ __('index.new_salary') }} · {{ __('index.annual_salary') }} ({{$currency}})</th>
-                            <th class="text-center">{{ __('index.old_salary') }} · {{ __('index.annual_salary') }} ({{$currency}})</th>
-                            <th class="text-center">{{ __('index.applicable_from') }}</th>
-                            <th class="text-center">{{ __('index.remark') }}</th>
-                            <th>{{ __('index.link_created_by') }}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @forelse($salaryReviseLists as $key => $value)
-                            <tr>
-                                <td>{{++$key}}</td>
-                                <td class="text-center">{{ \App\Helpers\AppHelper::timeLeaverequestDate($value->salary_revised_on) }}</td>
-                                <td class="text-center">{{ $value->increment_percent.'%' }}</td>
-                                <td class="text-center">{{ $value->increment_amount }}</td>
-                                <td class="text-center">{{ number_format($value->revised_salary, 2) }}</td>
-                                <td class="text-center">{{ number_format($value->base_salary, 2) }}</td>
-                                <td class="text-center">{{ \App\Helpers\AppHelper::timeLeaverequestDate($value->date_from) }}</td>
-                                <td class="text-center">
-                                    <a href="#"
-                                       data-show-salary-remark
-                                       data-remark="{{$value->remark}} ">
-                                        <i class="link-icon" data-feather="eye"></i>
-                                    </a>
-                                </td>
-                                <td>{{ $value->created_by_name ?: $value->createdBy?->name ?: '—' }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="100%">
-                                    <p class="text-center"><b>{{ __('index.no_records_found') }}</b></p>
-                                </td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="addslider" tabindex="-1" aria-labelledby="addslider" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header text-center">
-                        <h5 class="modal-title" id="exampleModalLabel"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
-                    </div>
-                    <div class="modal-body">
-                        <strong>{{ __('index.remark') }}:</strong> <p class="remark"> </p>
-                    </div>
-                </div>
+                @include('admin.payroll.employeeSalary.partials.history-content')
             </div>
         </div>
 
     </section>
 @endsection
-
-@section('scripts')
-    <script>
-        $('body').on('click','[data-show-salary-remark]', function (e) {
-            e.preventDefault();
-            let remark = $(this).data('remark');
-            $('#addslider .modal-title').text(@json(__('index.salary_increment_remark')));
-            $('#addslider .remark').text(remark);
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('addslider')).show();
-        });
-    </script>
-@endsection
-
-
-
-
-
-
-

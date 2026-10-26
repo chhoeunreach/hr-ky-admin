@@ -201,7 +201,7 @@ class EmployeeSalaryManagementService
     private function checkEffectiveDate(?string $date, int $employeeId): void
     {
         if (!$date || $date > now()->toDateString()) $this->invalid('effective_date', 'salary_manage_future');
-        if (SalaryReviseHistory::where('employee_id', $employeeId)->where('date_from', '>', $date)->exists()) {
+        if (SalaryReviseHistory::withTrashed()->where('employee_id', $employeeId)->where('date_from', '>', $date)->exists()) {
             $this->invalid('effective_date', 'salary_manage_backdated');
         }
     }

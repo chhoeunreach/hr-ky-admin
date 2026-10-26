@@ -43,7 +43,7 @@
                     <a class="btn btn-primary btn-sm" data-open-employee-form href="{{ route('admin.employee-salaries.increase-salary', $employee->id) }}">{{ __('index.increase_salary') }}</a>
                 @endcan
                 @can('show_salary_history')
-                    <a class="btn btn-outline-secondary btn-sm" data-open-employee-form href="{{ route('admin.employee-salaries.salary-revise-history.show', $employee->id) }}">{{ __('index.salary_manage_payroll_history') }}</a>
+                    <a class="btn btn-outline-secondary btn-sm" data-open-salary-history href="{{ route('admin.employee-salaries.salary-revise-history.show', $employee->id) }}">{{ __('index.salary_manage_payroll_history') }}</a>
                 @endcan
             @endif
         </div>
@@ -289,6 +289,7 @@
             </div>
         </div>
     @endcan
+    @include('admin.payroll.employeeSalary.partials.history-modal')
 @else
     <p class="text-muted mb-0">{{ __('index.salary_information_restricted') }}</p>
 @endif
