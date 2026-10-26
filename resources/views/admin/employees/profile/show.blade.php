@@ -38,7 +38,9 @@
 @section('main-content')
     <section class="content employee-360">
         @include('admin.section.flash_message')
-        @include('admin.employees.common.breadcrumb')
+        @unless(request('employee_modal') === '1' && request('tab') === 'salary')
+            @include('admin.employees.common.breadcrumb')
+        @endunless
 
         @php
             $avatar = $employee->avatar
@@ -1975,7 +1977,16 @@
         </style>
         <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
 
-        @include('admin.employees.profile.partials.overview-header')
+        @if(request('employee_modal') === '1' && $activeProfileTab === 'salary')
+            <style>
+                body { background: #fff; }
+                .employee-360 > .card { border: 0; box-shadow: none; margin-bottom: 0; }
+                .employee-360 > .card > .card-header { display: none; }
+                .employee-360 > .card > .card-body { padding: 0; }
+            </style>
+        @else
+            @include('admin.employees.profile.partials.overview-header')
+        @endif
 
         <div class="card">
             <div class="card-header pb-0">

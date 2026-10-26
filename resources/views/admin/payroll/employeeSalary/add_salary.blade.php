@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('admin.payroll.employeeSalary.common.form-layout')
 
 @section('title',__('index.employee_salary'))
 
@@ -26,6 +26,9 @@
             
             <div class="card-body">
                     @csrf
+                    @if(request('employee_modal') === '1')
+                        <input type="hidden" name="employee_modal" value="1">
+                    @endif
                     <input type="hidden" readonly name="employee_id" value="{{ $employee->id }}">
                     <div class="payroll-fil" x-data="createEmployeeSalary('{{ $percentType }}', {{ json_encode($salaryComponents) }})">
 

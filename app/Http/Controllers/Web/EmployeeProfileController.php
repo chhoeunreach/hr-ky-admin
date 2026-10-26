@@ -660,9 +660,11 @@ class EmployeeProfileController extends Controller
             }
         });
 
-        if ($linkedReview) {
-            return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary'])
-                ->with('success', __('index.salary_increase_requested'));
+        if ($linkedReview || $request->input('employee_modal') === '1') {
+            return redirect()->route('admin.employees.profile.show', [
+                'employee' => $employee->id, 'tab' => 'salary',
+                ...($request->input('employee_modal') === '1' ? ['employee_modal' => '1'] : []),
+            ])->with('success', __($linkedReview ? 'index.salary_increase_requested' : 'index.salary_history_added'));
         }
 
         return back()->with('success', __('index.salary_history_added'));
@@ -693,7 +695,10 @@ class EmployeeProfileController extends Controller
                 $this->audit($employee, 'salary', $status, $record->id, $old, $record->toArray(), $request);
             }
         });
-        return redirect()->route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary'])
+        return redirect()->route('admin.employees.profile.show', [
+            'employee' => $employee->id, 'tab' => 'salary',
+            ...($request->input('employee_modal') === '1' ? ['employee_modal' => '1'] : []),
+        ])
             ->with('success', __('index.salary_manage_status_saved'));
     }
 

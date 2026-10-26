@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('admin.payroll.employeeSalary.common.form-layout')
 
 @section('title',__('index.salary_increment'))
 
@@ -56,7 +56,7 @@
                                 <td class="text-center">{{ \App\Helpers\AppHelper::timeLeaverequestDate($value->date_from) }}</td>
                                 <td class="text-center">
                                     <a href="#"
-                                       id="showRemark"
+                                       data-show-salary-remark
                                        data-remark="{{$value->remark}} ">
                                         <i class="link-icon" data-feather="eye"></i>
                                     </a>
@@ -81,6 +81,7 @@
                 <div class="modal-content">
                     <div class="modal-header text-center">
                         <h5 class="modal-title" id="exampleModalLabel"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <strong>{{ __('index.remark') }}:</strong> <p class="remark"> </p>
@@ -94,13 +95,13 @@
 
 @section('scripts')
     <script>
-        $('body').on('click','#showRemark', function (e) {
+        $('body').on('click','[data-show-salary-remark]', function (e) {
             e.preventDefault();
             let remark = $(this).data('remark');
-            $('.modal-title').html(`{{__('index.salary_increment_remark')}}`);
-            $('.remark').text(remark);
-            $('#addslider').modal('show');
-        }).trigger("change");
+            $('#addslider .modal-title').text(@json(__('index.salary_increment_remark')));
+            $('#addslider .remark').text(remark);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addslider')).show();
+        });
     </script>
 @endsection
 

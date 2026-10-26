@@ -466,7 +466,7 @@ class EmployeeSalaryController extends Controller
                 app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->syncProfile($salary);
             });
 
-            return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_add'));
+            return $this->salarySavedRedirect($request, $employeeId)->with('success',__('message.salary_add'));
 
         }catch(ValidationException $exception){
             throw $exception;
@@ -538,7 +538,7 @@ class EmployeeSalaryController extends Controller
                 app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->syncProfile($salary->fresh(), $before);
             });
 
-            return redirect()->route('admin.employee-salaries.index')->with('success',__('message.salary_update'));
+            return $this->salarySavedRedirect($request, $employeeId)->with('success',__('message.salary_update'));
 
 
         }catch(Exception $exception){
@@ -547,6 +547,17 @@ class EmployeeSalaryController extends Controller
                 ->back()
                 ->with('danger', $exception->getMessage());
         }
+    }
+
+    private function salarySavedRedirect(Request $request, $employeeId): RedirectResponse
+    {
+        if ($request->input('employee_modal') === '1') {
+            return redirect()->route('admin.employees.profile.show', [
+                'employee' => $employeeId, 'tab' => 'salary', 'employee_modal' => '1',
+            ]);
+        }
+
+        return redirect()->route('admin.employee-salaries.index');
     }
 
     private function validatedSalaryData(Request $request, $employeeId): array

@@ -105,6 +105,28 @@ class EmployeeSalaryManagementTest extends TestCase
         ], $overrides));
     }
 
+    public function test_modal_payroll_increase_returns_to_embedded_employee_salary(): void
+    {
+        $this->salary();
+        $this->post('/_test/salary-increase', $this->increase(['employee_modal' => '1']))
+            ->assertRedirect(route('admin.employees.profile.show', [
+                'employee' => 20, 'tab' => 'salary', 'employee_modal' => '1',
+            ]))->assertSessionHas('success');
+        $this->assertEquals(13200, EmployeeSalary::where('employee_id', 20)->first()->annual_salary);
+    }
+
+    public function test_modal_salary_approval_returns_to_embedded_employee_salary(): void
+    {
+        $this->salary();
+        $record = $this->requestRecord();
+        $this->patch('/_test/salary-status/20/'.$record->id, [
+            'approval_status' => 'approved', 'employee_modal' => '1',
+        ])->assertRedirect(route('admin.employees.profile.show', [
+            'employee' => 20, 'tab' => 'salary', 'employee_modal' => '1',
+        ]))->assertSessionHas('success');
+        $this->assertSame('approved', $record->fresh()->approval_status);
+    }
+
     public function test_monthly_increase_updates_payroll_profile_and_both_histories_using_server_calculations(): void
     {
         $salary = $this->salary();

@@ -81,6 +81,30 @@
         @endphp
 
         <style>
+            .employee-profile-actions .dropdown-toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: .5rem;
+                border-radius: .5rem;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            .employee-profile-actions .link-icon { width: 16px; height: 16px; flex-shrink: 0; }
+            .employee-profile-action-menu {
+                min-width: 230px;
+                max-width: calc(100vw - 24px);
+                padding: .5rem;
+                border-radius: .75rem;
+                box-shadow: 0 8px 24px rgba(15, 23, 42, .12);
+            }
+            .employee-profile-action-menu .dropdown-header { max-width: 260px; padding: .5rem .75rem; }
+            .employee-profile-action-menu .dropdown-item {
+                display: flex;
+                align-items: center;
+                gap: .75rem;
+                padding: .65rem .75rem;
+                border-radius: .375rem;
+            }
             @media print {
                 @page {
                     size: A4 portrait;
@@ -327,12 +351,36 @@
                                 ];
                             @endphp
                             <tr>
-                                <td class="no-print">
-                                    <div class="d-flex flex-wrap gap-1">
-                                        <a class="btn btn-primary btn-xs" href="{{ route('admin.employees.profile.show', $employee->id) }}">{{ __('index.employee_360') }}</a>
-                                        @canany(['employee.salary.view', 'employee.salary.history.view'])
-                                            <a class="btn btn-outline-success btn-xs" data-open-employee-form href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary-certificate']) }}">{{ __('index.salary_certificate') }}</a>
-                                        @endcanany
+                                <td class="no-print align-middle">
+                                    <div class="dropdown employee-profile-actions">
+                                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button"
+                                                id="employeeProfileActions{{ $employee->id }}" data-bs-toggle="dropdown" aria-expanded="false"
+                                                aria-label="{{ __('index.action') }} · {{ $employee->name ?: $employee->english_name }}">
+                                            <i class="link-icon" data-feather="eye" aria-hidden="true"></i>{{ __('index.view') }}
+                                        </button>
+                                        <ul class="dropdown-menu employee-profile-action-menu" aria-labelledby="employeeProfileActions{{ $employee->id }}">
+                                            <li><h6 class="dropdown-header text-truncate">{{ $employee->name ?: $employee->english_name }}</h6></li>
+                                            <li><hr class="dropdown-divider my-1"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('admin.employees.profile.show', $employee->id) }}">
+                                                    <i class="link-icon text-primary" data-feather="user" aria-hidden="true"></i>{{ __('index.employee_360') }}
+                                                </a>
+                                            </li>
+                                            @canany(['view_salary_list', 'salary_increment', 'employee.salary.view', 'employee.salary.history.view', 'employee.salary.history.manage'])
+                                                <li>
+                                                    <a class="dropdown-item" data-open-employee-form data-employee-form-title="{{ $employee->name }} · {{ __('index.salary') }}" href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary']) }}">
+                                                        <i class="link-icon text-success" data-feather="dollar-sign" aria-hidden="true"></i>{{ __('index.salary') }}
+                                                    </a>
+                                                </li>
+                                            @endcanany
+                                            @canany(['employee.salary.view', 'employee.salary.history.view'])
+                                                <li>
+                                                    <a class="dropdown-item" data-open-employee-form href="{{ route('admin.employees.profile.show', ['employee' => $employee->id, 'tab' => 'salary-certificate']) }}">
+                                                        <i class="link-icon text-success" data-feather="file-text" aria-hidden="true"></i>{{ __('index.salary_certificate') }}
+                                                    </a>
+                                                </li>
+                                            @endcanany
+                                        </ul>
                                     </div>
                                 </td>
                                 <td>
@@ -431,6 +479,14 @@
 @section('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.employee-profile-actions [data-bs-toggle="dropdown"]').forEach(function (button) {
+                bootstrap.Dropdown.getOrCreateInstance(button, {
+                    boundary: document.body,
+                    popperConfig: function (config) {
+                        return {...config, strategy: 'fixed'};
+                    }
+                });
+            });
             const reviewModal = document.getElementById('quickCompleteReviewModal');
             if (reviewModal) {
                 reviewModal.addEventListener('show.bs.modal', function (event) {

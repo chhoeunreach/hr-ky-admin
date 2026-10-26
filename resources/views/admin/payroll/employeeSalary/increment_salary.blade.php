@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('admin.payroll.employeeSalary.common.form-layout')
 @section('title', __('index.salary_increment'))
 @section('action', __('index.increment'))
 @section('button')
@@ -27,6 +27,9 @@
                   data-earnings='@json(app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->earningStructure($employeeSalary))'
                   data-currency="{{ $currency }}" data-error="{{ __('index.salary_manage_invalid_amount') }}">
                 @csrf
+                @if(request('employee_modal') === '1')
+                    <input type="hidden" name="employee_modal" value="1">
+                @endif
                 <input type="hidden" name="employee_id" value="{{ $employeeDetail->id }}">
                 <input type="hidden" name="current_salary" value="{{ $employeeSalary->annual_salary }}">
                 <fieldset class="mb-4">
@@ -87,7 +90,7 @@
                 </fieldset>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary">{{ __('index.salary_manage_apply') }}</button>
-                    <a class="btn btn-outline-secondary" href="{{ route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id]) }}">{{ __('index.cancel') }}</a>
+                    <a class="btn btn-outline-secondary" href="{{ request('employee_modal') === '1' ? route('admin.employees.profile.show', ['employee' => $employeeDetail->id, 'tab' => 'salary', 'employee_modal' => '1']) : route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id]) }}">{{ __('index.cancel') }}</a>
                 </div>
             </form>
         </div>

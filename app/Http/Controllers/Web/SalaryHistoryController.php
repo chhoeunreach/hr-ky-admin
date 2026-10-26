@@ -66,6 +66,11 @@ class SalaryHistoryController extends Controller
             $validatedData = $request->validated();
 
             $this->salaryHistoryService->store($validatedData);
+            if ($request->input('employee_modal') === '1') {
+                return redirect()->route('admin.employees.profile.show', [
+                    'employee' => $request->integer('employee_id'), 'tab' => 'salary', 'employee_modal' => '1',
+                ])->with('success', __('message.salary_history_update'));
+            }
             return redirect()
                 ->route('admin.employee-salaries.index')
                 ->with('success',__('message.salary_history_update'));
