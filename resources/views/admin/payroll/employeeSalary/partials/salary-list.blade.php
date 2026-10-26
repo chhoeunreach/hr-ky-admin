@@ -101,7 +101,7 @@
                                         @if($employeeSalaryStatus == 0)
                                             @can('add_salary')
                                                 <li>
-                                                    <a class="dropdown-item py-2" title="{{ __('index.add_salary') }}"
+                                                    <a class="dropdown-item py-2" data-open-employee-form data-employee-form-title="{{ __('index.add_salary') }} · {{ $value->employee_name }}" title="{{ __('index.add_salary') }}"
                                                         href="{{ route('admin.employee-salaries.add', $value->employee_id) }}">
                                                         @lang('index.add_salary')
                                                     </a>
@@ -110,7 +110,7 @@
                                         @else
                                             @can('edit_salary')
                                                 <li>
-                                                    <a class="dropdown-item py-2" title="{{ __('index.edit_salary') }}"
+                                                    <a class="dropdown-item py-2" data-open-employee-form data-employee-form-title="{{ __('index.edit_salary') }} · {{ $value->employee_name }}" title="{{ __('index.edit_salary') }}"
                                                         href="{{ route('admin.employee-salaries.edit-salary', $value->employee_id) }}">
                                                         {{ __('index.edit_salary') }}
                                                     </a>
@@ -118,7 +118,7 @@
                                             @endcan
                                             @can('salary_increment')
                                                 <li>
-                                                    <a class="dropdown-item py-2" title="{{ __('index.increase_salary') }}"
+                                                    <a class="dropdown-item py-2" data-open-employee-form data-employee-form-title="{{ __('index.increase_salary') }} · {{ $value->employee_name }}" title="{{ __('index.increase_salary') }}"
                                                         href="{{route('admin.employee-salaries.increase-salary',$value->employee_id)}}">
                                                         {{ __('index.increase_salary') }}
                                                     </a>
@@ -127,7 +127,7 @@
                                             @can('show_salary_history')
                                                 <li>
                                                     <a href="{{route('admin.employee-salaries.salary-revise-history.show',$value->employee_id)}}"
-                                                        class="dropdown-item py-2 viewSalaryReviseHistory"
+                                                        class="dropdown-item py-2 viewSalaryReviseHistory" data-open-employee-form data-employee-form-title="{{ __('index.salary_review_history') }} · {{ $value->employee_name }}"
                                                         title="{{ __('index.salary_review_history') }}">
                                                         {{ __('index.salary_review_history') }}
                                                     </a>
@@ -135,11 +135,8 @@
                                             @endcan
                                                 @can('delete_salary')
                                                     <li>
-                                                        <form method="POST" action="{{ route('admin.employee-salaries.delete-salary',$value->employee_id) }}" class="deleteEmployeeSalaryForm">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="dropdown-item py-2 text-danger">{{ __('index.delete') }}</button>
-                                                        </form>
+                                                        <button type="button" class="dropdown-item py-2 text-danger" data-bs-toggle="modal" data-bs-target="#employeeSalaryDeleteModal"
+                                                                data-delete-url="{{ route('admin.employee-salaries.delete-salary', $value->employee_id) }}" data-employee-name="{{ $value->employee_name }}">{{ __('index.delete') }}</button>
                                                     </li>
                                                 @endcan
                                         @endif

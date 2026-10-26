@@ -84,6 +84,9 @@ class EmployeeSalaryController extends Controller
     public function index(Request $request): Factory|View|\Symfony\Component\HttpFoundation\Response|Application
     {
         $this->authorize('view_salary_list');
+        if ($request->input('salary_modal') === '1' && session()->has('success')) {
+            return view($this->view.'partials.modal-saved');
+        }
         if ($request->filled('export')) $this->authorize('export_salary');
         $request->validate([
             'employee_id' => ['nullable', 'integer', 'min:1'],
@@ -615,6 +618,9 @@ class EmployeeSalaryController extends Controller
 
     private function salarySavedRedirect(Request $request, $employeeId): RedirectResponse
     {
+        if ($request->input('salary_modal') === '1') {
+            return redirect()->route('admin.employee-salaries.index', ['employee_modal' => '1', 'salary_modal' => '1']);
+        }
         if ($request->input('employee_modal') === '1') {
             return redirect()->route('admin.employees.profile.show', [
                 'employee' => $employeeId, 'tab' => 'salary', 'employee_modal' => '1',

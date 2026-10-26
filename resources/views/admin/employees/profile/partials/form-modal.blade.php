@@ -1,5 +1,6 @@
 <div class="modal fade" id="employeeProfileFormModal" tabindex="-1" aria-labelledby="employeeProfileFormModalTitle" aria-hidden="true"
-     data-directory-url="{{ route('admin.employees.profile.index') }}">
+     data-directory-url="{{ $formModalDirectoryUrl ?? route('admin.employees.profile.index') }}"
+     data-context="{{ $formModalContext ?? '' }}" data-refresh-event="{{ $formModalRefreshEvent ?? '' }}">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-lg-down">
         <div class="modal-content">
             <div class="modal-header">

@@ -27,6 +27,9 @@
                   data-earnings='@json(app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->earningStructure($employeeSalary))'
                   data-currency="{{ $currency }}" data-error="{{ __('index.salary_manage_invalid_amount') }}">
                 @csrf
+                    @if(request('salary_modal') === '1')
+                        <input type="hidden" name="salary_modal" value="1">
+                    @endif
                 @if(request('employee_modal') === '1')
                     <input type="hidden" name="employee_modal" value="1">
                 @endif
@@ -90,7 +93,7 @@
                 </fieldset>
                 <div class="d-flex flex-wrap gap-2">
                     <button type="submit" class="btn btn-primary">{{ __('index.salary_manage_apply') }}</button>
-                    <a class="btn btn-outline-secondary" href="{{ request('employee_modal') === '1' ? route('admin.employees.profile.show', ['employee' => $employeeDetail->id, 'tab' => 'salary', 'employee_modal' => '1']) : route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id]) }}">{{ __('index.cancel') }}</a>
+                    <a class="btn btn-outline-secondary" href="{{ request('salary_modal') === '1' ? route('admin.employee-salaries.index') : (request('employee_modal') === '1' ? route('admin.employees.profile.show', ['employee' => $employeeDetail->id, 'tab' => 'salary', 'employee_modal' => '1']) : route('admin.employee-salaries.index', ['employee_id' => $employeeDetail->id])) }}">{{ __('index.cancel') }}</a>
                 </div>
             </form>
         </div>

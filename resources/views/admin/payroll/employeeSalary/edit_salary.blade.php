@@ -37,6 +37,9 @@
             <div class="card-body">
 
                     @csrf
+                    @if(request('salary_modal') === '1')
+                        <input type="hidden" name="salary_modal" value="1">
+                    @endif
                     @if(request('employee_modal') === '1')
                         <input type="hidden" name="employee_modal" value="1">
                     @endif

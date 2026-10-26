@@ -275,6 +275,22 @@ class EmployeeSalaryManagementTest extends TestCase
             ->assertOk()->assertSee('A4 portrait', false)->assertDontSee('Salary Group');
     }
 
+    public function test_salary_list_modal_saves_return_to_the_list_without_profile_permissions(): void
+    {
+        $this->setupSalaryDirectory();
+        $this->abilities = ['view_salary_list', 'edit_salary', 'salary_increment'];
+        $destination = route('admin.employee-salaries.index', ['employee_modal' => '1', 'salary_modal' => '1']);
+        $this->put('/_test/salary-edit/20', [
+            'payroll_type' => 'annual', 'payment_type' => 'monthly', 'annual_salary' => 12000,
+            'basic_salary_type' => 'percent', 'basic_salary_value' => 80,
+            'employee_modal' => '1', 'salary_modal' => '1',
+        ])->assertRedirect($destination)->assertSessionHas('success');
+        $result = app(EmployeeSalaryController::class)->index(Request::create('/_test/salary-directory', 'GET', ['salary_modal' => '1']));
+        $this->assertSame('admin.payroll.employeeSalary.partials.modal-saved', $result->name());
+        $this->post('/_test/salary-increase', $this->increase(['employee_modal' => '1', 'salary_modal' => '1']))
+            ->assertRedirect($destination)->assertSessionHasNoErrors();
+    }
+
     public function test_salary_setup_and_edit_save_server_calculated_earnings_and_allowance(): void
     {
         $this->setupSalaryGroup(); $this->abilities = ['add_salary', 'edit_salary'];

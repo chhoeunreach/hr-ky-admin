@@ -3051,4 +3051,5 @@ return [
     'salary_table_account_cycle' => 'Account Salary Cycle',
     'salary_refresh_error' => 'Unable to refresh salaries. Please try again.',
     'salary_refresh_success' => 'Salary list refreshed.',
+    'salary_delete_help' => 'Delete this employee’s salary setup? Current salary and allowances will be cleared from the profile. Salary history will be kept.',
 ];

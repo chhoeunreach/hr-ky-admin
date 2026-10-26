@@ -89,6 +89,11 @@
 
         <div data-salary-feedback role="status" aria-live="polite"></div>
         @include('admin.payroll.employeeSalary.partials.salary-list')
+        @include('admin.employees.profile.partials.form-modal', [
+            'formModalDirectoryUrl' => route('admin.employee-salaries.index'),
+            'formModalContext' => 'salary', 'formModalRefreshEvent' => 'employee-salary:changed',
+        ])
+        @include('admin.payroll.employeeSalary.partials.delete-modal')
     </section>
 
 @endsection
@@ -97,5 +102,7 @@
     @include('admin.payroll.employeeSalary.common.scripts')
     <script src="{{ asset('assets/js/employee-salary-table.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-table.js')) }}"></script>
     <script src="{{ asset('assets/js/employee-salary-refresh.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-refresh.js')) }}"></script>
+    <script src="{{ asset('assets/js/employee-profile-form-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-profile-form-modal.js')) }}"></script>
+    <script src="{{ asset('assets/js/employee-salary-modals.js') }}?v={{ filemtime(public_path('assets/js/employee-salary-modals.js')) }}"></script>
 @endsection
 

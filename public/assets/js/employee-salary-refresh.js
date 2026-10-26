@@ -90,10 +90,11 @@
         }
     });
     window.addEventListener('popstate', () => refresh(window.location.href, {push: false, restore: true}));
+    document.addEventListener('employee-salary:changed', () => refresh(window.location.href, {push: false, restore: true, message: page.dataset.salaryRefreshSuccess}));
     const saving = new WeakSet();
     document.addEventListener('employee-salary:submit', async event => {
         const actionForm = event.target;
-        if (!page.contains(actionForm) || !actionForm.matches('.deleteEmployeeSalaryForm, .salary-cycle-form')) return;
+        if (!page.contains(actionForm) || !actionForm.matches('.deleteEmployeeSalaryForm, .salary-cycle-form, [data-salary-delete-form]')) return;
         event.preventDefault();
         if (saving.has(actionForm)) return;
         saving.add(actionForm);
@@ -106,9 +107,13 @@
                 headers: {Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest'}});
             if (!response.ok) throw new Error(await responseError(response));
             const data = await response.json();
+            const modal = actionForm.closest?.('.modal');
+            if (modal) window.bootstrap?.Modal.getInstance(modal)?.hide();
             await refresh(window.location.href, {push: false, restore: true, message: data.message});
         } catch (error) {
             if (cycle) cycle.value = cycle.dataset.current;
+            const modalError = actionForm.querySelector?.('[data-salary-delete-error]');
+            if (modalError) modalError.textContent = error.message || page.dataset.salaryRefreshError;
             notify(error.message || page.dataset.salaryRefreshError, true);
         } finally {
             saving.delete(actionForm);

@@ -11,6 +11,7 @@
         try { url = new URL(href, window.location.href); } catch (_) { return null; }
         if (url.origin !== window.location.origin) return null;
         url.searchParams.set('employee_modal', '1');
+        if (modal.dataset.context === 'salary') url.searchParams.set('salary_modal', '1');
         return url;
     };
     const load = (url, label) => {
@@ -76,6 +77,11 @@
             url = new URL(frame.contentWindow.location.href);
         } catch (_) { return; }
         if (!child || url.origin !== window.location.origin) return;
+        if (modal.dataset.context === 'salary' && child.querySelector?.('[data-salary-modal-saved]')) {
+            changed = true;
+            instance().hide();
+            return;
+        }
         if (child.querySelector?.('.app-flash-message.alert-success')) changed = true;
         // A successful save may redirect without retaining the embedding flag.
         if (url.pathname.startsWith('/admin/') && url.searchParams.get('employee_modal') !== '1') {
@@ -90,6 +96,11 @@
             if (!form.querySelector('[name="employee_modal"]')) {
                 const field = child.createElement('input');
                 field.type = 'hidden'; field.name = 'employee_modal'; field.value = '1';
+                form.appendChild(field);
+            }
+            if (modal.dataset.context === 'salary' && !form.querySelector('[name="salary_modal"]')) {
+                const field = child.createElement('input');
+                field.type = 'hidden'; field.name = 'salary_modal'; field.value = '1';
                 form.appendChild(field);
             }
         }, true);
@@ -111,7 +122,10 @@
     });
     modal.addEventListener('hidden.bs.modal', () => {
         frame.removeAttribute('src');
-        if (changed) window.location.reload();
+        if (changed) {
+            if (modal.dataset.refreshEvent) document.dispatchEvent(new CustomEvent(modal.dataset.refreshEvent));
+            else window.location.reload();
+        }
         changed = false;
     });
 })();
