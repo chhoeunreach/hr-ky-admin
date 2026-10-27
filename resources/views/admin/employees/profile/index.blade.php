@@ -274,6 +274,9 @@
                     @if(request()->filled('name_direction'))
                         <input type="hidden" name="name_direction" value="{{ request('name_direction') }}">
                     @endif
+                    @if(request()->filled('working_life_direction'))
+                        <input type="hidden" name="working_life_direction" value="{{ request('working_life_direction') }}">
+                    @endif
                     <div class="row g-2">
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="branch_id">
@@ -337,7 +340,7 @@
                             <th class="no-print">{{ __('index.action') }}</th>
                             <th aria-sort="{{ request('name_direction') === 'desc' ? 'descending' : (request('name_direction') === 'asc' ? 'ascending' : 'none') }}">
                                 <a class="d-flex align-items-center justify-content-between gap-2 text-reset text-decoration-none"
-                                   href="{{ request()->fullUrlWithQuery(['name_direction' => request('name_direction') === 'asc' ? 'desc' : 'asc', 'page' => null]) }}">
+                                   href="{{ request()->fullUrlWithQuery(['name_direction' => request('name_direction') === 'asc' ? 'desc' : 'asc', 'working_life_direction' => null, 'page' => null]) }}">
                                     {{ __('index.employee') }}
                                     <span aria-hidden="true">{{ request('name_direction') === 'desc' ? '↓' : (request('name_direction') === 'asc' ? '↑' : '↕') }}</span>
                                 </a>
@@ -345,7 +348,13 @@
                             <th>{{ __('index.branch') }}</th>
                             <th>{{ __('index.department') }}</th>
                             <th>{{ __('index.position') }}</th>
-                            <th>{{ __('index.working_life') }}</th>
+                            <th aria-sort="{{ request('working_life_direction') === 'desc' ? 'descending' : (request('working_life_direction') === 'asc' ? 'ascending' : 'none') }}">
+                                <a class="d-flex align-items-center justify-content-between gap-2 text-reset text-decoration-none"
+                                   href="{{ request()->fullUrlWithQuery(['working_life_direction' => request('working_life_direction') === 'desc' ? 'asc' : 'desc', 'name_direction' => null, 'page' => null]) }}">
+                                    {{ __('index.working_life') }}
+                                    <span aria-hidden="true">{{ request('working_life_direction') === 'desc' ? '↓' : (request('working_life_direction') === 'asc' ? '↑' : '↕') }}</span>
+                                </a>
+                            </th>
                             <th>{{ __('index.review') }}</th>
                         </tr>
                         </thead>

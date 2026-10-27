@@ -54,6 +54,7 @@ class EmployeeProfileController extends Controller
             'department_ids.*' => ['integer', 'exists:departments,id'],
             'report_date' => ['nullable', 'date_format:Y-m-d'],
             'name_direction' => ['nullable', 'in:asc,desc'],
+            'working_life_direction' => ['nullable', 'in:asc,desc'],
         ]);
         $departmentIds = $request->input('department_ids', $request->filled('department_id') ? [$request->department_id] : []);
         $availableDepartments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
@@ -113,7 +114,16 @@ class EmployeeProfileController extends Controller
             $employeeQuery->whereIn('id', $matchingEmployeeIds->isNotEmpty() ? $matchingEmployeeIds : [0]);
         }
 
-        if ($request->filled('name_direction')) {
+        if ($request->filled('working_life_direction')) {
+            $direction = $request->input('working_life_direction') === 'asc' ? 'asc' : 'desc';
+            $endDate = 'COALESCE((SELECT last_working_date FROM employee_profiles WHERE employee_id = users.id LIMIT 1), ?)';
+            $duration = DB::connection()->getDriverName() === 'sqlite'
+                ? "ABS(julianday({$endDate}) - julianday(users.joining_date))"
+                : "ABS(DATEDIFF({$endDate}, users.joining_date))";
+            $employeeQuery->orderByRaw('CASE WHEN users.joining_date IS NULL THEN 1 ELSE 0 END')
+                ->orderByRaw("{$duration} {$direction}", [today()->toDateString()])
+                ->orderBy('users.id');
+        } elseif ($request->filled('name_direction')) {
             $direction = $request->input('name_direction') === 'desc' ? 'desc' : 'asc';
             $employeeQuery->orderByRaw("COALESCE(NULLIF(users.name, ''), users.english_name) {$direction}")->orderBy('users.id');
         } else {
