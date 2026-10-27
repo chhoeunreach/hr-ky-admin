@@ -69,6 +69,16 @@ test('saving stays embedded and refreshes the directory only when closing', () =
     assert.equal(state.calls.reload, 1);
 });
 
+test('successful employee edits close the modal and refresh the directory', () => {
+    const state = setup();
+    state.frame.contentDocument.querySelector = selector => selector === '[data-employee-modal-saved]' ? {} : null;
+    state.frameEvents.load();
+    assert.equal(state.calls.hide, 1);
+    assert.equal(state.calls.reload, 0);
+    state.modalEvents['hidden.bs.modal']();
+    assert.equal(state.calls.reload, 1);
+});
+
 test('server redirects retain the modal and restore the embedded layout', () => {
     const state = setup();
     state.frame.contentWindow.location.href = 'https://hr.test/admin/employees/20/profile?tab=salary';

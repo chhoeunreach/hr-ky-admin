@@ -384,18 +384,21 @@
 
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="supervisor" class="form-label">{{ __('index.supervisor') }}</label>
-                    <select class="form-select" id="supervisor" name="supervisor_id">
+                    <select class="form-select" id="supervisor" name="supervisor_id" @if(isset($userDetail)) data-all-departments @endif>
+                        <option value="">{{ __('index.select_supervisor') }}</option>
                         @if(isset($userDetail))
                             @foreach($filteredSupervisor as $supervisor)
                                 @if( $supervisor->id !== $userDetail->id)
                                     <option
-                                        value="{{ $supervisor->id }}" {{ $supervisor->id ==  $userDetail->supervisor_id ? 'selected' : '' }}>
-                                        {{ ucfirst($supervisor->name) }}
+                                        data-supervisor-name="{{ $supervisor->name ?: $supervisor->english_name }}"
+                                        value="{{ $supervisor->id }}" @selected((string) $supervisor->id === (string) old('supervisor_id', $userDetail->supervisor_id))>
+                                        {{ $supervisor->name ?: $supervisor->english_name }}{{ $supervisor->english_name && $supervisor->english_name !== $supervisor->name ? ' · '.$supervisor->english_name : '' }}
+                                        {{ ($supervisor->employee_code ?: $supervisor->username) ? ' · '.($supervisor->employee_code ?: $supervisor->username) : '' }}
+                                        {{ $supervisor->department?->dept_name ? ' · '.$supervisor->department->dept_name : '' }}{{ $supervisor->branch?->name ? ' · '.$supervisor->branch->name : '' }}
+                                        {{ $supervisor->email ? ' · '.$supervisor->email : '' }}
                                     </option>
                                 @endif
                             @endforeach
-                        @else
-                            <option selected disabled>{{ __('index.select_supervisor') }}</option>
                         @endif
                     </select>
                 </div>

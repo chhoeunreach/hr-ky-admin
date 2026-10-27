@@ -47,6 +47,9 @@ class EmployeeProfileController extends Controller
     public function index(Request $request)
     {
         $this->authorize('employee.profile.view');
+        if ($request->boolean('attendance_report')) {
+            $this->authorize('employee.attendance_daily_report.view');
+        }
         $request->validate([
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
@@ -137,8 +140,8 @@ class EmployeeProfileController extends Controller
         $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
 
         if ($attendanceReport) {
-            $canPrintAttendanceReport = $this->can('employee.attendance_daily_report.print') || $this->can('employee.profile.print');
-            $canExportAttendanceReport = $this->can('employee.attendance_daily_report.export') || $this->can('employee.profile.print');
+            $canPrintAttendanceReport = $this->can('employee.attendance_daily_report.print');
+            $canExportAttendanceReport = $this->can('employee.attendance_daily_report.export');
             return view('admin.employees.profile.attendance-report', compact('employees', 'branches', 'departments', 'availableDepartments', 'departmentIds', 'employmentStatus', 'canPrintAttendanceReport', 'canExportAttendanceReport'));
         }
 

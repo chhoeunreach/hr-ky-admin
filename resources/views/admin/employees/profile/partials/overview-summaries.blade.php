@@ -40,6 +40,7 @@
         </div>
     </div>
 
+    @if($canViewAttendanceDailyReport)
     <div class="emp-overview-card">
         <div class="emp-card-head">
             <h6><i class="link-icon" data-feather="activity"></i> {{ __('index.attendance') }}</h6>
@@ -60,6 +61,8 @@
         </div>
     </div>
 
+    @endif
+    @if($canViewLeaveRecords)
     <div class="emp-overview-card">
         <div class="emp-card-head">
             <h6><i class="link-icon" data-feather="calendar"></i> {{ __('index.leave_balance') }}</h6>
@@ -90,6 +93,7 @@
         </div>
     </div>
 
+    @endif
     @if($canViewPerformance)
         <div class="emp-overview-card">
             <div class="emp-card-head">

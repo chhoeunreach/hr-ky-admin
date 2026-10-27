@@ -1,4 +1,5 @@
 <div class="emp-kpi-row">
+    @if($canViewAttendanceDailyReport)
     <div class="emp-kpi-card">
         <div class="emp-kpi-icon emp-kpi-teal"><i class="link-icon" data-feather="check-circle"></i></div>
         <div class="emp-kpi-body">
@@ -12,6 +13,8 @@
         </div>
     </div>
 
+    @endif
+    @if($canViewLeaveRecords)
     <div class="emp-kpi-card">
         <div class="emp-kpi-icon emp-kpi-blue"><i class="link-icon" data-feather="calendar"></i></div>
         <div class="emp-kpi-body">
@@ -24,6 +27,7 @@
         </div>
     </div>
 
+    @endif
     @if($canViewPerformance)
         <div class="emp-kpi-card">
             <div class="emp-kpi-icon emp-kpi-amber"><i class="link-icon" data-feather="bar-chart-2"></i></div>

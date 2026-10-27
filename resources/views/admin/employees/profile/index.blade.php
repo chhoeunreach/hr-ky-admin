@@ -240,9 +240,11 @@
                         {{ __('index.filter') }}
                     </button>
                     <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
+                    @can('employee.attendance_daily_report.view')
                     <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" data-employee-report class="btn btn-outline-primary btn-sm">
                         <i class="link-icon" data-feather="file-text"></i> {{ __('index.attendance_confirmation_report') }}
                     </button>
+                    @endcan
                     <div class="employee-profile-search">
                         <i class="link-icon search-icon" data-feather="search"></i>
                         <input type="search"

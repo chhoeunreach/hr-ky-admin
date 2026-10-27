@@ -23,7 +23,11 @@
         });
         $("#supervisor").select2({
             placeholder: "{{ __('index.select_supervisor') }}",
+            minimumResultsForSearch: 0,
             allowClear: true,
+            templateSelection: function (option) {
+                return option.element?.dataset.supervisorName || option.text;
+            },
             width: '100%'
         });
         $("#role_id").select2({
@@ -528,6 +532,7 @@
         let selectedOfficeTimeId = "{{ isset($userDetail) ? $userDetail['office_time_id'] : old('office_time_id') }}";
         let selectedSupervisorId = "{{ isset($userDetail) ? $userDetail['supervisor_id'] : old('supervisor_id') }}";
         const employeeId = "{{ isset($userDetail) ? $userDetail['id'] : '' }}";
+        const allDepartmentSupervisors = $('#supervisor').is('[data-all-departments]');
         let selectedPostId = @json(isset($userDetail) ? $userDetail->post_id : ($filterParameters['post_id'] ?? old('post_id')));
 
         let branchLoadRequestId = 0;
@@ -540,7 +545,7 @@
             $('#department').empty().append('<option value="" selected>{{ __('index.select_department') }}</option>').prop('disabled', true);
             $('#officeTime').empty().append('<option value="" selected>{{ __('index.select_office_time') }}</option>');
             $('#post').empty().append('<option value="" selected>{{ __('index.select_post') }}</option>').prop('disabled', true);
-            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
+            if (!allDepartmentSupervisors) $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
             $('#department, #post').trigger('change.select2');
 
             const selectedBranchIds = Array.isArray(branchValue)
@@ -622,7 +627,7 @@
                 ? deptVal.filter(Boolean)
                 : (deptVal ? [deptVal] : []);
 
-            $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
+            if (!allDepartmentSupervisors) $('#supervisor').empty().append('<option value="" selected>{{ __('index.select_supervisor') }}</option>');
             $('#post').empty().append('<option value="" selected>{{ __('index.select_post') }}</option>').prop('disabled', true);
             $('#post').trigger('change.select2');
 
@@ -663,7 +668,7 @@
                 }
 
                 // If on employee create/edit form, load supervisors for single department
-                if ($('#supervisor').length && selectedDeptIds.length === 1) {
+                if (!allDepartmentSupervisors && $('#supervisor').length && selectedDeptIds.length === 1) {
                     try {
                         const supervisorRes = await fetch(`{{ url('admin/transfer/get-user-transfer-department-data') }}/${selectedDeptIds[0]}`, {
                             method: 'GET',
@@ -688,7 +693,7 @@
                 $('#supervisor').trigger('change.select2');
                 $('#post').trigger('change.select2');
             } catch (error) {
-                $('#supervisor').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
+                if (!allDepartmentSupervisors) $('#supervisor').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
                 $('#post').append('<option disabled>{{ __("index.error_loading_posts") }}</option>');
             }
         };

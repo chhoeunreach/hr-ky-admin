@@ -254,6 +254,7 @@
         </div>
     @endif
 
+    @if($canViewAttendanceDailyReport)
     <div class="employee-complete-section">
         <h6>13. វត្តមាន និងការឈប់សម្រាក (Attendance &amp; Leave Summary)</h6>
         <div class="employee-complete-list">
@@ -277,6 +278,7 @@
         </div>
     </div>
 
+    @endif
     @if($canViewPerformance || $canViewGoal)
         <div class="employee-complete-section">
             <h6>14. ចំណុចខ្លាំង / ចំណុចត្រូវកែលម្អ / គោលដៅ</h6>

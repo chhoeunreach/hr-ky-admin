@@ -58,7 +58,7 @@
         </div>
 
         <div class="btn-group employee-360-hero-buttons">
-            @can('employee.profile.edit')
+            @can('edit_employee')
                 <a class="btn btn-outline-primary btn-xs" data-open-employee-form href="{{ route('admin.employees.edit', $employee->id) }}">
                     <i class="link-icon" data-feather="edit"></i> {{ __('index.edit') }}
                 </a>

@@ -238,6 +238,7 @@ class EmployeeSalaryManagementTest extends TestCase
             $table->integer('role_id')->default(1); $table->integer('department_id')->default(1);
             $table->string('email')->nullable(); $table->string('marital_status')->nullable();
             $table->string('username')->nullable(); $table->string('avatar')->nullable();
+            $table->date('joining_date')->nullable();
         });
         Schema::create('employee_accounts', function (Blueprint $table) {
             $table->id(); $table->integer('user_id'); $table->decimal('salary')->nullable();
@@ -318,14 +319,14 @@ class EmployeeSalaryManagementTest extends TestCase
     {
         $this->setupSalaryDirectory();
         $this->getJson('/_test/salary-directory?export=json&employee_id=20')
-            ->assertOk()->assertJsonCount(6, 'headings')
-            ->assertJsonPath('rows.0', ['Employee', '1000.00', '800.00', '200.00', __('index.monthly'), __('index.salary_setup_ready')]);
+            ->assertOk()->assertJsonCount(7, 'headings')
+            ->assertJsonPath('rows.0', ['Employee', '—', '1000.00', '800.00', '200.00', __('index.monthly'), __('index.salary_setup_ready')]);
         EmployeeSalary::where('employee_id', 20)->update([
             'payment_type' => 'weekly', 'annual_salary' => 10400,
             'weekly_basic_salary' => 160, 'weekly_fixed_allowance' => 40,
         ]);
         $this->getJson('/_test/salary-directory?export=json&employee_id=20')
-            ->assertOk()->assertJsonPath('rows.0', ['Employee', '200.00', '160.00', '40.00', __('index.weekly'), __('index.salary_setup_ready')]);
+            ->assertOk()->assertJsonPath('rows.0', ['Employee', '—', '200.00', '160.00', '40.00', __('index.weekly'), __('index.salary_setup_ready')]);
     }
 
     public function test_salary_export_requires_export_permission_and_ignores_foreign_branch_override(): void

@@ -37,6 +37,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -852,9 +853,10 @@ class UserController extends Controller
                 ? $this->postRepository->getAllActivePostsByDepartmentId($userDetail->department_id, [], ['id', 'post_name'])
                 : [];
 
-            $filteredSupervisor = isset($userDetail->department_id)
-                ? $this->userRepo->getAllActiveEmployeeByDepartment($userDetail->department_id, ['id','name'])
-                : [];
+            $filteredSupervisor = User::with(['department:id,dept_name', 'branch:id,name'])
+                ->where('id', '!=', $userDetail->id)
+                ->orderBy('name')->orderBy('id')
+                ->get(['id', 'name', 'english_name', 'username', 'employee_code', 'email', 'department_id', 'branch_id']);
 
             return view($this->view . 'edit', compact('companyDetail', 'roles', 'userDetail', 'leaveTypes', 'employeeLeaveTypes', 'bsEnabled','filteredSupervisor','filteredPosts'));
         } catch (Exception $exception) {
@@ -924,6 +926,10 @@ class UserController extends Controller
 
 
             DB::commit();
+            if ($request->input('employee_modal') === '1') {
+                session()->flash('success', __('message.update_user'));
+                return view('admin.employees.common.modal-saved');
+            }
             return redirect()
                 ->route('admin.employees.index')
                 ->with('success', __('message.update_user'));
@@ -1066,8 +1072,15 @@ class UserController extends Controller
         }
     }
 
+    private function authorizeEmployeeLookup(array $abilities): void
+    {
+        // Shared selectors inherit the permissions of the forms that use them.
+        abort_unless(auth('admin')->check() || Gate::any($abilities), 403);
+    }
+
     public function getAllCompanyEmployeeDetail($branchId)
     {
+        $this->authorizeEmployeeLookup(['list_employee', 'create_employee', 'edit_employee']);
         try {
 
             $branch = $this->branchRepository->findBranchDetailById($branchId);
@@ -1087,6 +1100,7 @@ class UserController extends Controller
     }
     public function getAllBranchEmployees($branchId)
     {
+        $this->authorizeEmployeeLookup(['list_employee', 'create_employee', 'edit_employee', 'create_department', 'edit_department']);
         try {
 
             $selectEmployee = ['id', 'name'];
@@ -1179,6 +1193,19 @@ class UserController extends Controller
 
     public function getAllEmployeeByDepartmentId($departmentId): JsonResponse|RedirectResponse
     {
+        $this->authorizeEmployeeLookup([
+            'list_employee', 'create_employee', 'edit_employee', 'employee.profile.view',
+            'list_attendance', 'list_attendance_log', 'attendance_create', 'attendance_update',
+            'list_nfc', 'create_nfc', 'create_complaint', 'update_complaint',
+            'list_transfer', 'create_transfer', 'update_transfer',
+            'list_leave_request', 'request_leave', 'access_admin_leave',
+            'create_award', 'update_award',
+            'create_resignation', 'update_resignation', 'create_termination', 'update_termination',
+            'create_trainer', 'update_trainer',
+            'view_advance_salary_list', 'add_advance_salary', 'update_advance_salary',
+            'view_payroll_list', 'view_tada_list', 'create_tada', 'edit_tada',
+            'time_leave_list', 'create_time_leave_request',
+        ]);
         try {
 
             $select = ['name', 'username', 'id'];
@@ -1193,6 +1220,14 @@ class UserController extends Controller
 
     public function fetchEmployeesByDepartment(Request $request): JsonResponse|RedirectResponse
     {
+        $this->authorizeEmployeeLookup([
+            'list_employee', 'create_employee', 'edit_employee',
+            'create_warning', 'update_warning', 'create_event', 'edit_event',
+            'create_complaint', 'update_complaint', 'create_project', 'edit_project',
+            'create_resignation', 'update_resignation', 'create_termination', 'update_termination',
+            'create_team_meeting', 'edit_team_meeting',
+            'create_training', 'update_training', 'create_trainer', 'update_trainer',
+        ]);
         try {
             $departmentIds = $request->input('department_ids');
             $select = ['name', 'id'];
@@ -1206,6 +1241,7 @@ class UserController extends Controller
     }
     public function fetchDepartmentEmployees(Request $request): JsonResponse|RedirectResponse
     {
+        $this->authorize('salary_group');
         try {
             $departmentIds = $request->input('department_ids');
             $select = ['name', 'id'];
@@ -1230,6 +1266,7 @@ class UserController extends Controller
      */
     public function getBranchEmployeeData($branchId)
     {
+        $this->authorizeEmployeeLookup(['list_notice', 'create_notice', 'edit_notice']);
         try {
 
             $users = $this->userRepo->getAllBranchUsers($branchId, ['id','name']);

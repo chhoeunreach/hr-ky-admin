@@ -237,6 +237,7 @@ class EmployeeSalaryController extends Controller
 
     public function payrollCreate(Request $request)
     {
+        $this->authorize('generate_payroll');
         try{
 
             $payrollData = $this->generatePayrollService->getEmployeeSalariesToCreatePayslip();
@@ -799,6 +800,7 @@ class EmployeeSalaryController extends Controller
 
     public function getWeeks($year)
     {
+        $this->authorize('view_payroll_list');
         try{
             $weeks = AppHelper::getweeksList($year);
 
@@ -813,6 +815,7 @@ class EmployeeSalaryController extends Controller
     }
 
     public function calculateTax(Request $request){
+        $this->authorize('edit_payroll');
         try{
             $maritalStatus = $request->query('marital_status');
             $annualIncome = $request->query('salary');
@@ -828,6 +831,7 @@ class EmployeeSalaryController extends Controller
 
     public function getEmployeeSalaryData($type)
     {
+        $this->authorize('overtime_setting');
         try {
 
             $users = $this->employeeSalaryRepository->getPayrollTypeEmployee($type);
@@ -843,6 +847,7 @@ class EmployeeSalaryController extends Controller
     }
     public function getEmployeeByDepartmentPayrollType(Request $request)
     {
+        $this->authorize('overtime_setting');
         try {
             $departmentIds = $request->input('department_ids');
             $payrollType = $request->input('payroll_type');

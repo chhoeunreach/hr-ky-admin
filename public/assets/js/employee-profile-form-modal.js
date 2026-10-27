@@ -77,6 +77,11 @@
             url = new URL(frame.contentWindow.location.href);
         } catch (_) { return; }
         if (!child || url.origin !== window.location.origin) return;
+        if (child.querySelector?.('[data-employee-modal-saved]')) {
+            changed = true;
+            instance().hide();
+            return;
+        }
         if (modal.dataset.context === 'salary' && child.querySelector?.('[data-salary-modal-saved]')) {
             changed = true;
             instance().hide();

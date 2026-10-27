@@ -50,8 +50,10 @@
                 'overview' => __('index.overview'),
                 'complete-form' => __('index.complete_form'),
                 'personal' => __('index.personal_and_documents'),
-                'attendance' => __('index.attendance'),
             ];
+            if ($canViewAttendanceDailyReport) {
+                $tabs['attendance'] = __('index.attendance');
+            }
             $activeProfileTab = request('tab') === 'personal' ? 'personal' : 'overview';
             if ($canViewDocument) {
                 $tabs['contract-form'] = __('index.contract_form');
@@ -2335,6 +2337,7 @@
                         </div>
                     @endif
 
+                    @if($canViewAttendanceDailyReport)
                     <div class="tab-pane fade" id="attendance" role="tabpanel">
                         <div class="employee-360-grid">
                             @foreach($attendanceSummary as $label => $value)
@@ -2354,6 +2357,7 @@
                         </div>
                     </div>
 
+                    @endif
                     @if($canViewTraining)
                         <div class="tab-pane fade" id="training" role="tabpanel">
                             @include('admin.employees.profile.partials.training')
@@ -3283,7 +3287,7 @@
             if (!window.Chart) {
                 return;
             }
-            const attendanceData = @json($overview['attendance']['chart']);
+            const attendanceData = @json($canViewAttendanceDailyReport ? $overview['attendance']['chart'] : null);
             const attendanceCanvas = document.getElementById('attendanceChart');
             if (attendanceCanvas && attendanceData) {
                 new Chart(attendanceCanvas, {
@@ -3306,7 +3310,7 @@
                     },
                 });
             }
-            const performanceData = @json($overview['performance']['chart']);
+            const performanceData = @json($canViewPerformance ? $overview['performance']['chart'] : null);
             const performanceCanvas = document.getElementById('performanceChart');
             if (performanceCanvas && performanceData && performanceData.labels.length) {
                 new Chart(performanceCanvas, {
