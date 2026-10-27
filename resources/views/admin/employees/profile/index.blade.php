@@ -379,6 +379,15 @@
                                         <ul class="dropdown-menu employee-profile-action-menu" aria-labelledby="employeeProfileActions{{ $employee->id }}">
                                             <li><h6 class="dropdown-header text-truncate">{{ $employee->name ?: $employee->english_name }}</h6></li>
                                             <li><hr class="dropdown-divider my-1"></li>
+                                            @can('edit_employee')
+                                                <li>
+                                                    <a class="dropdown-item" data-open-employee-form
+                                                       data-employee-form-title="{{ __('index.edit') }} · {{ $employee->name ?: $employee->english_name }}"
+                                                       href="{{ route('admin.employees.edit', $employee->id) }}">
+                                                        <i class="link-icon text-primary" data-feather="edit" aria-hidden="true"></i>{{ __('index.edit') }}
+                                                    </a>
+                                                </li>
+                                            @endcan
                                             <li>
                                                 <a class="dropdown-item" href="{{ route('admin.employees.profile.show', $employee->id) }}">
                                                     <i class="link-icon text-primary" data-feather="user" aria-hidden="true"></i>{{ __('index.employee_360') }}
