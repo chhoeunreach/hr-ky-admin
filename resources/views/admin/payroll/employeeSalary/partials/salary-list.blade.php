@@ -13,6 +13,7 @@
                 </div>
             </div>
             <div class="card-body">
+                <input type="hidden" name="name_direction" form="employeeSalaryFilters" value="{{ $filterParameters['name_direction'] ?? 'asc' }}">
                 @include('admin.payroll.employeeSalary.common.toolkit')
                 @php
                     $rowOffset = method_exists($employeeLists, 'firstItem') ? ($employeeLists->firstItem() ?? 1) : 1;
@@ -23,8 +24,18 @@
                         <tr>
                             @foreach($salaryColumns as $column => $label)
                                 <th data-salary-column="{{ $column }}" data-default-visible="{{ in_array($column, $defaultSalaryColumns, true) ? '1' : '0' }}"
+                                    @if($column === 'employee') aria-sort="{{ ($filterParameters['name_direction'] ?? 'asc') === 'desc' ? 'descending' : 'ascending' }}" @endif
                                     @if(!in_array($column, $defaultSalaryColumns, true)) hidden @endif
-                                    @class(['text-end' => in_array($column, ['salary', 'basic_salary', 'allowance'], true)])>{{ $label }}</th>
+                                    @class(['text-end' => in_array($column, ['salary', 'basic_salary', 'allowance'], true)])>
+                                    @if($column === 'employee')
+                                        <a id="salaryNameSort" class="salary-name-sort" data-salary-sort="{{ ($filterParameters['name_direction'] ?? 'asc') === 'desc' ? 'asc' : 'desc' }}"
+                                           href="{{ route('admin.employee-salaries.index', array_merge(request()->except(['page', 'export', 'columns', 'orientation']), ['name_direction' => ($filterParameters['name_direction'] ?? 'asc') === 'desc' ? 'asc' : 'desc'])) }}">
+                                            {{ $label }} <span aria-hidden="true">{{ ($filterParameters['name_direction'] ?? 'asc') === 'desc' ? '↓' : '↑' }}</span>
+                                        </a>
+                                    @else
+                                        {{ $label }}
+                                    @endif
+                                </th>
                             @endforeach
                             <th class="text-center">{{ __('index.action') }}</th>
                         </tr>
@@ -53,6 +64,7 @@
                                             </div>
                                         @endcan
                                     </td>
+                                    <td>{{ $value->working_life }}</td>
                                     <td class="text-end">
                                         @if($savedSalary)
                                             <strong>{{ \App\Helpers\AppHelper::getCompanyPaymentCurrencySymbol() }}{{ number_format((float) $savedSalary->annual_salary / ($savedSalary->payment_type === 'weekly' ? 52 : 12), 2) }}</strong>

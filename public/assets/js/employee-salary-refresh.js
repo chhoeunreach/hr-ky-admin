@@ -84,6 +84,14 @@
         const reset = event.target.closest('[data-salary-reset]');
         const pagination = event.target.closest('.salary-table-footer a[href]');
         const button = event.target.closest('[data-salary-refresh]');
+        const sort = event.target.closest('[data-salary-sort]');
+        if (sort) {
+            event.preventDefault();
+            const url = formUrl();
+            url.searchParams.set('name_direction', sort.dataset.salarySort);
+            refresh(url);
+            return;
+        }
         if (reset || pagination || button) {
             event.preventDefault();
             refresh(reset?.href || pagination?.href || formUrl(), {restore: Boolean(reset), message: button ? page.dataset.salaryRefreshSuccess : ''});

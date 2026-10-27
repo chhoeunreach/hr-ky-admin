@@ -271,6 +271,9 @@
                 </div>
                 <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
                 <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['branch_id', 'department_id', 'department_ids', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
+                    @if(request()->filled('name_direction'))
+                        <input type="hidden" name="name_direction" value="{{ request('name_direction') }}">
+                    @endif
                     <div class="row g-2">
                         <div class="col-lg-2 col-md-6">
                             <select class="form-select" name="branch_id">
@@ -332,7 +335,13 @@
                         <thead>
                         <tr>
                             <th class="no-print">{{ __('index.action') }}</th>
-                            <th>{{ __('index.employee') }}</th>
+                            <th aria-sort="{{ request('name_direction') === 'desc' ? 'descending' : (request('name_direction') === 'asc' ? 'ascending' : 'none') }}">
+                                <a class="d-flex align-items-center justify-content-between gap-2 text-reset text-decoration-none"
+                                   href="{{ request()->fullUrlWithQuery(['name_direction' => request('name_direction') === 'asc' ? 'desc' : 'asc', 'page' => null]) }}">
+                                    {{ __('index.employee') }}
+                                    <span aria-hidden="true">{{ request('name_direction') === 'desc' ? '↓' : (request('name_direction') === 'asc' ? '↑' : '↕') }}</span>
+                                </a>
+                            </th>
                             <th>{{ __('index.branch') }}</th>
                             <th>{{ __('index.department') }}</th>
                             <th>{{ __('index.position') }}</th>

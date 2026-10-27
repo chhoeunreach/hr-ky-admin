@@ -94,6 +94,7 @@ class EmployeeSalaryController extends Controller
             'employee_name' => ['nullable', 'string', 'max:200'], 'q' => ['nullable', 'string', 'max:200'],
             'payment_type' => ['nullable', 'in:monthly,weekly'], 'salary_status' => ['nullable', 'in:configured,missing'],
             'per_page' => ['nullable', 'in:10,25,50,100,all'], 'export' => ['nullable', 'in:csv,excel,print,pdf,json'],
+            'name_direction' => ['nullable', 'in:asc,desc'],
             'orientation' => ['nullable', 'in:portrait,landscape'], 'columns' => ['nullable', 'array', 'min:1'],
             'columns.*' => ['string', \Illuminate\Validation\Rule::in(array_keys($this->salaryTableColumns()))],
         ]);
@@ -107,11 +108,20 @@ class EmployeeSalaryController extends Controller
                 'q' => trim((string) $request->input('q', '')),
                 'payment_type' => $request->input('payment_type'), 'salary_status' => $request->input('salary_status'),
                 'per_page' => $request->input('per_page') ?: '25', 'exporting' => $request->filled('export'),
+                'name_direction' => $request->input('name_direction') ?: 'asc',
             ];
             if(!auth('admin')->check() && auth()->check()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $employeeLists = $this->userRepository->getAllVerifiedActiveEmployeeWithSalaryGroup($filterParameters);
+            $serviceDate = today();
+            $employeeLists->each(function ($employee) use ($serviceDate) {
+                $joined = $employee->joining_date ? Carbon::parse($employee->joining_date)->startOfDay() : null;
+                $tenure = $joined && $joined->lte($serviceDate) ? $joined->diff($serviceDate) : null;
+                $employee->working_life = $tenure
+                    ? __('index.monthly_payroll_tenure', ['years' => $tenure->y, 'months' => $tenure->m, 'days' => $tenure->d])
+                    : '—';
+            });
 
 
             $employeeSalaries = \App\Models\EmployeeSalary::whereIn('employee_id', $employeeLists->pluck('employee_id'))->get()->keyBy('employee_id');
@@ -138,7 +148,7 @@ class EmployeeSalaryController extends Controller
     private function salaryTableColumns(): array
     {
         $currency = ' ('.AppHelper::getCompanyPaymentCurrencySymbol().')';
-        return ['number' => '#', 'employee' => __('index.employee_name'), 'salary' => __('index.salary_table_gross').$currency,
+        return ['number' => '#', 'employee' => __('index.employee_name'), 'working_life' => __('index.working_life'), 'salary' => __('index.salary_table_gross').$currency,
             'basic_salary' => __('index.basic_salary').$currency, 'allowance' => __('index.fixed_allowance').$currency,
             'payment_type' => __('index.salary_table_payment_cycle'), 'status' => __('index.status'), 'marital_status' => __('index.marital_status'),
             'salary_cycle' => __('index.salary_table_account_cycle'), 'salary_group' => __('index.salary_group')];
@@ -146,7 +156,7 @@ class EmployeeSalaryController extends Controller
 
     private function defaultSalaryColumns(): array
     {
-        return ['employee', 'salary', 'basic_salary', 'allowance', 'payment_type', 'status'];
+        return ['employee', 'working_life', 'salary', 'basic_salary', 'allowance', 'payment_type', 'status'];
     }
 
     private function exportSalaryTable(Request $request, $employees, $salaries)
@@ -156,6 +166,7 @@ class EmployeeSalaryController extends Controller
         $rows = $employees->values()->map(function ($employee, $index) use ($salaries, $columns) {
             $salary = $salaries->get($employee->employee_id);
             $data = ['number' => (string) ($index + 1), 'employee' => $employee->employee_name,
+                'working_life' => $employee->working_life,
                 'salary' => $salary ? number_format((float) $salary->annual_salary / ($salary->payment_type === 'weekly' ? 52 : 12), 2, '.', '') : '',
                 'basic_salary' => $salary ? number_format((float) ($salary->payment_type === 'weekly' ? $salary->weekly_basic_salary : $salary->monthly_basic_salary), 2, '.', '') : '',
                 'allowance' => $salary ? number_format((float) ($salary->payment_type === 'weekly' ? $salary->weekly_fixed_allowance : $salary->monthly_fixed_allowance), 2, '.', '') : '',

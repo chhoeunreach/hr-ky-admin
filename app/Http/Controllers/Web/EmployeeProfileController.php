@@ -53,6 +53,7 @@ class EmployeeProfileController extends Controller
             'department_ids' => ['nullable', 'array'],
             'department_ids.*' => ['integer', 'exists:departments,id'],
             'report_date' => ['nullable', 'date_format:Y-m-d'],
+            'name_direction' => ['nullable', 'in:asc,desc'],
         ]);
         $departmentIds = $request->input('department_ids', $request->filled('department_id') ? [$request->department_id] : []);
         $availableDepartments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
@@ -112,7 +113,12 @@ class EmployeeProfileController extends Controller
             $employeeQuery->whereIn('id', $matchingEmployeeIds->isNotEmpty() ? $matchingEmployeeIds : [0]);
         }
 
-        $employeeQuery->latest('id');
+        if ($request->filled('name_direction')) {
+            $direction = $request->input('name_direction') === 'desc' ? 'desc' : 'asc';
+            $employeeQuery->orderByRaw("COALESCE(NULLIF(users.name, ''), users.english_name) {$direction}")->orderBy('users.id');
+        } else {
+            $employeeQuery->latest('id');
+        }
         $employees = $attendanceReport || $perPage === 'all'
             ? $employeeQuery->get()
             : $employeeQuery->paginate($perPage);

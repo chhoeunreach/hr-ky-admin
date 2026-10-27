@@ -509,6 +509,7 @@ class UserRepository
                 'users.id as employee_id',
                 'users.name as employee_name',
                 'users.email as employee_email',
+                'users.joining_date',
                 'users.username',
                 'users.avatar',
                 'roles.id as role_id',
@@ -552,7 +553,7 @@ class UserRepository
            ->when(isset($filterParameters['branch_id']), function($query) use ($filterParameters){
                 $query->where('users.branch_id',$filterParameters['branch_id']);
             })
-          ->orderBy('users.name')->orderBy('users.id');
+          ->orderBy('users.name', ($filterParameters['name_direction'] ?? 'asc') === 'desc' ? 'desc' : 'asc')->orderBy('users.id');
 
        if (($filterParameters['per_page'] ?? 'all') === 'all' || !empty($filterParameters['exporting'])) return $query->get();
        return $query->paginate((int) $filterParameters['per_page'])->withQueryString();
