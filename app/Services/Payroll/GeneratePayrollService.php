@@ -9,6 +9,7 @@ use App\Helpers\AttendanceHelper;
 use App\Helpers\NepaliDate;
 use App\Helpers\PayrollHelper;
 use App\Models\EmployeePayslipAdditionalDetail;
+use App\Models\EmployeePayslip;
 use App\Models\OverTimeEmployee;
 use App\Models\UnderTimeSetting;
 use App\Repositories\EmployeePayslipAdditionalRepository;
@@ -73,7 +74,7 @@ class GeneratePayrollService
      */
     public function getEmployeeSalariesToCreatePayslip($filterData): array
     {
-        $isBsEnabled = AppHelper::ifDateInBsEnabled();
+        $isBsEnabled = $filterData['is_bs_enabled'] ?? AppHelper::ifDateInBsEnabled();
 
         $employeeSalary = [];
         $totalBasicSalary = 0;
@@ -124,6 +125,14 @@ class GeneratePayrollService
         $pfDetail = $this->pfService->getPFDetailForPayroll($firstDay,$lastDay);
 
         foreach ($employees as $employee){
+
+            // Saved monthly runs fill missing payslips without recalculating any
+            // existing period, including generated, locked and paid payslips.
+            if (!empty($filterData['preserve_existing']) && EmployeePayslip::withoutGlobalScopes()
+                ->where('employee_id', $employee->employee_id)->where('salary_cycle', 'monthly')
+                ->where('salary_from', '<=', $lastDay)->where('salary_to', '>=', $firstDay)->exists()) {
+                continue;
+            }
 
             $payrollData  = $this->payslipRepository->getEmployeePayslipSummary($employee->employee_id, $firstDay, $lastDay, $isBsEnabled,$filterData);
 

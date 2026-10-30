@@ -14,28 +14,31 @@ function setup(failed = false) {
     const form = {action:'/admin/monthly-payroll',elements:fields,dataset:{defaultMonth:'2026-10'},
         addEventListener(type, handler) {handlers['form.'+type] = handler;}, requestSubmit() {handlers['form.submit']({preventDefault() {}});}};
     const error = {};
-    const block = label => ({label, attributes:{}, scroller:{scrollLeft:90}, querySelector() {return this.scroller;},
-        setAttribute(key,value) {this.attributes[key]=value;}, replaceWith(next) {root=next;}});
+    const block = (label, kind = 'results') => ({label, attributes:{}, scroller:{scrollLeft:90}, querySelector() {return this.scroller;},
+        setAttribute(key,value) {this.attributes[key]=value;}, replaceWith(next) {if (kind === 'summary') summary=next; else root=next;}});
     let root = block('original');
+    let summary = block('original summary', 'summary');
     const page = {dataset:{error:'Refresh failed'},querySelector:()=>error,addEventListener(type, handler) {handlers['page.'+type] = handler;}};
     const location = {href:'https://hr.test/admin/monthly-payroll',origin:'https://hr.test'};
     vm.runInNewContext(source, {
-        document:{querySelector:()=>page,getElementById:id=>id==='monthlyPayrollFilters'?form:root,
+        document:{querySelector:()=>page,getElementById:id=>id==='monthlyPayrollFilters'?form:id==='monthlyPayrollSummary'?summary:root,
             addEventListener(type,handler) {handlers['document.'+type]=handler;}},
         window:{addEventListener(type,handler) {handlers['window.'+type]=handler;}},
         location, history:{pushState(_state,_title,url) {historyCalls.push(url);location.href=url;}}, URL,URLSearchParams,AbortController,
         FormData:class {constructor() {return fields.map(field=>[field.name,field.value]);}},
-        DOMParser:class {parseFromString() {return {getElementById:()=>block('updated')};}},
+        DOMParser:class {parseFromString() {return {getElementById:id=>id==='monthlyPayrollSummary'?block('updated summary','summary'):block('updated')};}},
         fetch:async (url,options)=>{requests.push({url,options});return {ok:!failed,text:async()=>'<div></div>'};},
         setTimeout:callback=>{timers.push(callback);return timers.length;},clearTimeout() {},
     });
-    return {handlers,requests,historyCalls,timers,fields,error,form,location,root:()=>root};
+    return {handlers,requests,historyCalls,timers,fields,error,form,location,root:()=>root,summary:()=>summary};
 }
 test('filters and page size refresh only the monthly payroll results', async () => {
     const state=setup(); let prevented=false;
     state.handlers['form.submit']({preventDefault() {prevented=true;}}); await flush();
     assert.equal(prevented,true);
     assert.equal(state.root().label,'updated');
+    assert.equal(state.summary().label,'updated summary');
+    assert.equal(state.summary().attributes['aria-busy'],'false');
     assert.equal(state.requests[0].options.headers['X-Monthly-Payroll-Fragment'],'1');
     assert.equal(new URL(state.requests[0].url).searchParams.get('month'),'2026-10');
     assert.equal(state.root().scroller.scrollLeft,90);
@@ -62,6 +65,8 @@ test('failed requests keep the current report and show an error', async () => {
     const state=setup(true);
     state.form.requestSubmit(); await flush();
     assert.equal(state.root().label,'original');
+    assert.equal(state.summary().label,'original summary');
+    assert.equal(state.summary().attributes['aria-busy'],'false');
     assert.equal(state.error.textContent,'Refresh failed');
     assert.equal(state.root().attributes['aria-busy'],'false');
 });

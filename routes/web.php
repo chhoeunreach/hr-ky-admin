@@ -410,6 +410,7 @@ Route::group([
         Route::get('attendances/copy-export', [AttendanceController::class, 'copyExport'])->name('attendances.copy-export');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
         Route::get('monthly-payroll', [MonthlyPayrollController::class, 'index'])->name('monthly-payroll.index');
+        Route::post('monthly-payroll/generate', [MonthlyPayrollController::class, 'generate'])->name('monthly-payroll.generate');
         Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
         Route::get('attendance-monthly/controls', [AttendanceSettingController::class, 'monthlyControls'])->name('attendance-monthly.controls');
         Route::put('attendance-monthly/controls', [AttendanceSettingController::class, 'updateMonthlyControls'])->name('attendance-monthly.controls.update');

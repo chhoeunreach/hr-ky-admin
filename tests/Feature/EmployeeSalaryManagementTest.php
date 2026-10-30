@@ -156,6 +156,17 @@ class EmployeeSalaryManagementTest extends TestCase
             ->assertOk()->assertSee('data-salary-history-panel', false);
     }
 
+    public function test_revision_history_loads_before_the_soft_delete_and_actor_snapshot_migrations(): void
+    {
+        $this->revisionRecord();
+        $this->abilities = ['show_salary_history'];
+        Schema::table('salary_revise_histories', function (Blueprint $table) {
+            $table->dropColumn(['deleted_at', 'created_by_name']);
+        });
+        $this->get('/_test/revision-history/20?salary_history_modal=1', ['Accept' => 'application/json'])
+            ->assertOk()->assertSee('data-salary-history-content', false)->assertSee('Original reason')->assertSee('Salary manager');
+    }
+
     public function test_revision_edit_updates_only_remarks_with_an_audit_record(): void
     {
         $record = $this->revisionRecord(); $salary = $this->salary();

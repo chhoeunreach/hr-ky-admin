@@ -4,13 +4,22 @@ namespace App\Repositories;
 
 use App\Models\SalaryReviseHistory;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Schema;
 
 class SalaryReviseHistoryRepository
 {
 
     public function getAllEmployeeSalaryHistoryList($employeeId,$select=['*'],$with=[]): Collection|array
     {
-        return SalaryReviseHistory::query()
+        $query = SalaryReviseHistory::query();
+        // Older installations have salary history but no soft-delete column yet.
+        // Keep history readable while retaining the deletion filter once migrated.
+        if (!Schema::hasColumn((new SalaryReviseHistory())->getTable(), 'deleted_at')) {
+            $query->withoutGlobalScope(SoftDeletingScope::class);
+        }
+
+        return $query
             ->with($with)
             ->select($select)
             ->where('employee_id',$employeeId)

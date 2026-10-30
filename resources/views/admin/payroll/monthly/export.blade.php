@@ -1,35 +1,7 @@
 @php
-    $printColumns = [
-        'number' => ['label' => '#', 'width' => .5, 'class' => 'number'],
-        'employee_code' => ['label' => __('index.employee_code'), 'width' => 1, 'class' => ''],
-        'photo' => ['label' => __('index.monthly_payroll_photo'), 'width' => .8, 'class' => 'employee-photo'],
-        'employee' => ['label' => __('index.employee_name'), 'width' => 1.7, 'class' => 'employee-name'],
-        'tenure' => ['label' => __('index.working_life'), 'width' => 1.3, 'class' => ''],
-        'gross_salary' => ['label' => __('index.salary_table_gross'), 'width' => 1.1, 'class' => 'money'],
-        'present_days' => ['label' => __('index.present_days'), 'width' => .85, 'class' => 'day-count'],
-        'absent_days' => ['label' => __('index.absent_days'), 'width' => .85, 'class' => 'day-count unpaid-days'],
-        'paid_leave' => ['label' => __('index.paid_leave'), 'width' => .85, 'class' => 'day-count paid-days'],
-        'unpaid_leave' => ['label' => __('index.unpaid_leave'), 'width' => .85, 'class' => 'day-count unpaid-days'],
-        'advance_salary' => ['label' => __('index.monthly_payroll_advance_salary'), 'width' => 1, 'class' => 'money deduction'],
-        'absent_deduction' => ['label' => __('index.monthly_payroll_absent_deduction'), 'width' => 1, 'class' => 'money deduction'],
-    ];
-    foreach ($commissionTypes as $type) {
-        $printColumns['commission:'.$type] = ['label' => __('index.commission').' · '.$type, 'width' => .95, 'class' => 'money earning'];
-    }
-    foreach ([
-        'overtime' => 'earning', 'tada' => 'earning', 'bonus' => 'earning', 'undertime' => 'deduction',
-        'tds' => 'deduction', 'ssf_deduction' => 'deduction', 'pf_deduction' => 'deduction',
-    ] as $key => $class) {
-        $printColumns[$key] = ['label' => __($key === 'bonus' ? 'index.bonus' : 'index.monthly_payroll_'.$key), 'width' => .95, 'class' => 'money '.$class];
-    }
-    $printColumns += [
-        'other_earnings' => ['label' => __('index.monthly_payroll_other_earnings'), 'width' => 1, 'class' => 'money earning'],
-        'other_deductions' => ['label' => __('index.monthly_payroll_other_deductions'), 'width' => 1, 'class' => 'money deduction'],
-        'net_salary' => ['label' => __('index.net_salary'), 'width' => 1.1, 'class' => 'money net-pay'],
-        'salary_note' => ['label' => __('index.monthly_payroll_print_note'), 'width' => 2.6, 'class' => 'salary-note'],
-    ];
+    $printColumns = $columns;
     $totalWidth = array_sum(array_column($printColumns, 'width'));
-    $money = fn ($amount) => (float) $amount === 0.0 ? '' : $currency.number_format((float) $amount, 2);
+    $money = fn ($amount) => $amount === null || (float) $amount === 0.0 ? '' : $currency.number_format((float) $amount, 2);
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -63,21 +35,7 @@
             @forelse($payslips as $index => $payslip)
                 @php
                     $employee = $payslip->employee;
-                    $end = \Carbon\Carbon::parse($payslip->salary_to);
-                    $joined = $employee?->joining_date ? \Carbon\Carbon::parse($employee->joining_date) : null;
-                    $tenure = $joined && $joined->lte($end) ? $joined->diff($end) : null;
-                    $values = [
-                        'number' => $index+1, 'employee_code' => $employee?->employee_code ?: '—',
-                        'employee' => $employee?->name ?: '—',
-                        'tenure' => $tenure ? __('index.monthly_payroll_tenure', ['years'=>$tenure->y, 'months'=>$tenure->m, 'days'=>$tenure->d]) : '—',
-                        'other_earnings' => $money($service->componentTotal($payslip, 'earning')),
-                        'other_deductions' => $money($service->componentTotal($payslip, 'deductions')),
-                        'salary_note' => $payslip->remark ?: __('index.monthly_payroll_print_net_note', ['amount'=>$currency.number_format((float) $payslip->net_salary, 2)]),
-                    ];
-                    foreach (['present_days','absent_days','paid_leave','unpaid_leave'] as $key) $values[$key] = (float) $payslip->$key ?: '';
-                    foreach (['gross_salary','advance_salary','absent_deduction','overtime','tada','bonus','undertime','tds','ssf_deduction','pf_deduction'] as $key) $values[$key] = $money($payslip->$key);
-                    $values['net_salary'] = $currency.number_format((float) $payslip->net_salary, 2);
-                    foreach ($commissionTypes as $type) $values['commission:'.$type] = $money($commissions[$payslip->employee_id][$type] ?? 0);
+                    $values = $service->rowValues($payslip, $commissions[$payslip->employee_id] ?? [], $index + 1);
                 @endphp
                 <section class="payroll-employee-block" aria-label="{{ $employee?->name }}">
                     <table class="payroll-sample-table">
@@ -86,9 +44,9 @@
                             @foreach($printColumns as $key => $column)
                                 <td class="{{ $column['class'] }}">
                                     @if($key === 'photo')
-                                        <img src="{{ $employee?->avatar_url ?: asset('assets/images/img.png') }}" alt="" width="44" height="57" onerror="this.onerror=null;this.src='{{ asset('assets/images/img.png') }}';">
+                                        <img src="{{ $values['photo'] ?: asset('assets/images/img.png') }}" alt="" width="44" height="57" onerror="this.onerror=null;this.src='{{ asset('assets/images/img.png') }}';">
                                     @else
-                                        {{ $values[$key] ?? '' }}
+                                        {{ $column['format'] === 'money' ? ($key === 'net_salary' && $values[$key] !== null ? $currency.number_format((float) $values[$key], 2) : $money($values[$key])) : ($values[$key] ?? '') }}
                                         @if($key === 'employee' && $employee?->username)<small>{{ $employee->username }}</small>@endif
                                     @endif
                                 </td>
@@ -101,7 +59,7 @@
             @endforelse
             <table class="payroll-print-totals">
                 <tbody><tr>
-                    @foreach(['records'=>'monthly_payroll_records','gross'=>'salary_table_gross','bonus'=>'bonus','commission'=>'monthly_payroll_sales_commission','net'=>'net_salary'] as $key=>$label)
+                    @foreach(['records'=>'monthly_payroll_records','gross'=>'salary_table_gross','bonus'=>'bonus','commission'=>'monthly_payroll_sales_commission','advance_salary'=>'monthly_payroll_loan_total','net'=>'net_salary'] as $key=>$label)
                         <th>{{ __('index.'.$label) }}</th><td>{{ $key === 'records' ? $summary[$key] : $currency.number_format((float) $summary[$key], 2) }}</td>
                     @endforeach
                 </tr></tbody>

@@ -44,6 +44,7 @@ class SalaryHistoryController extends Controller
             }
             return view($this->view.'salary_history',compact('salaryReviseLists','employeeDetail','currency'));
         }catch (Exception $exception){
+            report($exception);
             if (request()->expectsJson()) return response()->json(['message' => __('index.salary_review_load_error')], 500);
             return redirect()->back()->with('danger',$exception->getMessage());
         }
