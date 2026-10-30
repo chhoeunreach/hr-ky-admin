@@ -652,24 +652,26 @@
             .employee-complete-paper.employee-salary-certificate-paper {
                 --certificate-ink: #17324d;
                 --certificate-accent: #0f766e;
+                --certificate-page-margin: 12.7mm;
                 background: #ffffff;
                 border: 0;
                 border-radius: 0;
-                max-width: 190mm;
-                height: 276mm;
-                min-height: 276mm;
-                padding: 13mm 14mm 10mm;
+                max-width: 210mm;
+                /* Reserve 1mm for printer rounding to avoid a blank second page. */
+                height: 296mm;
+                min-height: 296mm;
+                padding: var(--certificate-page-margin);
                 position: relative !important;
-                width: 190mm;
+                width: 210mm;
                 overflow: hidden;
                 overflow-wrap: anywhere;
             }
             .employee-salary-certificate-content {
                 display: flow-root;
                 position: absolute;
-                top: 13mm;
-                left: 14mm;
-                right: 14mm;
+                top: var(--certificate-page-margin);
+                left: var(--certificate-page-margin);
+                right: var(--certificate-page-margin);
                 transform: scale(var(--certificate-scale, 1));
                 transform-origin: top center;
             }
@@ -1513,7 +1515,8 @@
                 }
                 @page salary-certificate {
                     size: A4 portrait;
-                    margin: 10mm;
+                    /* The paper supplies the narrow margin in preview and print. */
+                    margin: 0;
                 }
                 #employeeSalaryCertificatePrintRoot {
                     page: salary-certificate;
