@@ -3096,7 +3096,7 @@ return [
     'monthly_payroll_yearly' => 'Yearly',
     'monthly_payroll_yearly_title' => 'Yearly Payroll',
     'monthly_payroll_generate_save' => 'Generate & Save',
-    'monthly_payroll_generate_help' => 'Choose the month, branch and calculation options to generate a preview. Department and search filters do not limit generation. Review the preview, then choose Save payroll to save the record.',
+    'monthly_payroll_generate_help' => 'Choose the month, branches and calculation options to generate a preview. No branch selection means all branches available to your role. Review the preview, then choose Save payroll. Existing saved branch records stay unchanged.',
     'monthly_payroll_yearly_help' => 'Saved monthly payroll records for the selected year. Open a month to view its saved payroll.',
     'monthly_payroll_saved_record' => 'Saved',
     'monthly_payroll_not_saved' => 'Not saved',
@@ -3111,4 +3111,9 @@ return [
     'monthly_payroll_preview_help' => 'This preview has not been saved. Review the payroll values below, then choose Save payroll. The preview expires after 30 minutes.',
     'monthly_payroll_preview_changed' => 'Payroll values changed after this preview was generated. Generate a new preview and review it before saving.',
     'monthly_payroll_preview_expired' => 'This payroll preview has expired or has already been saved. Generate a new preview to continue.',
+    'monthly_payroll_all_branches_help' => 'Select one or more branches. Leave the selection empty to include all branches available to your role.',
+    'monthly_payroll_empty_branches' => 'No payroll data for:',
+    'monthly_payroll_all_saved' => 'All branches in this preview are already saved.',
+    'monthly_payroll_no_branches' => 'No branches are available for payroll generation.',
+    'monthly_payroll_mixed_currencies' => 'The selected branches use different currencies. Preview them separately.',
 ];

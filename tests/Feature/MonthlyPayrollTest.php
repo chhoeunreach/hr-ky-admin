@@ -355,7 +355,86 @@ class MonthlyPayrollTest extends TestCase
         $this->actingAs($creator);
         $this->abilities = ['view_monthly_payroll'];
         $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertForbidden();
+        $this->abilities = ['generate_payroll'];
+        $this->getJson('/_test/monthly-payroll/preview/'.$token)->assertForbidden();
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertForbidden();
         $this->assertDatabaseCount('monthly_payroll_records', 0);
+    }
+
+    private function allowBranchBatch(int $calls = 4): void
+    {
+        $this->abilities[] = 'generate_payroll';
+        auth()->user()->branch_id = null;
+        $this->mock(GeneratePayrollService::class, function ($mock) use ($calls) {
+            $mock->shouldReceive('getEmployeeSalariesToCreatePayslip')->times($calls)
+                ->withArgs(fn ($options) => in_array($options['branch_id'], [1, 2, 3], true) && $options['preserve_existing'] === true)->andReturn([]);
+        });
+    }
+
+    public function test_multiple_branches_preview_together_and_save_one_record_for_each_branch(): void
+    {
+        $this->allowBranchBatch();
+        $token = $this->previewToken(['branch_ids' => [1, 2]]);
+        $preview = Cache::get('monthly-payroll-preview:'.$token);
+        $this->assertCount(2, $preview['payloads']);
+        $this->assertSame([1, 2], array_column($preview['payloads'], 'branch_id'));
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertRedirect();
+        $this->assertDatabaseCount('monthly_payroll_records', 2);
+        $this->assertDatabaseHas('monthly_payroll_records', ['month' => '2026-10', 'branch_id' => 1]);
+        $this->assertDatabaseHas('monthly_payroll_records', ['month' => '2026-10', 'branch_id' => 2]);
+        $this->assertDatabaseCount('employee_payslips', 16);
+    }
+
+    public function test_no_branch_selection_means_all_accessible_branches_and_empty_branches_are_skipped(): void
+    {
+        $this->allowBranchBatch(5);
+        DB::table('branches')->insert(['id' => 3, 'name' => 'Empty branch']);
+        $token = $this->previewToken(['branch_id' => null]);
+        $preview = Cache::get('monthly-payroll-preview:'.$token);
+        $this->assertCount(2, $preview['payloads']);
+        $this->assertSame(['Empty branch'], $preview['emptyBranches']);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertRedirect();
+        $this->assertDatabaseCount('monthly_payroll_records', 2);
+        $this->assertDatabaseMissing('monthly_payroll_records', ['branch_id' => 3]);
+    }
+
+    public function test_empty_branch_selection_never_expands_a_branch_restricted_users_access(): void
+    {
+        $this->allowMonthlyGeneration();
+        $token = $this->previewToken(['branch_ids' => []]);
+        $preview = Cache::get('monthly-payroll-preview:'.$token);
+        $this->assertSame([1], array_column($preview['payloads'], 'branch_id'));
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertRedirect();
+        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_ids' => [1, 2]])->assertForbidden();
+        $this->assertDatabaseCount('monthly_payroll_records', 1);
+        $this->assertDatabaseMissing('monthly_payroll_records', ['branch_id' => 2]);
+    }
+
+    public function test_multi_branch_save_rolls_back_every_new_record_when_one_branch_changes(): void
+    {
+        $this->allowBranchBatch();
+        $token = $this->previewToken(['branch_ids' => [1, 2]]);
+        DB::table('employee_payslips')->where('employee_id', 21)->update(['net_salary' => 9500]);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertUnprocessable();
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->assertDatabaseCount('employee_payslips', 16);
+        $this->assertDatabaseHas('employee_payslips', ['employee_id' => 21, 'net_salary' => 9500]);
+    }
+
+    public function test_batch_preview_keeps_existing_saved_branch_records_unchanged(): void
+    {
+        $this->allowMonthlyGeneration();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $original = MonthlyPayrollRecord::firstOrFail();
+        $rows = $original->rows;
+        $this->allowBranchBatch(2);
+        $token = $this->previewToken(['branch_ids' => [1, 2]]);
+        $preview = Cache::get('monthly-payroll-preview:'.$token);
+        $this->assertTrue($preview['payloads'][0]['already_saved']);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertRedirect();
+        $this->assertDatabaseCount('monthly_payroll_records', 2);
+        $this->assertSame($rows, $original->fresh()->rows);
     }
 
     public function test_generate_saves_a_branch_month_and_existing_pay_is_preserved(): void

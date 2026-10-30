@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 
 class MonthlyPayrollRecordService
 {
+    private const SNAPSHOT_FIELDS = ['month', 'branch_id', 'branch_name', 'currency', 'options', 'columns', 'rows', 'summary'];
     public function __construct(private GeneratePayrollService $generator, private MonthlyPayrollReportService $reports) {}
 
     public function preview(string $month, Branch $branch, array $options, string $currency): array
@@ -18,12 +19,57 @@ class MonthlyPayrollRecordService
         $level = DB::transactionLevel();
         DB::beginTransaction();
         try {
-            return $this->generate($month, $branch, $options, $currency)->only([
-                'month', 'branch_id', 'branch_name', 'currency', 'options', 'columns', 'rows', 'summary',
-            ]);
+            return $this->generate($month, $branch, $options, $currency)->only(self::SNAPSHOT_FIELDS);
         } finally {
             DB::rollBack($level);
         }
+    }
+
+    public function previewBranches(string $month, iterable $branches, array $options, string $currency): array
+    {
+        $payloads = $emptyBranches = [];
+        foreach ($branches as $branch) {
+            $saved = MonthlyPayrollRecord::where('month', $month)->where('branch_id', $branch->id)->first();
+            if ($saved) {
+                $payloads[] = $saved->only(self::SNAPSHOT_FIELDS) + ['already_saved' => true, 'record_id' => $saved->id];
+                continue;
+            }
+            try {
+                $payloads[] = $this->preview($month, $branch, $options, $currency);
+            } catch (ValidationException $exception) {
+                if (($exception->errors()['month'] ?? []) !== [__('index.monthly_payroll_nothing_to_save')]) throw $exception;
+                $emptyBranches[] = $branch->name;
+            }
+        }
+        if (!$payloads) throw ValidationException::withMessages(['month' => __('index.monthly_payroll_nothing_to_save')]);
+        if (count(array_unique(array_column($payloads, 'currency'))) > 1) {
+            throw ValidationException::withMessages(['branch_ids' => __('index.monthly_payroll_mixed_currencies')]);
+        }
+        return compact('payloads', 'emptyBranches');
+    }
+
+    public function saveBranches(array $payloads): void
+    {
+        DB::transaction(function () use ($payloads) {
+            $payloads = collect($payloads)->sortBy('branch_id')->values();
+            $branches = Branch::whereIn('id', $payloads->pluck('branch_id'))->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            if ($branches->count() !== $payloads->count()) {
+                throw ValidationException::withMessages(['branch_ids' => __('index.monthly_payroll_preview_changed')]);
+            }
+            $created = 0;
+            foreach ($payloads as $payload) {
+                if (!empty($payload['already_saved'])) {
+                    $record = MonthlyPayrollRecord::whereKey($payload['record_id'])->lockForUpdate()->first();
+                    if (!$record || !hash_equals($this->fingerprint($payload), $this->fingerprint($record->only(self::SNAPSHOT_FIELDS)))) {
+                        throw ValidationException::withMessages(['preview' => __('index.monthly_payroll_preview_changed')]);
+                    }
+                    continue;
+                }
+                $this->generate($payload['month'], $branches[$payload['branch_id']], $payload['options'], $payload['currency'], $payload);
+                $created++;
+            }
+            if (!$created) throw ValidationException::withMessages(['month' => __('index.monthly_payroll_already_saved')]);
+        });
     }
 
     private function fingerprint(array $snapshot): string

@@ -69,22 +69,27 @@ class MonthlyPayrollController extends Controller
         $this->authorize('view_monthly_payroll');
         $this->authorize('generate_payroll');
         $data = $request->validate([
-            'month' => ['required', 'date_format:Y-m'], 'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'month' => ['required', 'date_format:Y-m'], 'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
+            'branch_ids' => ['nullable', 'array'], 'branch_ids.*' => ['integer', 'distinct', 'exists:branches,id'],
             'return_view' => ['nullable', 'in:monthly,yearly'],
             'attendance' => ['nullable', 'boolean'], 'include_tds' => ['nullable', 'boolean'],
             'include_ssf' => ['nullable', 'boolean'], 'include_pf' => ['nullable', 'boolean'],
             'include_tada' => ['nullable', 'boolean'], 'include_advance_salary' => ['nullable', 'boolean'],
         ]);
         $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
-        abort_if($allowedBranchId && (int) $data['branch_id'] !== (int) $allowedBranchId, 403);
-        $branch = Branch::findOrFail($data['branch_id']);
+        $branchIds = array_map('intval', $data['branch_ids'] ?? (isset($data['branch_id']) ? [$data['branch_id']] : []));
+        abort_if($allowedBranchId && array_diff($branchIds, [(int) $allowedBranchId]), 403);
+        $branches = Branch::query()->when($allowedBranchId, fn ($query) => $query->whereKey($allowedBranchId))
+            ->when($branchIds, fn ($query) => $query->whereIn('id', $branchIds))->orderBy('id')->get();
+        abort_if($branchIds && $branches->count() !== count($branchIds), 403);
+        if ($branches->isEmpty()) throw \Illuminate\Validation\ValidationException::withMessages(['branch_ids' => __('index.monthly_payroll_no_branches')]);
         $options = ['absent_paid' => 0, 'approved_paid_leaves' => 0];
         foreach (['attendance', 'include_tds', 'include_ssf', 'include_pf', 'include_tada', 'include_advance_salary'] as $key) $options[$key] = (int) ($data[$key] ?? 0);
-        $payload = $service->preview($data['month'], $branch, $options, AppHelper::getCompanyPaymentCurrencySymbol());
+        $batch = $service->previewBranches($data['month'], $branches, $options, AppHelper::getCompanyPaymentCurrencySymbol());
         $token = (string) Str::uuid();
         Cache::put('monthly-payroll-preview:'.$token, [
-            'owner' => $this->previewOwner(), 'payload' => $payload, 'return_view' => $data['return_view'] ?? 'monthly',
-        ], now()->addMinutes(30));
+            'owner' => $this->previewOwner(), 'return_view' => $data['return_view'] ?? 'monthly',
+        ] + $batch, now()->addMinutes(30));
         return redirect()->route('admin.monthly-payroll.preview', ['token' => $token]);
     }
 
@@ -101,35 +106,39 @@ class MonthlyPayrollController extends Controller
         abort_unless($preview, 410, __('index.monthly_payroll_preview_expired'));
         abort_unless($preview['owner'] === $this->previewOwner(), 403);
         $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
-        abort_if($allowedBranchId && (int) $preview['payload']['branch_id'] !== (int) $allowedBranchId, 403);
+        $preview['payloads'] ??= [$preview['payload']]; // Keep existing single-branch preview links valid.
+        foreach ($preview['payloads'] as $payload) abort_if($allowedBranchId && (int) $payload['branch_id'] !== (int) $allowedBranchId, 403);
         return $preview;
     }
 
     public function preview(string $token, MonthlyPayrollReportService $service)
     {
         $preview = $this->previewData($token);
-        $payload = $preview['payload'];
-        $filters = ['month' => $payload['month'], 'branch_id' => $payload['branch_id'], 'department_id' => null,
+        $payloads = $preview['payloads'];
+        $payload = $payloads[0];
+        $branchId = count($payloads) === 1 ? $payload['branch_id'] : null;
+        $filters = ['month' => $payload['month'], 'branch_id' => $branchId, 'department_id' => null,
             'q' => '', 'status' => null, 'per_page' => 'all', 'export' => null];
-        $report = $service->savedReport(collect([(new MonthlyPayrollRecord())->forceFill($payload)]), $filters);
-        $returnUrl = route('admin.monthly-payroll.index', ['month' => $payload['month'], 'branch_id' => $payload['branch_id'],
+        $report = $service->savedReport(collect($payloads)->map(fn ($item) => (new MonthlyPayrollRecord())->forceFill($item)), $filters);
+        $returnUrl = route('admin.monthly-payroll.index', ['month' => $payload['month'], 'branch_id' => $branchId,
             'view' => $preview['return_view'], 'year' => substr($payload['month'], 0, 4)]);
         return view('admin.payroll.monthly.preview', array_replace($report, [
             'isSavedReport' => false, 'isPreview' => true, 'currency' => $payload['currency'],
             'service' => $service, 'filters' => $filters, 'token' => $token, 'payload' => $payload, 'returnUrl' => $returnUrl,
+            'branchPreviews' => $payloads, 'emptyBranches' => $preview['emptyBranches'] ?? [],
+            'canSave' => collect($payloads)->contains(fn ($item) => empty($item['already_saved'])),
         ]));
     }
 
     public function savePreview(string $token, MonthlyPayrollRecordService $service)
     {
         $preview = $this->previewData($token);
-        $data = $preview['payload'];
-        $branch = Branch::findOrFail($data['branch_id']);
-        $service->generate($data['month'], $branch, $data['options'], $data['currency'], $data);
+        $data = $preview['payloads'][0];
+        $service->saveBranches($preview['payloads']);
         Cache::forget('monthly-payroll-preview:'.$token);
         return redirect()->route('admin.monthly-payroll.index', [
             'view' => $preview['return_view'], 'year' => substr($data['month'], 0, 4),
-            'month' => $data['month'], 'branch_id' => $branch->id,
+            'month' => $data['month'], 'branch_id' => count($preview['payloads']) === 1 ? $data['branch_id'] : null,
         ])->with('success', __('index.monthly_payroll_saved'));
     }
 }

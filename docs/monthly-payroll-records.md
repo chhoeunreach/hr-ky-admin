@@ -10,7 +10,10 @@ The Monthly Payroll page now has Monthly and Yearly views. The yearly view lists
 all twelve months and summarizes saved records for the selected branch/year.
 
 Users with `view_monthly_payroll` and `generate_payroll` can choose **Generate Preview**.
-Generation runs for the entire selected branch, regardless of department, search,
+Select one or more branches, use **All branches**, or leave the selection empty
+for all branches available to the current user. Branch-restricted users can only
+preview and save their permitted branch, even if other IDs are submitted directly.
+Generation runs for each entire selected branch, regardless of department, search,
 or pagination filters. The form exposes attendance, tax, contribution, travel,
 and advance-salary options using the existing payroll calculator.
 
@@ -21,7 +24,11 @@ report without saving.
 
 The preview shows all 28 columns and totals with a separate **Save payroll**
 button. Saving runs the calculation again in a transaction and verifies the
-reviewed employee values and totals still match. Changed data rejects the save
+reviewed employee values and totals still match. Multiple new branch records
+save in a single transaction; a failure rolls back all new branch records.
+Already-saved branches are included for review and remain unchanged. Branches
+with no payroll data are listed separately and do not create empty records.
+Changed data rejects the save
 and requires a fresh preview. A successful save consumes the preview token.
 
 Existing monthly payslips are preserved in every status. Save creates only
