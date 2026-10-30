@@ -9,7 +9,7 @@ function setup(month = null) {
     const form = {elements: {month: {}, branch_id: {}}, querySelector: () => button,
         addEventListener(type, handler) {events[type] = handler;}, setAttribute(key, value) {attributes[key] = value;}};
     const modal = {querySelector: () => form, addEventListener(type, handler) {events[type] = handler;}};
-    vm.runInNewContext(source, {document: {getElementById: id => ({monthlyPayrollGenerateModal: modal,
+    vm.runInNewContext(source, {document: {querySelector: () => null, getElementById: id => ({monthlyPayrollGenerateModal: modal,
         monthlyMonth: month ? {value: month} : null, monthlyBranch: {value: '2'}}[id])}});
     return {events, form, button, attributes};
 }
@@ -21,7 +21,14 @@ test('yearly row opens generation for its own month', () => {
     const state = setup();state.events['show.bs.modal']({relatedTarget: {dataset: {payrollMonth: '2026-03'}}});
     assert.equal(state.form.elements.month.value, '2026-03');
 });
-test('generation disables repeat submissions while the server saves the record', () => {
+test('generation disables repeat submissions while the server builds the preview', () => {
     const state = setup();state.events.submit();assert.equal(state.button.disabled, true);
     assert.equal(state.attributes['aria-busy'], 'true');
+});
+test('the preview Save button prevents duplicate submissions without a generation modal', () => {
+    let submit;
+    const button = {}, attributes = {};
+    const save = {querySelector: () => button, addEventListener(type, handler) {submit = handler;}, setAttribute(key, value) {attributes[key] = value;}};
+    vm.runInNewContext(source, {document: {querySelector: () => save, getElementById: () => null}});
+    submit();assert.equal(button.disabled, true);assert.equal(attributes['aria-busy'], 'true');
 });

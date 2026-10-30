@@ -9,14 +9,24 @@ php artisan migrate --path=database/migrations/2026_10_30_000001_create_monthly_
 The Monthly Payroll page now has Monthly and Yearly views. The yearly view lists
 all twelve months and summarizes saved records for the selected branch/year.
 
-Users with `view_monthly_payroll` and `generate_payroll` can choose **Generate & Save**.
+Users with `view_monthly_payroll` and `generate_payroll` can choose **Generate Preview**.
 Generation runs for the entire selected branch, regardless of department, search,
 or pagination filters. The form exposes attendance, tax, contribution, travel,
 and advance-salary options using the existing payroll calculator.
 
-Existing monthly payslips are preserved in every status. Generation creates only
-missing payslips, then saves the full branch/month report in a transaction. Empty
-months are not marked as saved. There is one saved record per branch/month;
+The preview runs the existing payroll calculator in a rollback-only transaction,
+then caches a private preview for its creator for 30 minutes. No new payslips or
+monthly records remain saved after preview generation. Cancel returns to the
+report without saving.
+
+The preview shows all 28 columns and totals with a separate **Save payroll**
+button. Saving runs the calculation again in a transaction and verifies the
+reviewed employee values and totals still match. Changed data rejects the save
+and requires a fresh preview. A successful save consumes the preview token.
+
+Existing monthly payslips are preserved in every status. Save creates only
+missing payslips, then saves the full branch/month report in one transaction.
+Empty months are not marked as saved. There is one saved record per branch/month;
 repeating the action returns an error instead of replacing it.
 
 Saved records contain the displayed columns, employee details, monetary values,

@@ -4,7 +4,7 @@
         <form method="post" action="{{ route('admin.monthly-payroll.generate') }}" data-payroll-generate-form>
             @csrf
             <input type="hidden" name="return_view" value="{{ request('view') === 'yearly' ? 'yearly' : 'monthly' }}">
-            <div class="modal-header"><h5 class="modal-title" id="monthlyPayrollGenerateTitle">{{ __('index.monthly_payroll_generate_save') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button></div>
+            <div class="modal-header"><h5 class="modal-title" id="monthlyPayrollGenerateTitle">{{ __('index.monthly_payroll_generate_preview') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button></div>
             <div class="modal-body">
                 <p class="text-muted small">{{ __('index.monthly_payroll_generate_help') }}</p>
                 <div class="row g-3 mb-3">
@@ -13,11 +13,12 @@
                 </div>
                 <div class="monthly-payroll-generation-options">
                     @foreach(['attendance'=>'use_attendance','include_tds'=>'include_tds','include_ssf'=>'include_ssf','include_pf'=>'include_pf','include_tada'=>'include_tada','include_advance_salary'=>'include_advance_salary'] as $key=>$label)
+                        <input type="hidden" name="{{ $key }}" value="0">
                         <label class="form-check"><input type="checkbox" class="form-check-input" name="{{ $key }}" value="1" @checked(old($key, in_array($key, ['attendance','include_tds','include_ssf','include_pf']) ? 1 : 0))><span class="form-check-label">{{ __('index.'.$label) }}</span></label>
                     @endforeach
                 </div>
             </div>
-            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button><button type="submit" class="btn btn-primary">{{ __('index.monthly_payroll_generate_save') }}</button></div>
+            <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button><button type="submit" class="btn btn-primary">{{ __('index.monthly_payroll_generate_preview') }}</button></div>
         </form>
     </div></div>
 </div>

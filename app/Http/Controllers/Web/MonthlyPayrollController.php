@@ -7,10 +7,13 @@ use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\MonthlyPayrollRecord;
 use App\Services\Payroll\MonthlyPayrollReportService;
 use App\Services\Payroll\MonthlyPayrollRecordService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MonthlyPayrollController extends Controller
@@ -77,9 +80,55 @@ class MonthlyPayrollController extends Controller
         $branch = Branch::findOrFail($data['branch_id']);
         $options = ['absent_paid' => 0, 'approved_paid_leaves' => 0];
         foreach (['attendance', 'include_tds', 'include_ssf', 'include_pf', 'include_tada', 'include_advance_salary'] as $key) $options[$key] = (int) ($data[$key] ?? 0);
-        $service->generate($data['month'], $branch, $options, AppHelper::getCompanyPaymentCurrencySymbol());
+        $payload = $service->preview($data['month'], $branch, $options, AppHelper::getCompanyPaymentCurrencySymbol());
+        $token = (string) Str::uuid();
+        Cache::put('monthly-payroll-preview:'.$token, [
+            'owner' => $this->previewOwner(), 'payload' => $payload, 'return_view' => $data['return_view'] ?? 'monthly',
+        ], now()->addMinutes(30));
+        return redirect()->route('admin.monthly-payroll.preview', ['token' => $token]);
+    }
+
+    private function previewOwner(): string
+    {
+        return auth('admin')->check() ? 'admin:'.auth('admin')->id() : 'user:'.auth()->id();
+    }
+
+    private function previewData(string $token): array
+    {
+        $this->authorize('view_monthly_payroll');
+        $this->authorize('generate_payroll');
+        $preview = Cache::get('monthly-payroll-preview:'.$token);
+        abort_unless($preview, 410, __('index.monthly_payroll_preview_expired'));
+        abort_unless($preview['owner'] === $this->previewOwner(), 403);
+        $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
+        abort_if($allowedBranchId && (int) $preview['payload']['branch_id'] !== (int) $allowedBranchId, 403);
+        return $preview;
+    }
+
+    public function preview(string $token, MonthlyPayrollReportService $service)
+    {
+        $preview = $this->previewData($token);
+        $payload = $preview['payload'];
+        $filters = ['month' => $payload['month'], 'branch_id' => $payload['branch_id'], 'department_id' => null,
+            'q' => '', 'status' => null, 'per_page' => 'all', 'export' => null];
+        $report = $service->savedReport(collect([(new MonthlyPayrollRecord())->forceFill($payload)]), $filters);
+        $returnUrl = route('admin.monthly-payroll.index', ['month' => $payload['month'], 'branch_id' => $payload['branch_id'],
+            'view' => $preview['return_view'], 'year' => substr($payload['month'], 0, 4)]);
+        return view('admin.payroll.monthly.preview', array_replace($report, [
+            'isSavedReport' => false, 'isPreview' => true, 'currency' => $payload['currency'],
+            'service' => $service, 'filters' => $filters, 'token' => $token, 'payload' => $payload, 'returnUrl' => $returnUrl,
+        ]));
+    }
+
+    public function savePreview(string $token, MonthlyPayrollRecordService $service)
+    {
+        $preview = $this->previewData($token);
+        $data = $preview['payload'];
+        $branch = Branch::findOrFail($data['branch_id']);
+        $service->generate($data['month'], $branch, $data['options'], $data['currency'], $data);
+        Cache::forget('monthly-payroll-preview:'.$token);
         return redirect()->route('admin.monthly-payroll.index', [
-            'view' => $data['return_view'] ?? 'monthly', 'year' => substr($data['month'], 0, 4),
+            'view' => $preview['return_view'], 'year' => substr($data['month'], 0, 4),
             'month' => $data['month'], 'branch_id' => $branch->id,
         ])->with('success', __('index.monthly_payroll_saved'));
     }

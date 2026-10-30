@@ -1,7 +1,7 @@
 <div id="monthlyPayrollResults" aria-busy="false">
     <div class="card"><div class="card-body">
         <div class="monthly-payroll-record-state mb-2">
-            <span class="badge {{ $isSavedReport ? 'bg-success' : 'bg-light text-secondary border' }}">{{ __($isSavedReport ? 'index.monthly_payroll_saved_record' : 'index.monthly_payroll_not_saved') }}</span>
+            <span class="badge {{ $isSavedReport ? 'bg-success' : 'bg-light text-secondary border' }}">{{ !empty($isPreview) ? __('index.monthly_payroll_preview') : __($isSavedReport ? 'index.monthly_payroll_saved_record' : 'index.monthly_payroll_not_saved') }}</span>
             @if($isSavedReport)<small class="text-muted">{{ $savedRecords->pluck('branch_name')->join(' · ') }} · {{ $savedRecords->max('created_at')->format('Y-m-d H:i') }}</small>@endif
             <span class="small text-muted ms-auto" title="{{ __('index.monthly_payroll_loan_help') }}">{{ __('index.monthly_payroll_loan_total') }}: <strong>{{ $currency.number_format((float) $summary['advance_salary'], 2) }}</strong></span>
         </div>
@@ -32,7 +32,7 @@
                                         <small class="d-block text-muted">{{ $employee?->username }}</small>
                                         <span class="badge {{ $payslip->status === 'paid' ? 'bg-success' : 'bg-light text-secondary border' }}" title="{{ $payslip->remark }}">{{ __('index.'.$payslip->status) }}</span>
                                         <div class="d-flex gap-1 mt-1">
-                                            @if(!$isSavedReport)
+                                            @if(!$isSavedReport && empty($isPreview))
                                             @can('show_payroll_detail')<a class="btn btn-outline-primary btn-sm" data-open-employee-form data-employee-form-title="{{ __('index.employee_payslip') }} · {{ $employee?->name }}" href="{{ route('admin.employee-salary.payroll-detail', $payslip->id) }}">{{ __('index.view') }}</a>@endcan
                                             @can('edit_payroll')
                                                 @if($payslip->status !== 'paid')<a class="btn btn-outline-secondary btn-sm" data-open-employee-form data-employee-form-title="{{ __('index.edit') }} · {{ $employee?->name }}" href="{{ route('admin.employee-salary.payroll-edit', $payslip->id) }}">{{ __('index.edit') }}</a>@endif

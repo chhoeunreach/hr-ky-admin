@@ -11,9 +11,38 @@ class MonthlyPayrollRecordService
 {
     public function __construct(private GeneratePayrollService $generator, private MonthlyPayrollReportService $reports) {}
 
-    public function generate(string $month, Branch $branch, array $options, string $currency): MonthlyPayrollRecord
+    public function preview(string $month, Branch $branch, array $options, string $currency): array
     {
-        return DB::transaction(function () use ($month, $branch, $options, $currency) {
+        // Use the same calculator and persistence path as Save, but roll back
+        // every database change before returning the private preview snapshot.
+        $level = DB::transactionLevel();
+        DB::beginTransaction();
+        try {
+            return $this->generate($month, $branch, $options, $currency)->only([
+                'month', 'branch_id', 'branch_name', 'currency', 'options', 'columns', 'rows', 'summary',
+            ]);
+        } finally {
+            DB::rollBack($level);
+        }
+    }
+
+    private function fingerprint(array $snapshot): string
+    {
+        $rows = array_map(fn ($row) => [
+            'employee' => $row['employee'], 'values' => $row['values'],
+            'status' => $row['attributes']['status'] ?? null,
+            'salary_from' => $row['attributes']['salary_from'] ?? null,
+            'salary_to' => $row['attributes']['salary_to'] ?? null,
+        ], $snapshot['rows']);
+        return hash('sha256', json_encode([
+            $snapshot['month'], (int) $snapshot['branch_id'], $snapshot['currency'],
+            $snapshot['columns'], $rows, $snapshot['summary'],
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    public function generate(string $month, Branch $branch, array $options, string $currency, ?array $reviewed = null): MonthlyPayrollRecord
+    {
+        return DB::transaction(function () use ($month, $branch, $options, $currency, $reviewed) {
             // Serialize generation for this branch, including simultaneous requests.
             Branch::whereKey($branch->id)->lockForUpdate()->firstOrFail();
             if (MonthlyPayrollRecord::where('month', $month)->where('branch_id', $branch->id)->exists()) {
@@ -41,6 +70,12 @@ class MonthlyPayrollRecordService
                     'commission_total' => array_sum($commissions),
                 ];
             })->all();
+            if ($reviewed !== null && !hash_equals($this->fingerprint($reviewed), $this->fingerprint([
+                'month' => $month, 'branch_id' => $branch->id, 'currency' => $currency,
+                'columns' => $report['columns'], 'rows' => $rows, 'summary' => $report['summary'],
+            ]))) {
+                throw ValidationException::withMessages(['preview' => __('index.monthly_payroll_preview_changed')]);
+            }
             $actor = auth('admin')->user() ?? auth()->user();
             return MonthlyPayrollRecord::create([
                 'month' => $month, 'branch_id' => $branch->id, 'branch_name' => $branch->name,

@@ -90,6 +90,8 @@ class MonthlyPayrollTest extends TestCase
         ]);
         Route::get('/_test/monthly-payroll', [MonthlyPayrollController::class,'index']);
         Route::post('/_test/monthly-payroll/generate', [MonthlyPayrollController::class,'generate']);
+        Route::get('/_test/monthly-payroll/preview/{token}', [MonthlyPayrollController::class,'preview']);
+        Route::post('/_test/monthly-payroll/preview/{token}/save', [MonthlyPayrollController::class,'savePreview']);
     }
 
     private function payslip(int $employeeId, array $data = []): void
@@ -258,20 +260,108 @@ class MonthlyPayrollTest extends TestCase
         $this->assertCount(28, $service->columns());
     }
 
-    private function allowMonthlyGeneration(): void
+    private function generateAndSave(array $data)
+    {
+        $response = $this->postJson('/_test/monthly-payroll/generate', $data);
+        if (!$response->isRedirect()) return $response;
+        $token = basename(parse_url($response->headers->get('Location'), PHP_URL_PATH));
+        return $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save');
+    }
+
+    private function allowMonthlyGeneration(int $calls = 2): void
     {
         $this->abilities[] = 'generate_payroll';
-        $this->mock(GeneratePayrollService::class, function ($mock) {
-            $mock->shouldReceive('getEmployeeSalariesToCreatePayslip')->once()->withArgs(fn ($options) =>
+        $this->mock(GeneratePayrollService::class, function ($mock) use ($calls) {
+            $mock->shouldReceive('getEmployeeSalariesToCreatePayslip')->times($calls)->withArgs(fn ($options) =>
                 $options['preserve_existing'] === true && $options['is_bs_enabled'] === false && $options['branch_id'] === 1
                 && $options['salary_cycle'] === 'monthly' && $options['department_id'] === null)->andReturn([]);
         });
     }
 
+    private function previewToken(array $data = []): string
+    {
+        $response = $this->postJson('/_test/monthly-payroll/generate', $data + ['month' => '2026-10', 'branch_id' => 1]);
+        $response->assertRedirect();
+        return basename(parse_url($response->headers->get('Location'), PHP_URL_PATH));
+    }
+
+    public function test_preview_creates_no_payroll_records_and_save_persists_the_reviewed_values(): void
+    {
+        $this->abilities = array_merge($this->abilities, ['generate_payroll', 'show_payroll_detail', 'edit_payroll']);
+        $this->mock(GeneratePayrollService::class, function ($mock) {
+            $mock->shouldReceive('getEmployeeSalariesToCreatePayslip')->twice()->andReturnUsing(function () {
+                $this->payslip(20, ['salary_from' => '2026-11-01', 'salary_to' => '2026-11-30', 'gross_salary' => 350, 'net_salary' => 300]);
+                return [];
+            });
+        });
+        $token = $this->previewToken(['month' => '2026-11']);
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->assertDatabaseCount('employee_payslips', 16);
+        $this->assertDatabaseMissing('employee_payslips', ['salary_from' => '2026-11-01']);
+        $root = sys_get_temp_dir().'/monthly-preview-layout-'.bin2hex(random_bytes(5));
+        mkdir($root.'/layouts', 0777, true);
+        file_put_contents($root.'/layouts/master.blade.php', '@yield("main-content")');
+        $this->app['view']->getFinder()->prependLocation($root);
+        try {
+            $response = $this->get('/_test/monthly-payroll/preview/'.$token);
+            $response->assertOk()->assertSee('Payroll Preview')->assertSee('Save payroll')->assertSee('$300.00')
+                ->assertSee('ប្រាក់ត្រូវបើក')->assertDontSee('data-open-employee-form', false);
+        } finally {
+            unlink($root.'/layouts/master.blade.php'); rmdir($root.'/layouts'); rmdir($root);
+        }
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save', ['month' => '2027-12', 'branch_id' => 2])->assertRedirect();
+        $this->assertDatabaseCount('monthly_payroll_records', 1);
+        $this->assertDatabaseCount('employee_payslips', 17);
+        $record = MonthlyPayrollRecord::firstOrFail();
+        $this->assertSame('2026-11', $record->month);
+        $this->assertEquals(1, $record->branch_id);
+        $this->assertEquals(300, $record->rows[0]['values']['net_salary']);
+        $this->assertNull(Cache::get('monthly-payroll-preview:'.$token));
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertGone();
+        $this->assertDatabaseCount('monthly_payroll_records', 1);
+    }
+
+    public function test_preview_rejects_changed_payroll_values_and_rolls_back_save(): void
+    {
+        $this->allowMonthlyGeneration();
+        $token = $this->previewToken();
+        DB::table('employee_payslips')->where('employee_id', 20)->where('salary_from', '2026-10-01')->where('salary_cycle', 'monthly')->update(['net_salary' => 500]);
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertUnprocessable()
+            ->assertSee(__('index.monthly_payroll_preview_changed'));
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->assertDatabaseCount('employee_payslips', 16);
+        $this->assertDatabaseHas('employee_payslips', ['employee_id' => 20, 'net_salary' => 500]);
+    }
+
+    public function test_previews_expire_without_creating_records(): void
+    {
+        $this->allowMonthlyGeneration(1);
+        $token = $this->previewToken();
+        $this->travel(31)->minutes();
+        $this->getJson('/_test/monthly-payroll/preview/'.$token)->assertGone();
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertGone();
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+    }
+
+    public function test_preview_is_private_to_its_creator_and_save_requires_generation_permission(): void
+    {
+        $this->allowMonthlyGeneration(1);
+        $token = $this->previewToken();
+        $creator = auth()->user();
+        $this->actingAs(User::findOrFail(20));
+        $this->getJson('/_test/monthly-payroll/preview/'.$token)->assertForbidden();
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertForbidden();
+        $this->actingAs($creator);
+        $this->abilities = ['view_monthly_payroll'];
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertForbidden();
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+    }
+
     public function test_generate_saves_a_branch_month_and_existing_pay_is_preserved(): void
     {
         $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1, 'attendance' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1, 'attendance' => 1])->assertRedirect();
         $record = MonthlyPayrollRecord::firstOrFail();
         $this->assertSame('2026-10', $record->month);
         $this->assertSame(13, $record->summary['records']);
@@ -286,7 +376,7 @@ class MonthlyPayrollTest extends TestCase
     public function test_saved_month_is_immutable_after_employee_payslip_and_commission_changes(): void
     {
         $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
         DB::table('employee_payslips')->where('employee_id', 20)->update(['net_salary' => 999]);
         DB::table('users')->where('id', 20)->update(['name' => 'Changed name']);
         DB::table('sell_out_reports')->where('user_id', 20)->update(['commission' => 100]);
@@ -307,9 +397,9 @@ class MonthlyPayrollTest extends TestCase
     {
         $this->allowMonthlyGeneration();
         $data = ['month' => '2026-10', 'branch_id' => 1];
-        $this->postJson('/_test/monthly-payroll/generate', $data)->assertRedirect();
+        $this->generateAndSave($data)->assertRedirect();
         $original = MonthlyPayrollRecord::first()->rows;
-        $this->postJson('/_test/monthly-payroll/generate', $data)->assertUnprocessable()->assertSee(__('index.monthly_payroll_already_saved'));
+        $this->generateAndSave($data)->assertUnprocessable()->assertSee(__('index.monthly_payroll_already_saved'));
         $this->assertDatabaseCount('monthly_payroll_records', 1);
         $this->assertSame($original, MonthlyPayrollRecord::first()->rows);
     }
@@ -317,7 +407,7 @@ class MonthlyPayrollTest extends TestCase
     public function test_generated_and_older_saved_reports_keep_the_exact_requested_columns(): void
     {
         $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
         $record = MonthlyPayrollRecord::firstOrFail();
         $this->assertSame($this->expectedHeadings(), array_column($record->columns, 'label'));
         // Simulate an older saved layout, including fields it did not record.
@@ -349,17 +439,17 @@ class MonthlyPayrollTest extends TestCase
 
     public function test_empty_month_is_not_marked_as_saved(): void
     {
-        $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-11', 'branch_id' => 1])->assertUnprocessable();
+        $this->allowMonthlyGeneration(1);
+        $this->generateAndSave(['month' => '2026-11', 'branch_id' => 1])->assertUnprocessable();
         $this->assertDatabaseCount('monthly_payroll_records', 0);
     }
 
     public function test_generation_requires_its_permission_and_respects_the_users_branch(): void
     {
         $this->mock(GeneratePayrollService::class, fn ($mock) => $mock->shouldNotReceive('getEmployeeSalariesToCreatePayslip'));
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertForbidden();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertForbidden();
         $this->abilities[] = 'generate_payroll';
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 2])->assertForbidden();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 2])->assertForbidden();
         $this->assertDatabaseCount('monthly_payroll_records', 0);
     }
 
@@ -413,7 +503,7 @@ class MonthlyPayrollTest extends TestCase
     public function test_yearly_overview_contains_twelve_months_and_only_saved_month_totals(): void
     {
         $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
         $report = app(MonthlyPayrollReportService::class)->yearly($this->filters(), 2026);
         $this->assertCount(12, $report['months']);
         $this->assertSame('2026-01', $report['months']->first()['month']);
@@ -427,7 +517,7 @@ class MonthlyPayrollTest extends TestCase
         $this->app['view']->getFinder()->prependLocation($root);
         try {
             $response = $this->get('/_test/monthly-payroll?view=yearly&year=2026');
-            $response->assertOk()->assertSee('2026-01')->assertSee('2026-12')->assertSee('Generate &amp; Save', false);
+            $response->assertOk()->assertSee('2026-01')->assertSee('2026-12')->assertSee('Generate Preview', false);
             $this->assertSame(12, substr_count($response->getContent(), 'data-payroll-month-row='));
         } finally {
             unlink($root.'/layouts/master.blade.php'); rmdir($root.'/layouts'); rmdir($root);
@@ -497,7 +587,7 @@ class MonthlyPayrollTest extends TestCase
     public function test_saved_monthly_loan_amounts_freeze_and_yearly_totals_add_saved_months(): void
     {
         $this->monthlyLoans(); $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
         $record = MonthlyPayrollRecord::firstOrFail();
         $this->assertEquals(125.75, $record->summary['advance_salary']);
         $this->assertSame(MonthlyPayrollLoanService::SOURCE, $record->options['loan_amount_source']);
@@ -520,7 +610,7 @@ class MonthlyPayrollTest extends TestCase
     public function test_loan_correction_updates_only_legacy_loan_values_and_can_be_rolled_back(): void
     {
         $this->loan(); $this->allowMonthlyGeneration();
-        $this->postJson('/_test/monthly-payroll/generate', ['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
+        $this->generateAndSave(['month' => '2026-10', 'branch_id' => 1])->assertRedirect();
         $record = MonthlyPayrollRecord::firstOrFail();
         $options = $record->options; unset($options['loan_amount_source']);
         $rows = $record->rows;

@@ -1,4 +1,9 @@
 (() => {
+    const save = document.querySelector('[data-payroll-preview-save]');
+    save?.addEventListener('submit', () => {
+        save.querySelector('[type="submit"]').disabled = true;
+        save.setAttribute('aria-busy', 'true');
+    });
     const modal = document.getElementById('monthlyPayrollGenerateModal');
     const form = modal?.querySelector('[data-payroll-generate-form]');
     if (!modal || !form) return;

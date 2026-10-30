@@ -37,7 +37,7 @@
                         <td><div class="d-flex flex-wrap gap-2">
                             <a class="btn btn-outline-primary btn-sm" href="{{ route('admin.monthly-payroll.index', ['month'=>$entry['month'], 'branch_id'=>$filters['branch_id'], 'department_id'=>$filters['department_id']]) }}">{{ __('index.view') }}</a>
                             @can('generate_payroll')
-                                @if(!$filters['branch_id'] || $entry['saved']->isEmpty())<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#monthlyPayrollGenerateModal" data-payroll-month="{{ $entry['month'] }}">{{ __('index.monthly_payroll_generate_save') }}</button>@endif
+                                @if(!$filters['branch_id'] || $entry['saved']->isEmpty())<button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#monthlyPayrollGenerateModal" data-payroll-month="{{ $entry['month'] }}">{{ __('index.monthly_payroll_generate_preview') }}</button>@endif
                             @endcan
                         </div></td>
                     </tr>

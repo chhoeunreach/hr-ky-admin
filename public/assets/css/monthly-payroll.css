@@ -11,6 +11,9 @@
 .monthly-payroll-generation-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .monthly-payroll-generation-options .form-check { margin-bottom: 0; }
 .monthly-payroll-record-state { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.monthly-payroll-preview-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; }
+.monthly-payroll-preview-actions .btn { display: inline-flex; align-items: center; gap: 7px; }
+.monthly-payroll-preview-actions svg { width: 16px; height: 16px; }
 .monthly-payroll-year-table th, .monthly-payroll-year-table td { padding: 12px; white-space: nowrap; }
 .monthly-payroll-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
 .monthly-payroll-summary-card { min-width: 0; padding: 12px 16px; border: 1px solid var(--bs-border-color, #e2e8f0); border-radius: 10px; background: var(--bs-body-bg, #fff); }
