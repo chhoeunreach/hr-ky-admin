@@ -112,6 +112,7 @@
 <script type="application/json" id="salaryCertificateWordData">{!! json_encode($certificateWordData, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) !!}</script>
 
 <div class="employee-complete-paper employee-salary-certificate-paper">
+    <div class="employee-salary-certificate-content">
     <header class="employee-salary-certificate-letterhead">
         <div class="employee-salary-certificate-company">
             <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo">
@@ -200,5 +201,6 @@
 
     <div class="employee-salary-certificate-note">
         {{ __('index.salary_certificate_footer') }}
+    </div>
     </div>
 </div>
