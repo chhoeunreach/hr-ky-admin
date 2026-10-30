@@ -653,8 +653,7 @@
                 --certificate-ink: #17324d;
                 --certificate-accent: #0f766e;
                 background: #ffffff;
-                border: 1px solid #cbd5e1;
-                border-top: 5px solid var(--certificate-accent);
+                border: 0;
                 border-radius: 0;
                 max-width: 190mm;
                 height: 276mm;

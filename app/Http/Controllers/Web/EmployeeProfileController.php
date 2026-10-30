@@ -51,6 +51,7 @@ class EmployeeProfileController extends Controller
             $this->authorize('employee.attendance_daily_report.view');
         }
         $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
             'branch_id' => ['nullable', 'integer', 'exists:branches,id'],
             'department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'department_ids' => ['nullable', 'array'],
@@ -79,15 +80,17 @@ class EmployeeProfileController extends Controller
                 'employee360Profile:id,employee_id,employment_status,last_working_date',
                 'employeePerformanceReviews:id,employee_id,review_type,period_end,review_date,next_review_date,status',
             ])
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('english_name', 'like', "%{$search}%")
-                        ->orWhere('username', 'like', "%{$search}%")
-                        ->orWhere('employee_code', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
+            ->when($request->filled('search'), function ($query) use ($request) {
+                // Match every word across both names and identifiers, ignoring extra spaces.
+                foreach (preg_split('/\s+/u', trim($request->input('search')), -1, PREG_SPLIT_NO_EMPTY) as $term) {
+                    $query->where(function ($query) use ($term) {
+                        foreach (['name', 'english_name', 'username', 'employee_code', 'email', 'phone'] as $column) {
+                            $query->orWhere($column, 'like', "%{$term}%");
+                        }
+                        $code = str_replace('-', '', $term);
+                        $query->orWhereRaw("REPLACE(REPLACE(employee_code, '-', ''), ' ', '') LIKE ?", ["%{$code}%"]);
+                    });
+                }
             })
             ->when($request->branch_id, fn ($query, $branchId) => $query->where('branch_id', $branchId))
             ->when($departmentIds, fn ($query) => $query->whereIn('department_id', $departmentIds))
@@ -98,7 +101,9 @@ class EmployeeProfileController extends Controller
 
                     if (in_array($status, ['active', 'inactive'], true)) {
                         $query->orWhere(function ($fallbackQuery) use ($status) {
-                            $fallbackQuery->doesntHave('employee360Profile')
+                            // A profile created for salary/documents can have no status yet.
+                            $fallbackQuery->whereDoesntHave('employee360Profile', fn ($profileQuery) => $profileQuery
+                                ->whereNotNull('employment_status')->where('employment_status', '!=', ''))
                                 ->where('is_active', $status === 'active' ? 1 : 0);
                         });
                     }
@@ -135,6 +140,10 @@ class EmployeeProfileController extends Controller
         $employees = $attendanceReport || $perPage === 'all'
             ? $employeeQuery->get()
             : $employeeQuery->paginate($perPage);
+
+        if (!$attendanceReport && $request->header('X-Employee-Profile-Results') === '1') {
+            return view('admin.employees.profile.partials.directory-results', compact('employees'));
+        }
 
         $branches = Branch::select('id', 'name', 'logo')->orderBy('name')->get();
         $posts = Post::select('id', 'post_name')->orderBy('post_name')->get();
