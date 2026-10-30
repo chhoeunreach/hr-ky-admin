@@ -2454,7 +2454,7 @@
                         @endforeach
                         @php $summaryColumnStart = 2 + count($calendarDays); @endphp
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart }}" data-sort-type="number" title="Sort"><span>{{ __('index.present') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 1 }}" data-sort-type="number" title="Sort"><span>{{ __('index.late') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 1 }}" data-sort-type="number" data-sort-default="desc" title="Sort"><span>{{ __('index.late') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 2 }}" data-sort-type="number" title="Sort"><span>{{ __('index.absent') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 3 }}" data-sort-type="number" title="Sort"><span>{{ __('index.leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 4 }}" data-sort-type="number" title="Sort"><span>{{ __('index.off_day') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
@@ -3236,7 +3236,9 @@
                         const columnIndex = Number(button.dataset.sortColumn);
                         const sortType = button.dataset.sortType || 'text';
                         const currentDirection = button.dataset.sortDirection || 'none';
-                        const nextDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+                        const nextDirection = currentDirection === 'none'
+                            ? (button.dataset.sortDefault || 'asc')
+                            : (currentDirection === 'asc' ? 'desc' : 'asc');
                         const rows = Array.from(tbody.querySelectorAll('tr[data-monthly-employee-row]'));
 
                         rows.sort((leftRow, rightRow) => {
@@ -3334,6 +3336,11 @@
 
                     if (!visibleRows) {
                         showEmptyRow();
+                    }
+
+                    if (!isClearing && filterKey === 'late') {
+                        const lateSort = table.querySelector('.monthly-sort-header[data-sort-default="desc"]');
+                        if (lateSort && lateSort.dataset.sortDirection !== 'desc') lateSort.click();
                     }
 
                     refreshVisibleRowNumbers();

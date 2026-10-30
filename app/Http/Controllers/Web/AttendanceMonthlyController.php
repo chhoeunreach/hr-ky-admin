@@ -347,17 +347,13 @@ class AttendanceMonthlyController extends Controller
             ->whereBetween('issue_date', [$startDate->toDateString(), $endDate->toDateString()])
             ->get(['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'admin_remark', 'status'])
             ->groupBy(fn ($leave) => $leave->requested_by . '|' . Carbon::parse($leave->issue_date)->format('Y-m-d'));
-        $approvedLateRequestCounts = $timeLeaveByUserDate
-            ->flatten(1)
-            ->where('status', 'approved')
-            ->groupBy('requested_by')
-            ->map(fn (Collection $requests) => $requests->count());
-
-        return $employees->map(function (User $employee) use ($calendarDays, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $approvedLateRequestCounts, $nonAttendanceReasons, $monthlyBonusControls) {
+        return $employees->map(function (User $employee) use ($calendarDays, $attendanceByUserDate, $leaveByUserDate, $timeLeaveByUserDate, $nonAttendanceReasons, $monthlyBonusControls) {
             $days = [];
             $totals = ['present' => 0, 'late' => 0, 'absent' => 0, 'leave' => 0, 'off_day' => 0];
             $lateBreakdown = $this->lateBreakdownTemplate();
             $lateMinutesTotal = 0;
+            $excusedLateDays = 0;
+            $approvedLateRequests = 0;
             $countReduction = AttendanceCountReduction::emptyBreakdown();
             $bonusDays = [];
             $bonusEligibleDays = 0;
@@ -422,13 +418,18 @@ class AttendanceMonthlyController extends Controller
                 if ($dayAttendances->isNotEmpty()) {
                     $firstAttendance = $dayAttendances->first();
                     $lateMinutes = $this->lateMinutesForAttendance($employee, $firstAttendance);
-                    $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $firstAttendance);
-                    if ($lateMinutes !== null) {
-                        $lateMinutesTotal += $lateMinutes;
-                    }
+                    if ($this->hasLateExcuse($dayLeaveRequests, $dayTimeLeaves)) {
+                        if ($lateMinutes !== null) {
+                            $excusedLateDays++;
+                            if ($this->hasLateExcuse($dayLeaveRequests, $dayTimeLeaves, ['approved'])) $approvedLateRequests++;
+                        }
+                    } else {
+                        $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $firstAttendance);
+                        if ($lateMinutes !== null) $lateMinutesTotal += $lateMinutes;
 
-                    $countLateMinutes = $this->countLateMinutesForAttendance($employee, $firstAttendance);
-                    $countReduction = AttendanceCountReduction::addLateMinutes($countReduction, $countLateMinutes);
+                        $countLateMinutes = $this->countLateMinutesForAttendance($employee, $firstAttendance);
+                        $countReduction = AttendanceCountReduction::addLateMinutes($countReduction, $countLateMinutes);
+                    }
                 }
 
                 foreach ($cell['indicators'] ?? [] as $indicator) {
@@ -451,7 +452,6 @@ class AttendanceMonthlyController extends Controller
             }
 
             $totalLateRecords = array_sum($lateBreakdown);
-            $approvedLateRequests = (int) ($approvedLateRequestCounts[$employee->id] ?? 0);
             $isCompletePresent = $bonusWorkingDays > 0 && $completePresentDays === $bonusWorkingDays;
 
             return [
@@ -462,7 +462,8 @@ class AttendanceMonthlyController extends Controller
                 'late_minutes_total' => $lateMinutesTotal,
                 'total_late_records' => $totalLateRecords,
                 'approved_late_requests' => $approvedLateRequests,
-                'effective_late_count' => max($totalLateRecords - $approvedLateRequests, 0),
+                'excused_late_days' => $excusedLateDays,
+                'effective_late_count' => $totalLateRecords,
                 'count_reduction' => $countReduction,
                 'signal_totals' => $signalTotals,
                 'employee_day_off_days' => $employeeDayOffDays,
@@ -752,6 +753,14 @@ class AttendanceMonthlyController extends Controller
         return $reasons;
     }
 
+    private function hasLateExcuse(?array $leaveRequests, Collection $timeLeaves, array $statuses = ['pending', 'review', 'approved']): bool
+    {
+        // Both collections have already been matched to this employee and date.
+        // Multiple requests on the same day excuse that day only once.
+        return collect($leaveRequests ?? [])->contains(fn ($leave) => in_array($leave['status'] ?? null, $statuses, true))
+            || $timeLeaves->contains(fn ($leave) => in_array($leave->status, $statuses, true));
+    }
+
     private function statusCell(User $employee, string $date, Collection $attendances, ?array $leaveRequests, Collection $timeLeaves, ?string $nonAttendanceReason): array
     {
         $leaveRequests = $leaveRequests ?? [];
@@ -781,6 +790,10 @@ class AttendanceMonthlyController extends Controller
             $checkIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
             $checkInLabel = $checkIn ? ' - In ' . Carbon::parse($checkIn)->format('H:i') : '';
             $timingRules = $this->attendanceTimingRules($employee, $firstAttendance);
+            if ($timingRules['late_check_in'] && $this->hasLateExcuse($leaveRequests, $timeLeaves)) {
+                $timingRules['late_check_in'] = false;
+                $details[] = __('index.monthly_attendance_late_excused');
+            }
             $timingDetails = $this->attendanceTimingRuleDetails($timingRules);
             if ($timingDetails !== []) {
                 $details = array_merge($details, $timingDetails);

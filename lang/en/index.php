@@ -3116,4 +3116,5 @@ return [
     'monthly_payroll_all_saved' => 'All branches in this preview are already saved.',
     'monthly_payroll_no_branches' => 'No branches are available for payroll generation.',
     'monthly_payroll_mixed_currencies' => 'The selected branches use different currencies. Preview them separately.',
+    'monthly_attendance_late_excused' => 'Late check-in excluded because of a leave or Time Leave request on this date.',
 ];

@@ -3186,4 +3186,5 @@ return [
     'monthly_payroll_all_saved' => 'សាខាទាំងអស់ក្នុងការមើលជាមុននេះត្រូវបានរក្សាទុករួចហើយ។',
     'monthly_payroll_no_branches' => 'មិនមានសាខាដែលអាចបង្កើតប្រាក់ខែបានទេ។',
     'monthly_payroll_mixed_currencies' => 'សាខាដែលបានជ្រើសរើសប្រើរូបិយប័ណ្ណខុសគ្នា។ សូមមើលជាមុនដាច់ដោយឡែក។',
+    'monthly_attendance_late_excused' => 'មិនរាប់ការមកយឺត ដោយសារមានសំណើសុំច្បាប់ ឬ Time Leave នៅថ្ងៃនេះ។',
 ];
