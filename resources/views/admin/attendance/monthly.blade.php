@@ -61,7 +61,7 @@
             <button class="btn btn-outline-success btn-sm monthly-reduction-export" type="button" data-bs-toggle="modal" data-bs-target="#monthlyReductionExportModal">
                 <i class="link-icon" data-feather="file-text"></i> {{ __('index.export_reduc_xlsx') }}
             </button>
-            <a class="btn btn-outline-success btn-sm" href="{{ request()->fullUrlWithQuery(['export' => 'bonus_xlsx']) }}">
+            <a class="btn btn-outline-success btn-sm" data-monthly-export="bonus_xlsx" href="{{ request()->fullUrlWithQuery(['export' => 'bonus_xlsx']) }}">
                 <i class="link-icon" data-feather="award"></i> {{ __('index.export_bonus_xlsx') }}
             </a>
         @endcanany
@@ -2720,10 +2720,10 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body d-grid gap-2">
-                            <a class="btn btn-outline-primary" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_xlsx'])) }}">
+                            <a class="btn btn-outline-primary" data-monthly-export="reduc_xlsx" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_xlsx'])) }}">
                                 <i class="link-icon" data-feather="clock"></i> {{ __('index.time_option') }}
                             </a>
-                            <a class="btn btn-success" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_count_xlsx'])) }}">
+                            <a class="btn btn-success" data-monthly-export="reduc_count_xlsx" href="{{ route('admin.attendance-monthly.index', array_merge($monthlyExportFilters, ['export' => 'reduc_count_xlsx'])) }}">
                                 <i class="link-icon" data-feather="hash"></i> {{ __('index.count_option') }}
                             </a>
                         </div>
@@ -3001,21 +3001,12 @@
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/monthly-attendance-exports.js') }}?v={{ filemtime(public_path('assets/js/monthly-attendance-exports.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             document.addEventListener('click', function (event) {
                 if (event.target.closest('.monthly-print-trigger')) {
                     window.print();
-                }
-                const exportLink = event.target.closest('[data-monthly-export]');
-                if (exportLink) {
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('export', exportLink.dataset.monthlyExport);
-                    url.searchParams.delete('page');
-                    if (exportLink.dataset.monthlyExport === 'pdf') {
-                        url.searchParams.set('orientation', new URL(exportLink.href).searchParams.get('orientation') || 'landscape');
-                    }
-                    exportLink.href = url.toString();
                 }
             });
 
