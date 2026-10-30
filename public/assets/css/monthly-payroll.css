@@ -74,17 +74,17 @@
 }
 @media (prefers-reduced-motion: reduce) { .monthly-payroll-filter-chevron { transition: none; } }
 .monthly-payroll-scroll { max-height: 75vh; border: 1px solid rgba(148,163,184,.3); border-radius: 8px; }
-.monthly-payroll-table { border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.monthly-payroll-table { --monthly-photo-width: 70px; border-collapse: separate; border-spacing: 0; font-size: 12px; }
 .monthly-payroll-table th, .monthly-payroll-table td { border-right: 1px dashed #94a3b8; border-bottom: 1px dashed #94a3b8; padding: 10px; min-width: 90px; }
 .monthly-payroll-table thead th { background: #fce8d5; color: #573b27; position: sticky; top: 0; z-index: 3; font-weight: 600; line-height: 1.7; }
 .monthly-payroll-table thead th { text-align: center; }
 .monthly-payroll-table thead th.money { white-space: normal; }
 .monthly-payroll-table .number, .monthly-payroll-table .day-count { text-align: center; min-width: 60px; }
-.monthly-payroll-table .employee-photo { min-width: 70px; text-align: center; }
+.monthly-payroll-table .employee-photo { box-sizing: border-box; width: var(--monthly-photo-width); min-width: var(--monthly-photo-width); max-width: var(--monthly-photo-width); text-align: center; position: sticky; left: 0; z-index: 2; }
 .monthly-payroll-table tbody td { background: var(--bs-body-bg, #fff); }
-.monthly-payroll-table .monthly-code { position: sticky; left: 0; z-index: 2; min-width: 100px; }
-.monthly-payroll-table thead .monthly-code { z-index: 4; }
-.monthly-payroll-table .monthly-name { min-width: 190px; }
+.monthly-payroll-table .monthly-code { min-width: 100px; }
+.monthly-payroll-table .monthly-name { min-width: 190px; position: sticky; left: var(--monthly-photo-width); z-index: 2; box-shadow: 6px 0 10px -8px rgba(15, 23, 42, .35); }
+.monthly-payroll-table thead .employee-photo, .monthly-payroll-table thead .monthly-name { z-index: 4; }
 .monthly-payroll-table .monthly-remark { min-width: 200px; max-width: 300px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .monthly-payroll-table .money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .monthly-payroll-table .earning { color: #047857; }
