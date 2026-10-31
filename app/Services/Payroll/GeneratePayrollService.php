@@ -613,7 +613,8 @@ class GeneratePayrollService
                                     $absentDays = $attendanceData['totalAbsent'];
                                 }
 
-                                $totalAbsentLeaveFee = ($deductionFee * $absentDays) + ($deductionFee * $unpaidLeaveDays);
+                                $totalAbsentLeaveFee = ($deductionFee * $absentDays)
+                                    + MonthlyUnpaidLeaveCalculator::amount((float) $grossSalary, (float) $unpaidLeaveDays);
                             }
 
 

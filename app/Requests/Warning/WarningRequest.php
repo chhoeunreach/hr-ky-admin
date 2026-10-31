@@ -2,13 +2,9 @@
 
 namespace App\Requests\Warning;
 
-use App\Enum\TrainerTypeEnum;
 use App\Helpers\AppHelper;
-use App\Models\Asset;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class WarningRequest extends FormRequest
 {
@@ -27,14 +23,15 @@ class WarningRequest extends FormRequest
     public function prepareForValidation()
     {
 
-        $startDate = AppHelper::getEnglishDate($this->input('warning_date'));
-        $fromDate = Carbon::createFromFormat('Y-m-d', $startDate);
+        if ($this->filled('warning_date') && is_string($this->input('warning_date'))) {
+            try {
+                $this->merge(['warning_date' => AppHelper::getEnglishDate($this->input('warning_date'))]);
+            } catch (\Throwable $exception) {
+                // Keep malformed dates for the validator to report as field errors.
+            }
+        }
 
-        $this->merge([
-            'warning_date' => $fromDate->format('Y-m-d'),
-        ]);
-
-        $employeeIds = collect($this->input('employee_id', []))->filter()->values();
+        $employeeIds = collect($this->input('employee_id', []))->filter(fn ($id) => is_scalar($id) && ctype_digit((string) $id))->values();
 
         if ($employeeIds->isNotEmpty()) {
             $employees = DB::table('users')
@@ -58,7 +55,9 @@ class WarningRequest extends FormRequest
         }
 
         if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
+            if (auth()->user()->branch_id) {
+                $this->merge(['branch_id' => auth()->user()->branch_id]);
+            }
         }
     }
 
@@ -71,14 +70,14 @@ class WarningRequest extends FormRequest
     public function rules()
     {
         $rules = [
-            'branch_id' => ['required','exists:branches,id'],
+            'branch_id' => ['required','integer','exists:branches,id'],
             'department_id' => 'required|array|min:1',
-            'department_id.*' => 'required|exists:departments,id',
+            'department_id.*' => 'required|integer|distinct|exists:departments,id',
             'employee_id' => 'required|array|min:1',
-            'employee_id.*' => 'required|exists:users,id',
-            'message' => ['nullable'],
-            'notification'=> 'nullable',
-            'subject'=> 'required|string',
+            'employee_id.*' => 'required|integer|distinct|exists:users,id',
+            'message' => ['nullable', 'string'],
+            'notification'=> ['nullable', 'boolean'],
+            'subject'=> 'required|string|max:255',
         ];
 
         if($this->isMethod('put')) {
@@ -89,6 +88,25 @@ class WarningRequest extends FormRequest
 
 
         return $rules;
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+            $departmentIds = $this->input('department_id', []);
+            $departmentCount = DB::table('departments')->whereIn('id', $departmentIds)
+                ->where('branch_id', $this->input('branch_id'))->count();
+            $employeeIds = $this->input('employee_id', []);
+            $employeeCount = DB::table('users')->whereIn('id', $employeeIds)
+                ->where('branch_id', $this->input('branch_id'))->whereIn('department_id', $departmentIds)
+                ->whereNull('deleted_at')->count();
+            if ($departmentCount !== count($departmentIds) || $employeeCount !== count($employeeIds)) {
+                $validator->errors()->add('employee_id', __('index.warning_same_branch_required'));
+            }
+        });
     }
 
 

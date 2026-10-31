@@ -38,7 +38,7 @@ function setup(fetch, {sourceRequestId = '1', staticSource = false, genericAllow
         cleanupEmployeeCompletePrintRoot: () => calls.push('cleanup'),
         document: {
             querySelector: selector => selector === '#paper' ? paper : notice,
-            createElement: () => ({appendChild() {}}),
+            createElement: () => ({style: {}, appendChild() {}}),
             getElementById: () => null,
             body: {appendChild() {}, classList: {add() {}}},
         },
@@ -46,7 +46,7 @@ function setup(fetch, {sourceRequestId = '1', staticSource = false, genericAllow
         fetch: async (...args) => {calls.push('save'); return fetch(...args);},
     });
     vm.runInContext(source, context);
-    return {calls, record, printedRecord, notice, printField, run: (type = 'leaveLetter') => context.printEmployeeProfilePaper('#paper', 'root', 'printing', type)};
+    return {calls, record, printedRecord, notice, printField, field, run: (type = 'leaveLetter') => context.printEmployeeProfilePaper('#paper', 'root', 'printing', type)};
 }
 
 test('waits for a saved record before opening print, including form values', async () => {
@@ -152,4 +152,16 @@ test('saved forms include their saved revision when requesting print', async () 
 test('contracts cannot print until a contract has been created', async () => {
     const {calls, run} = setup(async () => {throw new Error('must not print');}, {genericAllowed: true, sourceRequestId: ''});
     await run('contract'); assert.deepEqual(calls, ['cleanup', 'error']);
+});
+
+test('warning print preserves multiline entered values and normalizes blank fields like the saved form', async () => {
+    let payload;
+    const state = setup(async (url, options) => {payload = JSON.parse(options.body); return {ok: true, json: async () => ({recorded: true, print_record_id: 60})};}, {genericAllowed: true, savedFormId: 41});
+    state.field.value = 'Explanation line one\nExplanation line two';
+    await state.run('warning');
+    assert.equal(state.printField.printedValue, state.field.value);
+    state.field.value = '';
+    await state.run('warning');
+    assert.equal(payload.fields[0].value, null);
+    assert.equal(state.calls.at(-1), 'print');
 });

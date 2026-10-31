@@ -55,7 +55,7 @@ class WarningRepository
         return Warning::select($select)
             ->with($with)
             ->where('id',$id)
-            ->first();
+            ->firstOrFail();
     }
 
 

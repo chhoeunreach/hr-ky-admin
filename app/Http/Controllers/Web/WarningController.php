@@ -103,6 +103,7 @@ class WarningController extends Controller
 
         try{
             $validatedData = $request->validated();
+            $validatedData['notification'] = $request->boolean('notification');
 
             DB::beginTransaction();
             $warningDetail = $this->warningService->saveWarningDetail($validatedData);
@@ -118,7 +119,7 @@ class WarningController extends Controller
             return redirect()->route('admin.warning.index')->with('success',__('message.add_warning') );
         }catch(Exception $exception){
             DB::rollBack();
-            return redirect()->back()->with('danger', $exception->getMessage());
+            return redirect()->back()->with('danger', $exception->getMessage())->withInput();
         }
     }
 
@@ -133,18 +134,15 @@ class WarningController extends Controller
     public function show($id)
     {
         $this->authorize('show_warning');
-
-        try{
-            $select = ['*'];
-            $with = ['branch:id,name','warningDepartment.department:id,dept_name','createdBy:id,name', 'updatedBy:id,name','warningEmployee.employee:id,name','warningReply.employee:id,name'];
-            $warningDetail = $this->warningService->findWarningById($id,$select,$with);
-            $trainerTypes = TrainerTypeEnum::cases();
-            $departmentIds = [];
-            $employeeIds = [];
-            return view($this->view.'show', compact('warningDetail','trainerTypes','departmentIds','employeeIds'));
-        }catch(Exception $exception){
-            return redirect()->back()->with('danger', $exception->getMessage());
-        }
+        $with = [
+            'branch:id,name,logo', 'warningDepartment.department:id,dept_name',
+            'createdBy:id,name', 'updatedBy:id,name',
+            'warningEmployee.employee:id,name,english_name,employee_code,username,department_id,post_id',
+            'warningEmployee.employee.department:id,dept_name',
+            'warningEmployee.employee.post:id,post_name', 'warningReply.employee:id,name',
+        ];
+        $warningDetail = $this->warningService->findWarningById($id, ['*'], $with);
+        return view($this->view.'show', compact('warningDetail'));
     }
 
     /**
@@ -211,6 +209,7 @@ class WarningController extends Controller
             $previousEmployee = [];
 
             $validatedData = $request->validated();
+            $validatedData['notification'] = $request->boolean('notification');
 
             if($validatedData['notification'] == 1){
                 $previousEmployee = WarningEmployee::where('warning_id',$id)->get('employee_id')->toArray();

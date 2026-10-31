@@ -92,6 +92,117 @@ class MonthlyPayrollTest extends TestCase
         Route::post('/_test/monthly-payroll/generate', [MonthlyPayrollController::class,'generate']);
         Route::get('/_test/monthly-payroll/preview/{token}', [MonthlyPayrollController::class,'preview']);
         Route::post('/_test/monthly-payroll/preview/{token}/save', [MonthlyPayrollController::class,'savePreview']);
+        Route::post('/_test/monthly-payroll/{payslipId}/incentive', [MonthlyPayrollController::class,'updateIncentive']);
+    }
+
+    public function test_monthly_incentive_updates_only_bonus_and_net_for_selected_employee_month(): void
+    {
+        $this->abilities[] = 'edit_payroll';
+        $payslip = EmployeePayslip::where('employee_id', 20)->where('salary_cycle', 'monthly')->where('salary_from', '2026-10-01')->firstOrFail();
+        $url = '/_test/monthly-payroll/'.$payslip->id.'/incentive';
+        $payload = ['bonus' => 35.25, 'expected_bonus' => 10, 'expected_net' => 390];
+        $this->get('/_test/monthly-payroll?month=2026-10&q=ky20', ['X-Monthly-Payroll-Fragment' => '1'])
+            ->assertOk()->assertSee('monthly-incentive-editor')->assertSee('ប្រាក់លើកទឹកចិត្តសរុបសម្រាប់ខែនេះ');
+        $this->post($url, $payload)->assertRedirect()->assertSessionHasNoErrors();
+        $payslip->refresh();
+        $this->assertEquals(35.25, $payslip->bonus);
+        $this->assertEquals(415.25, $payslip->net_salary);
+        $this->assertEquals(400, $payslip->gross_salary);
+        $this->assertEquals(20, $payslip->absent_deduction);
+        $this->assertEquals(1, $payslip->updated_by);
+        $this->assertEquals(777, EmployeePayslip::where('salary_from', '2026-09-01')->value('net_salary'));
+        // Resubmitting the old form cannot add the incentive twice.
+        $this->postJson($url, $payload)->assertUnprocessable();
+        $this->assertEquals(415.25, $payslip->fresh()->net_salary);
+        $this->post($url, ['bonus' => 0, 'expected_bonus' => 35.25, 'expected_net' => 415.25])->assertSessionHasNoErrors();
+        $this->assertEquals(0, $payslip->fresh()->bonus);
+        $this->assertEquals(380, $payslip->fresh()->net_salary);
+    }
+
+    public function test_incentive_requires_both_permissions_and_own_branch(): void
+    {
+        $own = EmployeePayslip::where('employee_id', 20)->firstOrFail();
+        $other = EmployeePayslip::where('employee_id', 21)->firstOrFail();
+        $data = ['bonus' => 20, 'expected_bonus' => 10, 'expected_net' => 390];
+        $this->postJson('/_test/monthly-payroll/'.$own->id.'/incentive', $data)->assertForbidden();
+        $this->get('/_test/monthly-payroll?month=2026-10&q=ky20', ['X-Monthly-Payroll-Fragment' => '1'])
+            ->assertOk()->assertDontSee('monthly-incentive-editor');
+        $this->abilities = ['edit_payroll'];
+        $this->postJson('/_test/monthly-payroll/'.$own->id.'/incentive', $data)->assertForbidden();
+        $this->abilities[] = 'view_monthly_payroll';
+        $this->postJson('/_test/monthly-payroll/'.$other->id.'/incentive', $data)->assertForbidden();
+    }
+
+    public function test_incentive_rejects_paid_locked_weekly_and_invalid_amounts(): void
+    {
+        $this->abilities[] = 'edit_payroll';
+        $payslip = EmployeePayslip::where('employee_id', 20)->firstOrFail();
+        $url = '/_test/monthly-payroll/'.$payslip->id.'/incentive';
+        $data = ['bonus' => 20, 'expected_bonus' => 10, 'expected_net' => 390];
+        foreach (['paid', 'locked'] as $status) {
+            $payslip->update(['status' => $status]);
+            $this->postJson($url, $data)->assertUnprocessable();
+        }
+        $payslip->update(['status' => 'generated', 'salary_cycle' => 'weekly']);
+        $this->postJson($url, $data)->assertUnprocessable();
+        $payslip->update(['salary_cycle' => 'monthly']);
+        foreach ([-1, 'abc', '1.234', 1000000000] as $invalid) {
+            $this->postJson($url, array_replace($data, ['bonus' => $invalid]))->assertUnprocessable();
+        }
+        $this->assertEquals(390, $payslip->fresh()->net_salary);
+    }
+
+    public function test_incentive_cannot_change_a_saved_monthly_record(): void
+    {
+        $this->abilities[] = 'edit_payroll';
+        $this->allowMonthlyGeneration(1);
+        $branch = Branch::findOrFail(1);
+        $record = app(MonthlyPayrollRecordService::class)->generate('2026-10', $branch, [], '$');
+        $rows = $record->rows;
+        $payslip = EmployeePayslip::where('employee_id', 20)->where('salary_cycle', 'monthly')->where('salary_from', '2026-10-01')->firstOrFail();
+        $this->postJson('/_test/monthly-payroll/'.$payslip->id.'/incentive', ['bonus' => 30, 'expected_bonus' => 10, 'expected_net' => 390])->assertUnprocessable();
+        $this->assertEquals(10, $payslip->fresh()->bonus);
+        $this->assertSame($rows, $record->fresh()->rows);
+    }
+
+    public function test_incentive_change_invalidates_an_earlier_generate_preview(): void
+    {
+        $this->abilities[] = 'edit_payroll';
+        $this->allowMonthlyGeneration(2);
+        $token = $this->previewToken();
+        $payslip = EmployeePayslip::where('employee_id', 20)->where('salary_cycle', 'monthly')->where('salary_from', '2026-10-01')->firstOrFail();
+        $this->post('/_test/monthly-payroll/'.$payslip->id.'/incentive', ['bonus' => 25, 'expected_bonus' => 10, 'expected_net' => 390])->assertSessionHasNoErrors();
+        $this->postJson('/_test/monthly-payroll/preview/'.$token.'/save')->assertUnprocessable();
+        $this->assertDatabaseCount('monthly_payroll_records', 0);
+        $this->assertEquals(405, $payslip->fresh()->net_salary);
+    }
+
+    public function test_unpaid_money_column_uses_salary_over_30_without_deducting_twice(): void
+    {
+        $payslip = EmployeePayslip::where('employee_id', 20)->where('salary_cycle', 'monthly')->where('salary_from', '2026-10-01')->firstOrFail();
+        $payslip->update(['gross_salary' => 300, 'net_salary' => 280, 'bonus' => 0,
+            'attendance' => 1, 'unpaid_leave' => 2, 'paid_leave' => 5, 'leave_days' => 7, 'absent_deduction' => 20]);
+        $service = app(MonthlyPayrollReportService::class);
+        $values = $service->rowValues($payslip, [], 1);
+        $this->assertEquals(20, $values['pay']);
+        $this->assertEquals(20, $values['deduction']);
+        $this->assertEquals(280, $values['net_salary']);
+        $report = $service->report($this->filters(['q' => 'ky20']));
+        $table = $service->exportTable($report);
+        $this->assertSame('20.00', $table['rows'][0][16]);
+        $this->assertSame('20.00', $table['rows'][0][18]);
+        $this->assertSame('280.00', $table['rows'][0][27]);
+        $payslip->attendance = 0;
+        $this->assertEquals(0, $service->rowValues($payslip, [], 1)['pay']);
+        $payslip->attendance = 1;
+        $payslip->unpaid_leave = 0;
+        $this->assertEquals(0, $service->rowValues($payslip, [], 1)['pay']);
+        $payslip->unpaid_leave = 2;
+        $payslip->absent_deduction = 5;
+        $this->assertEquals(5, $service->rowValues($payslip, [], 1)['pay']);
+        $payslip->setAttribute('monthly_saved_values', ['pay' => 7, 'net_salary' => 999]);
+        $this->assertSame(7, $service->rowValues($payslip, [], 1)['pay']);
+        $this->assertSame(999, $service->rowValues($payslip, [], 1)['net_salary']);
     }
 
     private function payslip(int $employeeId, array $data = []): void
@@ -201,17 +312,24 @@ class MonthlyPayrollTest extends TestCase
     {
         return ['លរ', 'លេខ', 'រូប', 'ឈ្មោះខ្មែរ', 'ប្រាក់ខែគោល', 'តម្លើង', 'ទីតាំង', 'ធ្វើការ',
             'មកលឿន', 'មកយឺត', 'ចេញមុន', 'ថែមម៉ោង', 'ផ្នែក', 'សម្រាក', 'ពិន័យ', 'សុំច្បាប់',
-            'ប្រាក់', 'ខ្ចីលុយ', 'កាត់', 'មិនឈប់', 'លក់', 'អ៊ុង', 'សម្ភារ', 'fix', 'ផុស',
+            'ប្រាក់', 'ខ្ចីលុយ', 'កាត់', 'មិនឈប់', 'លក់', 'អ៊ុង', 'សម្ភារ', 'ជួសជុល', 'ផុស',
             'លើកទឹកចិត្ត', 'ប្រាក់សរុប', 'ប្រាក់ត្រូវបើក'];
     }
 
-    public function test_screen_print_and_spreadsheet_share_the_exact_28_requested_columns(): void
+    public function test_screen_print_and_spreadsheet_share_the_restored_28_columns_with_deduction_details(): void
     {
         $service = app(MonthlyPayrollReportService::class);
         $report = $service->report($this->filters(['q' => 'ky20']));
         $table = $service->exportTable($report);
         $this->assertSame($this->expectedHeadings(), $table['headings']);
         $this->assertCount(28, $table['rows'][0]);
+        $this->assertCount(28, array_unique($table['headings']));
+        foreach (['unpaid_absence', 'late_undertime', 'salary_advance', 'installment', 'warning', 'other'] as $category) {
+            $this->assertArrayNotHasKey('deduction_'.$category, $service->columns());
+        }
+        app()->setLocale('km');
+        $this->assertSame($this->expectedHeadings(), array_column($service->columns(), 'label'));
+        app()->setLocale('en');
         foreach ([null, 'print'] as $format) {
             $response = $this->get('/_test/monthly-payroll?month=2026-10&q=ky20'.($format ? '&export='.$format : ''), ['X-Monthly-Payroll-Fragment' => '1']);
             $response->assertOk();
@@ -234,10 +352,57 @@ class MonthlyPayrollTest extends TestCase
         $report = $service->report($this->filters(['q' => 'ky20']));
         $values = $service->rowValues($report['payslips']->first(), $report['commissions'][20], 1);
         foreach (['basic_salary' => 250, 'increase' => 10, 'early' => 2, 'late' => 3, 'early_out' => 4,
-            'penalty' => 5, 'pay' => 6, 'deduction' => 7, 'attendance_bonus' => 8, 'post' => 9,
+            'penalty' => 5, 'deduction' => 20, 'attendance_bonus' => 8, 'post' => 9,
             'rest' => 5, 'leave_days' => 2, 'gross_salary' => 400, 'net_salary' => 390] as $key => $amount) {
             $this->assertEquals($amount, $values[$key], $key);
         }
+    }
+
+    public function test_deduction_breakdown_uses_recorded_charges_once_and_not_loan_disbursements(): void
+    {
+        $payslip = EmployeePayslip::where('employee_id', 20)->where('salary_from', '2026-10-01')->firstOrFail();
+        $payslip->update(['absent_deduction' => 20, 'undertime' => 4, 'advance_salary' => 30,
+            'tds' => 2, 'ssf_deduction' => 3, 'pf_deduction' => 1]);
+        foreach (['Late Arrival' => 6, 'Loan Installment' => 12, 'Warning Penalty' => 8, 'កាត់' => 5] as $name => $amount) {
+            $id = DB::table('salary_components')->insertGetId(['name' => $name, 'component_type' => 'deductions']);
+            DB::table('employee_payslip_details')->insert(['employee_payslip_id' => $payslip->id, 'salary_component_id' => $id, 'amount' => $amount]);
+        }
+        // An earning with a similar name must never become a deduction.
+        $id = DB::table('salary_components')->insertGetId(['name' => 'Installment Refund', 'component_type' => 'earning']);
+        DB::table('employee_payslip_details')->insert(['employee_payslip_id' => $payslip->id, 'salary_component_id' => $id, 'amount' => 99]);
+        $payslip->setAttribute('monthly_loan_amount', 90);
+        $service = app(MonthlyPayrollReportService::class);
+        $values = $service->rowValues($payslip, [], 1);
+        $this->assertSame(['unpaid_absence' => 20.0, 'late_undertime' => 10.0, 'salary_advance' => 30.0,
+            'installment' => 12.0, 'warning' => 8.0, 'other' => 11.0], $values['deduction_breakdown']);
+        $this->assertSame(91.0, $values['deduction']);
+        $this->assertSame(90.0, $values['advance_salary']);
+        $this->assertSame(390.0, $values['net_salary']);
+
+        $response = $this->get('/_test/monthly-payroll?month=2026-10&q=ky20', ['X-Monthly-Payroll-Fragment' => '1']);
+        $response->assertOk()->assertSee('monthly-deduction-details')->assertSee('សងប្រាក់ខែបើកមុន')->assertSee('$91.00');
+        $report = $service->report($this->filters(['q' => 'ky20']));
+        $table = $service->exportTable($report);
+        $this->assertSame('91.00', $table['rows'][0][18]);
+        $this->get('/_test/monthly-payroll?month=2026-10&q=ky20&export=print')->assertOk()->assertSee('$91.00');
+    }
+
+    public function test_saved_deduction_breakdown_is_frozen_and_legacy_amounts_are_preserved(): void
+    {
+        $service = app(MonthlyPayrollReportService::class);
+        $payslip = new EmployeePayslip;
+        $saved = ['deduction' => 25.0, 'deduction_breakdown' => ['installment' => 25.0], 'net_salary' => 375.0];
+        $payslip->setAttribute('monthly_saved_values', $saved);
+        $payslip->absent_deduction = 999;
+        $values = $service->rowValues($payslip, [], 3);
+        $this->assertSame(25.0, $values['deduction']);
+        $this->assertSame(['installment' => 25.0], $values['deduction_breakdown']);
+        $this->assertSame(375.0, $values['net_salary']);
+        $this->assertSame(3, $values['number']);
+        $payslip->setAttribute('monthly_saved_values', ['deduction' => 7.0]);
+        $values = $service->rowValues($payslip, [], 1);
+        $this->assertSame(7.0, $values['deduction']);
+        $this->assertNull($values['deduction_breakdown']);
     }
 
     public function test_commission_aliases_use_the_fixed_columns_and_do_not_change_saved_pay(): void

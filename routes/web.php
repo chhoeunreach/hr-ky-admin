@@ -247,6 +247,7 @@ Route::group([
         Route::prefix('employees/{employee}/profile')->name('employees.profile.')->group(function () {
             Route::get('/', [EmployeeProfileController::class, 'show'])->name('show');
             Route::post('form-records', [EmployeeProfileController::class, 'savePrintForm'])->name('form-records.store');
+            Route::post('form-records/warning-number', [EmployeeProfileController::class, 'reserveWarningNumber'])->name('form-records.warning-number');
             Route::get('form-records', [EmployeeProfileController::class, 'printFormHistory'])->name('form-records.index');
             Route::post('print-records', [EmployeeProfileController::class, 'recordPrint'])->name('print-records.store');
             Route::get('salary-certificate/word', [EmployeeProfileController::class, 'downloadSalaryCertificateWord'])->name('salary-certificate.word');
@@ -410,6 +411,7 @@ Route::group([
         Route::get('attendances/copy-export', [AttendanceController::class, 'copyExport'])->name('attendances.copy-export');
         Route::get('attendance-monthly', [AttendanceMonthlyController::class, 'index'])->name('attendance-monthly.index');
         Route::get('monthly-payroll', [MonthlyPayrollController::class, 'index'])->name('monthly-payroll.index');
+        Route::post('monthly-payroll/{payslipId}/incentive', [MonthlyPayrollController::class, 'updateIncentive'])->whereNumber('payslipId')->name('monthly-payroll.incentive');
         Route::post('monthly-payroll/generate', [MonthlyPayrollController::class, 'generate'])->name('monthly-payroll.generate');
         Route::get('monthly-payroll/preview/{token}', [MonthlyPayrollController::class, 'preview'])->name('monthly-payroll.preview');
         Route::post('monthly-payroll/preview/{token}/save', [MonthlyPayrollController::class, 'savePreview'])->name('monthly-payroll.preview.save');

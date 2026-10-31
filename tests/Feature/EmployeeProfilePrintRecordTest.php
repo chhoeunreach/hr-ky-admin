@@ -99,6 +99,9 @@ class EmployeeProfilePrintRecordTest extends TestCase
         Route::post('/_test/profile-form', function (Request $request) {
             return app(EmployeeProfileController::class)->savePrintForm($request, (new User())->forceFill(['id' => 20, 'name' => 'Employee']));
         });
+        Route::post('/_test/warning-number', function (Request $request) {
+            return app(EmployeeProfileController::class)->reserveWarningNumber($request, (new User())->forceFill(['id' => 20, 'name' => 'Employee']));
+        });
         Route::get('/_test/profile-form-history', function (Request $request) {
             return app(EmployeeProfileController::class)->printFormHistory($request, (new User())->forceFill(['id' => 20]));
         });
@@ -149,6 +152,67 @@ class EmployeeProfilePrintRecordTest extends TestCase
         $this->abilities = ['employee.profile.view'];
         $this->getJson('/_test/profile-form-history?form_type=warning')->assertForbidden();
         $this->postJson('/_test/profile-form', $payload)->assertForbidden();
+    }
+
+    public function test_staff_warning_numbers_are_unique_persisted_and_stable_across_revisions(): void
+    {
+        $this->abilities[] = 'employee.warning_form.print';
+        $payload = array_replace($this->payload('warning'), ['document_text' => 'Staff Warning / WRN-______']);
+        $created = $this->postJson('/_test/profile-form', $payload)->assertCreated();
+        $number = $created->json('warning_number');
+        $this->assertMatchesRegularExpression('/^WRN-\d{6,}$/', $number);
+        $savedId = $created->json('saved_form_id');
+        $record = EmployeeProfileAuditLog::findOrFail($savedId);
+        $this->assertSame('Staff Warning / ' . $number, $record->new_values['document_text']);
+        $this->assertSame($number, $record->new_values['warning_number']);
+        $printed = array_replace($payload, ['document_text' => 'Staff Warning / ' . $number]);
+        $this->postJson('/_test/profile-print', $printed + ['saved_form_id' => $savedId])->assertCreated();
+        $updated = $this->postJson('/_test/profile-form', $printed + ['saved_form_id' => $savedId])->assertCreated();
+        $updated->assertJsonPath('warning_number', $number);
+        $this->postJson('/_test/profile-print', $printed + ['saved_form_id' => $updated->json('saved_form_id')])->assertCreated();
+        $next = $this->postJson('/_test/profile-form', $payload)->assertCreated();
+        $this->assertNotSame($number, $next->json('warning_number'));
+        $this->getJson('/_test/profile-form-history?form_type=warning&latest=1')->assertOk()->assertJsonPath('data.0.warning_number', $next->json('warning_number'));
+    }
+
+    public function test_warning_number_is_reserved_before_saving_and_cannot_be_reused_for_another_form(): void
+    {
+        $this->postJson('/_test/warning-number')->assertForbidden();
+        $this->abilities[] = 'employee.warning_form.print';
+        $reserved = $this->postJson('/_test/warning-number')->assertCreated();
+        $number = $reserved->json('warning_number');
+        $numberId = $reserved->json('warning_number_id');
+        $this->assertMatchesRegularExpression('/^WRN-\d{6,}$/', $number);
+        $this->assertSame(0, EmployeeProfileAuditLog::where('module', 'document_form')->count());
+        $payload = array_replace($this->payload('warning'), [
+            'warning_number_id' => $numberId, 'document_text' => 'Staff Warning / ' . $number,
+            'fields' => [['label' => 'Incident explanation', 'value' => "Employee provided explanation\nWith a follow-up date", 'checked' => null]],
+        ]);
+        $created = $this->postJson('/_test/profile-form', $payload)->assertCreated()->assertJsonPath('warning_number', $number);
+        $formId = $created->json('saved_form_id');
+        $this->assertSame($formId, EmployeeProfileAuditLog::findOrFail($numberId)->new_values['form_record_id']);
+        $this->assertSame($payload['fields'], EmployeeProfileAuditLog::findOrFail($formId)->new_values['fields']);
+        $this->postJson('/_test/profile-form', $payload)->assertUnprocessable();
+        $this->postJson('/_test/profile-form', $payload + ['saved_form_id' => $formId])->assertCreated()->assertJsonPath('warning_number', $number);
+        $this->postJson('/_test/profile-print', array_diff_key($payload, ['warning_number_id' => true]) + ['saved_form_id' => $formId])->assertCreated();
+        $other = $this->postJson('/_test/warning-number')->assertCreated();
+        $this->assertNotSame($number, $other->json('warning_number'));
+        EmployeeProfileAuditLog::whereKey($other->json('warning_number_id'))->update(['employee_id' => 30]);
+        $this->postJson('/_test/profile-form', array_replace($payload, ['warning_number_id' => $other->json('warning_number_id')]))->assertUnprocessable();
+    }
+
+    public function test_staff_warning_form_has_editable_details_and_noneditable_employee_identity(): void
+    {
+        $this->abilities[] = 'employee.warning_form.print';
+        Schema::create('companies', function (Blueprint $table) { $table->id(); $table->string('logo')->nullable(); });
+        $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
+        foreach (['branch', 'department', 'post', 'supervisor'] as $relation) $employee->setRelation($relation, null);
+        $this->view('admin.employees.profile.partials.staff-warning-form', ['employee' => $employee, 'discipline' => collect()])
+            ->assertSee('name="incident_description"', false)->assertSee('name="employee_explanation"', false)
+            ->assertSee('name="required_corrective_action"', false)->assertSee('name="warning_type"', false)
+            ->assertSee('name="warning_status"', false)->assertSee('type="date" name="warning_date"', false)
+            ->assertSee('value="EMP020" readonly', false)->assertSee('data-warning-number', false)
+            ->assertDontSee('WRN-______', false);
     }
 
     public function test_saved_form_cannot_be_reused_for_another_employee_or_form_type(): void

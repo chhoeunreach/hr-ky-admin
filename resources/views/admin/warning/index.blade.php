@@ -92,6 +92,7 @@
                         <thead>
                         <tr>
                             <th>#</th>
+                            <th>{{ __('index.warning_number') }}</th>
                             <th>{{ __('index.subject') }}</th>
                             <th class="text-center">{{ __('index.employees') }}</th>
                             <th class="text-center">{{ __('index.warning_date') }}</th>
@@ -103,7 +104,8 @@
                         <tbody>
                             @forelse($warningLists as $key => $value)
                                 <tr>
-                                    <td>{{++$key}}</td>
+                                    <td>{{ $warningLists->firstItem() + $loop->index }}</td>
+                                    <td>{{ $value->warning_number }}</td>
                                     <td>{{ $value->subject }}</td>
                                     <td class="text-center">
                                         <a
@@ -115,12 +117,21 @@
                                     <td class="text-center">
                                         {{ \App\Helpers\AppHelper::formatDateForView($value->warning_date) }}
                                     </td>
+                                    @canany(['show_warning','delete_warning','update_warning'])
                                     <td class="text-center">
                                         <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                             @can('update_warning')
                                                 <li class="me-2">
                                                     <a href="{{route('admin.warning.edit',$value->id)}}" title="{{ __('index.edit') }}">
                                                         <i class="link-icon" data-feather="edit"></i>
+                                                    </a>
+                                                </li>
+                                            @endcan
+
+                                            @can('show_warning')
+                                                <li class="me-2">
+                                                    <a href="{{ route('admin.warning.show', ['warning' => $value->id, 'print' => 1]) }}" target="_blank" rel="noopener" title="{{ __('index.print') }}" aria-label="{{ __('index.print') }}">
+                                                        <i class="link-icon" data-feather="printer"></i>
                                                     </a>
                                                 </li>
                                             @endcan
@@ -145,6 +156,7 @@
                                             @endcan
                                           </ul>
                                     </td>
+                                    @endcanany
                                 </tr>
                             @empty
                                 <tr>
@@ -172,19 +184,16 @@
 
     <script>
         function showEmployees(data) {
-            console.log(data);
             if (data && data.length > 0) {
                 $('.warning_employee_id').empty();
 
-                let employeeList = '<ul>';
+                const employeeList = $('<ul>');
                 data.forEach(warning => {
                     if (warning.employee && warning.employee.name) {
-                        employeeList += `<li>${warning.employee.name}</li>`;
+                        $('<li>').text(warning.employee.name).appendTo(employeeList);
                     }
                 });
-                employeeList += '</ul>';
-
-                $('.warning_employee_id').html(employeeList);
+                $('.warning_employee_id').empty().append(employeeList);
                 $('.warningEmployeeTitle').text('@lang('index.employee_list_title')');
 
                 // Use Bootstrap 5 modal method

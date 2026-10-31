@@ -46,7 +46,7 @@
                                     @if($key === 'photo')
                                         <img src="{{ $values['photo'] ?: asset('assets/images/img.png') }}" alt="" width="44" height="57" onerror="this.onerror=null;this.src='{{ asset('assets/images/img.png') }}';">
                                     @else
-                                        {{ $column['format'] === 'money' ? ($key === 'net_salary' && $values[$key] !== null ? $currency.number_format((float) $values[$key], 2) : $money($values[$key])) : ($values[$key] ?? '') }}
+                                        {{ $column['format'] === 'money' ? (in_array($key, ['net_salary', 'deduction', 'attendance_bonus']) && $values[$key] !== null ? $currency.number_format((float) $values[$key], 2) : $money($values[$key])) : ($values[$key] ?? '') }}
                                         @if($key === 'employee' && $employee?->username)<small>{{ $employee->username }}</small>@endif
                                     @endif
                                 </td>

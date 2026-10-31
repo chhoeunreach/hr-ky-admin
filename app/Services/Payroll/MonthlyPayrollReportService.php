@@ -151,14 +151,14 @@ class MonthlyPayrollReportService
             'rest' => ['សម្រាក', .7, 'day-count', 'text'],
             'penalty' => ['ពិន័យ', .8, 'money deduction', 'money'],
             'leave_days' => ['សុំច្បាប់', .7, 'day-count', 'text'],
-            'pay' => ['ប្រាក់', .8, 'money', 'money'],
+            'pay' => ['ប្រាក់', .8, 'money deduction', 'money'],
             'advance_salary' => ['ខ្ចីលុយ', .9, 'money deduction', 'money'],
-            'deduction' => ['កាត់', .9, 'money deduction', 'money'],
+            'deduction' => ['កាត់', .9, 'money deduction fw-bold', 'money'],
             'attendance_bonus' => ['មិនឈប់', .9, 'money earning', 'money'],
             'sell' => ['លក់', .9, 'money earning', 'money'],
             'iron' => ['អ៊ុង', .9, 'money earning', 'money'],
             'material' => ['សម្ភារ', .9, 'money earning', 'money'],
-            'repair' => ['fix', .9, 'money earning', 'money'],
+            'repair' => ['ជួសជុល', .9, 'money earning', 'money'],
             'post' => ['ផុស', .9, 'money earning', 'money'],
             'bonus' => ['លើកទឹកចិត្ត', 1, 'money earning', 'money'],
             'gross_salary' => ['ប្រាក់សរុប', 1.1, 'money', 'money'],
@@ -180,7 +180,12 @@ class MonthlyPayrollReportService
     {
         if (is_array($payslip->getAttribute('monthly_saved_values'))) {
             $defaults = array_fill_keys(array_keys($this->columns()), null);
-            return array_replace($defaults, array_intersect_key($payslip->getAttribute('monthly_saved_values'), $defaults), ['number' => $number]);
+            $saved = $payslip->getAttribute('monthly_saved_values');
+            $values = array_replace($defaults, array_intersect_key($saved, $defaults), [
+                'number' => $number,
+                'deduction_breakdown' => $saved['deduction_breakdown'] ?? null,
+            ]);
+            return $values;
         }
         $employee = $payslip->employee;
         $values = [
@@ -206,13 +211,18 @@ class MonthlyPayrollReportService
             'late' => ['មកយឺត', 'Late Arrival'],
             'early_out' => ['ចេញមុន', 'Early Departure'],
             'penalty' => ['ពិន័យ', 'Penalty'],
-            'pay' => ['ប្រាក់'],
-            'deduction' => ['កាត់'],
             'attendance_bonus' => ['មិនឈប់', 'Attendance Bonus'],
             'post' => ['ផុស', 'Post', 'Posting'],
         ] as $key => $names) {
             $values[$key] = $this->namedComponent($payslip, $names);
         }
+        $values['attendance_bonus'] ??= 0.0;
+        // This is part of absent_deduction, not an additional deduction from net pay.
+        $values['pay'] = $payslip->attendance === null ? null : ((int) $payslip->attendance === 1
+            ? min(max(0, (float) $payslip->absent_deduction), MonthlyUnpaidLeaveCalculator::amount((float) $payslip->gross_salary, (float) $payslip->unpaid_leave))
+            : 0.0);
+        $values['deduction_breakdown'] = $this->deductionBreakdown($payslip);
+        $values['deduction'] = round(array_sum($values['deduction_breakdown']), 2);
         foreach ([
             'sell' => ['លក់', 'sell', 'sale'],
             'iron' => ['អ៊ុង', 'អ៊ុត', 'iron', 'scots'],
@@ -226,6 +236,34 @@ class MonthlyPayrollReportService
             }
         }
         return $values;
+    }
+
+    /** Use amounts actually deducted on the payslip, never loan disbursements or warning counts. */
+    private function deductionBreakdown(EmployeePayslip $payslip): array
+    {
+        $amounts = [
+            // The calculator stores absence and unpaid leave together; do not estimate a split.
+            'unpaid_absence' => (float) $payslip->absent_deduction,
+            'late_undertime' => (float) $payslip->undertime,
+            'salary_advance' => (float) $payslip->advance_salary,
+            'installment' => 0.0,
+            'warning' => 0.0,
+            'other' => (float) $payslip->tds + (float) $payslip->ssf_deduction + (float) $payslip->pf_deduction,
+        ];
+        foreach ($payslip->payslipDetail->concat($payslip->additionalData) as $detail) {
+            if ($detail->salaryComponent?->component_type !== 'deductions') continue;
+            $name = mb_strtolower(trim($detail->salaryComponent->name));
+            $category = match (true) {
+                preg_match('/installment|instalment|បង់រំលស់/u', $name) === 1 => 'installment',
+                preg_match('/warning|penalty|ព្រមាន|ពិន័យ/u', $name) === 1 => 'warning',
+                preg_match('/late|undertime|early departure|មកយឺត|ចេញមុន/u', $name) === 1 => 'late_undertime',
+                preg_match('/unpaid|absence|absent|មិនបើកប្រាក់|អវត្តមាន/u', $name) === 1 => 'unpaid_absence',
+                preg_match('/advance|loan repayment|ប្រាក់បុរេប្រទាន|សងប្រាក់កម្ចី/u', $name) === 1 => 'salary_advance',
+                default => 'other',
+            };
+            $amounts[$category] += (float) $detail->amount;
+        }
+        return array_map(fn ($amount) => round($amount, 2), $amounts);
     }
 
     public function exportTable(array $report): array

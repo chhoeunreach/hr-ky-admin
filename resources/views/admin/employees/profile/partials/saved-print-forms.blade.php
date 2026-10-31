@@ -32,10 +32,13 @@
     $savedPrintConfig = [
         'saveUrl' => route('admin.employees.profile.form-records.store', $employee),
         'historyUrl' => route('admin.employees.profile.form-records.index', $employee),
+        'warningNumberUrl' => route('admin.employees.profile.form-records.warning-number', $employee),
         'csrf' => csrf_token(), 'actions' => ['create' => __('index.create'), 'update' => __('index.update')],
         'create' => __('index.create_saved_print_form'), 'update' => __('index.update_saved_print_form'),
         'history' => __('index.saved_print_form_history'), 'newForm' => __('index.saved_print_form_new'),
         'saved' => __('index.saved_print_form_done'), 'number' => __('index.saved_print_form_number'),
+        'warningNumber' => __('index.warning_number'),
+        'generatingWarningNumber' => __('index.warning_number_generating'),
         'error' => __('index.saved_print_form_failed'), 'saving' => __('index.asset_assignment_saving'),
         'empty' => __('index.no_records_found'), 'checked' => __('index.print_record_checked'), 'unchecked' => __('index.print_record_unchecked'),
     ];

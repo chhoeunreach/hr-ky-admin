@@ -10,7 +10,7 @@
         <div class="table-responsive monthly-payroll-scroll">
             <table class="table monthly-payroll-table align-middle mb-0">
                 <thead><tr>
-                    @foreach($columns as $column)<th scope="col" class="{{ $column['class'] }}">{{ $column['label'] }}</th>@endforeach
+                    @foreach($columns as $key => $column)<th scope="col" class="{{ $column['class'] }}" @if($key === 'deduction') title="{{ __('index.monthly_payroll_deduction_help') }}" @elseif($key === 'attendance_bonus') title="{{ __('index.monthly_payroll_attendance_bonus_help', [], 'km') }}" @elseif($key === 'pay') title="{{ __('index.monthly_payroll_unpaid_help', [], 'km') }}" @endif>{{ $column['label'] }}</th>@endforeach
                 </tr></thead>
                 <tbody>
                     @php
@@ -39,8 +39,36 @@
                                             @endcan
                                             @endif
                                         </div>
+                                    @elseif($key === 'bonus')
+                                        {{ $money($values[$key]) }}
+                                        @if(!$isSavedReport && empty($isPreview) && in_array($payslip->status, ['generated', 'review'], true))
+                                            @can('edit_payroll')
+                                                <details class="monthly-incentive-editor">
+                                                    <summary>{{ __('index.monthly_payroll_incentive_edit', [], 'km') }}</summary>
+                                                    <form method="post" action="{{ route('admin.monthly-payroll.incentive', $payslip->id) }}">
+                                                        @csrf
+                                                        <strong>{{ $values['employee'] }} · {{ $month->format('Y-m') }}</strong>
+                                                        <label for="incentive-{{ $payslip->id }}">{{ __('index.monthly_payroll_incentive_amount', [], 'km') }} ({{ $currency }})</label>
+                                                        <input id="incentive-{{ $payslip->id }}" class="form-control form-control-sm" type="number" name="bonus" min="0" max="999999999" step="0.01" value="{{ number_format((float) $values['bonus'], 2, '.', '') }}" required>
+                                                        <input type="hidden" name="expected_bonus" value="{{ number_format((float) $values['bonus'], 2, '.', '') }}">
+                                                        <input type="hidden" name="expected_net" value="{{ number_format((float) $values['net_salary'], 2, '.', '') }}">
+                                                        <small>{{ __('index.monthly_payroll_incentive_help', [], 'km') }}</small>
+                                                        <button class="btn btn-primary btn-sm mt-2" type="submit">{{ __('index.save', [], 'km') }}</button>
+                                                    </form>
+                                                </details>
+                                            @endcan
+                                        @endif
+                                    @elseif($key === 'deduction' && is_array($values['deduction_breakdown'] ?? null))
+                                        <details class="monthly-deduction-details">
+                                            <summary>{{ $currency.number_format((float) $values[$key], 2) }}<small>{{ __('index.monthly_payroll_deduction_details', [], 'km') }}</small></summary>
+                                            <dl>
+                                                @foreach($values['deduction_breakdown'] as $category => $amount)
+                                                    <div><dt>{{ __('index.monthly_payroll_deduction_'.$category, [], 'km') }}</dt><dd>{{ $currency.number_format((float) $amount, 2) }}</dd></div>
+                                                @endforeach
+                                            </dl>
+                                        </details>
                                     @elseif($column['format'] === 'money')
-                                        {{ $key === 'net_salary' && $values[$key] !== null ? $currency.number_format((float) $values[$key], 2) : $money($values[$key]) }}
+                                        {{ in_array($key, ['net_salary', 'deduction', 'attendance_bonus']) && $values[$key] !== null ? $currency.number_format((float) $values[$key], 2) : $money($values[$key]) }}
                                     @else
                                         {{ $values[$key] ?? '—' }}
                                     @endif

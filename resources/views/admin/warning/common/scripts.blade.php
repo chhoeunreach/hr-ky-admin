@@ -1,5 +1,4 @@
 <script src="{{asset('assets/vendors/tinymce/tinymce.min.js')}}"></script>
-<script src="{{asset('assets/js/tinymce.js')}}"></script>
 
 <script>
     $('document').ready(function(){
@@ -75,7 +74,7 @@
             })
         })
 
-        $('.nepali_date').nepaliDatePicker({
+        if ($.fn.nepaliDatePicker) $('.nepali_date').nepaliDatePicker({
             language: "english",
             dateFormat: "MM/DD/YYYY",
             ndpYear: true,
@@ -88,7 +87,7 @@
 
     });
 
-    tinymce.init({
+    if (document.getElementById('tinymceExample') && window.tinymce) tinymce.init({
         selector: '#tinymceExample',
         height: 200,
     });
@@ -102,16 +101,12 @@
 
         // Define variables
         const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
-        const branchId = "{{ $filterParameters['branch_id'] ?? null }}";
+        const defaultBranchId = @json(auth()->user()->branch_id);
+        const branchId = @json($filterParameters['branch_id'] ?? null);
 
         // Ensure filter parameters are arrays and normalize to strings
-        const filterDepartmentIds = Array.isArray(JSON.parse('{!! json_encode($filterParameters['department_id'] ?? []) !!}'))
-            ? JSON.parse('{!! json_encode($filterParameters['department_id'] ?? []) !!}').map(String)
-            : [String(JSON.parse('{!! json_encode($filterParameters['department_id'] ?? []) !!}'))].filter(Boolean);
-        const filterEmployeeIds = Array.isArray(JSON.parse('{!! json_encode($filterParameters['employee_id'] ?? []) !!}'))
-            ? JSON.parse('{!! json_encode($filterParameters['employee_id'] ?? []) !!}').map(String)
-            : [String(JSON.parse('{!! json_encode($filterParameters['employee_id'] ?? []) !!}'))].filter(Boolean);
+        const filterDepartmentIds = @json(array_values((array) ($filterParameters['department_id'] ?? []))).map(String);
+        const filterEmployeeIds = @json(array_values((array) ($filterParameters['employee_id'] ?? []))).map(String);
 
         const formDepartmentIds = {!! isset($departmentIds) ? json_encode($departmentIds) : '[]' !!}.map(String);
         const formEmployeeIds = {!! isset($employeeIds) ? json_encode($employeeIds) : '[]' !!}.map(String);
@@ -136,11 +131,7 @@
 
                 response.data.forEach(data => {
                     const isSelected = departmentIds.includes(String(data.id));
-                    $('#department_id').append(`
-                    <option value="${data.id}" ${isSelected ? "selected" : ""}>
-                        ${data.dept_name}
-                    </option>
-                `);
+                    $('#department_id').append(new Option(data.dept_name, data.id, false, isSelected));
                 });
 
                 $('#department_id').trigger('change');
@@ -181,11 +172,7 @@
                 data.forEach(employee => {
                     const employeeIdStr = String(employee.id);
                     const isSelected = currentEmployeeSelections.includes(employeeIdStr) || employeeIds.includes(employeeIdStr);
-                    $('#employee_id').append(`
-                    <option value="${employee.id}" ${isSelected ? "selected" : ""}>
-                        ${employee.name}
-                    </option>
-                `);
+                    $('#employee_id').append(new Option(employee.name, employee.id, false, isSelected));
                 });
 
                 // Update employeeIds to reflect current selections
@@ -226,10 +213,10 @@
     });
 
 
-    const withNotificationButton = document.getElementById('withNotification');
-    if (withNotificationButton) {
-        withNotificationButton.addEventListener('click', function (event) {
-            document.getElementById('notification').value = 1;
+    const notificationInput = document.getElementById('notification');
+    if (notificationInput?.form) {
+        notificationInput.form.addEventListener('submit', function (event) {
+            notificationInput.value = event.submitter?.id === 'withNotification' ? '1' : '0';
         });
     }
 

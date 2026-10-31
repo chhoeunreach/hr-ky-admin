@@ -99,3 +99,20 @@
 #monthlyPayrollResults[aria-busy="true"] { opacity: .5; }
 .monthly-payroll-footer nav p { display: none; }
 @media(max-width:767px) { .monthly-payroll-table th,.monthly-payroll-table td { padding: 8px; } }
+.monthly-deduction-details { min-width: 100px; text-align: right; }
+.monthly-deduction-details summary { cursor: pointer; border-radius: 4px; }
+.monthly-deduction-details summary:focus-visible { outline: 2px solid var(--bs-primary, #0f766e); outline-offset: 3px; }
+.monthly-deduction-details summary small { display: block; font-size: 10px; font-weight: 400; color: var(--bs-secondary-color, #64748b); }
+.monthly-deduction-details[open] { width: 290px; max-width: 75vw; white-space: normal; }
+.monthly-deduction-details dl { margin: 8px 0 0; padding: 10px; border: 1px solid var(--bs-border-color, #e2e8f0); border-radius: 8px; background: var(--bs-tertiary-bg, #f8fafc); }
+.monthly-deduction-details dl div { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 4px 0; }
+.monthly-deduction-details dt { text-align: left; font-size: 11px; font-weight: 400; }
+.monthly-deduction-details dd { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.monthly-incentive-editor { margin-top: 5px; }
+.monthly-incentive-editor summary { color: var(--bs-primary, #0f766e); cursor: pointer; font-size: 11px; font-weight: 500; }
+.monthly-incentive-editor form { width: 245px; max-width: 70vw; margin-top: 8px; padding: 12px; border: 1px solid var(--bs-border-color, #e2e8f0); border-radius: 8px; text-align: left; white-space: normal; }
+.monthly-incentive-editor :is(strong, label, small) { display: block; }
+.monthly-incentive-editor strong { margin-bottom: 8px; font-size: 12px; }
+.monthly-incentive-editor label { margin-bottom: 5px; font-size: 11px; }
+.monthly-incentive-editor small { margin-top: 7px; color: var(--bs-secondary-color, #64748b); font-size: 10px; font-weight: 400; }

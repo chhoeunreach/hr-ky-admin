@@ -367,6 +367,22 @@ class EmployeeProfileController extends Controller
         return $this->recordPrint($request, $employee, true);
     }
 
+    public function reserveWarningNumber(Request $request, User $employee)
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
+        $this->authorizeEmployeeProfile($employee, 'employee.warning_form.print');
+        $record = DB::transaction(function () use ($employee, $request) {
+            $record = $this->audit($employee, 'document_number', 'reserved', null, null, ['form_type' => 'warning'], $request);
+            $record->update(['new_values' => [
+                'form_type' => 'warning',
+                'warning_number' => 'WRN-' . str_pad((string) $record->id, 6, '0', STR_PAD_LEFT),
+            ]]);
+            return $record;
+        });
+        return response()->json(['warning_number_id' => $record->id, 'warning_number' => $record->new_values['warning_number']], 201)
+            ->header('Cache-Control', 'private, no-store');
+    }
+
     public function printFormHistory(Request $request, User $employee)
     {
         $forms = $this->printableProfileForms();
@@ -382,6 +398,7 @@ class EmployeeProfileController extends Controller
             'created_by' => data_get($record->new_values, 'performed_by_name'),
             'document_text' => data_get($record->new_values, 'document_text'),
             'fields' => data_get($record->new_values, 'fields', []),
+            'warning_number' => data_get($record->new_values, 'warning_number'),
         ]))->header('Cache-Control', 'private, no-store');
     }
 
@@ -393,6 +410,7 @@ class EmployeeProfileController extends Controller
             'form_type' => ['required', Rule::in(array_keys($forms))],
             'source_request_id' => [$linkedPrint ? 'required' : 'prohibited', 'integer', 'min:1'],
             'saved_form_id' => [$saveOnly || $linkedPrint ? 'nullable' : 'required', 'integer', 'min:1'],
+            'warning_number_id' => [$request->input('form_type') === 'warning' ? 'nullable' : 'prohibited', 'integer', 'min:1'],
             'document_text' => ['required', 'string', 'max:120000'],
             'fields' => ['present', 'array', 'max:500'],
             'fields.*' => ['array:label,value,checked'],
@@ -439,11 +457,22 @@ class EmployeeProfileController extends Controller
                 || data_get($saved?->new_values, 'fields') !== $data['fields'])) {
                 throw ValidationException::withMessages(['saved_form_id' => __('index.save_changes_before_print')]);
             }
-            return $this->audit($employee, $saveOnly ? 'document_form' : 'document_print',
+            $numberReservation = null;
+            if ($saveOnly && !empty($data['warning_number_id'])) {
+                $numberReservation = EmployeeProfileAuditLog::where('employee_id', $employee->id)
+                    ->where('module', 'document_number')->where('new_values->form_type', 'warning')
+                    ->whereKey($data['warning_number_id'])->lockForUpdate()->first();
+                $owner = data_get($numberReservation?->new_values, 'form_record_id');
+                if (!$numberReservation || ($owner && (int) $owner !== (int) ($saved?->record_id ?: $saved?->id))) {
+                    throw ValidationException::withMessages(['warning_number_id' => __('index.saved_print_form_failed')]);
+                }
+            }
+            $record = $this->audit($employee, $saveOnly ? 'document_form' : 'document_print',
                 $saveOnly ? ($saved ? 'update' : 'create') : 'print_requested',
                 $saveOnly && $saved ? ($saved->record_id ?: $saved->id) : null, $saveOnly ? $saved?->new_values : null, [
                 'saved_form_id' => $saved?->id,
                 'form_type' => $data['form_type'],
+                'warning_number' => data_get($saved?->new_values, 'warning_number'),
                 'document_title' => $title,
                 'document_text' => $data['document_text'],
                 'fields' => $data['fields'],
@@ -461,9 +490,26 @@ class EmployeeProfileController extends Controller
                     default => ['id', 'requested_by', 'issue_date', 'start_time', 'end_time', 'reasons', 'status', 'admin_remark'],
                 }),
             ], $request);
+            if ($saveOnly && $data['form_type'] === 'warning') {
+                $values = $record->new_values;
+                $values['warning_number'] = data_get($saved?->new_values, 'warning_number')
+                    ?: data_get($numberReservation?->new_values, 'warning_number')
+                    ?: 'WRN-' . str_pad((string) ($saved?->record_id ?: $saved?->id ?: $record->id), 6, '0', STR_PAD_LEFT);
+                $numberPosition = strpos($values['document_text'], 'WRN-______');
+                if ($numberPosition !== false && !data_get($saved?->new_values, 'warning_number')) {
+                    $values['document_text'] = substr_replace($values['document_text'], $values['warning_number'], $numberPosition, strlen('WRN-______'));
+                }
+                $record->update(['new_values' => $values]);
+                if ($numberReservation) {
+                    $numberReservation->update(['new_values' => array_merge($numberReservation->new_values, [
+                        'form_record_id' => $saved?->record_id ?: $saved?->id ?: $record->id,
+                    ])]);
+                }
+            }
+            return $record;
         });
 
-        return response()->json($saveOnly ? ['saved' => true, 'saved_form_id' => $record->id] : ['recorded' => true, 'print_record_id' => $record->id], 201);
+        return response()->json($saveOnly ? ['saved' => true, 'saved_form_id' => $record->id, 'warning_number' => data_get($record->new_values, 'warning_number')] : ['recorded' => true, 'print_record_id' => $record->id], 201);
     }
 
     public function downloadSalaryCertificateWord(User $employee)

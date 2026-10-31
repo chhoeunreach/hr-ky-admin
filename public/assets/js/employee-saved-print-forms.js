@@ -38,10 +38,11 @@
         editModal.querySelector('.modal-title').textContent = save.textContent;
         active = {paper, placeholder, persist, sync};
         bootstrap.Modal.getOrCreateInstance(editModal).show(save);
+        window.StaffWarningA4?.refresh(paper);
     };
     editModal.addEventListener('hide.bs.modal', event => {if (saving) event.preventDefault();});
     editModal.addEventListener('hidden.bs.modal', () => {
-        if (active) {active.placeholder.replaceWith(active.paper); active.sync(); active = null;}
+        if (active) {active.placeholder.replaceWith(active.paper); window.StaffWarningA4?.refresh(active.paper); active.sync(); active = null;}
     });
     confirm.addEventListener('click', async () => {
         if (!active || saving) return;
@@ -74,6 +75,7 @@
                 const summary = document.createElement('summary');
                 const date = new Date(record.created_at).toLocaleString(document.documentElement?.lang || 'km', {timeZone: 'Asia/Bangkok'});
                 summary.textContent = `#${record.id} · ${config.actions?.[record.action] || record.action} · ${record.created_by || '—'} · ${date}`;
+                if (record.warning_number) summary.textContent += ` · ${config.warningNumber}: ${record.warning_number}`;
                 const text = document.createElement('div');
                 text.className = 'mt-3'; text.style.whiteSpace = 'pre-wrap'; text.textContent = record.document_text;
                 details.append(summary, text);
@@ -111,6 +113,37 @@
         };
         const changed = () => {touched = true; sync();};
         paper.addEventListener('input', changed); paper.addEventListener('change', changed); sync();
+        let numberPromise;
+        const ensureWarningNumber = () => {
+            if (type !== 'warning' || !config.warningNumberUrl) return Promise.resolve(true);
+            const number = paper.querySelector('[data-warning-number]');
+            if (paper.dataset.warningNumberId || (saved.has(type) && /^WRN-\d+$/.test(number?.textContent || ''))) return Promise.resolve(true);
+            if (numberPromise) return numberPromise;
+            numberPromise = (async () => {
+                status.textContent = config.generatingWarningNumber;
+                try {
+                    const response = await fetch(config.warningNumberUrl, {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': config.csrf},
+                        body: JSON.stringify({}),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !Number.isInteger(result.warning_number_id) || !/^WRN-\d+$/.test(result.warning_number)) throw new Error();
+                    paper.dataset.warningNumberId = String(result.warning_number_id);
+                    number.textContent = result.warning_number;
+                    status.textContent = '';
+                    sync();
+                    return true;
+                } catch (_) {status.textContent = config.error; return false;}
+            })().finally(() => {numberPromise = null;});
+            return numberPromise;
+        };
+        const launchEditor = () => {
+            if (type !== 'warning' || !config.warningNumberUrl) return openEditor(paper, save, persist, sync);
+            save.disabled = true; fresh.disabled = true;
+            ensureWarningNumber().then(ready => {if (ready) openEditor(paper, save, persist, sync);})
+                .finally(() => {save.disabled = false; fresh.disabled = false;});
+        };
         (async () => {
             try {
                 const url = new URL(config.historyUrl, window.location.href);
@@ -120,32 +153,57 @@
                 const result = await response.json();
                 const record = result.data?.[0];
                 if (record && !touched && !saved.has(type)) {
+                    const warningNumber = paper.querySelector('[data-warning-number]');
+                    if (warningNumber && record.warning_number) warningNumber.textContent = record.warning_number;
+                    if (type === 'warning') {
+                        paper.querySelectorAll('input, textarea, select').forEach(field => {
+                            const label = field.getAttribute('aria-label') || field.name || field.id;
+                            const value = record.fields?.find(item => item.label === label);
+                            if (!value) return;
+                            field.value = value.value ?? '';
+                            if (field.matches('input[type="checkbox"], input[type="radio"]')) field.checked = Boolean(value.checked);
+                        });
+                        window.StaffWarningA4?.refresh(paper);
+                    }
                     saved.set(type, {id: record.id, signature: JSON.stringify({document_text: record.document_text, fields: record.fields})});
                     status.textContent = `${config.number} #${record.id}`; sync();
                 }
             } catch (_) { /* Creating a form remains available if history cannot load. */ }
+            if (type === 'warning') await ensureWarningNumber();
         })();
-        fresh.addEventListener('click', () => {touched = true; saved.delete(type); status.textContent = ''; sync(); openEditor(paper, save, persist, sync);});
+        fresh.addEventListener('click', () => {
+            touched = true; saved.delete(type); status.textContent = '';
+            const warningNumber = paper.querySelector('[data-warning-number]');
+            if (warningNumber) warningNumber.textContent = config.warningNumberUrl ? config.generatingWarningNumber : 'WRN-______';
+            if (paper.dataset) delete paper.dataset.warningNumberId;
+            sync(); launchEditor();
+        });
         history.addEventListener('click', () => {
             bootstrap.Modal.getOrCreateInstance(historyModal).show(history); loadHistory(type);
         });
         const persist = async () => {
+            if (!(await ensureWarningNumber())) return false;
             save.disabled = true; fresh.disabled = true; status.textContent = config.saving;
             const data = snapshot(paper);
             try {
                 const response = await fetch(config.saveUrl, {
                     method: 'POST', credentials: 'same-origin',
                     headers: {'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': config.csrf},
-                    body: JSON.stringify({form_type: type, ...data, ...(saved.has(type) ? {saved_form_id: saved.get(type).id} : {})}),
+                    body: JSON.stringify({form_type: type, ...data, ...(saved.has(type) ? {saved_form_id: saved.get(type).id} : {}),
+                        ...(type === 'warning' && paper.dataset?.warningNumberId ? {warning_number_id: Number(paper.dataset.warningNumberId)} : {})}),
                 });
                 const result = await response.json();
                 if (!response.ok || result.saved !== true || !Number.isInteger(result.saved_form_id)) throw new Error();
-                saved.set(type, {id: result.saved_form_id, signature: JSON.stringify(data)});
+                const warningNumber = paper.querySelector('[data-warning-number]');
+                const numberWasPending = warningNumber?.textContent === 'WRN-______';
+                if (warningNumber && result.warning_number) warningNumber.textContent = result.warning_number;
+                const persisted = {...data, document_text: numberWasPending && result.warning_number ? data.document_text.replace('WRN-______', result.warning_number) : data.document_text};
+                saved.set(type, {id: result.saved_form_id, signature: JSON.stringify(persisted)});
                 status.textContent = `${config.saved} ${config.number} #${result.saved_form_id}`;
                 return true;
             } catch (_) {status.textContent = config.error; return false;}
             finally {save.disabled = false; fresh.disabled = false; sync();}
         };
-        save.addEventListener('click', () => {touched = true; openEditor(paper, save, persist, sync);});
+        save.addEventListener('click', () => {touched = true; launchEditor();});
     }
 })();

@@ -3,6 +3,7 @@
 namespace App\Services\Payroll;
 
 use App\Models\Branch;
+use App\Models\EmployeePayslip;
 use App\Models\MonthlyPayrollRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -100,6 +101,12 @@ class MonthlyPayrollRecordService
                 'branch_id' => $branch->id, 'department_id' => null,
                 'preserve_existing' => true, 'is_bs_enabled' => false,
             ]);
+            $attendanceBonus = app(MonthlyAttendanceBonusService::class);
+            EmployeePayslip::with(['employee', 'payslipDetail.salaryComponent', 'additionalData.salaryComponent'])
+                ->where('salary_cycle', 'monthly')->where('salary_from', $month.'-01')
+                ->whereIn('status', ['generated', 'review'])
+                ->whereHas('employee', fn ($query) => $query->where('branch_id', $branch->id))
+                ->get()->each(fn ($payslip) => $attendanceBonus->apply($payslip));
             $report = $this->reports->report([
                 'month' => $month, 'branch_id' => $branch->id, 'department_id' => null,
                 'q' => '', 'status' => null, 'per_page' => 'all', 'export' => null, 'live' => true,

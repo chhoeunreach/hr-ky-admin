@@ -61,4 +61,29 @@ class Warning extends Model
     {
         return $this->hasMany(WarningResponse::class,'warning_id','id');
     }
+
+    public function getWarningNumberAttribute(): ?string
+    {
+        return $this->id ? 'WRN-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT) : null;
+    }
+
+    public function getPrintableMessageAttribute(): string
+    {
+        if (!filled($this->message)) {
+            return '';
+        }
+        $document = new \DOMDocument();
+        $document->loadHTML('<?xml encoding="UTF-8"><html><body>' . $this->message . '</body></html>', LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new \DOMXPath($document);
+        foreach ($xpath->query('//script|//style') as $node) {
+            $node->parentNode->removeChild($node);
+        }
+        foreach ($xpath->query('//br') as $node) {
+            $node->parentNode->replaceChild($document->createTextNode("\n"), $node);
+        }
+        foreach ($xpath->query('//p|//div|//li|//h1|//h2|//h3|//h4|//h5|//h6') as $node) {
+            $node->appendChild($document->createTextNode("\n"));
+        }
+        return trim($document->getElementsByTagName('body')->item(0)?->textContent ?? '');
+    }
 }

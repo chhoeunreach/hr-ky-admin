@@ -7,18 +7,60 @@ use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\EmployeePayslip;
 use App\Models\MonthlyPayrollRecord;
 use App\Services\Payroll\MonthlyPayrollReportService;
 use App\Services\Payroll\MonthlyPayrollRecordService;
 use App\Traits\CustomAuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Maatwebsite\Excel\Facades\Excel;
 
 class MonthlyPayrollController extends Controller
 {
     use CustomAuthorizesRequests;
+
+    public function updateIncentive(Request $request, int $payslipId)
+    {
+        $this->authorize('view_monthly_payroll');
+        $this->authorize('edit_payroll');
+        $data = $request->validate([
+            'bonus' => ['required', 'numeric', 'min:0', 'max:999999999', 'decimal:0,2'],
+            'expected_bonus' => ['required', 'numeric'],
+            'expected_net' => ['required', 'numeric'],
+        ]);
+        $month = $branchId = null;
+        DB::transaction(function () use ($payslipId, $data, &$month, &$branchId) {
+            $payslip = EmployeePayslip::with('employee')->findOrFail($payslipId);
+            $branchId = $payslip->employee?->branch_id;
+            $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
+            abort_if($allowedBranchId && (int) $branchId !== (int) $allowedBranchId, 403);
+            abort_unless($branchId && $payslip->salary_cycle === 'monthly', 422);
+            // Generation and saving acquire this same lock before snapshotting payroll.
+            Branch::whereKey($branchId)->lockForUpdate()->firstOrFail();
+            $payslip = EmployeePayslip::whereKey($payslipId)->lockForUpdate()->firstOrFail();
+            $month = substr((string) $payslip->salary_from, 0, 7);
+            if (!in_array($payslip->status, ['generated', 'review'], true)
+                || MonthlyPayrollRecord::where('month', $month)->where('branch_id', $branchId)->exists()) {
+                throw ValidationException::withMessages(['bonus' => __('index.monthly_payroll_incentive_readonly')]);
+            }
+            if (round((float) $payslip->bonus, 2) !== round((float) $data['expected_bonus'], 2)
+                || round((float) $payslip->net_salary, 2) !== round((float) $data['expected_net'], 2)) {
+                throw ValidationException::withMessages(['bonus' => __('index.monthly_payroll_incentive_stale')]);
+            }
+            $amount = round((float) $data['bonus'], 2);
+            $payslip->update([
+                'bonus' => $amount,
+                'net_salary' => round((float) $payslip->net_salary + $amount - (float) $payslip->bonus, 2),
+                'updated_by' => auth()->id(),
+            ]);
+        });
+        return redirect()->route('admin.monthly-payroll.index', ['month' => $month, 'branch_id' => $branchId])
+            ->with('success', __('index.monthly_payroll_incentive_saved'));
+    }
 
     public function index(Request $request, MonthlyPayrollReportService $service)
     {

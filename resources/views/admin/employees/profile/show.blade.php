@@ -2606,10 +2606,13 @@
                 if (field.matches('input[type="checkbox"], input[type="radio"]')) {
                     printField.checked = field.checked;
                 }
-                if (linkedPrint && !field.matches('input[type="checkbox"], input[type="radio"], [data-print-static-source]')) {
+                if ((linkedPrint || printType === 'warning') && !field.matches('input[type="checkbox"], input[type="radio"], [data-print-static-source]')) {
                     const value = document.createElement(field.matches('textarea') ? 'div' : 'span');
-                    value.className = 'employee-request-print-value';
+                    value.className = printType === 'warning' ? 'employee-warning-print-value' : 'employee-request-print-value';
+                    if (printType === 'warning' && field.matches('.employee-warning-lines')) value.className += ' employee-warning-lines';
                     value.textContent = field.tagName === 'SELECT' ? field.selectedOptions[0]?.textContent || '' : field.value;
+                    if (printType === 'warning' && !field.value && field.type === 'date') value.textContent = '____/____/________';
+                    if (printType === 'warning' && !field.value && field.type === 'time') value.textContent = '____:____';
                     printField.replaceWith(value);
                 }
             });
@@ -2631,7 +2634,7 @@
                         label: field.getAttribute('aria-label') || field.closest('label')?.textContent?.trim()
                             || field.closest('.employee-print-form-field')?.querySelector('span')?.textContent?.trim()
                             || field.name || field.id || `Field ${index + 1}`,
-                        value: field.value,
+                        value: field.value.trim() || null,
                         checked: field.matches('input[type="checkbox"], input[type="radio"]') ? field.checked : null,
                     };
                 });
@@ -2643,7 +2646,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': @json(csrf_token()),
                     },
-                    body: JSON.stringify({form_type: printType, document_text: linkedPrint ? printPaper.innerText : paper.innerText, fields,
+                    body: JSON.stringify({form_type: printType, document_text: linkedPrint ? printPaper.innerText : paper.innerText.trim(), fields,
                         ...(linkedPrint ? {source_request_id: sourceRequestId} : {saved_form_id: savedFormId})}),
                 });
                 const result = response.ok ? await response.json() : null;
@@ -2661,7 +2664,7 @@
                 savedNotice?.classList.remove('d-none');
                 savedNotice?.classList.add('d-block');
                 if (document.fonts) await document.fonts.ready;
-                if (linkedPrint || printType === 'salaryCertificate') {
+                if (linkedPrint || printType === 'salaryCertificate' || printType === 'warning') {
                     await Promise.all(Array.from(printPaper.querySelectorAll('img')).map(function (img) {
                         return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
                     }));
@@ -2673,6 +2676,11 @@
                     fitSalaryCertificate(printPaper);
                     printRoot.style.cssText = '';
                     fitSalaryCertificate(paper);
+                }
+                if (printType === 'warning') {
+                    printRoot.style.cssText = 'display:block; position:fixed; left:-10000px; top:0;';
+                    window.StaffWarningA4?.fit(printPaper);
+                    printRoot.style.cssText = '';
                 }
                 window.print();
             } catch (error) {

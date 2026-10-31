@@ -6,7 +6,7 @@
             $selectedEmployeeIds = collect(old('employee_id', $employeeIds ?? []))->map(fn ($id) => (string) $id)->all();
             $selectedDepartmentIds = collect(old('department_id', $departmentIds ?? []))->filter()->unique()->values();
         @endphp
-        <select class="form-select" id="employee_id" name="employee_id[]" multiple>
+        <select class="form-select" id="employee_id" name="employee_id[]" multiple required>
             @foreach($employees ?? [] as $employee)
                 <option value="{{ $employee->id }}"
                         data-branch-id="{{ $employee->branch_id }}"
@@ -28,23 +28,23 @@
             <div class="col-lg-4 d-md-flex d-lg-block d-block justify-content-between gap-4">
                 <div class="subject-field mb-4 w-100">
                     <label for="subject" class="form-label"> {{ __('index.subject') }} <span style="color: red">*</span></label>
-                    <input type="text" class="form-control" id="subject" name="subject" value="{{ ( isset( $warningDetail) ?  $warningDetail->subject: old('subject') )}}"
+                    <input type="text" class="form-control" id="subject" name="subject" required maxlength="255" value="{{ old('subject', $warningDetail->subject ?? '') }}"
                      autocomplete="off" placeholder="{{ __('index.subject') }}">
                 </div>
                 <div class="warning-date mb-4 w-100">
                     <label for="warning_date" class="form-label">@lang('index.warning_date') <span style="color: red">*</span> </label>
                     @if($isBsEnabled)
-                        <input type="text" class="form-control nepali_date" id="warning_date" name="warning_date" required value="{{ ( isset( $warningDetail) ?  \App\Helpers\AppHelper::taskDate($warningDetail->warning_date): old('warning_date') )}}"
+                        <input type="text" class="form-control nepali_date" id="warning_date" name="warning_date" required value="{{ old('warning_date', isset($warningDetail) ? \App\Helpers\AppHelper::taskDate($warningDetail->warning_date) : '') }}"
                             autocomplete="off" >
                     @else
-                        <input type="date" class="form-control" name="warning_date" required value="{{ ( isset( $warningDetail) ?  $warningDetail->warning_date: old('warning_date') )}}"
+                        <input type="date" class="form-control" id="warning_date" name="warning_date" required value="{{ old('warning_date', $warningDetail->warning_date ?? now()->format('Y-m-d')) }}"
                             autocomplete="off" >
                     @endif
                 </div>
             </div>
             <div class="col-lg-8 mb-4">
                 <label for="tinymceExample" class="form-label">{{ __('index.message') }}</label>
-                <textarea class="form-control" name="message" id="tinymceExample" rows="1">{{ ( isset($warningDetail) ? $warningDetail->message: old('message') )}}</textarea>
+                <textarea class="form-control" name="message" id="tinymceExample" rows="6">{{ old('message', $warningDetail->message ?? '') }}</textarea>
             </div>
         </div>
     </div>
@@ -52,7 +52,7 @@
 
     <input type="hidden" readonly id="notification" name="notification" value="0">
 
-@canany(['edit_warning','create_warning'])
+@can(isset($warningDetail) ? 'update_warning' : 'create_warning')
         <div class="text-center text-md-start border-top pt-4">
             <button type="submit" class="btn btn-primary mb-2">
                 <i class="link-icon" data-feather="plus"></i>
@@ -64,7 +64,7 @@
                 {{isset($warningDetail)?  __('index.update_send'): __('index.create_send')}}
             </button>
         </div>
-    @endcanany
+    @endcan
 </div>
 
 
