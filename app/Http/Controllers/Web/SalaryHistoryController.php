@@ -97,7 +97,9 @@ class SalaryHistoryController extends Controller
     public function edit($employeeId, SalaryReviseHistory $history)
     {
         $employeeDetail = $this->authorizeHistory($employeeId, $history, 'employee.salary.history.edit');
-        return view($this->view.'partials.history-form', ['history' => $history, 'employeeDetail' => $employeeDetail, 'deleting' => false]);
+        $currency = AppHelper::getCompanyPaymentCurrencySymbol();
+        $fiscalYears = $this->fiscalYearService->getAllFiscalYears(['id', 'year']);
+        return view($this->view.'partials.history-form', compact('history', 'employeeDetail', 'currency', 'fiscalYears') + ['deleting' => false]);
     }
 
     public function confirmDelete($employeeId, SalaryReviseHistory $history)
@@ -109,17 +111,40 @@ class SalaryHistoryController extends Controller
     public function update(Request $request, $employeeId, SalaryReviseHistory $history)
     {
         $this->authorizeHistory($employeeId, $history, 'employee.salary.history.edit');
-        $data = $request->validate([
+        $rules = [
             'remark' => ['nullable', 'string', 'max:2000'],
-            'base_salary' => ['prohibited'], 'revised_salary' => ['prohibited'], 'increment_amount' => ['prohibited'],
-            'increment_percent' => ['prohibited'], 'date_from' => ['prohibited'], 'salary_revised_on' => ['prohibited'],
-            'employee_id' => ['prohibited'],
-        ]);
-        DB::transaction(function () use ($history, $employeeId, $data, $request) {
+            'base_salary' => ['sometimes', 'required', 'numeric', 'min:0', 'max:99999999.99'],
+            'revised_salary' => ['sometimes', 'required', 'numeric', 'min:0', 'max:99999999.99'],
+            'salary_revised_on' => ['sometimes', 'required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'date_from' => ['sometimes', 'required', 'date_format:Y-m-d', 'before_or_equal:today'],
+            'date_to' => ['nullable', 'date_format:Y-m-d'],
+            'fiscal_year_id' => ['nullable', 'integer', 'exists:fiscal_years,id'],
+            'increment_amount' => ['prohibited'], 'increment_percent' => ['prohibited'],
+            'employee_id' => ['prohibited'], 'created_by' => ['prohibited'], 'created_by_name' => ['prohibited'], 'updated_by' => ['prohibited'],
+        ];
+        $amountFields = ['base_salary', 'revised_salary', 'base_monthly_salary', 'base_weekly_salary', 'base_monthly_allowance', 'base_weekly_allowance', 'hour_rate', 'weekly_hours', 'monthly_hours'];
+        foreach (array_slice($amountFields, 2) as $field) {
+            $rules[$field] = ['nullable', 'numeric', 'min:0', 'max:99999999.99'];
+        }
+        $data = $request->validate($rules);
+        DB::transaction(function () use ($history, $employeeId, $data, $request, $amountFields) {
             \App\Models\User::whereKey($employeeId)->lockForUpdate()->firstOrFail();
             $record = SalaryReviseHistory::whereKey($history->id)->lockForUpdate()->firstOrFail();
             $old = $record->toArray();
-            $record->update(['remark' => $data['remark'] ?? null]);
+            foreach ($amountFields as $field) {
+                if (array_key_exists($field, $data) && $data[$field] !== null) $data[$field] = round((float) $data[$field], 2);
+            }
+            $record->fill($data);
+            if ($record->date_to && $record->date_from && $record->date_to < $record->date_from) {
+                throw ValidationException::withMessages(['date_to' => __('validation.after_or_equal', ['attribute' => __('index.date_to'), 'date' => $record->date_from])]);
+            }
+            $base = (float) $record->base_salary;
+            $increment = round((float) $record->revised_salary - $base, 2);
+            $percent = $base > 0 ? round($increment / $base * 100, 2) : 0;
+            if (abs($percent) > 999.99) {
+                throw ValidationException::withMessages(['revised_salary' => __('index.salary_review_percent_range')]);
+            }
+            $record->fill(['increment_amount' => $increment, 'increment_percent' => $percent])->save();
             $this->auditHistory($record, 'revision_update', $old, $record->toArray(), $request);
         });
         return response()->json(['message' => __('index.salary_history_updated')]);

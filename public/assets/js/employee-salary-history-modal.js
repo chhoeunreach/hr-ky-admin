@@ -6,6 +6,21 @@
     const retry = modal.querySelector('[data-history-retry]');
     const panel = modal.querySelector('.modal-body');
     let historyUrl, lastUrl, pending, sequence = 0, closed = true;
+    const updateReviewAmounts = form => {
+        if (!form) return;
+        const baseField = form.querySelector('[name="base_salary"]');
+        const revisedField = form.querySelector('[name="revised_salary"]');
+        if (!baseField || !revisedField) return;
+        const base = Number(baseField.value), revised = Number(revisedField.value);
+        const valid = baseField.value !== '' && revisedField.value !== '' && Number.isFinite(base) && Number.isFinite(revised) && base >= 0 && revised >= 0;
+        const baseCents = Math.round((base + Number.EPSILON) * 100);
+        const difference = Math.round((revised + Number.EPSILON) * 100) - baseCents;
+        const increment = difference / 100;
+        // Round the percentage from cents, including negative halfway values.
+        const percent = baseCents > 0 ? Math.sign(difference) * Math.floor((Math.abs(difference) * 10000 + baseCents / 2) / baseCents) / 100 : 0;
+        form.querySelector('[data-review-increment]').textContent = valid ? increment.toFixed(2) : '-';
+        form.querySelector('[data-review-percent]').textContent = valid ? percent.toFixed(2) + '%' : '-';
+    };
     const errorMessage = async response => {
         try {return (await response.json()).message || modal.dataset.loadError;}
         catch (_) {return modal.dataset.loadError;}
@@ -29,8 +44,9 @@
             const content = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-salary-history-content]');
             if (!content) throw new Error(modal.dataset.loadError);
             body.replaceChildren(content);
+            updateReviewAmounts(body.querySelector('[data-salary-review-edit]'));
             status.textContent = '';
-            body.querySelector('textarea')?.focus();
+            body.querySelector('input:not([type="hidden"]), select, textarea')?.focus();
             return true;
         } catch (error) {
             if (!closed && requestId === sequence && error.name !== 'AbortError') {
@@ -58,6 +74,7 @@
         else if (event.target.closest('[data-history-back]')) load(historyUrl);
     });
     retry.addEventListener('click', () => load(lastUrl));
+    modal.addEventListener('input', event => updateReviewAmounts(event.target.closest('[data-salary-review-edit]')));
     modal.addEventListener('submit', async event => {
         const form = event.target;
         if (!form.matches('[data-salary-history-form]')) return;

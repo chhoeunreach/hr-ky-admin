@@ -70,6 +70,8 @@ class EmployeeSalaryManagementTest extends TestCase
             foreach ((new SalaryReviseHistory)->getFillable() as $field) $table->string($field)->nullable();
             $table->softDeletes();
         });
+        Schema::create('fiscal_years', function (Blueprint $table) { $table->id(); $table->string('year'); });
+        DB::table('fiscal_years')->insert(['id' => 1, 'year' => '2026']);
         Schema::create('employee_profile_audit_logs', function (Blueprint $table) {
             $table->id();
             foreach ((new EmployeeProfileAuditLog)->getFillable() as $field) $table->text($field)->nullable();
@@ -167,19 +169,65 @@ class EmployeeSalaryManagementTest extends TestCase
             ->assertOk()->assertSee('data-salary-history-content', false)->assertSee('Original reason')->assertSee('Salary manager');
     }
 
-    public function test_revision_edit_updates_only_remarks_with_an_audit_record(): void
+    public function test_revision_edit_updates_full_details_and_recalculates_the_increment_with_an_audit_record(): void
     {
         $record = $this->revisionRecord(); $salary = $this->salary();
         $this->abilities = ['show_salary_history', 'employee.salary.history.edit'];
-        $this->get('/_test/revision-history/20/'.$record->id.'/edit')->assertOk()->assertSee('Original reason');
-        $this->put('/_test/revision-history/20/'.$record->id, ['revised_salary' => 99999])
-            ->assertRedirect()->assertSessionHasErrors('revised_salary');
-        $this->putJson('/_test/revision-history/20/'.$record->id, ['remark' => 'Corrected reason'])->assertOk();
+        $this->get('/_test/revision-history/20/'.$record->id.'/edit')->assertOk()->assertSee('Original reason')
+            ->assertSee('name="base_salary"', false)->assertSee('name="revised_salary"', false)
+            ->assertSee('name="date_from"', false)->assertSee('name="base_monthly_salary"', false);
+        $this->putJson('/_test/revision-history/20/'.$record->id, [
+            'base_salary' => 18000, 'revised_salary' => 19800, 'remark' => 'Corrected reason',
+            'salary_revised_on' => '2026-10-24', 'date_from' => '2026-10-20', 'date_to' => '2026-10-31', 'fiscal_year_id' => 1,
+            'base_monthly_salary' => 1500, 'base_weekly_salary' => 346.15, 'base_monthly_allowance' => 10,
+            'base_weekly_allowance' => 2.31, 'hour_rate' => 10, 'weekly_hours' => 37.5, 'monthly_hours' => 150,
+        ])->assertOk();
         $this->assertSame('Corrected reason', $record->fresh()->remark);
-        $this->assertEquals(13200, $record->fresh()->revised_salary);
+        $this->assertEquals(19800, $record->fresh()->revised_salary);
+        $this->assertEquals(1800, $record->fresh()->increment_amount);
+        $this->assertEquals(10, $record->fresh()->increment_percent);
+        $this->assertSame('2026-10-20', $record->fresh()->date_from);
+        $this->assertSame('2026-10-24', $record->fresh()->salary_revised_on);
+        $this->assertEquals(1500, $record->fresh()->base_monthly_salary);
+        $this->assertEquals(37.5, $record->fresh()->weekly_hours);
+        $this->assertEquals(1, $record->fresh()->fiscal_year_id);
         $this->assertEquals(12000, $salary->fresh()->annual_salary);
-        $this->assertSame('revision_update', EmployeeProfileAuditLog::firstOrFail()->action);
+        $audit = EmployeeProfileAuditLog::firstOrFail();
+        $this->assertSame('revision_update', $audit->action);
+        $this->assertEquals(13200, $audit->old_values['revised_salary']);
+        $this->assertEquals(19800, $audit->new_values['revised_salary']);
         $this->deleteJson('/_test/revision-history/20/'.$record->id)->assertForbidden();
+    }
+
+    public function test_revision_edit_validates_full_inputs_and_rolls_back_invalid_changes(): void
+    {
+        $record = $this->revisionRecord();
+        $this->abilities = ['show_salary_history', 'employee.salary.history.edit'];
+        foreach ([
+            ['base_salary' => -1], ['revised_salary' => null], ['base_monthly_salary' => -10],
+            ['salary_revised_on' => 'bad-date'], ['date_from' => '2030-01-01'], ['date_to' => '2026-01-01'],
+            ['fiscal_year_id' => 999], ['revised_salary' => 2000000], ['employee_id' => 21],
+            ['created_by' => 21], ['increment_amount' => 999999], ['increment_percent' => 99],
+        ] as $payload) {
+            $this->putJson('/_test/revision-history/20/'.$record->id, $payload)->assertUnprocessable();
+        }
+        $this->assertEquals(13200, $record->fresh()->revised_salary);
+        $this->assertDatabaseCount('employee_profile_audit_logs', 0);
+    }
+
+    public function test_revision_edit_supports_remark_only_updates_zero_base_and_salary_corrections(): void
+    {
+        $record = $this->revisionRecord();
+        $this->abilities = ['show_salary_history', 'employee.salary.history.edit'];
+        $this->putJson('/_test/revision-history/20/'.$record->id, ['remark' => 'Remark only'])->assertOk();
+        $this->assertEquals(13200, $record->fresh()->revised_salary);
+        $this->putJson('/_test/revision-history/20/'.$record->id, ['base_salary' => 0, 'revised_salary' => 100])->assertOk();
+        $this->assertEquals(100, $record->fresh()->increment_amount);
+        $this->assertEquals(0, $record->fresh()->increment_percent);
+        $this->putJson('/_test/revision-history/20/'.$record->id, ['base_salary' => 12000, 'revised_salary' => 11000])->assertOk();
+        $this->assertEquals(-1000, $record->fresh()->increment_amount);
+        $this->assertEquals(-8.33, $record->fresh()->increment_percent);
+        $this->assertSame('Remark only', $record->fresh()->remark);
     }
 
     public function test_revision_delete_hides_the_entry_but_preserves_payroll_snapshots_and_audit(): void

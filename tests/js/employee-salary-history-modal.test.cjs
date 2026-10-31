@@ -77,3 +77,25 @@ test('invalid edits remain in the form with an error and no list refresh', async
     assert.equal(state.calls.changed, 0);
     assert.equal(form.dataset.saving, '0');
 });
+
+test('full review edits recalculate annual increments, including decreases and zero-base records', () => {
+    const state = setup();
+    const base = {value: '12000'}, revised = {value: '13200'}, increment = {}, percent = {};
+    const form = {querySelector: selector => ({'[name="base_salary"]': base, '[name="revised_salary"]': revised, '[data-review-increment]': increment, '[data-review-percent]': percent}[selector])};
+    const input = () => state.events.input({target: {closest: () => form}});
+    input();
+    assert.equal(increment.textContent, '1200.00');
+    assert.equal(percent.textContent, '10.00%');
+    revised.value = '11000'; input();
+    assert.equal(increment.textContent, '-1000.00');
+    assert.equal(percent.textContent, '-8.33%');
+    base.value = '20000'; revised.value = '20201'; input();
+    assert.equal(percent.textContent, '1.01%');
+    revised.value = '19799'; input();
+    assert.equal(percent.textContent, '-1.01%');
+    base.value = '0'; revised.value = '100'; input();
+    assert.equal(percent.textContent, '0.00%');
+    revised.value = ''; input();
+    assert.equal(increment.textContent, '-');
+    assert.equal(percent.textContent, '-');
+});
