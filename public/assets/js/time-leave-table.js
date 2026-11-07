@@ -53,7 +53,7 @@
         const table = new root.DataTable(element, {
             dom: '<"time-leave-list-toolbar"lBf>rt<"time-leave-table-footer"ip>',
             pageLength: labels.pageLength,
-            lengthMenu: [10, 25, 50, 100],
+            lengthMenu: [[10, 25, 50, 100, 500, -1], [10, 25, 50, 100, 500, labels.all || 'All']],
             search: {search: labels.search},
             // Preserve newest requests first until the user chooses a column.
             order: [],

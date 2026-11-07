@@ -308,6 +308,7 @@
                 title: @json(__('index.time_leave_list')),
                 show: @json(__('index.show')),
                 entries: @json(__('index.entries')),
+                all: @json(__('index.all')),
                 searchLabel: @json(__('index.search')),
                 empty: @json(__('index.no_records_found')),
                 info: @json(__('index.showing') . ' _START_ ' . __('index.to') . ' _END_ ' . __('index.of') . ' _TOTAL_ ' . __('index.entries')),

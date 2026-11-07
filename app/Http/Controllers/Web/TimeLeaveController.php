@@ -45,7 +45,7 @@ class TimeLeaveController extends Controller
                 'year' => $request->year ?? Carbon::now()->format('Y'),
                 'status' => $request->status ?? null,
                 'search' => is_string($request->input('search')) ? trim($request->input('search')) : null,
-                'per_page' => in_array($request->input('per_page'), ['10', '25', '50', '100'], true)
+                'per_page' => in_array($request->input('per_page'), ['10', '25', '50', '100', '500', '-1'], true)
                     ? (int) $request->input('per_page') : 25,
             ];
 
