@@ -1,6 +1,7 @@
 @once
 <link rel="stylesheet" href="{{ asset('assets/css/asset-gallery.css') }}?v={{ filemtime(public_path('assets/css/asset-gallery.css')) }}">
 <dialog id="assetImageViewer" class="asset-image-viewer" aria-labelledby="assetImageViewerTitle"
+    data-file-label="{{ __('index.file') }}" data-download-label="{{ __('index.asset_file_download') }}"
     data-empty="{{ __('index.asset_image_empty') }}" data-image-label="{{ __('index.asset_image') }}"
     data-zoom-label="{{ __('index.asset_image_zoom') }}" data-fit-label="{{ __('index.asset_image_fit') }}">
     <div class="asset-viewer-header">

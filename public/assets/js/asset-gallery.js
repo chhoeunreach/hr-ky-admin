@@ -33,13 +33,28 @@
             urls.forEach((url, position) => {
                 const link = document.createElement('a');
                 link.href = url; link.className = 'asset-gallery-card';
-                link.setAttribute('data-asset-image', '');
-                link.setAttribute('aria-label', `${name} · ${viewer.dataset.imageLabel} ${position + 1}`);
-                const image = document.createElement('img');
-                image.src = url; image.alt = name; image.loading = position ? 'lazy' : 'eager';
+                const extension = url.split(/[?#]/)[0].split('.').pop().toLowerCase();
+                if (['jpg', 'jpeg', 'png', 'webp'].includes(extension)) {
+                    link.setAttribute('data-asset-image', '');
+                    link.setAttribute('aria-label', `${name} · ${viewer.dataset.imageLabel} ${position + 1}`);
+                    const image = document.createElement('img');
+                    image.src = url; image.alt = name; image.loading = position ? 'lazy' : 'eager';
+                    link.appendChild(image);
+                } else {
+                    link.className += ' asset-gallery-document';
+                    link.download = '';
+                    link.setAttribute('aria-label', `${name} · ${extension.toUpperCase()} · ${viewer.dataset.downloadLabel}`);
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-regular fa-file-lines'; icon.setAttribute('aria-hidden', 'true');
+                    const label = document.createElement('span');
+                    label.textContent = `${extension.toUpperCase()} · ${viewer.dataset.fileLabel}`;
+                    const download = document.createElement('span');
+                    download.className = 'small'; download.textContent = viewer.dataset.downloadLabel;
+                    link.appendChild(icon); link.appendChild(label); link.appendChild(download);
+                }
                 const count = document.createElement('span'); count.className = 'asset-gallery-number';
                 count.textContent = `${position + 1} / ${urls.length}`;
-                link.appendChild(image); link.appendChild(count); container.appendChild(link);
+                link.appendChild(count); container.appendChild(link);
             });
         },
     };

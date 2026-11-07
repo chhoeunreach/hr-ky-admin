@@ -129,9 +129,9 @@
         </div>
     @endif
     <div class="col-lg-6 col-md-6 mb-4">
-        <label for="image" class="form-label">{{ __('index.upload_image') }} @if(!isset($assetDetail))<span style="color: red">*</span>@endif </label>
+        <label for="images" class="form-label">{{ __('index.asset_upload_files') }} @if(!isset($assetDetail))<span style="color: red">*</span>@endif </label>
         <input class="form-control" type="file" id="images" name="images[]" multiple
-               accept="image/jpeg,image/png,image/webp" {{ isset($assetDetail) ? '' : 'required' }}>
+               accept="{{ '.'.implode(',.', \App\Models\Asset::ATTACHMENT_EXTENSIONS) }}" {{ isset($assetDetail) ? '' : 'required' }}>
         <div class="form-text">{{ __('index.asset_images_help') }}</div>
         @error('images')<div class="text-danger small">{{ $message }}</div>@enderror
         @foreach($errors->get('images.*') as $messages)
@@ -140,9 +140,16 @@
         <div class="d-flex flex-wrap gap-3 mt-3" data-asset-gallery>
             @foreach(isset($assetDetail) ? $assetDetail->imageFiles() : [] as $file)
                 <label class="border rounded p-2">
-                    <a data-asset-image href="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" target="_blank" rel="noopener">
-                        <img src="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" alt="{{ __('index.asset_image') }}" width="110" height="90" style="object-fit:contain">
-                    </a>
+                    @if(\App\Models\Asset::isImageFile($file))
+                        <a data-asset-image href="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" target="_blank" rel="noopener">
+                            <img src="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" alt="{{ __('index.asset_image') }}" width="110" height="90" style="object-fit:contain">
+                        </a>
+                    @else
+                        <a class="d-flex flex-column align-items-center gap-2 p-2" href="{{ asset(\App\Models\Asset::UPLOAD_PATH.$file) }}" download>
+                            <i class="fa-regular fa-file-lines fa-2x" aria-hidden="true"></i>
+                            <span>{{ strtoupper(pathinfo($file, PATHINFO_EXTENSION)) }} · {{ __('index.asset_file_download') }}</span>
+                        </a>
+                    @endif
                     <span class="d-block small mt-2"><input type="checkbox" name="remove_images[]" value="{{ $file }}" @checked(in_array($file, old('remove_images', [])))> {{ __('index.delete') }}</span>
                 </label>
             @endforeach

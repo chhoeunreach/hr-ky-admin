@@ -43,7 +43,10 @@ class TimeLeaveController extends Controller
                 'requested_by' => $request->requested_by ?? null,
                 'month' => $request->month ?? null,
                 'year' => $request->year ?? Carbon::now()->format('Y'),
-                'status' => $request->status ?? null
+                'status' => $request->status ?? null,
+                'search' => is_string($request->input('search')) ? trim($request->input('search')) : null,
+                'per_page' => in_array($request->input('per_page'), ['10', '25', '50', '100'], true)
+                    ? (int) $request->input('per_page') : 25,
             ];
 
             if(!auth('admin')->check() && auth()->check()){
@@ -55,9 +58,12 @@ class TimeLeaveController extends Controller
                 $filterParameters['year'] = $request->year ?? $nepaliDate['year'];
             }
             $months = AppHelper::MONTHS;
-            $with = ['leaveRequestedBy:id,name'];
+            $with = ['leaveRequestedBy:id,name,username,employee_code'];
             $select = ['time_leaves.*'];
-            $timeLeaves = $this->timeLeaveService->getAllEmployeeLeaveRequests($filterParameters, $select, $with);
+            // DataTables searches, sorts and exports the complete filtered list in the browser.
+            $timeLeaves = $this->timeLeaveService->getAllEmployeeLeaveRequests(
+                array_merge($filterParameters, ['search' => null]), $select, $with, false
+            );
 
             $with = ['branches:id,name'];
             $select = ['id', 'name'];

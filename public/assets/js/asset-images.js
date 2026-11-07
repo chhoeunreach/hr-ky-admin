@@ -11,14 +11,28 @@
         const retained = Array.from(existing).filter(field => !field.checked).length;
         input.setCustomValidity(files.length + retained > 10 ? input.closest('div').querySelector('.form-text').textContent : '');
         files.forEach(file => {
-            const img = document.createElement('img');
             const url = URL.createObjectURL(file);
             urls.push(url);
-            img.src = url; img.alt = file.name; img.title = file.name;
-            img.width = 110; img.height = 90; img.style.objectFit = 'contain';
             const link = document.createElement('a');
-            link.href = url; link.setAttribute('data-asset-image', '');
-            link.appendChild(img); previews.appendChild(link);
+            link.href = url;
+            link.title = file.name;
+            if (/^image\/(jpeg|png|webp)$/.test(file.type)) {
+                const img = document.createElement('img');
+                img.src = url; img.alt = file.name; img.title = file.name;
+                img.width = 110; img.height = 90; img.style.objectFit = 'contain';
+                link.setAttribute('data-asset-image', '');
+                link.appendChild(img);
+            } else {
+                link.className = 'border rounded p-3 d-flex flex-column align-items-center gap-2';
+                link.download = file.name;
+                const icon = document.createElement('i');
+                icon.className = 'fa-regular fa-file-lines fa-2x';
+                icon.setAttribute('aria-hidden', 'true');
+                const name = document.createElement('span');
+                name.className = 'small text-break'; name.textContent = file.name;
+                link.appendChild(icon); link.appendChild(name);
+            }
+            previews.appendChild(link);
         });
     });
     document.querySelectorAll('[name="remove_images[]"]').forEach(field => field.addEventListener('change', () => input.dispatchEvent(new Event('change'))));

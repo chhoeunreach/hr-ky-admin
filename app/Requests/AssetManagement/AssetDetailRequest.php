@@ -67,16 +67,16 @@ class AssetDetailRequest extends FormRequest
         ];
 
         $rules['images'] = ['nullable', 'array', 'max:10'];
-        $rules['images.*'] = ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:5048'];
+        $rules['images.*'] = ['required', 'file', 'mimes:'.implode(',', Asset::ATTACHMENT_EXTENSIONS), 'max:5048'];
         $rules['remove_images'] = ['nullable', 'array'];
         $rules['remove_images.*'] = ['string', Rule::in($assetId ? Asset::findOrFail($assetId)->imageFiles() : [])];
 
         if ($this->isMethod('put') || $this->isMethod('patch')) {
             $rules['purchased_date'] = ['required','date'];
-            $rules['image'] = ['nullable','file', 'mimes:jpeg,png,jpg,webp','max:5048'];
+            $rules['image'] = ['nullable','file', 'mimes:'.implode(',', Asset::ATTACHMENT_EXTENSIONS),'max:5048'];
         } else {
             $rules['purchased_date'] = ['required','date','before_or_equal:today'];
-            $rules['image'] = ['required_without:images','nullable','file','mimes:jpeg,png,jpg,webp','max:5048'];
+            $rules['image'] = ['required_without:images','nullable','file','mimes:'.implode(',', Asset::ATTACHMENT_EXTENSIONS),'max:5048'];
         }
 
         $rules['warranty_end_date'] = ['nullable',

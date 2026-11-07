@@ -10,13 +10,27 @@ use Illuminate\Support\Facades\Log;
 
 class TimeLeaveRepository
 {
-    public function getAllEmployeeTimeLeaveRequest($filterParameters, $select = ['*'], $with = [])
+    public function getAllEmployeeTimeLeaveRequest($filterParameters, $select = ['*'], $with = [], bool $paginate = true)
     {
 
         $leaveDetailList = TimeLeave::with($with)
             ->select($select)
             ->when(isset($filterParameters['requested_by']), function ($query) use ($filterParameters) {
                 $query->where('requested_by', $filterParameters['requested_by']);
+            })
+            ->when(filled($filterParameters['search'] ?? null), function ($query) use ($filterParameters) {
+                $search = '%' . trim($filterParameters['search']) . '%';
+
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('reasons', 'like', $search)
+                        ->orWhereHas('leaveRequestedBy', function ($userQuery) use ($search) {
+                            $userQuery->where(function ($identityQuery) use ($search) {
+                                $identityQuery->where('name', 'like', $search)
+                                    ->orWhere('username', 'like', $search)
+                                    ->orWhere('employee_code', 'like', $search);
+                            });
+                        });
+                });
             })
             ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->where('branch_id', $filterParameters['branch_id']);
@@ -43,9 +57,19 @@ class TimeLeaveRepository
 
                 });
         }
+        if (!$paginate) {
+            return $leaveDetailList->orderBy('id', 'DESC')->get();
+        }
+
+        $perPage = isset($filterParameters['per_page'])
+            ? (int) $filterParameters['per_page'] : getRecordPerPage();
+        if (isset($filterParameters['per_page']) && !in_array($perPage, [10, 25, 50, 100], true)) {
+            $perPage = 25;
+        }
+
         return $leaveDetailList
             ->orderBy('id', 'DESC')
-            ->paginate( getRecordPerPage());
+            ->paginate($perPage);
     }
 
     public function getAllTimeLeaveRequestDetailOfEmployee($filterParameters)

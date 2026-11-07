@@ -69,6 +69,13 @@ class Asset extends Model
 
     const SORTABLE_COLUMNS = ['number', 'employee', 'name', 'phone_numbers', 'asset_code', 'asset_serial_no', 'description', 'type', 'is_working', 'is_available', 'assigned_to'];
 
+    const ATTACHMENT_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'doc', 'docx', 'txt', 'rtf', 'csv', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'odp'];
+
+    public static function isImageFile(string $file): bool
+    {
+        return in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp'], true);
+    }
+
     const UPLOAD_PATH = 'uploads/asset/';
 
     public static function boot()

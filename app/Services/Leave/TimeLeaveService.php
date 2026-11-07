@@ -28,7 +28,7 @@ class TimeLeaveService
     )
     {}
 
-    public function getAllEmployeeLeaveRequests($filterParameters, $select=['*'], $with=[])
+    public function getAllEmployeeLeaveRequests($filterParameters, $select=['*'], $with=[], bool $paginate = true)
     {
 
         if(AppHelper::ifDateInBsEnabled()){
@@ -38,7 +38,7 @@ class TimeLeaveService
         }
 
 
-        return $this->timeLeaveRepository->getAllEmployeeTimeLeaveRequest($filterParameters,$select,$with);
+        return $this->timeLeaveRepository->getAllEmployeeTimeLeaveRequest($filterParameters,$select,$with,$paginate);
 
     }
     public function getAllTimeLeaveRequestOfEmployee($filterParameters)

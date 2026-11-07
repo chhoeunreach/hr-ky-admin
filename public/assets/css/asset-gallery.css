@@ -42,3 +42,7 @@
     .asset-viewer-footer span { display: none; }
     .asset-viewer-stage { padding: 10px; }
 }
+
+.asset-gallery-document { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .6rem; padding: 1rem 1rem 2.6rem; text-align: center; text-decoration: none; }
+.asset-gallery-document > i { font-size: 2.25rem; }
+.asset-gallery-document:first-child { grid-column: auto; aspect-ratio: 4/3; }

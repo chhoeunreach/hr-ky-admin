@@ -14,14 +14,14 @@ function element(tag = 'div') {
         setAttribute(key, value) {this.attrs[key] = value;}, removeAttribute(key) {delete this.attrs[key];},
         addEventListener(type, callback) {this.events[type] = callback;},
         querySelector(selector) {return this.children.find(child => child.tag === selector);},
-        querySelectorAll() {return this.children.filter(child => child.tag === 'a');},
+        querySelectorAll() {return this.children.filter(child => child.tag === 'a' && 'data-asset-image' in child.attrs);},
         closest(selector) {if (selector === '[data-asset-gallery]') return this.parent; if (selector === '.modal') return null;},
         focus() {this.focused = true;},
     };
 }
 function setup() {
     const viewer = element('dialog'), gallery = element(), body = element('body');
-    viewer.dataset = {empty: 'No images', imageLabel: 'Image', zoomLabel: 'Actual size', fitLabel: 'Fit to screen'};
+    viewer.dataset = {empty: 'No images', fileLabel: 'File', downloadLabel: 'Download file', imageLabel: 'Image', zoomLabel: 'Actual size', fitLabel: 'Fit to screen'};
     const selectors = ['[data-image-full]', '[data-image-stage]', '[data-image-error]', '[data-image-zoom]', '[data-image-previous]',
         '[data-image-next]', '[data-image-counter]', '[data-image-original]', '[data-image-download]', '[data-image-close]', '#assetImageViewerTitle'];
     const fields = Object.fromEntries(selectors.map(selector => [selector, element()]));
@@ -85,4 +85,22 @@ test('an unavailable image keeps the original link and the next image can still 
     assert.equal(state.fields['[data-image-error]'].hidden, true);
     assert.equal(state.fields['[data-image-full]'].hidden, false);
     assert.equal(state.fields['[data-image-full]'].src, '/available.jpg');
+});
+
+
+test('documents render download cards while image navigation skips document attachments', () => {
+    const state = setup();
+    state.render(['/front.jpg', '/manual.docx', '/notes.txt', '/back.png']);
+    assert.equal(state.gallery.children.length, 4);
+    const document = state.gallery.children[1];
+    assert.equal(document.attrs['data-asset-image'], undefined);
+    assert.equal(document.download, '');
+    assert.equal(document.querySelector('img'), undefined);
+    assert.equal(document.children[1].textContent, 'DOCX · File');
+    assert.equal(document.children[2].textContent, 'Download file');
+    state.open(3);
+    assert.equal(state.fields['[data-image-full]'].src, '/back.png');
+    assert.equal(state.fields['[data-image-counter]'].textContent, '2 / 2');
+    state.fields['[data-image-next]'].events.click();
+    assert.equal(state.fields['[data-image-full]'].src, '/front.jpg');
 });

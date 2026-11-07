@@ -500,10 +500,62 @@ class AssetsToolkitTest extends TestCase
             $this->assertSame($original[1], $saved->image);
             $this->assertFileDoesNotExist(public_path(\App\Models\Asset::UPLOAD_PATH.$original[0]));
             $this->put('/_test/asset-edit/'.$asset->id, $data + ['remove_images' => ['../other.jpg']])->assertSessionHasErrors('remove_images.0');
-            $this->post('/_test/asset-create', $data + ['images' => [\Illuminate\Http\UploadedFile::fake()->create('bad.txt', 1, 'text/plain')]])->assertSessionHasErrors('images.0');
+            $this->post('/_test/asset-create', $data + ['images' => [\Illuminate\Http\UploadedFile::fake()->create('bad.php', 1, 'application/x-httpd-php')]])->assertSessionHasErrors('images.0');
             $this->post('/_test/asset-create', $data + ['images' => array_fill(0, 11, \Illuminate\Http\UploadedFile::fake()->image('many.jpg'))])->assertSessionHasErrors('images');
             $activity = \App\Models\AssetActivity::where('asset_id', $asset->id)->where('event', 'asset_created')->firstOrFail();
             $this->assertCount(2, json_decode($activity->after['images'], true));
+        } finally {
+            \Illuminate\Support\Facades\File::deleteDirectory($temp);
+        }
+    }
+
+    public function test_asset_documents_can_be_uploaded_added_and_removed_with_image_previews_preserved(): void
+    {
+        $this->abilities = array_merge($this->abilities, ['create_assets', 'edit_assets']);
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(0);
+            $table->date('warranty_end_date')->nullable(); $table->integer('created_by')->nullable();
+        });
+        $temp = sys_get_temp_dir().'/asset-documents-'.uniqid();
+        app()->usePublicPath($temp);
+        Route::post('/_test/asset-create', [AssetController::class, 'store']);
+        Route::put('/_test/asset-edit/{asset}', [AssetController::class, 'update']);
+        $data = ['branch_id' => 2, 'type_id' => 1, 'name' => 'Document laptop', 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'is_working' => 'yes'];
+        $upload = \Illuminate\Http\UploadedFile::fake();
+        try {
+            $this->post('/_test/asset-create', $data + ['images' => [
+                $upload->image('front.jpg'),
+                $upload->create('manual.doc', 2, 'application/msword'),
+                $upload->create('manual.docx', 2, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+                $upload->createWithContent('notes.txt', 'Asset maintenance notes'),
+                $upload->create('invoice.pdf', 2, 'application/pdf'),
+                $upload->create('inventory.xlsx', 2, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+                $upload->create('training.pptx', 2, 'application/vnd.openxmlformats-officedocument.presentationml.presentation'),
+            ]])->assertRedirect(route('admin.assets.index'))->assertSessionHasNoErrors();
+            $asset = \App\Models\Asset::where('name', 'Document laptop')->firstOrFail();
+            $files = $asset->imageFiles();
+            $this->assertCount(7, $files);
+            foreach ($files as $file) $this->assertFileExists(public_path(\App\Models\Asset::UPLOAD_PATH.$file));
+            $this->assertTrue(\App\Models\Asset::isImageFile($files[0]));
+            foreach (array_slice($files, 1) as $file) $this->assertFalse(\App\Models\Asset::isImageFile($file));
+            $this->assertStringEndsWith('.docx', $files[2]);
+            $this->assertSame('Asset maintenance notes', file_get_contents(public_path(\App\Models\Asset::UPLOAD_PATH.$files[3])));
+
+            $this->put('/_test/asset-edit/'.$asset->id, $data + [
+                'remove_images' => [$files[2]], 'images' => [$upload->createWithContent('updated.txt', 'Updated notes')],
+            ])->assertSessionHasNoErrors()->assertRedirect(route('admin.assets.index'));
+            $this->assertCount(7, $asset->fresh()->imageFiles());
+            $this->assertFileDoesNotExist(public_path(\App\Models\Asset::UPLOAD_PATH.$files[2]));
+            $this->assertFileExists(public_path(\App\Models\Asset::UPLOAD_PATH.$files[0]));
+            $this->post('/_test/asset-create', array_merge($data, ['name' => 'Legacy document asset',
+                'image' => $upload->createWithContent('legacy.txt', 'Legacy upload')]))->assertSessionHasNoErrors();
+            $this->assertStringEndsWith('.txt', \App\Models\Asset::where('name', 'Legacy document asset')->firstOrFail()->image);
+            $this->post('/_test/asset-create', $data + ['images' => [$upload->create('large.docx', 5049,
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document')]])->assertSessionHasErrors('images.0');
+            $this->post('/_test/asset-create', $data + ['images' => [$upload->create('script.php', 1,
+                'application/x-httpd-php')]])->assertSessionHasErrors('images.0');
+
         } finally {
             \Illuminate\Support\Facades\File::deleteDirectory($temp);
         }
