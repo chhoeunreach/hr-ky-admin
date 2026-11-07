@@ -9,9 +9,9 @@ class AssetTypeRepository
 
     public function getAllAssetTypes($filterParameters,$select=['*'],$with=[])
     {
-        return AssetType::select($select)->withCount($with)
+        return AssetType::select($select)->with('branch:id,name')->withCount($with)
             ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
-                $query->where('branch_id', $filterParameters['branch_id']);
+                $query->where(fn ($branches) => $branches->whereNull('branch_id')->orWhere('branch_id', $filterParameters['branch_id']));
             })
             ->when(isset($filterParameters['type']), function($query) use ($filterParameters){
                 $query->where('name', 'like', '%' . $filterParameters['type'] . '%');
@@ -26,7 +26,7 @@ class AssetTypeRepository
 
     public function getBranchAssetTypes($branchId,$select=['*'])
     {
-        return AssetType::select($select)->where('branch_id',$branchId)->where('is_active',1)->get();
+        return AssetType::select($select)->where(fn ($branches) => $branches->whereNull('branch_id')->orWhere('branch_id', $branchId))->where('is_active',1)->get();
     }
 
     public function findAssetTypeById($id,$select=['*'],$with=[])

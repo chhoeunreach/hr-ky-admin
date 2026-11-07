@@ -95,5 +95,19 @@ class AssetDetailRequest extends FormRequest
 
     }
 
+    public function attributes(): array
+    {
+        $fields = [
+            'branch_id' => 'branch', 'name' => 'name', 'type_id' => 'type', 'asset_code' => 'asset_code',
+            'asset_serial_no' => 'asset_serial_number', 'phone_numbers' => 'phone_number', 'icloud' => 'asset_icloud',
+            'asset_password' => 'asset_device_password', 'screen_time_passcode' => 'asset_screen_time_passcode',
+            'set_by' => 'asset_set_by', 'is_working' => 'is_working', 'purchased_date' => 'purchased_date',
+            'warranty_available' => 'warranty_available', 'warranty_end_date' => 'warranty_end_date',
+            'is_available' => 'is_available_for_employee', 'note' => 'description',
+            'images' => 'asset_upload_files', 'images.*' => 'file', 'image' => 'file', 'remove_images.*' => 'file',
+        ];
+        return array_map(fn ($key) => __('index.'.$key), $fields);
+    }
+
 }
 

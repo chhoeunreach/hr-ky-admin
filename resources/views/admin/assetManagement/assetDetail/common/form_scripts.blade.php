@@ -1,11 +1,48 @@
 <script src="{{asset('assets/vendors/tinymce/tinymce.min.js')}}"></script>
-<script src="{{asset('assets/js/tinymce.js')}}"></script>
+
 
 <script>
     $('document').ready(function(){
 
-        $("select#branch_id").select2({});
-        $("#type").select2({});
+        const selectLanguage = {
+            noResults: () => @json(__('index.asset_select_no_results')),
+            searching: () => @json(__('index.asset_select_searching')),
+            errorLoading: () => @json(__('index.asset_select_error')),
+            removeAllItems: () => @json(__('index.asset_select_clear'))
+        };
+        $("select#branch_id, #type").select2({width: '100%', language: selectLanguage});
+        $("#asset_set_by").select2({
+            width: '100%',
+            placeholder: @json(__('index.asset_select_setup_person')),
+            allowClear: true,
+            minimumResultsForSearch: 0,
+            language: selectLanguage
+        });
+
+        $('#asset_set_by').on('select2:open', function () {
+            const search = document.querySelector('.select2-container--open .select2-search__field');
+            if (search) {
+                search.placeholder = @json(__('index.asset_select_search'));
+                search.setAttribute('aria-label', @json(__('index.asset_select_search')));
+                search.focus();
+            }
+        });
+
+        @if(app()->getLocale() === 'km')
+            tinymce.addI18n('km', @json(__('index.asset_editor_i18n')));
+        @endif
+        tinymce.init({
+            selector: '#tinymceExample',
+            language: @json(app()->getLocale() === 'km' ? 'km' : 'en'),
+            height: 300,
+            menubar: false,
+            branding: false,
+            statusbar: false,
+            contextmenu: false,
+            plugins: 'lists',
+            toolbar: 'undo redo | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist',
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; }'
+        });
 
         let warranty = $('#warranty_available').val();
         $('#warrantyDateRequired').prop('hidden', warranty != 1);
@@ -60,7 +97,6 @@
 @include('admin.assetManagement.assetDetail.common.image-viewer')
 
 <script>
-    if ($.fn.select2) $('#asset_set_by').select2({width: '100%'});
     document.querySelectorAll('[data-asset-secret-toggle]').forEach(button => {
         button.addEventListener('click', () => {
             const input = document.getElementById(button.dataset.assetSecretToggle);

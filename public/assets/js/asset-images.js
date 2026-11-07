@@ -2,14 +2,18 @@
     const input = document.getElementById('images');
     const previews = document.getElementById('asset-image-previews');
     if (!input || !previews) return;
+    const choose = document.getElementById('assetFileChoose');
+    const status = document.getElementById('assetFileStatus');
+    if (choose) choose.addEventListener('click', () => input.click());
     let urls = [];
     const clear = () => { urls.forEach(url => URL.revokeObjectURL(url)); urls = []; previews.replaceChildren(); };
     input.addEventListener('change', () => {
         clear();
         const files = Array.from(input.files || []);
+        if (status) status.textContent = files.length ? files.map(file => file.name).join(', ') : status.dataset.empty;
         const existing = document.querySelectorAll('[name="remove_images[]"]');
         const retained = Array.from(existing).filter(field => !field.checked).length;
-        input.setCustomValidity(files.length + retained > 10 ? input.closest('div').querySelector('.form-text').textContent : '');
+        input.setCustomValidity(files.length + retained > 10 ? document.getElementById('assetFileHelp').textContent : '');
         files.forEach(file => {
             const url = URL.createObjectURL(file);
             urls.push(url);

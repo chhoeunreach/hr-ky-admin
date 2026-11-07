@@ -101,7 +101,10 @@ class AssetRepository
         $validatedData['image'] = $files[0] ?? null;
         $validatedData['images'] = $files;
         try {
-            return Asset::create($validatedData)->fresh();
+            return \Illuminate\Support\Facades\DB::transaction(function () use ($validatedData) {
+                $validatedData['asset_code'] = app(\App\Services\AssetManagement\AssetCodeGenerator::class)->next();
+                return Asset::create($validatedData)->fresh();
+            });
         } catch (\Throwable $exception) {
             foreach ($files as $file) $this->removeImage(Asset::UPLOAD_PATH, $file);
             throw $exception;

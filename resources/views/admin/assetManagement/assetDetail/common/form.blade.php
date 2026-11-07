@@ -47,9 +47,13 @@
         <input type="text" class="form-control"
                id="assetCode"
                name="asset_code"
-               value="{{ old('asset_code', $assetDetail->asset_code ?? '') }}"
+               value="{{ isset($assetDetail) ? old('asset_code', $assetDetail->asset_code) : ($nextAssetCode ?? '') }}"
+               @if(!isset($assetDetail)) readonly aria-describedby="assetCodeHelp" @endif
                autocomplete="off"
-               placeholder="{{ __('index.enter_asset_code') }}">
+               placeholder="{{ isset($assetDetail) ? __('index.enter_asset_code') : __('index.asset_code_auto_generated') }}">
+        @if(!isset($assetDetail))
+            <div class="form-text" id="assetCodeHelp">{{ __('index.asset_code_auto_generated') }}</div>
+        @endif
     </div>
 
     <div class="col-lg-4 col-md-6 mb-4">
@@ -130,9 +134,14 @@
     @endif
     <div class="col-lg-6 col-md-6 mb-4">
         <label for="images" class="form-label">{{ __('index.asset_upload_files') }} @if(!isset($assetDetail))<span style="color: red">*</span>@endif </label>
-        <input class="form-control" type="file" id="images" name="images[]" multiple
-               accept="{{ '.'.implode(',.', \App\Models\Asset::ATTACHMENT_EXTENSIONS) }}" {{ isset($assetDetail) ? '' : 'required' }}>
-        <div class="form-text">{{ __('index.asset_images_help') }}</div>
+        <div class="d-flex align-items-center gap-3 border rounded p-2 position-relative">
+            <input class="visually-hidden" type="file" id="images" name="images[]" multiple
+                   aria-describedby="assetFileStatus assetFileHelp"
+                   accept="{{ '.'.implode(',.', \App\Models\Asset::ATTACHMENT_EXTENSIONS) }}" {{ isset($assetDetail) ? '' : 'required' }}>
+            <button class="btn btn-outline-secondary flex-shrink-0" type="button" id="assetFileChoose">{{ __('index.asset_file_choose') }}</button>
+            <span class="small text-muted text-break" id="assetFileStatus" role="status" data-empty="{{ __('index.asset_file_none') }}">{{ __('index.asset_file_none') }}</span>
+        </div>
+        <div class="form-text" id="assetFileHelp">{{ __('index.asset_images_help') }}</div>
         @error('images')<div class="text-danger small">{{ $message }}</div>@enderror
         @foreach($errors->get('images.*') as $messages)
             @foreach($messages as $message)<div class="text-danger small">{{ $message }}</div>@endforeach

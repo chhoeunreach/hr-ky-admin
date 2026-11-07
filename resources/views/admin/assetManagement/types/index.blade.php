@@ -65,6 +65,7 @@
                         <tr>
                             <th>#</th>
                             <th>{{ __('index.name') }}</th>
+                            <th>{{ __('index.branch') }}</th>
                             <th class="text-center">{{ __('index.asset_item_count') }}</th>
                             <th class="text-center">{{ __('index.status') }}</th>
                             @canany(['edit_type','delete_type'])
@@ -78,6 +79,7 @@
                             <tr>
                                 <td>{{++$key}}</td>
                                 <td>{{ucfirst($value->name)}}</td>
+                                <td>{{ $value->branch?->name ?? __('index.asset_all_branches') }}</td>
                                 <td class="text-center">
                                     <a href="{{route('admin.asset-types.show',$value->id)}}"> {{$value->assets_count}}</a>
                                 </td>
@@ -89,6 +91,7 @@
                                     </label>
                                 </td>
 
+                                @canany(['edit_type', 'delete_type'])
                                 <td class="text-center">
                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                         @can('edit_type')
@@ -110,7 +113,8 @@
                                         @endcan
                                     </ul>
                                 </td>
-
+                                @endcanany
+                            </tr>
                         @empty
                             <tr>
                                 <td colspan="100%">
@@ -139,19 +143,9 @@
 
 
                         <div class="row align-items-center">
-                            @if(!isset(auth()->user()->branch_id))
-                                <div class="col-lg-6 mb-4">
-                                    <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-                                    <select class="form-select" id="branch_id" name="branch_id">
-                                        <option selected disabled>{{ __('index.select_branch') }}</option>
-                                        @if(isset($companyDetail))
-                                            @foreach($companyDetail->branches()->get() as $key => $branch)
-                                                <option value="{{$branch->id}}">{{ucfirst($branch->name)}}</option>
-                                            @endforeach
-                                        @endif
-                                    </select>
-                                </div>
-                            @endif
+                            <div class="col-lg-6 mb-4">
+                                @include('admin.assetManagement.types.common.branch-select')
+                            </div>
 
                             <div class="col-lg-6 mb-3">
                                 <label for="name" class="form-label">{{ __('index.name') }}<span style="color: red">*</span></label>
@@ -160,7 +154,7 @@
                                        name="name"
                                        value="{{ old('name') }}"
                                        autocomplete="off"
-                                       placeholder="Enter Assets Name"
+                                       placeholder="{{ __('index.enter_name') }}"
                                 >
                             </div>
                             <div class="col-lg-6 mb-3">

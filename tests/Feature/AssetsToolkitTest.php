@@ -57,6 +57,7 @@ class AssetsToolkitTest extends TestCase
         (require database_path('migrations/2026_10_25_000001_create_asset_activities_table.php'))->up();
         (require database_path('migrations/2026_10_25_000002_add_images_to_assets_table.php'))->up();
         (require database_path('migrations/2026_10_25_000006_add_device_setup_to_assets_table.php'))->up();
+        (require database_path('migrations/2026_11_07_000001_create_asset_code_sequences_table.php'))->up();
         DB::table('branches')->insert([['id' => 1, 'name' => 'Other branch'], ['id' => 2, 'name' => 'Current branch']]);
         DB::table('asset_types')->insert(['id' => 1, 'name' => 'Laptop', 'branch_id' => 2]);
         for ($index = 1; $index <= 32; $index++) {
@@ -558,6 +559,112 @@ class AssetsToolkitTest extends TestCase
 
         } finally {
             \Illuminate\Support\Facades\File::deleteDirectory($temp);
+        }
+    }
+
+    public function test_asset_codes_continue_across_branches_ignore_submitted_values_and_survive_deletion(): void
+    {
+        $this->abilities[] = 'create_assets';
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(0);
+            $table->date('warranty_end_date')->nullable(); $table->integer('created_by')->nullable();
+        });
+        DB::table('assets')->where('id', 32)->update(['asset_code' => 'ID:000017']);
+        $generator = app(\App\Services\AssetManagement\AssetCodeGenerator::class);
+        $this->assertSame('ID:000018', $generator->preview());
+        $this->assertSame('ID:000018', $generator->preview());
+        $temp = sys_get_temp_dir().'/asset-codes-'.uniqid();
+        app()->usePublicPath($temp);
+        Route::post('/_test/asset-create', [AssetController::class, 'store']);
+        $data = ['branch_id' => 2, 'type_id' => 1, 'purchased_date' => '2026-10-01',
+            'warranty_available' => 0, 'is_available' => 1, 'asset_code' => 'ID:000018'];
+        try {
+            foreach ([18, 19] as $number) {
+                $this->post('/_test/asset-create', $data + ['name' => 'Generated '.$number,
+                    'images' => [\Illuminate\Http\UploadedFile::fake()->createWithContent('notes.txt', 'Asset notes')]])
+                    ->assertRedirect(route('admin.assets.index'))->assertSessionHasNoErrors();
+                $asset = \App\Models\Asset::where('name', 'Generated '.$number)->firstOrFail();
+                $this->assertSame('ID:0000'.$number, $asset->asset_code);
+                $activity = \App\Models\AssetActivity::where('asset_id', $asset->id)->where('event', 'asset_created')->firstOrFail();
+                $this->assertSame($asset->asset_code, $activity->after['asset_code']);
+            }
+            app(AssetRepository::class)->delete($asset);
+            $this->assertSame('ID:000020', $generator->preview());
+            DB::beginTransaction();
+            $this->assertSame('ID:000020', $generator->next());
+            DB::rollBack();
+            $this->assertSame('ID:000020', $generator->next());
+            $this->assertSame('ID:000017', DB::table('assets')->where('id', 32)->value('asset_code'));
+        } finally {
+            \Illuminate\Support\Facades\File::deleteDirectory($temp);
+        }
+    }
+
+    public function test_add_asset_form_and_search_controls_render_in_english_and_khmer(): void
+    {
+        $this->abilities[] = 'create_assets';
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $view = $this->view('admin.assetManagement.assetDetail.common.form', [
+                'errors' => new \Illuminate\Support\ViewErrorBag(),
+                'nextAssetCode' => 'ID:000018', 'setByOptions' => collect([(object) ['id' => 10, 'name' => 'Asset officer', 'employee_code' => 'KY001']]),
+            ]);
+            foreach (['asset_code_auto_generated', 'asset_upload_files', 'asset_file_choose', 'asset_file_none',
+                'purchased_date', 'warranty_available', 'select_warranty_availability', 'warranty_end_date',
+                'is_available_for_employee', 'select_availability', 'asset_set_by', 'asset_phone_numbers_help'] as $key) {
+                $view->assertSee(__('index.'.$key));
+            }
+            $view->assertSee('value="ID:000018"', false)->assertSee('readonly', false)->assertSee('Asset officer')->assertSee('KY001')->assertDontSee('index.');
+            if ($locale === 'km') {
+                foreach (['Purchased Date', 'Warranty Available', 'Select Asset Type', 'Choose files', 'No files selected'] as $english) $view->assertDontSee($english);
+            }
+            $scripts = $this->view('admin.assetManagement.assetDetail.common.form_scripts');
+            $scripts->assertDontSee('index.asset_');
+            foreach (['asset_select_no_results', 'asset_select_search'] as $key) {
+                $this->assertStringContainsString(json_encode(__('index.'.$key), 15), (string) $scripts);
+            }
+        }
+        app()->setLocale('km');
+        $request = new \App\Requests\AssetManagement\AssetDetailRequest();
+        $this->assertSame('កាលបរិច្ឆេទទិញ', $request->attributes()['purchased_date']);
+        $this->assertSame('ឯកសារ', $request->attributes()['images.*']);
+    }
+
+    public function test_shared_asset_types_are_visible_and_selectable_in_every_branch(): void
+    {
+        $this->abilities = array_merge($this->abilities, ['create_type', 'edit_type']);
+        Schema::table('asset_types', function (Blueprint $table) {
+            $table->integer('created_by')->nullable(); $table->integer('updated_by')->nullable(); $table->timestamps();
+        });
+        Route::post('/_test/asset-type-create', [\App\Http\Controllers\Web\AssetTypeController::class, 'store']);
+        Route::put('/_test/asset-type-edit/{asset_type}', [\App\Http\Controllers\Web\AssetTypeController::class, 'update']);
+        Route::get('/_test/asset-types/{branchId}', [AssetController::class, 'getBranchAssetData']);
+        $this->postJson('/_test/asset-type-create', ['name' => 'Shared equipment', 'branch_id' => ''])->assertOk();
+        $shared = DB::table('asset_types')->where('name', 'Shared equipment')->first();
+        $this->assertNull($shared->branch_id);
+        $this->getJson('/_test/asset-types/2')->assertOk()->assertJsonCount(2, 'types');
+        $this->postJson('/_test/asset-type-create', ['name' => 'Unauthorized branch', 'branch_id' => 1])->assertUnprocessable();
+        DB::table('asset_types')->insert(['name' => 'Other branch only', 'branch_id' => 1]);
+        $repository = app(\App\Repositories\AssetTypeRepository::class);
+        $this->assertEqualsCanonicalizing(['Laptop', 'Shared equipment'], $repository->getAllAssetTypes(['branch_id' => 2])->pluck('name')->all());
+
+        $this->actingAs((new User())->forceFill(['id' => 11, 'name' => 'Other officer', 'branch_id' => 1]));
+        \Illuminate\Database\Eloquent\Model::clearBootedModels();
+        $this->getJson('/_test/asset-types/1')->assertOk()->assertJsonCount(2, 'types');
+        $this->assertTrue(\App\Models\AssetType::whereKey($shared->id)->exists());
+        $this->assertFalse(\App\Models\AssetType::where('name', 'Laptop')->exists());
+        $this->putJson('/_test/asset-type-edit/'.$shared->id, ['name' => 'Shared renamed', 'branch_id' => 'all'])->assertOk();
+        $this->assertNull(DB::table('asset_types')->where('id', $shared->id)->value('branch_id'));
+    }
+
+    public function test_asset_type_branch_picker_offers_all_branches_and_only_the_users_own_specific_branch(): void
+    {
+        $branches = collect([(object) ['id' => 1, 'name' => 'Other branch'], (object) ['id' => 2, 'name' => 'Current branch']]);
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->view('admin.assetManagement.types.common.branch-select', ['branch' => $branches])
+                ->assertSee(__('index.asset_all_branches'))->assertSee(__('index.asset_type_branch_help'))
+                ->assertSee('Current branch')->assertDontSee('Other branch')->assertDontSee('index.');
         }
     }
 

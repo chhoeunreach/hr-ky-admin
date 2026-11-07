@@ -9,6 +9,8 @@
 
         create: @json(__('index.create')),
         update: @json(__('index.update')),
+        loadError: @json(__('index.asset_type_load_error')),
+        error: @json(__('index.dialog_error_title')),
     };
     $(document).ready(function () {
         $.ajaxSetup({
@@ -55,7 +57,7 @@
         })
 
         $(document).on('click', '.create-assetType', function() {
-            $('#assetTypeModalLabel').text(translations.createClient);
+            $('#assetTypeModalLabel').text(translations.createAssetType);
             $('#submitButtonText').text(translations.create);
             $('#assetTypeForm').attr('action', '{{ route("admin.asset-types.store") }}');
             $('#formMethod').val('POST');
@@ -75,7 +77,7 @@
                 success: function(response) {
                     const assetType = response.assetTypeDetail;
 
-                    $('#assetTypeModalLabel').text(translations.editClient);
+                    $('#assetTypeModalLabel').text(translations.editAssetType);
                     $('#submitButtonText').text(translations.update);
                     $('#assetTypeForm').attr('action', `{{ url('admin/asset-types') }}/${assetTypeId}`);
                     $('#formMethod').val('PUT');
@@ -83,7 +85,7 @@
 
                     // Populate form fields
                     $('#name').val(assetType.name);
-                    $('#branch_id').val(assetType.branch_id).trigger('change');
+                    $('#branch_id').val(assetType.branch_id == null ? '' : assetType.branch_id).trigger('change');
 
                     $('#assetTypeModal').modal('show');
                 },
@@ -91,7 +93,7 @@
                     Swal.fire({
                         position: 'top-end',
                         icon: 'error',
-                        title: 'Error: ' + (xhr.responseJSON.message || 'Failed to load assetType data'),
+                        title: translations.error + ': ' + (xhr.responseJSON?.message || translations.loadError),
                         showConfirmButton: false,
                         timer: 1500
                     });
@@ -142,7 +144,7 @@
                     Swal.fire({
                         position: 'top-end',
                         icon: 'error',
-                        title: 'Error: ' + errorMessage,
+                        title: translations.error + ': ' + errorMessage,
                         showConfirmButton: false,
                         timer: 1500
                     });

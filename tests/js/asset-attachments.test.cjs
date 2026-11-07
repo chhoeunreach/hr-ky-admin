@@ -16,15 +16,18 @@ function element(tag) {
 }
 
 function setup() {
-    const input = element('input'), previews = element('div');
+    const input = element('input'), previews = element('div'), choose = element('button');
+    const status = {dataset: {empty: 'No files selected'}, textContent: ''};
+    const help = {textContent: 'Maximum 10 files'};
+    input.click = () => {input.clicked = true;};
     const revoked = [], handlers = {};
     let next = 0;
     vm.runInNewContext(source, {
-        document: {getElementById: id => id === 'images' ? input : previews, createElement: element, querySelectorAll: () => []},
+        document: {getElementById: id => ({images: input, 'asset-image-previews': previews, assetFileChoose: choose, assetFileStatus: status, assetFileHelp: help})[id], createElement: element, querySelectorAll: () => []},
         window: {addEventListener: (type, handler) => {handlers[type] = handler;}},
         URL: {createObjectURL: () => 'blob:' + (++next), revokeObjectURL: url => revoked.push(url)}
     });
-    return {input, previews, revoked, handlers};
+    return {input, previews, revoked, handlers, choose, status};
 }
 
 test('Word and text files show download links while photos keep image previews', () => {
@@ -57,4 +60,17 @@ test('replacing selected files releases old previews and keeps the total file li
     handlers.pagehide();
     assert.equal(revoked.length, 12);
     assert.equal(previews.children.length, 0);
+});
+
+
+test('localized file picker opens the input and reports selected filenames without browser English text', () => {
+    const {input, choose, status} = setup();
+    choose.handlers.click();
+    assert.equal(input.clicked, true);
+    input.files = [{name: 'ឯកសារ.txt', type: 'text/plain'}];
+    input.handlers.change();
+    assert.equal(status.textContent, 'ឯកសារ.txt');
+    input.files = [];
+    input.handlers.change();
+    assert.equal(status.textContent, 'No files selected');
 });

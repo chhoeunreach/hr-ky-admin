@@ -165,7 +165,8 @@ class AssetController extends Controller
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
             $setByOptions = Asset::setupPeople();
-            return view($this->view . 'create',compact('companyDetail', 'setByOptions'));
+            $nextAssetCode = app(\App\Services\AssetManagement\AssetCodeGenerator::class)->preview();
+            return view($this->view . 'create',compact('companyDetail', 'setByOptions', 'nextAssetCode'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

@@ -19,8 +19,8 @@ class AssetTypeRequest extends FormRequest
 
     public function prepareForValidation()
     {
-        if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
+        if (in_array($this->input('branch_id'), ['', 'all', null], true)) {
+            $this->merge(['branch_id' => null]);
         }
     }
     /**
@@ -30,8 +30,12 @@ class AssetTypeRequest extends FormRequest
      */
     public function rules()
     {
+        $branchRule = Rule::exists('branches', 'id');
+        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+            $branchRule->where('id', auth()->user()->branch_id);
+        }
         return [
-            'branch_id' => ['required','exists:branches,id'],
+            'branch_id' => ['nullable', $branchRule],
             'name' => ['required', 'string', 'max:255', Rule::unique('asset_types')->ignore($this->asset_type)],
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],
         ];

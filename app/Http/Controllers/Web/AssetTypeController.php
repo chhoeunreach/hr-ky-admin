@@ -73,7 +73,7 @@ class AssetTypeController extends Controller
         try{
             $validatedData = $request->validated();
             $this->assetTypeService->store($validatedData);
-            return response()->json(['message' => __('message.add_award_type')]);
+            return response()->json(['message' => __('message.asset_type_create')]);
         }catch(\Exception $exception){
             return response()->json(['message' => $exception->getMessage()], 500);
         }

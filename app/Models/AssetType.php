@@ -42,8 +42,8 @@ class AssetType extends Model
             $branchId = Auth::user()->branch_id;
 
             static::addGlobalScope('branch', function (Builder $builder) use($branchId){
-                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                $builder->where(function ($query) use ($branchId) {
+                    $query->whereNull('asset_types.branch_id')->orWhere('asset_types.branch_id', $branchId);
                 });
             });
         }
