@@ -52,6 +52,7 @@ class MonthlyAttendanceReductionExport implements FromCollection, WithHeadings, 
     {
         $sheet->getStyle('A:R')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         $sheet->getStyle('J:J')->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('M:M')->getAlignment()->setWrapText(true);
 
         return [
             1 => ['font' => ['bold' => true]],

@@ -465,6 +465,21 @@ class AttendanceMonthlyController extends Controller
                 'excused_late_days' => $excusedLateDays,
                 'effective_late_count' => $totalLateRecords,
                 'count_reduction' => $countReduction,
+                'approved_time_leaves' => $timeLeaveByUserDate
+                    ->filter(fn ($leaves, $key) => str_starts_with($key, $employee->id . '|'))
+                    ->flatten(1)
+                    ->where('status', 'approved')
+                    ->sortBy(fn ($leave) => Carbon::parse($leave->issue_date)->format('Y-m-d') . ' ' . $leave->start_time)
+                    ->map(function ($leave) {
+                        $date = Carbon::parse($leave->issue_date)->format('Y-m-d');
+                        $start = $leave->start_time ? Carbon::parse($leave->start_time)->format('H:i') : '';
+                        $end = $leave->end_time ? Carbon::parse($leave->end_time)->format('H:i') : '';
+                        $reason = trim(strip_tags((string) $leave->reasons));
+
+                        return $date . ($start || $end ? ' ' . $start . ' - ' . $end : '')
+                            . ($reason !== '' ? ' - ' . $reason : '');
+                    })
+                    ->values()->all(),
                 'signal_totals' => $signalTotals,
                 'employee_day_off_days' => $employeeDayOffDays,
                 'total_days' => count($days),
@@ -1433,7 +1448,7 @@ class AttendanceMonthlyController extends Controller
                     round($payment, 2),
                     'Cash',
                     $receiver,
-                    $monthYear,
+                    implode("\n", $row['approved_time_leaves'] ?? []),
                     $monthYear,
                     $number . $expenseType,
                     $employee->email,
@@ -1485,7 +1500,7 @@ class AttendanceMonthlyController extends Controller
                     round($payment, 2),
                     'Cash',
                     $receiver,
-                    $monthYear,
+                    implode("\n", $row['approved_time_leaves'] ?? []),
                     $monthYear,
                     $number . $expenseType,
                     $employee->email,

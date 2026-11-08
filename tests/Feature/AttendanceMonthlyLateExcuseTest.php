@@ -201,6 +201,43 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $this->assertSame(4, array_sum($row['count_reduction']));
     }
 
+    public function test_reduction_other_column_lists_all_monthly_approved_time_leaves(): void
+    {
+        $this->late('2026-10-01');
+        $this->timeLeave('2026-10-08', 'approved');
+        $id = $this->timeLeave('2026-10-03', 'approved');
+        DB::table('time_leaves')->where('id', $id)->update(['reasons' => '<p>Appointment</p>']);
+        $id = $this->timeLeave('2026-10-03', 'approved');
+        DB::table('time_leaves')->where('id', $id)->update(['start_time' => '14:00:00', 'end_time' => '15:00:00']);
+        $this->timeLeave('2026-10-04', 'pending');
+        $this->timeLeave('2026-10-05', 'review');
+        $this->timeLeave('2026-10-06', 'rejected');
+        $this->timeLeave('2026-10-07', 'approved', 21);
+        $this->timeLeave('2026-09-30', 'approved');
+        $this->timeLeave('2026-11-01', 'approved');
+
+        $row = $this->row();
+        $expected = "2026-10-03 09:00 - 10:00 - Appointment\n2026-10-03 14:00 - 15:00\n2026-10-08 09:00 - 10:00";
+        foreach (['reductionExportRows', 'countReductionExportRows'] as $method) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertSame($expected, $export[0][12]);
+            $this->assertSame('Oct-26', $export[0][13]);
+        }
+    }
+
+    public function test_reduction_other_column_is_blank_without_approved_time_leave(): void
+    {
+        $this->late('2026-10-01');
+        $this->timeLeave('2026-10-03', 'pending');
+        $row = $this->row();
+        foreach (['reductionExportRows', 'countReductionExportRows'] as $method) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertSame('', $export[0][12]);
+        }
+    }
+
     public function test_rejected_cancelled_and_other_employees_requests_do_not_excuse_lateness(): void
     {
         $this->late('2026-10-01'); $this->late('2026-10-02');
