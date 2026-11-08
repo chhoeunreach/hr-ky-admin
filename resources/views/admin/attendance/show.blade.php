@@ -808,6 +808,13 @@
                     && !$isDayOffLeave($leaveRequest);
             };
 
+            $isApprovedLateExcuseDate = static function (string $date) use ($isApprovedLeaveDate, $timeLeavesByDate): bool {
+                $timeLeave = $timeLeavesByDate[$date] ?? null;
+
+                return $isApprovedLeaveDate($date)
+                    || ($timeLeave && strtolower((string) $timeLeave->status) === 'approved');
+            };
+
             $detailCardStats = [
                 'total' => (int) ($attendanceSummary['totalDays'] ?? 0),
                 'present' => (int) ($attendanceSummary['totalPresent'] ?? 0),
@@ -906,7 +913,7 @@
                         if (
                             \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
                             && $attendanceApproved
-                            && !$isApprovedLeaveDate($dayData['attendance_date'])
+                            && !$isApprovedLateExcuseDate($dayData['attendance_date'])
                         ) {
                             $lateDates[$dayData['attendance_date']] = true;
                         }
@@ -1170,12 +1177,17 @@
                                         $manualLateGraceMinutes = 16;
                                         $earlyCheckoutEnabled = (int) ($attendance['is_early_check_out'] ?? $userDetail->officeTime?->is_early_check_out ?? 0) === 1;
 
-                                        if ($attendanceCheckIn && $shiftOpening && !$isApprovedLeaveDate($dayData['attendance_date'])) {
+                                        if ($attendanceCheckIn && $shiftOpening) {
                                             $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
                                             $actualCheckIn = \Carbon\Carbon::parse($attendanceCheckIn);
                                             $allowedCheckInLabel = $allowedCheckIn->format('H:i');
                                             $attendanceLate = $actualCheckIn->gt($allowedCheckIn);
                                             $checkInLateMinutes = $attendanceLate ? $allowedCheckIn->diffInMinutes($actualCheckIn) : 0;
+                                        }
+
+                                        $attendanceLateExcused = $attendanceLate && $isApprovedLateExcuseDate($dayData['attendance_date']);
+                                        if ($attendanceLateExcused) {
+                                            $attendanceLate = false;
                                         }
 
                                         if ($attendanceCheckOut && $shiftClosing && $earlyCheckoutEnabled) {
@@ -1232,7 +1244,9 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{  \App\Helpers\AttendanceHelper::changeNightAttendanceFormat($appTimeSetting, $attendance['night_checkin']) }}
                                                         </span>
-                                                        @if($attendanceLate && !$attendanceRejected)
+                                                        @if($attendanceLateExcused && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('TL', 'Approved leave', 'is-time', 'Late check-in excused by approved leave') !!}</span>
+                                                        @elseif($attendanceLate && !$attendanceRejected)
                                                             <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $lateBadgeTitle) !!}</span>
                                                         @endif
                                                     </td>
@@ -1242,7 +1256,7 @@
                                                 <td class="text-center attendance-print-only">
                                                     @if($attendanceCheckIn && !$attendanceRejected)
                                                         <span class="attendance-print-status {{ $attendanceLate ? 'is-alert' : '' }}">
-                                                            {{ $attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok' }}
+                                                            {{ $attendanceLateExcused ? 'TL' : ($attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok') }}
                                                         </span>
                                                     @else
                                                         -
@@ -1298,7 +1312,9 @@
                                                                 data-bs-target="{{'#addslider' }}">
                                                             {{  \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $attendance['check_in_at']) }}
                                                         </span>
-                                                        @if($attendanceLate && !$attendanceRejected)
+                                                        @if($attendanceLateExcused && !$attendanceRejected)
+                                                            <span class="attendance-overlay-badge">{!! $statusBadge('TL', 'Approved leave', 'is-time', 'Late check-in excused by approved leave') !!}</span>
+                                                        @elseif($attendanceLate && !$attendanceRejected)
                                                             <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $lateBadgeTitle) !!}</span>
                                                         @endif
                                                     </td>
@@ -1308,7 +1324,7 @@
                                                 <td class="text-center attendance-print-only">
                                                     @if($attendanceCheckIn && !$attendanceRejected)
                                                         <span class="attendance-print-status {{ $attendanceLate ? 'is-alert' : '' }}">
-                                                            {{ $attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok' }}
+                                                            {{ $attendanceLateExcused ? 'TL' : ($attendanceLate ? 'Late '.$formatRuleMinutes($checkInLateMinutes) : 'Ok') }}
                                                         </span>
                                                     @else
                                                         -

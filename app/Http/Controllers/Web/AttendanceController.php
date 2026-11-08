@@ -1168,7 +1168,11 @@ class AttendanceController extends Controller
                 : Carbon::parse($endDate);
 
             for ($date = $leaveStart->copy(); $date->lte($leaveEnd); $date->addDay()) {
-                $leaveRequestsByDate[$date->format('Y-m-d')] = $leaveRequest;
+                $dateKey = $date->format('Y-m-d');
+                if (($leaveRequestsByDate[$dateKey]->status ?? null) === 'approved' && $leaveRequest->status !== 'approved') {
+                    continue;
+                }
+                $leaveRequestsByDate[$dateKey] = $leaveRequest;
             }
         }
 
@@ -1197,6 +1201,7 @@ class AttendanceController extends Controller
             ->whereIn('status', ['pending', 'approved'])
             ->whereBetween('issue_date', [$startDate, $endDate])
             ->get()
+            ->sortBy(fn ($timeLeave) => strtolower((string) $timeLeave->status) === 'approved' ? 1 : 0)
             ->keyBy(fn ($timeLeave) => Carbon::parse($timeLeave->issue_date)->format('Y-m-d'))
             ->all();
     }

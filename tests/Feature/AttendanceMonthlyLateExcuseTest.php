@@ -276,6 +276,50 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $this->assertNotEmpty($days[0]['detail_url']);
     }
 
+    public function test_employee_attendance_detail_renders_tl_for_approved_leave_only(): void
+    {
+        $template = file_get_contents(resource_path('views/admin/attendance/show.blade.php'));
+        $helpersStart = strpos($template, '            $isDayOffLeave =');
+        $helpersEnd = strpos($template, '            $detailCardStats =', $helpersStart);
+        $helpers = substr($template, $helpersStart, $helpersEnd - $helpersStart);
+        $logicStart = strpos($template, "                                        \$totalMinutes += \$attendance['worked_hour'];");
+        $logicEnd = strpos($template, '@endphp', $logicStart);
+        $logic = substr($template, $logicStart, $logicEnd - $logicStart);
+        preg_match('/@if\(\$attendanceLateExcused && !\$attendanceRejected\).*?@endif/s', $template, $badge);
+        $fragment = '@php '.$helpers.$logic.' @endphp'.$badge[0];
+
+        foreach (['approved' => 'TL', 'pending' => 'L', 'rejected' => 'L'] as $status => $expected) {
+            foreach (['check_in_at', 'night_checkin'] as $checkInColumn) {
+                $html = \Illuminate\Support\Facades\Blade::render($fragment, [
+                    'leaveRequestsByDate' => [],
+                    'timeLeavesByDate' => ['2026-10-03' => (object) ['status' => $status]],
+                    'dayData' => ['attendance_date' => '2026-10-03'],
+                    'attendance' => ['worked_hour' => 0, $checkInColumn => '09:35:00', 'attendance_status' => 1, 'opening_time' => '09:00:00', 'closing_time' => '17:00:00'],
+                    'userDetail' => $this->employee,
+                    'totalMinutes' => 0,
+                    'printRemark' => null,
+                    'formatRuleMinutes' => fn ($minutes) => $minutes.'m',
+                    'statusBadge' => fn ($code, ...$unused) => $code,
+                ]);
+                $this->assertSame('<span class="attendance-overlay-badge">'.$expected.'</span>', trim($html));
+            }
+        }
+    }
+
+    public function test_employee_detail_preserves_approved_leave_when_another_request_is_pending(): void
+    {
+        $this->timeLeave('2026-10-03', 'approved');
+        $this->timeLeave('2026-10-03', 'pending');
+        $this->leave('2026-10-03', '2026-10-03', 'approved');
+        $this->leave('2026-10-03', '2026-10-03', 'pending');
+        $reflection = new \ReflectionClass(\App\Http\Controllers\Web\AttendanceController::class);
+        $controller = $reflection->newInstanceWithoutConstructor();
+        foreach (['getEmployeeTimeLeavesByDate', 'getEmployeeLeaveRequestsByDate'] as $method) {
+            $requests = $reflection->getMethod($method)->invoke($controller, 20, ['date_in_bs' => false, 'year' => 2026, 'month' => 10]);
+            $this->assertSame('approved', $requests['2026-10-03']->status);
+        }
+    }
+
     public function test_rejected_cancelled_and_other_employees_requests_do_not_excuse_lateness(): void
     {
         $this->late('2026-10-01'); $this->late('2026-10-02');
