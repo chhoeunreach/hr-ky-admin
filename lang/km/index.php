@@ -440,6 +440,7 @@ return [
     'not_yet_check_out' => 'មិនទាន់ចេញម៉ោង',
     'total_day_off' => 'ថ្ងៃឈប់សរុប',
     'time_leave' => 'ឈប់សម្រាកជាម៉ោង',
+    'approved_time_leave' => 'យឺតមានច្បាប់',
     'action' => 'សកម្មភាព',
     'are_you_sure_change_status' => 'តើអ្នកប្រាកដថាចង់ផ្លាស់ប្តូរស្ថានភាពមែនទេ?',
     'are_you_sure_delete_branch' => 'តើអ្នកប្រាកដថាចង់លុបសាខាមែនទេ?',

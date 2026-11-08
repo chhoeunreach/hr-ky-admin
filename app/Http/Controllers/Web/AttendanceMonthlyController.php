@@ -415,13 +415,17 @@ class AttendanceMonthlyController extends Controller
                     $employeeDayOffDays++;
                 }
 
+                $approvedLate = false;
                 if ($dayAttendances->isNotEmpty()) {
                     $firstAttendance = $dayAttendances->first();
                     $lateMinutes = $this->lateMinutesForAttendance($employee, $firstAttendance);
                     if ($this->hasLateExcuse($dayLeaveRequests, $dayTimeLeaves)) {
                         if ($lateMinutes !== null) {
                             $excusedLateDays++;
-                            if ($this->hasLateExcuse($dayLeaveRequests, $dayTimeLeaves, ['approved'])) $approvedLateRequests++;
+                            if ($this->hasLateExcuse($dayLeaveRequests, $dayTimeLeaves, ['approved'])) {
+                                $approvedLateRequests++;
+                                $approvedLate = true;
+                            }
                         }
                     } else {
                         $lateBreakdown = $this->addLateBreakdownCount($lateBreakdown, $employee, $firstAttendance);
@@ -444,6 +448,7 @@ class AttendanceMonthlyController extends Controller
                 }
 
                 $days[] = $cell + $day + [
+                    'approved_late' => $approvedLate,
                     'detail_url' => route('admin.attendances.index', [
                         'attendance_date' => $day['date'],
                         'search' => $employee->username ?: ($employee->employee_code ?: $employee->name),
@@ -1266,6 +1271,7 @@ class AttendanceMonthlyController extends Controller
         foreach (['present', 'late', 'absent', 'leave', 'off_day', 'total', 'bonus', 'pending_day_off', 'pending_leave', 'time_leave', 'time_leave_request', 'no_checkout'] as $key) {
             $headings[] = __('index.' . $key);
         }
+        array_splice($headings, 4 + count($calendarDays), 0, [__('index.approved_time_leave')]);
 
         [, $summaryRows] = $this->monthlyAttendanceExportTable($rows, $month, true);
         $statusCodes = ['present' => 'P', 'late' => 'L', 'absent' => 'A', 'leave' => 'LV', 'off_day' => 'O', 'empty' => '-'];
@@ -1287,6 +1293,8 @@ class AttendanceMonthlyController extends Controller
             $totals = array_slice($summaryRows[$index], 4 + count($calendarDays));
             $totals[6] = '$' . number_format($row['bonus_amount'] ?? 0, 0) . "\n"
                 . number_format($row['bonus_eligible_days'] ?? 0) . '/' . number_format($row['bonus_working_days'] ?? 0);
+
+            array_splice($totals, 2, 0, [(int) ($row['approved_late_requests'] ?? 0)]);
 
             return array_merge($line, $totals);
         });

@@ -95,6 +95,9 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $this->assertSame(3, $row['totals']['present']);
         $this->assertSame(3, $row['excused_late_days']);
         $this->assertSame(1, $row['approved_late_requests']);
+        $this->assertFalse($row['days'][0]['approved_late']);
+        $this->assertFalse($row['days'][1]['approved_late']);
+        $this->assertTrue($row['days'][2]['approved_late']);
         $this->assertSame(0, $row['late_minutes_total']);
         $this->assertSame(0, array_sum($row['late_breakdown']));
         $this->assertSame(0, array_sum($row['count_reduction']));
@@ -199,6 +202,7 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $this->assertSame(4, $row['totals']['late']);
         $this->assertSame(4, $row['effective_late_count']);
         $this->assertSame(4, array_sum($row['count_reduction']));
+        $this->assertSame(1, collect($row['days'])->where('approved_late', true)->count());
     }
 
     public function test_reduction_other_column_lists_all_monthly_approved_time_leaves(): void
@@ -236,6 +240,40 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
             $this->assertCount(1, $export);
             $this->assertSame('', $export[0][12]);
         }
+    }
+
+    public function test_display_export_places_approved_time_leave_immediately_after_late(): void
+    {
+        $this->employee->setRelation('department', null);
+        $this->employee->setRelation('post', null);
+        $this->late('2026-10-03');
+        $this->timeLeave('2026-10-03', 'approved');
+        $row = $this->row();
+        [$headings, $rows] = $this->invoke('monthlyAttendanceDisplayExportTable', collect([$row]), Carbon::parse('2026-10-01'));
+        $lateIndex = array_search(__('index.late'), $headings, true);
+
+        $this->assertSame(__('index.approved_time_leave'), $headings[$lateIndex + 1]);
+        $this->assertSame(1, $rows[0][$lateIndex + 1]);
+        $this->assertCount(count($headings), $rows[0]);
+    }
+
+    public function test_approved_late_button_contains_matching_dates_and_leave_details(): void
+    {
+        $this->late('2026-10-01');
+        $this->late('2026-10-02');
+        $this->timeLeave('2026-10-01', 'approved');
+        $this->timeLeave('2026-10-02', 'pending');
+        $row = $this->row();
+        $template = file_get_contents(resource_path('views/admin/attendance/monthly.blade.php'));
+        preg_match('/data-approved-late-days="[^"]*"/', $template, $match);
+        $html = \Illuminate\Support\Facades\Blade::render($match[0], ['row' => $row]);
+        preg_match('/data-approved-late-days="([^"]*)"/', $html, $payload);
+        $days = json_decode(html_entity_decode($payload[1], ENT_QUOTES, 'UTF-8'), true, 512, JSON_THROW_ON_ERROR);
+
+        $this->assertCount($row['approved_late_requests'], $days);
+        $this->assertSame('2026-10-01', $days[0]['date']);
+        $this->assertStringContainsString('Approved time leave', implode(' ', $days[0]['details']));
+        $this->assertNotEmpty($days[0]['detail_url']);
     }
 
     public function test_rejected_cancelled_and_other_employees_requests_do_not_excuse_lateness(): void

@@ -2455,16 +2455,17 @@
                         @php $summaryColumnStart = 2 + count($calendarDays); @endphp
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart }}" data-sort-type="number" title="Sort"><span>{{ __('index.present') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 1 }}" data-sort-type="number" data-sort-default="desc" title="Sort"><span>{{ __('index.late') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 2 }}" data-sort-type="number" title="Sort"><span>{{ __('index.absent') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 3 }}" data-sort-type="number" title="Sort"><span>{{ __('index.leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 4 }}" data-sort-type="number" title="Sort"><span>{{ __('index.off_day') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 5 }}" data-sort-type="number" title="Sort"><span>{{ __('index.total') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 6 }}" data-sort-type="number" title="Sort"><span>{{ __('index.bonus') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 7 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_day_off') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 8 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 9 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 10 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave_request') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
-                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 11 }}" data-sort-type="number" title="Sort"><span>{{ __('index.no_checkout') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 2 }}" data-sort-type="number" data-sort-default="desc" title="Sort"><span>{{ __('index.approved_time_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 3 }}" data-sort-type="number" title="Sort"><span>{{ __('index.absent') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 4 }}" data-sort-type="number" title="Sort"><span>{{ __('index.leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 5 }}" data-sort-type="number" title="Sort"><span>{{ __('index.off_day') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 6 }}" data-sort-type="number" title="Sort"><span>{{ __('index.total') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 7 }}" data-sort-type="number" title="Sort"><span>{{ __('index.bonus') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 8 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_day_off') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 9 }}" data-sort-type="number" title="Sort"><span>{{ __('index.pending_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 10 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 11 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave_request') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 12 }}" data-sort-type="number" title="Sort"><span>{{ __('index.no_checkout') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -2564,6 +2565,7 @@
                                             data-attendance-date="{{ $day['date'] }}"
                                             data-display-date="{{ \Carbon\Carbon::parse($day['date'])->format('M d, Y') }}"
                                             data-status-key="{{ $day['status'] }}"
+                                            data-approved-late="{{ !empty($day['approved_late']) ? '1' : '0' }}"
                                             data-status="{{ $day['label'] }}"
                                             data-details='@json($day["details"] ?? array_merge([$day["label"]], array_column($day["indicators"] ?? [], "label")))'
                                             data-indicators='@json($day["indicators"] ?? [])'
@@ -2610,6 +2612,16 @@
                                           data-export-url="{{ request()->fullUrlWithQuery(['export' => 'reduc_xlsx']) }}"
                                         @disabled(($row['totals']['late'] ?? 0) <= 0)>
                                     <span class="monthly-total-value {{ ($row['totals']['late'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['totals']['late'] }}</span>
+                                </button>
+                            </td>
+                            <td class="monthly-total" data-sort-value="{{ $row['approved_late_requests'] ?? 0 }}">
+                                <button type="button" class="monthly-total-button"
+                                        data-total-status="approved_late"
+                                        data-total-title="{{ __('index.approved_time_leave') }}"
+                                        data-employee="{{ $employee->name }}"
+                                        data-approved-late-days="{{ json_encode(array_values(array_filter($row['days'], fn ($day) => !empty($day['approved_late'])))) }}"
+                                        @disabled(($row['approved_late_requests'] ?? 0) <= 0)>
+                                    <span class="monthly-total-value {{ ($row['approved_late_requests'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['approved_late_requests'] ?? 0 }}</span>
                                 </button>
                             </td>
                             <td class="monthly-total total-absent" data-sort-value="{{ $row['totals']['absent'] ?? 0 }}">
@@ -2676,7 +2688,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ count($calendarDays) + 14 }}">
+                            <td colspan="{{ count($calendarDays) + 15 }}">
                                 <div class="monthly-empty-state">
                                     <strong>{{ __('index.no_monthly_attendance_records_found') }}</strong>
                                     <div>{{ __('index.try_changing_month_filters') }}</div>
@@ -4477,7 +4489,22 @@
                 const status = element.getAttribute('data-total-status');
                 const titleText = element.getAttribute('data-total-title') || i18n.attendanceDetail;
                 const dayButtons = Array.from(row?.querySelectorAll('.monthly-day-link') || []);
-                const matchedDays = status === 'all'
+                const matchedDays = status === 'approved_late'
+                    ? readJsonData(element, 'data-approved-late-days').map((day) => {
+                        const source = dayButtons.find((button) => button.getAttribute('data-date') === day.date);
+                        const button = source ? source.cloneNode(false) : document.createElement('button');
+                        button.setAttribute('data-date', day.date);
+                        button.setAttribute('data-attendance-date', day.date);
+                        button.setAttribute('data-display-date', day.date);
+                        button.setAttribute('data-employee', element.getAttribute('data-employee') || '');
+                        button.setAttribute('data-status', day.label || titleText);
+                        button.setAttribute('data-details', JSON.stringify(day.details || []));
+                        button.setAttribute('data-indicators', JSON.stringify(day.indicators || []));
+                        button.setAttribute('data-actions', JSON.stringify(day.actions || []));
+                        button.setAttribute('data-detail-url', day.detail_url || '');
+                        return button;
+                    })
+                    : status === 'all'
                     ? dayButtons
                     : dayButtons.filter((dayButton) => {
                         const dayStatus = dayButton.getAttribute('data-status-key');

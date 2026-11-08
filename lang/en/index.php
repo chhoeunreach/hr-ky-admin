@@ -437,6 +437,7 @@ return [
     'not_yet_check_out' => 'Not Yet Check Out',
     'total_day_off' => 'Total Day Off',
     'time_leave' => 'Time Leave',
+    'approved_time_leave' => 'Approved Late',
     'action' => 'Action',
     'are_you_sure_change_status' => 'Change the status of this record?',
     'are_you_sure_delete_branch' => 'Delete this branch?',
