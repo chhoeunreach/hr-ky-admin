@@ -4132,7 +4132,7 @@
 
             const buildLateTimeRange = (openingTime, minutes) => {
                 const ranges = {
-                    16: [17, 19],
+                    16: [16, 19],
                     20: [20, 29],
                     30: [30, 39],
                     40: [40, 49],
@@ -4164,7 +4164,7 @@
                 const exportUrl = element.getAttribute('data-export-url') || '#';
                 const reportSubtitle = element.getAttribute('data-report-subtitle') || matchedDays[0]?.getAttribute('data-employee-subtitle') || matchedDays[0]?.getAttribute('data-employee') || '';
                 const rows = [
-                    [16, '16 Minutes', 'Late more than 16 minutes', 0.10],
+                    [16, '16 Minutes', 'Late from 16 minutes', 0.10],
                     [20, '20 Minutes', 'Late more than 20 minutes', 0.20],
                     [30, '30 Minutes', 'Late more than 30 minutes', 0.30],
                     [40, '40 Minutes', 'Late more than 40 minutes', 0.40],
@@ -4208,14 +4208,14 @@
                             <div>
                                 <p class="late-dashboard-card-label">${escapeHtml(i18n.gracePeriod)}</p>
                                 <p class="late-dashboard-card-value">16 Minutes</p>
-                                <p class="late-dashboard-card-note">Until ${escapeHtml(lateAfter)}</p>
+                                <p class="late-dashboard-card-note">Before ${escapeHtml(lateAfter)}</p>
                             </div>
                         </div>
                         <div class="late-dashboard-card">
                             <span class="late-dashboard-icon is-orange"><i data-feather="alert-triangle"></i></span>
                             <div>
                                 <p class="late-dashboard-card-label">${escapeHtml(i18n.lateCheckIn)}</p>
-                                <p class="late-dashboard-card-value">After ${escapeHtml(lateAfter)}</p>
+                                <p class="late-dashboard-card-value">From ${escapeHtml(lateAfter)}</p>
                             </div>
                         </div>
                         <div class="late-dashboard-card">

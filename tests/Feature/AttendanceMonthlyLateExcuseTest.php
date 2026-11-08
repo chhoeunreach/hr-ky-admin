@@ -294,7 +294,7 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
                     'leaveRequestsByDate' => [],
                     'timeLeavesByDate' => ['2026-10-03' => (object) ['status' => $status]],
                     'dayData' => ['attendance_date' => '2026-10-03'],
-                    'attendance' => ['worked_hour' => 0, $checkInColumn => '09:35:00', 'attendance_status' => 1, 'opening_time' => '09:00:00', 'closing_time' => '17:00:00'],
+                    'attendance' => ['worked_hour' => 0, $checkInColumn => '09:16:00', 'attendance_status' => 1, 'opening_time' => '09:00:00', 'closing_time' => '17:00:00'],
                     'userDetail' => $this->employee,
                     'totalMinutes' => 0,
                     'printRemark' => null,
@@ -318,6 +318,47 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
             $requests = $reflection->getMethod($method)->invoke($controller, 20, ['date_in_bs' => false, 'year' => 2026, 'month' => 10]);
             $this->assertSame('approved', $requests['2026-10-03']->status);
         }
+    }
+
+    public function test_reduction_counts_exactly_sixteen_minutes_after_opening(): void
+    {
+        foreach (['09:15:59', '09:16:00', '09:16:01'] as $index => $time) {
+            $date = '2026-10-0'.($index + 1);
+            $this->late($date);
+            DB::table('attendances')->where('attendance_date', $date)->update(['check_in_at' => $time]);
+        }
+        $row = $this->row();
+        $this->assertSame('present', $row['days'][0]['status']);
+        $this->assertSame('late', $row['days'][1]['status']);
+        $this->assertSame('late', $row['days'][2]['status']);
+        $this->assertSame(2, $row['effective_late_count']);
+        foreach (['reductionExportRows' => 0.2, 'countReductionExportRows' => 1.0] as $method => $expected) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertEquals($expected, $export[0][9]);
+        }
+    }
+
+    public function test_employee_detail_reduction_counts_sixteen_minutes_and_excludes_only_approved_dates(): void
+    {
+        $reflection = new \ReflectionClass(\App\Http\Controllers\Web\AttendanceController::class);
+        $controller = $reflection->newInstanceWithoutConstructor();
+        $details = collect(range(1, 4))->map(fn ($day) => [
+            'attendance_date' => '2026-10-0'.$day,
+            'data' => [['check_in_at' => '09:16:00', 'attendance_status' => 1]],
+        ]);
+        $method = $reflection->getMethod('buildCountReductionWarning');
+        $result = $method->invoke($controller, $details, $this->employee, []);
+        $this->assertSame(4, $result['effective_late_count']);
+        $this->assertSame(32.0, $result['amount']);
+
+        $result = $method->invoke($controller, $details, $this->employee, [
+            '2026-10-01' => (object) ['status' => 'approved'],
+            '2026-10-08' => (object) ['status' => 'approved'],
+        ]);
+        $this->assertSame(3, $result['total_late']);
+        $this->assertSame(3, $result['effective_late_count']);
+        $this->assertSame(1.5, $result['amount']);
     }
 
     public function test_rejected_cancelled_and_other_employees_requests_do_not_excuse_lateness(): void

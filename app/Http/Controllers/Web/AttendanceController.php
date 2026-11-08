@@ -822,7 +822,8 @@ class AttendanceController extends Controller
             $countReductionWarning = $this->buildCountReductionWarning(
                 $attendanceDetail,
                 $userDetail,
-                $timeLeavesByDate
+                $timeLeavesByDate,
+                $leaveRequestsByDate
             );
 
             $attendanceSummary = AttendanceHelper::getMonthlyDetail($employeeId, $filterParameter['date_in_bs'], $filterParameter['year'], $filterParameter['month']);
@@ -1206,7 +1207,7 @@ class AttendanceController extends Controller
             ->all();
     }
 
-    private function buildCountReductionWarning($attendanceDetail, $userDetail, array $timeLeavesByDate): array
+    private function buildCountReductionWarning($attendanceDetail, $userDetail, array $timeLeavesByDate, array $leaveRequestsByDate = []): array
     {
         $breakdown = AttendanceCountReduction::emptyBreakdown();
         $lateRecordsForEffectiveCount = 0;
@@ -1231,6 +1232,10 @@ class AttendanceController extends Controller
             }
 
             $date = Carbon::parse($dayData['attendance_date'])->format('Y-m-d');
+            if (strtolower((string) ($timeLeavesByDate[$date]->status ?? '')) === 'approved'
+                || strtolower((string) ($leaveRequestsByDate[$date]->status ?? '')) === 'approved') {
+                continue;
+            }
             $openingAt = Carbon::parse($date . ' ' . $openingTime);
             $checkInAt = preg_match('/^\d{1,2}:\d{2}/', $checkIn)
                 ? Carbon::parse($date . ' ' . $checkIn)
@@ -1247,15 +1252,12 @@ class AttendanceController extends Controller
             $lateMinutes = (int) $openingAt->diffInMinutes($checkInAt, false);
             $breakdown = AttendanceCountReduction::addLateMinutes($breakdown, $lateMinutes);
 
-            if ($lateMinutes > AttendanceCountReduction::MIN_LATE_MINUTES) {
+            if ($lateMinutes >= AttendanceCountReduction::MIN_LATE_MINUTES) {
                 $lateRecordsForEffectiveCount++;
             }
         }
 
-        $approvedLateRequests = collect($timeLeavesByDate)
-            ->filter(fn ($timeLeave) => strtolower((string) $timeLeave->status) === 'approved')
-            ->count();
-        $effectiveLateCount = max($lateRecordsForEffectiveCount - $approvedLateRequests, 0);
+        $effectiveLateCount = $lateRecordsForEffectiveCount;
 
         return [
             'breakdown' => $breakdown,

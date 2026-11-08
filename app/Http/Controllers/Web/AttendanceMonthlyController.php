@@ -670,7 +670,7 @@ class AttendanceMonthlyController extends Controller
 
         $lateMinutes = Carbon::parse($shift->opening_time)->diffInMinutes(Carbon::parse($checkIn), false);
 
-        return $lateMinutes <= self::LATE_CHECK_IN_GRACE_MINUTES ? null : (int) $lateMinutes;
+        return $lateMinutes < self::LATE_CHECK_IN_GRACE_MINUTES ? null : (int) $lateMinutes;
     }
 
     private function countLateMinutesForAttendance(User $employee, Attendance $attendance): ?int
@@ -1017,7 +1017,7 @@ class AttendanceMonthlyController extends Controller
 
             $manualLateGraceMinutes = self::LATE_CHECK_IN_GRACE_MINUTES;
             $allowedLateCheckIn = $openingTime->copy()->addMinutes($manualLateGraceMinutes);
-            $rules['late_check_in'] = $checkInAt->gt($allowedLateCheckIn);
+            $rules['late_check_in'] = $checkInAt->gte($allowedLateCheckIn);
             $rules['late_check_in_allowed'] = $allowedLateCheckIn->format('H:i');
         }
 

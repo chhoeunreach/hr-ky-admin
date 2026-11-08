@@ -911,7 +911,7 @@
                         $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
 
                         if (
-                            \Carbon\Carbon::parse($checkIn)->gt($allowedCheckIn)
+                            \Carbon\Carbon::parse($checkIn)->gte($allowedCheckIn)
                             && $attendanceApproved
                             && !$isApprovedLateExcuseDate($dayData['attendance_date'])
                         ) {
@@ -1038,7 +1038,7 @@
                 <div class="employee-attendance-card is-late">
                     <span class="employee-attendance-card-icon">OK</span>
                     <div>
-                        <p class="employee-attendance-card-title">Not Late Until</p>
+                        <p class="employee-attendance-card-title">Late From</p>
                         <p class="employee-attendance-card-value">{{ $lateAllowedUntil ?: '-' }}</p>
                         <p class="employee-attendance-card-note">
                             {{ $officeOpeningLabel ? $officeOpeningLabel.' + '.$manualLateGraceMinutes.' min' : 'Office time not set' }}
@@ -1181,8 +1181,8 @@
                                             $allowedCheckIn = \Carbon\Carbon::parse($shiftOpening)->addMinutes($manualLateGraceMinutes);
                                             $actualCheckIn = \Carbon\Carbon::parse($attendanceCheckIn);
                                             $allowedCheckInLabel = $allowedCheckIn->format('H:i');
-                                            $attendanceLate = $actualCheckIn->gt($allowedCheckIn);
-                                            $checkInLateMinutes = $attendanceLate ? $allowedCheckIn->diffInMinutes($actualCheckIn) : 0;
+                                            $attendanceLate = $actualCheckIn->gte($allowedCheckIn);
+                                            $checkInLateMinutes = $attendanceLate ? \Carbon\Carbon::parse($shiftOpening)->diffInMinutes($actualCheckIn) : 0;
                                         }
 
                                         $attendanceLateExcused = $attendanceLate && $isApprovedLateExcuseDate($dayData['attendance_date']);
