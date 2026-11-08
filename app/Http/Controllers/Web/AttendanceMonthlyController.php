@@ -1406,7 +1406,7 @@ class AttendanceMonthlyController extends Controller
 
         return $rows
             ->map(function (array $row) use ($dateText, $month, $monthYear, $companyEmail, $receiver, $createdAt) {
-                if (($row['effective_late_count'] ?? 0) < self::LATE_WARNING_THRESHOLD) {
+                if (($row['effective_late_count'] ?? 0) < 1) {
                     return null;
                 }
 

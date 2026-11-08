@@ -133,7 +133,7 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $this->assertStringContainsString('Over 3 late times: $30 final warning', $time[0][8]);
     }
 
-    public function test_approved_time_leave_keeps_three_unexcused_lates_below_the_reduction_threshold(): void
+    public function test_approved_time_leave_keeps_three_unexcused_lates_below_the_warning_threshold(): void
     {
         foreach (range(1, 4) as $day) $this->late('2026-10-0'.$day);
         $this->timeLeave('2026-10-01', 'approved');
@@ -141,6 +141,32 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
 
         $this->assertSame(3, $row['effective_late_count']);
         $this->assertSame(105, $row['late_minutes_total']);
+        foreach (['reductionExportRows' => 0.9, 'countReductionExportRows' => 4.5] as $method => $payment) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertEquals($payment, $export[0][9]);
+            $this->assertStringNotContainsString('$30 final warning', $export[0][8]);
+        }
+    }
+
+    public function test_reduction_starts_at_one_unexcused_late_and_excludes_approved_time_leave(): void
+    {
+        $this->late('2026-10-01');
+        $this->late('2026-10-02');
+        $this->timeLeave('2026-10-01', 'approved');
+        $row = $this->row();
+        $this->assertSame(1, $row['effective_late_count']);
+
+        foreach (['reductionExportRows' => 0.3, 'countReductionExportRows' => 1.5] as $method => $payment) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertEquals($payment, $export[0][9]);
+            $this->assertStringNotContainsString('$30 final warning', $export[0][8]);
+        }
+
+        $this->timeLeave('2026-10-02', 'approved');
+        $row = $this->row();
+        $this->assertSame(0, $row['effective_late_count']);
         foreach (['reductionExportRows', 'countReductionExportRows'] as $method) {
             $this->assertCount(0, $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01')));
         }

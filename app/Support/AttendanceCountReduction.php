@@ -5,7 +5,7 @@ namespace App\Support;
 final class AttendanceCountReduction
 {
     public const MIN_LATE_MINUTES = 16;
-    public const EFFECTIVE_LATE_THRESHOLD = 4;
+    public const EFFECTIVE_LATE_THRESHOLD = 1;
     public const STANDARD_RATE = 0.50;
     public const OVER_30_RATE = 1.50;
     public const FINAL_WARNING_RATE = 30.00;

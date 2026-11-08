@@ -18,12 +18,13 @@ class AttendanceCountReductionTest extends TestCase
         $this->assertSame(1, $breakdown['late_over_30']);
     }
 
-    public function test_it_requires_four_effective_lates_before_deducting(): void
+    public function test_it_deducts_from_the_first_late_and_adds_a_warning_after_three(): void
     {
-        $breakdown = ['late_16_to_30' => 3, 'late_over_30' => 1];
-
-        $this->assertSame(0.0, AttendanceCountReduction::payment($breakdown, 3));
-        $this->assertSame(33.0, AttendanceCountReduction::payment($breakdown, 4));
+        $this->assertSame(0.0, AttendanceCountReduction::payment(AttendanceCountReduction::emptyBreakdown(), 0));
+        $this->assertSame(0.5, AttendanceCountReduction::payment(['late_16_to_30' => 1], 1));
+        $this->assertSame(1.5, AttendanceCountReduction::payment(['late_over_30' => 1], 1));
+        $this->assertSame(1.5, AttendanceCountReduction::payment(['late_16_to_30' => 3], 3));
+        $this->assertSame(33.0, AttendanceCountReduction::payment(['late_16_to_30' => 3, 'late_over_30' => 1], 4));
     }
 
     public function test_reason_contains_total_late_count(): void
