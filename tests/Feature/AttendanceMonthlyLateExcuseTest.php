@@ -129,7 +129,37 @@ class AttendanceMonthlyLateExcuseTest extends TestCase
         $time = $this->invoke('reductionExportRows', collect([$row]), Carbon::parse('2026-10-01'));
         $count = $this->invoke('countReductionExportRows', collect([$row]), Carbon::parse('2026-10-01'));
         $this->assertCount(1, $time); $this->assertCount(1, $count);
-        $this->assertEquals(1.2, $time[0][9]); $this->assertEquals(36, $count[0][9]);
+        $this->assertEquals(31.2, $time[0][9]); $this->assertEquals(36, $count[0][9]);
+        $this->assertStringContainsString('Over 3 late times: $30 final warning', $time[0][8]);
+    }
+
+    public function test_approved_time_leave_keeps_three_unexcused_lates_below_the_reduction_threshold(): void
+    {
+        foreach (range(1, 4) as $day) $this->late('2026-10-0'.$day);
+        $this->timeLeave('2026-10-01', 'approved');
+        $row = $this->row();
+
+        $this->assertSame(3, $row['effective_late_count']);
+        $this->assertSame(105, $row['late_minutes_total']);
+        foreach (['reductionExportRows', 'countReductionExportRows'] as $method) {
+            $this->assertCount(0, $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01')));
+        }
+    }
+
+    public function test_four_unexcused_lates_add_one_warning_charge_after_approved_time_leave_is_excluded(): void
+    {
+        foreach (range(1, 5) as $day) $this->late('2026-10-0'.$day);
+        $this->timeLeave('2026-10-01', 'approved');
+        $row = $this->row();
+
+        $this->assertSame(4, $row['effective_late_count']);
+        $this->assertSame(140, $row['late_minutes_total']);
+        foreach (['reductionExportRows' => 31.2, 'countReductionExportRows' => 36] as $method => $payment) {
+            $export = $this->invoke($method, collect([$row]), Carbon::parse('2026-10-01'));
+            $this->assertCount(1, $export);
+            $this->assertEquals($payment, $export[0][9]);
+            $this->assertSame(1, substr_count($export[0][8], '$30 final warning'));
+        }
     }
 
     public function test_multiple_requests_on_one_day_are_excluded_once_without_a_second_monthly_subtraction(): void

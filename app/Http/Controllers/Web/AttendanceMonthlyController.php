@@ -1505,6 +1505,10 @@ class AttendanceMonthlyController extends Controller
             $payment += ((int) ($breakdown[$minutes] ?? 0)) * $rate;
         }
 
+        if (array_sum($breakdown) >= self::LATE_WARNING_THRESHOLD) {
+            $payment += AttendanceCountReduction::FINAL_WARNING_RATE;
+        }
+
         return $payment;
     }
 
@@ -1534,6 +1538,10 @@ class AttendanceMonthlyController extends Controller
 
         if ($effectiveLateCount !== null) {
             $reason .= ' - Effective late count: ' . $effectiveLateCount;
+        }
+
+        if (($effectiveLateCount ?? array_sum($breakdown)) >= self::LATE_WARNING_THRESHOLD) {
+            $reason .= ' - Over 3 late times: $30 final warning';
         }
 
         return $reason;
