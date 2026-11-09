@@ -98,6 +98,11 @@ class Department extends Model
             ]);
     }
 
+    public function assignedEmployees(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(User::class, 'department_id', 'id');
+    }
+
     public function getDisplayNameAttribute(): string
     {
         $deptName = (string) $this->dept_name;

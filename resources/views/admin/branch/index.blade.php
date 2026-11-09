@@ -1,55 +1,33 @@
 @extends('layouts.master')
 
 @section('title', __('index.title_branch'))
-@section('button')
-    @can('create_branch')
-        <a href="{{ route('admin.branch.create') }}">
-            <button class="btn btn-primary"><i class="link-icon" data-feather="plus"></i> {{ __('index.add_branch') }}</button>
-        </a>
-    @endcan
 
-@endsection
 @section('main-content')
 
     <section class="content">
 
         @include('admin.section.flash_message')
         @include('admin.branch.common.breadcrumb', ['title' => __('index.branch')])
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.branch_lists') }}</h6>
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'branchDirectoryFilters', 'directoryExpanded' => false])
+            <div id="branchDirectoryFilters" class="collapse">
+                <form id="branchFilterForm" class="directory-filter-form" action="{{ route('admin.branch.index') }}" method="get">
+                    <div class="row g-3">
+                        <div class="col-lg-4 col-md-6">
+                            <label for="branchNameFilter" class="form-label">{{ __('index.branch_name') }}</label>
+                            <input id="branchNameFilter" type="text" placeholder="{{ __('index.search_by_branch_name') }}" name="name" value="{{ $filterParameters['name'] ?? '' }}" class="form-control">
+                        </div>
+                    </div>
+                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.branch.index')])
+                </form>
             </div>
-            <form class="forms-sample card-body pb-0" action="{{ route('admin.branch.index') }}" method="get">
-                <div class="row align-items-center">
-
-                    <div class="col-lg-4 col-md-4 mb-4">
-                        <input type="text" placeholder="{{ __('index.search_by_branch_name') }}" name="name" value="{{($filterParameters['name'])}}" class="form-control">
-                    </div>
-
-                    <div class="col-lg-4 col-md-4 mb-4">
-                        <select class="form-select form-select-lg" name="per_page">
-                            <option value="10" {{($filterParameters['per_page']) == 10 ? 'selected': ''}}>10</option>
-                            <option value="25" {{($filterParameters['per_page']) == 25 ? 'selected': ''}}>25</option>
-                            <option value="50" {{($filterParameters['per_page']) == 50 ? 'selected': ''}}>50</option>
-                        </select>
-                    </div>
-
-                    <div class="col-lg-4 col-md-3 d-flex">
-                        <button type="submit" class="btn btn-block btn-success me-2 mb-4">{{ __('index.filter') }}</button>
-
-                        <a class="btn btn-block btn-primary me-md-2 me-0 mb-4" href="{{route('admin.branch.index')}}">{{ __('index.reset') }}</a>
-                    </div>
-                </div>
-            </form>
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.branch_lists') }}</h6>
-            </div>
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'branchDirectoryTable', 'directoryForm' => 'branchFilterForm', 'directorySearch' => 'branchListSearch', 'directoryRecords' => $branches, 'directoryTitle' => __('index.branch_lists'), 'directoryIcon' => 'map-pin', 'directoryPermission' => 'create_branch', 'directoryAddUrl' => route('admin.branch.create'), 'directoryDefaultSize' => '10', 'directorySearchKey' => 'name', 'directoryLive' => false])
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="branchDirectoryTable" class="table">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -60,16 +38,16 @@
                             <th class="text-center">{{ __('index.payment_qr_codes') }}</th>
                             <th class="text-center">{{ __('index.total_employee') }}</th>
                             <th class="text-center">{{ __('index.status') }}</th>
-                            @can(['edit_branch','delete_branch'])
-                                <th class="text-center">{{ __('index.action') }}</th>
-                            @endcan
+                            @canany(['edit_branch','delete_branch'])
+                                <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
+                            @endcanany
                         </tr>
                         </thead>
                         <tbody>
 
                         @forelse($branches as $key => $value)
                             <tr>
-                                <td>{{(($branches->currentPage()- 1 ) * (\App\Models\Branch::RECORDS_PER_PAGE) + (++$key))}}</td>
+                                <td>{{ $branches->firstItem() + $key }}</td>
                                 <td>
                                     @if($value->logo)
                                         <img src="{{ asset(\App\Models\Branch::UPLOAD_PATH.$value->logo) }}"
@@ -81,7 +59,7 @@
                                     @endif
                                 </td>
                                 <td>{{ucfirst($value->name)}}</td>
-                                <td>{{$value->address}}</td>
+                                <td class="directory-address-cell"><details><summary>{{ \Illuminate\Support\Str::limit($value->address, 70) }}</summary><div>{{ $value->address }}</div></details></td>
                                 <td class="text-center">{{$value->phone}}</td>
                                 <td class="text-center">
                                     @if(!empty($value->payment_qr_codes))

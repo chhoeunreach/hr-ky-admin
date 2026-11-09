@@ -94,178 +94,80 @@
                     color: #111827 !important;
                 }
             }
-            .employee-profile-search {
-                margin-left: auto;
-                position: relative;
-                width: min(100%, 280px);
-            }
-            .employee-profile-search .search-icon {
-                color: #94a3b8;
-                height: 15px;
-                left: 11px;
-                pointer-events: none;
-                position: absolute;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 15px;
-            }
-            .employee-profile-search-input {
-                background: #f8fafc;
-                border: 1px solid #d7dfeb;
-                border-radius: 8px;
-                color: #1e293b;
-                font-size: .8125rem;
-                height: 34px;
-                padding: 0 34px;
-                width: 100%;
-            }
-            .employee-profile-search-input:focus {
-                background: #ffffff;
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
-                outline: none;
-            }
-            .employee-profile-search-clear {
-                align-items: center;
-                background: #e2e8f0;
-                border: 0;
-                border-radius: 50%;
-                color: #64748b;
-                display: flex;
-                height: 20px;
-                justify-content: center;
-                padding: 0;
-                position: absolute;
-                right: 9px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 20px;
-            }
-            .employee-profile-search-clear:hover {
-                background: #cbd5e1;
-                color: #0f172a;
-            }
-            .employee-profile-search-clear .link-icon {
-                height: 12px;
-                width: 12px;
-            }
-            @media (max-width: 767.98px) {
-                .employee-profile-search {
-                    order: 4;
-                    width: 100%;
-                }
-            }
         </style>
 
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex flex-wrap align-items-center gap-3 mb-3 no-print">
-                    <button class="btn btn-outline-secondary btn-sm"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#employeeProfileFilters"
-                            aria-expanded="{{ request()->hasAny(['branch_id', 'department_id', 'department_ids', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'true' : 'false' }}"
-                            aria-controls="employeeProfileFilters">
-                        {{ __('index.filter') }}
-                    </button>
-                    <h6 class="card-title mb-0">{{ __('index.employee_profile') }}</h6>
-                    @can('employee.attendance_daily_report.view')
-                    <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" data-employee-report class="btn btn-outline-primary btn-sm">
-                        <i class="link-icon" data-feather="file-text"></i> {{ __('index.attendance_confirmation_report') }}
-                    </button>
-                    @endcan
-                    <div class="employee-profile-search">
-                        <i class="link-icon search-icon" data-feather="search"></i>
-                        <input type="search"
-                               id="employeeProfileSearch"
-                               class="employee-profile-search-input"
-                               name="search"
-                               form="employeeProfileFilters"
-                               autocomplete="off"
-                               maxlength="255"
-                               value="{{ request('search') }}"
-                               placeholder="{{ __('index.search_employee') }}"
-                               aria-label="{{ __('index.search_employee') }}">
-                        <button type="button"
-                                id="employeeProfileSearchClear"
-                                class="employee-profile-search-clear"
-                                style="display: {{ filled(request('search')) ? 'flex' : 'none' }};"
-                                title="{{ __('index.clear_search') }}"
-                                aria-label="{{ __('index.clear_search') }}">
-                            <i class="link-icon" data-feather="x"></i>
-                        </button>
-                    </div>
-                    @can('employee.profile.print')
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">
-                            {{ __('index.print') }}
-                        </button>
-                    @endcan
-                </div>
-                <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
-                <form method="get" id="employeeProfileFilters" class="collapse no-print {{ request()->hasAny(['branch_id', 'department_id', 'department_ids', 'post_id', 'employment_status', 'review_status', 'per_page']) ? 'show' : '' }}">
+        <div class="directory-filter-panel mb-4 no-print">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'employeeProfileFilterCollapse', 'directoryExpanded' => false])
+                <div id="employeeProfileFilterCollapse" class="collapse">
+                <form method="get" action="{{ route('admin.employees.profile.index') }}" id="employeeProfileFilters" class="directory-filter-form">
                     @if(request()->filled('name_direction'))
                         <input type="hidden" name="name_direction" value="{{ request('name_direction') }}">
                     @endif
                     @if(request()->filled('working_life_direction'))
                         <input type="hidden" name="working_life_direction" value="{{ request('working_life_direction') }}">
                     @endif
-                    <div class="row g-2">
-                        <div class="col-lg-2 col-md-6">
-                            <select class="form-select" name="branch_id">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="profileBranchFilter" class="form-label">{{ __('index.branch') }}</label>
+                            <select id="profileBranchFilter" class="form-select" name="branch_id">
                                 <option value="">{{ __('index.all_branches') }}</option>
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" @selected((string) request('branch_id') === (string) $branch->id)>{{ $branch->name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-6">
-                            <select class="form-select employee-department-multiselect" name="department_ids[]" multiple aria-label="{{ __('index.department') }}" data-placeholder="{{ __('index.all_departments') }}">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="profileDepartmentFilter" class="form-label">{{ __('index.department') }}</label>
+                            <select id="profileDepartmentFilter" class="form-select employee-department-multiselect" name="department_ids[]" multiple aria-label="{{ __('index.department') }}" data-placeholder="{{ __('index.all_departments') }}">
                                 @foreach($departments as $department)
                                     <option value="{{ $department->id }}" @selected(in_array((string) $department->id, array_map('strval', $departmentIds), true))>{{ $department->dept_name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-2 col-md-6">
-                            <select class="form-select" name="post_id">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="profilePostFilter" class="form-label">{{ __('index.position') }}</label>
+                            <select id="profilePostFilter" class="form-select" name="post_id">
                                 <option value="">{{ __('index.all_positions') }}</option>
                                 @foreach($posts as $post)
                                     <option value="{{ $post->id }}" @selected((string) request('post_id') === (string) $post->id)>{{ $post->post_name }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-1 col-md-6">
-                            <select class="form-select" name="employment_status">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="profileEmploymentStatusFilter" class="form-label">{{ __('index.employment_status') }}</label>
+                            <select id="profileEmploymentStatusFilter" class="form-select" name="employment_status">
                                 <option value="">{{ __('index.all_status') }}</option>
                                 @foreach(['active', 'probation', 'suspended', 'resigned', 'terminated', 'inactive'] as $status)
                                     <option value="{{ $status }}" @selected($employmentStatus === $status)>{{ __('index.' . $status) }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-1 col-md-6">
-                            <select class="form-select" name="review_status">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="profileReviewStatusFilter" class="form-label">{{ __('index.review') }}</label>
+                            <select id="profileReviewStatusFilter" class="form-select" name="review_status">
                                 <option value="">{{ __('index.review') }}</option>
                                 @foreach(['Due', 'Overdue', 'Upcoming', 'Done', 'N/A'] as $status)
                                     <option value="{{ $status }}" @selected(request('review_status') === $status)>{{ $status === 'N/A' ? 'N/A' : __('index.' . strtolower($status)) }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-1 col-md-6">
-                            <select class="form-select" name="per_page">
-                                @foreach([10, 25, 50, 100] as $size)
-                                    <option value="{{ $size }}" @selected($perPage === $size)>{{ $size }}</option>
-                                @endforeach
-                                <option value="all" @selected($perPage === 'all')>{{ __('index.all') }}</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-1 col-md-6 d-flex gap-2">
-                            <button class="btn btn-primary w-100">{{ __('index.apply') }}</button>
-                            <a class="btn btn-outline-secondary" href="{{ route('admin.employees.profile.index') }}">{{ __('index.reset') }}</a>
-                        </div>
                     </div>
+                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.employees.profile.index')])
                 </form>
-                <div id="employeeProfileSearchLoading" class="text-muted small d-none" role="status">{{ __('index.loading') }}</div>
-                <div id="employeeProfileSearchError" class="alert alert-danger mt-2 mb-0 d-none" role="alert">{{ __('index.error_loading_employees') }}</div>
             </div>
+        </div>
+        <div class="card">
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'employeeProfileTable', 'directoryForm' => 'employeeProfileFilters', 'directorySearch' => 'employeeProfileSearch', 'directorySearchInForm' => true, 'directoryRecords' => $employees, 'directoryTitle' => __('index.employee_profiles'), 'directoryIcon' => 'users', 'directoryCanAdd' => false, 'directoryCanPrint' => \Illuminate\Support\Facades\Gate::allows('employee.profile.print'), 'directoryAddUrl' => '', 'directoryDefaultSize' => '25', 'directoryPageSizes' => [10,25,50,100,200,500,1000,'all'], 'directorySearchKey' => 'search', 'directoryLive' => true])
+            <h6 class="employee-profile-print-title d-none">{{ __('index.employee_profile') }}</h6>
+            @can('employee.attendance_daily_report.view')
+                <div class="px-3 py-2 no-print border-bottom">
+                    <button type="submit" form="employeeProfileFilters" name="attendance_report" value="1" data-employee-report class="btn btn-outline-primary btn-sm">
+                        <i class="link-icon" data-feather="file-text"></i> {{ __('index.attendance_confirmation_report') }}
+                    </button>
+                </div>
+            @endcan
+            <div id="employeeProfileSearchLoading" class="text-muted small d-none px-3 py-2" role="status">{{ __('index.loading') }}</div>
+            <div id="employeeProfileSearchError" class="alert alert-danger m-3 d-none" role="alert">{{ __('index.error_loading_employees') }}</div>
             @include('admin.employees.profile.partials.directory-results')
         </div>
         @can('employee.performance.create')

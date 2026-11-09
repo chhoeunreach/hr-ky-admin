@@ -11,16 +11,22 @@ class AdminRepository
 
     use ImageService;
 
-    public function getAll($select = ['*'])
+    public function getAll($select = ['*'], array $filters = [])
     {
-        return Admin::select($select)->orderBy('admins.name')
-            ->latest()
-            ->paginate( getRecordPerPage());
+        $query = Admin::select($select)
+            ->when(filled($filters['name'] ?? null), fn ($query) => $query->where('name', 'like', '%'.$filters['name'].'%'))
+            ->when(filled($filters['email'] ?? null), fn ($query) => $query->where('email', 'like', '%'.$filters['email'].'%'))
+            ->when(filled($filters['search'] ?? null), function ($query) use ($filters) {
+                $term = '%'.$filters['search'].'%';
+                $query->where(fn ($query) => $query->where('name', 'like', $term)->orWhere('email', 'like', $term)->orWhere('username', 'like', $term));
+            })
+            ->when(isset($filters['is_active']) && $filters['is_active'] !== '', fn ($query) => $query->where('is_active', $filters['is_active']))
+            ->orderBy('admins.name')->orderBy('admins.id');
+        $requested = $filters['per_page'] ?? 25;
+        $size = $requested === 'all' ? max(1, (clone $query)->count())
+            : (in_array((int) $requested, [10, 25, 50, 100, 200, 500, 1000], true) ? (int) $requested : 25);
+        return $query->paginate($size);
     }
-
-
-
-
 
     public function store($validatedData)
     {

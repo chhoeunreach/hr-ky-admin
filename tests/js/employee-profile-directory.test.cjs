@@ -6,8 +6,8 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.join(__dirname, '../../public/assets/js/employee-profile-directory.js'), 'utf8');
 const flush = () => new Promise(setImmediate);
 const response = label => ({ok: true, text: async () => label});
-function setup() {
-    const events = {}, requests = [], history = [], timers = new Map();
+function setup({clearButton = true} = {}) {
+    const events = {}, requests = [], history = [], timers = new Map(), dispatched = [], displayedTotal = {};
     let nextTimer = 0;
     const element = name => ({name, value: '', style: {}, listeners: {},
         addEventListener(type, handler) {this.listeners[type] = handler;},
@@ -21,24 +21,24 @@ function setup() {
     const form = {...element(), action: 'http://hr.test/admin/employees/profile-directory', elements: fields,
         querySelector(selector) {return fields.find(f => selector.includes(`"${f.name}"`));},
         appendChild(field) {fields.push(field);}};
-    const block = label => ({label, attributes: {},
+    const block = label => ({label, attributes: {}, dataset: {directoryTotal: '12'},
         setAttribute(name, value) {this.attributes[name] = value;},
         querySelectorAll: () => [], replaceWith(next) {root = next;}});
     let root = block('original');
     const location = {href: form.action + '?page=4', origin: 'http://hr.test', pathname: '/admin/employees/profile-directory'};
     vm.runInNewContext(source, {
-        URL, URLSearchParams, AbortController, Event: class {},
+        URL, URLSearchParams, AbortController, Event: class {}, CustomEvent: class {constructor(type) {this.type = type;}},
         FormData: class {constructor() {return fields.filter(f => f.name).map(f => [f.name, f.value]);}},
         DOMParser: class {parseFromString(html) {return {getElementById: () => html === 'invalid' ? null : block(html)};}},
         document: {body: {}, getElementById: id => ({employeeProfileFilters: form, employeeProfileSearch: input,
-            employeeProfileSearchClear: clear, employeeProfileSearchError: error, employeeProfileSearchLoading: loading,
-            employeeProfileResults: root}[id]), addEventListener(type, handler) {events[type] = handler;}, createElement: () => element()},
+            employeeProfileSearchClear: clearButton ? clear : null, employeeProfileSearchError: error, employeeProfileSearchLoading: loading,
+            employeeProfileResults: root, per_page: count}[id]), addEventListener(type, handler) {events[type] = handler;}, querySelector: () => displayedTotal, dispatchEvent(event) {dispatched.push(event.type);}, createElement: () => element()},
         window: {location, history: {replaceState(a,b,href) {history.push(['replace', href]);}, pushState(a,b,href) {history.push(['push',href]);}},
             addEventListener(type, handler) {events[type] = handler;},
             setTimeout(fn) {timers.set(++nextTimer,fn);return nextTimer;}, clearTimeout(id) {timers.delete(id);}},
         fetch: (url, options) => new Promise((resolve,reject) => requests.push({url,options,resolve,reject})),
     });
-    return {input, clear, form, error, loading, requests, history, events,
+    return {input, clear, form, error, loading, requests, history, events, displayedTotal, dispatched, pageSize: count,
         root: () => root,
         type(value) {input.value = value; input.listeners.input();},
         runTimer() {for (const fn of [...timers.values()]) fn();timers.clear();},
@@ -136,4 +136,22 @@ test('sorting uses the current search and selected filters', async () => {
     assert.equal(url.searchParams.get('name_direction'),'asc');
     app.requests[0].resolve(response('sorted'));await flush();
     assert.equal(app.form.elements.find(f=>f.name==='name_direction').value,'asc');
+});
+
+
+test('shared-toolbar search works without a separate clear button and updates the result count', async () => {
+    const app = setup({clearButton: false});
+    app.type('Dara');app.runTimer();app.requests[0].resolve(response('filtered'));await flush();
+    assert.equal(app.root().label, 'filtered');
+    assert.equal(app.displayedTotal.textContent, '12');
+    assert.deepEqual(app.dispatched, ['directory:updated']);
+});
+
+test('changing the external page-size selector refreshes current filters from the first page', () => {
+    const app = setup();app.input.value = 'Dara';app.pageSize.value = 'all';app.pageSize.listeners.change();
+    const url = new URL(app.requests[0].url);
+    assert.equal(url.searchParams.get('per_page'), 'all');
+    assert.equal(url.searchParams.get('search'), 'Dara');
+    assert.equal(url.searchParams.get('branch_id'), '2');
+    assert.equal(url.searchParams.has('page'), false);
 });

@@ -46,12 +46,6 @@
 
         window.filterByStatus = function(status) {
             $('#is_active').val(status).trigger('change');
-            if (status !== '') {
-                const filterCollapse = document.getElementById('employeeFilterCollapse');
-                if (filterCollapse && !filterCollapse.classList.contains('show')) {
-                    new bootstrap.Collapse(filterCollapse, { toggle: true });
-                }
-            }
             refreshEmployeeList();
         };
 
@@ -223,6 +217,10 @@
             }
 
             currentTableBody.innerHTML = nextTableBody.innerHTML;
+            const count = document.querySelector('[data-directory-count="employeeTable"]');
+            const nextCount = doc.querySelector('[data-directory-count="employeeTable"]');
+            if (count && nextCount) count.textContent = nextCount.textContent;
+            document.dispatchEvent(new CustomEvent('directory:updated'));
 
             if (currentCalendar && nextCalendar) {
                 currentCalendar.outerHTML = nextCalendar.outerHTML;

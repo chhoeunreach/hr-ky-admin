@@ -16,14 +16,17 @@ class BranchRepository
      */
     public function getAllCompanyBranches($filterParameters,array $select=['*']): mixed
     {
-        return Branch::select($select)
+        $query = Branch::select($select)
             ->with(['employees:id,name,avatar,branch_id'])
             ->withCount('employees')
             ->when(isset($filterParameters['name']), function ($query) use ($filterParameters) {
                 $query->where('name', 'like', '%' . $filterParameters['name'] . '%');
             })
-            ->latest()
-            ->paginate($filterParameters['per_page']);
+            ->latest();
+        $requested = $filterParameters['per_page'] ?? 10;
+        $size = $requested === 'all' ? max(1, (clone $query)->count())
+            : (in_array((int) $requested, [10, 25, 50, 100, 200, 500, 1000], true) ? (int) $requested : 10);
+        return $query->paginate($size);
     }
 
     /**

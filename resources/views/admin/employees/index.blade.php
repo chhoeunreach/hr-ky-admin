@@ -16,13 +16,7 @@
             </button>
         </a>
 
-        @can('create_employee')
-            <a href="{{ route('admin.employees.create')}}">
-                <button class="btn btn-primary btn-sm d-flex align-items-center gap-1.5 rounded-2 px-2.5 py-1.5" style="font-size: 0.8125rem;">
-                    <i class="link-icon" data-feather="plus" style="width: 14px; height: 14px;"></i>{{ __('index.add_employee') }}
-                </button>
-            </a>
-        @endcan
+
     </div>
 @endsection
 
@@ -35,16 +29,6 @@
 
         @php
             $telegramBotUsername = TelegramBotSettings::get(TelegramBotSettings::BOT_USERNAME, '');
-            $hasEmployeeFilters = filled($filterParameters['branch_id'] ?? null)
-                || filled($filterParameters['department_id'] ?? null)
-                || filled($filterParameters['post_id'] ?? null)
-                || filled($filterParameters['role_id'] ?? null)
-                || filled($filterParameters['employee_name'] ?? null)
-                || filled($filterParameters['search'] ?? null)
-                || filled($filterParameters['email'] ?? null)
-                || filled($filterParameters['phone'] ?? null)
-                || (($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null)
-                || (($filterParameters['per_page'] ?? '25') !== '25');
         @endphp
 
         <!-- Top KPI Metric Cards -->
@@ -115,32 +99,15 @@
             </div>
         </div>
 
-        <div class="card mb-3 border-0 shadow-sm" style="border-radius: 12px;">
-            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between gap-2 py-2 px-3">
-                <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1.5 rounded-2 px-2.5 py-1"
-                            style="font-size: 0.8rem;"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#employeeFilterCollapse"
-                            aria-expanded="{{ $hasEmployeeFilters ? 'true' : 'false' }}"
-                            aria-controls="employeeFilterCollapse">
-                        <i class="link-icon" data-feather="filter" style="width: 13px; height: 13px;"></i>
-                        <span>{{ __('index.filter') }}</span>
-                        @if($hasEmployeeFilters)
-                            <span class="badge bg-primary rounded-pill" style="font-size: 9.5px;">{{ __('index.active') }}</span>
-                        @endif
-                    </button>
-                    <h6 class="card-title mb-0 fw-bold" style="font-size: 0.9rem;">{{ __('index.employee_lists') }}</h6>
-                </div>
-            </div>
-            <div id="employeeFilterCollapse" class="collapse{{ $hasEmployeeFilters ? ' show' : '' }}">
-            <form class="forms-sample card-body py-2 px-3 pb-1" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'employeeFilterCollapse', 'directoryExpanded' => false])
+            <div id="employeeFilterCollapse" class="collapse">
+            <form class="forms-sample directory-filter-form" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
                 <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                <div class="row g-2 align-items-center">
+                <div class="row g-3 align-items-end">
                     @if(!isset(auth()->user()->branch_id))
-                        <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                            <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.branch') }}</label>
+                        <div class="col-xl-3 col-md-6">
+                            <label for="branch" class="form-label">{{ __('index.branch') }}</label>
                             @php
                                 $selectedBranchIds = collect((array)($filterParameters['branch_id'] ?? []))
                                     ->filter()
@@ -158,20 +125,20 @@
                         </div>
                     @endif
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.department') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="department" class="form-label">{{ __('index.department') }}</label>
                         <select class="form-control" id="department" name="department_id[]" multiple data-placeholder="{{ __('index.select_department') }}">
                         </select>
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.post') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="post" class="form-label">{{ __('index.post') }}</label>
                         <select class="form-control" id="post" name="post_id[]" multiple data-placeholder="{{ __('index.select_post') }}">
                         </select>
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.role') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="role_id" class="form-label">{{ __('index.role') }}</label>
                         <select class="form-control" id="role_id" name="role_id" data-placeholder="{{ __('index.select_role') }}">
                             <option value="">{{ __('index.all_roles') }}</option>
                             @foreach($roles as $role)
@@ -182,27 +149,27 @@
                         </select>
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.employee_name') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="employeeName" class="form-label">{{ __('index.employee_name') }}</label>
                         <input type="text" placeholder="{{ __('index.employee_name') }}" id="employeeName"
                                name="employee_name" value="{{ $filterParameters['employee_name'] }}"
                                class="form-control">
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.employee_email') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="email" class="form-label">{{ __('index.employee_email') }}</label>
                         <input type="text" placeholder="{{ __('index.employee_email') }}" id="email" name="email"
                                value="{{ $filterParameters['email'] }}" class="form-control">
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.employee_phone') }}</label>
-                        <input type="number" placeholder="{{ __('index.employee_phone') }}" id="phone" name="phone"
+                    <div class="col-xl-3 col-md-6">
+                        <label for="phone" class="form-label">{{ __('index.employee_phone') }}</label>
+                        <input type="tel" placeholder="{{ __('index.employee_phone') }}" id="phone" name="phone"
                                value="{{ $filterParameters['phone'] }}" class="form-control">
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-2">
-                        <label class="form-label small text-muted mb-0.5" style="font-size: 11px; font-weight: 500;">{{ __('index.is_active') }}</label>
+                    <div class="col-xl-3 col-md-6">
+                        <label for="is_active" class="form-label">{{ __('index.is_active') }}</label>
                         <select class="form-control" id="is_active" name="is_active">
                             <option value="">{{ __('index.all_status') }}</option>
                             <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
@@ -210,158 +177,19 @@
                         </select>
                     </div>
 
-                    <div class="col-12 mt-1 mb-2">
-                        <div class="d-flex align-items-center gap-1.5">
-                            <button type="submit" value="filter" class="btn btn-primary btn-sm px-3 py-1.5 rounded-2 d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;">
-                                <i class="link-icon" data-feather="filter" style="width: 12px; height: 12px;"></i>
-                                <span>{{ __('index.filter') }}</span>
-                            </button>
-                            <a class="btn btn-outline-secondary btn-sm px-3 py-1.5 rounded-2 d-inline-flex align-items-center gap-1.5" style="font-size: 0.8rem;" href="{{ route('admin.employees.index') }}">
-                                <i class="link-icon" data-feather="rotate-ccw" style="width: 12px; height: 12px;"></i>
-                                <span>{{ __('index.reset') }}</span>
-                            </a>
-                        </div>
-                    </div>
-
                 </div>
 
 
-            </form>
+                @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.employees.index')])
+                </form>
             </div>
         </div>
 
         <div id="employeeListSection">
         <div class="card border-0 shadow-sm employee-datatable-card" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0 !important;">
-            <div class="card-header bg-white border-bottom py-2 px-3">
-                <div class="employee-toolbar">
-                    <div class="employee-toolbar-left">
-                        <div class="d-flex align-items-center gap-2">
-                            <h6 class="card-title mb-0 fw-bold" style="font-size: 0.95rem; color: #0f172a;">{{ __('index.employee_lists') }}</h6>
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 px-2 py-0.5 rounded-pill" style="font-size: 10.5px; font-weight: 600;">
-                                {{ number_format($users->total()) }} {{ __('index.staff') }}
-                            </span>
-                        </div>
-                        <div class="employee-entry-control">
-                            <span class="text-muted small fw-medium">{{ __('index.show') }}</span>
-                            <select class="form-select form-select-sm employee-entry-select" id="per_page" name="per_page" form="employeeFilterForm">
-                                <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ (string)($filterParameters['per_page'] ?? '') === '100' ? 'selected' : '' }}>100</option>
-                                <option value="200" {{ (string)($filterParameters['per_page'] ?? '') === '200' ? 'selected' : '' }}>200</option>
-                                <option value="500" {{ (string)($filterParameters['per_page'] ?? '') === '500' ? 'selected' : '' }}>500</option>
-                                <option value="1000" {{ (string)($filterParameters['per_page'] ?? '') === '1000' ? 'selected' : '' }}>1,000</option>
-                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>{{ __('index.all') }}</option>
-                            </select>
-                            <span class="text-muted small fw-medium">{{ __('index.entries') }}</span>
-                        </div>
-                    </div>
-                    <div class="employee-toolbar-actions">
-                        @can('create_employee')
-                            <button type="button"
-                                    id="export_employee"
-                                    data-href="{{ route('admin.employees.index') }}"
-                                    value="export"
-                                    class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 rounded-2 px-2.5 py-1 fw-medium shadow-none"
-                                    style="border-color: #cbd5e1; color: #475569; font-size: 0.8rem;">
-                                <i class="link-icon" data-feather="download" style="width: 13px; height: 13px;"></i>
-                                <span>{{ __('index.export') }}</span>
-                            </button>
-                        @endcan
-                    </div>
-                    <div class="employee-toolbar-search">
-                        <div class="employee-search-box">
-                            <i class="link-icon search-icon" data-feather="search"></i>
-                            <input type="text"
-                                   id="employeeListSearch"
-                                   class="employee-list-search"
-                                   value="{{ $filterParameters['search'] ?? '' }}"
-                                   placeholder="{{ __('index.search_employee') }}">
-                            <button type="button"
-                                    id="employeeSearchClear"
-                                    class="employee-search-clear"
-                                    style="display: {{ filled($filterParameters['search'] ?? null) ? 'flex' : 'none' }};"
-                                    title="{{ __('index.clear_search') }}">
-                                <i class="link-icon" data-feather="x"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'employeeTable', 'directoryForm' => 'employeeFilterForm', 'directorySearch' => 'employeeListSearch', 'directoryRecords' => $users, 'directoryTitle' => __('index.employee_lists'), 'directoryIcon' => 'users', 'directoryPermission' => 'create_employee', 'directoryAddUrl' => route('admin.employees.create'), 'directoryDefaultSize' => '25', 'directorySearchKey' => 'search', 'directoryLive' => true])
             <div class="card-body p-0">
                 <style>
-                    /* Filter Form Compact Fields */
-                    #employeeFilterForm .form-label {
-                        font-size: 11px;
-                        font-weight: 600;
-                        color: #64748b;
-                        margin-bottom: 3px;
-                    }
-
-                    #employeeFilterForm .form-control {
-                        min-height: 33px;
-                        height: 33px;
-                        padding: 3px 9px;
-                        font-size: 0.8125rem;
-                        border-radius: 7px;
-                        border-color: #d7dfeb;
-                        background-color: #ffffff;
-                    }
-
-                    #employeeFilterForm .form-control:focus {
-                        border-color: #3b82f6;
-                        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.12);
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--single {
-                        min-height: 33px;
-                        height: 33px;
-                        padding: 1px 6px;
-                        border-radius: 7px;
-                        border: 1px solid #d7dfeb;
-                        background-color: #ffffff;
-                        font-size: 0.8125rem;
-                        display: flex;
-                        align-items: center;
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--single .select2-selection__rendered {
-                        line-height: 31px;
-                        padding-left: 2px;
-                        font-size: 0.8125rem;
-                        color: #334155;
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--single .select2-selection__arrow {
-                        height: 31px;
-                        right: 8px;
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--multiple {
-                        min-height: 33px;
-                        padding: 1px 6px;
-                        border-radius: 7px;
-                        border: 1px solid #d7dfeb;
-                        background-color: #ffffff;
-                        font-size: 0.8125rem;
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--multiple .select2-selection__choice {
-                        margin-top: 2px;
-                        margin-bottom: 2px;
-                        padding: 1px 6px;
-                        font-size: 11px;
-                        border-radius: 4px;
-                        background-color: #eff6ff;
-                        border: 1px solid #bfdbfe;
-                        color: #1d4ed8;
-                    }
-
-                    #employeeFilterForm .select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
-                        margin-top: 2px;
-                        font-size: 0.8125rem;
-                        height: 24px;
-                    }
-
                     .employee-toolbar {
                         display: grid;
                         grid-template-columns: auto 1fr auto;
@@ -836,7 +664,7 @@
                                 </span>
                             </th>
                             @canany(['employee.profile.view','edit_employee','delete_employee','change_password','force_logout','show_detail_employee'])
-                                <th class="text-end pe-2" style="width: 85px;">{{ __('index.action') }}</th>
+                                <th class="text-end pe-2" style="width: 85px;" data-directory-actions>{{ __('index.action') }}</th>
                             @endcanany
                         </tr>
                         </thead>

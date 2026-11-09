@@ -45,7 +45,10 @@ class SellStaffReportController extends Controller
             );
         }
 
-        $reports = $query->paginate(25)->withQueryString();
+        $requestedSize = $request->input('per_page', '25');
+        $pageSize = $requestedSize === 'all' ? max(1, (clone $query)->count())
+            : (in_array((int) $requestedSize, [10, 25, 50, 100, 200, 500, 1000], true) ? (int) $requestedSize : 25);
+        $reports = $query->paginate($pageSize)->withQueryString();
         $summary = $this->summaryQuery($filterData)->first();
         $totalQty = $this->totalQtyQuery($filterData);
         $staffSummary = $this->staffSummaryQuery($filterData)->get();

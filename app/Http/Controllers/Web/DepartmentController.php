@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Helpers\AppHelper;
+use App\Exports\DepartmentTableExport;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\User;
@@ -11,6 +12,7 @@ use App\Repositories\CompanyRepository;
 use App\Repositories\DepartmentRepository;
 use App\Repositories\UserRepository;
 use App\Requests\Department\DepartmentStoreRequest;
+use App\Services\DepartmentDeletionService;
 use App\Traits\CustomAuthorizesRequests;
 use Exception;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -18,7 +20,13 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\QueryException;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DepartmentController extends Controller
 {
@@ -45,26 +53,7 @@ class DepartmentController extends Controller
     {
         $this->authorize('list_department');
         try {
-            $branchParam = $request->query('branch', $request->query('branch_id', []));
-            $branchIds = collect(is_array($branchParam) ? $branchParam : [$branchParam])
-                ->filter(fn ($id) => $id !== null && $id !== '')
-                ->map(fn ($id) => (string) $id)
-                ->unique()
-                ->values()
-                ->all();
-
-            $filterParameters = [
-                'company_id' => AppHelper::getAuthUserCompanyId(),
-                'name' =>  $request->name ?? null,
-                'search' => $request->search ?? null,
-                'branch' =>  $branchIds,
-                'is_active' => $request->is_active ?? null,
-                'per_page' => $request->per_page ?? 25,
-            ];
-
-            if(!auth('admin')->check() && auth()->check()){
-                $filterParameters['branch'] = [(string) auth()->user()->branch_id];
-            }
+            $filterParameters = $this->listFilters($request);
 
             $selectBranch = ['id','name'];
             $with = ['branch:id,name', 'departmentHead:id,name', 'employees:id,name,avatar,department_id'];
@@ -292,38 +281,107 @@ class DepartmentController extends Controller
         }
     }
 
-    public function delete($id)
+    public function delete(Request $request, $id, DepartmentDeletionService $deletion)
     {
         $this->authorize('delete_department');
-        try {
-            $select = ['*'];
-            $with = ['posts'];
-            $departmentDetail = $this->departmentRepo->findDepartmentById($id,$select,$with);
-            if (!$departmentDetail) {
-                throw new Exception(__('message.department_not_found'), 404);
-            }
-
-            $allRelated = Department::where('company_id', $departmentDetail->company_id)
-                ->where('dept_name', $departmentDetail->dept_name)
-                ->with('posts')
-                ->get();
-
-            foreach ($allRelated as $item) {
-                if (count($item->posts) > 0) {
-                    throw new Exception(__('message.delete_department_warning'), 403);
-                }
-            }
-
-            DB::beginTransaction();
-            foreach ($allRelated as $item) {
-                $this->departmentRepo->delete($item);
-            }
-            DB::commit();
-            return redirect()->back()->with('success', __('message.delete_department'));
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return redirect()->back()->with('danger', $exception->getMessage());
+        if (!$request->isMethod('get')) {
+            $request->validate(['remove_positions' => ['sometimes', 'boolean'], 'unlink_records' => ['sometimes', 'boolean']]);
+            if ($request->boolean('remove_positions')) $this->authorize('delete_post');
         }
+        try {
+            if ($request->isMethod('get')) {
+                return response()->json($deletion->preview($deletion->departments($id)) + [
+                    'can_remove_positions' => auth('admin')->check() || Gate::allows('delete_post'),
+                    'can_change_positions' => auth('admin')->check() || Gate::allows('edit_post'),
+                    'can_change_employees' => auth('admin')->check() || Gate::allows('edit_employee'),
+                    'employees_url' => route('admin.departments.employees', ['id' => $id, 'employee_status' => 'all', 'include_position_assignments' => 1]),
+                ]);
+            }
+            $deletion->delete($id, $request->boolean('remove_positions'), $request->boolean('unlink_records'));
+            return response()->json(['message' => __('message.delete_department')]);
+        } catch (ValidationException $exception) {
+            return response()->json(['message' => collect($exception->errors())->flatten()->first()], 422);
+        } catch (ModelNotFoundException $exception) {
+            return response()->json(['message' => __('message.department_not_found')], 404);
+        } catch (QueryException $exception) {
+            report($exception);
+            return response()->json(['message' => __('index.department_delete_reassign')], 409);
+        } catch (Exception $exception) {
+            report($exception);
+            return response()->json(['message' => __('index.department_delete_failed')], 500);
+        }
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('list_department');
+        $columns = [
+            'id' => '#', 'name' => __('index.name'), 'head' => __('index.department_head'),
+            'employees' => __('index.total_employees'), 'address' => __('index.address'),
+            'branch' => __('index.branch_name'), 'status' => __('index.status'),
+        ];
+        $request->validate([
+            'format' => ['required', Rule::in(['json', 'csv', 'excel', 'print', 'pdf'])],
+            'orientation' => ['nullable', Rule::in(['portrait', 'landscape'])],
+            'columns' => ['sometimes', 'array', 'min:1'],
+            'columns.*' => ['string', Rule::in(array_keys($columns))],
+        ]);
+        $keys = array_values(array_intersect(array_keys($columns), $request->input('columns', array_keys($columns))));
+        $headings = array_map(fn ($key) => $columns[$key], $keys);
+        $filter = $this->listFilters($request);
+        $filter['per_page'] = 'all';
+        $filter['page'] = 1;
+        $departments = $this->departmentRepo->getAllPaginatedDepartments($filter);
+        $rows = $departments->getCollection()->values()->map(function ($department, $index) use ($keys) {
+            $values = [
+                'id' => (string) ($index + 1), 'name' => $department->dept_name,
+                'head' => $department->departmentHeads->pluck('name')->join("\n"),
+                'employees' => (string) $department->employees_count,
+                'address' => $department->departmentEntries->map(fn ($entry) => ($department->departmentEntries->count() > 1 ? ($entry->branch?->name ?? '').': ' : '').($entry->address ?? ''))->join("\n"),
+                'branch' => $department->branches->pluck('name')->join("\n"),
+                'status' => $department->is_active ? __('index.active') : __('index.inactive'),
+            ];
+            return array_map(fn ($key) => (string) $values[$key], $keys);
+        })->all();
+        $format = $request->input('format');
+        if ($format === 'json') return response()->json(compact('headings', 'rows'));
+        if (in_array($format, ['csv', 'excel'], true)) {
+            if ($format === 'csv') $rows = array_map(fn ($row) => array_map(fn ($value) => preg_match('/^[=+\-@\t\r]/', $value) ? "'".$value : $value, $row), $rows);
+            return Excel::download(new DepartmentTableExport($headings, $rows), 'departments.'.($format === 'csv' ? 'csv' : 'xlsx'));
+        }
+        $orientation = $request->input('orientation', 'landscape');
+        $employeeStatus = $filter['employee_status'] === 'all' ? __('index.all') : __('index.'.$filter['employee_status']);
+        return view('admin.department.exports.table', compact('headings', 'rows', 'format', 'orientation', 'employeeStatus'));
+    }
+
+    private function listFilters(Request $request): array
+    {
+        $branchParam = $request->query('branch', $request->query('branch_id', []));
+        $branchIds = collect(is_array($branchParam) ? $branchParam : [$branchParam])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $filterParameters = [
+            'company_id' => AppHelper::getAuthUserCompanyId(),
+            'name' =>  $request->name ?? null,
+            'search' => $request->search ?? null,
+            'branch' =>  $branchIds,
+            'is_active' => $request->is_active ?? null,
+            'employee_status' => in_array($request->query('employee_status', 'all'), ['all', 'active', 'inactive'], true)
+                ? $request->query('employee_status', 'all') : 'all',
+            'per_page' => $request->per_page ?? 10,
+            'sort_by' => in_array($request->query('sort_by', 'id'), DepartmentRepository::SORT_COLUMNS, true)
+                ? $request->query('sort_by', 'id') : 'id',
+            'sort_direction' => $request->query('sort_direction') === 'asc' ? 'asc' : 'desc',
+        ];
+
+        if(!auth('admin')->check() && auth()->check()){
+            $filterParameters['branch'] = [(string) auth()->user()->branch_id];
+        }
+        return $filterParameters;
     }
 
     /**

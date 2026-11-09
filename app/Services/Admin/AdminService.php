@@ -11,9 +11,9 @@ class AdminService
         protected AdminRepository $adminRepository
     ){}
 
-    public function getAllAdmin($select= ['*'])
+    public function getAllAdmin($select= ['*'], array $filters = [])
     {
-        return $this->adminRepository->getAll($select);
+        return $this->adminRepository->getAll($select, $filters);
     }
 
 

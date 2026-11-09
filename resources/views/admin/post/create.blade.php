@@ -38,8 +38,10 @@
             </div>
         </div>
 
+        @include('admin.post.common.selection-modal')
     </section>
 @endsection
 @section('scripts')
     @include('admin.post.common.scripts')
+    <script src="{{ asset('assets/js/post-selection-popup.js') }}?v={{ filemtime(public_path('assets/js/post-selection-popup.js')) }}"></script>
 @endsection

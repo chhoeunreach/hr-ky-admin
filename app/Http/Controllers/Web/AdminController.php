@@ -26,8 +26,16 @@ class AdminController extends Controller
     {
         try {
 
-            $admins = $this->adminService->getAllAdmin();
-            return view($this->view . 'index', compact('admins'));
+            $filters = $request->validate([
+                'name' => ['nullable', 'string', 'max:255'],
+                'email' => ['nullable', 'string', 'max:255'],
+                'search' => ['nullable', 'string', 'max:255'],
+                'is_active' => ['nullable', 'in:0,1'],
+                'per_page' => ['nullable', 'in:10,25,50,100,200,500,1000,all'],
+            ]);
+            $filterParameters = array_merge(['name' => '', 'email' => '', 'search' => '', 'is_active' => '', 'per_page' => 25], $filters);
+            $admins = $this->adminService->getAllAdmin(['id', 'name', 'email', 'is_active'], $filterParameters);
+            return view($this->view . 'index', compact('admins', 'filterParameters'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

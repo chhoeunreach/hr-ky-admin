@@ -132,7 +132,32 @@ class EmployeeProfileDirectoryTest extends TestCase
         $this->assertSame('admin.employees.profile.partials.directory-results', $view->name());
         $html = $view->render();
         $this->assertStringContainsString('id="employeeProfileResults"', $html);
+        $this->assertStringNotContainsString('hasAny([', $html);
         $this->assertStringContainsString('KY-00474', $html);
         $this->assertStringNotContainsString('id="employeeProfileSearch"', $html);
+    }
+    public function test_full_directory_uses_shared_toolbar_for_all_results_and_respects_print_permission(): void
+    {
+        $request = Request::create('/admin/employees/profile-directory', 'GET', ['per_page' => 'all', 'employment_status' => '']);
+        app()->instance('request', $request);
+        $view = app(EmployeeProfileController::class)->index($request);
+        $source = str_replace("@extends('layouts.master')", '', file_get_contents(resource_path('views/admin/employees/profile/index.blade.php')));
+        $html = \Illuminate\Support\Facades\Blade::render($source."\n@yield('main-content')", $view->getData());
+        $this->assertStringContainsString('data-directory-table="employeeProfileTable"', $html);
+        $this->assertStringContainsString('id="employeeProfileFilterCollapse" class="collapse"', $html);
+        $this->assertStringContainsString('id="employeeProfileSearch"', $html);
+        $this->assertStringContainsString('data-directory-total="3"', $html);
+        $this->assertStringContainsString('data-directory-export="excel"', $html);
+        $this->assertStringNotContainsString('data-directory-export="print"', $html);
+        $this->assertStringNotContainsString('data-directory-export="pdf"', $html);
+        $this->assertStringNotContainsString('class="directory-add"', $html);
+        $this->assertStringNotContainsString('hasAny([', $html);
+        $this->assertStringContainsString('KY-00474', $html);
+    }
+
+    public function test_toolbar_page_sizes_are_honored_by_the_directory(): void
+    {
+        $this->assertSame(200, $this->directory(['per_page' => '200'])->getData()['employees']->perPage());
+        $this->assertSame(25, $this->directory(['per_page' => '-1'])->getData()['employees']->perPage());
     }
 }

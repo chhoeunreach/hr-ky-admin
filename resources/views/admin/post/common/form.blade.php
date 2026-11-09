@@ -9,7 +9,7 @@
     @if(!isset(auth()->user()->branch_id))
         <div class="col-lg-6 col-12 mb-3">
             <label for="branch_id" class="form-label fw-semibold text-dark">{{ __('index.branch') }} <span class="text-danger">*</span></label>
-            <select class="form-select" id="branch_id" name="branch_id[]" multiple required data-placeholder="{{ __('index.select_branch') }}" @if(isset($postDetail)) data-selection-popup="1" @endif>
+            <select class="form-select" id="branch_id" name="branch_id[]" multiple required data-placeholder="{{ __('index.select_branch') }}" data-selection-popup="1">
                 <option value="" disabled>{{ __('index.select_branch') }}</option>
                 @if(isset($companyDetail))
                     @foreach($availableBranches as $key => $branch)
@@ -27,7 +27,7 @@
 
     <div class="col-lg-6 col-12 mb-3">
         <label for="department_id" class="form-label fw-semibold text-dark">{{ __('index.department_label') }} <span class="text-danger">*</span></label>
-        <select class="form-select" id="department_id" name="dept_id[]" multiple required data-placeholder="{{ __('index.select_department') }}" data-auto-select-all="{{ $autoSelectAll ? '1' : '0' }}" @if(isset($postDetail)) data-selection-popup="1" @endif>
+        <select class="form-select" id="department_id" name="dept_id[]" multiple required data-placeholder="{{ __('index.select_department') }}" data-auto-select-all="{{ $autoSelectAll ? '1' : '0' }}" data-selection-popup="1">
             <option disabled>{{ __('index.select_department') }}</option>
         </select>
         <div class="form-text text-muted small">Select the department(s) associated with this position.</div>

@@ -102,24 +102,26 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm" id="printSellStaffReport">
                     <i data-feather="printer" class="icon-sm me-1"></i> Print Report
                 </button>
-                <a href="{{ route('admin.sell-staff-report.create') }}" class="btn btn-primary btn-sm">{{ __('index.add_new') }}</a>
             </div>
         </nav>
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="card-title mb-0">{{ __('index.sell_staff_report_filter') }}</h6>
-            </div>
-            <div class="card-body pb-0">
-                <form action="{{ route('admin.sell-staff-report.index') }}" method="get">
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'sellStaffReportFilters', 'directoryExpanded' => false])
+            <div id="sellStaffReportFilters" class="collapse">
+                <form class="directory-filter-form" id="sellStaffReportFilterForm" action="{{ route('admin.sell-staff-report.index') }}" method="get">
+                    @foreach(['ss_date_from','ss_date_to','ss_branch_id','ss_department_id','seller_name'] as $retainedFilter)
+                        @if(request()->filled($retainedFilter))<input type="hidden" name="{{ $retainedFilter }}" value="{{ request($retainedFilter) }}">@endif
+                    @endforeach
                     <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
                     <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
                     <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
-                    <div class="row">
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <input type="text" name="date_range" class="form-control" value="{{ $filterData['date_from'] && $filterData['date_to'] ? $filterData['date_from'] . ' - ' . $filterData['date_to'] : '' }}" placeholder="{{ __('index.date_range') }}" readonly>
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="sellDateRangeFilter" class="form-label">{{ __('index.date_range') }}</label>
+                            <input id="sellDateRangeFilter" type="text" name="date_range" class="form-control" value="{{ $filterData['date_from'] && $filterData['date_to'] ? $filterData['date_from'] . ' - ' . $filterData['date_to'] : '' }}" placeholder="{{ __('index.date_range') }}" readonly>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="top_filter_branch" class="form-label">{{ __('index.branch') }}</label>
                             <select class="form-control" id="top_filter_branch">
                                 <option value="">{{ __('index.all_branches') }}</option>
                                 @foreach($branches as $branch)
@@ -127,27 +129,23 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <select class="form-control" name="department_id">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="sellDepartmentFilter" class="form-label">{{ __('index.department') }}</label>
+                            <select id="sellDepartmentFilter" class="form-control" name="department_id">
                                 <option value="">{{ __('index.select_department') }}</option>
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3">
-                            <select class="form-control" name="service_type">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="sellServiceTypeFilter" class="form-label">{{ __('index.sell_type') }}</label>
+                            <select id="sellServiceTypeFilter" class="form-control" name="service_type">
                                 <option value="">{{ __('index.all_sell_types') }}</option>
                                 @foreach($sellTypes as $type)
                                     <option value="{{ $type }}" {{ ($filterData['service_type'] ?? '') == $type ? 'selected' : '' }}>{{ $type }}</option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-lg-3 col-md-6 mb-3 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">{{ __('index.filter') }}</button>
-                            <a href="{{ route('admin.sell-staff-report.index') }}" class="btn btn-warning">{{ __('index.clear') }}</a>
-                        </div>
                     </div>
-                    <div class="d-flex justify-content-end border-top pt-3 mb-3">
-                        <button type="submit" name="download_excel" value="1" class="btn btn-success">{{ __('index.export_excel') }}</button>
-                    </div>
+                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.sell-staff-report.index')])
                 </form>
             </div>
         </div>
@@ -237,21 +235,10 @@
         </div>
 
         <div class="card">
-            <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h6 class="card-title mb-0">{{ __('index.sell_staff_report') }}</h6>
-                <form action="{{ route('admin.sell-staff-report.index') }}" method="get" class="d-flex gap-2 no-print">
-                    <input type="hidden" name="date_from" value="{{ $filterData['date_from'] ?? '' }}">
-                    <input type="hidden" name="date_to" value="{{ $filterData['date_to'] ?? '' }}">
-                    <input type="hidden" name="branch_name" value="{{ $filterData['branch_name'] ?? '' }}">
-                    <input type="hidden" name="department_id" value="{{ $filterData['department_id'] ?? '' }}">
-                    <input type="hidden" name="service_type" value="{{ $filterData['service_type'] ?? '' }}">
-                    <input type="text" name="search" class="form-control" value="{{ $filterData['search'] ?? '' }}" placeholder="{{ __('index.search') }}">
-                    <button type="submit" class="btn btn-primary">{{ __('index.search') }}</button>
-                </form>
-            </div>
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'sellStaffReportTable', 'directoryForm' => 'sellStaffReportFilterForm', 'directorySearch' => 'sellStaffReportSearch', 'directoryRecords' => $reports, 'directoryTitle' => __('index.sell_staff_report'), 'directoryIcon' => 'shopping-bag', 'directoryPermission' => 'view_sell_staff_report', 'directoryAddUrl' => route('admin.sell-staff-report.create'), 'directoryDefaultSize' => '25', 'directorySearchKey' => 'search', 'directoryLive' => false])
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table align-middle">
+                    <table id="sellStaffReportTable" class="table align-middle">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -265,7 +252,7 @@
                             <th class="text-center">{{ __('index.items') }}</th>
                             <th class="text-end">{{ __('index.total_amount') }}</th>
                             <th>{{ __('index.created_at') }}</th>
-                            <th class="text-center print-hidden">{{ __('index.action') }}</th>
+                            <th class="text-center print-hidden" data-directory-actions>{{ __('index.action') }}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -275,7 +262,7 @@
                                 tabindex="0"
                                 role="link"
                                 aria-label="{{ __('index.view') }} {{ $report->invoice_no }}">
-                                <td class="text-muted">{{ $reports->firstItem() + $loop->iteration }}</td>
+                                <td class="text-muted">{{ $reports->firstItem() + $loop->index }}</td>
                                 <td>
                                     <a href="{{ route('admin.sell-staff-report.show', $report->id) }}" class="fw-semibold text-decoration-none" title="{{ $report->invoice_no }}">
                                         {{ $report->invoice_no }}

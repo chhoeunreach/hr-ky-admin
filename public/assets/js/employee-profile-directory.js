@@ -4,10 +4,10 @@
     const clear = document.getElementById('employeeProfileSearchClear');
     const error = document.getElementById('employeeProfileSearchError');
     const loading = document.getElementById('employeeProfileSearchLoading');
-    if (!form || !input || !clear) return;
+    if (!form || !input) return;
     let timer, pending, sequence = 0, composing = false;
     const results = () => document.getElementById('employeeProfileResults');
-    const syncClear = () => { clear.style.display = input.value ? 'flex' : 'none'; };
+    const syncClear = () => { if (clear) clear.style.display = input.value ? 'flex' : 'none'; };
     const cancel = () => {
         window.clearTimeout(timer);
         ++sequence;
@@ -79,6 +79,9 @@
             if (!incoming) throw new Error('Missing directory results');
             results().querySelectorAll('[data-bs-toggle="dropdown"]').forEach(button => window.bootstrap?.Dropdown.getInstance(button)?.dispose());
             results().replaceWith(incoming);
+            const count = document.querySelector('[data-directory-count="employeeProfileTable"]');
+            if (count && incoming.dataset.directoryTotal !== undefined) count.textContent = Number(incoming.dataset.directoryTotal).toLocaleString();
+            document.dispatchEvent(new CustomEvent('directory:updated'));
             initializeDropdowns();
             window.feather?.replace();
             syncSort(url);
@@ -100,13 +103,14 @@
     input.addEventListener('input', schedule);
     input.addEventListener('compositionstart', () => { composing = true; cancel(); });
     input.addEventListener('compositionend', () => { composing = false; schedule(); });
-    clear.addEventListener('click', () => {
+    clear?.addEventListener('click', () => {
         input.value = '';
         syncClear();
         input.focus();
         refresh(formUrl());
     });
     form.addEventListener('change', cancel);
+    document.getElementById('per_page')?.addEventListener('change', () => refresh(formUrl(), {push: true}));
     form.addEventListener('submit', event => {
         if (event.submitter?.hasAttribute('data-employee-report')) { cancel(); return; }
         event.preventDefault();

@@ -24,6 +24,8 @@ use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DCardPrintController;
 use App\Http\Controllers\Web\DataExportController;
 use App\Http\Controllers\Web\DepartmentController;
+use App\Http\Controllers\Web\DepartmentEmployeeController;
+use App\Http\Controllers\Web\DepartmentPositionController;
 use App\Http\Controllers\Web\DeviceController;
 use App\Http\Controllers\Web\EmployeeChatController;
 use App\Http\Controllers\Web\EmployeeLogOutRequestController;
@@ -309,11 +311,17 @@ Route::group([
 
 
         /** Department route */
+        Route::get('departments/export/table', [DepartmentController::class, 'export'])->name('departments.export');
+        Route::get('departments/positions/{position}/assignment', [DepartmentPositionController::class, 'options'])->name('departments.position-assignment');
+        Route::patch('departments/positions/{position}/assignment', [DepartmentPositionController::class, 'update']);
+        Route::get('departments/{id}/employees', [DepartmentEmployeeController::class, 'index'])->name('departments.employees');
+        Route::get('departments/employees/{employee}/assignment', [DepartmentEmployeeController::class, 'options'])->name('departments.employee-assignment');
+        Route::patch('departments/employees/{employee}/assignment', [DepartmentEmployeeController::class, 'update']);
         Route::get('departments/{id}/performance-defaults', [DepartmentController::class, 'performanceDefaults'])->name('departments.performance-defaults');
         Route::post('departments/{id}/performance-defaults', [DepartmentController::class, 'applyPerformanceDefaults'])->name('departments.performance-defaults.apply');
         Route::resource('departments', DepartmentController::class);
         Route::get('departments/toggle-status/{id}', [DepartmentController::class, 'toggleStatus'])->name('departments.toggle-status');
-        Route::get('departments/delete/{id}', [DepartmentController::class, 'delete'])->name('departments.delete');
+        Route::match(['get', 'delete'], 'departments/delete/{id}', [DepartmentController::class, 'delete'])->name('departments.delete');
         Route::get('departments/get-All-Departments/{branchId}', [DepartmentController::class, 'getAllDepartmentsByBranchId'])->name('departments.getAllDepartmentsByBranchId');
 
 

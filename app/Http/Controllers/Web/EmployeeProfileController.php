@@ -71,7 +71,7 @@ class EmployeeProfileController extends Controller
         $requestedPerPage = $request->input('per_page', 25);
         $perPage = $requestedPerPage === 'all'
             ? 'all'
-            : (in_array((int) $requestedPerPage, [10, 25, 50, 100], true) ? (int) $requestedPerPage : 25);
+            : (in_array((int) $requestedPerPage, [10, 25, 50, 100, 200, 500, 1000], true) ? (int) $requestedPerPage : 25);
 
         $employeeQuery = User::with([
                 'branch:id,name',

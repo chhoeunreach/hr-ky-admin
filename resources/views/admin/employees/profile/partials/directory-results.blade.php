@@ -69,12 +69,12 @@
             };
         @endphp
 
-            <div class="card-body" id="employeeProfileResults" aria-busy="false">
+            <div class="card-body" id="employeeProfileResults" aria-busy="false" data-directory-total="{{ method_exists($employees, 'total') ? $employees->total() : $employees->count() }}">
                 <div class="table-responsive">
-                    <table class="table table-sm">
+                    <table id="employeeProfileTable" class="table table-sm">
                         <thead>
                         <tr>
-                            <th class="no-print">{{ __('index.action') }}</th>
+                            <th class="no-print" data-directory-actions>{{ __('index.action') }}</th>
                             <th aria-sort="{{ request('name_direction') === 'desc' ? 'descending' : (request('name_direction') === 'asc' ? 'ascending' : 'none') }}">
                                 <a data-profile-results-link class="d-flex align-items-center justify-content-between gap-2 text-reset text-decoration-none"
                                    href="{{ request()->fullUrlWithQuery(['name_direction' => request('name_direction') === 'asc' ? 'desc' : 'asc', 'working_life_direction' => null, 'page' => null]) }}">

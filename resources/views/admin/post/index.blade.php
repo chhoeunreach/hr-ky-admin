@@ -13,108 +13,19 @@
                 <li class="breadcrumb-item active" aria-current="page">{{ __('index.posts') }}</li>
             </ol>
 
-            @can('create_post')
-                <a href="{{ route('admin.posts.create') }}">
-                    <button class="btn btn-primary add_department">
-                        <i class="link-icon" data-feather="plus"></i>{{ __('index.add_post') }}
-                    </button>
-                </a>
-            @endcan
+
         </nav>
 
 
-        @php
-            $hasPostFilters = filled($filterParameters['branch_id'] ?? null)
-                || filled($filterParameters['department_id'] ?? null)
-                || filled($filterParameters['name'] ?? null)
-                || filled($filterParameters['search'] ?? null)
-                || (($filterParameters['is_active'] ?? '') !== '' && $filterParameters['is_active'] !== null)
-                || (($filterParameters['per_page'] ?? '25') !== '25');
-        @endphp
-
-        <!-- Top KPI Metric Cards -->
-        <div class="row g-3 mb-4">
-            <div class="col-xl-3 col-sm-6 col-12">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: 14px; background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%); border-left: 4px solid #3b82f6 !important;">
-                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium d-block mb-1">Total Positions</span>
-                            <h3 class="fw-bold mb-0 text-dark">{{ $stats['total_posts'] ?? $posts->total() }}</h3>
-                        </div>
-                        <div class="rounded-3 bg-primary bg-opacity-10 text-primary p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="link-icon" data-feather="briefcase" style="width: 24px; height: 24px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-sm-6 col-12">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: 14px; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); border-left: 4px solid #10b981 !important;">
-                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium d-block mb-1">Active Positions</span>
-                            <h3 class="fw-bold mb-0 text-success">{{ $stats['active_posts'] ?? 0 }}</h3>
-                        </div>
-                        <div class="rounded-3 bg-success bg-opacity-10 text-success p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                            <i class="link-icon" data-feather="check-circle" style="width: 24px; height: 24px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-sm-6 col-12">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: 14px; background: linear-gradient(135deg, #f5f3ff 0%, #ffffff 100%); border-left: 4px solid #8b5cf6 !important;">
-                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium d-block mb-1">Total Employees</span>
-                            <h3 class="fw-bold mb-0" style="color: #7c3aed;">{{ $stats['total_employees'] ?? 0 }}</h3>
-                        </div>
-                        <div class="rounded-3 p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                            <i class="link-icon" data-feather="users" style="width: 24px; height: 24px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-sm-6 col-12">
-                <div class="card border-0 shadow-sm h-100" style="border-radius: 14px; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); border-left: 4px solid #f97316 !important;">
-                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                        <div>
-                            <span class="text-muted small fw-medium d-block mb-1">Covered Branches</span>
-                            <h3 class="fw-bold mb-0" style="color: #ea580c;">{{ $stats['total_branches'] ?? 0 }}</h3>
-                        </div>
-                        <div class="rounded-3 p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: rgba(249, 115, 22, 0.1); color: #f97316;">
-                            <i class="link-icon" data-feather="map-pin" style="width: 24px; height: 24px;"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card mb-4 border-0 shadow-sm" style="border-radius: 14px;">
-            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between gap-2 py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <button class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-2 rounded-3 px-3"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#postFilterCollapse"
-                            aria-expanded="{{ $hasPostFilters ? 'true' : 'false' }}"
-                            aria-controls="postFilterCollapse">
-                        <i class="link-icon" data-feather="filter" style="width: 14px; height: 14px;"></i>
-                        <span>{{ __('index.filter') }}</span>
-                        @if($hasPostFilters)
-                            <span class="badge bg-primary rounded-pill" style="font-size: 10px;">Active</span>
-                        @endif
-                    </button>
-                    <h6 class="card-title mb-0 fw-bold">{{ __('index.post_lists') }}</h6>
-                </div>
-            </div>
-            <div id="postFilterCollapse" class="collapse{{ $hasPostFilters ? ' show' : '' }}">
-            <form class="forms-sample card-body pb-0" action="{{ route('admin.posts.index') }}" id="postFilterForm" method="get">
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'postFilterCollapse', 'directoryExpanded' => false])
+            <div id="postFilterCollapse" class="collapse">
+            <form class="forms-sample directory-filter-form" action="{{ route('admin.posts.index') }}" id="postFilterForm" method="get">
                 <input type="hidden" id="postSearch" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                <div class="row align-items-center">
+                <div class="row g-3 align-items-end">
                     @if(!isset(auth()->user()->branch_id))
-                        <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
+                        <div class="col-lg-3 col-md-6">
+                            <label for="branch_id" class="form-label">{{ __('index.branch') }}</label>
                             <select class="form-control" id="branch_id" name="branch_id[]" multiple data-placeholder="{{ __('index.select_branch') }}">
                                 @if(isset($companyDetail))
                                     @foreach($companyDetail->branches()->get() as $key => $branch)
@@ -128,70 +39,37 @@
                     @endif
 
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
-                        <select class="form-control" name="department_id[]" id="department_id" multiple data-placeholder="{{ __('index.select_department') }}">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="department_id" class="form-label">{{ __('index.department') }}</label>
+                            <select class="form-control" name="department_id[]" id="department_id" multiple data-placeholder="{{ __('index.select_department') }}">
 
                         </select>
                     </div>
 
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
-                        <input type="text" placeholder="{{ __('index.search_by_post_name') }}" name="name" value="{{ $filterParameters['name'] }}" class="form-control">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="postNameFilter" class="form-label">{{ __('index.post_name') }}</label>
+                            <input id="postNameFilter" type="text" placeholder="{{ __('index.search_by_post_name') }}" name="name" value="{{ $filterParameters['name'] }}" class="form-control">
 
                     </div>
 
-                    <div class="col-xxl-3 col-xl-3 col-md-6 mb-4">
-                        <select class="form-control" id="is_active" name="is_active">
+                    <div class="col-lg-3 col-md-6">
+                        <label for="is_active" class="form-label">{{ __('index.status') }}</label>
+                            <select class="form-control" id="is_active" name="is_active">
                             <option value="">{{ __('index.all') }} {{ __('index.status') }}</option>
                             <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
                             <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
                         </select>
                     </div>
-
-                    <div class="col-xxl-4 col-xl-4 col-md-6">
-                        <div class="d-md-flex align-items-center gap-2">
-                            <button type="submit" class="btn btn-block btn-success mb-4 rounded-3">{{  __('index.filter') }}</button>
-                            <a href="{{ route('admin.posts.index') }}" class="btn btn-block btn-primary mb-4 rounded-3">{{  __('index.reset') }}</a>
-                        </div>
-                    </div>
                 </div>
+                @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.posts.index')])
             </form>
             </div>
         </div>
 
         <div id="postListSection">
         <div class="card support-main border-0 shadow-sm" style="border-radius: 14px; overflow: hidden;">
-            <div class="card-header bg-white border-bottom py-3">
-                <div class="post-toolbar">
-                    <div class="post-toolbar-left">
-                        <h6 class="card-title mb-0 fw-bold">{{ __('index.post_lists') }}</h6>
-                        <div class="post-entry-control">
-                            <span class="text-muted small">Show</span>
-                            <select class="form-control post-entry-select" id="per_page" name="per_page" form="postFilterForm">
-                                <option value="25" {{ (string)($filterParameters['per_page'] ?? '') === '25' ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ (string)($filterParameters['per_page'] ?? '') === '50' ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ (string)($filterParameters['per_page'] ?? '') === '100' ? 'selected' : '' }}>100</option>
-                                <option value="200" {{ (string)($filterParameters['per_page'] ?? '') === '200' ? 'selected' : '' }}>200</option>
-                                <option value="500" {{ (string)($filterParameters['per_page'] ?? '') === '500' ? 'selected' : '' }}>500</option>
-                                <option value="1000" {{ (string)($filterParameters['per_page'] ?? '') === '1000' ? 'selected' : '' }}>1,000</option>
-                                <option value="all" {{ (string)($filterParameters['per_page'] ?? '') === 'all' ? 'selected' : '' }}>{{ __('index.all') }}</option>
-                            </select>
-                            <span class="text-muted small">entries</span>
-                        </div>
-                    </div>
-                    <div class="post-toolbar-search d-flex align-items-center gap-2">
-                        <button type="button" class="btn btn-outline-secondary btn-sm d-inline-flex align-items-center gap-1 rounded-3 px-3 py-2" id="exportPostCsvBtn" title="Export as CSV">
-                            <i class="link-icon" data-feather="download" style="width: 14px; height: 14px;"></i>
-                            <span>Export</span>
-                        </button>
-                        <input type="text"
-                               id="postListSearch"
-                               class="post-list-search"
-                               value="{{ $filterParameters['search'] ?? '' }}"
-                               placeholder="Search positions...">
-                    </div>
-                </div>
-            </div>
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'postTable', 'directoryForm' => 'postFilterForm', 'directorySearch' => 'postListSearch', 'directoryRecords' => $posts, 'directoryTitle' => __('index.post_lists'), 'directoryIcon' => 'briefcase', 'directoryPermission' => 'create_post', 'directoryAddUrl' => route('admin.posts.create'), 'directoryDefaultSize' => '25', 'directorySearchKey' => 'search', 'directoryLive' => true])
             <div class="card-body p-0">
                 <style>
                     .post-toolbar {
@@ -291,7 +169,7 @@
                             <th class="text-center" style="width: 140px;">{{ __('index.status') }}</th>
 
                             @canany(['edit_post','delete_post'])
-                                <th class="text-center" style="width: 100px;">{{ __('index.action') }}</th>
+                                <th class="text-center" style="width: 100px;" data-directory-actions>{{ __('index.action') }}</th>
                             @endcanany
                         </tr>
                         </thead>

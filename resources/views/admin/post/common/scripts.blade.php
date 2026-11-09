@@ -20,14 +20,17 @@
             const options = select.find('option').filter(function () {
                 return this.value !== '' && !this.disabled;
             });
-            const allSelected = options.length > 0 && options.toArray().every(option => option.selected);
+            const selectedCount = options.toArray().filter(option => option.selected).length;
+            const allSelected = options.length > 0 && selectedCount === options.length;
             const selection = control.$selection.find('.select2-selection__rendered');
 
             selection.find('.select2-selection__all-summary').remove();
-            selection.find('.select2-selection__choice').toggle(!allSelected);
-            if (allSelected) {
+            selection.find('.select2-selection__choice').hide();
+            if (selectedCount > 0) {
+                const countLabel = @json(__('index.selected_count')).replace(':count', selectedCount.toLocaleString());
                 $('<li class="select2-selection__all-summary"></li>')
-                    .text(@json(__('index.all')))
+                    .append($('<span class="badge bg-light text-primary border rounded-pill px-3 py-2"></span>')
+                        .text(allSelected ? @json(__('index.all')) + ' · ' + countLabel : countLabel))
                     .css({ float: 'left', marginTop: '4px', padding: '0 8px' })
                     .insertBefore(selection.find('.select2-search--inline'));
             }
@@ -318,6 +321,10 @@
             }
 
             currentTableBody.innerHTML = nextTableBody.innerHTML;
+            const count = document.querySelector('[data-directory-count="postTable"]');
+            const nextCount = doc.querySelector('[data-directory-count="postTable"]');
+            if (count && nextCount) count.textContent = nextCount.textContent;
+            document.dispatchEvent(new CustomEvent('directory:updated'));
 
             if (currentPagination && nextPagination) {
                 currentPagination.innerHTML = nextPagination.innerHTML;
