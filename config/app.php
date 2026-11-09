@@ -69,6 +69,9 @@ return [
 
     'mobile_app_url' => env('MOBILE_APP_URL'),
 
+    'fallback_url' => env('APP_FALLBACK_URL'),
+    'mobile_app_fallback_url' => env('MOBILE_APP_FALLBACK_URL', env('APP_FALLBACK_URL')),
+
     'asset_url' => env('ASSET_URL'),
 
     /*

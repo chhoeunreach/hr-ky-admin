@@ -423,6 +423,9 @@ class DashboardApiController extends Controller
             ?? $request->header('App-Version')
             ?? $request->get('app_version');
 
-        return AppHelper::sendSuccessResponse(__('index.data_found'), AppHelper::getAppVersionCheckData($currentAppVersion));
+        $data = AppHelper::getAppVersionCheckData($currentAppVersion);
+        $data['server_fallback_url'] = \App\Helpers\MobileServerConfiguration::fallbackUrl();
+
+        return AppHelper::sendSuccessResponse(__('index.data_found'), $data);
     }
 }

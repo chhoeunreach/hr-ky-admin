@@ -150,8 +150,9 @@ class DashboardController extends Controller
     public function showQR()
     {
         $url = $this->generateUrl();
+        $backupUrl = \App\Helpers\MobileServerConfiguration::qrPayload();
 
-        return view('admin.print_qr', compact('url'));
+        return view('admin.print_qr', compact('url', 'backupUrl'));
     }
 
     public function employeeChat()
@@ -173,10 +174,7 @@ class DashboardController extends Controller
 
     private function generateUrl(): string
     {
-        $url = config('app.mobile_app_url') ?: config('app.url');
-        $url = rtrim($url, '/') . '/';
-
-        return base64_encode($url);
+        return base64_encode(\App\Helpers\MobileServerConfiguration::primaryUrl());
     }
 
     private function transformDepartmentDashboardSummaries($departmentDashboardSummaries)

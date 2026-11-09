@@ -9,7 +9,7 @@
     <style>
         body {
             margin: 0;
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -41,6 +41,13 @@
 <body>
 <div class="center">
     <h4 class="scan-text-url">{{ __('index.app_qr') }}</h4>
+    @if (!empty($backupUrl))
+        <h4>Connect with automatic backup</h4>
+        <p>Scan this code with the updated mobile app to save both server addresses.</p>
+        <div class="qr">{!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(300)->format('svg')->errorCorrection('H')->generate($backupUrl) !!}</div>
+        <hr>
+        <p>For older mobile apps (primary server only)</p>
+    @endif
     @php
         $qrImage = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(400)
             ->format('svg')
