@@ -1,16 +1,18 @@
 <div class="row g-3">
+    @php
+        $availableBranches = isset($companyDetail) ? $companyDetail->branches : collect();
+        $autoSelectAll = !isset($postDetail) && !session()->hasOldInput();
+        $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($postDetail) ? [$postDetail->branch_id] : ($autoSelectAll ? $availableBranches->pluck('id')->all() : []))))
+            ->map(fn ($id) => (string) $id)
+            ->all();
+    @endphp
     @if(!isset(auth()->user()->branch_id))
         <div class="col-lg-6 col-12 mb-3">
             <label for="branch_id" class="form-label fw-semibold text-dark">{{ __('index.branch') }} <span class="text-danger">*</span></label>
-            <select class="form-select" id="branch_id" name="branch_id[]" multiple required data-placeholder="{{ __('index.select_branch') }}">
+            <select class="form-select" id="branch_id" name="branch_id[]" multiple required data-placeholder="{{ __('index.select_branch') }}" @if(isset($postDetail)) data-selection-popup="1" @endif>
                 <option value="" disabled>{{ __('index.select_branch') }}</option>
                 @if(isset($companyDetail))
-                    @foreach($companyDetail->branches()->get() as $key => $branch)
-                        @php
-                            $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($postDetail) ? [$postDetail->branch_id] : [])))
-                                ->map(fn ($id) => (string) $id)
-                                ->all();
-                        @endphp
+                    @foreach($availableBranches as $key => $branch)
                         <option value="{{$branch->id}}"
                             {{ in_array((string) $branch->id, $selectedBranchIds, true) ? 'selected': '' }}>
                             {{ucfirst($branch->name)}}</option>
@@ -25,7 +27,7 @@
 
     <div class="col-lg-6 col-12 mb-3">
         <label for="department_id" class="form-label fw-semibold text-dark">{{ __('index.department_label') }} <span class="text-danger">*</span></label>
-        <select class="form-select" id="department_id" name="dept_id[]" multiple required data-placeholder="{{ __('index.select_department') }}">
+        <select class="form-select" id="department_id" name="dept_id[]" multiple required data-placeholder="{{ __('index.select_department') }}" data-auto-select-all="{{ $autoSelectAll ? '1' : '0' }}" @if(isset($postDetail)) data-selection-popup="1" @endif>
             <option disabled>{{ __('index.select_department') }}</option>
         </select>
         <div class="form-text text-muted small">Select the department(s) associated with this position.</div>

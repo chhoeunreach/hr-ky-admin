@@ -6,11 +6,41 @@
             allowClear: true,
             width: '100%'
         });
-        $("#branch_id").select2({
+        $("select#branch_id").select2({
             placeholder: $("#branch_id").data('placeholder') || "{{ __('index.select_branch') }}",
             allowClear: true,
             width: '100%'
         });
+
+        const updateAllSummary = function () {
+            const select = $(this);
+            const control = select.data('select2');
+            if (!control) return;
+
+            const options = select.find('option').filter(function () {
+                return this.value !== '' && !this.disabled;
+            });
+            const allSelected = options.length > 0 && options.toArray().every(option => option.selected);
+            const selection = control.$selection.find('.select2-selection__rendered');
+
+            selection.find('.select2-selection__all-summary').remove();
+            selection.find('.select2-selection__choice').toggle(!allSelected);
+            if (allSelected) {
+                $('<li class="select2-selection__all-summary"></li>')
+                    .text(@json(__('index.all')))
+                    .css({ float: 'left', marginTop: '4px', padding: '0 8px' })
+                    .insertBefore(selection.find('.select2-search--inline'));
+            }
+        };
+
+        $('select#branch_id, select#department_id').each(function () {
+            const element = this;
+            const control = $(element).data('select2');
+            if (!control) return;
+            control.on('selection:update', () => updateAllSummary.call(element));
+            updateAllSummary.call(element);
+        });
+
         $("#is_active").select2({});
         $("#per_page").select2({minimumResultsForSearch: Infinity});
         // Setup CSRF token for all AJAX requests
@@ -155,16 +185,38 @@
         const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
         const branchId = @json($filterParameters['branch_id'] ?? ($selectedBranchIds ?? (isset($postDetail) ? [$postDetail->branch_id] : [])));
         const selectedDepartmentIds = @json(collect(old('dept_id', $selectedDepartmentIds ?? (isset($postDetail) ? [$postDetail->dept_id] : ($filterParameters['department_id'] ?? []))))->filter()->map(fn ($id) => (string) $id)->all());
+        const autoSelectAllDepartments = $('#department_id').attr('data-auto-select-all') === '1';
+        let departmentLoadVersion = 0;
+        let retainedDepartmentIds = selectedDepartmentIds;
+        let retainAllDepartments = autoSelectAllDepartments;
 
-        const loadDepartments = async (selectedBranchValue) => {
+        const loadDepartments = async (selectedBranchValue, initialLoad = false) => {
+            const loadVersion = ++departmentLoadVersion;
+            const departmentSelect = $('#department_id');
+            const currentOptions = departmentSelect.find('option').filter(function () {
+                return this.value !== '' && !this.disabled;
+            }).toArray();
+            if (!initialLoad && !departmentSelect.prop('disabled')) {
+                retainAllDepartments = currentOptions.length > 0 && currentOptions.every(option => option.selected);
+                retainedDepartmentIds = (departmentSelect.val() || []).map(String);
+            }
+            const selectAllDepartments = retainAllDepartments;
+            const preservedDepartmentIds = retainedDepartmentIds;
             const selectedBranchIds = Array.isArray(selectedBranchValue)
                 ? selectedBranchValue.filter(Boolean)
                 : (selectedBranchValue ? [selectedBranchValue] : []);
+            const submitButtons = departmentSelect.closest('form').find('[type="submit"]');
 
             $('#department_id').empty();
             $('#department_id').trigger('change.select2');
 
-            if (selectedBranchIds.length === 0) return;
+            if (selectedBranchIds.length === 0) {
+                departmentSelect.prop('disabled', false);
+                submitButtons.prop('disabled', false);
+                return;
+            }
+            departmentSelect.prop('disabled', true);
+            submitButtons.prop('disabled', true);
 
             try {
                 const responses = await Promise.all(selectedBranchIds.map(async (selectedBranchId) => {
@@ -180,6 +232,7 @@
                     }));
                 }));
 
+                if (loadVersion !== departmentLoadVersion) return;
                 const departments = responses.flat();
 
                 if (departments.length === 0) {
@@ -203,13 +256,20 @@
                         label = `${data.dept_name.replace(/\s*-\s*$/, '')} - ${data.branch_name}`;
                     }
 
-                    $('#department_id').append(`<option value="${data.id}" ${selectedDepartmentIds.includes(String(data.id)) ? 'selected' : ''}>${label}</option>`);
+                    const selected = selectAllDepartments || preservedDepartmentIds.includes(String(data.id));
+                    $('#department_id').append(new Option(label, data.id, false, selected));
                 });
 
                 $('#department_id').trigger('change.select2');
             } catch (error) {
+                if (loadVersion !== departmentLoadVersion) return;
                 $('#department_id').append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
                 $('#department_id').trigger('change.select2');
+            } finally {
+                if (loadVersion === departmentLoadVersion) {
+                    departmentSelect.prop('disabled', false);
+                    submitButtons.prop('disabled', false);
+                }
             }
         };
 
@@ -222,12 +282,12 @@
 
                 const initialBranches = branchSelect.val() || branchId || (defaultBranchId ? [String(defaultBranchId)] : []);
                 if (initialBranches && initialBranches.length > 0) {
-                    await loadDepartments(initialBranches);
+                    await loadDepartments(initialBranches, true);
                 }
             } else {
                 const hiddenVal = branchSelect.val() || defaultBranchId;
                 if (hiddenVal) {
-                    await loadDepartments([String(hiddenVal)]);
+                    await loadDepartments([String(hiddenVal)], true);
                 }
             }
         };

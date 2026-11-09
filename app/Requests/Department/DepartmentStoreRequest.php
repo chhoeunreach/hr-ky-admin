@@ -4,6 +4,7 @@ namespace App\Requests\Department;
 
 
 use App\Helpers\AppHelper;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -46,7 +47,26 @@ class DepartmentStoreRequest extends FormRequest
             'dept_name' => 'required|string',
             'address' => 'required|string',
             'phone' => 'required|string',
-            'dept_head_id' => 'nullable|exists:users,id',
+            'dept_head_ids' => ['nullable', 'array'],
+            'dept_head_ids.*' => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    $branchId = substr($attribute, strlen('dept_head_ids.'));
+                    $selectedBranchIds = array_map('strval', (array) $this->input('branch_id', []));
+                    $isBranchEmployee = in_array($branchId, $selectedBranchIds, true)
+                        && User::query()
+                            ->where('id', $value)
+                            ->where('company_id', AppHelper::getAuthUserCompanyId())
+                            ->where('branch_id', $branchId)
+                            ->where('status', 'verified')
+                            ->where('is_active', 1)
+                            ->exists();
+                    if (!$isBranchEmployee) {
+                        $fail(__('validation.exists', ['attribute' => __('index.department_head')]));
+                    }
+                },
+            ],
             'branch_id' => ['required', 'array', 'min:1'],
             'branch_id.*' => $branchRules,
             'is_active' => ['nullable', 'boolean', Rule::in([1, 0])],

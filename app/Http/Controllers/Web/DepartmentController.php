@@ -103,9 +103,10 @@ class DepartmentController extends Controller
         try {
             $select = ['name','id'];
             $branches = $this->branchRepo->getLoggedInUserCompanyBranches(AppHelper::getAuthUserCompanyId(),['id','name']);
+            $headEmployeesByBranch = $this->getHeadEmployeesByBranch($branches);
 
             return view($this->view . 'create',
-                compact('branches')
+                compact('branches', 'headEmployeesByBranch')
             );
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -157,11 +158,10 @@ class DepartmentController extends Controller
         try {
             $validatedData = $request->validated();
             $branchIds = collect($validatedData['branch_id'])->unique()->values();
-            if ($branchIds->count() > 1) {
-                unset($validatedData['dept_head_id']);
-            }
-            if(isset($validatedData['dept_head_id'])){
-                $this->checkDepartmentHead($validatedData['dept_head_id']);
+            foreach ($validatedData['dept_head_ids'] ?? [] as $headId) {
+                if ($headId) {
+                    $this->checkDepartmentHead($headId);
+                }
             }
             DB::beginTransaction();
             $branchIds->each(function ($branchId) use ($validatedData) {
@@ -175,7 +175,7 @@ class DepartmentController extends Controller
                         'slug' => Str::slug($validatedData['dept_name']),
                         'address' => $validatedData['address'],
                         'phone' => $validatedData['phone'],
-                        'dept_head_id' => $validatedData['dept_head_id'] ?? null,
+                        'dept_head_id' => $validatedData['dept_head_ids'][$branchId] ?? null,
                         'is_active' => $validatedData['is_active'] ?? Department::IS_ACTIVE,
                     ]
                 );
@@ -201,18 +201,16 @@ class DepartmentController extends Controller
 
             $branches = $this->branchRepo->getLoggedInUserCompanyBranches(AppHelper::getAuthUserCompanyId(),['id','name']);
 
-            $selectUser = ['name', 'id'];
-            $filteredUsers = isset($departmentsDetail->branch_id)
-                ? $this->userRepo->getActiveEmployeeOfBranch($departmentsDetail->branch_id, $selectUser)
-                : [];
+            $headEmployeesByBranch = $this->getHeadEmployeesByBranch($branches);
             $relatedDepartments = Department::query()
                 ->where('company_id', AppHelper::getAuthUserCompanyId())
                 ->where('dept_name', $departmentsDetail->dept_name)
-                ->get(['id', 'branch_id']);
+                ->get(['id', 'branch_id', 'dept_head_id']);
             $selectedBranchIds = $relatedDepartments->pluck('branch_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
+            $departmentHeadsByBranch = $relatedDepartments->pluck('dept_head_id', 'branch_id')->all();
 
             return view($this->view . 'edit',
-                compact('branches', 'filteredUsers', 'departmentsDetail', 'selectedBranchIds')
+                compact('branches', 'headEmployeesByBranch', 'departmentsDetail', 'selectedBranchIds', 'departmentHeadsByBranch')
             );
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -229,13 +227,6 @@ class DepartmentController extends Controller
                 throw new Exception(__('message.update_department'), 404);
             }
             $branchIds = collect($validatedData['branch_id'])->unique()->values();
-            if ($branchIds->count() > 1) {
-                unset($validatedData['dept_head_id']);
-            }
-            if(isset($validatedData['dept_head_id'])){
-                $this->checkDepartmentHead($validatedData['dept_head_id'],$id);
-            }
-
             DB::beginTransaction();
             $oldDepartmentName = $departmentDetail->dept_name;
             $branchIds->each(function ($branchId) use ($validatedData, $oldDepartmentName, $departmentDetail) {
@@ -253,12 +244,17 @@ class DepartmentController extends Controller
                     $department->branch_id = $branchId;
                 }
 
+                $headId = $validatedData['dept_head_ids'][$branchId] ?? null;
+                if ($headId) {
+                    $this->checkDepartmentHead($headId, $department->id ?? 0);
+                }
+
                 $department->fill([
                     'dept_name' => $validatedData['dept_name'],
                     'slug' => Str::slug($validatedData['dept_name']),
                     'address' => $validatedData['address'],
                     'phone' => $validatedData['phone'],
-                    'dept_head_id' => $validatedData['dept_head_id'] ?? null,
+                    'dept_head_id' => $headId,
                     'is_active' => $validatedData['is_active'] ?? Department::IS_ACTIVE,
                 ]);
                 $department->save();
@@ -268,6 +264,7 @@ class DepartmentController extends Controller
                 ->route('admin.departments.index')
                 ->with('success', __('message.'));
         } catch (Exception $exception) {
+            DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage())->withInput();
         }
 
@@ -332,6 +329,21 @@ class DepartmentController extends Controller
     /**
      * @throws Exception
      */
+    private function getHeadEmployeesByBranch($branches)
+    {
+        return User::query()
+            ->where('company_id', AppHelper::getAuthUserCompanyId())
+            ->whereIn('branch_id', $branches->pluck('id'))
+            ->when(!auth('admin')->check() && isset(auth()->user()->branch_id), function ($query) {
+                $query->where('branch_id', auth()->user()->branch_id);
+            })
+            ->where('status', 'verified')
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'branch_id'])
+            ->groupBy('branch_id');
+    }
+
     public function checkDepartmentHead($userId, $departmentId=0)
     {
         $statusCheck =  $this->departmentRepo->checkDepartmentHead($userId, $departmentId);

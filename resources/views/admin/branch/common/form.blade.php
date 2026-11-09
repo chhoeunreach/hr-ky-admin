@@ -13,11 +13,11 @@
     </div>
 
     <div class="col-lg-4 col-md-6 mb-4">
-        <label for="exampleFormControlSelect1" class="form-label">{{ __('index.branch_head') }}</label>
-        <select class="form-select" id="exampleFormControlSelect1" name="branch_head_id">
-            <option value="" {{ !isset($branch) ? 'selected' : '' }} disabled>{{ __('index.select_branch_head') }}</option>
+        <label for="branch_head_id" class="form-label">{{ __('index.branch_head') }}</label>
+        <select class="form-select" id="branch_head_id" name="branch_head_id" data-placeholder="{{ __('index.select_branch_head') }}">
+            <option value="" {{ !old('branch_head_id', $branch->branch_head_id ?? '') ? 'selected' : '' }} disabled>{{ __('index.select_branch_head') }}</option>
             @foreach($users as $key => $user)
-                <option value="{{ $user->id }}" {{ isset($branch) && $branch->branch_head_id  == $user->id ? 'selected' : '' }}>{{ ucfirst($user->name) }}</option>
+                <option value="{{ $user->id }}" {{ old('branch_head_id', $branch->branch_head_id ?? '') == $user->id ? 'selected' : '' }}>{{ ucfirst($user->name) }}</option>
             @endforeach
         </select>
     </div>
@@ -130,6 +130,11 @@
 @section('scripts')
     <script>
         $(document).ready(function () {
+            $('#branch_head_id').select2({
+                width: '100%',
+                minimumResultsForSearch: 0
+            });
+
             let paymentQrCodeIndex = $('.payment-qr-code-row').length;
 
             $('#addPaymentQrCode').on('click', function () {

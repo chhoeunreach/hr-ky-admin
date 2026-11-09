@@ -50,7 +50,7 @@ class PostController extends Controller
             $with = ['branch:id,name', 'department:id,dept_name','employees:id,name,post_id,avatar'];
 
             $posts = $this->postRepo->getAllDepartmentPosts($filterParameters,$with,$postSelect);
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
 
@@ -93,7 +93,7 @@ class PostController extends Controller
             $with = [];
             $select = ['id', 'dept_name'];
             $departmentDetail = $this->departmentRepo->getAllActiveDepartments($with, $select);
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
 
@@ -160,11 +160,12 @@ class PostController extends Controller
             $with = [];
             $select = ['id', 'dept_name'];
             $departmentDetail = $this->departmentRepo->getAllActiveDepartments($with, $select);
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepository->getCompanyDetail($select, $with);
             $companyId = AppHelper::getAuthUserCompanyId();
             $relatedPosts = Post::withoutGlobalScopes()
+                ->with('department:id,branch_id')
                 ->where('post_name', $postDetail->post_name)
                 ->where(function ($query) use ($companyId) {
                     $query->whereHas('branch', fn ($b) => $b->where('company_id', $companyId))
@@ -172,7 +173,9 @@ class PostController extends Controller
                           ->orWhereNull('branch_id');
                 })
                 ->get(['id', 'branch_id', 'dept_id']);
-            $selectedBranchIds = $relatedPosts->pluck('branch_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
+            $selectedBranchIds = $relatedPosts
+                ->map(fn ($post) => $post->branch_id ?? $post->department?->branch_id)
+                ->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
             $selectedDepartmentIds = $relatedPosts->pluck('dept_id')->filter()->map(fn ($id) => (string) $id)->unique()->values()->all();
 
             return view($this->view.'edit',

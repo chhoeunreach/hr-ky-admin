@@ -1,4 +1,13 @@
 <div class="row align-items-center">
+    @php
+        $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($departmentsDetail) ? [$departmentsDetail->branch_id] : [])))
+            ->map(fn ($id) => (string) $id)
+            ->all();
+        if (!auth('admin')->check() && isset(auth()->user()->branch_id)) {
+            $selectedBranchIds = [(string) auth()->user()->branch_id];
+        }
+        $selectedDepartmentHeads = old('dept_head_ids', $departmentHeadsByBranch ?? []);
+    @endphp
     @if(!isset(auth()->user()->branch_id))
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
@@ -6,18 +15,13 @@
             <option value="" disabled>{{ __('index.select_branch') }}</option>
 
             @foreach($branches as $key => $branch)
-                @php
-                    $selectedBranchIds = collect(old('branch_id', $selectedBranchIds ?? (isset($departmentsDetail) ? [$departmentsDetail->branch_id] : [])))
-                        ->map(fn ($id) => (string) $id)
-                        ->all();
-                @endphp
                 <option value="{{ $branch->id }}" {{ in_array((string) $branch->id, $selectedBranchIds, true) ? 'selected' : '' }}>{{ ucfirst($branch->name) }}</option>
             @endforeach
 
         </select>
     </div>
     @endif
-    @if(!auth('admin')->check() && auth()->check())
+    @if(!auth('admin')->check() && isset(auth()->user()->branch_id))
         <input type="hidden" readonly id="branch_id" name="branch_id[]" value="{{ auth()->user()->branch_id }}">
     @endif
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
@@ -25,19 +29,39 @@
         <input type="text" class="form-control" id="dept_name" required name="dept_name" value="{{ old('dept_name', $departmentsDetail->dept_name ?? '') }}" autocomplete="off" placeholder="">
     </div>
 
-    <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
-        <label for="dept_head_id" class="form-label">{{ __('index.department_head') }}</label>
-        <select class="form-select" id="dept_head_id" name="dept_head_id">
-            @if(isset($departmentsDetail))
-                @foreach($filteredUsers as $user)
-                    <option value="{{ $user->id }}" {{ $user->id ==  $departmentsDetail->dept_head_id ? 'selected' : '' }}>
-                        {{ ucfirst($user->name) }}
-                    </option>
-                @endforeach
-            @else
-                <option selected  disabled>{{ __('index.select_department_head') }}</option>
-            @endif
-        </select>
+    <div class="col-12 mb-4">
+        <div class="row" id="departmentHeadsByBranch">
+            @foreach($branches as $headBranch)
+                @php
+                    $branchSelected = in_array((string) $headBranch->id, $selectedBranchIds, true);
+                    $selectedHeadId = $selectedDepartmentHeads[$headBranch->id] ?? '';
+                    $headEmployees = $headEmployeesByBranch->get($headBranch->id, collect());
+                @endphp
+                <div class="col-xxl-4 col-xl-4 col-md-6 mb-3 department-head-row"
+                     data-branch-id="{{ $headBranch->id }}" @if(!$branchSelected) style="display: none" @endif>
+                    <label for="dept_head_{{ $headBranch->id }}" class="form-label">
+                        {{ __('index.department_head') }} — {{ $headBranch->name }}
+                    </label>
+                    <select class="form-select department-head-select"
+                            id="dept_head_{{ $headBranch->id }}"
+                            name="dept_head_ids[{{ $headBranch->id }}]"
+                            data-placeholder="{{ __('index.select_department_head') }}"
+                            @if(!$branchSelected) disabled @endif>
+                        <option value="">{{ __('index.select_department_head') }}</option>
+                        @foreach($headEmployees as $user)
+                            <option value="{{ $user->id }}" {{ (string) $selectedHeadId === (string) $user->id ? 'selected' : '' }}>{{ ucfirst($user->name) }}</option>
+                        @endforeach
+                    </select>
+                    @if($headEmployees->isEmpty())
+                        <small class="text-muted">{{ __('index.employee_not_found') }}</small>
+                    @endif
+                    @error('dept_head_ids.'.$headBranch->id)
+                        <small class="text-danger">{{ $message }}</small>
+                    @enderror
+                </div>
+            @endforeach
+        </div>
+        <small class="text-muted" id="departmentHeadBranchHint" @if(count($selectedBranchIds)) style="display: none" @endif>{{ __('index.select_branch') }}</small>
     </div>
 
     <div class="col-xxl-4 col-xl-4 col-md-6 mb-4">
