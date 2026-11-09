@@ -60,6 +60,7 @@
         tools.querySelector('[data-directory-refresh]').addEventListener('click', submit);
         const textOf = cell => {
             if (!cell) return '';
+            if (cell.dataset.directoryValue !== undefined) return cell.dataset.directoryValue;
             const copy = cell.cloneNode(true);
             const toggle = copy.querySelector('input[type=checkbox]');
             if (toggle) {

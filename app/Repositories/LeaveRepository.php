@@ -14,9 +14,9 @@ class LeaveRepository
     {
         $leaveDetailList = $this->buildLeaveRequestListQuery($filterParameters, $select, $with);
 
-        return $leaveDetailList
-            ->orderBy('id', 'DESC')
-            ->paginate($this->resolvePerPage($filterParameters['per_page'] ?? null));
+        $requested = $filterParameters['per_page'] ?? null;
+        $perPage = $requested === 'all' ? max(1, (clone $leaveDetailList)->count()) : $this->resolvePerPage($requested);
+        return $leaveDetailList->orderBy('id', 'DESC')->paginate($perPage);
 
     }
 
@@ -82,7 +82,7 @@ class LeaveRepository
 
     private function resolvePerPage($perPage): int
     {
-        $allowedValues = [10, 25, 50, 100];
+        $allowedValues = [10, 25, 50, 100, 200, 500, 1000];
 
         if (in_array((int) $perPage, $allowedValues, true)) {
             return (int) $perPage;

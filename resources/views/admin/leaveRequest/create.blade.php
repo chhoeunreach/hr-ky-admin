@@ -10,6 +10,7 @@
     <section class="content">
 
         @include('admin.section.flash_message')
+        @include('admin.employees.profile.partials.request-saved-next-step', ['savedRequestType' => 'leave', 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])
 
         @if(request('request_modal') !== '1')
             @include('admin.leaveRequest.common.breadcrumb')

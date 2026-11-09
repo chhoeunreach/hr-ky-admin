@@ -62,8 +62,10 @@
             $('#statusUpdate').modal('show');
         });
 
-        const refreshLeaveRequestList = function () {
-            return $.get(window.location.href).then(function (html) {
+        const refreshLeaveRequestList = function ({resetPage = false} = {}) {
+            const url = new URL(window.location.href);
+            if (resetPage) url.searchParams.delete('page');
+            return $.get(url.href).then(function (html) {
                 const page = $('<div>').append($.parseHTML(html));
                 const listBlock = page.find('#leave-request-list-block');
                 const pagination = page.find('#leave-request-pagination');
@@ -76,12 +78,28 @@
 
                 $('#leave-request-list-block').replaceWith(listBlock);
                 $('#leave-request-pagination').replaceWith(pagination);
+                const refreshed = document.getElementById('leave-request-list-block');
+                const count = document.querySelector('[data-directory-count="leaveRequestTable"]');
+                if (count && refreshed?.dataset.directoryTotal !== undefined) count.textContent = Number(refreshed.dataset.directoryTotal).toLocaleString();
+                document.dispatchEvent(new CustomEvent('directory:updated'));
+                if (resetPage) window.history.replaceState({}, '', url.href);
 
                 if (typeof feather !== 'undefined') {
                     feather.replace();
                 }
             });
         };
+
+        document.addEventListener('employee-request:updated', function (event) {
+            if (event.detail?.requestType !== 'leave') return;
+            refreshLeaveRequestList({resetPage: true}).fail(function (error) {
+                Swal.fire(
+                    'Refresh required',
+                    error.responseJSON?.message || 'The request was saved, but the list could not be refreshed. Please reload the page.',
+                    'warning'
+                );
+            });
+        });
 
         $('body').on('submit', '#updateLeaveStatus', function (event) {
             event.preventDefault();
@@ -180,140 +198,56 @@
         $("#requestedBy").select2({});
         $("#leaveType").select2({});
 
-        const departmentId = "{{ $filterParameters['department_id'] ?? '' }}";
-        const employeeId = "{{ $filterParameters['requested_by'] ?? '' }}";
-        const leaveTypeId = "{{ $filterParameters['leave_type'] ?? '' }}";
-        const branchId = "{{ $filterParameters['branch_id'] ?? '' }}";
-        const isAdmin = {{ auth('admin')->check() ? 'true' : 'false' }};
-        const defaultBranchId = {{ auth()->user()->branch_id ?? 'null' }};
+        const departmentId = @json((string) ($filterParameters['department_id'] ?? ''));
+        const employeeId = @json((string) ($filterParameters['requested_by'] ?? ''));
+        const branchId = @json((string) ($filterParameters['branch_id'] ?? ''));
+        const employeeLabel = $('#requestedBy option:selected').text();
+        const allDepartments = @json(__('index.all_departments'));
+        const allEmployees = @json(__('index.all_employees'));
+        let departmentSequence = 0, employeeSequence = 0;
+        const reset = (selector, label) => $(selector).empty().append(new Option(label, ''));
 
-        const loadDepartments = async (selectedBranchId) => {
-            if (!selectedBranchId) return;
-
+        const loadEmployees = async (restoreId = '') => {
+            const sequence = ++employeeSequence;
+            const selectedDepartment = $('#department_id').val();
+            if (!restoreId) reset('#requestedBy', allEmployees);
+            if (!selectedDepartment) return;
             try {
-                const response = await $.ajax({
-                    type: 'GET',
-                    url: `{{ url('admin/departments/get-All-Departments') }}/${selectedBranchId}`,
-                });
-
-                // Clear existing options
-                $('#department_id').empty();
-
-
-
-                $('#department_id').append('<option selected disabled>{{ __("index.select_department") }}</option>');
-                if (response.data && response.data.length > 0) {
-                    response.data.forEach(department => {
-                        $('#department_id').append(
-                            `<option value="${department.id}" ${department.id == departmentId ? 'selected' : ''}>${department.dept_name}</option>`
-                        );
-                    });
-                } else {
-                    $('#department_id').append('<option disabled>{{ __("index.no_department_found") }}</option>');
-                }
-
-                loadEmployees();
-
-            } catch (error) {
-                $('#department_id').append('<option disabled>{{ __("index.error_loading_department") }}</option>');
-            }
-        };
-
-        const loadEmployees = async () => {
-            const selectedDepartmentId = $('#department_id').val();
-            if (!selectedDepartmentId) return;
-            try {
-                $('#requestedBy').empty().append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-
-                const response = await fetch(`{{ url('admin/employees/get-all-employees') }}/${selectedDepartmentId}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    }
-                });
-
+                const response = await fetch(`{{ url('admin/employees/get-all-employees') }}/${encodeURIComponent(selectedDepartment)}`, {headers: {Accept: 'application/json'}});
+                if (!response.ok) throw new Error('Unable to load employees');
                 const data = await response.json();
-                $('#requestedBy').empty();
-                $('#requestedBy').append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-
-                if (data.data && data.data.length > 0) {
-                    data.data.forEach(user => {
-                        const employeeLabel = user.username ? `${user.name} (${user.username})` : user.name;
-                        $('#requestedBy').append(
-                            `<option value="${user.id}" ${user.id == employeeId ? 'selected' : ''}>${employeeLabel}</option>`
-                        );
-                    });
-                } else {
-                    $('#requestedBy').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
-                }
-
-            } catch (error) {
-                $('#requestedBy').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
+                if (sequence !== employeeSequence) return;
+                reset('#requestedBy', allEmployees);
+                (data.data || []).forEach(employee => {
+                    const label = employee.username ? `${employee.name} (${employee.username})` : employee.name;
+                    $('#requestedBy').append(new Option(label, employee.id, false, String(employee.id) === restoreId));
+                });
+                $('#requestedBy').trigger('change.select2');
+            } catch (_) {
+                if (sequence === employeeSequence) $('#requestedBy').append(new Option(@json(__('index.error_loading_employees')), '', false, false)).find('option:last').prop('disabled', true);
             }
         };
-
-        const loadLeaveTypes = async () => {
-            const selectedEmployee = $('#requestedBy').val();
-            if (!selectedEmployee) return;
+        const loadDepartments = async (selectedBranch, restoreDepartment = '', restoreEmployee = '') => {
+            const sequence = ++departmentSequence;
+            ++employeeSequence;
+            if (!restoreDepartment) reset('#department_id', allDepartments);
+            if (!restoreEmployee) reset('#requestedBy', allEmployees);
+            if (!selectedBranch) return;
             try {
-                $('#leaveType').empty().append('<option selected disabled>{{ __("index.select_leave_type") }}</option>');
-
-                const response = await fetch(`{{ url('admin/leaves/get-employee-leave-types') }}/${selectedEmployee}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    }
-                });
-
-                const data = await response.json();
-                $('#leaveType').empty();
-                $('#leaveType').append('<option selected disabled>{{ __("index.select_leave_type") }}</option>');
-
-                if (data.leveTypes && data.leveTypes.length > 0) {
-                    data.leveTypes.forEach(type => {
-                        $('#leaveType').append(
-                            `<option value="${type.id}" ${type.id == leaveTypeId ? 'selected' : ''}>${type.name}</option>`
-                        );
-                    });
-                } else {
-                    $('#leaveType').append('<option disabled>{{ __("index.leave_type_not_found") }}</option>');
-                }
-
-            } catch (error) {
-                $('#leaveType').append('<option disabled>{{ __("index.error_loading_leave_types") }}</option>');
+                const response = await $.get(`{{ url('admin/departments/get-All-Departments') }}/${encodeURIComponent(selectedBranch)}`);
+                if (sequence !== departmentSequence) return;
+                reset('#department_id', allDepartments);
+                (response.data || []).forEach(department => $('#department_id').append(new Option(department.dept_name, department.id, false, String(department.id) === restoreDepartment)));
+                $('#department_id').trigger('change.select2');
+                if ($('#department_id').val()) await loadEmployees(restoreEmployee);
+                else if (restoreEmployee) reset('#requestedBy', allEmployees).append(new Option(employeeLabel, restoreEmployee, true, true));
+            } catch (_) {
+                if (sequence === departmentSequence) $('#department_id').append(new Option(@json(__('index.error_loading_department')), '', false, false)).find('option:last').prop('disabled', true);
             }
         };
-
-        const initializeDropdowns = async () => {
-            let selectedBranchId;
-
-            if (isAdmin) {
-                selectedBranchId = $('#branch_id').val() || branchId; // Use DOM value or filter parameter
-                $('#branch_id').change(async () => {
-                    await loadDepartments($('#branch_id').val());
-                    // Clear requestedBy when branch changes
-                    $('#requestedBy').empty().append('<option selected disabled>{{ __("index.select_employee") }}</option>');
-                });
-            } else {
-                selectedBranchId = defaultBranchId;
-            }
-
-            if (selectedBranchId) {
-                await loadDepartments(selectedBranchId);
-            }
-        };
-
-        $(document).ready(() => {
-            initializeDropdowns();
-            $('#department_id').change(loadEmployees);
-            if (departmentId) {
-                loadEmployees();
-
-                $('#requestedBy').change(loadLeaveTypes);
-
-            }
-        });
+        $('#branch_id').on('change', () => loadDepartments($('#branch_id').val()));
+        $('#department_id').on('change', () => loadEmployees());
+        if (branchId) loadDepartments(branchId, departmentId, employeeId);
+        else if (departmentId) loadEmployees(employeeId);
     });
 </script>

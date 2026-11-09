@@ -10,4 +10,11 @@
             @endcan
         @endcan
     </div>
+    @if($savedRequestType === 'leave' && request('request_modal') === '1')
+        <script>
+            if (window.parent !== window) {
+                window.parent.postMessage({type: 'employee-request-form-updated', requestType: 'leave'}, window.location.origin);
+            }
+        </script>
+    @endif
 @endif

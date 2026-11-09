@@ -45,6 +45,7 @@
     <link rel="shortcut icon" href="{{asset('assets/images/favicon.png')}}" />
     <link rel="stylesheet" href="{{ asset('assets/css/app-dialogs.css') }}?v={{ filemtime(public_path('assets/css/app-dialogs.css')) }}">
 
+    @include('admin.section.typography')
     @yield('page-styles')
 </head>
 <body>

@@ -26,6 +26,8 @@
         if (event.origin !== window.location.origin || event.source !== frame.contentWindow) return;
         if (event.data?.type === 'employee-request-form-close') {
             bootstrap.Modal.getOrCreateInstance(modal).hide();
+        } else if (event.data?.type === 'employee-request-form-updated' && event.data.requestType === 'leave') {
+            document.dispatchEvent(new CustomEvent('employee-request:updated', {detail: {requestType: 'leave'}}));
         } else if (event.data?.type === 'employee-request-form-saved' && typeof event.data.redirectUrl === 'string') {
             const destination = new URL(event.data.redirectUrl, window.location.href);
             if (destination.origin !== window.location.origin) return;

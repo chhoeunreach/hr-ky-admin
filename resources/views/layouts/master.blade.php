@@ -17,23 +17,12 @@
     <meta name="keywords" content="Digital HR">
 
     <title>@yield('title')</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-color: {{ $themeColor->primary_color ?? '#0F766E' }};
             --hover-color: {{ $themeColor->hover_color ?? '#115E59' }};
             --dark-primary-color: {{ $themeColor->dark_primary_color ?? '#14B8A6' }};
             --dark-hover-color: {{ $themeColor->dark_hover_color ?? '#0F766E' }};
-        }
-
-        html.locale-km body,
-        html.locale-km button,
-        html.locale-km input,
-        html.locale-km select,
-        html.locale-km textarea {
-            font-family: 'Kantumruy Pro', 'Noto Sans Khmer', 'Roboto', Arial, sans-serif;
         }
 
         .sidebar .sidebar-body .nav .nav-item .nav-link {
@@ -66,6 +55,7 @@
         }
     </style>
     @include('admin.section.head_links')
+    @include('admin.section.typography')
     @yield('styles')
     @if(request('asset_modal') === '1' || request('employee_modal') === '1')
         <style>

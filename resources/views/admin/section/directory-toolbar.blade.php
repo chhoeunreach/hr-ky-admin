@@ -5,7 +5,7 @@
 @endonce
 <div class="directory-list-heading">
     <div class="directory-title"><i data-feather="{{ $directoryIcon }}"></i><h6>{{ $directoryTitle }}</h6><span class="directory-count" data-directory-count="{{ $directoryTable }}">{{ number_format(method_exists($directoryRecords, 'total') ? $directoryRecords->total() : $directoryRecords->count()) }}</span></div>
-    @if($directoryCanAdd ?? \Illuminate\Support\Facades\Gate::allows($directoryPermission))<a class="directory-add" href="{{ $directoryAddUrl }}"><i data-feather="plus"></i>{{ __('index.add') }}</a>@endif
+    @if($directoryCanAdd ?? \Illuminate\Support\Facades\Gate::allows($directoryPermission))<a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif><i data-feather="plus"></i>{{ __('index.add') }}</a>@endif
 </div>
 <div class="directory-tools no-print" data-directory-table="{{ $directoryTable }}" data-directory-form="{{ $directoryForm }}" data-directory-live="{{ $directoryLive ? 'true' : 'false' }}" data-directory-search-key="{{ $directorySearchKey }}" data-directory-title="{{ $directoryTitle }}" data-directory-working="{{ __('index.loading') }}" data-directory-failed="{{ __('index.directory_export_failed') }}" data-directory-copied="{{ __('index.directory_copy_success') }}" data-directory-yes="{{ __('index.yes') }}" data-directory-no="{{ __('index.no') }}" data-directory-active="{{ __('index.active') }}" data-directory-inactive="{{ __('index.inactive') }}">
     <div class="directory-entry-control">

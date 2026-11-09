@@ -8,6 +8,7 @@ const source = fs.readFileSync(path.join(__dirname, '../../public/assets/js/empl
 
 function setup() {
     const handlers = {};
+    const updated = [];
     const frame = {removeAttribute(name) { delete this[name]; }};
     const shown = [];
     const navigated = [];
@@ -23,8 +24,10 @@ function setup() {
         return {show: trigger => shown.push(trigger), hide: () => hidden.push(true)};
     }}};
     vm.runInNewContext(source, {
+        CustomEvent: class {constructor(type, options) {this.type = type;this.detail = options.detail;}},
         document: {
             getElementById: () => modal,
+            dispatchEvent: event => updated.push(event),
             addEventListener: (name, handler) => { handlers[name] = handler; },
         },
         window: {bootstrap, addEventListener: (name, handler) => {handlers[name] = handler;},
@@ -32,7 +35,7 @@ function setup() {
         bootstrap,
         URL,
     });
-    return {handlers, frame, shown, title, hidden, navigated};
+    return {handlers, frame, shown, title, hidden, navigated, updated};
 }
 
 test('clicking a request icon opens its saved form in a modal and prevents navigation', () => {
@@ -156,4 +159,26 @@ test('cancel closes the modal without navigation and ignores unrelated window me
     assert.deepEqual(navigated, []);
     handlers.message({...event, data: {type: 'employee-request-form-saved', redirectUrl: 'https://elsewhere.example'}});
     assert.deepEqual(navigated, []);
+});
+
+
+test('successful leave creation refreshes the parent list while keeping the saved preview open', () => {
+    const app = setup();
+    app.handlers.message({origin: 'http://localhost', source: app.frame.contentWindow,
+        data: {type: 'employee-request-form-updated', requestType: 'leave'}});
+    assert.equal(app.updated.length, 1);
+    assert.equal(app.updated[0].type, 'employee-request:updated');
+    assert.equal(app.updated[0].detail.requestType, 'leave');
+    assert.equal(app.hidden.length, 0);
+    assert.equal(app.navigated.length, 0);
+});
+
+test('leave refresh notifications from other origins, other frames, or other request types are ignored', () => {
+    const app = setup();
+    const event = {origin: 'http://localhost', source: app.frame.contentWindow,
+        data: {type: 'employee-request-form-updated', requestType: 'leave'}};
+    app.handlers.message({...event, origin: 'https://elsewhere.example'});
+    app.handlers.message({...event, source: {}});
+    app.handlers.message({...event, data: {...event.data, requestType: 'other'}});
+    assert.equal(app.updated.length, 0);
 });

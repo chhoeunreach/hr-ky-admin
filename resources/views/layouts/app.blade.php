@@ -18,6 +18,7 @@
 
         <!-- Styles -->
         <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+        @include('admin.section.typography')
     </head>
 <body>
     <div id="app">
