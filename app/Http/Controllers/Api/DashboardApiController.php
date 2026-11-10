@@ -41,6 +41,12 @@ use Illuminate\Support\Str;
 
 class DashboardApiController extends Controller
 {
+    public function attendanceSummary(Request $request): JsonResponse
+    {
+        return response()->json(['data' => app(\App\Services\Attendance\EmployeeMonthlyAttendanceSummary::class)
+            ->forEmployee($request->user())]);
+    }
+
     public function __construct(protected UserRepository $userRepo, protected HolidayService $holidayService, protected FeatureRepository $featureRepository,
                                 protected AwardService $awardService, protected EventService $eventService, protected TrainingService $trainingService, protected ThemeSettingService $themeSettingService,
                                 protected NoticeService $noticeService)
@@ -111,6 +117,7 @@ class DashboardApiController extends Controller
 
             $dashboard['user'] = new UserReportResource($userDetail);
             $dashboard['employee_today_attendance'] = new EmployeeTodayAttendance($userDetail);
+            $dashboard['monthly_attendance_summary'] = app(\App\Services\Attendance\EmployeeMonthlyAttendanceSummary::class)->forEmployee($userDetail);
             $dashboard['overview'] = new OverviewResource($overview);
             $dashboard['office_time'] = new OfficeTimeResource($userDetail);
             $dashboard['company'] = new CompanyWeekendResource($userDetail);

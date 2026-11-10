@@ -128,6 +128,7 @@ Route::group([
 
     /** Dashboard Routes **/
     Route::get('dashboard', [DashboardApiController::class, 'userDashboardDetail']);
+    Route::get('dashboard/attendance-summary', [DashboardApiController::class, 'attendanceSummary']);
 
     /** Attendance Routes **/
     /**
