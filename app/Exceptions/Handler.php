@@ -60,9 +60,18 @@ class Handler extends ExceptionHandler
 
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        if ($request->expectsJson()) {
+        if ($this->shouldReturnJson($request, $exception)) {
            return AppHelper::sendErrorResponse(__('auth.unauthenticated'), 401);
         }
+
+        return parent::unauthenticated($request, $exception);
+    }
+
+    protected function shouldReturnJson($request, Throwable $e)
+    {
+        // Export clients request CSV, but API failures must remain machine-readable.
+        return ($request->is('api/sell-out-reports') && $request->boolean('paginated'))
+            || parent::shouldReturnJson($request, $e);
     }
 
     /**

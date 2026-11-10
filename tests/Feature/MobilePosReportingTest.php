@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Http\Middleware\SPAuthGateMW;
 use App\Models\User;
 use App\Services\SellOut\ReportingRules;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Passport\Passport;
@@ -22,6 +23,22 @@ class MobilePosReportingTest extends TestCase
             $app['config']->set('cache.limiter','array');
             $app['config']->set('database.default','sqlite');
             $app['config']->set('database.connections.sqlite.database',':memory:');
+            $socket = getenv('POS_REPORT_MYSQL_SOCKET');
+            if ($socket !== false && $socket !== '') {
+                // Opt-in dialect checks use only a disposable, socket-only MySQL.
+                // Never use the configured application's database or credentials.
+                if (!preg_match('#^/private/tmp/kneayerng-pos-mysql\.[A-Za-z0-9]+/mysql\.sock$#', $socket)
+                    && !preg_match('#^/tmp/kneayerng-pos-mysql\.[A-Za-z0-9]+/mysql\.sock$#', $socket)) {
+                    throw new \RuntimeException('A disposable POS test socket is required.');
+                }
+                $app['config']->set('database.default','pos_reporting_test');
+                $app['config']->set('database.connections.pos_reporting_test', [
+                    'driver'=>'mysql', 'host'=>'localhost', 'unix_socket'=>$socket,
+                    'database'=>'pos_reporting_test', 'username'=>'root', 'password'=>'',
+                    'charset'=>'utf8mb4', 'collation'=>'utf8mb4_unicode_ci',
+                    'prefix'=>'', 'strict'=>true, 'engine'=>null,
+                ]);
+            }
         });
         $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
         return $app;
@@ -30,13 +47,20 @@ class MobilePosReportingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        DB::purge('sqlite');
-        $this->withoutMiddleware([SPAuthGateMW::class, \Illuminate\Routing\Middleware\ThrottleRequests::class]);
+        DB::purge(config('database.default'));
+        if (config('database.default') === 'pos_reporting_test') Schema::dropAllTables();
+        $this->withoutMiddleware([\Illuminate\Routing\Middleware\ThrottleRequests::class]);
         $this->travelTo(now()->setDate(2026,11,9)->setTime(12,0));
         Cache::put('payment_currency_symbol','$');
+        Bus::fake();
+        Http::preventStrayRequests();
         Schema::create('users', function (Blueprint $t) {
-            $t->id(); $t->string('name'); $t->integer('branch_id')->nullable(); $t->integer('office_time_id')->nullable(); $t->integer('department_id')->nullable(); $t->softDeletes();
+            $t->id(); $t->string('name'); $t->integer('role_id')->default(2); $t->integer('branch_id')->nullable(); $t->integer('office_time_id')->nullable(); $t->integer('department_id')->nullable(); $t->softDeletes();
         });
+        Schema::create('roles',function (Blueprint $t) {$t->id(); $t->string('name'); $t->string('slug');});
+        Schema::create('permissions',function (Blueprint $t) {$t->id(); $t->string('permission_key');});
+        Schema::create('permission_roles',function (Blueprint $t) {$t->id(); $t->integer('permission_id'); $t->integer('role_id');});
+        DB::table('roles')->insert(['id'=>2,'name'=>'Employee','slug'=>'employee']);
         Schema::create('branches',function (Blueprint $t) {$t->id(); $t->string('name');});
         Schema::create('departments',function (Blueprint $t) {$t->id(); $t->string('dept_name'); $t->integer('branch_id')->nullable();});
         Schema::create('office_times',function (Blueprint $t) {
@@ -48,7 +72,7 @@ class MobilePosReportingTest extends TestCase
         });
         Schema::create('sell_out_report_lines',function (Blueprint $t) {
             $t->id(); $t->integer('sell_out_report_id'); foreach (['product_name','sku','imei','imei2','serial_number','model_number','color','storage'] as $f) $t->string($f)->nullable();
-            $t->integer('qty'); $t->decimal('unit_price',12,2); $t->decimal('subtotal',12,2);
+            $t->integer('qty'); $t->decimal('unit_price',12,2); $t->decimal('subtotal',12,2); $t->timestamps();
         });
         Schema::create('sell_out_report_photos',function (Blueprint $t) {$t->id(); $t->integer('sell_out_report_id'); $t->integer('sell_out_report_line_id')->nullable(); $t->string('photo_url')->nullable(); $t->string('photo_path')->nullable();});
         (require database_path('migrations/2026_11_10_000001_add_mobile_reporting_index.php'))->up();
@@ -168,6 +192,63 @@ class MobilePosReportingTest extends TestCase
         $this->getJson($this->url(['per_page'=>501]))->assertUnprocessable();
         \Illuminate\Support\Facades\Auth::forgetGuards();
         $this->getJson($this->url())->assertUnauthorized();
+    }
+
+    public function test_create_detail_and_edit_refresh_dashboard_totals_for_each_service(): void
+    {
+        foreach (['Sell','Material','Iron','Repair','Buy In','iCloud Cus'] as $index => $type) {
+            $payload = [
+                'seller_name'=>'Employee','branch_name'=>'HQ','customer_name'=>'New Customer',
+                'customer_phone'=>'012345678','service_type'=>$type,'payment_method'=>'Cash',
+                'original_invoice_no'=>'ORIGINAL-'.$index,
+                'lines'=>[['product_name'=>'New product','qty'=>2,'unit_price'=>15,'serial_number'=>'TEST'.$index]],
+            ];
+            $created = $this->postJson('/api/sell-out-reports',$payload)->assertCreated()
+                ->assertJsonPath('data.total_amount','30.00')->assertJsonPath('data.original_invoice_no','ORIGINAL-'.$index);
+            $id = $created->json('data.id');
+            $this->getJson('/api/sell-out-reports/'.$id)->assertOk()
+                ->assertJsonPath('data.lines.0.qty',2)->assertJsonPath('data.lines.0.serial_number','TEST'.$index);
+            $payload['lines'][0]['unit_price'] = 20;
+            $this->putJson('/api/sell-out-reports/'.$id,$payload)->assertOk()
+                ->assertJsonPath('data.total_amount','40.00')->assertJsonPath('data.original_invoice_no','ORIGINAL-'.$index);
+        }
+        // Four revenue services, one purchase service; iCloud customer records
+        // remain accessible without inventing financial rules for that module.
+        $this->getJson($this->url())->assertOk()->assertJsonPath('summary.sales_amount',382)
+            ->assertJsonPath('summary.buy_in_amount',540)->assertJsonPath('summary.total_transactions',11);
+    }
+
+    public function test_detail_and_edit_enforce_ownership_and_today_restriction(): void
+    {
+        $payload = ['seller_name'=>'Employee','service_type'=>'Iron',
+            'lines'=>[['product_name'=>'Iron','qty'=>1,'unit_price'=>1]]];
+        $this->getJson('/api/sell-out-reports/7')->assertNotFound();
+        $this->putJson('/api/sell-out-reports/7',$payload)->assertNotFound();
+        DB::table('sell_out_reports')->where('id',1)->update(['created_at'=>now()->subDay()]);
+        $this->getJson($this->url(['date_from'=>'2026-11-08','date_to'=>'2026-11-08']))
+            ->assertOk()->assertJsonPath('data.0.can_edit',false);
+        $this->putJson('/api/sell-out-reports/1',$payload)->assertForbidden();
+    }
+
+    public function test_csv_errors_remain_json_for_mobile_clients(): void
+    {
+        $this->get($this->url(['export'=>'csv', 'per_page'=>501]), ['Accept'=>'text/csv'])
+            ->assertUnprocessable()->assertHeader('Content-Type','application/json');
+        \Illuminate\Support\Facades\Auth::forgetGuards();
+        $this->get($this->url(['export'=>'csv']), ['Accept'=>'text/csv'])
+            ->assertUnauthorized()->assertHeader('Content-Type','application/json');
+    }
+
+    public function test_default_today_and_partial_dates_use_business_calendar_boundaries(): void
+    {
+        $this->record('Iron',1,9,['created_at'=>now()->startOfDay()]);
+        $this->record('Iron',1,11,['created_at'=>now()->endOfDay()]);
+        $this->record('Iron',1,1000,['created_at'=>now()->addDay()->startOfDay()]);
+        $this->getJson('/api/sell-out-reports?paginated=1')->assertOk()
+            ->assertJsonPath('summary.total_transactions',8)->assertJsonPath('summary.sales_amount',242)
+            ->assertJsonPath('filters.date_from','2026-11-09')->assertJsonPath('filters.date_to','2026-11-09');
+        $this->getJson('/api/sell-out-reports?paginated=1&date_from=2026-11-10')->assertOk()
+            ->assertJsonPath('summary.sales_amount',1000);
     }
 
     public function test_legacy_list_and_detail_contracts_remain_available(): void
