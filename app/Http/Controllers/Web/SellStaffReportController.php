@@ -643,65 +643,12 @@ class SellStaffReportController extends Controller
         ?User $user
     ): float
     {
-        $serviceType = $this->normalizeServiceType((string) $serviceType);
-
-        if (! $this->isCommissionableServiceType($serviceType) || mb_strlen(trim((string) $customerPhone)) <= 6) {
-            return 0;
-        }
-
-        $totalQty = collect($lines)->sum(fn (array $line): int => (int) ($line['qty'] ?? 0));
-
-        if ($this->isSellServiceType($serviceType)) {
-            return $totalQty >= $this->sellQtyThreshold($user) ? $totalQty * 0.25 : 0;
-        }
-
-        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
-            return 0.20;
-        }
-
-        if ($this->isMaterialServiceType($serviceType)) {
-            return $totalAmount >= 10 ? 0.25 : 0;
-        }
-
-        return 0;
-    }
-
-    private function isCommissionableServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
-    }
-
-    private function isSellServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
-    }
-
-    private function isIronServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
-    }
-
-    private function isMaterialServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
-    }
-
-    private function isRepairServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
-    }
-
-    private function normalizeServiceType(string $serviceType): string
-    {
-        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
-    }
-
-    private function sellQtyThreshold(?User $user): int
-    {
         $user?->loadMissing('officeTime');
-        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
-
-        return $category === 'part_timer' ? 50 : 100;
+        $settings = app(\App\Services\SellOut\CommissionSettingsService::class)->configuration();
+        return \App\Services\SellOut\ReportingRules::calculate((string)$serviceType,
+            (int)collect($lines)->sum(fn ($line) => (int)($line['qty'] ?? 0)), $totalAmount,
+            (string)$customerPhone,(string)($user?->officeTime?->category ?? ''),null,
+            $settings['default_mode'] === 'with_conditions');
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool

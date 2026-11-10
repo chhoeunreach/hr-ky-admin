@@ -640,6 +640,8 @@ Route::group([
         Route::put('employee-salaries/tax-report/{id}', [TaxReportController::class, 'updateTaxReport'])->name('payroll.tax-report.update');
 
         /** Sell staff report */
+        Route::get('commission-settings', [\App\Http\Controllers\Web\CommissionSettingsController::class, 'index'])->name('commission-settings.index');
+        Route::put('commission-settings', [\App\Http\Controllers\Web\CommissionSettingsController::class, 'update'])->name('commission-settings.update');
         Route::get('sell-staff-report', [SellStaffReportController::class, 'index'])->name('sell-staff-report.index');
         Route::get('sell-staff-report/create', [SellStaffReportController::class, 'create'])->name('sell-staff-report.create');
         Route::post('sell-staff-report', [SellStaffReportController::class, 'store'])->name('sell-staff-report.store');

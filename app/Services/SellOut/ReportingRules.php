@@ -34,9 +34,18 @@ final class ReportingRules
     public static function calculate(string $type, int $qty, float $amount, string $phone, string $category, ?int $periodQty = null, bool $conditions = true): float
     {
         $type = self::canonical($type);
-        if (!isset(self::RATES[$type])) return 0;
-        if ($conditions && (mb_strlen(trim($phone)) <= 6 || ($type === 'material' && $amount < 10) || ($type === 'sell' && ($periodQty ?? $qty) < self::threshold($category)))) return 0;
-        return ($type === 'sell' ? $qty : 1) * self::RATES[$type];
+        $configuration = app(CommissionSettingsService::class)->configuration();
+        $rule = $configuration['rules'][$type] ?? null;
+        if (!$configuration['enabled'] || !$rule || !$rule['enabled']) return 0;
+        $threshold = self::category($category) === 'part_timer' ? $rule['part_time_quantity'] : $rule['full_time_quantity'];
+        if ($conditions && (($rule['require_phone'] && mb_strlen(trim($phone)) <= 6)
+            || $amount < $rule['minimum_amount'] || ($periodQty ?? $qty) < $threshold)) return 0;
+        return round(($rule['basis'] === 'item' ? $qty : 1) * $rule['rate'], 2);
+    }
+
+    private static function category(string $value): string
+    {
+        return mb_strtolower(trim(preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $value)));
     }
 
     public static function typeSql(string $column): string
@@ -58,19 +67,43 @@ final class ReportingRules
         return "LOWER(TRIM($clean))";
     }
 
+    public static function enabledSql(string $alias = 'd'): string
+    {
+        $c = app(CommissionSettingsService::class)->configuration();
+        $types = $c['enabled'] ? array_keys(array_filter($c['rules'],fn ($r) => $r['enabled'])) : [];
+        return $types ? "$alias.type IN ('".implode("','",$types)."')" : '1 = 0';
+    }
+
+    public static function periodQuantitySql(): string
+    {
+        $parts = [];
+        foreach (app(CommissionSettingsService::class)->configuration()['rules'] as $type=>$rule) {
+            $parts[] = "WHEN type = '$type' THEN ".($rule['require_phone'] ? 'CASE WHEN phone_valid = 1 THEN total_qty ELSE 0 END' : 'total_qty');
+        }
+        return 'CASE '.implode(' ',$parts).' ELSE 0 END';
+    }
+
     public static function eligibleSql(bool $conditions): string
     {
-        $supported = "d.type IN ('sell','material','iron','repair')";
-        if (!$conditions) return $supported;
-        $part = self::PART_TIME_THRESHOLD;
-        $full = self::FULL_TIME_THRESHOLD;
-        return "$supported AND d.phone_valid = 1 AND (d.type <> 'material' OR d.total_amount >= 10) AND (d.type <> 'sell' OR COALESCE(p.period_qty,0) >= CASE WHEN d.category = 'part_timer' THEN $part ELSE $full END)";
+        if (!$conditions) return self::enabledSql();
+        $parts = [];
+        foreach (app(CommissionSettingsService::class)->configuration()['rules'] as $type=>$rule) {
+            $phone = $rule['require_phone'] ? 'd.phone_valid = 1' : '1 = 1';
+            $amount = (float)$rule['minimum_amount'];
+            $part = (int)$rule['part_time_quantity']; $full = (int)$rule['full_time_quantity'];
+            $parts[] = "(d.type = '$type' AND $phone AND d.total_amount >= $amount AND COALESCE(p.period_qty,0) >= CASE WHEN d.category = 'part_timer' THEN $part ELSE $full END)";
+        }
+        return self::enabledSql().' AND ('.implode(' OR ',$parts).')';
     }
 
     public static function rateSql(): string
     {
         $sql = 'CASE d.type';
-        foreach (self::RATES as $type => $rate) $sql .= " WHEN '$type' THEN $rate";
+        foreach (app(CommissionSettingsService::class)->configuration()['rules'] as $type=>$rule) {
+            $rate = (float)$rule['rate'];
+            $units = $rule['basis'] === 'item' ? 'd.total_qty' : '1';
+            $sql .= " WHEN '$type' THEN $rate * $units";
+        }
         return "$sql ELSE 0 END";
     }
 }

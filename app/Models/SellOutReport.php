@@ -63,6 +63,7 @@ class SellOutReport extends Model
         $user = $this->relationLoaded('user') ? $this->user : $this->user()->with('officeTime')->first();
         return \App\Services\SellOut\ReportingRules::calculate($this->display_service_type,
             (int) $lines->sum('qty'), (float) $this->total_amount, (string) $this->customer_phone,
-            (string) ($user?->officeTime?->category ?? ''));
+            (string) ($user?->officeTime?->category ?? ''), null,
+            app(\App\Services\SellOut\CommissionSettingsService::class)->configuration()['default_mode'] === 'with_conditions');
     }
 }

@@ -9,6 +9,7 @@ class SellOutReportResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $policy = app(\App\Services\SellOut\CommissionSettingsService::class)->policy($request->user());
         $data = [
             'id' => $this->id,
             'invoice_no' => $this->invoice_no,
@@ -22,7 +23,8 @@ class SellOutReportResource extends JsonResource
             'note' => $this->note ?? '',
             'extracted_text' => $this->extracted_text ?? '',
             'total_amount' => number_format((float) $this->total_amount, 2, '.', ''),
-            'commission' => number_format($this->calculatedCommission(), 2, '.', ''),
+            'commission' => $policy['visible'] ? number_format((float)$this->commission, 2, '.', '') : null,
+            'commission_visible' => $policy['visible'],
             'created_at' => optional($this->created_at)->format('Y-m-d H:i:s'),
             'department_id' => $this->user?->department_id,
             'department_name' => $this->user?->department?->dept_name ?? '',

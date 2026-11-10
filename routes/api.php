@@ -294,6 +294,7 @@ Route::group([
 
     /** Sell Out Report */
     Route::get('sell-out-reports', [SellOutReportController::class, 'index']);
+    Route::get('sell-out-reports/commission-policy', [SellOutReportController::class, 'commissionPolicy']);
     Route::get('sell-out-reports/departments', [SellOutReportController::class, 'departments']);
     Route::post('sell-out-reports', [SellOutReportController::class, 'store']);
     Route::put('sell-out-reports/{id}', [SellOutReportController::class, 'update']);

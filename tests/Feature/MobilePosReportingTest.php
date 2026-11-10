@@ -257,4 +257,16 @@ class MobilePosReportingTest extends TestCase
         $this->getJson('/api/sell-out-reports')->assertOk()->assertJsonCount(6,'data')->assertJsonStructure(['data'=>[['id','lines','commission']]]);
         $this->getJson('/api/sell-out-reports/1')->assertOk()->assertJsonPath('data.id',1);
     }
+    public function test_business_breakdown_contains_sales_and_filtered_commission_per_service(): void
+    {
+        $response = $this->getJson($this->url())->assertOk()
+            ->assertJsonPath('categories.0.type','sell')->assertJsonPath('categories.0.amount',200)
+            ->assertJsonPath('categories.0.commission',25)->assertJsonPath('categories.1.commission',0.25)
+            ->assertJsonPath('categories.2.commission',0.2)->assertJsonPath('categories.3.commission',0.2)
+            ->assertJsonPath('categories.4.commission',0);
+        $this->assertEquals($response->json('summary.commission'),array_sum(array_column($response->json('categories'),'commission')));
+        $this->getJson($this->url(['type'=>'material']))->assertOk()
+            ->assertJsonPath('categories.0.commission',0)->assertJsonPath('categories.1.commission',0.25);
+    }
+
 }

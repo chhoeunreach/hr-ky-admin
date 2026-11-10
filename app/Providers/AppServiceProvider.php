@@ -19,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->scoped(\App\Services\SellOut\CommissionSettingsService::class);
     }
 
     /**

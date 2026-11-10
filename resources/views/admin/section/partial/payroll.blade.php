@@ -1,9 +1,10 @@
-@canany(['view_monthly_payroll','view_payroll_list','view_tada_list','view_salary_list','view_advance_salary_list','view_tax_report','view_sell_staff_report','salary_component','salary_group','ssf','pf','bonus','salary_tds','advance_salary_limit','overtime_setting','undertime_setting','payment_method'])
+@canany(['manage_commission_settings','view_monthly_payroll','view_payroll_list','view_tada_list','view_salary_list','view_advance_salary_list','view_tax_report','view_sell_staff_report','salary_component','salary_group','ssf','pf','bonus','salary_tds','advance_salary_limit','overtime_setting','undertime_setting','payment_method'])
     <li class="nav-item  {{
                     request()->routeIs('admin.bonus.*') ||
                 request()->routeIs('admin.advance-salaries.*') ||
                 request()->routeIs('admin.employee-salaries.*')||
                 request()->routeIs('admin.payroll.tax-report.*')||
+                request()->routeIs('admin.commission-settings.*')||
                 request()->routeIs('admin.sell-staff-report.*')||
                 request()->routeIs('admin.employee-salary.payroll*')||
                 request()->routeIs('admin.monthly-payroll.*')||
@@ -34,6 +35,7 @@
                 request()->routeIs('admin.advance-salaries.*') ||
                 request()->routeIs('admin.employee-salaries.*')||
                 request()->routeIs('admin.payroll.tax-report.*')||
+                request()->routeIs('admin.commission-settings.*')||
                 request()->routeIs('admin.sell-staff-report.*')||
                 request()->routeIs('admin.employee-salary.payroll*')||
                 request()->routeIs('admin.monthly-payroll.*')||
@@ -103,6 +105,9 @@
                            data-href="{{route('admin.payroll.tax-report.index')}}"
                            class="nav-link  {{request()->routeIs('admin.payroll.tax-report.*') ? 'active':''}}">{{ __('index.tax_report') }}</a>
                     </li>
+                @endcan
+                @can('manage_commission_settings')
+                    <li class="nav-item"><a href="{{ route('admin.commission-settings.index') }}" data-href="{{ route('admin.commission-settings.index') }}" class="nav-link {{ request()->routeIs('admin.commission-settings.*') ? 'active' : '' }}">{{ __('commission.title') }}</a></li>
                 @endcan
                 @can('view_sell_staff_report')
                     <li class="nav-item">

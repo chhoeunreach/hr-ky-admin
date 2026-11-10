@@ -37,22 +37,30 @@ final class MobileReportingService
         if (!empty($filters['branch_name'])) abort_unless($branches->contains($filters['branch_name']), 403, 'Branch is outside your report scope.');
         if (!empty($filters['seller_name'])) abort_unless($employees->contains($filters['seller_name']), 403, 'Employee is outside your report scope.');
 
+        $settings = app(CommissionSettingsService::class);
+        $policy = $settings->policy($request->user());
+        $filters['commission_mode'] = $settings->mode($request->user(),$filters['commission_mode'] ?? null);
+        if (!$policy['visible']) $filters['report_status'] = 'all';
         $base = $this->base($request->user()->id, $filters, $from, $to);
         // Build qualification before status and pagination, using the complete filtered period.
-        $period = DB::query()->fromSub(clone $base, 's')->select(['user_id','seller_key','category'])
-            ->selectRaw("SUM(CASE WHEN type = 'sell' AND phone_valid = 1 THEN total_qty ELSE 0 END) AS period_qty")
-            ->groupBy('user_id','seller_key','category');
+        $period = DB::query()->fromSub(clone $base, 's')->select(['user_id','seller_key','category','type'])
+            ->selectRaw('SUM('.ReportingRules::periodQuantitySql().') AS period_qty')
+            ->groupBy('user_id','seller_key','category','type');
         $conditions = ($filters['commission_mode'] ?? 'with_conditions') === 'with_conditions';
         $eligible = ReportingRules::eligibleSql($conditions);
         $commission = ReportingRules::rateSql();
+        $enabled = ReportingRules::enabledSql();
+        $statusSql = $policy['can_calculate'] ? "CASE WHEN $eligible THEN 'qualified' WHEN $enabled THEN 'failed' ELSE 'not_applicable' END"
+            : "CASE WHEN d.commission > 0 THEN 'qualified' WHEN $enabled THEN 'failed' ELSE 'not_applicable' END";
+        $commissionSql = $policy['can_calculate'] ? "CASE WHEN $eligible THEN ($commission) ELSE 0 END" : 'd.commission';
         $evaluated = DB::query()->fromSub($base, 'd')->leftJoinSub($period, 'p', function ($join) {
-            $join->on('d.user_id','=','p.user_id')->on('d.seller_key','=','p.seller_key')->on('d.category','=','p.category');
+            $join->on('d.user_id','=','p.user_id')->on('d.seller_key','=','p.seller_key')->on('d.category','=','p.category')->on('d.type','=','p.type');
         })->select('d.*')->selectRaw('COALESCE(p.period_qty,0) AS period_qty')
-            ->selectRaw("CASE WHEN $eligible THEN 'qualified' WHEN d.type IN ('sell','material','iron','repair') THEN 'failed' ELSE 'not_applicable' END AS report_status")
-            ->selectRaw("CASE WHEN $eligible THEN ($commission) * CASE WHEN d.type = 'sell' THEN d.total_qty ELSE 1 END ELSE 0 END AS report_commission");
+            ->selectRaw("$statusSql AS report_status")
+            ->selectRaw("ROUND($commissionSql,2) AS report_commission");
         $query = DB::query()->fromSub($evaluated, 't');
         if (($filters['report_status'] ?? 'all') !== 'all') $query->where('report_status', $filters['report_status']);
-        if (($filters['export'] ?? '') === 'csv') return $this->export($query);
+        if (($filters['export'] ?? '') === 'csv') return $this->export($query,$policy['visible']);
 
         $categories = (clone $query)->select('type')->selectRaw('COUNT(*) AS transactions, COALESCE(SUM(total_qty),0) AS quantity, COALESCE(SUM(total_amount),0) AS amount, COALESCE(SUM(report_commission),0) AS commission')
             ->groupBy('type')->get()->keyBy('type');
@@ -70,6 +78,7 @@ final class MobileReportingService
         $summary = (array) $stats;
         foreach ($summary as $key => $value) $summary[$key] = in_array($key, ['sales_amount','commission','module_amount']) ? round((float)$value, 2) : (int)$value;
         foreach (['material','iron','repair','buy_in'] as $type) $summary[$type.'_amount'] = round((float)($categories[$type]->amount ?? 0),2);
+        if (!$policy['visible']) foreach (['commission','qualified','failed','module_qualified','module_failed'] as $key) unset($summary[$key]);
         $summary['gross_profit'] = null;
         $summary['gross_profit_available'] = false;
         $size = (int)($filters['per_page'] ?? 20);
@@ -80,12 +89,14 @@ final class MobileReportingService
         $paginator = new \Illuminate\Pagination\LengthAwarePaginator($rows,$total,$size,$page);
         return [
             'status' => true,
-            'data' => array_map(fn ($r) => $this->transaction($r), $paginator->items()),
+            'commission_policy' => $policy,
+            'data' => array_map(fn ($r) => $this->transaction($r,$policy['visible']), $paginator->items()),
             'meta' => ['current_page' => $paginator->currentPage(), 'per_page' => $size, 'total' => $paginator->total(), 'last_page' => $paginator->lastPage()],
             'summary' => $summary,
             'categories' => collect(['sell','material','iron','repair','buy_in'])->map(fn ($type) => [
                 'type' => $type, 'transactions' => (int)($categories[$type]->transactions ?? 0),
                 'quantity' => (int)($categories[$type]->quantity ?? 0), 'amount' => round((float)($categories[$type]->amount ?? 0),2),
+                ...($policy['visible'] ? ['commission'=>round((float)($categories[$type]->commission ?? 0),2)] : []),
                 'is_purchase' => $type === 'buy_in',
             ])->all(),
             'chart' => $this->chart($query, $from, $to, $filters),
@@ -109,7 +120,7 @@ final class MobileReportingService
         $q = DB::table('sell_out_reports as r')->leftJoinSub($qty,'l','l.sell_out_report_id','=','r.id')
             ->leftJoin('users as u','u.id','=','r.user_id')->leftJoin('office_times as o','o.id','=','u.office_time_id')
             ->where('r.user_id',$userId)->whereBetween('r.created_at',[$from,$to])
-            ->select(['r.id','r.user_id','r.invoice_no','r.original_invoice_no','r.seller_name','r.branch_name','r.customer_name','r.customer_phone','r.service_type','r.payment_method','r.total_amount','r.created_at'])
+            ->select(['r.id','r.user_id','r.invoice_no','r.original_invoice_no','r.seller_name','r.branch_name','r.customer_name','r.customer_phone','r.service_type','r.payment_method','r.total_amount','r.commission','r.created_at'])
             ->selectRaw(ReportingRules::typeSql('r.service_type').' AS type')
             ->selectRaw("COALESCE(l.total_qty,0) AS total_qty, LOWER(TRIM(COALESCE(r.seller_name,''))) AS seller_key, ".ReportingRules::normalizedSql('o.category')." AS category, CASE WHEN $length(TRIM(COALESCE(r.customer_phone,''))) > 6 THEN 1 ELSE 0 END AS phone_valid");
         if (!empty($f['branch_name'])) $q->where('r.branch_name',$f['branch_name']);
@@ -152,9 +163,9 @@ final class MobileReportingService
         return ['bucket' => $bucket, 'points' => array_values($points)];
     }
 
-    private function transaction(object $r): array
+    private function transaction(object $r, bool $visible): array
     {
-        return [
+        $data = [
             'id' => (int)$r->id, 'invoice_no' => $r->invoice_no ?? '', 'original_invoice_no' => $r->original_invoice_no ?? '',
             'customer_name' => $r->customer_name ?? '', 'customer_phone' => $r->customer_phone ?? '',
             'seller_name' => $r->seller_name, 'branch_name' => $r->branch_name ?? '', 'type' => $r->type,
@@ -165,15 +176,17 @@ final class MobileReportingService
             'operational_status' => null, 'payment_status' => null,
             'can_edit' => Carbon::parse($r->created_at)->isToday(),
         ];
+        if (!$visible) foreach (['report_commission','report_status','period_qty'] as $key) unset($data[$key]);
+        return $data;
     }
 
-    private function export(Builder $query): StreamedResponse
+    private function export(Builder $query, bool $visible): StreamedResponse
     {
-        return response()->streamDownload(function () use ($query) {
+        return response()->streamDownload(function () use ($query,$visible) {
             $out = fopen('php://output','w'); fwrite($out,"\xEF\xBB\xBF");
-            fputcsv($out,['Reference','Type','Customer','Phone','Qty','Amount','Report commission','Commission status','Date','Branch','Employee']);
+            fputcsv($out,['Reference','Type','Customer','Phone','Qty','Amount',...($visible ? ['Report commission','Commission status'] : []),'Date','Branch','Employee']);
             foreach ((clone $query)->orderByDesc('created_at')->orderByDesc('id')->cursor() as $r) {
-                $cells = [$r->invoice_no,$r->type,$r->customer_name,$r->customer_phone,$r->total_qty,$r->total_amount,$r->report_commission,$r->report_status,$r->created_at,$r->branch_name,$r->seller_name];
+                $cells = [$r->invoice_no,$r->type,$r->customer_name,$r->customer_phone,$r->total_qty,$r->total_amount,...($visible ? [$r->report_commission,$r->report_status] : []),$r->created_at,$r->branch_name,$r->seller_name];
                 fputcsv($out,array_map(fn ($v) => preg_match('/^[=+@\-\t\r]/',(string)$v) ? "'".$v : $v,$cells));
             }
             fclose($out);

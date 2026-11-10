@@ -20,9 +20,9 @@ Filters: `date_from`, `date_to`, `branch_name`, `seller_name`, `search` (maximum
 
 Authentication and permission middleware remain enabled. All reporting queries preserve the existing own-report scope; branch/employee options come from that same scope. Transactions cannot be read or edited by a different owner. Editing is restricted to reports created today.
 
-Revenue includes Sell, Material, Iron, and Repair header amounts exactly once. Buy In remains separate spending. iCloud Cus uses its existing create/detail/edit and navigation screens; it is excluded from financial aggregation because no additional financial rules were authorized. Gross profit and unsupported operational/payment statuses remain unavailable.
+Revenue includes Sell, Material, Iron, and Repair header amounts exactly once. Buy In remains separate spending. Commission defaults can now be managed globally in Payroll → Commission Settings; see `docs/commission-settings.md`. iCloud Cus uses its existing create/detail/edit and navigation screens; it is excluded from financial aggregation because no additional financial rules were authorized. Gross profit and unsupported operational/payment statuses remain unavailable.
 
-Period commission is calculated across the complete filtered scope before status filtering or pagination. Existing service rates and work-category thresholds are shared through `ReportingRules`. Report previews do not update saved commissions.
+Permitted period commission is calculated using the current admin policy across the complete filtered scope before status filtering or pagination. Existing service rates and work-category thresholds are shared through `ReportingRules`. Report previews do not update saved commissions.
 
 ## Deployment
 
@@ -50,3 +50,7 @@ For MySQL dialect verification, the same suite supports `POS_REPORT_MYSQL_SOCKET
 Verified on 10 November 2026: 15 backend tests / 171 assertions passed on SQLite and MySQL, including create/detail/edit for all six services, scoping, date boundaries, financial totals, conditions, CSV errors, and pagination. PHPUnit reports one existing configuration deprecation.
 
 The configured application MySQL connection refused connections during the local audit. No business-database migration or data change was performed. Live-account verification requires that connection to be available.
+
+## Admin-managed commission
+
+See [Commission administration](commission-settings.md) for per-service rates/conditions, global controls, role visibility/calculation permissions, audit history, and the additional migration. Saved invoice resources now return persisted commissions, while authorized reporting previews use current rules. Hidden values are redacted by the API rather than only hidden in Flutter.

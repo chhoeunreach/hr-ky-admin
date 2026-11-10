@@ -92,7 +92,7 @@ class SellOutReportController extends Controller
             'total_qty' => $reports->sum(fn (SellOutReport $report) => $report->lines->sum('qty')),
             'total_amount' => number_format((float) $reports->sum('total_amount'), 2, '.', ''),
             'total_commission' => number_format(
-                (float) $reports->sum(fn (SellOutReport $report) => $report->calculatedCommission()),
+                (float) $reports->sum('commission'),
                 2,
                 '.',
                 ''
@@ -120,14 +120,22 @@ class SellOutReportController extends Controller
             ->sortByDesc('total_sales')
             ->values();
 
+        $policy = app(\App\Services\SellOut\CommissionSettingsService::class)->policy($request->user());
+        if (!$policy['visible']) unset($summary['total_commission']);
         return response()->json([
             'status' => true,
+            'commission_policy' => $policy,
             'data' => $reports
                 ->map(fn (SellOutReport $report) => (new SellOutReportResource($report))->toArray(request()))
                 ->values(),
             'summary' => $summary,
             'staff_summary' => $staffSummary,
         ]);
+    }
+
+    public function commissionPolicy(Request $request): JsonResponse
+    {
+        return response()->json(['status'=>true,'data'=>app(\App\Services\SellOut\CommissionSettingsService::class)->policy($request->user())]);
     }
 
     public function show(int $id): JsonResponse
@@ -139,6 +147,7 @@ class SellOutReportController extends Controller
 
         return response()->json([
             'status' => true,
+            'commission_policy' => app(\App\Services\SellOut\CommissionSettingsService::class)->policy(request()->user()),
             'data' => (new SellOutReportResource($report))->toArray(request()),
         ]);
     }
@@ -252,6 +261,7 @@ class SellOutReportController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Sell Out Report submitted successfully!',
+            'commission_policy' => app(\App\Services\SellOut\CommissionSettingsService::class)->policy(request()->user()),
             'data' => (new SellOutReportResource($report))->toArray(request()),
         ], 201);
     }
@@ -338,6 +348,7 @@ class SellOutReportController extends Controller
         return response()->json([
             'status' => true,
             'message' => 'Sell Out Report updated successfully!',
+            'commission_policy' => app(\App\Services\SellOut\CommissionSettingsService::class)->policy(request()->user()),
             'data' => (new SellOutReportResource($report))->toArray(request()),
         ]);
     }
@@ -487,7 +498,8 @@ class SellOutReportController extends Controller
         $user?->loadMissing('officeTime');
         return ReportingRules::calculate($serviceType,
             (int) collect($lines)->sum(fn (array $line): int => (int) $line['qty']),
-            $totalAmount, (string) $customerPhone, (string) ($user?->officeTime?->category ?? ''));
+            $totalAmount, (string) $customerPhone, (string) ($user?->officeTime?->category ?? ''), null,
+            app(\App\Services\SellOut\CommissionSettingsService::class)->configuration()['default_mode'] === 'with_conditions');
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool
