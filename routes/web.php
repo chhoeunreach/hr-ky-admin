@@ -382,6 +382,12 @@ Route::group([
             Route::get('import', [RepairPriceWebController::class, 'import'])->name('import');
             Route::post('import', [RepairPriceWebController::class, 'processImport'])->name('import.process');
             Route::get('sample-template', [RepairPriceWebController::class, 'downloadSample'])->name('sample-template');
+            Route::post('types', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'storeType'])->name('types.store');
+            Route::put('types/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'updateType'])->name('types.update');
+            Route::delete('types/delete/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'deleteType'])->name('types.delete');
+            Route::post('series', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'storeSeries'])->name('series.store');
+            Route::put('series/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'updateSeries'])->name('series.update');
+            Route::delete('series/delete/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'deleteSeries'])->name('series.delete');
             Route::post('brands', [RepairPriceWebController::class, 'storeBrand'])->name('brands.store');
             Route::put('brands/{id}', [RepairPriceWebController::class, 'updateBrand'])->name('brands.update');
             Route::delete('brands/delete/{id}', [RepairPriceWebController::class, 'deleteBrand'])->name('brands.delete');

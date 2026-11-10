@@ -6,9 +6,11 @@
 
 @section('button')
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('admin.repair-price.import') }}" class="btn btn-outline-success btn-sm">
-            <i class="link-icon" data-feather="upload-cloud"></i> {{ __('index.import_excel') ?? 'Import Excel' }}
-        </a>
+        @can('repair_price.manage_prices')
+            <a href="{{ route('admin.repair-price.import') }}" class="btn btn-outline-success btn-sm">
+                <i class="link-icon" data-feather="upload-cloud"></i> {{ __('index.import_excel') ?? 'Import Excel' }}
+            </a>
+        @endcan
         <a href="{{ route('admin.repair-price.sample-template') }}" class="btn btn-outline-secondary btn-sm" title="Download Sample CSV">
             <i class="link-icon" data-feather="download"></i> Sample CSV
         </a>
@@ -41,7 +43,9 @@
 @endsection
 
 @section('main-content')
-<section class="content">
+<link rel="stylesheet" href="{{ asset('assets/css/directory-table-tools.css') }}?v={{ filemtime(public_path('assets/css/directory-table-tools.css')) }}">
+<style>.repair-price-page .card{border:1px solid rgba(125,139,160,.18);border-radius:14px;overflow:hidden}.repair-price-page .directory-add{background:linear-gradient(110deg,#ff0800,#ffad00);box-shadow:0 4px 14px #ff3c0026}.repair-price-page .directory-filter-toggle,.repair-price-page .directory-title>svg{color:#ff0800}</style>
+<section class="content repair-price-page">
     @include('admin.section.flash_message')
 
     <!-- Breadcrumb & Role Permissions Indicator -->
@@ -69,14 +73,18 @@
     </nav>
 
     <!-- Filters Card -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0"><i class="link-icon me-1" data-feather="filter"></i> {{ __('index.filters_and_search') }}</h6>
-        </div>
-        <form class="card-body pb-2" action="{{ route('admin.repair-price.index') }}" method="get">
+    @php
+        $repairFiltersExpanded = request()->filled('brand_id') || request()->filled('device_id') || request()->filled('category_id');
+    @endphp
+    <div class="directory-filter-panel mb-4">
+        @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'repairFilterCollapse', 'directoryExpanded' => $repairFiltersExpanded])
+        <div id="repairFilterCollapse" class="collapse {{ $repairFiltersExpanded ? 'show' : '' }}">
+        <form id="repairFilterForm" class="directory-filter-form" action="{{ route('admin.repair-price.index') }}" method="get">
+            <input type="hidden" name="search" value="{{ $filterParameters['search'] ?? '' }}">
+            <input type="hidden" name="per_page" value="{{ $filterParameters['per_page'] }}">
             <input type="hidden" name="active_tab" id="filterActiveTab" value="{{ $filterParameters['active_tab'] ?? 'prices' }}">
             <div class="row align-items-center">
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-lg-4 col-md-6 mb-3">
                     <label class="form-label small text-muted">{{ __('index.brand') }}</label>
                     <select class="form-select" name="brand_id">
                         <option value="">{{ __('index.all_brands') }}</option>
@@ -88,7 +96,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-lg-4 col-md-6 mb-3">
                     <label class="form-label small text-muted">{{ __('index.device_model') }}</label>
                     <select class="form-select" name="device_id">
                         <option value="">{{ __('index.all_devices') }}</option>
@@ -100,7 +108,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-3">
+                <div class="col-lg-4 col-md-6 mb-3">
                     <label class="form-label small text-muted">{{ __('index.category') }}</label>
                     <select class="form-select" name="category_id">
                         <option value="">{{ __('index.all_categories') }}</option>
@@ -112,17 +120,10 @@
                     </select>
                 </div>
 
-                <div class="col-lg-3 col-md-6 mb-3">
-                    <label class="form-label small text-muted">{{ __('index.keyword_search') }}</label>
-                    <input type="text" class="form-control" name="search" placeholder="{{ __('index.search_placeholder') }}" value="{{ $filterParameters['search'] ?? '' }}">
-                </div>
-
-                <div class="col-12 mb-2 d-flex justify-content-end gap-2">
-                    <button type="submit" class="btn btn-success btn-sm"><i data-feather="search" class="me-1"></i> {{ __('index.filter') }}</button>
-                    <a href="{{ route('admin.repair-price.index', ['active_tab' => $filterParameters['active_tab'] ?? 'prices']) }}" class="btn btn-secondary btn-sm"><i data-feather="refresh-cw" class="me-1"></i> {{ __('index.reset') }}</a>
-                </div>
             </div>
+            @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.repair-price.index', ['active_tab' => $filterParameters['active_tab'], 'per_page' => $filterParameters['per_page']])])
         </form>
+        </div>
     </div>
 
     <!-- Navigation Tabs -->
@@ -156,11 +157,20 @@
                 <i class="link-icon me-1" data-feather="tool"></i> {{ __('index.repair_services') }}
             </a>
         </li>
+        @can('repair_price.manage_devices')
+            @foreach(['types' => 'Device Types', 'series' => 'Device Series'] as $tab => $label)
+                <li class="nav-item">
+                    <a class="nav-link {{ $filterParameters['active_tab'] === $tab ? 'active' : '' }}" id="{{ $tab }}-tab" data-bs-toggle="tab" href="#{{ $tab }}Pane" role="tab">{{ $label }}</a>
+                </li>
+            @endforeach
+        @endcan
+        @can('repair_price.manage_prices')
         <li class="nav-item ms-auto">
             <a class="nav-link text-primary fw-bold" href="{{ route('admin.repair-price.import') }}">
                 <i class="link-icon me-1 text-primary" data-feather="upload-cloud"></i> Import Excel / CSV
             </a>
         </li>
+        @endcan
     </ul>
 
     <!-- Tab Contents -->
@@ -169,13 +179,10 @@
         <!-- TAB 1: PRICES & COSTS -->
         <div class="tab-pane fade {{ ($filterParameters['active_tab'] ?? 'prices') == 'prices' ? 'show active' : '' }}" id="pricesPane" role="tabpanel" aria-labelledby="prices-tab">
             <div class="card shadow-sm">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">{{ __('index.repair_price_matrix') }}</h6>
-                    <span class="text-muted small">{{ __('index.showing_repair_records', ['count' => $prices->total()]) }}</span>
-                </div>
+                @include('admin.repairPrice.partials.toolbar', ['repairEntity' => 'prices', 'repairRecords' => $prices])
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table id="repair-prices-table" class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -192,7 +199,7 @@
                                     <th>{{ __('index.warranty') }}</th>
                                     <th>{{ __('index.status') }}</th>
                                     @canany(['repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
-                                        <th class="text-center">{{ __('index.action') }}</th>
+                                        <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     @endcanany
                                 </tr>
                             </thead>
@@ -309,22 +316,17 @@
             <!-- TAB 2: BRANDS -->
             <div class="tab-pane fade {{ ($filterParameters['active_tab'] ?? '') == 'brands' ? 'show active' : '' }}" id="brandsPane" role="tabpanel" aria-labelledby="brands-tab">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h6 class="card-title mb-0">{{ __('index.brands') ?? 'Brands' }}</h6>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBrandModal">
-                            <i data-feather="plus" class="me-1"></i> {{ __('index.add_brand') ?? 'Add Brand' }}
-                        </button>
-                    </div>
-                    <div class="card-body">
+                    @include('admin.repairPrice.partials.toolbar', ['repairEntity' => 'brands', 'repairRecords' => $brandsList])
+                <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table id="repair-brands-table" class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
                                         <th>#</th>
                                         <th>{{ __('index.brand') }}</th>
                                         <th>Slug</th>
                                         <th>{{ __('index.status') }}</th>
-                                        <th class="text-center">{{ __('index.action') }}</th>
+                                        <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -380,15 +382,10 @@
             <!-- TAB 3: CATEGORIES -->
             <div class="tab-pane fade {{ ($filterParameters['active_tab'] ?? '') == 'categories' ? 'show active' : '' }}" id="categoriesPane" role="tabpanel" aria-labelledby="categories-tab">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h6 class="card-title mb-0">{{ __('index.categories') ?? 'Categories' }}</h6>
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                            <i data-feather="plus" class="me-1"></i> {{ __('index.add_category') ?? 'Add Category' }}
-                        </button>
-                    </div>
-                    <div class="card-body">
+                    @include('admin.repairPrice.partials.toolbar', ['repairEntity' => 'categories', 'repairRecords' => $categoriesList])
+                <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table id="repair-categories-table" class="table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
                                         <th>#</th>
@@ -397,7 +394,7 @@
                                         <th>Slug</th>
                                         <th>{{ __('index.sort_order') ?? 'Sort Order' }}</th>
                                         <th>{{ __('index.status') }}</th>
-                                        <th class="text-center">{{ __('index.action') }}</th>
+                                        <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -456,17 +453,10 @@
         <!-- TAB 2: DEVICE MODELS -->
         <div class="tab-pane fade {{ ($filterParameters['active_tab'] ?? '') == 'devices' ? 'show active' : '' }}" id="devicesPane" role="tabpanel" aria-labelledby="devices-tab">
             <div class="card shadow-sm">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">{{ __('index.repair_devices') }}</h6>
-                    @can('repair_price.manage_devices')
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDeviceModal">
-                            <i data-feather="plus" class="me-1"></i> {{ __('index.add_device') }}
-                        </button>
-                    @endcan
-                </div>
+                @include('admin.repairPrice.partials.toolbar', ['repairEntity' => 'devices', 'repairRecords' => $devicesList])
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table id="repair-devices-table" class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -477,7 +467,7 @@
                                     <th>{{ __('index.model_number') }}</th>
                                     <th>{{ __('index.status') }}</th>
                                     @can('repair_price.manage_devices')
-                                        <th class="text-center">{{ __('index.action') }}</th>
+                                        <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     @endcan
                                 </tr>
                             </thead>
@@ -539,17 +529,10 @@
         <!-- TAB 3: SERVICES & CATEGORIES -->
         <div class="tab-pane fade {{ ($filterParameters['active_tab'] ?? '') == 'services' ? 'show active' : '' }}" id="servicesPane" role="tabpanel" aria-labelledby="services-tab">
             <div class="card shadow-sm">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">{{ __('index.repair_services') }}</h6>
-                    @can('repair_price.manage_services')
-                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addServiceModal">
-                            <i data-feather="plus" class="me-1"></i> {{ __('index.add_service') }}
-                        </button>
-                    @endcan
-                </div>
+                @include('admin.repairPrice.partials.toolbar', ['repairEntity' => 'services', 'repairRecords' => $servicesList])
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
+                        <table id="repair-services-table" class="table table-hover align-middle">
                             <thead class="table-light">
                                 <tr>
                                     <th>#</th>
@@ -559,7 +542,7 @@
                                     <th>{{ __('index.description') }}</th>
                                     <th>{{ __('index.status') }}</th>
                                     @can('repair_price.manage_services')
-                                        <th class="text-center">{{ __('index.action') }}</th>
+                                        <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     @endcan
                                 </tr>
                             </thead>
@@ -620,10 +603,12 @@
             </div>
         </div>
 
+        @include('admin.repairPrice.partials.catalog-tabs')
     </div>
 </section>
 
 <!-- ================= MODALS ================= -->
+@include('admin.repairPrice.partials.catalog-modals')
 
 @can('repair_price.manage_brands')
     <!-- ADD BRAND MODAL -->
@@ -990,7 +975,7 @@
                             <select class="form-select" name="repair_device_series_id">
                                 <option value="">{{ __('index.series') }}</option>
                                 @foreach($series as $s)
-                                    <option value="{{ $s->id }}">{{ $s->name }} ({{ $s->brand?->name }})</option>
+                                    <option value="{{ $s->id }}" data-brand-id="{{ $s->repair_brand_id }}" data-type-id="{{ $s->repair_device_type_id }}">{{ $s->name }} ({{ $s->brand?->name }})</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1049,7 +1034,7 @@
                             <select class="form-select" id="edit_device_series_id" name="repair_device_series_id">
                                 <option value="">{{ __('index.series') }}</option>
                                 @foreach($series as $s)
-                                    <option value="{{ $s->id }}">{{ $s->name }}</option>
+                                    <option value="{{ $s->id }}" data-brand-id="{{ $s->repair_brand_id }}" data-type-id="{{ $s->repair_device_type_id }}">{{ $s->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -1183,6 +1168,12 @@
             else if (target === '#categoriesPane') $('#filterActiveTab').val('categories');
             else if (target === '#devicesPane') $('#filterActiveTab').val('devices');
             else if (target === '#servicesPane') $('#filterActiveTab').val('services');
+            else if (target === '#typesPane') $('#filterActiveTab').val('types');
+            else if (target === '#seriesPane') $('#filterActiveTab').val('series');
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('active_tab', $('#filterActiveTab').val());
+            window.history.replaceState(null, '', nextUrl);
+
         });
 
         // SweetAlert Delete Warning
@@ -1204,6 +1195,19 @@
                     HTMLFormElement.prototype.submit.call(form);
                 }
             });
+        });
+
+        $('.edit-catalog-btn').on('click', function () {
+            const record = $(this).data('record');
+            const entity = $(this).data('entity');
+            const form = document.getElementById('editCatalog' + entity + 'Form');
+            form.action = $(this).data('url');
+            ['name', 'slug', 'icon', 'repair_brand_id', 'repair_device_type_id'].forEach(function (key) {
+                const field = form.elements.namedItem(key);
+                if (field) field.value = record[key] == null ? '' : record[key];
+            });
+            form.elements.namedItem('status').checked = !!record.status;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editCatalog' + entity + 'Modal')).show();
         });
 
         // Brand Edit Modal Populate
@@ -1278,4 +1282,5 @@
         });
     });
 </script>
+@include('admin.repairPrice.partials.form-behavior')
 @endsection

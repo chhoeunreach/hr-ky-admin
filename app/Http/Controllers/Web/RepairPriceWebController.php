@@ -30,22 +30,52 @@ class RepairPriceWebController extends Controller
         abort_unless(Gate::allows('repair_price.view'), 403, __('message.unauthorized_access') ?? 'Unauthorized access.');
 
         try {
+            $tabs = ['prices', 'brands', 'categories', 'devices', 'services', 'types', 'series'];
+            $activeTab = $request->input('active_tab');
+            if (!in_array($activeTab, $tabs, true)) {
+                $activeTab = collect($tabs)->first(fn ($tab) => $request->has($tab.'_page'), 'prices');
+            }
             $filterParameters = [
                 'brand_id' => $request->brand_id ?? null,
                 'device_id' => $request->device_id ?? null,
                 'category_id' => $request->category_id ?? null,
                 'search' => $request->search ?? null,
-                'active_tab' => $request->active_tab ?? 'prices',
+                'active_tab' => $activeTab,
             ];
 
-            $brands = RepairBrand::where('status', true)->orderBy('name')->get();
-            $brandsList = RepairBrand::latest()->paginate(15, ['*'], 'brands_page');
-            $deviceTypes = RepairDeviceType::where('status', true)->orderBy('name')->get();
-            $series = RepairDeviceSeries::where('status', true)->orderBy('name')->get();
-            $devices = RepairDevice::where('status', true)->orderBy('name')->get();
-            $categories = RepairCategory::where('status', true)->orderBy('sort_order')->get();
-            $categoriesList = RepairCategory::orderBy('sort_order')->latest()->paginate(15, ['*'], 'categories_page');
-            $services = RepairService::where('status', true)->orderBy('name')->get();
+            $pageSize = (string) $request->input('per_page', '25');
+            if (!in_array($pageSize, ['25', '50', '100', '200', 'all'], true)) $pageSize = '25';
+            $filterParameters['per_page'] = $pageSize;
+            $paginate = function ($query, $pageName) use ($pageSize) {
+                return $query->paginate($pageSize === 'all' ? max(1, (clone $query)->count()) : (int) $pageSize, ['*'], $pageName);
+            };
+            $catalog = function ($query, array $paths, array $searchColumns) use ($request) {
+                foreach ($paths as $parameter => [$relation, $column]) {
+                    if (!$request->filled($parameter)) continue;
+                    if ($relation) $query->whereHas($relation, fn ($q) => $q->where($column, $request->input($parameter)));
+                    else $query->where($column, $request->input($parameter));
+                }
+                if ($request->filled('search')) {
+                    $query->where(function ($q) use ($searchColumns, $request) {
+                        foreach ($searchColumns as $column) $q->orWhere($column, 'like', '%'.$request->input('search').'%');
+                    });
+                }
+                return $query;
+            };
+            $brands = RepairBrand::orderBy('name')->get();
+            $deviceTypes = RepairDeviceType::orderBy('name')->get();
+            $series = RepairDeviceSeries::with(['brand', 'deviceType'])->orderBy('name')->get();
+            $devices = RepairDevice::with('brand')->orderBy('name')->get();
+            $categories = RepairCategory::orderBy('sort_order')->get();
+            $services = RepairService::orderBy('name')->get();
+            $brandsList = $paginate($catalog(RepairBrand::latest(), [
+                'brand_id' => [null, 'id'], 'device_id' => ['devices', 'id'],
+                'category_id' => ['devices.prices.service', 'repair_category_id'],
+            ], ['name', 'slug']), 'brands_page');
+            $categoriesList = $paginate($catalog(RepairCategory::orderBy('sort_order')->latest(), [
+                'brand_id' => ['services.prices.device', 'repair_brand_id'],
+                'device_id' => ['services.prices', 'repair_device_id'], 'category_id' => [null, 'id'],
+            ], ['name', 'name_kh', 'slug']), 'categories_page');
 
             // 1. Price Query
             $pricesQuery = RepairPrice::with(['device.brand', 'device.series', 'service.category'])
@@ -68,19 +98,28 @@ class RepairPriceWebController extends Controller
                     });
                 });
 
-            $prices = $pricesQuery->latest()->paginate(15)->appends($request->all());
-
-            // 2. Devices Query (for Tab 2)
-            $devicesList = RepairDevice::with(['brand', 'deviceType', 'series'])
-                ->when($request->filled('brand_id'), fn ($q) => $q->where('repair_brand_id', $request->brand_id))
-                ->latest()
-                ->paginate(15, ['*'], 'devices_page');
-
-            // 3. Services Query (for Tab 3)
-            $servicesList = RepairService::with('category')
-                ->when($request->filled('category_id'), fn ($q) => $q->where('repair_category_id', $request->category_id))
-                ->latest()
-                ->paginate(15, ['*'], 'services_page');
+            $prices = $paginate($pricesQuery->latest(), 'page');
+            $devicesList = $paginate($catalog(RepairDevice::with(['brand', 'deviceType', 'series'])->latest(), [
+                'brand_id' => [null, 'repair_brand_id'], 'device_id' => [null, 'id'],
+                'category_id' => ['prices.service', 'repair_category_id'],
+            ], ['name', 'model_number']), 'devices_page');
+            $servicesList = $paginate($catalog(RepairService::with('category')->latest(), [
+                'brand_id' => ['prices.device', 'repair_brand_id'], 'device_id' => ['prices', 'repair_device_id'],
+                'category_id' => [null, 'repair_category_id'],
+            ], ['name', 'name_kh', 'description']), 'services_page');
+            $typesList = $paginate($catalog(RepairDeviceType::latest(), [
+                'brand_id' => ['devices', 'repair_brand_id'], 'device_id' => ['devices', 'id'],
+                'category_id' => ['devices.prices.service', 'repair_category_id'],
+            ], ['name', 'slug']), 'types_page');
+            $seriesList = $paginate($catalog(RepairDeviceSeries::with(['brand', 'deviceType'])->latest(), [
+                'brand_id' => [null, 'repair_brand_id'], 'device_id' => ['devices', 'id'],
+                'category_id' => ['devices.prices.service', 'repair_category_id'],
+            ], ['name', 'slug']), 'series_page');
+            foreach (['prices' => $prices, 'brands' => $brandsList, 'categories' => $categoriesList,
+                'devices' => $devicesList, 'services' => $servicesList, 'types' => $typesList, 'series' => $seriesList] as $tab => $paginator) {
+                $paginator->appends($request->only(['brand_id', 'device_id', 'category_id', 'search']))
+                    ->appends(['active_tab' => $tab, 'per_page' => $pageSize]);
+            }
 
             // Role & Permission flags
             $canViewCost = Gate::allows('repair_price.view_cost');
@@ -90,6 +129,8 @@ class RepairPriceWebController extends Controller
 
             return view($this->view . 'index', compact(
                 'prices',
+                'typesList',
+                'seriesList',
                 'devicesList',
                 'servicesList',
                 'brandsList',
@@ -114,6 +155,10 @@ class RepairPriceWebController extends Controller
     public function storeCategory(Request $request)
     {
         abort_unless(Gate::allows('repair_price.manage_categories'), 403, 'Unauthorized to manage categories.');
+
+        if (!$request->filled('slug')) {
+            $request->merge(['slug' => Str::slug($request->input('name', '')) ?: 'category-'.Str::lower(Str::random(8))]);
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:repair_categories,name',
@@ -142,6 +187,10 @@ class RepairPriceWebController extends Controller
         abort_unless(Gate::allows('repair_price.manage_categories'), 403, 'Unauthorized to manage categories.');
 
         $category = RepairCategory::findOrFail($id);
+
+        if (!$request->filled('slug')) {
+            $request->merge(['slug' => $category->slug]);
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('repair_categories', 'name')->ignore($category->id)],
@@ -189,6 +238,10 @@ class RepairPriceWebController extends Controller
     {
         abort_unless(Gate::allows('repair_price.manage_brands'), 403, 'Unauthorized to manage brands.');
 
+        if (!$request->filled('slug')) {
+            $request->merge(['slug' => Str::slug($request->input('name', '')) ?: 'brand-'.Str::lower(Str::random(8))]);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:repair_brands,name',
             'slug' => 'nullable|string|max:255|unique:repair_brands,slug',
@@ -213,6 +266,10 @@ class RepairPriceWebController extends Controller
         abort_unless(Gate::allows('repair_price.manage_brands'), 403, 'Unauthorized to manage brands.');
 
         $brand = RepairBrand::findOrFail($id);
+
+        if (!$request->filled('slug')) {
+            $request->merge(['slug' => $brand->slug]);
+        }
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('repair_brands', 'name')->ignore($brand->id)],
@@ -260,7 +317,9 @@ class RepairPriceWebController extends Controller
         $validated = $request->validate([
             'repair_brand_id' => 'required|exists:repair_brands,id',
             'repair_device_type_id' => 'required|exists:repair_device_types,id',
-            'repair_device_series_id' => 'nullable|exists:repair_device_series,id',
+            'repair_device_series_id' => ['nullable', Rule::exists('repair_device_series', 'id')
+                ->where('repair_brand_id', $request->repair_brand_id)
+                ->where('repair_device_type_id', $request->repair_device_type_id)],
             'name' => [
                 'required',
                 'string',
@@ -293,7 +352,9 @@ class RepairPriceWebController extends Controller
         $validated = $request->validate([
             'repair_brand_id' => 'required|exists:repair_brands,id',
             'repair_device_type_id' => 'required|exists:repair_device_types,id',
-            'repair_device_series_id' => 'nullable|exists:repair_device_series,id',
+            'repair_device_series_id' => ['nullable', Rule::exists('repair_device_series', 'id')
+                ->where('repair_brand_id', $request->repair_brand_id)
+                ->where('repair_device_type_id', $request->repair_device_type_id)],
             'name' => [
                 'required',
                 'string',
@@ -325,6 +386,9 @@ class RepairPriceWebController extends Controller
 
         try {
             $device = RepairDevice::findOrFail($id);
+            if ($device->prices()->exists()) {
+                return redirect()->back()->with('danger', 'This device is used by repair prices. Delete or reassign those prices first.');
+            }
             $device->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
                 ->with('success', 'Device model deleted successfully.');
@@ -387,6 +451,9 @@ class RepairPriceWebController extends Controller
 
         try {
             $service = RepairService::findOrFail($id);
+            if ($service->prices()->exists()) {
+                return redirect()->back()->with('danger', 'This service is used by repair prices. Delete or reassign those prices first.');
+            }
             $service->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'services'])
                 ->with('success', 'Repair service deleted successfully.');

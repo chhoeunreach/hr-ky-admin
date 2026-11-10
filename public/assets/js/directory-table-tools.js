@@ -53,7 +53,7 @@
             form.requestSubmit();
         };
         if (!live) {
-            tools.querySelector('#per_page').addEventListener('change', submit);
+            tools.querySelector('[name="per_page"]').addEventListener('change', submit);
             search.addEventListener('keydown', event => {if (event.key === 'Enter') {event.preventDefault(); submit();}});
             search.addEventListener('search', submit);
         }
