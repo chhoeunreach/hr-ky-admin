@@ -1,0 +1,179 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Http\Middleware\SPAuthGateMW;
+use App\Models\User;
+use App\Services\SellOut\ReportingRules;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Laravel\Passport\Passport;
+use Tests\TestCase;
+
+class MobilePosReportingTest extends TestCase
+{
+    public function createApplication()
+    {
+        $app = require __DIR__.'/../../bootstrap/app.php';
+        $app->afterBootstrapping(\Illuminate\Foundation\Bootstrap\LoadConfiguration::class, function ($app) {
+            $app['config']->set('cache.default','array');
+            $app['config']->set('cache.limiter','array');
+            $app['config']->set('database.default','sqlite');
+            $app['config']->set('database.connections.sqlite.database',':memory:');
+        });
+        $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        return $app;
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        DB::purge('sqlite');
+        $this->withoutMiddleware([SPAuthGateMW::class, \Illuminate\Routing\Middleware\ThrottleRequests::class]);
+        $this->travelTo(now()->setDate(2026,11,9)->setTime(12,0));
+        Cache::put('payment_currency_symbol','$');
+        Schema::create('users', function (Blueprint $t) {
+            $t->id(); $t->string('name'); $t->integer('branch_id')->nullable(); $t->integer('office_time_id')->nullable(); $t->integer('department_id')->nullable(); $t->softDeletes();
+        });
+        Schema::create('branches',function (Blueprint $t) {$t->id(); $t->string('name');});
+        Schema::create('departments',function (Blueprint $t) {$t->id(); $t->string('dept_name'); $t->integer('branch_id')->nullable();});
+        Schema::create('office_times',function (Blueprint $t) {
+            $t->id(); $t->integer('branch_id')->nullable(); foreach (['category','opening_time','closing_time','shift','shift_type','is_late_check_in','checkin_after','is_early_check_out','checkout_before'] as $f) $t->string($f)->nullable();
+        });
+        Schema::create('sell_out_reports',function (Blueprint $t) {
+            $t->id(); $t->integer('user_id'); foreach (['invoice_no','original_invoice_no','seller_name','branch_name','customer_name','customer_phone','service_type','payment_method','note','extracted_text'] as $f) $t->string($f)->nullable();
+            $t->decimal('total_amount',12,2); $t->decimal('commission',12,2)->default(0); $t->timestamps();
+        });
+        Schema::create('sell_out_report_lines',function (Blueprint $t) {
+            $t->id(); $t->integer('sell_out_report_id'); foreach (['product_name','sku','imei','imei2','serial_number','model_number','color','storage'] as $f) $t->string($f)->nullable();
+            $t->integer('qty'); $t->decimal('unit_price',12,2); $t->decimal('subtotal',12,2);
+        });
+        Schema::create('sell_out_report_photos',function (Blueprint $t) {$t->id(); $t->integer('sell_out_report_id'); $t->integer('sell_out_report_line_id')->nullable(); $t->string('photo_url')->nullable(); $t->string('photo_path')->nullable();});
+        (require database_path('migrations/2026_11_10_000001_add_mobile_reporting_index.php'))->up();
+        DB::table('branches')->insert([['id'=>1,'name'=>'HQ'],['id'=>2,'name'=>'Other']]);
+        DB::table('office_times')->insert(['id'=>1,'category'=>'full_timer','branch_id'=>1]);
+        DB::table('users')->insert([['id'=>1,'name'=>'Employee','branch_id'=>1,'office_time_id'=>1],['id'=>2,'name'=>'Other employee','branch_id'=>2,'office_time_id'=>1]]);
+        Passport::actingAs(User::findOrFail(1));
+        $this->record('Sell',60,120);
+        $this->record('លក់',40,80);
+        $this->record('Material',1,10);
+        $this->record('Iron',1,5);
+        $this->record('Repair',1,7);
+        $this->record('Buy In',1,500);
+        $this->record('Sell',999,9999,['user_id'=>2,'branch_name'=>'Other','seller_name'=>'Other employee']);
+    }
+
+    private function record(string $type, int $qty, float $amount, array $extra = []): int
+    {
+        $id = DB::table('sell_out_reports')->insertGetId($extra + ['user_id'=>1,'invoice_no'=>'INV-'.DB::table('sell_out_reports')->count(),'seller_name'=>'Employee','branch_name'=>'HQ','customer_name'=>'Customer','customer_phone'=>'012345678','service_type'=>$type,'payment_method'=>'Cash','total_amount'=>$amount,'created_at'=>now(),'updated_at'=>now()]);
+        DB::table('sell_out_report_lines')->insert(['sell_out_report_id'=>$id,'product_name'=>'Phone '.$id,'sku'=>'SKU-'.$id,'qty'=>$qty,'unit_price'=>$amount/$qty,'subtotal'=>$amount]);
+        return $id;
+    }
+
+    private function url(array $query = []): string
+    {
+        return '/api/sell-out-reports?'.http_build_query($query + ['paginated'=>1,'date_from'=>'2026-11-09','date_to'=>'2026-11-09']);
+    }
+
+    public function test_summary_is_scoped_deduplicated_and_excludes_purchase_spending(): void
+    {
+        DB::table('sell_out_report_photos')->insert([['sell_out_report_id'=>1],['sell_out_report_id'=>1]]);
+        $this->getJson($this->url())->assertOk()->assertJsonPath('summary.reports',2)->assertJsonPath('summary.quantity',100)
+            ->assertJsonPath('summary.sales_amount',222)->assertJsonPath('summary.buy_in_amount',500)->assertJsonPath('summary.gross_profit',null)
+            ->assertJsonPath('summary.commission',25.65)->assertJsonPath('summary.qualified',2)->assertJsonPath('summary.total_transactions',6)
+            ->assertJsonPath('permissions.scope','own_reports')->assertJsonPath('meta.per_page',20)->assertJsonPath('capabilities.repair_orders',false);
+    }
+
+    public function test_server_pagination_is_bounded_and_summaries_cover_all_pages(): void
+    {
+        for ($i=0;$i<25;$i++) $this->record('Iron',1,1);
+        $first = $this->getJson($this->url())->assertOk()->assertJsonCount(20,'data')->assertJsonPath('meta.total',31)->assertJsonPath('meta.last_page',2)->assertJsonPath('summary.sales_amount',247);
+        $second = $this->getJson($this->url(['page'=>2]))->assertOk()->assertJsonCount(11,'data')->assertJsonPath('summary.sales_amount',247);
+        $this->assertEmpty(array_intersect(array_column($first->json('data'),'id'),array_column($second->json('data'),'id')));
+        $this->getJson($this->url(['per_page'=>'all']))->assertUnprocessable();
+        $this->getJson($this->url(['page'=>9999]))->assertOk()->assertJsonPath('meta.current_page',2)->assertJsonCount(11,'data');
+    }
+
+    public function test_search_type_branch_employee_and_status_work_together(): void
+    {
+        $this->getJson($this->url(['type'=>'sell','report_status'=>'qualified','branch_name'=>'HQ','seller_name'=>'Employee']))->assertOk()->assertJsonCount(2,'data')->assertJsonPath('summary.commission',25);
+        // Search is part of the period calculation: 60 selected items do not reach 100.
+        $this->getJson($this->url(['search'=>'SKU-1']))->assertOk()->assertJsonCount(1,'data')->assertJsonPath('data.0.report_status','failed')->assertJsonPath('summary.commission',0);
+        $this->getJson($this->url(['type'=>'material','search'=>'Customer']))->assertOk()->assertJsonCount(1,'data')->assertJsonPath('summary.module_amount',10);
+    }
+
+    public function test_unowned_filters_cannot_leak_cross_branch_or_employee_data(): void
+    {
+        $response = $this->getJson($this->url())->assertOk();
+        $this->assertSame(['HQ'],$response->json('options.branches'));
+        $this->assertSame(['Employee'],$response->json('options.employees'));
+        $this->getJson($this->url(['branch_name'=>'Other']))->assertForbidden();
+        $this->getJson($this->url(['seller_name'=>'Other employee']))->assertForbidden();
+    }
+
+    public function test_date_filters_drive_summary_chart_and_transactions_consistently(): void
+    {
+        $this->record('Sell',100,99,['created_at'=>now()->subDay()]);
+        $response = $this->getJson($this->url(['date_from'=>'2026-11-08','date_to'=>'2026-11-08']))->assertOk()->assertJsonPath('summary.sales_amount',99)->assertJsonCount(1,'data');
+        $this->assertEquals(99,array_sum(array_column($response->json('chart.points'),'amount')));
+        $this->getJson($this->url(['date_from'=>'2026-11-07','date_to'=>'2026-11-07']))->assertOk()->assertJsonCount(0,'data')->assertJsonPath('summary.sales_amount',0);
+        $this->getJson($this->url(['date_from'=>'2026-11-10','date_to'=>'2026-11-08']))->assertUnprocessable();
+    }
+
+    public function test_no_condition_preview_preserves_service_rates_but_never_commissions_buy_in(): void
+    {
+        DB::table('sell_out_reports')->where('user_id',1)->update(['customer_phone'=>'']);
+        $this->getJson($this->url())->assertOk()->assertJsonPath('summary.commission',0);
+        $this->getJson($this->url(['commission_mode'=>'without_conditions']))->assertOk()->assertJsonPath('summary.commission',25.65);
+        $this->getJson($this->url(['type'=>'buy_in','commission_mode'=>'without_conditions']))->assertOk()->assertJsonPath('data.0.report_commission',0)->assertJsonPath('summary.sales_amount',0);
+    }
+
+    public function test_csv_uses_all_matching_records_and_protects_spreadsheet_cells(): void
+    {
+        DB::table('sell_out_reports')->where('id',1)->update(['customer_name'=>'=1+1']);
+        $response = $this->get($this->url(['export'=>'csv']))->assertOk();
+        $this->assertStringContainsString("'=1+1", $response->streamedContent());
+    }
+
+    public function test_sql_commission_matches_existing_invoice_rules_for_single_invoice_scopes(): void
+    {
+        foreach (['sell','material','iron','repair','buy_in'] as $type) {
+            $response = $this->getJson($this->url(['type'=>$type]))->assertOk();
+            foreach ($response->json('data') as $row) {
+                $expected = ReportingRules::calculate($row['service_type'],$row['total_qty'],$row['total_amount'],$row['customer_phone'],'full_timer',$row['period_qty']);
+                $this->assertEquals($expected,$row['report_commission']);
+            }
+        }
+    }
+
+    public function test_service_rates_and_part_time_threshold_remain_compatible_with_invoice_rules(): void
+    {
+        foreach (['material'=>0.25,'iron'=>0.20,'repair'=>0.20,'buy_in'=>0] as $type=>$rate) {
+            $this->getJson($this->url(['type'=>$type]))->assertOk()->assertJsonPath('summary.commission',$rate);
+        }
+        DB::table('sell_out_reports')->where('service_type','Material')->update(['total_amount'=>9.99]);
+        $this->getJson($this->url(['type'=>'material']))->assertOk()->assertJsonPath('summary.commission',0);
+        $this->assertSame(0.0, \App\Models\SellOutReport::findOrFail(1)->calculatedCommission());
+        DB::table('office_times')->where('id',1)->update(['category'=>'part_timer']);
+        $this->getJson($this->url(['search'=>'SKU-1']))->assertOk()->assertJsonPath('summary.commission',15);
+        $this->assertSame(15.0, \App\Models\SellOutReport::findOrFail(1)->calculatedCommission());
+        $this->assertEquals(0,DB::table('sell_out_reports')->where('id',1)->value('commission'));
+    }
+
+    public function test_reporting_requires_authentication_and_validated_filters(): void
+    {
+        $this->getJson($this->url(['type'=>'sell;DROP TABLE users']))->assertUnprocessable();
+        $this->getJson($this->url(['per_page'=>501]))->assertUnprocessable();
+        \Illuminate\Support\Facades\Auth::forgetGuards();
+        $this->getJson($this->url())->assertUnauthorized();
+    }
+
+    public function test_legacy_list_and_detail_contracts_remain_available(): void
+    {
+        $this->withoutExceptionHandling();
+        $this->getJson('/api/sell-out-reports')->assertOk()->assertJsonCount(6,'data')->assertJsonStructure(['data'=>[['id','lines','commission']]]);
+        $this->getJson('/api/sell-out-reports/1')->assertOk()->assertJsonPath('data.id',1);
+    }
+}

@@ -59,66 +59,10 @@ class SellOutReport extends Model
 
     public function calculatedCommission(): float
     {
-        $serviceType = $this->normalizeServiceType($this->display_service_type);
-
-        if (! $this->isCommissionableServiceType($serviceType) || mb_strlen(trim((string) $this->customer_phone)) <= 6) {
-            return 0;
-        }
-
         $lines = $this->relationLoaded('lines') ? $this->lines : $this->lines()->get();
-
-        if ($this->isSellServiceType($serviceType)) {
-            $totalQty = $lines->sum(fn (SellOutReportLine $line): int => (int) $line->qty);
-
-            return $totalQty >= $this->sellQtyThreshold() ? $totalQty * 0.25 : 0;
-        }
-
-        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
-            return 0.20;
-        }
-
-        if ($this->isMaterialServiceType($serviceType)) {
-            return (float) $this->total_amount >= 10 ? 0.25 : 0;
-        }
-
-        return 0;
-    }
-
-    private function isCommissionableServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
-    }
-
-    private function isSellServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
-    }
-
-    private function isIronServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
-    }
-
-    private function isMaterialServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
-    }
-
-    private function isRepairServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
-    }
-
-    private function sellQtyThreshold(): int
-    {
         $user = $this->relationLoaded('user') ? $this->user : $this->user()->with('officeTime')->first();
-        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
-
-        return $category === 'part_timer' ? 50 : 100;
-    }
-
-    private function normalizeServiceType(string $serviceType): string
-    {
-        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
+        return \App\Services\SellOut\ReportingRules::calculate($this->display_service_type,
+            (int) $lines->sum('qty'), (float) $this->total_amount, (string) $this->customer_phone,
+            (string) ($user?->officeTime?->category ?? ''));
     }
 }

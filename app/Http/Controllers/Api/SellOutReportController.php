@@ -12,6 +12,9 @@ use App\Requests\SellOutReport\StoreSellOutReportRequest;
 use App\Requests\SellOutReport\UpdateSellOutReportRequest;
 use App\Resources\SellOutReport\SellOutReportResource;
 use App\Services\TelegramService;
+use App\Services\SellOut\MobileReportingService;
+use App\Services\SellOut\ReportingRules;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -25,8 +28,12 @@ class SellOutReportController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse|StreamedResponse
     {
+        if ($request->boolean('paginated')) {
+            $result = DB::transaction(fn () => app(MobileReportingService::class)->report($request));
+            return $result instanceof StreamedResponse ? $result : response()->json($result);
+        }
         $reports = SellOutReport::query()
             ->where('user_id', auth()->id())
             ->when($request->filled('date_from'), function ($query) use ($request) {
@@ -477,68 +484,10 @@ class SellOutReportController extends Controller
         ?User $user
     ): float
     {
-        if (! $this->isCommissionableServiceType($serviceType) || ! $this->hasValidCustomerPhone($customerPhone)) {
-            return 0;
-        }
-
-        $totalQty = collect($lines)->sum(fn (array $line): int => (int) $line['qty']);
-
-        if ($this->isSellServiceType($serviceType)) {
-            return $totalQty >= $this->sellQtyThreshold($user) ? $totalQty * 0.25 : 0;
-        }
-
-        if ($this->isIronServiceType($serviceType) || $this->isRepairServiceType($serviceType)) {
-            return 0.20;
-        }
-
-        if ($this->isMaterialServiceType($serviceType)) {
-            return $totalAmount >= 10 ? 0.25 : 0;
-        }
-
-        return 0;
-    }
-
-    private function isCommissionableServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់', 'Material', 'សម្ភារ', 'Iron', 'Scots', 'អ៊ុត', 'Repair', 'ជួសជុល'], true);
-    }
-
-    private function isSellServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Sell', 'Sale', 'លក់'], true);
-    }
-
-    private function isIronServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Iron', 'Scots', 'អ៊ុត'], true);
-    }
-
-    private function isMaterialServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Material', 'សម្ភារ'], true);
-    }
-
-    private function isRepairServiceType(string $serviceType): bool
-    {
-        return in_array($this->normalizeServiceType($serviceType), ['Repair', 'ជួសជុល'], true);
-    }
-
-    private function hasValidCustomerPhone(?string $customerPhone): bool
-    {
-        return mb_strlen(trim((string) $customerPhone)) > 6;
-    }
-
-    private function normalizeServiceType(string $serviceType): string
-    {
-        return trim((string) preg_replace('/[\x{200B}-\x{200D}\x{FEFF}]/u', '', $serviceType));
-    }
-
-    private function sellQtyThreshold(?User $user): int
-    {
         $user?->loadMissing('officeTime');
-        $category = $this->normalizeServiceType((string) ($user?->officeTime?->category ?? ''));
-
-        return $category === 'part_timer' ? 50 : 100;
+        return ReportingRules::calculate($serviceType,
+            (int) collect($lines)->sum(fn (array $line): int => (int) $line['qty']),
+            $totalAmount, (string) $customerPhone, (string) ($user?->officeTime?->category ?? ''));
     }
 
     private function sendSellOutReportTelegram(SellOutReport $report): bool
