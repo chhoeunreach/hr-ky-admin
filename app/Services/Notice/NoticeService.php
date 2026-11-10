@@ -56,14 +56,7 @@ class NoticeService
 
     public function createManyNoticeReceiver($noticeDetail, $validatedData)
     {
-        try {
-            DB::commit();
-            $this->noticeRepo->createManyNoticeReceiver($noticeDetail, $validatedData['receiver']);
-            DB::commit();
-        } catch (Exception $exception) {
-            DB::rollBack();
-            throw $exception;
-        }
+        $this->noticeRepo->createManyNoticeReceiver($noticeDetail, $validatedData['receiver']);
     }
 
     /**

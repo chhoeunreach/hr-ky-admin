@@ -105,7 +105,7 @@
             }
         });
 
-        $('.toggleStatus').change(function (event) {
+        $(document).on('change', '.toggleStatus', function (event) {
             event.preventDefault();
             let status = $(this).prop('checked') === true ? 1 : 0;
             let href = $(this).attr('href');
@@ -125,7 +125,7 @@
             })
         })
 
-        $('.delete').click(function (event) {
+        $(document).on('click', '.delete', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
@@ -142,7 +142,7 @@
             })
         })
 
-        $('.sendNotice').click(function (event) {
+        $(document).on('click', '.sendNotice', function (event) {
             event.preventDefault();
             let href = $(this).data('href');
             Swal.fire({
@@ -165,20 +165,11 @@
             $.get(url, function (data) {
 
 
-                $('.modal-title').html(@json(__('index.notice_detail_modal_title', ['title' => '']))+': ' + data.data.title );
+                $('#addslider .modal-title').text(@json(__('index.notice_detail_modal_title', ['title' => '']))+': ' + data.data.title );
                 $('#description').html(data.data.description);
-                $('#addslider').modal('show');
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('addslider')).show();
             })
         }).trigger("change");
-
-        $('input[type="checkbox"]').click(function(){
-            if($(this).is(":checked")){
-                $('#notice').select2('destroy').find('option').prop('selected', 'selected').end().select2();
-            }
-            else if($(this).is(":not(:checked)")){
-                $('#notice').select2('destroy').find('option').prop('selected', false).end().select2();
-            }
-        });
 
         $('.reset').click(function(event){
             event.preventDefault();
@@ -187,6 +178,7 @@
             $('.toDate').val('');
         });
 
+        if ({{ \App\Helpers\AppHelper::ifDateInBsEnabled() ? 'true' : 'false' }} && $.fn.nepaliDatePicker) {
         $('#fromDate').nepaliDatePicker({
             language: "english",
             dateFormat: "MM/DD/YYYY",
@@ -206,6 +198,7 @@
             readOnlyInput: true,
             disableAfter: "2089-12-30",
         });
+        }
     });
 
     $(document).ready(function () {
@@ -229,10 +222,10 @@
             receiverUserIds = {!! isset($noticeDetail) && !empty($receiverUserIds) ? json_encode($receiverUserIds) : '[]' !!}.map(String);
         }
 
-        console.log('Initial receivers: ', receiverUserIds);
+
 
         const loadEmployees = async (selectedBranchId) => {
-            if (!selectedBranchId) return;
+            if (!selectedBranchId) { $('#notice').empty(); return; }
 
             try {
                 const response = await $.ajax({
@@ -247,10 +240,7 @@
                     // Populate employees
                     response.users.forEach(user => {
                         const isSelected = receiverUserIds.includes(String(user.id));
-                        $('#notice').append(
-                            `<option value="${user.id}" ${isSelected ? 'selected' : ''}>${user.name}</option>`
-                        );
-                        console.log(`User ${user.id} (${user.name}): ${isSelected ? 'selected' : 'not selected'}`);
+                        $('#notice').append(new Option(user.name, user.id, isSelected, isSelected));
                     });
                 } else {
                     $('#notice').append('<option disabled>{{ __("index.employee_not_found") }}</option>');
@@ -273,9 +263,7 @@
                     const newBranchId = $('#branch_id').val();
 
                     // Only reset receiverUserIds if not in filter mode
-                    if (!window.location.href.includes('filter')) {
-                        receiverUserIds = [];
-                    }
+                    receiverUserIds = [];
 
                     await loadEmployees(newBranchId);
                 });

@@ -1,6 +1,6 @@
 @extends('layouts.master')
 
-@section('title', 'Import Repair Prices & Devices')
+@section('title', __('repair.import_title'))
 
 @section('styles')
 <style>
@@ -144,24 +144,24 @@
     <!-- Breadcrumb -->
     <nav class="page-breadcrumb d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('admin.repair.dashboard') }}">{{ __('index.repair_management') ?? 'Repair Management' }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('admin.repair.dashboard') }}">{{ __('index.repair_management') }}</a></li>
             <li class="breadcrumb-item"><a href="{{ route('admin.repair-price.index') }}">{{ __('index.repair_price') }}</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Import</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ __('repair.import') }}</li>
         </ol>
         <a href="{{ route('admin.repair-price.index') }}" class="btn btn-outline-secondary btn-sm">
-            <i data-feather="arrow-left" class="me-1"></i> Back to Price Matrix
+            <i data-feather="arrow-left" class="me-1"></i> {{ __('repair.back_to_prices') }}
         </a>
     </nav>
 
     <!-- Hero Header -->
     <div class="import-hero d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
         <div>
-            <h1 class="import-hero-title">Bulk Import Repair Prices & Devices</h1>
-            <p class="import-hero-sub">Easily import hundreds of device repair services, parts, and prices at once using Excel or CSV.</p>
+            <h1 class="import-hero-title">{{ __('repair.bulk_import') }}</h1>
+            <p class="import-hero-sub">{{ __('repair.import_intro') }}</p>
         </div>
         <div>
             <a href="{{ route('admin.repair-price.sample-template') }}" class="btn btn-primary">
-                <i data-feather="download" class="me-1"></i> Download Sample CSV
+                <i data-feather="download" class="me-1"></i> {{ __('repair.download_sample') }}
             </a>
         </div>
     </div>
@@ -173,8 +173,8 @@
                 <div class="d-flex align-items-center gap-3 mb-4">
                     <span class="step-badge">1</span>
                     <div>
-                        <h5 class="mb-0 fw-bold" style="color: var(--imp-text-main);">Upload Spreadsheet</h5>
-                        <small class="text-muted">Choose your populated .xlsx, .xls, or .csv file</small>
+                        <h5 class="mb-0 fw-bold" style="color: var(--imp-text-main);">{{ __('repair.upload') }}</h5>
+                        <small class="text-muted">{{ __('repair.choose_file') }}</small>
                     </div>
                 </div>
 
@@ -187,8 +187,8 @@
                         <div class="dropzone-icon">
                             <i data-feather="upload-cloud" style="width: 28px; height: 28px;"></i>
                         </div>
-                        <h6 class="fw-bold mb-1" style="color: var(--imp-text-main);">Click to browse or drag & drop your spreadsheet here</h6>
-                        <p class="text-muted small mb-3">Supports Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv) up to 10MB</p>
+                        <h6 class="fw-bold mb-1" style="color: var(--imp-text-main);">{{ __('repair.drop_file') }}</h6>
+                        <p class="text-muted small mb-3">{{ __('repair.file_support') }}</p>
 
                         <div class="d-flex justify-content-center gap-2">
                             <span class="file-pill"><i data-feather="file-text" style="width: 14px; height: 14px;"></i> .XLSX</span>
@@ -213,25 +213,25 @@
                         <div class="d-flex align-items-center gap-3 mb-3">
                             <span class="step-badge" style="background: #64748b;">2</span>
                             <div>
-                                <h6 class="mb-0 fw-bold" style="color: var(--imp-text-main);">Import Options</h6>
-                                <small class="text-muted">Configure how duplicates should be handled</small>
+                                <h6 class="mb-0 fw-bold" style="color: var(--imp-text-main);">{{ __('repair.import_options') }}</h6>
+                                <small class="text-muted">{{ __('repair.duplicate_options') }}</small>
                             </div>
                         </div>
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="updateExisting" name="update_existing" value="1" checked>
                             <label class="form-check-label fw-semibold small" for="updateExisting">
-                                Automatically update existing prices
+                                {{ __('repair.auto_update') }}
                             </label>
-                            <div class="text-muted small">If a device and service already exist, update costs, fees, warranty, and log price changes.</div>
+                            <div class="text-muted small">{{ __('repair.auto_update_help') }}</div>
                         </div>
                     </div>
 
                     <!-- Submit Actions -->
                     <div class="mt-4 d-flex justify-content-end gap-2">
-                        <a href="{{ route('admin.repair-price.index') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ route('admin.repair-price.index') }}" class="btn btn-secondary">{{ __('index.cancel') }}</a>
                         <button type="submit" class="btn btn-primary px-4" id="submitBtn">
-                            <i data-feather="check" class="me-1"></i> Start Import Process
+                            <i data-feather="check" class="me-1"></i> {{ __('repair.start_import') }}
                         </button>
                     </div>
                 </form>
@@ -243,93 +243,93 @@
             <div class="import-card">
                 <div class="d-flex align-items-center gap-2 mb-3">
                     <i data-feather="help-circle" class="text-primary"></i>
-                    <h5 class="mb-0 fw-bold" style="color: var(--imp-text-main);">Spreadsheet Column Guide</h5>
+                    <h5 class="mb-0 fw-bold" style="color: var(--imp-text-main);">{{ __('repair.column_guide') }}</h5>
                 </div>
-                <p class="text-muted small mb-3">Your spreadsheet must have the following column headers in the first row. Download the sample template for best results.</p>
+                <p class="text-muted small mb-3">{{ __('repair.column_guide_help') }}</p>
 
                 <div class="table-responsive" style="max-height: 480px; overflow-y: auto;">
                     <table class="table schema-table align-middle">
                         <thead>
                             <tr>
-                                <th>Column Header</th>
-                                <th>Required?</th>
-                                <th>Example</th>
+                                <th>{{ __('repair.column_header') }}</th>
+                                <th>{{ __('repair.required_question') }}</th>
+                                <th>{{ __('repair.example') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
                                 <td><code>brand</code></td>
-                                <td><span class="badge bg-danger">Required</span></td>
+                                <td><span class="badge bg-danger">{{ __('repair.required') }}</span></td>
                                 <td>Apple, Samsung</td>
                             </tr>
                             <tr>
                                 <td><code>model</code></td>
-                                <td><span class="badge bg-danger">Required</span></td>
+                                <td><span class="badge bg-danger">{{ __('repair.required') }}</span></td>
                                 <td>iPhone 15 Pro Max</td>
                             </tr>
                             <tr>
                                 <td><code>category</code></td>
-                                <td><span class="badge bg-danger">Required</span></td>
-                                <td>Screen, Battery</td>
+                                <td><span class="badge bg-danger">{{ __('repair.required') }}</span></td>
+                                <td>{{ __('repair.sample_categories') }}</td>
                             </tr>
                             <tr>
                                 <td><code>service</code></td>
-                                <td><span class="badge bg-danger">Required</span></td>
-                                <td>Screen Replacement</td>
+                                <td><span class="badge bg-danger">{{ __('repair.required') }}</span></td>
+                                <td>{{ __('repair.sample_service') }}</td>
                             </tr>
                             <tr>
                                 <td><code>selling_price</code></td>
-                                <td><span class="badge bg-danger">Required</span></td>
+                                <td><span class="badge bg-danger">{{ __('repair.required') }}</span></td>
                                 <td>220.00</td>
                             </tr>
                             <tr>
                                 <td><code>device_type</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
-                                <td>Phone, Tablet, Laptop</td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
+                                <td>{{ __('repair.sample_types') }}</td>
                             </tr>
                             <tr>
                                 <td><code>model_number</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>A3106, SM-S928B</td>
                             </tr>
                             <tr>
                                 <td><code>category_kh</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>អេក្រង់, ថ្ម</td>
                             </tr>
                             <tr>
                                 <td><code>service_kh</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>ដូរអេក្រង់, ដូរថ្ម</td>
                             </tr>
                             <tr>
                                 <td><code>part_name</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
-                                <td>OLED Assembly</td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
+                                <td>{{ __('repair.sample_part') }}</td>
                             </tr>
                             <tr>
                                 <td><code>part_type</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
-                                <td>Original, OEM</td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
+                                <td>{{ __('repair.sample_quality') }}</td>
                             </tr>
                             <tr>
                                 <td><code>part_cost</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>180.00</td>
                             </tr>
                             <tr>
                                 <td><code>service_fee</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>20.00</td>
                             </tr>
                             <tr>
                                 <td><code>warranty</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
-                                <td>3 Months</td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
+                                <td>{{ __('repair.sample_warranty') }}</td>
                             </tr>
                             <tr>
                                 <td><code>status</code></td>
-                                <td><span class="badge bg-secondary">Optional</span></td>
+                                <td><span class="badge bg-secondary">{{ __('repair.optional') }}</span></td>
                                 <td>available, out_of_stock</td>
                             </tr>
                         </tbody>
@@ -339,7 +339,7 @@
                 <div class="mt-3 p-3 rounded bg-light border">
                     <div class="d-flex align-items-start gap-2">
                         <i data-feather="info" class="text-primary mt-1 flex-shrink-0" style="width: 16px; height: 16px;"></i>
-                        <p class="small text-muted mb-0"><strong>Tip:</strong> If a Brand, Category, Device Model, or Service does not already exist in the database, the import system will automatically create it for you!</p>
+                        <p class="small text-muted mb-0"><strong>{{ __('repair.tip') }}</strong> {{ __('repair.import_tip') }}</p>
                     </div>
                 </div>
             </div>

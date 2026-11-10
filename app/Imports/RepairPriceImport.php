@@ -45,19 +45,19 @@ class RepairPriceImport implements ToCollection, WithHeadingRow, SkipsEmptyRows
             $sellingPrice = $this->numericValue($row, 'selling_price');
 
             if (!$brandName) {
-                throw new Exception("Row {$line}: Brand is required.");
+                throw new Exception(__('repair.row_brand', ['row' => $line]));
             }
             if (!$modelName) {
-                throw new Exception("Row {$line}: Device/Model name is required.");
+                throw new Exception(__('repair.row_model', ['row' => $line]));
             }
             if (!$categoryName) {
-                throw new Exception("Row {$line}: Category is required.");
+                throw new Exception(__('repair.row_category', ['row' => $line]));
             }
             if (!$serviceName) {
-                throw new Exception("Row {$line}: Service name is required.");
+                throw new Exception(__('repair.row_service', ['row' => $line]));
             }
             if ($sellingPrice === null || $sellingPrice < 0) {
-                throw new Exception("Row {$line}: Selling price must be a valid non-negative number.");
+                throw new Exception(__('repair.row_price', ['row' => $line]));
             }
 
             // 1. Resolve or Create Brand

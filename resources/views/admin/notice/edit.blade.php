@@ -1,4 +1,7 @@
 @extends('layouts.master')
+@if(request('notice_modal') === '1')
+    @section('embedded', '1')
+@endif
 
 @section('title', __('index.edit_notice'))
 
@@ -16,7 +19,9 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.notice.common.breadcrumb')
+        @unless(request('notice_modal') === '1')
+            @include('admin.notice.common.breadcrumb')
+        @endunless
 
         <div class="card">
             <div class="card-body">
@@ -34,4 +39,7 @@
 
 @section('scripts')
     @include('admin.notice.common.scripts')
+    @if(request('notice_modal') === '1')
+        @include('admin.notice.common.modal-bridge')
+    @endif
 @endsection

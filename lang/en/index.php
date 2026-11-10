@@ -3254,4 +3254,7 @@ return [
     'warning_print_acknowledgement_text' => 'The employee signature confirms receipt of this warning, and does not necessarily indicate agreement with its contents.',
     'directory_copy_success' => 'Copied :count records.',
     'directory_export_failed' => 'Unable to load the filtered results. Please try again.',
+    'import_excel' => 'Import Excel',
+    'select_device' => 'Select Device',
+    'select_service' => 'Select Service',
 ];

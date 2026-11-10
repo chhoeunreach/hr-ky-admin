@@ -40,6 +40,9 @@ class NoticeController extends Controller
                 'publish_date_from' => $request->publish_date_from ?? null,
                 'publish_date_to' => $request->publish_date_to ?? null,
                 'branch_id' => $request->branch_id ?? null,
+                'is_active' => $request->input('is_active'),
+                'search' => $request->input('search'),
+                'per_page' => in_array((string) $request->input('per_page'), ['25', '50', '100', '200', 'all'], true) ? (string) $request->input('per_page') : '25',
             ];
 
             if(!auth('admin')->check() && auth()->check()){
@@ -48,7 +51,7 @@ class NoticeController extends Controller
 
 
             $select = ['*'];
-            $with = ['noticeReceiversDetail', 'branch:id,name'];
+            $with = ['noticeReceiversDetail.employee:id,name', 'branch:id,name'];
             $notices = $this->noticeService->getAllCompanyNotices($filterParameters, $select, $with);
 
             $with = ['branches:id,name'];
@@ -95,11 +98,12 @@ class NoticeController extends Controller
                     $noticeId
                 );
             }
-            return redirect()
-                ->back()
-                ->with('success', $request->boolean('send_work_alert') ? __('message.notice_create_sent') : __('index.data_created_successfully'));
+            $message = $request->boolean('send_work_alert') ? __('message.notice_create_sent') : __('index.data_created_successfully');
+            if ($request->expectsJson()) return response()->json(['message' => $message, 'id' => $notice->id], 201);
+            return redirect()->back()->with('success', $message);
         } catch (Exception $e) {
             DB::rollBack();
+            if ($request->expectsJson()) return response()->json(['message' => $e->getMessage()], 422);
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
     }
@@ -234,8 +238,12 @@ class NoticeController extends Controller
                     $id
                 );
             }
-            return redirect()->back()->with('success', $request->boolean('send_work_alert') ? __('message.notice_update_sent') : __('index.updated_successfully'));
+            $message = $request->boolean('send_work_alert') ? __('message.notice_update_sent') : __('index.updated_successfully');
+            if ($request->expectsJson()) return response()->json(['message' => $message, 'id' => $id]);
+            return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
+            DB::rollBack();
+            if ($request->expectsJson()) return response()->json(['message' => $exception->getMessage()], 422);
             return redirect()->back()->with('danger', $exception->getMessage())
                 ->withInput();
         }

@@ -9,7 +9,7 @@
                             <thead><tr>
                                 <th>{{ __('index.name') }}</th>
                                 @if($entity === 'series')<th>{{ __('index.brand') }}</th><th>{{ __('index.device_type') }}</th>@endif
-                                <th>Slug</th><th>{{ __('index.status') }}</th><th data-directory-actions>{{ __('index.action') }}</th>
+                                <th>{{ __('repair.slug') }}</th><th>{{ __('index.status') }}</th><th data-directory-actions>{{ __('index.action') }}</th>
                             </tr></thead>
                             <tbody>
                                 @forelse($records as $record)

@@ -7,7 +7,8 @@ const vm = require('node:vm');
 const view = fs.readFileSync(path.join(__dirname, '../../resources/views/admin/repairPrice/index.blade.php'), 'utf8');
 const source = view.match(/<script>([\s\S]*?)<\/script>/)[1]
     .replace(/\{\{\s*url\('([^']+)'\)\s*\}\}/g, '/$1')
-    .replace(/\{\{[\s\S]*?\}\}/g, 'Translated text');
+    .replace(/\{\{[\s\S]*?\}\}/g, 'Translated text')
+    .replace(/@json\(__\('index\.[a-z_]+'\)\)/g, '"Translated text"');
 
 function setup(confirmed = false) {
     const handlers = {};

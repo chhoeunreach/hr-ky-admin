@@ -49,6 +49,7 @@ class RepairPriceManagementTest extends TestCase
         Gate::before(fn ($user, $ability) => in_array($ability, $this->abilities, true));
         Route::middleware('web')->group(function () {
             Route::get('/_test/repair-management', [RepairPriceWebController::class, 'index']);
+            Route::get('/_test/repair-import', [RepairPriceWebController::class, 'import']);
             Route::post('/_test/repair-prices', [RepairPriceWebController::class, 'storePrice']);
             Route::put('/_test/repair-prices/{id}', [RepairPriceWebController::class, 'updatePrice']);
             Route::delete('/_test/repair-prices/{id}', [RepairPriceWebController::class, 'deletePrice']);
@@ -264,5 +265,28 @@ class RepairPriceManagementTest extends TestCase
             ->assertViewHas('servicesList', fn ($records) => $records->total() === 1);
         $this->get('/_test/repair-management?active_tab=brands&search=missing')->assertOk()
             ->assertViewHas('brandsList', fn ($records) => $records->total() === 0);
+    }
+
+    public function test_english_and_khmer_cover_forms_import_validation_and_notifications(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_prices', 'repair_price.manage_devices',
+            'repair_price.manage_services', 'repair_price.manage_brands', 'repair_price.manage_categories'];
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->withSession(['locale' => $locale])->get('/_test/repair-management')->assertOk()
+                ->assertSee(__('repair.device_types'))->assertSee(__('repair.edit_series'))
+                ->assertSee(__('repair.auto_slug'))->assertSee(__('index.select_device'))
+                ->assertSee(__('index.export_csv'))->assertDontSee('index.select_device')
+                ->assertDontSee('repair.device_types');
+            $this->withSession(['locale' => $locale])->get('/_test/repair-import')->assertOk()
+                ->assertSee(__('repair.column_guide'))->assertSee(__('repair.import_options'))
+                ->assertSee(__('repair.drop_file'))->assertSee(__('repair.import_tip'));
+            $this->withSession(['locale' => $locale])->post('/_test/repair-prices', $this->payload(['selling_price' => -1]))
+                ->assertSessionHasErrors(['selling_price' => __('validation.min.numeric', ['attribute' => __('repair.attributes.selling_price'), 'min' => 0])]);
+            $this->withSession(['locale' => $locale])->post('/_test/repair/types', ['name' => 'Bilingual '.$locale])
+                ->assertSessionHas('success', __('repair.type_saved'));
+            $this->withSession(['locale' => $locale])->delete('/_test/repair/brands/1')
+                ->assertSessionHas('danger', __('repair.brand_used'));
+        }
     }
 }

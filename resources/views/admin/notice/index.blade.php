@@ -4,84 +4,75 @@
 
 @section('action', __('index.lists'))
 
-@section('button')
-    @can('create_notice')
-        <a href="{{ route('admin.notices.create')}}">
-            <button class="btn btn-primary">
-                <i class="link-icon" data-feather="plus"></i> @lang('index.create_notice')
-            </button>
-        </a>
-    @endcan
-@endsection
+
 
 @section('main-content')
 
+    <link rel="stylesheet" href="{{ asset('assets/css/directory-table-tools.css') }}?v={{ filemtime(public_path('assets/css/directory-table-tools.css')) }}">
     <section class="content">
 
         @include('admin.section.flash_message')
 
         @include('admin.notice.common.breadcrumb')
 
-        <div class="card mb-4">
-            <form class="forms-sample card-body pb-0" action="{{ route('admin.notices.index') }}" method="get">
-                <div class="row align-items-center">
-                    @if(!isset(auth()->user()->branch_id))
-                        <div class="col-lg col-md-6 mb-4">
-                            <select class="form-select" id="branch_id" name="branch_id">
-                                <option  {{ !isset($filterParameters['branch_id']) || old('branch_id') ? 'selected': ''}}  disabled>{{ __('index.select_branch') }}
-                                </option>
-                                @if(isset($companyDetail))
-                                    @foreach($companyDetail->branches()->get() as $key => $branch)
-                                        <option value="{{$branch->id}}"
-                                            {{ (isset($filterParameters['branch_id']) && $filterParameters['branch_id'] == $branch->id) ? 'selected': '' }}>
-                                            {{ucfirst($branch->name)}}</option>
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'noticeFilterCollapse', 'directoryExpanded' => false])
+            <div class="collapse" id="noticeFilterCollapse">
+                <form id="noticeFilterForm" class="directory-filter-form" action="{{ route('admin.notices.index') }}" method="get">
+                    <input type="hidden" name="search" value="{{ $filterParameters['search'] ?? '' }}">
+                    <div class="row g-3">
+                        @if(!isset(auth()->user()->branch_id))
+                            <div class="col-lg-3 col-md-6">
+                                <label class="form-label" for="branch_id">{{ __('index.branch') }}</label>
+                                <select class="form-select" id="branch_id" name="branch_id">
+                                    <option value="">{{ __('index.all') }}</option>
+                                    @foreach($companyDetail?->branches ?? [] as $branch)
+                                        <option value="{{ $branch->id }}" @selected(($filterParameters['branch_id'] ?? '') == $branch->id)>{{ $branch->name }}</option>
                                     @endforeach
-                                @endif
+                                </select>
+                            </div>
+                        @endif
+                        <div class="col-lg-3 col-md-6">
+                            <label class="form-label" for="notice">{{ __('index.notice_receiver') }}</label>
+                            <select class="form-select" multiple name="notice_receiver[]" id="notice"></select>
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label" for="fromDate">{{ __('notice.publish_from') }}</label>
+                            <input type="{{ \App\Helpers\AppHelper::ifDateInBsEnabled() ? 'text' : 'date' }}" id="fromDate" name="publish_date_from" value="{{ $filterParameters['publish_date_from'] }}" class="form-control fromDate">
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label" for="toDate">{{ __('notice.publish_to') }}</label>
+                            <input type="{{ \App\Helpers\AppHelper::ifDateInBsEnabled() ? 'text' : 'date' }}" id="toDate" name="publish_date_to" value="{{ $filterParameters['publish_date_to'] }}" class="form-control toDate">
+                        </div>
+                        <div class="col-lg-2 col-md-6">
+                            <label class="form-label" for="noticeStatus">{{ __('index.status') }}</label>
+                            <select class="form-select" name="is_active" id="noticeStatus">
+                                <option value="">{{ __('index.all') }}</option>
+                                @foreach(['1' => __('index.active'), '0' => __('index.inactive')] as $status => $label)
+                                    <option value="{{ $status }}" @selected((string) ($filterParameters['is_active'] ?? '') === (string) $status)>{{ $label }}</option>
+                                @endforeach
                             </select>
                         </div>
-                    @endif
-                    <div class="col-lg col-md-6 mb-4">
-                        <select class="form-select" multiple name="notice_receiver[]" id="notice">
-
-                        </select>
                     </div>
-
-                    @if(\App\Helpers\AppHelper::ifDateInBsEnabled())
-                        <div class="col-lg col-md-6 mb-4">
-
-                            <input type="text" id="fromDate" name="publish_date_from" value="{{ $filterParameters['publish_date_from'] }}" placeholder="mm/dd/yyyy" class="form-control fromDate">
-                        </div>
-
-                        <div class="col-lg col-md-6 mb-4">
-                            <input type="text" id="toDate" name="publish_date_to" value="{{ $filterParameters['publish_date_to'] }}" placeholder="mm/dd/yyyy" class="form-control toDate">
-                        </div>
-                    @else
-                        <div class="col-lg-3 col-md-6 mb-4">
-                            <input type="date" id="fromDate" name="publish_date_from" value="{{ $filterParameters['publish_date_from'] }}" class="form-control fromDate">
-                        </div>
-
-                        <div class="col-lg-3 col-md-6 mb-4">
-                            <input type="date" id="toDate" name="publish_date_to" value="{{ $filterParameters['publish_date_to'] }}" class="form-control toDate">
-                        </div>
-                    @endif
-
-                    <div class="col-lg-2 col-md-6 mb-4">
-                        <div class="d-flex float-md-end">
-                            <button type="submit" class="btn btn-block btn-success me-2">@lang('index.filter')</button>
-                            <a class="btn btn-block btn-primary" href="{{ route('admin.notices.index') }}">@lang('index.reset')</a>
-                        </div>
-                    </div>
-                </div>
-            </form>
+                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.notices.index')])
+                </form>
+            </div>
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">@lang('index.notice_lists')</h6>
-            </div>
+            @include('admin.section.directory-toolbar', [
+                'directoryTable' => 'noticeTable', 'directoryForm' => 'noticeFilterForm',
+                'directorySearch' => 'noticeSearch', 'directoryRecords' => $notices,
+                'directoryTitle' => __('index.notice_lists'), 'directoryIcon' => 'bell',
+                'directoryPermission' => 'create_notice', 'directoryAddUrl' => route('admin.notices.create'),
+                'directoryAddNoticeModal' => true, 'directoryDefaultSize' => '25',
+                'directoryCurrentSize' => $filterParameters['per_page'], 'directoryPageSizes' => [25, 50, 100, 200, 'all'],
+                'directorySearchKey' => 'search', 'directoryLive' => true,
+            ])
+            <div id="notice-list-block" data-directory-total="{{ $notices->total() }}">
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="dataTableExample" class="table">
+                    <table id="noticeTable" class="table">
                         <thead>
                         <tr>
                             <th>#</th>
@@ -94,14 +85,14 @@
                             @endcan
                             <th class="text-center">@lang('index.status')</th>
                             @canany(['edit_notice', 'delete_notice', 'send_notice'])
-                                <th class="text-center">@lang('index.action')</th>
+                                <th class="text-center" data-directory-actions>@lang('index.action')</th>
                             @endcanany
                         </tr>
                         </thead>
                         <tbody>
                         @forelse ($notices as $key => $value)
                             <tr>
-                                <td>{{ (($notices->currentPage() - 1) * (\App\Models\Notice::RECORDS_PER_PAGE)) + (++$key) }}</td>
+                                <td>{{ $notices->firstItem() + $key }}</td>
                                 <td>{{ ucfirst($value->title) }}</td>
                                 <td>{{ $value->branch ? ucfirst($value->branch->name) : 'N/A' }}</td>
                                 <td>{{ convertDateTimeFormat($value->notice_publish_date) ?? __('index.not_published_yet') }}</td>
@@ -113,7 +104,7 @@
                                     </ul>
                                 </td>
                                 @can('show_notice')
-                                    <td class="text-center">
+                                    <td class="text-center" data-directory-value="{{ trim(strip_tags($value->description)) }}">
                                         <a href="#" id="showNoticeDescription" data-href="{{ route('admin.notices.show', $value->id) }}" data-id="{{ $value->id }}" title="@lang('index.show_notice_content')">
                                             <i class="link-icon" data-feather="eye"></i>
                                         </a>
@@ -130,7 +121,7 @@
                                         <ul class="d-flex list-unstyled mb-0 justify-content-center align-items-center gap-2">
                                             @can('edit_notice')
                                                 <li>
-                                                    <a href="{{ route('admin.notices.edit', $value->id) }}" title="@lang('index.edit_notice')">
+                                                    <a data-open-notice-form href="{{ route('admin.notices.edit', $value->id) }}" title="@lang('index.edit_notice')">
                                                         <i class="link-icon" data-feather="edit"></i>
                                                     </a>
                                                 </li>
@@ -166,18 +157,20 @@
                     </table>
                 </div>
             </div>
-        </div>
-
-        <div class="dataTables_paginate mt-3">
-            {{ $notices->appends($_GET)->links() }}
+                <div class="dataTables_paginate p-3">
+                    {{ $notices->appends(request()->query())->links() }}
+                </div>
+            </div>
         </div>
 
     </section>
 
     @include('admin.notice.show')
+    @include('admin.notice.common.form-modal')
 
 @endsection
 
 @section('scripts')
     @include('admin.notice.common.scripts')
+    <script src="{{ asset('assets/js/notice-directory.js') }}?v={{ filemtime(public_path('assets/js/notice-directory.js')) }}"></script>
 @endsection

@@ -5,8 +5,8 @@
         'categories' => [__('index.categories'), 'grid', 'addCategoryModal', ['repair_price.manage_categories']],
         'devices' => [__('index.repair_devices'), 'smartphone', 'addDeviceModal', ['repair_price.manage_devices']],
         'services' => [__('index.repair_services'), 'tool', 'addServiceModal', ['repair_price.manage_services']],
-        'types' => ['Device Types', 'layers', 'addCatalogtypesModal', ['repair_price.manage_devices']],
-        'series' => ['Device Series', 'list', 'addCatalogseriesModal', ['repair_price.manage_devices']],
+        'types' => [__('repair.device_types'), 'layers', 'addCatalogtypesModal', ['repair_price.manage_devices']],
+        'series' => [__('repair.device_series'), 'list', 'addCatalogseriesModal', ['repair_price.manage_devices']],
     ];
     [$repairTitle, $repairIcon, $repairModal, $repairAbilities] = $repairToolbars[$repairEntity];
     $repairFormId = 'repair-'.$repairEntity.'-form';

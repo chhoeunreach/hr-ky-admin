@@ -1,5 +1,5 @@
 @can('repair_price.manage_devices')
-    @foreach(['types' => 'Device Type', 'series' => 'Device Series'] as $entity => $label)
+    @foreach(['types', 'series'] as $entity)
         @foreach(['add', 'edit'] as $mode)
             <div class="modal fade" id="{{ $mode }}Catalog{{ $entity }}Modal" tabindex="-1" aria-hidden="true">
                 <div class="modal-dialog"><div class="modal-content">
@@ -7,7 +7,7 @@
                         @csrf
                         @if($mode === 'edit') @method('PUT') @endif
                         <div class="modal-header">
-                            <h5 class="modal-title">{{ $mode === 'add' ? 'Add' : 'Edit' }} {{ $label }}</h5>
+                            <h5 class="modal-title">{{ __('repair.'.($mode === 'add' ? 'add_' : 'edit_').($entity === 'types' ? 'type' : 'series')) }}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                         </div>
                         <div class="modal-body">
@@ -32,11 +32,11 @@
                                 <input class="form-control" name="name" required maxlength="255">
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Slug</label>
-                                <input class="form-control" name="slug" maxlength="255" placeholder="Auto generated if empty">
+                                <label class="form-label">{{ __('repair.slug') }}</label>
+                                <input class="form-control" name="slug" maxlength="255" placeholder="{{ __('repair.auto_slug') }}">
                             </div>
                             @if($entity === 'types')
-                                <div class="mb-3"><label class="form-label">Icon</label><input class="form-control" name="icon" maxlength="255"></div>
+                                <div class="mb-3"><label class="form-label">{{ __('repair.icon') }}</label><input class="form-control" name="icon" maxlength="255"></div>
                             @endif
                             <label class="form-check"><input class="form-check-input" type="checkbox" name="status" value="1" checked><span class="form-check-label">{{ __('index.active') }}</span></label>
                         </div>

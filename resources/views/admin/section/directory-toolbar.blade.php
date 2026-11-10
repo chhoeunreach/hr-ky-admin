@@ -9,7 +9,7 @@
         @if($directoryAddModal ?? false)
             <button type="button" class="directory-add border-0" data-bs-toggle="modal" data-bs-target="#{{ $directoryAddModal }}"><i data-feather="plus"></i>{{ __('index.add') }}</button>
         @else
-            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif><i data-feather="plus"></i>{{ __('index.add') }}</a>
+            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif @if($directoryAddNoticeModal ?? false) data-open-notice-form @endif><i data-feather="plus"></i>{{ __('index.add') }}</a>
         @endif
     @endif
 </div>

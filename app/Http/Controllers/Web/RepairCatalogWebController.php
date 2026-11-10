@@ -12,6 +12,8 @@ use Illuminate\Validation\Rule;
 
 class RepairCatalogWebController extends Controller
 {
+    use \App\Http\Controllers\Web\Concerns\ValidatesRepairInput;
+
     public function storeType(Request $request)
     {
         return $this->saveType($request, new RepairDeviceType());
@@ -27,7 +29,7 @@ class RepairCatalogWebController extends Controller
     {
         abort_unless(Gate::allows('repair_price.manage_devices'), 403);
         $request->merge(['slug' => $request->input('slug') ?: ($type->slug ?: (Str::slug($request->input('name', '')) ?: 'type-'.Str::lower(Str::random(8))))]);
-        $data = $request->validate([
+        $data = $this->validateRepairInput($request, [
             'name' => ['required', 'string', 'max:255', Rule::unique('repair_device_types')->ignore($type->id)],
             'slug' => ['required', 'string', 'max:255', Rule::unique('repair_device_types')->ignore($type->id)],
             'icon' => 'nullable|string|max:255',
@@ -35,7 +37,7 @@ class RepairCatalogWebController extends Controller
         ]);
         $data['status'] = $request->boolean('status');
         $type->fill($data)->save();
-        return redirect()->route('admin.repair-price.index', ['active_tab' => 'types'])->with('success', 'Device type saved successfully.');
+        return redirect()->route('admin.repair-price.index', ['active_tab' => 'types'])->with('success', __('repair.type_saved'));
     }
 
     public function deleteType($id)
@@ -43,10 +45,10 @@ class RepairCatalogWebController extends Controller
         abort_unless(Gate::allows('repair_price.manage_devices'), 403);
         $type = RepairDeviceType::findOrFail($id);
         if ($type->devices()->exists() || $type->series()->exists()) {
-            return redirect()->back()->with('danger', 'This device type is used by models or series. Delete or reassign those records first.');
+            return redirect()->back()->with('danger', __('repair.type_used'));
         }
         $type->delete();
-        return redirect()->route('admin.repair-price.index', ['active_tab' => 'types'])->with('success', 'Device type deleted successfully.');
+        return redirect()->route('admin.repair-price.index', ['active_tab' => 'types'])->with('success', __('repair.type_deleted'));
     }
 
     public function storeSeries(Request $request)
@@ -64,7 +66,7 @@ class RepairCatalogWebController extends Controller
     {
         abort_unless(Gate::allows('repair_price.manage_devices'), 403);
         $request->merge(['slug' => $request->input('slug') ?: ($series->slug ?: (Str::slug($request->input('name', '')) ?: 'series-'.Str::lower(Str::random(8))))]);
-        $data = $request->validate([
+        $data = $this->validateRepairInput($request, [
             'repair_brand_id' => 'required|exists:repair_brands,id',
             'repair_device_type_id' => 'required|exists:repair_device_types,id',
             'name' => 'required|string|max:255',
@@ -75,11 +77,11 @@ class RepairCatalogWebController extends Controller
         ]);
         if ($series->exists && $series->devices()->exists()
             && ($series->repair_brand_id != $data['repair_brand_id'] || $series->repair_device_type_id != $data['repair_device_type_id'])) {
-            return redirect()->back()->withInput()->withErrors(['repair_brand_id' => 'This series has device models. Reassign them before changing its brand or type.']);
+            return redirect()->back()->withInput()->withErrors(['repair_brand_id' => __('repair.series_reassign')]);
         }
         $data['status'] = $request->boolean('status');
         $series->fill($data)->save();
-        return redirect()->route('admin.repair-price.index', ['active_tab' => 'series'])->with('success', 'Device series saved successfully.');
+        return redirect()->route('admin.repair-price.index', ['active_tab' => 'series'])->with('success', __('repair.series_saved'));
     }
 
     public function deleteSeries($id)
@@ -87,9 +89,9 @@ class RepairCatalogWebController extends Controller
         abort_unless(Gate::allows('repair_price.manage_devices'), 403);
         $series = RepairDeviceSeries::findOrFail($id);
         if ($series->devices()->exists()) {
-            return redirect()->back()->with('danger', 'This series is used by device models. Delete or reassign those models first.');
+            return redirect()->back()->with('danger', __('repair.series_used'));
         }
         $series->delete();
-        return redirect()->route('admin.repair-price.index', ['active_tab' => 'series'])->with('success', 'Device series deleted successfully.');
+        return redirect()->route('admin.repair-price.index', ['active_tab' => 'series'])->with('success', __('repair.series_deleted'));
     }
 }

@@ -7,6 +7,17 @@ use Illuminate\Validation\Rule;
 
 class NoticeRequest extends FormRequest
 {
+    protected function failedValidation(\Illuminate\Contracts\Validation\Validator $validator)
+    {
+        if ($this->expectsJson()) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(response()->json([
+                'message' => __('index.dialog_validation_title'),
+                'errors' => $validator->errors(),
+            ], 422));
+        }
+        parent::failedValidation($validator);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *

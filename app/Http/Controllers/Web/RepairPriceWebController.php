@@ -23,11 +23,13 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class RepairPriceWebController extends Controller
 {
+    use \App\Http\Controllers\Web\Concerns\ValidatesRepairInput;
+
     private $view = 'admin.repairPrice.';
 
     public function index(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.view'), 403, __('message.unauthorized_access') ?? 'Unauthorized access.');
+        abort_unless(Gate::allows('repair_price.view'), 403, __('message.unauthorized_access') ?? __('repair.unauthorized'));
 
         try {
             $tabs = ['prices', 'brands', 'categories', 'devices', 'services', 'types', 'series'];
@@ -154,13 +156,13 @@ class RepairPriceWebController extends Controller
 
     public function storeCategory(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.manage_categories'), 403, 'Unauthorized to manage categories.');
+        abort_unless(Gate::allows('repair_price.manage_categories'), 403, __('repair.unauthorized'));
 
         if (!$request->filled('slug')) {
             $request->merge(['slug' => Str::slug($request->input('name', '')) ?: 'category-'.Str::lower(Str::random(8))]);
         }
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'name' => 'required|string|max:255|unique:repair_categories,name',
             'name_kh' => 'nullable|string|max:255',
             'slug' => 'nullable|string|max:255|unique:repair_categories,slug',
@@ -176,7 +178,7 @@ class RepairPriceWebController extends Controller
         try {
             RepairCategory::create($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'categories'])
-                ->with('success', 'Category added successfully.');
+                ->with('success', __('repair.category_added'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -184,7 +186,7 @@ class RepairPriceWebController extends Controller
 
     public function updateCategory(Request $request, $id)
     {
-        abort_unless(Gate::allows('repair_price.manage_categories'), 403, 'Unauthorized to manage categories.');
+        abort_unless(Gate::allows('repair_price.manage_categories'), 403, __('repair.unauthorized'));
 
         $category = RepairCategory::findOrFail($id);
 
@@ -192,7 +194,7 @@ class RepairPriceWebController extends Controller
             $request->merge(['slug' => $category->slug]);
         }
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'name' => ['required', 'string', 'max:255', Rule::unique('repair_categories', 'name')->ignore($category->id)],
             'name_kh' => 'nullable|string|max:255',
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('repair_categories', 'slug')->ignore($category->id)],
@@ -208,7 +210,7 @@ class RepairPriceWebController extends Controller
         try {
             $category->update($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'categories'])
-                ->with('success', 'Category updated successfully.');
+                ->with('success', __('repair.category_updated'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -216,19 +218,19 @@ class RepairPriceWebController extends Controller
 
     public function deleteCategory($id)
     {
-        abort_unless(Gate::allows('repair_price.manage_categories'), 403, 'Unauthorized to manage categories.');
+        abort_unless(Gate::allows('repair_price.manage_categories'), 403, __('repair.unauthorized'));
 
         try {
             $category = RepairCategory::withCount('services')->findOrFail($id);
 
             if ($category->services_count > 0) {
                 return redirect()->back()
-                    ->with('danger', 'This category is used by services. Please move/delete those services first.');
+                    ->with('danger', __('repair.category_used'));
             }
 
             $category->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'categories'])
-                ->with('success', 'Category deleted successfully.');
+                ->with('success', __('repair.category_deleted'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage());
         }
@@ -236,13 +238,13 @@ class RepairPriceWebController extends Controller
 
     public function storeBrand(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.manage_brands'), 403, 'Unauthorized to manage brands.');
+        abort_unless(Gate::allows('repair_price.manage_brands'), 403, __('repair.unauthorized'));
 
         if (!$request->filled('slug')) {
             $request->merge(['slug' => Str::slug($request->input('name', '')) ?: 'brand-'.Str::lower(Str::random(8))]);
         }
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'name' => 'required|string|max:255|unique:repair_brands,name',
             'slug' => 'nullable|string|max:255|unique:repair_brands,slug',
             'logo' => 'nullable|string|max:255',
@@ -255,7 +257,7 @@ class RepairPriceWebController extends Controller
         try {
             RepairBrand::create($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'brands'])
-                ->with('success', 'Brand added successfully.');
+                ->with('success', __('repair.brand_added'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -263,7 +265,7 @@ class RepairPriceWebController extends Controller
 
     public function updateBrand(Request $request, $id)
     {
-        abort_unless(Gate::allows('repair_price.manage_brands'), 403, 'Unauthorized to manage brands.');
+        abort_unless(Gate::allows('repair_price.manage_brands'), 403, __('repair.unauthorized'));
 
         $brand = RepairBrand::findOrFail($id);
 
@@ -271,7 +273,7 @@ class RepairPriceWebController extends Controller
             $request->merge(['slug' => $brand->slug]);
         }
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'name' => ['required', 'string', 'max:255', Rule::unique('repair_brands', 'name')->ignore($brand->id)],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('repair_brands', 'slug')->ignore($brand->id)],
             'logo' => 'nullable|string|max:255',
@@ -284,7 +286,7 @@ class RepairPriceWebController extends Controller
         try {
             $brand->update($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'brands'])
-                ->with('success', 'Brand updated successfully.');
+                ->with('success', __('repair.brand_updated'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -292,19 +294,19 @@ class RepairPriceWebController extends Controller
 
     public function deleteBrand($id)
     {
-        abort_unless(Gate::allows('repair_price.manage_brands'), 403, 'Unauthorized to manage brands.');
+        abort_unless(Gate::allows('repair_price.manage_brands'), 403, __('repair.unauthorized'));
 
         try {
             $brand = RepairBrand::withCount(['devices', 'series'])->findOrFail($id);
 
             if ($brand->devices_count > 0 || $brand->series_count > 0) {
                 return redirect()->back()
-                    ->with('danger', 'This brand is used by devices or series. Please move/delete those records first.');
+                    ->with('danger', __('repair.brand_used'));
             }
 
             $brand->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'brands'])
-                ->with('success', 'Brand deleted successfully.');
+                ->with('success', __('repair.brand_deleted'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage());
         }
@@ -312,9 +314,9 @@ class RepairPriceWebController extends Controller
 
     public function storeDevice(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.manage_devices'), 403, 'Unauthorized to manage devices.');
+        abort_unless(Gate::allows('repair_price.manage_devices'), 403, __('repair.unauthorized'));
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_brand_id' => 'required|exists:repair_brands,id',
             'repair_device_type_id' => 'required|exists:repair_device_types,id',
             'repair_device_series_id' => ['nullable', Rule::exists('repair_device_series', 'id')
@@ -329,7 +331,7 @@ class RepairPriceWebController extends Controller
             'model_number' => 'nullable|string|max:100',
             'status' => 'nullable|boolean',
         ], [
-            'name.unique' => 'A device model with this name already exists for this brand.',
+            'name.unique' => __('repair.device_duplicate'),
         ]);
 
         $validated['status'] = $request->has('status') ? 1 : 0;
@@ -337,7 +339,7 @@ class RepairPriceWebController extends Controller
         try {
             RepairDevice::create($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
-                ->with('success', 'Device model added successfully.');
+                ->with('success', __('repair.device_added'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -345,11 +347,11 @@ class RepairPriceWebController extends Controller
 
     public function updateDevice(Request $request, $id)
     {
-        abort_unless(Gate::allows('repair_price.manage_devices'), 403, 'Unauthorized to manage devices.');
+        abort_unless(Gate::allows('repair_price.manage_devices'), 403, __('repair.unauthorized'));
 
         $device = RepairDevice::findOrFail($id);
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_brand_id' => 'required|exists:repair_brands,id',
             'repair_device_type_id' => 'required|exists:repair_device_types,id',
             'repair_device_series_id' => ['nullable', Rule::exists('repair_device_series', 'id')
@@ -366,7 +368,7 @@ class RepairPriceWebController extends Controller
             'model_number' => 'nullable|string|max:100',
             'status' => 'nullable|boolean',
         ], [
-            'name.unique' => 'A device model with this name already exists for this brand.',
+            'name.unique' => __('repair.device_duplicate'),
         ]);
 
         $validated['status'] = $request->has('status') ? 1 : 0;
@@ -374,7 +376,7 @@ class RepairPriceWebController extends Controller
         try {
             $device->update($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
-                ->with('success', 'Device model updated successfully.');
+                ->with('success', __('repair.device_updated'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -382,16 +384,16 @@ class RepairPriceWebController extends Controller
 
     public function deleteDevice($id)
     {
-        abort_unless(Gate::allows('repair_price.manage_devices'), 403, 'Unauthorized to manage devices.');
+        abort_unless(Gate::allows('repair_price.manage_devices'), 403, __('repair.unauthorized'));
 
         try {
             $device = RepairDevice::findOrFail($id);
             if ($device->prices()->exists()) {
-                return redirect()->back()->with('danger', 'This device is used by repair prices. Delete or reassign those prices first.');
+                return redirect()->back()->with('danger', __('repair.device_used'));
             }
             $device->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
-                ->with('success', 'Device model deleted successfully.');
+                ->with('success', __('repair.device_deleted'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage());
         }
@@ -399,9 +401,9 @@ class RepairPriceWebController extends Controller
 
     public function storeService(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.manage_services'), 403, 'Unauthorized to manage services.');
+        abort_unless(Gate::allows('repair_price.manage_services'), 403, __('repair.unauthorized'));
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_category_id' => 'required|exists:repair_categories,id',
             'name' => 'required|string|max:255',
             'name_kh' => 'nullable|string|max:255',
@@ -414,7 +416,7 @@ class RepairPriceWebController extends Controller
         try {
             RepairService::create($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'services'])
-                ->with('success', 'Repair service added successfully.');
+                ->with('success', __('repair.service_added'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -422,11 +424,11 @@ class RepairPriceWebController extends Controller
 
     public function updateService(Request $request, $id)
     {
-        abort_unless(Gate::allows('repair_price.manage_services'), 403, 'Unauthorized to manage services.');
+        abort_unless(Gate::allows('repair_price.manage_services'), 403, __('repair.unauthorized'));
 
         $service = RepairService::findOrFail($id);
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_category_id' => 'required|exists:repair_categories,id',
             'name' => 'required|string|max:255',
             'name_kh' => 'nullable|string|max:255',
@@ -439,7 +441,7 @@ class RepairPriceWebController extends Controller
         try {
             $service->update($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'services'])
-                ->with('success', 'Repair service updated successfully.');
+                ->with('success', __('repair.service_updated'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -447,16 +449,16 @@ class RepairPriceWebController extends Controller
 
     public function deleteService($id)
     {
-        abort_unless(Gate::allows('repair_price.manage_services'), 403, 'Unauthorized to manage services.');
+        abort_unless(Gate::allows('repair_price.manage_services'), 403, __('repair.unauthorized'));
 
         try {
             $service = RepairService::findOrFail($id);
             if ($service->prices()->exists()) {
-                return redirect()->back()->with('danger', 'This service is used by repair prices. Delete or reassign those prices first.');
+                return redirect()->back()->with('danger', __('repair.service_used'));
             }
             $service->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'services'])
-                ->with('success', 'Repair service deleted successfully.');
+                ->with('success', __('repair.service_deleted'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage());
         }
@@ -464,9 +466,9 @@ class RepairPriceWebController extends Controller
 
     public function storePrice(Request $request)
     {
-        abort_unless(Gate::any(['repair_price.create', 'repair_price.manage_prices']), 403, 'Unauthorized to create repair prices.');
+        abort_unless(Gate::any(['repair_price.create', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_device_id' => 'required|exists:repair_devices,id',
             'repair_service_id' => 'required|exists:repair_services,id',
             'part_name' => 'nullable|string|max:255',
@@ -486,7 +488,7 @@ class RepairPriceWebController extends Controller
 
         if ($exists) {
             return redirect()->back()
-                ->with('danger', 'A repair price for this device model, service, and part type already exists. Please edit the existing price.')
+                ->with('danger', __('repair.price_duplicate'))
                 ->withInput();
         }
 
@@ -496,7 +498,7 @@ class RepairPriceWebController extends Controller
 
             RepairPrice::create($validated);
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
-                ->with('success', 'Repair price added successfully.');
+                ->with('success', __('repair.price_added'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -504,11 +506,11 @@ class RepairPriceWebController extends Controller
 
     public function updatePrice(Request $request, $id)
     {
-        abort_unless(Gate::any(['repair_price.update', 'repair_price.manage_prices']), 403, 'Unauthorized to update repair prices.');
+        abort_unless(Gate::any(['repair_price.update', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
 
         $price = RepairPrice::findOrFail($id);
 
-        $validated = $request->validate([
+        $validated = $this->validateRepairInput($request, [
             'repair_device_id' => 'required|exists:repair_devices,id',
             'repair_service_id' => 'required|exists:repair_services,id',
             'part_name' => 'nullable|string|max:255',
@@ -529,7 +531,7 @@ class RepairPriceWebController extends Controller
 
         if ($exists) {
             return redirect()->back()
-                ->with('danger', 'Another repair price with this device model, service, and part type already exists.')
+                ->with('danger', __('repair.price_conflict'))
                 ->withInput();
         }
 
@@ -555,7 +557,7 @@ class RepairPriceWebController extends Controller
             }
 
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
-                ->with('success', 'Repair price updated successfully.');
+                ->with('success', __('repair.price_updated'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -563,13 +565,13 @@ class RepairPriceWebController extends Controller
 
     public function deletePrice($id)
     {
-        abort_unless(Gate::any(['repair_price.delete', 'repair_price.manage_prices']), 403, 'Unauthorized to delete repair prices.');
+        abort_unless(Gate::any(['repair_price.delete', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
 
         try {
             $price = RepairPrice::findOrFail($id);
             $price->delete();
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
-                ->with('success', 'Repair price deleted successfully.');
+                ->with('success', __('repair.price_deleted'));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage());
         }
@@ -586,15 +588,15 @@ class RepairPriceWebController extends Controller
 
     public function import(): \Illuminate\View\View
     {
-        abort_unless(Gate::allows('repair_price.manage_prices'), 403, 'Unauthorized to import repair prices.');
+        abort_unless(Gate::allows('repair_price.manage_prices'), 403, __('repair.unauthorized'));
         return view($this->view . 'import');
     }
 
     public function processImport(Request $request): \Illuminate\Http\RedirectResponse
     {
-        abort_unless(Gate::allows('repair_price.manage_prices'), 403, 'Unauthorized to import repair prices.');
+        abort_unless(Gate::allows('repair_price.manage_prices'), 403, __('repair.unauthorized'));
 
-        $request->validate([
+        $this->validateRepairInput($request, [
             'file' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
             'update_existing' => 'nullable|boolean',
         ]);
@@ -611,17 +613,17 @@ class RepairPriceWebController extends Controller
             $updated = $import->updatedCount();
 
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
-                ->with('success', "Import completed successfully! Inserted: {$inserted} new records, Updated: {$updated} existing records.");
+                ->with('success', __('repair.import_success', ['inserted' => $inserted, 'updated' => $updated]));
         } catch (Exception $e) {
             return redirect()->back()
-                ->with('danger', 'Import failed: ' . $e->getMessage())
+                ->with('danger', __('repair.import_failed', ['error' => $e->getMessage()]))
                 ->withInput();
         }
     }
 
     public function downloadSample(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        abort_unless(Gate::allows('repair_price.view'), 403, 'Unauthorized.');
+        abort_unless(Gate::allows('repair_price.view'), 403, __('repair.unauthorized'));
 
         $headers = [
             'Content-Type' => 'text/csv',

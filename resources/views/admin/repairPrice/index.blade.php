@@ -2,17 +2,17 @@
 
 @section('title', __('index.repair_price'))
 
-@section('action', __('index.lists') ?? 'Lists')
+@section('action', __('index.lists'))
 
 @section('button')
     <div class="d-flex gap-2 flex-wrap">
         @can('repair_price.manage_prices')
             <a href="{{ route('admin.repair-price.import') }}" class="btn btn-outline-success btn-sm">
-                <i class="link-icon" data-feather="upload-cloud"></i> {{ __('index.import_excel') ?? 'Import Excel' }}
+                <i class="link-icon" data-feather="upload-cloud"></i> {{ __('index.import_excel') }}
             </a>
         @endcan
-        <a href="{{ route('admin.repair-price.sample-template') }}" class="btn btn-outline-secondary btn-sm" title="Download Sample CSV">
-            <i class="link-icon" data-feather="download"></i> Sample CSV
+        <a href="{{ route('admin.repair-price.sample-template') }}" class="btn btn-outline-secondary btn-sm" title="{{ __('repair.download_sample') }}">
+            <i class="link-icon" data-feather="download"></i> {{ __('repair.sample_csv') }}
         </a>
         @canany(['repair_price.create', 'repair_price.manage_prices'])
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPriceModal">
@@ -31,12 +31,12 @@
         @endcan
         @can('repair_price.manage_brands')
             <button class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#addBrandModal">
-                <i class="link-icon" data-feather="tag"></i> {{ __('index.add_brand') ?? 'Add Brand' }}
+                <i class="link-icon" data-feather="tag"></i> {{ __('index.add_brand') }}
             </button>
         @endcan
         @can('repair_price.manage_categories')
             <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
-                <i class="link-icon" data-feather="grid"></i> {{ __('index.add_category') ?? 'Add Category' }}
+                <i class="link-icon" data-feather="grid"></i> {{ __('index.add_category') }}
             </button>
         @endcan
     </div>
@@ -51,13 +51,13 @@
     <!-- Breadcrumb & Role Permissions Indicator -->
     <nav class="page-breadcrumb d-flex justify-content-between align-items-center flex-wrap gap-2">
         <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('admin.repair.dashboard') }}">{{ __('index.repair_management') ?? 'Repair Management' }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('admin.repair.dashboard') }}">{{ __('index.repair_management') }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">{{ __('index.repair_price') }}</li>
         </ol>
 
         <!-- Role Badges for Transparency -->
         <div class="d-flex align-items-center gap-1 flex-wrap">
-            <span class="badge bg-secondary">{{ __('index.role') ?? 'Role' }}: {{ auth()->user()->role?->name ?? 'Admin' }}</span>
+            <span class="badge bg-secondary">{{ __('index.role') }}: {{ auth()->user()->role?->name ?? __('repair.admin') }}</span>
             @can('repair_price.view_cost')
                 <span class="badge bg-success" title="{{ __('index.cost_visible') }}"><i data-feather="eye" style="width:12px;height:12px;"></i> {{ __('index.cost_visible') }}</span>
             @else
@@ -102,7 +102,7 @@
                         <option value="">{{ __('index.all_devices') }}</option>
                         @foreach($devices as $device)
                             <option value="{{ $device->id }}" {{ (isset($filterParameters['device_id']) && $filterParameters['device_id'] == $device->id) ? 'selected' : '' }}>
-                                {{ $device->name }} ({{ $device->model_number ?? 'N/A' }})
+                                {{ $device->name }} ({{ $device->model_number ?? __('repair.not_available') }})
                             </option>
                         @endforeach
                     </select>
@@ -136,14 +136,14 @@
         @can('repair_price.manage_brands')
             <li class="nav-item">
                 <a class="nav-link {{ ($filterParameters['active_tab'] ?? '') == 'brands' ? 'active' : '' }}" id="brands-tab" data-bs-toggle="tab" href="#brandsPane" role="tab" aria-controls="brandsPane" aria-selected="false">
-                    <i class="link-icon me-1" data-feather="tag"></i> {{ __('index.brands') ?? 'Brands' }}
+                    <i class="link-icon me-1" data-feather="tag"></i> {{ __('index.brands') }}
                 </a>
             </li>
         @endcan
         @can('repair_price.manage_categories')
             <li class="nav-item">
                 <a class="nav-link {{ ($filterParameters['active_tab'] ?? '') == 'categories' ? 'active' : '' }}" id="categories-tab" data-bs-toggle="tab" href="#categoriesPane" role="tab" aria-controls="categoriesPane" aria-selected="false">
-                    <i class="link-icon me-1" data-feather="grid"></i> {{ __('index.categories') ?? 'Categories' }}
+                    <i class="link-icon me-1" data-feather="grid"></i> {{ __('index.categories') }}
                 </a>
             </li>
         @endcan
@@ -158,7 +158,7 @@
             </a>
         </li>
         @can('repair_price.manage_devices')
-            @foreach(['types' => 'Device Types', 'series' => 'Device Series'] as $tab => $label)
+            @foreach(['types' => __('repair.device_types'), 'series' => __('repair.device_series')] as $tab => $label)
                 <li class="nav-item">
                     <a class="nav-link {{ $filterParameters['active_tab'] === $tab ? 'active' : '' }}" id="{{ $tab }}-tab" data-bs-toggle="tab" href="#{{ $tab }}Pane" role="tab">{{ $label }}</a>
                 </li>
@@ -167,7 +167,7 @@
         @can('repair_price.manage_prices')
         <li class="nav-item ms-auto">
             <a class="nav-link text-primary fw-bold" href="{{ route('admin.repair-price.import') }}">
-                <i class="link-icon me-1 text-primary" data-feather="upload-cloud"></i> Import Excel / CSV
+                <i class="link-icon me-1 text-primary" data-feather="upload-cloud"></i> {{ __('repair.import_excel_csv') }}
             </a>
         </li>
         @endcan
@@ -208,14 +208,14 @@
                                     @php
                                         $profit = ($p->part_cost !== null && $p->service_fee !== null) ? ($p->selling_price - $p->part_cost - $p->service_fee) : null;
                                         $margin = ($p->selling_price > 0 && $profit !== null) ? round(($profit / $p->selling_price) * 100, 1) : null;
-                                        $catName = (app()->getLocale() == 'km' && !empty($p->service?->category?->name_kh)) ? $p->service->category->name_kh : ($p->service?->category?->name ?? 'General');
-                                        $srvName = (app()->getLocale() == 'km' && !empty($p->service?->name_kh)) ? $p->service->name_kh : ($p->service?->name ?? 'N/A');
+                                        $catName = (app()->getLocale() == 'km' && !empty($p->service?->category?->name_kh)) ? $p->service->category->name_kh : ($p->service?->category?->name ?? __('repair.general'));
+                                        $srvName = (app()->getLocale() == 'km' && !empty($p->service?->name_kh)) ? $p->service->name_kh : ($p->service?->name ?? __('repair.not_available'));
                                     @endphp
                                     <tr>
                                         <td>{{ $prices->firstItem() + $key }}</td>
                                         <td>
-                                            <div class="fw-bold">{{ $p->device?->name ?? 'N/A' }}</div>
-                                            <span class="badge bg-light text-secondary">{{ $p->device?->brand?->name ?? 'Brand' }}</span>
+                                            <div class="fw-bold">{{ $p->device?->name ?? __('repair.not_available') }}</div>
+                                            <span class="badge bg-light text-secondary">{{ $p->device?->brand?->name ?? __('index.brand') }}</span>
                                             <span class="text-muted small">({{ $p->device?->model_number ?? '-' }})</span>
                                         </td>
                                         <td>
@@ -224,7 +224,7 @@
                                         <td>
                                             <div class="fw-semibold">{{ $srvName }}</div>
                                             @if($p->part_name)
-                                                <div class="text-muted small">{{ $p->part_name }} ({{ $p->part_type ?? 'Standard' }})</div>
+                                                <div class="text-muted small">{{ $p->part_name }} ({{ $p->part_type ?? __('repair.standard') }})</div>
                                             @endif
                                         </td>
                                         <td>
@@ -246,10 +246,10 @@
                                         @endcan
                                         <td>
                                             <span class="badge bg-light text-dark border">
-                                                {{ $p->warranty_days ? $p->warranty_days . ' ' . (__('index.days') ?? 'days') : '-' }}
+                                                {{ $p->warranty_days ? $p->warranty_days . ' ' . (__('index.days')) : '-' }}
                                             </span>
                                             @if($p->estimated_minutes)
-                                                <div class="text-muted small mt-1"><i data-feather="clock" style="width:11px;height:11px;"></i> {{ $p->estimated_minutes }} {{ __('index.minute') ?? 'min' }}</div>
+                                                <div class="text-muted small mt-1"><i data-feather="clock" style="width:11px;height:11px;"></i> {{ $p->estimated_minutes }} {{ __('index.minute') }}</div>
                                             @endif
                                         </td>
                                         <td>
@@ -324,7 +324,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>{{ __('index.brand') }}</th>
-                                        <th>Slug</th>
+                                        <th>{{ __('repair.slug') }}</th>
                                         <th>{{ __('index.status') }}</th>
                                         <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     </tr>
@@ -391,8 +391,8 @@
                                         <th>#</th>
                                         <th>{{ __('index.category') }}</th>
                                         <th>{{ __('index.service_name_kh') }}</th>
-                                        <th>Slug</th>
-                                        <th>{{ __('index.sort_order') ?? 'Sort Order' }}</th>
+                                        <th>{{ __('repair.slug') }}</th>
+                                        <th>{{ __('index.sort_order') }}</th>
                                         <th>{{ __('index.status') }}</th>
                                         <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     </tr>
@@ -476,7 +476,7 @@
                                     <tr>
                                         <td>{{ $devicesList->firstItem() + $key }}</td>
                                         <td><span class="badge bg-secondary">{{ $d->brand?->name ?? '-' }}</span></td>
-                                        <td>{{ $d->deviceType?->name ?? 'Smartphone' }}</td>
+                                        <td>{{ $d->deviceType?->name ?? __('repair.smartphone') }}</td>
                                         <td>{{ $d->series?->name ?? '-' }}</td>
                                         <td class="fw-bold">{{ $d->name }}</td>
                                         <td><code>{{ $d->model_number ?? '-' }}</code></td>
@@ -552,7 +552,7 @@
                                         <td>{{ $servicesList->firstItem() + $key }}</td>
                                         <td>
                                             <span class="badge bg-secondary">
-                                                {{ (app()->getLocale() == 'km' && !empty($s->category?->name_kh)) ? $s->category->name_kh : ($s->category?->name ?? 'General') }}
+                                                {{ (app()->getLocale() == 'km' && !empty($s->category?->name_kh)) ? $s->category->name_kh : ($s->category?->name ?? __('repair.general')) }}
                                             </span>
                                         </td>
                                         <td class="fw-bold">{{ $s->name }}</td>
@@ -618,21 +618,21 @@
                 <form action="{{ route('admin.repair-price.brands.store') }}" method="post">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title">{{ __('index.add_brand') ?? 'Add Brand' }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">{{ __('index.add_brand') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label required">{{ __('index.brand') }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="e.g. Oppo" required>
+                            <input type="text" class="form-control" name="name" placeholder="{{ __('repair.example_brand') }}" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Slug</label>
-                            <input type="text" class="form-control" name="slug" placeholder="Auto generated if empty">
+                            <label class="form-label">{{ __('repair.slug') }}</label>
+                            <input type="text" class="form-control" name="slug" placeholder="{{ __('repair.auto_slug') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Logo URL / Path</label>
-                            <input type="text" class="form-control" name="logo" placeholder="Optional">
+                            <label class="form-label">{{ __('repair.logo_path') }}</label>
+                            <input type="text" class="form-control" name="logo" placeholder="{{ __('repair.optional') }}">
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="brandStatusSwitch" checked>
@@ -656,8 +656,8 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h5 class="modal-title">{{ __('index.edit_brand') ?? 'Edit Brand' }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">{{ __('index.edit_brand') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -665,11 +665,11 @@
                             <input type="text" class="form-control" id="edit_brand_name" name="name" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Slug</label>
+                            <label class="form-label">{{ __('repair.slug') }}</label>
                             <input type="text" class="form-control" id="edit_brand_slug" name="slug">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Logo URL / Path</label>
+                            <label class="form-label">{{ __('repair.logo_path') }}</label>
                             <input type="text" class="form-control" id="edit_brand_logo" name="logo">
                         </div>
                         <div class="form-check form-switch">
@@ -695,28 +695,28 @@
                 <form action="{{ route('admin.repair-price.categories.store') }}" method="post">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title">{{ __('index.add_category') ?? 'Add Category' }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">{{ __('index.add_category') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label required">{{ __('index.category') }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="e.g. Charging" required>
+                            <input type="text" class="form-control" name="name" placeholder="{{ __('repair.example_category') }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{{ __('index.service_name_kh') }}</label>
-                            <input type="text" class="form-control" name="name_kh" placeholder="Optional">
+                            <input type="text" class="form-control" name="name_kh" placeholder="{{ __('repair.optional') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Slug</label>
-                            <input type="text" class="form-control" name="slug" placeholder="Auto generated if empty">
+                            <label class="form-label">{{ __('repair.slug') }}</label>
+                            <input type="text" class="form-control" name="slug" placeholder="{{ __('repair.auto_slug') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Icon</label>
-                            <input type="text" class="form-control" name="icon" placeholder="Optional">
+                            <label class="form-label">{{ __('repair.icon') }}</label>
+                            <input type="text" class="form-control" name="icon" placeholder="{{ __('repair.optional') }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">{{ __('index.sort_order') ?? 'Sort Order' }}</label>
+                            <label class="form-label">{{ __('index.sort_order') }}</label>
                             <input type="number" min="0" class="form-control" name="sort_order" value="0">
                         </div>
                         <div class="form-check form-switch">
@@ -741,8 +741,8 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
-                        <h5 class="modal-title">{{ __('index.edit_category') ?? 'Edit Category' }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title">{{ __('index.edit_category') }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -754,15 +754,15 @@
                             <input type="text" class="form-control" id="edit_category_name_kh" name="name_kh">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Slug</label>
+                            <label class="form-label">{{ __('repair.slug') }}</label>
                             <input type="text" class="form-control" id="edit_category_slug" name="slug">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Icon</label>
+                            <label class="form-label">{{ __('repair.icon') }}</label>
                             <input type="text" class="form-control" id="edit_category_icon" name="icon">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">{{ __('index.sort_order') ?? 'Sort Order' }}</label>
+                            <label class="form-label">{{ __('index.sort_order') }}</label>
                             <input type="number" min="0" class="form-control" id="edit_category_sort_order" name="sort_order">
                         </div>
                         <div class="form-check form-switch">
@@ -789,14 +789,14 @@
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.add_repair_price') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label required">{{ __('index.device_model') }} <span class="text-danger">*</span></label>
                                 <select class="form-select" name="repair_device_id" required>
-                                    <option value="" disabled selected>{{ __('index.select_device') ?? 'Select Device' }}</option>
+                                    <option value="" disabled selected>{{ __('index.select_device') }}</option>
                                     @foreach($devices as $d)
                                         <option value="{{ $d->id }}">{{ $d->brand?->name }} - {{ $d->name }}</option>
                                     @endforeach
@@ -805,7 +805,7 @@
                             <div class="col-md-6">
                                 <label class="form-label required">{{ __('index.repair_service') }} <span class="text-danger">*</span></label>
                                 <select class="form-select" name="repair_service_id" required>
-                                    <option value="" disabled selected>{{ __('index.select_service') ?? 'Select Service' }}</option>
+                                    <option value="" disabled selected>{{ __('index.select_service') }}</option>
                                     @foreach($services as $s)
                                         <option value="{{ $s->id }}">{{ (app()->getLocale() == 'km' && !empty($s->name_kh)) ? $s->name_kh : $s->name }}</option>
                                     @endforeach
@@ -813,11 +813,11 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ __('index.part_name') }}</label>
-                                <input type="text" class="form-control" name="part_name" placeholder="e.g. OLED Screen Assembly">
+                                <input type="text" class="form-control" name="part_name" placeholder="{{ __('repair.example_part') }}">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ __('index.part_type') }}</label>
-                                <input type="text" class="form-control" name="part_type" placeholder="e.g. Original / OEM / High Quality">
+                                <input type="text" class="form-control" name="part_type" placeholder="{{ __('repair.example_part_type') }}">
                             </div>
 
                             <div class="col-md-4">
@@ -835,11 +835,11 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">{{ __('index.warranty_days') ?? __('index.warranty_period') }}</label>
-                                <input type="number" min="0" class="form-control" name="warranty_days" placeholder="e.g. 90">
+                                <input type="number" min="0" class="form-control" name="warranty_days" placeholder="{{ __('repair.example_days') }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">{{ __('index.estimated_minutes') }}</label>
-                                <input type="number" min="0" class="form-control" name="estimated_minutes" placeholder="e.g. 45">
+                                <input type="number" min="0" class="form-control" name="estimated_minutes" placeholder="{{ __('repair.example_minutes') }}">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label required">{{ __('index.availability') }} <span class="text-danger">*</span></label>
@@ -871,7 +871,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.edit_repair_price') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
@@ -950,7 +950,7 @@
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.add_device') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -981,11 +981,11 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label required">{{ __('index.model_name') }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="e.g. iPhone 15 Pro Max" required>
+                            <input type="text" class="form-control" name="name" placeholder="{{ __('repair.example_model') }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{{ __('index.model_number') }}</label>
-                            <input type="text" class="form-control" name="model_number" placeholder="e.g. A3106">
+                            <input type="text" class="form-control" name="model_number" placeholder="{{ __('repair.example_model_number') }}">
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="deviceStatusSwitch" checked>
@@ -1010,7 +1010,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.edit_device') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -1070,7 +1070,7 @@
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.add_service') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -1084,15 +1084,15 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label required">{{ __('index.service_name_en') }} <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="name" placeholder="e.g. Screen Replacement" required>
+                            <input type="text" class="form-control" name="name" placeholder="{{ __('repair.example_service') }}" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{{ __('index.service_name_kh') }}</label>
-                            <input type="text" class="form-control" name="name_kh" placeholder="e.g. ផ្លាស់ប្តូរអេក្រង់">
+                            <input type="text" class="form-control" name="name_kh" placeholder="{{ __('repair.example_service_kh') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">{{ __('index.description') }}</label>
-                            <textarea class="form-control" name="description" rows="3" placeholder="Service notes..."></textarea>
+                            <textarea class="form-control" name="description" rows="3" placeholder="{{ __('repair.service_notes') }}"></textarea>
                         </div>
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="serviceStatusSwitch" checked>
@@ -1117,7 +1117,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.edit_service') }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -1182,12 +1182,12 @@
             const form = this;
             let title = $(form).find('.repair-delete-btn').data('title');
             Swal.fire({
-                title: '{{ __('index.delete_confirmation') ?? "Are you sure you want to delete?" }}',
+                title: @json(__('index.delete_confirmation')),
                 text: title ? title : '',
                 icon: 'warning',
                 showDenyButton: true,
-                confirmButtonText: '{{ __('index.yes') ?? "Yes, delete" }}',
-                denyButtonText: '{{ __('index.no') ?? "Cancel" }}',
+                confirmButtonText: @json(__('index.yes')),
+                denyButtonText: @json(__('index.no')),
                 padding: '10px 50px',
                 allowOutsideClick: false
             }).then((result) => {

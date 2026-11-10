@@ -10,7 +10,7 @@ class NoticeRepository{
 
     public function getAllCompanyNotices($filterParameters,$select=['*'],$with=[])
     {
-        return Notice::select($select)->with($with)
+        $query = Notice::select($select)->with($with)
             ->when(isset($filterParameters['notice_receiver']), function ($query) use ($filterParameters) {
                 $query->whereHas('noticeReceiversDetail',function($subQuery) use ($filterParameters){
                     $subQuery->whereIn('notice_receiver_id', $filterParameters['notice_receiver']);
@@ -22,8 +22,18 @@ class NoticeRepository{
             ->when(isset($filterParameters['publish_date_to']), function($query) use ($filterParameters){
                 $query->whereDate('notice_publish_date','<=',$filterParameters['publish_date_to']);
             })
-            ->orderBy('notice_publish_date','Desc')
-            ->paginate( getRecordPerPage());
+            ->when(!empty($filterParameters['branch_id']), fn ($query) => $query->where('branch_id', $filterParameters['branch_id']))
+            ->when(isset($filterParameters['is_active']) && $filterParameters['is_active'] !== '', fn ($query) => $query->where('is_active', $filterParameters['is_active']))
+            ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = '%'.$filterParameters['search'].'%';
+                $query->where(fn ($q) => $q->where('title', 'like', $search)->orWhere('description', 'like', $search)
+                    ->orWhereHas('branch', fn ($b) => $b->where('name', 'like', $search))
+                    ->orWhereHas('noticeReceiversDetail.employee', fn ($u) => $u->where('name', 'like', $search)));
+            })
+            ->orderByDesc('notice_publish_date')->orderByDesc('id');
+        $size = (string) ($filterParameters['per_page'] ?? '25');
+        if (!in_array($size, ['25', '50', '100', '200', 'all'], true)) $size = '25';
+        return $query->paginate($size === 'all' ? max(1, (clone $query)->count()) : (int) $size);
     }
 
     public function getAllEmployeeNotices($perPage,$select=['*'])

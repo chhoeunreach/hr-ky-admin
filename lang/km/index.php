@@ -1232,7 +1232,7 @@ return [
     'verified_date'=>'Verified Date',
     'tada_summary'=>'Tada Summary',
     'update_status'=>'Update Status',
-    'category'=>'Category',
+    'category'=>'ក្រុម',
     'select_category'=>'Select Category',
     'opening_time' => 'Opening Time',
     'closing_time' => 'Closing Time',
@@ -1933,7 +1933,7 @@ return [
     /** Devices */
     'serial_number'=>'Serial Number',
     'enter_serial_number'=>'Enter Device Serial Number',
-    'add_device'=>'Add Device',
+    'add_device'=>'បន្ថែមឧបករណ៍',
     'biometric_device'=>'Biometric Device',
     'device'=>'Device',
     'device_lists'=>'Device Lists',
@@ -3325,4 +3325,7 @@ return [
     'warning_print_acknowledgement_text' => 'ហត្ថលេខារបស់បុគ្គលិកបញ្ជាក់ថាបានទទួលលិខិតព្រមាននេះ ហើយមិនមានន័យថាយល់ព្រមលើខ្លឹមសារទាំងអស់នោះទេ។',
     'directory_copy_success' => 'បានចម្លងទិន្នន័យចំនួន :count។',
     'directory_export_failed' => 'មិនអាចទាញយកទិន្នន័យតាមការច្រោះបានទេ។ សូមព្យាយាមម្ដងទៀត។',
+    'import_excel' => 'នាំចូល Excel',
+    'select_device' => 'ជ្រើសរើសឧបករណ៍',
+    'select_service' => 'ជ្រើសរើសសេវាកម្ម',
 ];
