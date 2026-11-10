@@ -89,6 +89,8 @@ class EmployeeMonthlyAttendanceSummaryTest extends TestCase
         $this->assertSame($amount, $summary['deduction']['amount']);
         $this->assertSame(31.2, $amount);
         $this->assertSame(3, $summary['excused_late_count']);
+        $this->assertSame(1, $summary['approved_late_count']);
+        $this->assertSame(1, $summary['approved_time_leave_count']);
         $this->assertSame($row['bonus_eligible_days'], $summary['bonus']['completed_days']);
     }
 
@@ -109,6 +111,33 @@ class EmployeeMonthlyAttendanceSummaryTest extends TestCase
         $this->assertSame(6.5, $summary['bonus']['progress_percent']);
         $this->assertSame(20.0, $summary['bonus']['target_amount']);
         $this->assertTrue($summary['deduction']['estimated']);
+    }
+
+    public function test_approved_totals_count_dates_without_pending_future_or_other_employee_requests(): void
+    {
+        $this->travelTo(Carbon::parse('2026-10-05 18:00:00'));
+        foreach ([1, 2, 3, 4] as $day) $this->attendance(sprintf('2026-10-%02d', $day), '09:35:00');
+        DB::table('leave_requests_master')->insert(['requested_by' => 20, 'leave_type_id' => 1,
+            'leave_from' => '2026-10-01', 'leave_to' => '2026-10-01', 'status' => 'approved']);
+        foreach ([
+            [20, '2026-10-01', 'approved'],
+            [20, '2026-10-01', 'approved'],
+            [20, '2026-10-02', 'approved'],
+            [20, '2026-10-03', 'pending'],
+            [20, '2026-10-04', 'review'],
+            [20, '2026-10-05', 'approved'], // Approved time leave without a late attendance.
+            [20, '2026-10-06', 'approved'],
+            [20, '2026-09-30', 'approved'],
+            [99, '2026-10-04', 'approved'],
+        ] as [$employeeId, $date, $status]) {
+            DB::table('time_leaves')->insert(['requested_by' => $employeeId, 'issue_date' => $date, 'status' => $status]);
+        }
+        $summary = $this->summary();
+        $this->assertSame(2, $summary['approved_late_count']);
+        $this->assertSame(3, $summary['approved_time_leave_count']);
+        $this->assertSame(4, $summary['excused_late_count']);
+        $this->assertSame(0, $summary['late_count']);
+        $this->assertSame(0.0, $summary['deduction']['amount']);
     }
 
     public function test_bonus_target_follows_admin_setting_and_excludes_company_weekends_and_holidays(): void
@@ -152,6 +181,7 @@ class EmployeeMonthlyAttendanceSummaryTest extends TestCase
         $this->actingAs($this->employee, 'api');
         $this->getJson('/api/dashboard/attendance-summary?user_id=99&month=2025-01')
             ->assertOk()->assertJsonPath('data.late_count', 0)->assertJsonPath('data.month', '2026-10')
+            ->assertJsonPath('data.approved_late_count', 0)->assertJsonPath('data.approved_time_leave_count', 0)
             ->assertJsonMissingPath('data.employee')->assertJsonMissingPath('data.days');
         auth('api')->forgetUser();
         $this->getJson('/api/dashboard/attendance-summary')->assertUnauthorized();

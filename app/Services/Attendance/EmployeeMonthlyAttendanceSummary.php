@@ -40,7 +40,7 @@ class EmployeeMonthlyAttendanceSummary
             ->whereBetween('issue_date', [$start->toDateString(), $now->toDateString()])
             ->get(['issue_date', 'status'])->groupBy(fn ($leave) => Carbon::parse($leave->issue_date)->toDateString());
         $breakdown = $this->lateBreakdownTemplate();
-        $excused = $eligible = $workingDays = $elapsedDays = 0;
+        $excused = $approvedLate = $eligible = $workingDays = $elapsedDays = 0;
 
         for ($day = $start->copy(); $day->lte($end); $day->addDay()) {
             $date = $day->toDateString();
@@ -54,7 +54,10 @@ class EmployeeMonthlyAttendanceSummary
             $dayTimeLeaves = $timeLeaves->get($date, collect());
             if ($first = $rows->first()) {
                 if ($this->hasLateExcuse($dayLeaves, $dayTimeLeaves)) {
-                    if ($this->lateMinutesForAttendance($employee, $first) !== null) $excused++;
+                    if ($this->lateMinutesForAttendance($employee, $first) !== null) {
+                        $excused++;
+                        if ($this->hasLateExcuse($dayLeaves, $dayTimeLeaves, ['approved'])) $approvedLate++;
+                    }
                 } else {
                     $breakdown = $this->addLateBreakdownCount($breakdown, $employee, $first);
                 }
@@ -70,6 +73,10 @@ class EmployeeMonthlyAttendanceSummary
             'as_of' => $now->toIso8601String(),
             'late_count' => array_sum($breakdown),
             'excused_late_count' => $excused,
+            'approved_late_count' => $approvedLate,
+            // Count dates, so multiple approved requests on one day count once.
+            'approved_time_leave_count' => $timeLeaves
+                ->filter(fn ($requests) => $requests->contains(fn ($leave) => $leave->status === 'approved'))->count(),
             'deduction' => [
                 'amount' => round($this->lateReductionPayment($breakdown), 2),
                 'currency' => 'USD',

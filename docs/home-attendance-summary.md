@@ -2,6 +2,8 @@
 
 The employee home clock now has a compact current-month attendance card. It shows the signed-in employee's unexcused late count, estimated deduction, and progress toward the attendance bonus target configured in Admin → Attendance Settings (default $20). Tap the card for the month, qualifying-day counts, and calculation explanation. Narrow screens and larger accessibility text place the card below the clock.
 
+The card also shows approved late days and approved time-leave days this month through today. Only approved requests contribute to these totals; pending/review requests are not labelled approved. Duplicate requests on the same date count once. A date can appear in both totals when approved time leave also excuses lateness. The existing deduction/excuse rules remain unchanged. Older API responses without these fields show dashes for approval totals.
+
 The dashboard response contains `data.monthly_attendance_summary`. After successful online check-in/out, Flutter refreshes it using authenticated `GET /api/dashboard/attendance-summary`. Home refresh, resume, and date rollover also update it. Requests carry the existing token and use the configured API host. Old responses cannot overwrite newer summary requests. Unavailable, malformed, or stale-month data displays dashes rather than invented amounts.
 
 Backend calculations share `MonthlyAttendanceRules` with the admin monthly attendance report. Deduction uses its standard **minute-based** rule (not the separate Count export), including excused lateness and the existing warning threshold. This is an estimate, not a new payroll deduction. No new per-role rates or payroll mutations were introduced.

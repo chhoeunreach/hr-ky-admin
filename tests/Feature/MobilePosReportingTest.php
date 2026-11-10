@@ -230,6 +230,25 @@ class MobilePosReportingTest extends TestCase
         $this->putJson('/api/sell-out-reports/1',$payload)->assertForbidden();
     }
 
+    public function test_all_six_services_allow_today_edits_and_lock_at_business_midnight(): void
+    {
+        $day = now()->startOfDay();
+        foreach (['Sell', 'Material', 'Iron', 'Repair', 'Buy In', 'iCloud Cus'] as $type) {
+            $this->travelTo($day->copy()->setTime(23, 59, 59));
+            $payload = ['seller_name' => 'Employee', 'service_type' => $type,
+                'lines' => [['product_name' => 'Editable item', 'qty' => 1, 'unit_price' => 10, 'serial_number' => 'SERIAL123']]];
+            $id = $this->postJson('/api/sell-out-reports', $payload)->assertCreated()->json('data.id');
+            $payload['lines'][0]['unit_price'] = 20;
+            $this->putJson('/api/sell-out-reports/'.$id, $payload)->assertOk()->assertJsonPath('data.total_amount', '20.00');
+            $this->travelTo($day->copy()->addDay());
+            $payload['lines'][0]['unit_price'] = 99;
+            $this->putJson('/api/sell-out-reports/'.$id, $payload)->assertForbidden();
+            $this->assertEquals(20, DB::table('sell_out_reports')->where('id', $id)->value('total_amount'));
+            DB::table('sell_out_reports')->where('id', $id)->update(['created_at' => $day->copy()->addDays(2)]);
+            $this->putJson('/api/sell-out-reports/'.$id, $payload)->assertForbidden();
+        }
+    }
+
     public function test_csv_errors_remain_json_for_mobile_clients(): void
     {
         $this->get($this->url(['export'=>'csv', 'per_page'=>501]), ['Accept'=>'text/csv'])
