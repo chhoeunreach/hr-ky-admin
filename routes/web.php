@@ -384,19 +384,19 @@ Route::group([
             Route::get('sample-template', [RepairPriceWebController::class, 'downloadSample'])->name('sample-template');
             Route::post('brands', [RepairPriceWebController::class, 'storeBrand'])->name('brands.store');
             Route::put('brands/{id}', [RepairPriceWebController::class, 'updateBrand'])->name('brands.update');
-            Route::get('brands/delete/{id}', [RepairPriceWebController::class, 'deleteBrand'])->name('brands.delete');
+            Route::delete('brands/delete/{id}', [RepairPriceWebController::class, 'deleteBrand'])->name('brands.delete');
             Route::post('categories', [RepairPriceWebController::class, 'storeCategory'])->name('categories.store');
             Route::put('categories/{id}', [RepairPriceWebController::class, 'updateCategory'])->name('categories.update');
-            Route::get('categories/delete/{id}', [RepairPriceWebController::class, 'deleteCategory'])->name('categories.delete');
+            Route::delete('categories/delete/{id}', [RepairPriceWebController::class, 'deleteCategory'])->name('categories.delete');
             Route::post('devices', [RepairPriceWebController::class, 'storeDevice'])->name('devices.store');
             Route::put('devices/{id}', [RepairPriceWebController::class, 'updateDevice'])->name('devices.update');
-            Route::get('devices/delete/{id}', [RepairPriceWebController::class, 'deleteDevice'])->name('devices.delete');
+            Route::delete('devices/delete/{id}', [RepairPriceWebController::class, 'deleteDevice'])->name('devices.delete');
             Route::post('services', [RepairPriceWebController::class, 'storeService'])->name('services.store');
             Route::put('services/{id}', [RepairPriceWebController::class, 'updateService'])->name('services.update');
-            Route::get('services/delete/{id}', [RepairPriceWebController::class, 'deleteService'])->name('services.delete');
+            Route::delete('services/delete/{id}', [RepairPriceWebController::class, 'deleteService'])->name('services.delete');
             Route::post('prices', [RepairPriceWebController::class, 'storePrice'])->name('prices.store');
             Route::put('prices/{id}', [RepairPriceWebController::class, 'updatePrice'])->name('prices.update');
-            Route::get('prices/delete/{id}', [RepairPriceWebController::class, 'deletePrice'])->name('prices.delete');
+            Route::delete('prices/delete/{id}', [RepairPriceWebController::class, 'deletePrice'])->name('prices.delete');
             Route::get('ajax/series/{brandId}', [RepairPriceWebController::class, 'getSeriesByBrand'])->name('ajax.series');
         });
 

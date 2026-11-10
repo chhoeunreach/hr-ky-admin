@@ -12,11 +12,11 @@
         <a href="{{ route('admin.repair-price.sample-template') }}" class="btn btn-outline-secondary btn-sm" title="Download Sample CSV">
             <i class="link-icon" data-feather="download"></i> Sample CSV
         </a>
-        @can('repair_price.create')
+        @canany(['repair_price.create', 'repair_price.manage_prices'])
             <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPriceModal">
                 <i class="link-icon" data-feather="plus"></i> {{ __('index.add_repair_price') }}
             </button>
-        @endcan
+        @endcanany
         @can('repair_price.manage_devices')
             <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addDeviceModal">
                 <i class="link-icon" data-feather="smartphone"></i> {{ __('index.add_device') }}
@@ -191,7 +191,7 @@
                                     @endcan
                                     <th>{{ __('index.warranty') }}</th>
                                     <th>{{ __('index.status') }}</th>
-                                    @canany(['repair_price.update', 'repair_price.delete'])
+                                    @canany(['repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
                                         <th class="text-center">{{ __('index.action') }}</th>
                                     @endcanany
                                 </tr>
@@ -254,10 +254,10 @@
                                                 <span class="badge bg-warning text-dark">{{ __('index.pre_order') }}</span>
                                             @endif
                                         </td>
-                                        @canany(['repair_price.update', 'repair_price.delete'])
+                                        @canany(['repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    @can('repair_price.update')
+                                                    @canany(['repair_price.update', 'repair_price.manage_prices'])
                                                         <button class="btn btn-sm btn-outline-primary btn-icon edit-price-btn"
                                                                 data-id="{{ $p->id }}"
                                                                 data-device-id="{{ $p->repair_device_id }}"
@@ -273,16 +273,17 @@
                                                                 title="{{ __('index.edit') }}">
                                                             <i data-feather="edit-2"></i>
                                                         </button>
-                                                    @endcan
-                                                    @can('repair_price.delete')
-                                                        <a href="javascript:void(0);"
-                                                           class="btn btn-sm btn-outline-danger btn-icon deleteWarning"
-                                                           data-title="{{ $srvName }}"
-                                                           data-href="{{ route('admin.repair-price.prices.delete', $p->id) }}"
-                                                           title="{{ __('index.delete') }}">
+                                                    @endcanany
+                                                    @canany(['repair_price.delete', 'repair_price.manage_prices'])
+                                                        <form action="{{ route('admin.repair-price.prices.delete', $p->id) }}" method="post" class="repair-delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon repair-delete-btn"
+                                                                    data-title="{{ $srvName }}" title="{{ __('index.delete') }}">
                                                             <i data-feather="trash-2"></i>
-                                                        </a>
-                                                    @endcan
+                                                        </button>
+                                                        </form>
+                                                    @endcanany
                                                 </div>
                                             </td>
                                         @endcanany
@@ -348,13 +349,14 @@
                                                             title="{{ __('index.edit') }}">
                                                         <i data-feather="edit-2"></i>
                                                     </button>
-                                                    <a href="javascript:void(0);"
-                                                       class="btn btn-sm btn-outline-danger btn-icon deleteWarning"
-                                                       data-title="{{ $brand->name }}"
-                                                       data-href="{{ route('admin.repair-price.brands.delete', $brand->id) }}"
-                                                       title="{{ __('index.delete') }}">
+                                                    <form action="{{ route('admin.repair-price.brands.delete', $brand->id) }}" method="post" class="repair-delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon repair-delete-btn"
+                                                                    data-title="{{ $brand->name }}" title="{{ __('index.delete') }}">
                                                         <i data-feather="trash-2"></i>
-                                                    </a>
+                                                    </button>
+                                                        </form>
                                                 </div>
                                             </td>
                                         </tr>
@@ -424,13 +426,14 @@
                                                             title="{{ __('index.edit') }}">
                                                         <i data-feather="edit-2"></i>
                                                     </button>
-                                                    <a href="javascript:void(0);"
-                                                       class="btn btn-sm btn-outline-danger btn-icon deleteWarning"
-                                                       data-title="{{ $category->name }}"
-                                                       data-href="{{ route('admin.repair-price.categories.delete', $category->id) }}"
-                                                       title="{{ __('index.delete') }}">
+                                                    <form action="{{ route('admin.repair-price.categories.delete', $category->id) }}" method="post" class="repair-delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon repair-delete-btn"
+                                                                    data-title="{{ $category->name }}" title="{{ __('index.delete') }}">
                                                         <i data-feather="trash-2"></i>
-                                                    </a>
+                                                    </button>
+                                                        </form>
                                                 </div>
                                             </td>
                                         </tr>
@@ -506,13 +509,14 @@
                                                             title="{{ __('index.edit') }}">
                                                         <i data-feather="edit-2"></i>
                                                     </button>
-                                                    <a href="javascript:void(0);"
-                                                       class="btn btn-sm btn-outline-danger btn-icon deleteWarning"
-                                                       data-title="{{ $d->name }}"
-                                                       data-href="{{ route('admin.repair-price.devices.delete', $d->id) }}"
-                                                       title="{{ __('index.delete') }}">
+                                                    <form action="{{ route('admin.repair-price.devices.delete', $d->id) }}" method="post" class="repair-delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon repair-delete-btn"
+                                                                    data-title="{{ $d->name }}" title="{{ __('index.delete') }}">
                                                         <i data-feather="trash-2"></i>
-                                                    </a>
+                                                    </button>
+                                                        </form>
                                                 </div>
                                             </td>
                                         @endcan
@@ -589,13 +593,14 @@
                                                             title="{{ __('index.edit') }}">
                                                         <i data-feather="edit-2"></i>
                                                     </button>
-                                                    <a href="javascript:void(0);"
-                                                       class="btn btn-sm btn-outline-danger btn-icon deleteWarning"
-                                                       data-title="{{ $s->name }}"
-                                                       data-href="{{ route('admin.repair-price.services.delete', $s->id) }}"
-                                                       title="{{ __('index.delete') }}">
+                                                    <form action="{{ route('admin.repair-price.services.delete', $s->id) }}" method="post" class="repair-delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon repair-delete-btn"
+                                                                    data-title="{{ $s->name }}" title="{{ __('index.delete') }}">
                                                         <i data-feather="trash-2"></i>
-                                                    </a>
+                                                    </button>
+                                                        </form>
                                                 </div>
                                             </td>
                                         @endcan
@@ -790,7 +795,7 @@
     </div>
 @endcan
 
-@can('repair_price.create')
+@canany(['repair_price.create', 'repair_price.manage_prices'])
     <!-- ADD PRICE MODAL -->
     <div class="modal fade" id="addPriceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -869,9 +874,9 @@
             </div>
         </div>
     </div>
-@endcan
+@endcanany
 
-@can('repair_price.update')
+@canany(['repair_price.update', 'repair_price.manage_prices'])
     <!-- EDIT PRICE MODAL -->
     <div class="modal fade" id="editPriceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -949,7 +954,7 @@
             </div>
         </div>
     </div>
-@endcan
+@endcanany
 
 @can('repair_price.manage_devices')
     <!-- ADD DEVICE MODAL -->
@@ -1181,10 +1186,10 @@
         });
 
         // SweetAlert Delete Warning
-        $('body').on('click', '.deleteWarning', function (event) {
+        $('.repair-delete-form').on('submit', function (event) {
             event.preventDefault();
-            let title = $(this).data('title');
-            let href = $(this).data('href');
+            const form = this;
+            let title = $(form).find('.repair-delete-btn').data('title');
             Swal.fire({
                 title: '{{ __('index.delete_confirmation') ?? "Are you sure you want to delete?" }}',
                 text: title ? title : '',
@@ -1196,7 +1201,7 @@
                 allowOutsideClick: false
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = href;
+                    HTMLFormElement.prototype.submit.call(form);
                 }
             });
         });
@@ -1210,7 +1215,7 @@
             $('#edit_brand_status').prop('checked', $(this).data('status') == 1);
 
             $('#editBrandForm').attr('action', "{{ url('admin/repair-price/brands') }}/" + id);
-            $('#editBrandModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editBrandModal')).show();
         });
 
         // Category Edit Modal Populate
@@ -1224,7 +1229,7 @@
             $('#edit_category_status').prop('checked', $(this).data('status') == 1);
 
             $('#editCategoryForm').attr('action', "{{ url('admin/repair-price/categories') }}/" + id);
-            $('#editCategoryModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editCategoryModal')).show();
         });
 
         // Price Edit Modal Populate
@@ -1242,7 +1247,7 @@
             $('#edit_price_availability_status').val($(this).data('availability-status'));
 
             $('#editPriceForm').attr('action', "{{ url('admin/repair-price/prices') }}/" + id);
-            $('#editPriceModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editPriceModal')).show();
         });
 
         // Device Edit Modal Populate
@@ -1256,7 +1261,7 @@
             $('#edit_device_status').prop('checked', $(this).data('status') == 1);
 
             $('#editDeviceForm').attr('action', "{{ url('admin/repair-price/devices') }}/" + id);
-            $('#editDeviceModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editDeviceModal')).show();
         });
 
         // Service Edit Modal Populate
@@ -1269,7 +1274,7 @@
             $('#edit_service_status').prop('checked', $(this).data('status') == 1);
 
             $('#editServiceForm').attr('action', "{{ url('admin/repair-price/services') }}/" + id);
-            $('#editServiceModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('editServiceModal')).show();
         });
     });
 </script>

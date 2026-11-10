@@ -397,7 +397,7 @@ class RepairPriceWebController extends Controller
 
     public function storePrice(Request $request)
     {
-        abort_unless(Gate::allows('repair_price.create'), 403, 'Unauthorized to create repair prices.');
+        abort_unless(Gate::any(['repair_price.create', 'repair_price.manage_prices']), 403, 'Unauthorized to create repair prices.');
 
         $validated = $request->validate([
             'repair_device_id' => 'required|exists:repair_devices,id',
@@ -437,7 +437,7 @@ class RepairPriceWebController extends Controller
 
     public function updatePrice(Request $request, $id)
     {
-        abort_unless(Gate::allows('repair_price.update'), 403, 'Unauthorized to update repair prices.');
+        abort_unless(Gate::any(['repair_price.update', 'repair_price.manage_prices']), 403, 'Unauthorized to update repair prices.');
 
         $price = RepairPrice::findOrFail($id);
 
@@ -496,7 +496,7 @@ class RepairPriceWebController extends Controller
 
     public function deletePrice($id)
     {
-        abort_unless(Gate::allows('repair_price.delete'), 403, 'Unauthorized to delete repair prices.');
+        abort_unless(Gate::any(['repair_price.delete', 'repair_price.manage_prices']), 403, 'Unauthorized to delete repair prices.');
 
         try {
             $price = RepairPrice::findOrFail($id);
