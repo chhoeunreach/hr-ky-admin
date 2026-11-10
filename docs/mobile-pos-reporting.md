@@ -54,3 +54,5 @@ The configured application MySQL connection refused connections during the local
 ## Admin-managed commission
 
 See [Commission administration](commission-settings.md) for per-service rates/conditions, global controls, role visibility/calculation permissions, audit history, and the additional migration. Saved invoice resources now return persisted commissions, while authorized reporting previews use current rules. Hidden values are redacted by the API rather than only hidden in Flutter.
+
+Business breakdown now returns `categories[].commission` for each of the five financial service categories, including Sales. Values use the same filtered/rounded calculation as the summary and are omitted when the current role cannot view commission. The Flutter table displays these server values alongside each category amount.
