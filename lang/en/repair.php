@@ -30,6 +30,8 @@ return [
     'choose_services' => 'Select at least one repair service.',
     'per_pair_prices' => 'Price for each model, category, and service',
     'per_pair_prices_help' => 'Enter separate costs, fees, and selling prices for every selected model and service. Each service belongs to the category shown.',
+    'price_split_help' => 'The service fee is always calculated automatically: selling price − part cost (e.g. 500 − 400 = 100). The part cost is the primary value and never changes automatically; without a selling price yet, a clean one is suggested with the part at about :part% of the sale.',
+    'auto_calculated' => 'auto',
     'select_models_and_services' => 'Select models and repair services above to enter their prices.',
     'only_selected_pair_prices' => 'Enter prices only for selected model and service combinations.',
     'prices_added_to_pairs' => 'Saved :count prices for :models models and :services repair services.',

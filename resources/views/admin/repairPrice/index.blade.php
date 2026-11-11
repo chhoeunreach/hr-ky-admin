@@ -76,6 +76,7 @@
     <!-- Filters Card -->
     @php
         $repairFiltersExpanded = request()->filled('brand_id') || request()->filled('device_id') || request()->filled('category_id');
+        $partSharePercent = (int) round((float) config('repair-pricing.part_share', 0.70) * 100);
     @endphp
     <div class="directory-filter-panel mb-4">
         @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'repairFilterCollapse', 'directoryExpanded' => $repairFiltersExpanded])
@@ -882,7 +883,7 @@
     <div class="modal fade repair-scroll-modal" id="editPriceModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
-                <form id="editPriceForm" method="post">
+                <form id="editPriceForm" method="post" data-price-group>
                     @csrf
                     @method('PUT')
                     <div class="modal-header">
@@ -927,16 +928,19 @@
                             </div>
 
                             <div class="col-md-4">
-                                <label class="form-label text-danger">{{ __('index.part_cost') }} ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_part_cost" name="part_cost">
+                                <label class="form-label text-danger">{{ __('index.part_cost') }} ($) <span class="text-muted fw-normal">{{ $partSharePercent }}%</span></label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_part_cost" name="part_cost" data-price-field="part_cost">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-warning">{{ __('index.service_fee') }} ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_service_fee" name="service_fee">
+                                <label class="form-label text-warning">{{ __('index.service_fee') }} ($) <span class="text-muted fw-normal">{{ __('repair.auto_calculated') }}</span></label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_service_fee" name="service_fee" data-price-field="service_fee" readonly tabindex="-1">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-primary required">{{ __('index.selling_price') }} ($) <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_selling_price" name="selling_price" required>
+                                <input type="number" step="0.01" min="0" class="form-control" id="edit_price_selling_price" name="selling_price" data-price-field="selling_price" required>
+                            </div>
+                            <div class="col-12">
+                                <p class="form-text mt-0 mb-0 text-primary"><i data-feather="zap" style="width:14px;height:14px;"></i> {{ __('repair.price_split_help', ['part' => $partSharePercent]) }}</p>
                             </div>
 
                             <div class="col-md-4">
@@ -1338,6 +1342,8 @@
         });
     });
 </script>
+<script>window.REPAIR_PRICING = {{ Illuminate\Support\Js::from(['partShare' => (float) config('repair-pricing.part_share', 0.70), 'priceStep' => (float) config('repair-pricing.price_step', 0.50)]) }};</script>
+<script src="{{ asset('assets/js/repair-price-auto-split.js') }}?v={{ filemtime(public_path('assets/js/repair-price-auto-split.js')) }}"></script>
 <script src="{{ asset('assets/js/repair-price-models.js') }}?v={{ filemtime(public_path('assets/js/repair-price-models.js')) }}"></script>
 <script src="{{ asset('assets/js/repair-price-workflow.js') }}?v={{ filemtime(public_path('assets/js/repair-price-workflow.js')) }}"></script>
 @include('admin.repairPrice.partials.form-behavior')
