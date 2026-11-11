@@ -7,6 +7,7 @@ final class ReportingRules
 {
     public const ALIASES = [
         'sell' => ['sell', 'sale', 'លក់', ''],
+        'sellsim' => ['sellsim', 'sell sim', 'sell_sim', 'sell-sim', 'sim sale', 'sim_sale', 'លក់ស៊ីម'],
         'material' => ['material', 'សម្ភារ'],
         'iron' => ['iron', 'scots', 'អ៊ុត'],
         'repair' => ['repair', 'ជួសជុល'],

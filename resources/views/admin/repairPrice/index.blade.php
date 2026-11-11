@@ -810,63 +810,66 @@
 @canany(['repair_price.create', 'repair_price.manage_prices'])
     <!-- ADD PRICE MODAL -->
     <div class="modal fade repair-scroll-modal" id="addPriceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <form action="{{ route('admin.repair-price.prices.store') }}" method="post">
+                <form action="{{ route('admin.repair-price.prices.store') }}" method="post" novalidate data-guided-price-form data-copied-label="{{ __('repair.copied_cost') }}">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">{{ __('index.add_repair_price') }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                @include('admin.repairPrice.partials.price-models')
-                                <input type="hidden" name="source_price_id" value="">
-                                <input type="hidden" name="copy_source_device_id" value="">
-                                <p class="form-text repair-copy-costs-message" hidden>{{ __('repair.costs_copied_privately') }}</p>
-                            </div>
-                            <div class="col-12">
-                                @include('admin.repairPrice.partials.price-services')
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('index.part_name') }}</label>
-                                <input type="text" class="form-control" name="part_name" placeholder="{{ __('repair.example_part') }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">{{ __('index.part_type') }}</label>
-                                <input type="text" class="form-control" name="part_type" placeholder="{{ __('repair.example_part_type') }}">
-                            </div>
-
-                            <div class="col-12">
-                                @include('admin.repairPrice.partials.model-price-fields')
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">{{ __('index.warranty_days') ?? __('index.warranty_period') }}</label>
-                                <input type="number" min="0" class="form-control" name="warranty_days" placeholder="{{ __('repair.example_days') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">{{ __('index.estimated_minutes') }}</label>
-                                <input type="number" min="0" class="form-control" name="estimated_minutes" placeholder="{{ __('repair.example_minutes') }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label required">{{ __('index.availability') }} <span class="text-danger">*</span></label>
-                                <select class="form-select" name="availability_status" required>
-                                    <option value="available" selected>{{ __('index.available') }}</option>
-                                    <option value="out_of_stock">{{ __('index.out_of_stock') }}</option>
-                                    <option value="pre_order">{{ __('index.pre_order') }}</option>
-                                </select>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">{{ __('repair.price_notes') }}</label>
-                                <textarea class="form-control" name="note" rows="2" maxlength="10000"></textarea>
-                            </div>
-                        </div>
+                        @include('admin.repairPrice.partials.price-workflow')
+                        <input type="hidden" name="source_price_id" value="">
+                        <input type="hidden" name="copy_source_device_id" value="">
+                        <p class="form-text repair-copy-costs-message" hidden>{{ __('repair.costs_copied_privately') }}</p>
+                        <section data-price-step="1" aria-label="{{ __('repair.service_parts') }}">
+                            <h6 tabindex="-1" class="repair-step-heading">{{ __('repair.choose_service_heading') }}</h6>
+                            @include('admin.repairPrice.partials.price-services')
+                            <div class="mt-3">@include('admin.repairPrice.partials.category-part-fields')</div>
+                        </section>
+                        <section data-price-step="2" aria-label="{{ __('repair.device_models_step') }}" hidden>
+                            <h6 tabindex="-1" class="repair-step-heading">{{ __('repair.choose_models_heading') }}</h6>
+                            @include('admin.repairPrice.partials.price-models')
+                        </section>
+                        <section data-price-step="3" aria-label="{{ __('repair.prices_step') }}" hidden>
+                            <h6 tabindex="-1" class="repair-step-heading">{{ __('repair.enter_prices_heading') }}</h6>
+                            @include('admin.repairPrice.partials.model-price-fields')
+                            <details class="repair-price-options mt-3">
+                                <summary>{{ __('repair.optional_price_details') }}</summary>
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-4">
+                                        <label class="form-label">{{ __('index.warranty_days') ?? __('index.warranty_period') }}</label>
+                                        <input type="number" min="0" class="form-control" name="warranty_days" placeholder="{{ __('repair.example_days') }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">{{ __('index.estimated_minutes') }}</label>
+                                        <input type="number" min="0" class="form-control" name="estimated_minutes" placeholder="{{ __('repair.example_minutes') }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label required">{{ __('index.availability') }} <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="availability_status" required>
+                                            <option value="available" selected>{{ __('index.available') }}</option>
+                                            <option value="out_of_stock">{{ __('index.out_of_stock') }}</option>
+                                            <option value="pre_order">{{ __('index.pre_order') }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">{{ __('repair.price_notes') }}</label>
+                                        <textarea class="form-control" name="note" rows="2" maxlength="10000"></textarea>
+                                    </div>
+                                </div>
+                            </details>
+                        </section>
+                        <section data-price-step="4" aria-label="{{ __('repair.review_step') }}" hidden>
+                            @include('admin.repairPrice.partials.price-review')
+                        </section>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer repair-workflow-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('index.cancel') }}</button>
-                        <button type="submit" class="btn btn-primary">{{ __('index.save') }}</button>
+                        <button type="button" class="btn btn-outline-secondary" data-price-back hidden>{{ __('repair.back') }}</button>
+                        <button type="button" class="btn btn-primary" data-price-next>{{ __('repair.continue') }}</button>
+                        <button type="submit" class="btn btn-primary" data-price-save hidden>{{ __('repair.save_prices') }}</button>
                     </div>
                 </form>
             </div>
@@ -1335,6 +1338,7 @@
         });
     });
 </script>
-<script src="{{ asset('assets/js/repair-price-models.js') }}"></script>
+<script src="{{ asset('assets/js/repair-price-models.js') }}?v={{ filemtime(public_path('assets/js/repair-price-models.js')) }}"></script>
+<script src="{{ asset('assets/js/repair-price-workflow.js') }}?v={{ filemtime(public_path('assets/js/repair-price-workflow.js')) }}"></script>
 @include('admin.repairPrice.partials.form-behavior')
 @endsection

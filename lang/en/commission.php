@@ -14,5 +14,5 @@ return [
     'history_help'=>'Saved invoice and payroll commissions stay unchanged. New transactions use the new rules; permitted report previews use current rules.',
     'save'=>'Save commission settings','saved'=>'Commission settings saved.','recent_changes'=>'Recent changes',
     'revision'=>'Revision','actor'=>'Changed by','date'=>'Date','no_changes'=>'No changes yet.',
-    'types'=>['sell'=>'Sell','material'=>'Material','iron'=>'Iron','repair'=>'Repair','buy_in'=>'Buy In','icloud_cus'=>'iCloud Cus'],
+    'types'=>['sellsim'=>'Sellsim (SIM sales)','sell'=>'Sell','material'=>'Material','iron'=>'Iron','repair'=>'Repair','buy_in'=>'Buy In','icloud_cus'=>'iCloud Cus'],
 ];

@@ -70,6 +70,10 @@ class RepairPriceWebController extends Controller
             $devices = RepairDevice::with('brand')->orderBy('name')->get();
             $categories = RepairCategory::orderBy('sort_order')->get();
             $services = RepairService::with('category')->orderBy('name')->get();
+            $categoryPartSuggestions = RepairPrice::query()
+                ->join('repair_services', 'repair_services.id', '=', 'repair_prices.repair_service_id')
+                ->select('repair_services.repair_category_id', 'repair_prices.part_name', 'repair_prices.part_type')
+                ->distinct()->get()->groupBy('repair_category_id');
             $brandsList = $paginate($catalog(RepairBrand::latest(), [
                 'brand_id' => [null, 'id'], 'device_id' => ['devices', 'id'],
                 'category_id' => ['devices.categories', 'repair_categories.id'],
@@ -143,6 +147,7 @@ class RepairPriceWebController extends Controller
                 'devices',
                 'categories',
                 'services',
+                'categoryPartSuggestions',
                 'filterParameters',
                 'canViewCost',
                 'canManageDevices',
@@ -563,6 +568,10 @@ class RepairPriceWebController extends Controller
             'pair_prices.*.*.part_cost' => 'nullable|numeric|min:0',
             'pair_prices.*.*.service_fee' => 'nullable|numeric|min:0',
             'pair_prices.*.*.selling_price' => 'required|numeric|min:0',
+            'category_parts' => 'sometimes|array',
+            'category_parts.*' => 'array:part_name,part_type',
+            'category_parts.*.part_name' => 'nullable|string|max:255',
+            'category_parts.*.part_type' => 'nullable|string|max:100',
             'part_name' => 'nullable|string|max:255',
             'part_type' => 'nullable|string|max:100',
             'part_cost' => 'nullable|numeric|min:0',
@@ -613,6 +622,11 @@ class RepairPriceWebController extends Controller
             }
         }
 
+        $selectedCategoryIds = RepairService::whereIn('id', $serviceIds)->pluck('repair_category_id')->unique()->all();
+        if (array_diff(array_keys($validated['category_parts'] ?? []), $selectedCategoryIds)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['category_parts' => __('repair.only_selected_category_parts')]);
+        }
+
         if (!empty($validated['source_price_id'])) {
             abort_unless(Gate::allows('repair_price.view'), 403, __('repair.unauthorized'));
         }
@@ -621,10 +635,22 @@ class RepairPriceWebController extends Controller
             $count = DB::transaction(function () use ($validated, $deviceIds, $serviceIds) {
                 // Lock models consistently so concurrent batch submissions cannot create duplicates.
                 $devices = RepairDevice::whereIn('id', $deviceIds)->orderBy('id')->lockForUpdate()->get();
+                $services = RepairService::whereIn('id', $serviceIds)->orderBy('id')->get();
+                $partsByService = [];
+                foreach ($services as $service) {
+                    $partsByService[$service->id] = array_replace([
+                        'part_name' => $validated['part_name'] ?? null,
+                        'part_type' => $validated['part_type'] ?? null,
+                    ], $validated['category_parts'][$service->repair_category_id] ?? []);
+                }
                 $conflicts = RepairPrice::with(['device:id,name', 'service:id,name'])
                     ->whereIn('repair_device_id', $deviceIds)
-                    ->whereIn('repair_service_id', $serviceIds)
-                    ->where('part_type', $validated['part_type'] ?? null)->get();
+                    ->where(function ($query) use ($services, $partsByService) {
+                        foreach ($services as $service) {
+                            $query->orWhere(fn ($pair) => $pair->where('repair_service_id', $service->id)
+                                ->where('part_type', $partsByService[$service->id]['part_type']));
+                        }
+                    })->get();
                 if ($conflicts->isNotEmpty()) {
                     throw new \RuntimeException(__('repair.price_models_conflict', [
                         'models' => $conflicts->map(fn ($price) => $price->device->name.(count($serviceIds) > 1 ? ' — '.$price->service->name : ''))->unique()->implode(', '),
@@ -637,12 +663,11 @@ class RepairPriceWebController extends Controller
                 $source = !empty($data['source_price_id']) && !Gate::allows('repair_price.view_cost')
                     ? RepairPrice::findOrFail($data['source_price_id']) : null;
                 unset($data['repair_device_ids'], $data['repair_device_id'], $data['repair_category_id'], $data['source_price_id'],
-                    $data['model_prices'], $data['per_model_pricing'], $data['repair_service_ids'], $data['pair_prices'], $data['per_pair_pricing']);
-                $services = RepairService::whereIn('id', $serviceIds)->orderBy('id')->get();
+                    $data['category_parts'], $data['model_prices'], $data['per_model_pricing'], $data['repair_service_ids'], $data['pair_prices'], $data['per_pair_pricing']);
                 foreach ($devices as $device) {
                     foreach ($services as $service) {
                         $amounts = $validated['pair_prices'][$device->id][$service->id] ?? $validated['model_prices'][$device->id] ?? [];
-                        $modelData = array_replace($data, $amounts);
+                        $modelData = array_replace($data, $partsByService[$service->id], $amounts);
                         $modelData['repair_service_id'] = $service->id;
                         $modelData['part_cost'] = $modelData['part_cost'] ?? 0;
                         $modelData['service_fee'] = $modelData['service_fee'] ?? 0;

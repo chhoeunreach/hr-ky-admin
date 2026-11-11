@@ -51,12 +51,19 @@ function setup({context = '', viewCost = true} = {}) {
             '.repair-services-all': allServices, '.repair-services-clear': clearServices})[selector]});
     const body = {children: [], append(row) {this.children.push(row);}, replaceChildren() {this.children = [];}};
     const rowTemplate = {content: {firstElementChild: priceRow()}};
+    const categoryRows = ['5', '6'].map(id => {
+        const values = Object.fromEntries(['part_name', 'part_type'].map(field => [field, {value: '', disabled: true, dataset: {partField: field}}]));
+        return {dataset: {categoryId: id}, hidden: true, fields: values, querySelectorAll: () => Object.values(values)};
+    });
+    const categoryParts = {hidden: true, querySelectorAll: () => categoryRows};
+
     const form = element({dataset: {}, elements: {namedItem: name => fields[name]},
         querySelector: selector => ({'.repair-price-model-picker': picker, '.repair-price-service-picker': servicePicker,
             '.repair-pair-price-body': body, '.repair-pair-price-template': rowTemplate,
-            '.repair-model-prices-empty': empty, '.repair-copy-costs-message': message})[selector],
+            '.repair-model-prices-empty': empty, '.repair-copy-costs-message': message, '.repair-category-part-fields': categoryParts})[selector],
         reset() {
             Object.values(fields).forEach(field => {field.value = '';});
+            categoryRows.forEach(row => Object.values(row.fields).forEach(field => {field.value = '';}));
             fields.availability_status.value = 'available';
             [...options, ...serviceOptions].forEach(option => {option.input.checked = false;});
         }});
@@ -65,7 +72,7 @@ function setup({context = '', viewCost = true} = {}) {
     vm.runInNewContext(source, {document: {getElementById: () => modal, querySelectorAll: () => triggers}});
     const row = (model, service) => body.children.find(row => row.dataset.modelId === model && row.dataset.serviceId === service);
     return {modal, form, picker, servicePicker, options, serviceOptions, fields, search, serviceSearch, category,
-        all, clear, allServices, clearServices, error, serviceError, count, serviceCount, body, message, row};
+        all, clear, allServices, clearServices, error, serviceError, count, serviceCount, body, message, row, categoryRows, categoryParts};
 }
 
 test('selecting two models and two services builds four prices with model, category, and service labels', () => {
@@ -196,4 +203,82 @@ test('both a model and a repair service are required before submitting', () => {
     prevented = false;
     env.form.fire('submit', {preventDefault() {prevented = true;}});
     assert.equal(prevented, false);
+});
+
+
+test('part names and quality types belong to selected categories and retain separate values', () => {
+    const env = setup();
+    env.modal.fire('show.bs.modal');
+    env.allServices.fire('click');
+    assert.equal(env.categoryParts.hidden, false);
+    env.categoryRows[0].fields.part_name.value = 'OLED display';
+    env.categoryRows[0].fields.part_type.value = 'Original';
+    env.categoryRows[1].fields.part_name.value = 'Battery pack';
+    env.categoryRows[1].fields.part_type.value = 'Premium';
+    env.serviceOptions[0].input.checked = false;
+    env.servicePicker.fire('change');
+    assert.equal(env.categoryRows[0].hidden, true);
+    assert.equal(env.categoryRows[0].fields.part_type.disabled, true);
+    env.serviceOptions[0].input.checked = true;
+    env.servicePicker.fire('change');
+    assert.equal(env.categoryRows[0].fields.part_name.value, 'OLED display');
+    assert.equal(env.categoryRows[1].fields.part_name.value, 'Battery pack');
+    assert.equal(env.categoryRows[1].fields.part_type.value, 'Premium');
+});
+
+test('copying fills source category part details without copying them into other categories', () => {
+    const env = setup();
+    env.modal.fire('show.bs.modal', {relatedTarget: {dataset: {priceTemplate: JSON.stringify(template)}}});
+    assert.equal(env.categoryRows[0].fields.part_name.value, 'OLED assembly');
+    assert.equal(env.categoryRows[0].fields.part_type.value, 'Original');
+    env.serviceOptions[1].input.checked = true;
+    env.servicePicker.fire('change');
+    assert.equal(env.categoryRows[1].fields.part_name.value, '');
+    assert.equal(env.categoryRows[1].fields.part_type.value, '');
+});
+
+test('category part details are recovered after validation without losing entered text', () => {
+    const env = setup();
+    env.form.fire('repair:restore-prices', {detail: {
+        repair_service_ids: ['8', '9'], category_parts: {
+            5: {part_name: 'Display', part_type: 'Original'}, 6: {part_name: 'Battery', part_type: 'Premium'},
+        },
+    }});
+    env.form.dataset.restoring = '1';
+    env.modal.fire('show.bs.modal');
+    assert.equal(env.categoryRows[0].fields.part_name.value, 'Display');
+    assert.equal(env.categoryRows[1].fields.part_type.value, 'Premium');
+});
+
+
+test('single-price mode selects only one model and service, while bulk mode retains multiple selections', () => {
+    const env = setup();
+    env.modal.fire('show.bs.modal');
+    env.form.fire('repair:selection-mode', {detail: 'single'});
+    env.options[0].input.checked = true;
+    env.picker.fire('change', {target: env.options[0].input});
+    env.options[1].input.checked = true;
+    env.picker.fire('change', {target: env.options[1].input});
+    assert.equal(env.options[0].input.checked, false);
+    assert.equal(env.options[1].input.checked, true);
+    env.serviceOptions[0].input.checked = true;
+    env.servicePicker.fire('change', {target: env.serviceOptions[0].input});
+    env.serviceOptions[1].input.checked = true;
+    env.servicePicker.fire('change', {target: env.serviceOptions[1].input});
+    assert.equal(env.serviceOptions[0].input.checked, false);
+    env.form.fire('repair:selection-mode', {detail: 'bulk'});
+    env.allServices.fire('click');
+    assert.equal(env.serviceOptions[0].input.checked, true);
+    assert.equal(env.serviceOptions[1].input.checked, true);
+});
+
+test('changing categories in single-price mode clears a service from the previous category', () => {
+    const env = setup();
+    env.modal.fire('show.bs.modal');
+    env.form.fire('repair:selection-mode', {detail: 'single'});
+    env.serviceOptions[0].input.checked = true;
+    env.servicePicker.fire('change', {target: env.serviceOptions[0].input});
+    env.category.value = '6';
+    env.category.fire('change');
+    assert.equal(env.serviceOptions[0].input.checked, false);
 });

@@ -22,13 +22,31 @@
     const template = form.querySelector('.repair-pair-price-template');
     const emptyPrices = form.querySelector('.repair-model-prices-empty');
     const copiedCosts = form.querySelector('.repair-copy-costs-message');
+    const categoryParts = form.querySelector('.repair-category-part-fields');
+    const categoryRows = categoryParts ? Array.from(categoryParts.querySelectorAll('.repair-category-part-row')) : [];
+    let selectionMode = 'bulk';
     const rows = new Map();
     let priceDefaults = {};
     let restoredPrices = {};
+    let restoredParts = {};
 
     function updateSelection() {
         const models = inputs.filter(input => input.checked && !input.disabled);
         const services = serviceInputs.filter(input => input.checked);
+        const categories = new Set(services.map(service => serviceOptions[serviceInputs.indexOf(service)].dataset.categoryId));
+        if (categoryParts) categoryParts.hidden = categories.size === 0;
+        categoryRows.forEach(row => {
+            const active = categories.has(row.dataset.categoryId);
+            row.hidden = !active;
+            row.querySelectorAll('[data-part-field]').forEach(input => {
+                input.disabled = !active;
+                if (active && !row.dataset.initialized) {
+                    const defaults = String(priceDefaults.repair_category_id) === row.dataset.categoryId ? priceDefaults : {};
+                    input.value = String(restoredParts[row.dataset.categoryId]?.[input.dataset.partField] ?? defaults[input.dataset.partField] ?? '');
+                }
+            });
+            if (active) row.dataset.initialized = '1';
+        });
         count.textContent = models.length + ' / ' + inputs.filter(input => !input.disabled).length;
         serviceCount.textContent = services.length + ' / ' + serviceInputs.length;
         if (models.length) error.hidden = true;
@@ -64,7 +82,7 @@
             }
             row.hidden = false;
             row.querySelectorAll('[data-price-field]').forEach(input => {
-                const privateCost = privateCosts && input.dataset.priceField !== 'selling_price';
+                const privateCost = privateCosts && ['part_cost', 'service_fee'].includes(input.dataset.priceField);
                 input.disabled = privateCost;
                 input.hidden = privateCost;
                 const message = input.parentElement.querySelector('[data-private-cost]');
@@ -72,6 +90,7 @@
             });
         }));
         copiedCosts.hidden = !(source.value && picker.dataset.canViewCost !== '1');
+        if (typeof CustomEvent !== 'undefined') form.dispatchEvent(new CustomEvent('repair:selection-updated'));
     }
 
     function filterModels() {
@@ -92,8 +111,14 @@
         });
     }
     function wirePicker(container, optionList, inputList, allSelector, clearSelector) {
-        container.addEventListener('change', updateSelection);
+        container.addEventListener('change', event => {
+            if (selectionMode === 'single' && event.target?.checked && inputList.includes(event.target)) {
+                inputList.forEach(input => {if (input !== event.target) input.checked = false;});
+            }
+            updateSelection();
+        });
         container.querySelector(allSelector).addEventListener('click', () => {
+            if (selectionMode === 'single') return;
             optionList.forEach((option, index) => {
                 if (!option.hidden && !inputList[index].disabled) inputList[index].checked = true;
             });
@@ -104,11 +129,29 @@
             updateSelection();
         });
     }
+    form.addEventListener('repair:selection-mode', event => {
+        selectionMode = event.detail;
+        if (selectionMode === 'single') {
+            [inputs, serviceInputs].forEach(list => {
+                const first = list.find(input => input.checked && !input.disabled);
+                list.forEach(input => {input.checked = input === first;});
+            });
+        }
+        updateSelection();
+    });
     wirePicker(picker, options, inputs, '.repair-models-all', '.repair-models-clear');
     wirePicker(servicePicker, serviceOptions, serviceInputs, '.repair-services-all', '.repair-services-clear');
     search.addEventListener('input', filterModels);
     serviceSearch.addEventListener('input', filterServices);
-    categoryFilter.addEventListener('change', filterServices);
+    categoryFilter.addEventListener('change', () => {
+        filterServices();
+        if (selectionMode === 'single' && categoryFilter.value) {
+            serviceOptions.forEach((option, index) => {
+                if (option.dataset.categoryId !== categoryFilter.value) serviceInputs[index].checked = false;
+            });
+            updateSelection();
+        }
+    });
     form.addEventListener('submit', event => {
         const hasModels = inputs.some(input => input.checked && !input.disabled);
         const hasServices = serviceInputs.some(input => input.checked);
@@ -121,6 +164,7 @@
     form.addEventListener('repair:restore-prices', event => {
         const previous = event.detail;
         restoredPrices = previous.pair_prices || {};
+        restoredParts = previous.category_parts || {};
         source.value = previous.source_price_id || '';
         sourceDevice.value = previous.copy_source_device_id || '';
         inputs.forEach(input => {input.checked = (previous.repair_device_ids || []).map(String).includes(input.value);});
@@ -139,6 +183,8 @@
             body.replaceChildren();
             priceDefaults = {};
             restoredPrices = {};
+            restoredParts = {};
+            categoryRows.forEach(row => {delete row.dataset.initialized;});
             const data = event.relatedTarget?.dataset.priceTemplate;
             if (data) {
                 priceDefaults = JSON.parse(data);

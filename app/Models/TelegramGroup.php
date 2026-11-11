@@ -29,6 +29,7 @@ class TelegramGroup extends Model
     public const EVENT_ADVANCE_SALARY_APPROVED = 'advance_salary_approved';
     public const EVENT_SELL_OUT_REPORT = 'sell_out_report';
     public const EVENT_SELL_OUT_SALE = 'sell_out_sale';
+    public const EVENT_SELL_OUT_SELLSIM = 'sell_out_sellsim';
     public const EVENT_SELL_OUT_UT = 'sell_out_ut';
     public const EVENT_SELL_OUT_MATERIAL = 'sell_out_material';
     public const EVENT_SELL_OUT_REPAIR = 'sell_out_repair';
@@ -95,6 +96,7 @@ class TelegramGroup extends Model
             self::EVENT_ADVANCE_SALARY_APPROVED => 'Advance Salary Approved',
             self::EVENT_SELL_OUT_REPORT => 'Sell Out Report',
             self::EVENT_SELL_OUT_SALE => 'Sell Out - លក់',
+            self::EVENT_SELL_OUT_SELLSIM => 'Sell Out - លក់ស៊ីម',
             self::EVENT_SELL_OUT_UT => 'Sell Out - អ៊ុត',
             self::EVENT_SELL_OUT_MATERIAL => 'Sell Out - សម្ភារ',
             self::EVENT_SELL_OUT_REPAIR => 'Sell Out - ជួសជុល',
@@ -108,6 +110,7 @@ class TelegramGroup extends Model
     {
         return [
             self::EVENT_SELL_OUT_SALE => 'លក់',
+            self::EVENT_SELL_OUT_SELLSIM => 'លក់ស៊ីម',
             self::EVENT_SELL_OUT_UT => 'អ៊ុត',
             self::EVENT_SELL_OUT_MATERIAL => 'សម្ភារ',
             self::EVENT_SELL_OUT_REPAIR => 'ជួសជុល',
@@ -122,6 +125,7 @@ class TelegramGroup extends Model
         $normalized = str_replace([' ', '-', '_'], '', $normalized);
 
         return match ($normalized) {
+            'លក់ស៊ីម', 'sellsim', 'simsale' => self::EVENT_SELL_OUT_SELLSIM,
             'អ៊ុត', 'ut' => self::EVENT_SELL_OUT_UT,
             'សម្ភារ', 'material', 'materials', 'accessory', 'accessories' => self::EVENT_SELL_OUT_MATERIAL,
             'ជួសជុល', 'repair', 'fix', 'service' => self::EVENT_SELL_OUT_REPAIR,

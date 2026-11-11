@@ -18,7 +18,7 @@ final class MobileReportingService
             'branch_name' => ['nullable','string','max:255'],
             'seller_name' => ['nullable','string','max:255'],
             'search' => ['nullable','string','max:160'],
-            'type' => ['nullable','in:all,sell,material,iron,repair,buy_in'],
+            'type' => ['nullable','in:all,sell,sellsim,material,iron,repair,buy_in'],
             'report_status' => ['nullable','in:all,qualified,failed,not_applicable'],
             'commission_mode' => ['nullable','in:with_conditions,without_conditions'],
             'page' => ['nullable','integer','min:1'],
@@ -69,7 +69,7 @@ final class MobileReportingService
             COALESCE(SUM(CASE WHEN type = 'sell' THEN total_qty ELSE 0 END),0) AS quantity,
             COALESCE(SUM(CASE WHEN type = 'sell' AND report_status = 'qualified' THEN 1 ELSE 0 END),0) AS qualified,
             COALESCE(SUM(CASE WHEN type = 'sell' AND report_status = 'failed' THEN 1 ELSE 0 END),0) AS failed,
-            COALESCE(SUM(CASE WHEN type IN ('sell','material','iron','repair') THEN total_amount ELSE 0 END),0) AS sales_amount,
+            COALESCE(SUM(CASE WHEN type IN ('sell','sellsim','material','iron','repair') THEN total_amount ELSE 0 END),0) AS sales_amount,
             COALESCE(SUM(report_commission),0) AS commission,
             COALESCE(SUM(total_qty),0) AS module_quantity,
             COALESCE(SUM(total_amount),0) AS module_amount,
@@ -77,7 +77,7 @@ final class MobileReportingService
             COALESCE(SUM(CASE WHEN report_status = 'failed' THEN 1 ELSE 0 END),0) AS module_failed")->first();
         $summary = (array) $stats;
         foreach ($summary as $key => $value) $summary[$key] = in_array($key, ['sales_amount','commission','module_amount']) ? round((float)$value, 2) : (int)$value;
-        foreach (['material','iron','repair','buy_in'] as $type) $summary[$type.'_amount'] = round((float)($categories[$type]->amount ?? 0),2);
+        foreach (['material','iron','repair','buy_in','sellsim'] as $type) $summary[$type.'_amount'] = round((float)($categories[$type]->amount ?? 0),2);
         if (!$policy['visible']) foreach (['commission','qualified','failed','module_qualified','module_failed'] as $key) unset($summary[$key]);
         $summary['gross_profit'] = null;
         $summary['gross_profit_available'] = false;
@@ -93,7 +93,7 @@ final class MobileReportingService
             'data' => array_map(fn ($r) => $this->transaction($r,$policy['visible']), $paginator->items()),
             'meta' => ['current_page' => $paginator->currentPage(), 'per_page' => $size, 'total' => $paginator->total(), 'last_page' => $paginator->lastPage()],
             'summary' => $summary,
-            'categories' => collect(['sell','material','iron','repair','buy_in'])->map(fn ($type) => [
+            'categories' => collect(['sell','material','iron','repair','buy_in','sellsim'])->map(fn ($type) => [
                 'type' => $type, 'transactions' => (int)($categories[$type]->transactions ?? 0),
                 'quantity' => (int)($categories[$type]->quantity ?? 0), 'amount' => round((float)($categories[$type]->amount ?? 0),2),
                 ...($policy['visible'] ? ['commission'=>round((float)($categories[$type]->commission ?? 0),2)] : []),
@@ -101,9 +101,9 @@ final class MobileReportingService
             ])->all(),
             'chart' => $this->chart($query, $from, $to, $filters),
             'filters' => $filters,
-            'options' => ['branches' => $branches, 'employees' => $employees, 'types' => ['sell','material','iron','repair','buy_in'], 'statuses' => ['qualified','failed','not_applicable']],
+            'options' => ['branches' => $branches, 'employees' => $employees, 'types' => ['sell','material','iron','repair','buy_in','sellsim'], 'statuses' => ['qualified','failed','not_applicable']],
             // Same own-record scope and create entitlement as the existing authenticated API.
-            'permissions' => ['scope' => 'own_reports', 'can_create' => true, 'modules' => ['sell','material','iron','repair','buy_in']],
+            'permissions' => ['scope' => 'own_reports', 'can_create' => true, 'modules' => ['sell','material','iron','repair','buy_in','sellsim']],
             'capabilities' => ['gross_profit' => false, 'operational_status' => false, 'payment_status' => false, 'repair_orders' => false],
             'currency_symbol' => (\Illuminate\Support\Facades\Cache::get('payment_currency_symbol') ?? \App\Models\PaymentCurrency::query()->value('symbol') ?? ''),
             'business_name' => $filters['branch_name'] ?? $request->user()->branch?->name ?? 'KNEAYERNG',
@@ -126,7 +126,7 @@ final class MobileReportingService
         if (!empty($f['branch_name'])) $q->where('r.branch_name',$f['branch_name']);
         if (!empty($f['seller_name'])) $q->where('r.seller_name',$f['seller_name']);
         if (($f['type'] ?? 'all') !== 'all') $q->whereRaw('('.ReportingRules::typeSql('r.service_type').') = ?',[$f['type']]);
-        else $q->whereRaw('('.ReportingRules::typeSql('r.service_type').") IN ('sell','material','iron','repair','buy_in')");
+        else $q->whereRaw('('.ReportingRules::typeSql('r.service_type').") IN ('sell','sellsim','material','iron','repair','buy_in')");
         if (!empty($f['search'])) {
             $term = '%'.trim($f['search']).'%';
             $q->where(function ($search) use ($term) {
@@ -144,7 +144,7 @@ final class MobileReportingService
     {
         // Aggregate by day in SQL, then bucket at most 3661 scalar rows, never invoices.
         $quantity = ($f['type'] ?? 'all') === 'all' ? "CASE WHEN type = 'sell' THEN total_qty ELSE 0 END" : 'total_qty';
-        $days = (clone $q)->selectRaw("DATE(created_at) AS day, SUM(CASE WHEN type IN ('sell','material','iron','repair') THEN total_amount ELSE 0 END) AS amount, SUM(CASE WHEN type = 'buy_in' THEN total_amount ELSE 0 END) AS buy_in_amount, SUM($quantity) AS quantity")->groupByRaw('DATE(created_at)')->get()->keyBy('day');
+        $days = (clone $q)->selectRaw("DATE(created_at) AS day, SUM(CASE WHEN type IN ('sell','sellsim','material','iron','repair') THEN total_amount ELSE 0 END) AS amount, SUM(CASE WHEN type = 'buy_in' THEN total_amount ELSE 0 END) AS buy_in_amount, SUM($quantity) AS quantity")->groupByRaw('DATE(created_at)')->get()->keyBy('day');
         $bucket = $f['bucket'] ?? ($from->diffInDays($to) > 90 ? 'month' : ($from->diffInDays($to) > 31 ? 'week' : 'day'));
         $points = [];
         for ($day = $from->copy(); $day->lte($to); $day->addDay()) {

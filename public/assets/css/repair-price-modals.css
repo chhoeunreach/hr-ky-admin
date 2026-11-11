@@ -32,3 +32,50 @@
 .repair-scroll-modal .repair-price-service-option {
     display: block;
 }
+
+/* Guided price setup: a focused task at each step. */
+#addPriceModal .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--bs-body-bg, #f8fafc); }
+#addPriceModal .modal-header h5 { margin: 0; }
+.repair-entry-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.repair-entry-mode { text-align: left; border: 1px solid #d8e0ea; background: var(--bs-body-bg, #fff); color: inherit; border-radius: 10px; padding: 12px 16px; }
+.repair-entry-mode strong, .repair-entry-mode span { display: block; }
+.repair-entry-mode span { color: #64748b; font-size: 12px; margin-top: 4px; }
+.repair-entry-mode.is-active { border-color: #2563eb; background: rgba(37,99,235,.09); box-shadow: 0 0 0 1px #2563eb; }
+.repair-workflow-steps { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+.repair-workflow-steps button { border: 0; border-bottom: 2px solid #e2e8f0; background: none; color: #64748b; padding: 10px 4px; width: 100%; text-align: left; font-size: 13px; }
+.repair-workflow-steps button span { display: inline-flex; justify-content: center; align-items: center; width: 24px; height: 24px; border-radius: 50%; background: #e2e8f0; margin-right: 6px; }
+.repair-workflow-steps button[aria-current] { color: #1d4ed8; border-color: #2563eb; font-weight: 600; }
+.repair-workflow-steps button[aria-current] span { background: #2563eb; color: #fff; }
+.repair-workflow-context { padding: 4px 0 18px; }
+.repair-step-heading { margin-bottom: 16px; font-size: 17px; }
+.repair-entry-single .repair-models-all, .repair-entry-single .repair-services-all { display: none; }
+.repair-entry-single .repair-price-model-picker .form-text { display: none; }
+.repair-price-options { border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
+.repair-price-options summary { cursor: pointer; font-weight: 500; }
+.repair-review-table { font-size: 12px; }
+.repair-review-table th { white-space: nowrap; }
+.repair-review-details { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 18px; }
+.repair-review-details dt { color: #64748b; font-size: 12px; font-weight: 400; }
+.repair-review-details dd { margin: 3px 0; overflow-wrap: anywhere; }
+.repair-review-details > div:last-child { grid-column: 1 / -1; }
+.repair-workflow-footer { background: var(--bs-body-bg, #f8fafc); }
+.repair-workflow-footer .btn-primary { background: var(--primary-color, #2563eb); border: 1px solid var(--primary-color, #2563eb); color: #fff; }
+.repair-step-heading:focus, .repair-review-heading h6:focus { outline: none; }
+.repair-entry-mode:focus-visible, .repair-workflow-steps button:focus-visible { outline: 2px solid #2563eb; outline-offset: 3px; }
+#addPriceModal .repair-model-price-fields .table { min-width: 800px; }
+#addPriceModal .repair-model-price-fields [data-pair-model] { min-width: 140px; }
+#addPriceModal .repair-model-price-fields [data-pair-service] { min-width: 160px; }
+#addPriceModal .repair-review-table { min-width: 950px; }
+.repair-workflow-footer [data-bs-dismiss] { margin-right: auto; }
+#addPriceModal [data-price-step] .repair-price-model-option,
+#addPriceModal [data-price-step] .repair-price-service-option { padding: 9px 12px 9px 32px; margin: 0; border-radius: 6px; }
+#addPriceModal [data-price-step] .form-check:hover { background: rgba(100,116,139,.07); }
+@media (max-width: 575.98px) {
+    .repair-entry-modes { gap: 8px; }
+    .repair-entry-mode { padding: 10px; }
+    .repair-entry-mode span { font-size: 11px; }
+    .repair-workflow-steps { gap: 4px; }
+    .repair-workflow-steps button { font-size: 11px; text-align: center; }
+    .repair-workflow-steps button span { display: flex; margin: 0 auto 5px; }
+    .repair-review-details { grid-template-columns: 1fr 1fr; }
+}

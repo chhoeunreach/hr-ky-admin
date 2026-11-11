@@ -65,6 +65,7 @@ class SellStaffReportController extends Controller
                 ->distinct()
                 ->orderBy('service_type')
                 ->pluck('service_type'))
+            ->map(fn ($type) => \App\Services\SellOut\ReportingRules::canonical($type) === 'sellsim' ? 'លក់ស៊ីម' : $type)
             ->filter()
             ->unique()
             ->values();
@@ -469,6 +470,9 @@ class SellStaffReportController extends Controller
                 });
             })
             ->when($filterData['service_type'], function ($query, $type) {
+                if (\App\Services\SellOut\ReportingRules::canonical($type) === 'sellsim') {
+                    return $query->whereRaw('('.\App\Services\SellOut\ReportingRules::typeSql('service_type').') = ?', ['sellsim']);
+                }
                 $query->where(function ($query) use ($type) {
                     $query->where('service_type', $type);
 

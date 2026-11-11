@@ -13,7 +13,7 @@ final class CommissionSettingsService
     public static function defaults(): array
     {
         $rules = [];
-        foreach (['sell','material','iron','repair','buy_in','icloud_cus'] as $type) {
+        foreach (['sell','material','iron','repair','buy_in','icloud_cus','sellsim'] as $type) {
             $rules[$type] = [
                 'enabled'=>in_array($type,['sell','material','iron','repair'],true),
                 'rate'=>ReportingRules::RATES[$type] ?? 0,

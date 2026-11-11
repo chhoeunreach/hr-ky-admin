@@ -206,6 +206,46 @@ class RepairPriceManagementTest extends TestCase
             ->assertSee(__('repair.per_pair_prices'))->assertSee('data-pair-category', false);
     }
 
+    public function test_batch_part_names_and_qualities_follow_each_selected_category(): void
+    {
+        $data = $this->multiServicePayload();
+        $data['category_parts'] = [
+            1 => ['part_name' => 'OLED display', 'part_type' => 'Original'],
+            2 => ['part_name' => 'Battery pack', 'part_type' => 'Premium'],
+        ];
+        $this->post('/_test/repair-prices', $data)->assertSessionHas('success');
+        foreach ([1, 2] as $model) {
+            $this->assertDatabaseHas('repair_prices', ['repair_device_id' => $model, 'repair_service_id' => 1, 'part_name' => 'OLED display', 'part_type' => 'Original']);
+            $this->assertDatabaseHas('repair_prices', ['repair_device_id' => $model, 'repair_service_id' => 2, 'part_name' => 'Battery pack', 'part_type' => 'Premium']);
+        }
+        $this->abilities[] = 'repair_price.view';
+        $this->get('/_test/repair-management')->assertOk()
+            ->assertSee('name="category_parts[1][part_name]"', false)
+            ->assertSee('name="category_parts[2][part_type]"', false)
+            ->assertViewHas('categoryPartSuggestions', fn ($groups) => $groups->get(1)->pluck('part_name')->unique()->all() === ['OLED display']
+                && $groups->get(2)->pluck('part_type')->unique()->all() === ['Premium']);
+        // A different quality is a new price variant; matching category qualities conflict atomically.
+        $data['category_parts'][1]['part_type'] = 'Aftermarket';
+        $data['category_parts'][2]['part_type'] = 'Standard';
+        $this->post('/_test/repair-prices', $data)->assertSessionHas('success');
+        $this->assertDatabaseCount('repair_prices', 8);
+        $this->post('/_test/repair-prices', $data)->assertSessionHas('danger');
+        $this->assertDatabaseCount('repair_prices', 8);
+    }
+
+    public function test_category_part_details_reject_unselected_categories_and_invalid_qualities(): void
+    {
+        $data = $this->multiServicePayload();
+        $data['category_parts'] = [999 => ['part_name' => 'Unexpected', 'part_type' => 'Original']];
+        $this->post('/_test/repair-prices', $data)->assertSessionHasErrors('category_parts');
+        $data['category_parts'] = [1 => ['part_type' => str_repeat('a', 101)]];
+        $this->post('/_test/repair-prices', $data)->assertSessionHasErrors('category_parts.1.part_type');
+        $data['category_parts'] = [1 => ['part_name' => ['invalid']]];
+        $this->post('/_test/repair-prices', $data)->assertSessionHasErrors('category_parts.1.part_name');
+        $this->assertDatabaseCount('repair_prices', 0);
+        $this->assertDatabaseCount('repair_category_device', 0);
+    }
+
     public function test_multi_service_missing_invalid_and_unselected_pairs_are_rejected_without_partial_saves(): void
     {
         $data = $this->multiServicePayload();
@@ -607,6 +647,10 @@ class RepairPriceManagementTest extends TestCase
         foreach (['Price', 'Device', 'Service', 'Brand', 'Category', 'Catalogtypes', 'Catalogseries'] as $entity) {
             $response->assertSee('id="add'.$entity.'Modal"', false)->assertSee('id="edit'.$entity.'Modal"', false);
         }
+        $response->assertSee('data-guided-price-form', false)
+            ->assertSee('data-entry-mode="single"', false)->assertSee('data-entry-mode="bulk"', false)
+            ->assertSee('data-price-step="4"', false)->assertSee('data-review-rows', false)
+            ->assertSee(__('repair.review_heading'))->assertSee(__('repair.optional_price_details'));
         $this->abilities = ['repair_price.view'];
         $response = $this->get('/_test/repair-management')->assertOk();
         foreach (['Price', 'Device', 'Service', 'Brand', 'Category', 'Catalogtypes', 'Catalogseries'] as $entity) {

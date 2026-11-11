@@ -101,6 +101,25 @@ class MobilePosReportingTest extends TestCase
         return '/api/sell-out-reports?'.http_build_query($query + ['paginated'=>1,'date_from'=>'2026-11-09','date_to'=>'2026-11-09']);
     }
 
+    public function test_sellsim_is_a_distinct_sell_type_in_both_languages_and_reporting(): void
+    {
+        foreach (['Sellsim', 'Sell Sim', 'sell_sim', 'sell-sim', 'SIM Sale', 'លក់ស៊ីម'] as $label) {
+            $this->assertSame('sellsim', ReportingRules::canonical($label));
+            $this->assertSame(\App\Models\TelegramGroup::EVENT_SELL_OUT_SELLSIM, \App\Models\TelegramGroup::sellOutEventKeyForServiceType($label));
+        }
+        $this->assertSame('លក់ស៊ីម', \App\Models\TelegramGroup::sellOutEventOptions()[\App\Models\TelegramGroup::EVENT_SELL_OUT_SELLSIM]);
+        $this->record('Sellsim', 2, 12);
+        $this->record('លក់ស៊ីម', 3, 18);
+        $response = $this->getJson($this->url(['type' => 'sellsim']))->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('summary.module_quantity', 5)->assertJsonPath('summary.module_amount', 30)
+            ->assertJsonPath('summary.sellsim_amount', 30)->assertJsonPath('summary.sales_amount', 30)
+            ->assertJsonPath('summary.commission', 0)->assertJsonPath('data.0.type', 'sellsim');
+        $this->assertContains('sellsim', $response->json('options.types'));
+        $this->assertContains('sellsim', $response->json('permissions.modules'));
+        $this->getJson($this->url())->assertOk()->assertJsonPath('summary.sales_amount', 252)
+            ->assertJsonPath('summary.total_transactions', 8)->assertJsonPath('summary.reports', 2);
+    }
+
     public function test_summary_is_scoped_deduplicated_and_excludes_purchase_spending(): void
     {
         DB::table('sell_out_report_photos')->insert([['sell_out_report_id'=>1],['sell_out_report_id'=>1]]);

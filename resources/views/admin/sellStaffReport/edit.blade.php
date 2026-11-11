@@ -50,7 +50,7 @@
                             <label class="form-label">Report Type</label>
                             <select name="service_type" class="form-select">
                                 @foreach(\App\Models\TelegramGroup::sellOutEventOptions() as $eventKey => $label)
-                                    <option value="{{ $label }}" {{ old('service_type', $report->service_type) === $label ? 'selected' : '' }}>{{ $label }}</option>
+                                    <option value="{{ $label }}" {{ (old('service_type', $report->service_type) === $label || ($eventKey === \App\Models\TelegramGroup::EVENT_SELL_OUT_SELLSIM && \App\Services\SellOut\ReportingRules::canonical((string) old('service_type', $report->service_type)) === 'sellsim')) ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>

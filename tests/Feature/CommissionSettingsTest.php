@@ -28,6 +28,17 @@ class CommissionSettingsTest extends MobilePosReportingTest
         return $c;
     }
 
+    public function test_sim_sales_commission_starts_disabled_and_can_be_configured_separately(): void
+    {
+        $this->assertFalse(CommissionSettingsService::defaults()['rules']['sellsim']['enabled']);
+        $this->assertSame(0, CommissionSettingsService::defaults()['rules']['sellsim']['rate']);
+        $this->configure(['rules' => ['sellsim' => ['enabled' => true, 'rate' => 0.75, 'basis' => 'invoice', 'require_phone' => false]]]);
+        DB::table('sell_out_reports')->where('id', 1)->update(['service_type' => 'Sellsim']);
+        $this->getJson($this->reports(['type' => 'sellsim']))->assertOk()
+            ->assertJsonPath('summary.commission', 0.75)->assertJsonPath('commission_policy.rules.sellsim.rate', 0.75);
+        $this->assertSame(0.75, ReportingRules::calculate('លក់ស៊ីម', 1, 12, '', 'full_timer'));
+    }
+
     private function reports(array $query = []): string
     {
         return '/api/sell-out-reports?'.http_build_query($query + ['paginated'=>1,'date_from'=>'2026-11-09','date_to'=>'2026-11-09']);
