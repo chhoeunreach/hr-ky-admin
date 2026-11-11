@@ -1,4 +1,3 @@
-<div id="noticeDirectoryMessage" class="alert d-none" role="status"></div>
 <div class="modal fade" id="noticeFormModal" tabindex="-1" aria-labelledby="noticeFormModalTitle" aria-hidden="true"
      data-add-title="{{ __('index.create_notice') }}" data-edit-title="{{ __('index.edit_notice') }}"
      data-failed="{{ __('notice.list_failed') }}" data-saved-refresh-failed="{{ __('notice.refresh_failed') }}" data-loading="{{ __('index.loading') }}">
@@ -9,7 +8,7 @@
         </div>
         <div class="modal-body p-0">
             <div class="p-4" id="noticeFormLoading" role="status">{{ __('index.loading') }}</div>
-            <iframe id="noticeFormFrame" title="{{ __('index.notice') }}" style="width:100%;height:75vh;border:0" hidden></iframe>
+            <iframe id="noticeFormFrame" title="{{ __('index.notice') }}" style="width:100%;height:100%;border:0" hidden></iframe>
         </div>
     </div></div>
 </div>

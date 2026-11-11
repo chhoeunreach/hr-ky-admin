@@ -5,6 +5,7 @@ namespace App\Models\RepairPrice;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class RepairDevice extends Model
 {
@@ -33,6 +34,11 @@ class RepairDevice extends Model
     public function series(): BelongsTo
     {
         return $this->belongsTo(RepairDeviceSeries::class, 'repair_device_series_id');
+    }
+
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(RepairCategory::class, 'repair_category_device');
     }
 
     public function prices(): HasMany

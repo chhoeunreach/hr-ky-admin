@@ -16,7 +16,7 @@ function setup(confirmed = false) {
     const shown = [];
     const submissions = [];
     const forms = new Map();
-    const document = {getElementById: id => forms.get(id) || ({id})};
+    const document = {getElementById: id => forms.get(id) || ({id, dataset: {}})};
     const history = [];
     const window = {location: {href: 'https://hr.kytech.info/admin/repair-price?brand_id=1'}, history: {replaceState: (_, __, url) => history.push(String(url))}};
     function $(selector) {
@@ -26,9 +26,11 @@ function setup(confirmed = false) {
         const element = elements.get(selector);
         return {
             on: (event, callback) => {handlers[selector + ':' + event] = callback;},
-            val: value => {if (value === undefined) return element.value; element.value = value;},
-            attr: (key, value) => {element.attrs[key] = value;},
-            prop: (key, value) => {element.props[key] = value;},
+            val(value) {if (value === undefined) return element.value; element.value = value; return this;},
+            attr(key, value) {element.attrs[key] = value; return this;},
+            prop(key, value) {element.props[key] = value; return this;},
+            each() {return this;},
+            trigger() {return this;},
             // Deliberately omit the jQuery modal plugin, as in the actual layout.
         };
     }

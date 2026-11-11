@@ -14,6 +14,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class RepairPriceRepository
@@ -65,7 +66,7 @@ class RepairPriceRepository
 
     public function devices(Request $request): LengthAwarePaginator
     {
-        return RepairDevice::with(['brand', 'deviceType', 'series'])
+        return RepairDevice::with(['brand', 'deviceType', 'series', 'categories'])
             ->where('status', true)
             ->when($request->filled('brand_id'), fn ($query) => $query->where('repair_brand_id', $request->brand_id))
             ->when($request->filled('brand'), fn ($query) => $query->whereHas('brand', fn ($brand) => $brand->where('slug', $request->brand)))
@@ -111,13 +112,26 @@ class RepairPriceRepository
 
     public function storeDevice(array $data): RepairDevice
     {
-        return RepairDevice::create($data)->load(['brand', 'deviceType', 'series']);
+        return DB::transaction(function () use ($data) {
+            $categoryIds = $data['category_ids'] ?? [];
+            unset($data['category_ids']);
+            $device = RepairDevice::create($data);
+            $device->categories()->sync($categoryIds);
+            return $device->load(['brand', 'deviceType', 'series', 'categories']);
+        });
     }
 
     public function updateDevice(RepairDevice $device, array $data): RepairDevice
     {
-        $device->update($data);
-        return $device->fresh(['brand', 'deviceType', 'series']);
+        return DB::transaction(function () use ($device, $data) {
+            $categoryIds = $data['category_ids'] ?? null;
+            unset($data['category_ids']);
+            $device->update($data);
+            if ($categoryIds !== null) {
+                $device->categories()->sync($categoryIds);
+            }
+            return $device->fresh(['brand', 'deviceType', 'series', 'categories']);
+        });
     }
 
     public function deleteDevice(RepairDevice $device): bool

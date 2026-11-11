@@ -42,6 +42,8 @@ class NoticeController extends Controller
                 'branch_id' => $request->branch_id ?? null,
                 'is_active' => $request->input('is_active'),
                 'search' => $request->input('search'),
+                'sort' => $request->input('sort', 'published'),
+                'direction' => $request->input('direction', 'desc'),
                 'per_page' => in_array((string) $request->input('per_page'), ['25', '50', '100', '200', 'all'], true) ? (string) $request->input('per_page') : '25',
             ];
 

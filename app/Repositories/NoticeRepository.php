@@ -30,7 +30,11 @@ class NoticeRepository{
                     ->orWhereHas('branch', fn ($b) => $b->where('name', 'like', $search))
                     ->orWhereHas('noticeReceiversDetail.employee', fn ($u) => $u->where('name', 'like', $search)));
             })
-            ->orderByDesc('notice_publish_date')->orderByDesc('id');
+;
+        $sorts = ['title' => 'title', 'published' => 'notice_publish_date', 'status' => 'is_active'];
+        $sort = $sorts[$filterParameters['sort'] ?? 'published'] ?? 'notice_publish_date';
+        $direction = ($filterParameters['direction'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
+        $query->orderBy($sort, $direction)->orderByDesc('id');
         $size = (string) ($filterParameters['per_page'] ?? '25');
         if (!in_array($size, ['25', '50', '100', '200', 'all'], true)) $size = '25';
         return $query->paginate($size === 'all' ? max(1, (clone $query)->count()) : (int) $size);

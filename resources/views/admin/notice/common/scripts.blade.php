@@ -12,7 +12,10 @@
         if ($('#noticeDescription').length && typeof tinymce !== 'undefined') {
             tinymce.init({
                 selector: '#noticeDescription',
-                height: 520,
+                height: Math.max(320, Math.min(620, window.innerHeight - 270)),
+                min_height: 300,
+                toolbar_mode: 'sliding',
+                resize: true,
                 menubar: false,
                 branding: false,
                 paste_data_images: true,
@@ -159,7 +162,7 @@
             })
         })
 
-        $('body').on('click', '#showNoticeDescription', function (event) {
+        $('body').on('click', '[data-notice-description]', function (event) {
             event.preventDefault();
             let url = $(this).data('href');
             $.get(url, function (data) {

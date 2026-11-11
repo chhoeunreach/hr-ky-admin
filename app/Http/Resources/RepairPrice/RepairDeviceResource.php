@@ -14,6 +14,7 @@ class RepairDeviceResource extends JsonResource
             'name' => $this->name,
             'model_number' => $this->model_number,
             'image' => $this->image,
+            'categories' => RepairCategoryResource::collection($this->whenLoaded('categories')),
             'brand' => $this->whenLoaded('brand', fn () => new RepairBrandResource($this->brand)),
             'device_type' => $this->whenLoaded('deviceType', fn () => [
                 'id' => $this->deviceType->id,

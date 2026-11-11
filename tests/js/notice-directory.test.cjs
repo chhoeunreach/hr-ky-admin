@@ -35,11 +35,15 @@ function setup(success = true) {
 
 test('add and edit use the modal without navigating away from the list', () => {
     const env = setup();
-    const trigger = {href: 'http://localhost/admin/notices/42/edit'};
+    const trigger = {dataset: {url: 'http://localhost/admin/notices/42/edit'}};
     env.events.click({preventDefault() {}, target: {closest: selector => selector === '[data-open-notice-form]' ? trigger : null}});
     assert.equal(env.frame.src, 'http://localhost/admin/notices/42/edit?notice_modal=1');
     assert.equal(env.elements.noticeFormModalTitle.textContent, 'Edit Notice');
     assert.ok(env.calls.some(call => call[0] === 'show'));
+    const add = {href: 'http://localhost/admin/notices/create'};
+    env.events.click({preventDefault() {}, target: {closest: selector => selector === '[data-open-notice-form]' ? add : null}});
+    assert.equal(env.frame.src, 'http://localhost/admin/notices/create?notice_modal=1');
+    assert.equal(env.elements.noticeFormModalTitle.textContent, 'Add Notice');
 });
 
 test('a trusted save refreshes only the list and retains the current filters and page', async () => {
@@ -64,4 +68,16 @@ test('a failed refresh reports that the notice was saved and leaves the current 
     await env.messages.message({origin: env.location.origin, source: env.frame.contentWindow, data: {type: 'notice:saved', message: 'Saved'}});
     assert.equal(env.message.textContent, 'Saved but refresh failed');
     assert.equal(env.calls.some(call => call[0] === 'replace'), false);
+});
+
+test('Cancel closes the modal without refreshing and is ignored during a save', async () => {
+    const env = setup();
+    const send = data => env.messages.message({origin: env.location.origin, source: env.frame.contentWindow, data});
+    await send({type: 'notice:saving', saving: true});
+    await send({type: 'notice:cancel'});
+    assert.equal(env.calls.length, 0);
+    await send({type: 'notice:saving', saving: false});
+    await send({type: 'notice:cancel'});
+    assert.equal(env.calls.length, 1);
+    assert.equal(env.calls[0][0], 'hide');
 });

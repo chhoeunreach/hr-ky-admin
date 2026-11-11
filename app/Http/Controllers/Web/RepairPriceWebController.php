@@ -69,14 +69,14 @@ class RepairPriceWebController extends Controller
             $series = RepairDeviceSeries::with(['brand', 'deviceType'])->orderBy('name')->get();
             $devices = RepairDevice::with('brand')->orderBy('name')->get();
             $categories = RepairCategory::orderBy('sort_order')->get();
-            $services = RepairService::orderBy('name')->get();
+            $services = RepairService::with('category')->orderBy('name')->get();
             $brandsList = $paginate($catalog(RepairBrand::latest(), [
                 'brand_id' => [null, 'id'], 'device_id' => ['devices', 'id'],
-                'category_id' => ['devices.prices.service', 'repair_category_id'],
+                'category_id' => ['devices.categories', 'repair_categories.id'],
             ], ['name', 'slug']), 'brands_page');
-            $categoriesList = $paginate($catalog(RepairCategory::orderBy('sort_order')->latest(), [
-                'brand_id' => ['services.prices.device', 'repair_brand_id'],
-                'device_id' => ['services.prices', 'repair_device_id'], 'category_id' => [null, 'id'],
+            $categoriesList = $paginate($catalog(RepairCategory::withCount('devices')->orderBy('sort_order')->latest(), [
+                'brand_id' => ['devices', 'repair_brand_id'],
+                'device_id' => ['devices', 'repair_devices.id'], 'category_id' => [null, 'id'],
             ], ['name', 'name_kh', 'slug']), 'categories_page');
 
             // 1. Price Query
@@ -101,9 +101,9 @@ class RepairPriceWebController extends Controller
                 });
 
             $prices = $paginate($pricesQuery->latest(), 'page');
-            $devicesList = $paginate($catalog(RepairDevice::with(['brand', 'deviceType', 'series'])->latest(), [
+            $devicesList = $paginate($catalog(RepairDevice::with(['brand', 'deviceType', 'series', 'categories', 'prices.service'])->latest(), [
                 'brand_id' => [null, 'repair_brand_id'], 'device_id' => [null, 'id'],
-                'category_id' => ['prices.service', 'repair_category_id'],
+                'category_id' => ['categories', 'repair_categories.id'],
             ], ['name', 'model_number']), 'devices_page');
             $servicesList = $paginate($catalog(RepairService::with('category')->latest(), [
                 'brand_id' => ['prices.device', 'repair_brand_id'], 'device_id' => ['prices', 'repair_device_id'],
@@ -111,11 +111,11 @@ class RepairPriceWebController extends Controller
             ], ['name', 'name_kh', 'description']), 'services_page');
             $typesList = $paginate($catalog(RepairDeviceType::latest(), [
                 'brand_id' => ['devices', 'repair_brand_id'], 'device_id' => ['devices', 'id'],
-                'category_id' => ['devices.prices.service', 'repair_category_id'],
+                'category_id' => ['devices.categories', 'repair_categories.id'],
             ], ['name', 'slug']), 'types_page');
             $seriesList = $paginate($catalog(RepairDeviceSeries::with(['brand', 'deviceType'])->latest(), [
                 'brand_id' => [null, 'repair_brand_id'], 'device_id' => ['devices', 'id'],
-                'category_id' => ['devices.prices.service', 'repair_category_id'],
+                'category_id' => ['devices.categories', 'repair_categories.id'],
             ], ['name', 'slug']), 'series_page');
             foreach (['prices' => $prices, 'brands' => $brandsList, 'categories' => $categoriesList,
                 'devices' => $devicesList, 'services' => $servicesList, 'types' => $typesList, 'series' => $seriesList] as $tab => $paginator) {
@@ -329,17 +329,28 @@ class RepairPriceWebController extends Controller
                 Rule::unique('repair_devices', 'name')->where(fn ($query) => $query->where('repair_brand_id', $request->repair_brand_id)),
             ],
             'model_number' => 'nullable|string|max:100',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'integer|distinct|exists:repair_categories,id',
             'status' => 'nullable|boolean',
         ], [
             'name.unique' => __('repair.device_duplicate'),
         ]);
 
         $validated['status'] = $request->has('status') ? 1 : 0;
+        $inlinePrices = $this->validateDevicePrices($request);
 
         try {
-            RepairDevice::create($validated);
+            DB::transaction(function () use ($validated, $inlinePrices) {
+                $categoryIds = $validated['category_ids'] ?? [];
+                unset($validated['category_ids']);
+                $device = RepairDevice::create($validated);
+                $device->categories()->sync($categoryIds);
+                $this->saveDevicePrices($device, $inlinePrices);
+            });
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
                 ->with('success', __('repair.device_added'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -366,19 +377,85 @@ class RepairPriceWebController extends Controller
                     ->ignore($device->id),
             ],
             'model_number' => 'nullable|string|max:100',
+            'category_ids' => 'nullable|array',
+            'category_ids.*' => 'integer|distinct|exists:repair_categories,id',
             'status' => 'nullable|boolean',
         ], [
             'name.unique' => __('repair.device_duplicate'),
         ]);
 
         $validated['status'] = $request->has('status') ? 1 : 0;
+        $inlinePrices = $this->validateDevicePrices($request, $device);
 
         try {
-            $device->update($validated);
+            DB::transaction(function () use ($device, $validated, $inlinePrices) {
+                $categoryIds = $validated['category_ids'] ?? [];
+                unset($validated['category_ids']);
+                RepairDevice::whereKey($device->id)->lockForUpdate()->firstOrFail();
+                $device->update($validated);
+                $device->categories()->sync($categoryIds);
+                $this->saveDevicePrices($device, $inlinePrices);
+            });
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'devices'])
                 ->with('success', __('repair.device_updated'));
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
+        }
+    }
+
+    private function validateDevicePrices(Request $request, ?RepairDevice $device = null): array
+    {
+        $data = $this->validateRepairInput($request, [
+            'new_prices' => 'sometimes|array',
+            'new_prices.*' => 'nullable|numeric|min:0',
+            'existing_prices' => 'sometimes|array',
+            'existing_prices.*' => 'required|numeric|min:0',
+        ]);
+        $selected = array_map('strval', $request->input('category_ids', []) ?? []);
+        foreach ($data['new_prices'] ?? [] as $serviceId => $amount) {
+            if ($amount === null) continue;
+            $service = ctype_digit((string) $serviceId) ? RepairService::find($serviceId) : null;
+            if (!$service || !in_array((string) $service->repair_category_id, $selected, true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['new_prices.'.$serviceId => __('repair.invalid_category_price')]);
+            }
+            abort_unless(Gate::any(['repair_price.create', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
+        }
+        foreach ($data['existing_prices'] ?? [] as $priceId => $amount) {
+            $price = $device && ctype_digit((string) $priceId) ? $device->prices()->with('service')->find($priceId) : null;
+            if (!$price || !in_array((string) $price->service->repair_category_id, $selected, true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['existing_prices.'.$priceId => __('repair.invalid_category_price')]);
+            }
+            abort_unless(Gate::any(['repair_price.update', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
+        }
+        return $data;
+    }
+
+    private function saveDevicePrices(RepairDevice $device, array $data): void
+    {
+        foreach ($data['new_prices'] ?? [] as $serviceId => $amount) {
+            if ($amount === null) continue;
+            if ($device->prices()->where('repair_service_id', $serviceId)->whereNull('part_type')->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['new_prices.'.$serviceId => __('repair.price_duplicate')]);
+            }
+            $device->prices()->create([
+                'repair_service_id' => $serviceId, 'selling_price' => $amount,
+                'part_cost' => 0, 'service_fee' => 0, 'availability_status' => 'available',
+            ]);
+        }
+        foreach ($data['existing_prices'] ?? [] as $priceId => $amount) {
+            $price = $device->prices()->lockForUpdate()->findOrFail($priceId);
+            if ((float) $price->selling_price === (float) $amount) continue;
+            $oldPrice = $price->selling_price;
+            $price->update(['selling_price' => $amount]);
+            $price->histories()->create([
+                'old_part_cost' => $price->part_cost, 'new_part_cost' => $price->part_cost,
+                'old_service_fee' => $price->service_fee, 'new_service_fee' => $price->service_fee,
+                'old_selling_price' => $oldPrice, 'new_selling_price' => $price->selling_price,
+                'changed_by' => Auth::guard('admin')->id() ?? Auth::id(),
+                'created_at' => now(),
+            ]);
         }
     }
 
@@ -469,36 +546,120 @@ class RepairPriceWebController extends Controller
         abort_unless(Gate::any(['repair_price.create', 'repair_price.manage_prices']), 403, __('repair.unauthorized'));
 
         $validated = $this->validateRepairInput($request, [
-            'repair_device_id' => 'required|exists:repair_devices,id',
-            'repair_service_id' => 'required|exists:repair_services,id',
+            'repair_device_id' => ['required_without:repair_device_ids', Rule::prohibitedIf($request->has('repair_device_ids')), 'integer', 'exists:repair_devices,id'],
+            'repair_device_ids' => 'required_without:repair_device_id|array|min:1',
+            'repair_device_ids.*' => 'required|integer|distinct|exists:repair_devices,id',
+            'source_price_id' => 'nullable|integer|exists:repair_prices,id',
+            'repair_category_id' => 'sometimes|required|exists:repair_categories,id',
+            'repair_service_id' => ['required_without:repair_service_ids', Rule::prohibitedIf($request->has('repair_service_ids')), Rule::exists('repair_services', 'id')
+                ->when($request->filled('repair_category_id'), fn ($rule) => $rule->where('repair_category_id', $request->repair_category_id))],
+            'repair_service_ids' => 'required_without:repair_service_id|array|min:1',
+            'repair_service_ids.*' => ['required', 'integer', 'distinct', Rule::exists('repair_services', 'id')
+                ->when($request->filled('repair_category_id'), fn ($rule) => $rule->where('repair_category_id', $request->repair_category_id))],
+            'per_pair_pricing' => 'sometimes|in:1',
+            'pair_prices' => 'required_with:repair_service_ids|required_if:per_pair_pricing,1|array',
+            'pair_prices.*' => 'array',
+            'pair_prices.*.*' => 'array:part_cost,service_fee,selling_price',
+            'pair_prices.*.*.part_cost' => 'nullable|numeric|min:0',
+            'pair_prices.*.*.service_fee' => 'nullable|numeric|min:0',
+            'pair_prices.*.*.selling_price' => 'required|numeric|min:0',
             'part_name' => 'nullable|string|max:255',
             'part_type' => 'nullable|string|max:100',
             'part_cost' => 'nullable|numeric|min:0',
             'service_fee' => 'nullable|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
+            'selling_price' => 'required_without_all:model_prices,pair_prices|numeric|min:0',
+            'per_model_pricing' => 'sometimes|in:1',
+            'model_prices' => ['required_if:per_model_pricing,1', Rule::prohibitedIf($request->has('repair_service_ids')), 'array'],
+            'model_prices.*' => 'array:part_cost,service_fee,selling_price',
+            'model_prices.*.part_cost' => 'nullable|numeric|min:0',
+            'model_prices.*.service_fee' => 'nullable|numeric|min:0',
+            'model_prices.*.selling_price' => 'required|numeric|min:0',
             'warranty_days' => 'nullable|integer|min:0',
             'estimated_minutes' => 'nullable|integer|min:0',
             'availability_status' => 'required|in:available,out_of_stock,pre_order',
+            'note' => 'nullable|string|max:10000',
         ]);
 
-        $exists = RepairPrice::where('repair_device_id', $request->repair_device_id)
-            ->where('repair_service_id', $request->repair_service_id)
-            ->where('part_type', $request->part_type)
-            ->exists();
+        $deviceIds = $validated['repair_device_ids'] ?? [$validated['repair_device_id']];
+        $serviceIds = $validated['repair_service_ids'] ?? [$validated['repair_service_id']];
+        if (isset($validated['model_prices']) || isset($validated['per_model_pricing'])) {
+            $rules = [];
+            foreach ($deviceIds as $deviceId) {
+                $rules['model_prices.'.$deviceId] = 'required|array';
+                $rules['model_prices.'.$deviceId.'.selling_price'] = 'required|numeric|min:0';
+            }
+            $this->validateRepairInput($request, $rules);
+            if (array_diff(array_keys($validated['model_prices'] ?? []), $deviceIds)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['model_prices' => __('repair.only_selected_model_prices')]);
+            }
+        }
 
-        if ($exists) {
-            return redirect()->back()
-                ->with('danger', __('repair.price_duplicate'))
-                ->withInput();
+        if (isset($validated['pair_prices']) || isset($validated['per_pair_pricing']) || isset($validated['repair_service_ids'])) {
+            $rules = [];
+            foreach ($deviceIds as $deviceId) {
+                foreach ($serviceIds as $serviceId) {
+                    $rules['pair_prices.'.$deviceId.'.'.$serviceId] = 'required|array';
+                    $rules['pair_prices.'.$deviceId.'.'.$serviceId.'.selling_price'] = 'required|numeric|min:0';
+                }
+            }
+            $this->validateRepairInput($request, $rules);
+            if (array_diff(array_keys($validated['pair_prices'] ?? []), $deviceIds)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['pair_prices' => __('repair.only_selected_pair_prices')]);
+            }
+            foreach ($validated['pair_prices'] ?? [] as $prices) {
+                if (array_diff(array_keys($prices), $serviceIds)) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['pair_prices' => __('repair.only_selected_pair_prices')]);
+                }
+            }
+        }
+
+        if (!empty($validated['source_price_id'])) {
+            abort_unless(Gate::allows('repair_price.view'), 403, __('repair.unauthorized'));
         }
 
         try {
-            $validated['part_cost'] = $validated['part_cost'] ?? 0;
-            $validated['service_fee'] = $validated['service_fee'] ?? 0;
+            $count = DB::transaction(function () use ($validated, $deviceIds, $serviceIds) {
+                // Lock models consistently so concurrent batch submissions cannot create duplicates.
+                $devices = RepairDevice::whereIn('id', $deviceIds)->orderBy('id')->lockForUpdate()->get();
+                $conflicts = RepairPrice::with(['device:id,name', 'service:id,name'])
+                    ->whereIn('repair_device_id', $deviceIds)
+                    ->whereIn('repair_service_id', $serviceIds)
+                    ->where('part_type', $validated['part_type'] ?? null)->get();
+                if ($conflicts->isNotEmpty()) {
+                    throw new \RuntimeException(__('repair.price_models_conflict', [
+                        'models' => $conflicts->map(fn ($price) => $price->device->name.(count($serviceIds) > 1 ? ' — '.$price->service->name : ''))->unique()->implode(', '),
+                    ]));
+                }
 
-            RepairPrice::create($validated);
+                $data = $validated;
+                $data['part_cost'] = $data['part_cost'] ?? 0;
+                $data['service_fee'] = $data['service_fee'] ?? 0;
+                $source = !empty($data['source_price_id']) && !Gate::allows('repair_price.view_cost')
+                    ? RepairPrice::findOrFail($data['source_price_id']) : null;
+                unset($data['repair_device_ids'], $data['repair_device_id'], $data['repair_category_id'], $data['source_price_id'],
+                    $data['model_prices'], $data['per_model_pricing'], $data['repair_service_ids'], $data['pair_prices'], $data['per_pair_pricing']);
+                $services = RepairService::whereIn('id', $serviceIds)->orderBy('id')->get();
+                foreach ($devices as $device) {
+                    foreach ($services as $service) {
+                        $amounts = $validated['pair_prices'][$device->id][$service->id] ?? $validated['model_prices'][$device->id] ?? [];
+                        $modelData = array_replace($data, $amounts);
+                        $modelData['repair_service_id'] = $service->id;
+                        $modelData['part_cost'] = $modelData['part_cost'] ?? 0;
+                        $modelData['service_fee'] = $modelData['service_fee'] ?? 0;
+                        if ($source && $source->repair_service_id === $service->id) {
+                            $modelData['part_cost'] = $source->part_cost;
+                            $modelData['service_fee'] = $source->service_fee;
+                        }
+                        $device->prices()->create($modelData);
+                    }
+                    $device->categories()->syncWithoutDetaching($services->pluck('repair_category_id')->unique()->all());
+                }
+                return $devices->count() * $services->count();
+            });
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
-                ->with('success', __('repair.price_added'));
+                ->with('success', $count === 1 ? __('repair.price_added') : (count($serviceIds) > 1
+                    ? __('repair.prices_added_to_pairs', ['count' => $count, 'models' => count($deviceIds), 'services' => count($serviceIds)])
+                    : __('repair.prices_added_to_models', ['count' => $count])));
         } catch (Exception $e) {
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
         }
@@ -512,7 +673,10 @@ class RepairPriceWebController extends Controller
 
         $validated = $this->validateRepairInput($request, [
             'repair_device_id' => 'required|exists:repair_devices,id',
-            'repair_service_id' => 'required|exists:repair_services,id',
+            'repair_category_id' => 'sometimes|required|exists:repair_categories,id',
+            'repair_service_id' => ['required', Rule::exists('repair_services', 'id')
+                ->when($request->filled('repair_category_id'), fn ($rule) => $rule->where('repair_category_id', $request->repair_category_id))],
+            'note' => 'nullable|string|max:10000',
             'part_name' => 'nullable|string|max:255',
             'part_type' => 'nullable|string|max:100',
             'part_cost' => 'nullable|numeric|min:0',
@@ -539,22 +703,27 @@ class RepairPriceWebController extends Controller
             $validated['part_cost'] = $validated['part_cost'] ?? 0;
             $validated['service_fee'] = $validated['service_fee'] ?? 0;
 
-            $before = $price->only(['part_cost', 'service_fee', 'selling_price']);
-            $price->update($validated);
+            DB::transaction(function () use ($price, $validated) {
+                unset($validated['repair_category_id']);
+                $before = $price->only(['part_cost', 'service_fee', 'selling_price']);
+                $price->update($validated);
+                $price->unsetRelation('device')->unsetRelation('service');
+                $price->device->categories()->syncWithoutDetaching([$price->service->repair_category_id]);
 
-            if ($before['part_cost'] != $price->part_cost || $before['service_fee'] != $price->service_fee || $before['selling_price'] != $price->selling_price) {
-                RepairPriceHistory::create([
-                    'repair_price_id' => $price->id,
-                    'old_part_cost' => $before['part_cost'],
-                    'new_part_cost' => $price->part_cost,
-                    'old_service_fee' => $before['service_fee'],
-                    'new_service_fee' => $price->service_fee,
-                    'old_selling_price' => $before['selling_price'],
-                    'new_selling_price' => $price->selling_price,
-                    'changed_by' => Auth::guard('admin')->id() ?? Auth::id(),
-                    'created_at' => now(),
-                ]);
-            }
+                if ($before['part_cost'] != $price->part_cost || $before['service_fee'] != $price->service_fee || $before['selling_price'] != $price->selling_price) {
+                    RepairPriceHistory::create([
+                        'repair_price_id' => $price->id,
+                        'old_part_cost' => $before['part_cost'],
+                        'new_part_cost' => $price->part_cost,
+                        'old_service_fee' => $before['service_fee'],
+                        'new_service_fee' => $price->service_fee,
+                        'old_selling_price' => $before['selling_price'],
+                        'new_selling_price' => $price->selling_price,
+                        'changed_by' => Auth::guard('admin')->id() ?? Auth::id(),
+                        'created_at' => now(),
+                    ]);
+                }
+            });
 
             return redirect()->route('admin.repair-price.index', ['active_tab' => 'prices'])
                 ->with('success', __('repair.price_updated'));

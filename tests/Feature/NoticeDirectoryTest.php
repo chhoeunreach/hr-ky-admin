@@ -86,6 +86,21 @@ class NoticeDirectoryTest extends TestCase
         $this->assertSame(1, $repo->getAllCompanyNotices(['search' => 'Meeting 31'])->total());
     }
 
+    public function test_column_sorting_is_allowlisted_and_keeps_filters(): void
+    {
+        $this->seedNotices();
+        $repo = app(NoticeRepository::class);
+        $this->assertSame(1, $repo->getAllCompanyNotices(['sort' => 'title', 'direction' => 'asc'])->first()->id);
+        $this->assertSame(9, $repo->getAllCompanyNotices(['sort' => 'title', 'direction' => 'desc'])->first()->id);
+        $this->assertSame(30, $repo->getAllCompanyNotices(['sort' => 'status', 'direction' => 'asc'])->first()->id);
+        $this->assertSame(31, $repo->getAllCompanyNotices(['sort' => 'status', 'direction' => 'desc', 'branch_id' => 1])->first()->id);
+        $this->assertSame(31, $repo->getAllCompanyNotices(['sort' => 'invalid', 'direction' => 'invalid'])->first()->id);
+        $this->get('/_test/notices?branch_id=1&sort=title&direction=asc')->assertOk()
+            ->assertSee('aria-sort="ascending"', false)->assertSee('data-notice-sort', false)
+            ->assertSee('data-open-notice-form data-url=', false)
+            ->assertSee('data-notice-description', false)->assertSee('notice-status is-active', false);
+    }
+
     public function test_index_renders_toolbar_and_replaceable_list_in_both_languages(): void
     {
         $this->seedNotices();
@@ -129,5 +144,17 @@ class NoticeDirectoryTest extends TestCase
         $this->postJson('/_test/notices', $this->payload())->assertForbidden();
         $this->putJson('/_test/notices/1', $this->payload())->assertForbidden();
         $this->assertDatabaseCount('notices', 0);
+    }
+
+    public function test_edit_form_preserves_inactive_status_and_prefills_recipients_in_both_languages(): void
+    {
+        $this->postJson('/_test/notices', $this->payload(['is_active' => 0]))->assertCreated();
+        foreach (['en', 'km'] as $locale) {
+            $this->withSession(['locale' => $locale])->get('/_test/notices/1/edit?notice_modal=1')->assertOk()
+                ->assertSee('notice-form-workspace', false)->assertSee('notice-form-sidebar', false)
+                ->assertSee('data-notice-cancel', false)->assertSee('value="0" selected', false)
+                ->assertSee('value="1" selected>Dara', false)
+                ->assertSee('value="New notice"', false)->assertDontSee('notice.save_changes');
+        }
     }
 }

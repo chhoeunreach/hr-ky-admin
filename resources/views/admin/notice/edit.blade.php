@@ -15,7 +15,9 @@
 
 @section('main-content')
 
-    <section class="content">
+    <link rel="stylesheet" href="{{ asset('assets/css/notice-form.css') }}?v={{ filemtime(public_path('assets/css/notice-form.css')) }}">
+    @if(request('notice_modal') === '1')<script>document.documentElement.classList.add('notice-form-embedded');</script>@endif
+    <section class="content notice-form-page">
 
         @include('admin.section.flash_message')
 

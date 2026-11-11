@@ -13,7 +13,7 @@ function setup(ok = true) {
     let pending = null;
     const editor = {uploadImages: async () => {calls.push('upload');}, save: () => calls.push('editor-save')};
     vm.runInNewContext(source, {
-        document: {readyState: 'complete', getElementById: id => id === 'notification' ? form : error},
+        document: {readyState: 'complete', getElementById: id => id === 'notification' ? form : error, addEventListener: (name, callback) => {events['document:' + name] = callback;}},
         window: {parent: {postMessage: (data, origin) => messages.push({data, origin})}, tinymce: {get: () => editor}},
         location: {origin: 'http://localhost'}, FormData: class {constructor(value) {assert.equal(value, form);}},
         fetch: async (url, options) => {calls.push({url, options}); if (pending) await pending; return {ok, json: async () => ok ? {message: 'Saved', id: 42} : {errors: {title: ['Title is required.']}}};},
@@ -49,4 +49,11 @@ test('duplicate submissions are ignored while saving', async () => {
     await env.events.submit({preventDefault() {}});
     release(); await first;
     assert.equal(env.calls.filter(item => typeof item === 'object').length, 1);
+});
+
+test('Cancel closes through the parent without submitting the form', () => {
+    const env = setup();
+    env.events['document:click']({target: {closest: () => ({})}, preventDefault() {}});
+    assert.equal(env.calls.length, 0);
+    assert.equal(env.messages[0].data.type, 'notice:cancel');
 });

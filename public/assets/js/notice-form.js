@@ -4,6 +4,11 @@
         const form = document.getElementById('notification');
         if (!form || window.parent === window) return;
         let saving = false;
+        document.addEventListener('click', event => {
+            if (!event.target.closest('[data-notice-cancel]')) return;
+            event.preventDefault();
+            if (!saving) window.parent.postMessage({type: 'notice:cancel'}, location.origin);
+        });
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (saving) return;

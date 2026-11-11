@@ -31,6 +31,11 @@
                 const count = document.querySelector('[data-directory-count="noticeTable"]');
                 if (count) count.textContent = Number(replacement.dataset.directoryTotal).toLocaleString();
                 window.history.replaceState(null, '', url);
+                const parameters = new URL(url, location.href).searchParams;
+                ['sort', 'direction'].forEach(key => {
+                    const input = form.elements.namedItem(key);
+                    if (input) input.value = parameters.get(key) || (key === 'sort' ? 'published' : 'desc');
+                });
                 window.feather?.replace();
                 document.dispatchEvent(new CustomEvent('directory:updated'));
                 return true;
@@ -53,7 +58,7 @@
             const trigger = event.target.closest('[data-open-notice-form]');
             if (trigger) {
                 event.preventDefault();
-                const url = new URL(trigger.href, location.href);
+                const url = new URL(trigger.dataset?.url || trigger.href, location.href);
                 if (url.origin !== location.origin) return;
                 url.searchParams.set('notice_modal', '1');
                 title.textContent = url.pathname.endsWith('/create') ? modalElement.dataset.addTitle : modalElement.dataset.editTitle;
@@ -61,7 +66,7 @@
                 bootstrap.Modal.getOrCreateInstance(modalElement).show();
                 return;
             }
-            const page = event.target.closest('#notice-list-block .pagination a');
+            const page = event.target.closest('#notice-list-block .pagination a, [data-notice-sort]');
             if (page) {event.preventDefault(); refresh(page.href);}
         });
         frame.addEventListener('load', () => {if (frame.getAttribute('src') !== 'about:blank') {frame.hidden = false; loading.hidden = true;}});
@@ -70,6 +75,10 @@
         window.addEventListener('message', async event => {
             if (event.origin !== location.origin || event.source !== frame.contentWindow) return;
             if (event.data?.type === 'notice:saving') {saving = !!event.data.saving; return;}
+            if (event.data?.type === 'notice:cancel') {
+                if (!saving) bootstrap.Modal.getOrCreateInstance(modalElement).hide();
+                return;
+            }
             if (event.data?.type !== 'notice:saved') return;
             saving = false;
             bootstrap.Modal.getOrCreateInstance(modalElement).hide();

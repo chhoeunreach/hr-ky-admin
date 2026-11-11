@@ -44,6 +44,7 @@
 
 @section('main-content')
 <link rel="stylesheet" href="{{ asset('assets/css/directory-table-tools.css') }}?v={{ filemtime(public_path('assets/css/directory-table-tools.css')) }}">
+<link rel="stylesheet" href="{{ asset('assets/css/repair-price-modals.css') }}?v={{ filemtime(public_path('assets/css/repair-price-modals.css')) }}">
 <style>.repair-price-page .card{border:1px solid rgba(125,139,160,.18);border-radius:14px;overflow:hidden}.repair-price-page .directory-add{background:linear-gradient(110deg,#ff0800,#ffad00);box-shadow:0 4px 14px #ff3c0026}.repair-price-page .directory-filter-toggle,.repair-price-page .directory-title>svg{color:#ff0800}</style>
 <section class="content repair-price-page">
     @include('admin.section.flash_message')
@@ -198,7 +199,7 @@
                                     @endcan
                                     <th>{{ __('index.warranty') }}</th>
                                     <th>{{ __('index.status') }}</th>
-                                    @canany(['repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
+                                    @canany(['repair_price.create', 'repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
                                         <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     @endcanany
                                 </tr>
@@ -261,15 +262,27 @@
                                                 <span class="badge bg-warning text-dark">{{ __('index.pre_order') }}</span>
                                             @endif
                                         </td>
-                                        @canany(['repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
+                                        @canany(['repair_price.create', 'repair_price.update', 'repair_price.delete', 'repair_price.manage_prices'])
                                             <td class="text-center">
                                                 <div class="d-flex justify-content-center gap-1">
+                                                    @canany(['repair_price.create', 'repair_price.manage_prices'])
+                                                        @php
+                                                            $priceTemplate = $p->only(['repair_service_id', 'part_name', 'part_type', 'selling_price', 'warranty_days', 'estimated_minutes', 'availability_status', 'note']);
+                                                            if ($canViewCost) $priceTemplate += $p->only(['part_cost', 'service_fee']);
+                                                            $priceTemplate += ['source_price_id' => $p->id, 'repair_category_id' => $p->service?->repair_category_id, 'source_device_id' => $p->repair_device_id, 'costs_hidden' => !$canViewCost];
+                                                        @endphp
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary copy-price-btn"
+                                                                data-bs-toggle="modal" data-bs-target="#addPriceModal"
+                                                                data-price-template="{{ json_encode($priceTemplate) }}"
+                                                                title="{{ __('repair.copy_price_to_models') }}">{{ __('repair.copy_price_to_models') }}</button>
+                                                    @endcanany
                                                     @canany(['repair_price.update', 'repair_price.manage_prices'])
                                                         <button class="btn btn-sm btn-outline-primary btn-icon edit-price-btn"
                                                                 data-id="{{ $p->id }}"
                                                                 data-device-id="{{ $p->repair_device_id }}"
                                                                 data-service-id="{{ $p->repair_service_id }}"
                                                                 data-part-name="{{ $p->part_name }}"
+                                                                data-note="{{ $p->note }}"
                                                                 data-part-type="{{ $p->part_type }}"
                                                                 data-part-cost="{{ $p->part_cost }}"
                                                                 data-service-fee="{{ $p->service_fee }}"
@@ -393,6 +406,7 @@
                                         <th>{{ __('index.service_name_kh') }}</th>
                                         <th>{{ __('repair.slug') }}</th>
                                         <th>{{ __('index.sort_order') }}</th>
+                                        <th>{{ __('repair.linked_models') }}</th>
                                         <th>{{ __('index.status') }}</th>
                                         <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                     </tr>
@@ -405,6 +419,7 @@
                                             <td>{{ $category->name_kh ?? '-' }}</td>
                                             <td><code>{{ $category->slug }}</code></td>
                                             <td>{{ $category->sort_order }}</td>
+                                            <td><a href="{{ route('admin.repair-price.index', ['active_tab' => 'devices', 'category_id' => $category->id]) }}#devicesPane">{{ $category->devices_count }}</a></td>
                                             <td>
                                                 <span class="badge {{ $category->status ? 'bg-success' : 'bg-danger' }}">
                                                     {{ $category->status ? __('index.active') : __('index.inactive') }}
@@ -436,7 +451,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center py-4">{{ __('index.no_records_found') }}</td>
+                                            <td colspan="8" class="text-center py-4">{{ __('index.no_records_found') }}</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -465,6 +480,7 @@
                                     <th>{{ __('index.series') }}</th>
                                     <th>{{ __('index.model_name') }}</th>
                                     <th>{{ __('index.model_number') }}</th>
+                                    <th>{{ __('repair.linked_categories') }}</th>
                                     <th>{{ __('index.status') }}</th>
                                     @can('repair_price.manage_devices')
                                         <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
@@ -478,8 +494,17 @@
                                         <td><span class="badge bg-secondary">{{ $d->brand?->name ?? '-' }}</span></td>
                                         <td>{{ $d->deviceType?->name ?? __('repair.smartphone') }}</td>
                                         <td>{{ $d->series?->name ?? '-' }}</td>
-                                        <td class="fw-bold">{{ $d->name }}</td>
+                                        <td class="fw-bold">{{ $d->name }}
+                                            <a class="d-block small fw-normal" href="{{ route('admin.repair-price.index', ['active_tab' => 'prices', 'device_id' => $d->id]) }}#pricesPane">{{ __('repair.model_prices') }}</a>
+                                        </td>
                                         <td><code>{{ $d->model_number ?? '-' }}</code></td>
+                                        <td>
+                                            @forelse($d->categories as $category)
+                                                <a class="badge bg-light text-primary" href="{{ route('admin.repair-price.index', ['active_tab' => 'prices', 'device_id' => $d->id, 'category_id' => $category->id]) }}#pricesPane">{{ app()->getLocale() === 'km' && $category->name_kh ? $category->name_kh : $category->name }}</a>
+                                            @empty
+                                                <span class="text-muted">-</span>
+                                            @endforelse
+                                        </td>
                                         <td>
                                             <span class="badge {{ $d->status ? 'bg-success' : 'bg-danger' }}">
                                                 {{ $d->status ? __('index.active') : __('index.inactive') }}
@@ -493,6 +518,8 @@
                                                             data-brand-id="{{ $d->repair_brand_id }}"
                                                             data-type-id="{{ $d->repair_device_type_id }}"
                                                             data-series-id="{{ $d->repair_device_series_id }}"
+                                                            data-category-ids='@json($d->categories->modelKeys())'
+                                                            data-prices='{{ $d->prices->map->only(['id', 'repair_service_id', 'part_type', 'selling_price'])->toJson() }}'
                                                             data-name="{{ $d->name }}"
                                                             data-model-number="{{ $d->model_number }}"
                                                             data-status="{{ $d->status }}"
@@ -513,7 +540,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-4">{{ __('index.no_records_found') }}</td>
+                                        <td colspan="{{ $canManageDevices ? 9 : 8 }}" class="text-center py-4">{{ __('index.no_records_found') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -782,8 +809,8 @@
 
 @canany(['repair_price.create', 'repair_price.manage_prices'])
     <!-- ADD PRICE MODAL -->
-    <div class="modal fade" id="addPriceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade repair-scroll-modal" id="addPriceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <form action="{{ route('admin.repair-price.prices.store') }}" method="post">
                     @csrf
@@ -793,23 +820,14 @@
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label required">{{ __('index.device_model') }} <span class="text-danger">*</span></label>
-                                <select class="form-select" name="repair_device_id" required>
-                                    <option value="" disabled selected>{{ __('index.select_device') }}</option>
-                                    @foreach($devices as $d)
-                                        <option value="{{ $d->id }}">{{ $d->brand?->name }} - {{ $d->name }}</option>
-                                    @endforeach
-                                </select>
+                            <div class="col-12">
+                                @include('admin.repairPrice.partials.price-models')
+                                <input type="hidden" name="source_price_id" value="">
+                                <input type="hidden" name="copy_source_device_id" value="">
+                                <p class="form-text repair-copy-costs-message" hidden>{{ __('repair.costs_copied_privately') }}</p>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label required">{{ __('index.repair_service') }} <span class="text-danger">*</span></label>
-                                <select class="form-select" name="repair_service_id" required>
-                                    <option value="" disabled selected>{{ __('index.select_service') }}</option>
-                                    @foreach($services as $s)
-                                        <option value="{{ $s->id }}">{{ (app()->getLocale() == 'km' && !empty($s->name_kh)) ? $s->name_kh : $s->name }}</option>
-                                    @endforeach
-                                </select>
+                            <div class="col-12">
+                                @include('admin.repairPrice.partials.price-services')
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{{ __('index.part_name') }}</label>
@@ -820,17 +838,8 @@
                                 <input type="text" class="form-control" name="part_type" placeholder="{{ __('repair.example_part_type') }}">
                             </div>
 
-                            <div class="col-md-4">
-                                <label class="form-label text-danger">{{ __('index.part_cost') }} ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" name="part_cost" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label text-warning">{{ __('index.service_fee') }} ($)</label>
-                                <input type="number" step="0.01" min="0" class="form-control" name="service_fee" placeholder="0.00">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label text-primary required">{{ __('index.selling_price') }} ($) <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" class="form-control" name="selling_price" required placeholder="0.00">
+                            <div class="col-12">
+                                @include('admin.repairPrice.partials.model-price-fields')
                             </div>
 
                             <div class="col-md-4">
@@ -849,6 +858,10 @@
                                     <option value="pre_order">{{ __('index.pre_order') }}</option>
                                 </select>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">{{ __('repair.price_notes') }}</label>
+                                <textarea class="form-control" name="note" rows="2" maxlength="10000"></textarea>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -863,8 +876,8 @@
 
 @canany(['repair_price.update', 'repair_price.manage_prices'])
     <!-- EDIT PRICE MODAL -->
-    <div class="modal fade" id="editPriceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+    <div class="modal fade repair-scroll-modal" id="editPriceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <form id="editPriceForm" method="post">
                     @csrf
@@ -884,10 +897,20 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
+                                <label class="form-label required">{{ __('index.category') }} <span class="text-danger">*</span></label>
+                                <select class="form-select repair-price-category" name="repair_category_id" required aria-label="{{ __('index.category') }}">
+                                    <option value="">{{ __('repair.choose_category') }}</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}">{{ app()->getLocale() === 'km' && $category->name_kh ? $category->name_kh : $category->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">{{ __('repair.model_category_price_help') }}</div>
+                            </div>
+                            <div class="col-md-6">
                                 <label class="form-label required">{{ __('index.repair_service') }} <span class="text-danger">*</span></label>
                                 <select class="form-select" id="edit_price_service_id" name="repair_service_id" required>
                                     @foreach($services as $s)
-                                        <option value="{{ $s->id }}">{{ (app()->getLocale() == 'km' && !empty($s->name_kh)) ? $s->name_kh : $s->name }}</option>
+                                        <option value="{{ $s->id }}" data-category-id="{{ $s->repair_category_id }}">{{ (app()->getLocale() == 'km' && !empty($s->name_kh)) ? $s->name_kh : $s->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -929,6 +952,10 @@
                                     <option value="pre_order">{{ __('index.pre_order') }}</option>
                                 </select>
                             </div>
+                            <div class="col-12">
+                                <label class="form-label">{{ __('repair.price_notes') }}</label>
+                                <textarea class="form-control" name="note" rows="2" maxlength="10000"></textarea>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -943,8 +970,8 @@
 
 @can('repair_price.manage_devices')
     <!-- ADD DEVICE MODAL -->
-    <div class="modal fade" id="addDeviceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade repair-scroll-modal" id="addDeviceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <form action="{{ route('admin.repair-price.devices.store') }}" method="post">
                     @csrf
@@ -987,6 +1014,7 @@
                             <label class="form-label">{{ __('index.model_number') }}</label>
                             <input type="text" class="form-control" name="model_number" placeholder="{{ __('repair.example_model_number') }}">
                         </div>
+                        @include('admin.repairPrice.partials.device-categories')
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="deviceStatusSwitch" checked>
                             <label class="form-check-label" for="deviceStatusSwitch">{{ __('index.active') }}</label>
@@ -1002,8 +1030,8 @@
     </div>
 
     <!-- EDIT DEVICE MODAL -->
-    <div class="modal fade" id="editDeviceModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+    <div class="modal fade repair-scroll-modal" id="editDeviceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <form id="editDeviceForm" method="post">
                     @csrf
@@ -1046,6 +1074,7 @@
                             <label class="form-label">{{ __('index.model_number') }}</label>
                             <input type="text" class="form-control" id="edit_device_model_number" name="model_number">
                         </div>
+                        @include('admin.repairPrice.partials.device-categories')
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="status" value="1" id="edit_device_status">
                             <label class="form-check-label" for="edit_device_status">{{ __('index.active') }}</label>
@@ -1242,6 +1271,7 @@
             $('#edit_price_device_id').val($(this).data('device-id'));
             $('#edit_price_service_id').val($(this).data('service-id'));
             $('#edit_price_part_name').val($(this).data('part-name'));
+            $('#editPriceForm [name="note"]').val($(this).data('note'));
             $('#edit_price_part_type').val($(this).data('part-type'));
             $('#edit_price_part_cost').val($(this).data('part-cost'));
             $('#edit_price_service_fee').val($(this).data('service-fee'));
@@ -1255,6 +1285,23 @@
         });
 
         // Device Edit Modal Populate
+        $('.repair-category-search').on('input', function () {
+            const search = this.value.toLocaleLowerCase();
+            $(this).closest('.repair-category-picker').find('.repair-category-option').each(function () {
+                $(this).toggle($(this).find('.form-check-label').text().toLocaleLowerCase().includes(search));
+            });
+        });
+        $('.repair-categories-all').on('click', function () {
+            $(this).closest('.repair-category-picker').find('.repair-category-option:visible input[type="checkbox"]').prop('checked', true).each(function () {
+                this.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        });
+        $('.repair-categories-clear').on('click', function () {
+            $(this).closest('.repair-category-picker').find('input[type="checkbox"]').prop('checked', false).each(function () {
+                this.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        });
+
         $('.edit-device-btn').on('click', function () {
             let id = $(this).data('id');
             $('#edit_device_brand_id').val($(this).data('brand-id'));
@@ -1262,8 +1309,14 @@
             $('#edit_device_series_id').val($(this).data('series-id'));
             $('#edit_device_name').val($(this).data('name'));
             $('#edit_device_model_number').val($(this).data('model-number'));
+            const categoryIds = ($(this).data('category-ids') || []).map(String);
+            $('#editDeviceForm [name="category_ids[]"]').each(function () {
+                this.checked = categoryIds.includes(this.value);
+            });
+            $('#editDeviceForm .repair-category-search').val('').trigger('input');
             $('#edit_device_status').prop('checked', $(this).data('status') == 1);
 
+            document.getElementById('editDeviceForm').dataset.prices = JSON.stringify($(this).data('prices') || []);
             $('#editDeviceForm').attr('action', "{{ url('admin/repair-price/devices') }}/" + id);
             bootstrap.Modal.getOrCreateInstance(document.getElementById('editDeviceModal')).show();
         });
@@ -1282,5 +1335,6 @@
         });
     });
 </script>
+<script src="{{ asset('assets/js/repair-price-models.js') }}"></script>
 @include('admin.repairPrice.partials.form-behavior')
 @endsection

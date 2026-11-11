@@ -31,6 +31,8 @@ class RepairDeviceRequest extends FormRequest
                     ->ignore($deviceId),
             ],
             'model_number' => 'nullable|string|max:255',
+            'category_ids' => 'sometimes|array',
+            'category_ids.*' => 'integer|distinct|exists:repair_categories,id',
             'image' => 'nullable|string|max:2048',
             'status' => 'nullable|boolean',
         ];
