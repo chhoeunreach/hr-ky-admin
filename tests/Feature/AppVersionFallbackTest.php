@@ -76,4 +76,36 @@ class AppVersionFallbackTest extends TestCase
         config(['app.mobile_app_fallback_url' => 'https://primary.example']);
         $this->assertNull(MobileServerConfiguration::fallbackUrl());
     }
+
+    public function test_print_qr_uses_the_current_request_host_instead_of_static_config(): void
+    {
+        config(['app.mobile_app_url' => 'https://hr.kytech.info',
+            'app.mobile_app_fallback_url' => 'http://192.168.0.113:8001']);
+        $request = Request::create('http://192.168.0.113:8000/showQR');
+        $this->assertSame('http://192.168.0.113:8000/', MobileServerConfiguration::primaryUrlFromRequest($request));
+        $this->assertSame([
+            'server_url' => 'http://192.168.0.113:8000/',
+            'server_fallback_url' => 'http://192.168.0.113:8001/',
+        ], json_decode(base64_decode(MobileServerConfiguration::qrPayloadForRequest($request)), true));
+    }
+
+    public function test_print_qr_falls_back_to_static_config_for_localhost_requests(): void
+    {
+        config(['app.mobile_app_url' => 'https://hr.kytech.info',
+            'app.mobile_app_fallback_url' => 'https://hr.rvstechsolution.com']);
+        $request = Request::create('http://localhost:8000/showQR');
+        $this->assertSame('https://hr.kytech.info/', MobileServerConfiguration::primaryUrlFromRequest($request));
+        $this->assertSame([
+            'server_url' => 'https://hr.kytech.info/',
+            'server_fallback_url' => 'https://hr.rvstechsolution.com/',
+        ], json_decode(base64_decode(MobileServerConfiguration::qrPayloadForRequest($request)), true));
+    }
+
+    public function test_request_qr_skips_backup_matching_the_request_host(): void
+    {
+        config(['app.mobile_app_url' => 'https://hr.kytech.info',
+            'app.mobile_app_fallback_url' => 'http://192.168.0.113:8000']);
+        $request = Request::create('http://192.168.0.113:8000/showQR');
+        $this->assertNull(MobileServerConfiguration::qrPayloadForRequest($request));
+    }
 }

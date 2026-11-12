@@ -29,6 +29,12 @@ class TeamMeeting extends Model
         'branch_id'
     ];
 
+    protected $casts = [
+        'attendance_enabled' => 'boolean',
+        'attendance_opens_at' => 'datetime',
+        'attendance_closes_at' => 'datetime',
+    ];
+
     const RECORDS_PER_PAGE = 20;
 
     const UPLOAD_PATH = 'uploads/team-meeting/';

@@ -41,6 +41,7 @@ use App\Http\Controllers\Web\FiscalYearController;
 use App\Http\Controllers\Web\FaceKioskController;
 use App\Http\Controllers\Web\GeneralSettingController;
 use App\Http\Controllers\Web\HolidayController;
+use App\Http\Controllers\Web\HomeHighlightController;
 use App\Http\Controllers\Web\iclockController;
 use App\Http\Controllers\Web\LeaveApprovalController;
 use App\Http\Controllers\Web\LeaveController;
@@ -69,6 +70,7 @@ use App\Http\Controllers\Web\SalaryTDSController;
 use App\Http\Controllers\Web\SSFController;
 use App\Http\Controllers\Web\PFController;
 use App\Http\Controllers\Web\SellStaffReportController;
+use App\Http\Controllers\Web\SocialMarketingController;
 use App\Http\Controllers\Web\StaticPageContentController;
 use App\Http\Controllers\Web\AppLinkController;
 use App\Http\Controllers\Web\RepairDashboardController;
@@ -147,6 +149,52 @@ Route::group([
 
 
     Route::group(['middleware' => ['admin.auth','permission']], function () {
+
+        Route::controller(\App\Http\Controllers\Web\CommunityController::class)->prefix('community')->name('community.')->group(function () {
+            Route::get('flash-views', 'flashes')->name('flashes');
+            Route::get('flash-views/create', 'editFlash')->name('flash-create');
+            Route::get('flash-views/{flashView}/edit', 'editFlash')->name('flash-edit');
+            Route::post('flash-views', 'saveFlash')->name('flash-store');
+            Route::post('flash-views/{flashView}', 'saveFlash')->name('flash-update');
+            Route::post('flash-views/{flashView}/toggle', 'toggleFlash')->name('flash-toggle');
+            Route::post('flash-views/{flashView}/send-alert', 'sendFlashAlert')->name('flash-send-alert');
+            Route::delete('flash-views/{flashView}', 'deleteFlash')->name('flash-delete');
+            Route::get('social-feed', 'feed')->name('feed');
+            Route::get('social-feed/create', 'createPost')->name('post-create');
+            Route::post('social-feed', 'storePost')->name('post-store');
+            Route::get('social-feed/{post}/edit', 'editPost')->name('post-edit');
+            Route::post('social-feed/{post}/edit', 'updatePost')->name('post-update');
+            Route::post('social-feed/{post}/promote', 'togglePostPromotion')->name('post-promote');
+            Route::post('social-feed/{post}/pin', 'togglePostPin')->name('post-pin');
+            Route::get('social-reports', 'reports')->name('reports');
+            Route::post('social-reports/{report}/resolve', 'resolveReport')->name('report-resolve');
+            Route::get('social-feed/{post}/comments', 'comments')->name('comments');
+            Route::delete('social-feed/{post}', 'deletePost')->name('post-delete');
+            Route::delete('social-comments/{comment}', 'deleteComment')->name('comment-delete');
+        });
+
+        Route::controller(HomeHighlightController::class)->prefix('home-highlights')->name('community.home-highlights.')->group(function () {
+            Route::post('display-settings', 'saveDisplaySettings')->name('display-settings');
+            Route::get('/', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('{homeHighlight}/edit', 'edit')->name('edit');
+            Route::post('{homeHighlight}', 'update')->name('update');
+            Route::post('{homeHighlight}/toggle', 'toggle')->name('toggle');
+            Route::post('{homeHighlight}/send-now', 'sendNow')->middleware('throttle:5,1')->name('send-now');
+            Route::delete('{homeHighlight}', 'destroy')->name('destroy');
+        });
+
+
+        Route::controller(SocialMarketingController::class)->prefix('social-marketing')->name('social-marketing.')->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::get('create', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            Route::get('{socialReward}', 'show')->name('show');
+            Route::get('{socialReward}/edit', 'edit')->name('edit');
+            Route::put('{socialReward}', 'update')->name('update');
+            Route::delete('{socialReward}', 'destroy')->name('destroy');
+        });
 
         Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -472,6 +520,11 @@ Route::group([
         Route::get('notices/send-notice/{id}', [NoticeController::class, 'sendNotice'])->name('notices.send-notice');
 
         /** Team Meeting route */
+        Route::get('team-meetings/{id}/attendance', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'show'])->name('team-meetings.attendance');
+        Route::put('team-meetings/{id}/attendance', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'update'])->name('team-meetings.attendance.update');
+        Route::post('team-meetings/{id}/attendance/rotate', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'rotate'])->name('team-meetings.attendance.rotate');
+        Route::get('team-meetings/{id}/attendance/export', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'export'])->name('team-meetings.attendance.export');
+
         Route::resource('team-meetings', TeamMeetingController::class);
         Route::get('team-meetings/delete/{id}', [TeamMeetingController::class, 'delete'])->name('team-meetings.delete');
         Route::get('team-meetings/remove-image/{id}', [TeamMeetingController::class, 'removeImage'])->name('team-meetings.remove-image');

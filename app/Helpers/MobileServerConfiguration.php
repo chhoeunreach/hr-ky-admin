@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use Illuminate\Http\Request;
+
 class MobileServerConfiguration
 {
     private static function normalize(?string $url): ?string
@@ -40,6 +42,38 @@ class MobileServerConfiguration
         }
         return base64_encode(json_encode([
             'server_url' => self::primaryUrl(),
+            'server_fallback_url' => $backup,
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * The address a phone can actually reach: the host currently serving the
+     * admin panel. Falls back to the configured primary for local hosts
+     * (localhost/127.0.0.1) that a phone cannot scan-usefully connect to.
+     */
+    public static function primaryUrlFromRequest(Request $request): string
+    {
+        $host = $request->getSchemeAndHttpHost();
+        if ($host && !in_array(parse_url($host, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1'], true)) {
+            $normalized = self::normalize($host);
+            if ($normalized) {
+                return $normalized;
+            }
+        }
+
+        return self::primaryUrl();
+    }
+
+    public static function qrPayloadForRequest(Request $request): ?string
+    {
+        $backup = self::fallbackUrl();
+        $primary = self::primaryUrlFromRequest($request);
+        if (!$backup || $backup === $primary) {
+            return null;
+        }
+
+        return base64_encode(json_encode([
+            'server_url' => $primary,
             'server_fallback_url' => $backup,
         ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     }

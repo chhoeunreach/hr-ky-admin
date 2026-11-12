@@ -124,10 +124,9 @@
                                     </ul>
                                 </td>
                                 <td class="text-center">
-                                    <div class="d-inline-block bg-white p-2 rounded border">
-                                        {!! \SimpleSoftwareIO\QrCode\Facades\QrCode::size(82)->generate('meeting:' . $value->id) !!}
-                                    </div>
-                                    <div class="small text-muted mt-1">meeting:{{ $value->id }}</div>
+                                    @can('show_team_meeting')
+                                    <a class="btn btn-sm btn-primary" href="{{ route('admin.team-meetings.attendance', $value->id) }}">QR &amp; Attendance</a>
+                                    @endcan
                                 </td>
                                 @can('show_team_meeting')
                                     <td class="text-center">

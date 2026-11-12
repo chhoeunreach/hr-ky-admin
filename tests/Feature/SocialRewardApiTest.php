@@ -8,6 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Passport\Passport;
@@ -15,10 +16,16 @@ use Tests\TestCase;
 
 class SocialRewardApiTest extends TestCase
 {
+    private array $abilities = ['*'];
+
     protected function setUp(): void
     {
         $this->prepareTestDatabaseFile();
         parent::setUp();
+
+        config(['mobile_permissions' => require __DIR__.'/../../config/mobile_permissions.php']);
+        Gate::before(fn ($user, $ability) => in_array('*', $this->abilities, true)
+            || in_array($ability, $this->abilities, true));
 
         Artisan::call('migrate:fresh', [
             '--path' => 'database/migrations/testing',
@@ -139,6 +146,56 @@ class SocialRewardApiTest extends TestCase
             'id' => $rewardId,
             'fb_post_url' => 'https://facebook.com/new-post',
             'is_locked' => false,
+        ]);
+    }
+
+    public function test_employee_cannot_read_or_modify_another_employees_rewards(): void
+    {
+        $this->abilities = [
+            'mobile.menu.social-rewards',
+            'mobile.function.SocialReward.index',
+            'mobile.function.SocialReward.submit',
+            'mobile.function.SocialReward.update',
+        ];
+        $user = $this->makeUser();
+        $other = $this->makeUser();
+        Passport::actingAs($user);
+
+        $rewardId = DB::table('hrs_addon_social_rewards')->insertGetId([
+            'existing_employee_id' => $other->id,
+            'log_date' => now()->toDateString(),
+            'fb_post_url' => 'https://facebook.com/other-post',
+            'fb_story_url' => 'https://facebook.com/other-story',
+            'tiktok_url' => 'https://tiktok.com/other-video',
+            'reward_points' => 1,
+            'is_locked' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->getJson("/api/v1/hr-ky-admin/social-rewards?employee_id={$other->id}")
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->postJson('/api/v1/hr-ky-admin/social-rewards/submit', [
+            'employee_id' => $other->id,
+            'fb_post_url' => 'https://facebook.com/hijack',
+            'fb_story_url' => 'https://facebook.com/hijack-story',
+            'tiktok_url' => 'https://tiktok.com/hijack',
+            'fb_post_photo' => UploadedFile::fake()->image('hijack.jpg'),
+            'fb_story_photo' => UploadedFile::fake()->image('hijack-story.jpg'),
+            'tiktok_photo' => UploadedFile::fake()->image('hijack-tiktok.jpg'),
+        ])->assertForbidden();
+
+        $this->postJson('/api/v1/hr-ky-admin/social-rewards/update/'.$rewardId, [
+            'fb_post_url' => 'https://facebook.com/hijack',
+            'fb_story_url' => 'https://facebook.com/hijack-story',
+            'tiktok_url' => 'https://tiktok.com/hijack',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('hrs_addon_social_rewards', [
+            'id' => $rewardId,
+            'fb_post_url' => 'https://facebook.com/other-post',
         ]);
     }
 

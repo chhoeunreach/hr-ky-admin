@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('community:optimize-videos')->everyMinute()->withoutOverlapping(35)->runInBackground();
+
         $schedule->call(function () {
             Notification::query()
                 ->whereNotNull('notification_publish_date')

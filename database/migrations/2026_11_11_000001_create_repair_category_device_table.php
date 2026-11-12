@@ -9,6 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Some older deployments created this table outside the migration
+        // ledger. Treat that state as already applied so deployment recovery
+        // can safely resume without dropping existing associations.
+        if (Schema::hasTable('repair_category_device')) {
+            return;
+        }
+
         Schema::create('repair_category_device', function (Blueprint $table) {
             $table->foreignId('repair_category_id')->constrained('repair_categories')->cascadeOnDelete();
             $table->foreignId('repair_device_id')->constrained('repair_devices')->cascadeOnDelete();

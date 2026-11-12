@@ -147,10 +147,12 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function showQR()
+    public function showQR(Request $request)
     {
-        $url = $this->generateUrl();
-        $backupUrl = \App\Helpers\MobileServerConfiguration::qrPayload();
+        // Use the host actually serving this page so scanning connects the
+        // phone to the current server instead of one static .env address.
+        $url = base64_encode(\App\Helpers\MobileServerConfiguration::primaryUrlFromRequest($request));
+        $backupUrl = \App\Helpers\MobileServerConfiguration::qrPayloadForRequest($request);
 
         return view('admin.print_qr', compact('url', 'backupUrl'));
     }
@@ -170,11 +172,6 @@ class DashboardController extends Controller
             ->get();
 
         return view('admin.employee-chat', compact('chatUrl', 'staffList'));
-    }
-
-    private function generateUrl(): string
-    {
-        return base64_encode(\App\Helpers\MobileServerConfiguration::primaryUrl());
     }
 
     private function transformDepartmentDashboardSummaries($departmentDashboardSummaries)

@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\EmployeeProfileApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
+use App\Http\Controllers\Api\HomeHighlightApiController;
 use App\Http\Controllers\Api\Kiosk\KioskApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
@@ -47,9 +48,8 @@ use App\Http\Controllers\Api\Auth\AuthApiController;
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
 Route::get('app-version', [DashboardApiController::class, 'appVersion']);
-Route::get('app-links', [AppLinkApiController::class, 'index']);
 Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
-    ->middleware('auth:api');
+    ->middleware(['auth:api', 'permission', \App\Http\Middleware\MobileFunctionPermission::class]);
 
 Route::prefix('kiosk/v1')
     ->middleware(['kiosk.device', 'throttle:120,1'])
@@ -94,8 +94,53 @@ Route::prefix('repair-price')
     });
 
 Route::group([
-    'middleware' => ['auth:api','permission']
+    'middleware' => ['auth:api','permission', \App\Http\Middleware\MobileFunctionPermission::class]
 ], function () {
+
+    Route::controller(\App\Http\Controllers\Api\FlashViewApiController::class)->group(function () {
+        Route::get('flash-views', 'index');
+        Route::post('flash-views/{flashView}/acknowledge', 'acknowledge');
+    });
+
+    Route::controller(HomeHighlightApiController::class)->prefix('home-highlights')->group(function () {
+        Route::get('/', 'index');
+        Route::get('history', 'history');
+        Route::get('{homeHighlight}', 'show');
+    });
+    Route::controller(\App\Http\Controllers\Api\SocialFeedApiController::class)->group(function () {
+        Route::get('social-feed', 'index');
+        Route::post('social-feed', 'store')->middleware('throttle:20,1');
+        Route::get('social-feed/{post}', 'show');
+        Route::post('social-feed/{post}', 'update')->middleware('throttle:30,1');
+        Route::delete('social-feed/{post}', 'destroy');
+        Route::get('social-feed/{post}/comments', 'comments');
+        Route::get('social-feed/{post}/comments/{comment}/replies', 'replies');
+        Route::post('social-feed/{post}/comments', 'comment')->middleware('throttle:30,1');
+        Route::delete('social-feed/{post}/comments/{comment}', 'deleteComment');
+        Route::put('social-feed/{post}/comments/{comment}', 'editComment');
+        Route::put('social-feed/{post}/comments/{comment}/reaction', 'reactComment')->middleware('throttle:60,1');
+        Route::put('social-feed/{post}/reaction', 'react')->middleware('throttle:60,1');
+        Route::get('social-feed/{post}/reactions', 'reactions');
+        Route::post('social-feed/{post}/share', 'share')->middleware('throttle:10,1');
+        Route::post('social-feed/{post}/save', 'save');
+        Route::delete('social-feed/{post}/save', 'unsave');
+        Route::post('social-feed/{post}/report', 'report')->middleware('throttle:10,1');
+        Route::post('social-feed/{post}/pin', 'pin');
+        Route::post('social-feed/{post}/poll/vote', 'vote');
+        Route::post('social-feed/{post}/notifications', 'toggleNotifications');
+        Route::post('social-feed/{post}/hide', 'hide');
+        Route::get('social-saved', 'saved');
+        Route::get('social-search', 'search');
+        Route::get('social-notifications', 'notifications');
+        Route::post('social-notifications/{notification}/read', 'markNotificationRead');
+        Route::post('social-notifications/read-all', 'markNotificationsRead');
+    });
+    Route::controller(\App\Http\Controllers\Api\SocialStoryApiController::class)->group(function () {
+        Route::get('social-stories', 'index');
+        Route::post('social-stories', 'store')->middleware('throttle:20,1');
+        Route::post('social-stories/{story}/view', 'view')->middleware('throttle:120,1');
+        Route::delete('social-stories/{story}', 'destroy');
+    });
 
     /**   user logout **/
     Route::get('logout', [AuthApiController::class, 'logout']);

@@ -5,9 +5,7 @@ namespace App\Helpers\SMPush;
 use App\Helpers\AppHelper;
 use App\Models\UserNotification;
 use Illuminate\Http\JsonResponse;
-use Exception;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Exception\MessagingException;
 use Kreait\Firebase\Factory;
@@ -17,16 +15,6 @@ use Kreait\Firebase\Messaging\CloudMessage;
 
 class SMPushNotification
 {
-    private static function resolveBadgeCountForUser(int $userId): int
-    {
-        $unseenCount = UserNotification::query()
-            ->where('user_id', $userId)
-            ->where('is_seen', 0)
-            ->count();
-
-        return max(1, $unseenCount + 1);
-    }
-
     /**
      * @throws MessagingException
      * @throws FirebaseException
@@ -35,14 +23,15 @@ class SMPushNotification
                                   string $message,
                                   array  $data,
                                   array  $recipients,
-                                  bool   $isSilence = false): void
+                                  bool   $isSilence = false,
+                                  bool   $highPriority = false): array
     {
         $data['android_channel_id'] = 'ahpu_channel_11';
 
         $credentialsPath = storage_path('firebase-adminsdk.json');
         if (!file_exists($credentialsPath) || !is_readable($credentialsPath) || filesize($credentialsPath) === 0) {
             Log::warning("Firebase credentials file missing, empty or unreadable at [{$credentialsPath}]. Push notification skipped.");
-            return;
+            return ['sent' => 0, 'failed' => count($recipients), 'error' => 'Firebase service credentials are missing or unreadable.'];
         }
 
         try {
@@ -51,7 +40,7 @@ class SMPushNotification
             $messaging = $firebase->createMessaging();
         } catch (\Throwable $e) {
             Log::error("Failed to initialize Firebase with service account [{$credentialsPath}]: " . $e->getMessage());
-            return;
+            return ['sent' => 0, 'failed' => count($recipients), 'error' => 'Firebase could not initialize. Check the service account configuration.'];
         }
 
         $fromArray = $isSilence ? [] : [
@@ -61,22 +50,34 @@ class SMPushNotification
             ],
         ];
 
+        $androidConfig = AndroidConfig::fromArray([
+            'priority' => $highPriority ? 'high' : 'normal',
+            'notification' => [
+                'sound' => 'default',
+                'channel_id' => 'ahpu_channel_11',
+            ],
+        ]);
+
         $baseMessage = CloudMessage
             ::fromArray($fromArray)
             ->withData($data)
-            ->withAndroidConfig(
-                AndroidConfig::new()
-                    ->withSound('default')
-            );
+            ->withAndroidConfig($androidConfig);
 
-        $responses = [];
+        $userIds = array_keys(array_filter($recipients));
+        $unseenCounts = UserNotification::query()
+            ->whereIn('user_id', $userIds)
+            ->where('is_seen', 0)
+            ->selectRaw('user_id, COUNT(*) as total')
+            ->groupBy('user_id')
+            ->pluck('total', 'user_id');
+        $outbound = [];
 
         foreach ($recipients as $userId => $token) {
             if (empty($token)) {
                 continue;
             }
 
-            $badgeCount = self::resolveBadgeCountForUser((int) $userId);
+            $badgeCount = max(1, (int) ($unseenCounts[$userId] ?? 0) + 1);
 
             if ($isSilence) {
                 $apnsPayload = [
@@ -110,19 +111,46 @@ class SMPushNotification
                 ];
             }
 
-            $messageForRecipient = $baseMessage
+            $outbound[$userId] = $baseMessage
                 ->toToken((string) $token)
                 ->withApnsConfig(ApnsConfig::fromArray($apnsPayload));
+        }
 
+        $sent = 0;
+        $failed = 0;
+        foreach (array_chunk($outbound, 500, true) as $batch) {
             try {
-                $responses[$userId] = $messaging->send($messageForRecipient);
-            } catch (Exception $exception) {
-                $responses[$userId] = [
-                    'error' => $exception->getMessage(),
-                ];
+                $reports = $messaging->sendAll(array_values($batch))->getItems();
+                foreach ($reports as $index => $report) {
+                    $userId = array_keys($batch)[$index] ?? null;
+                    if ($report->isSuccess()) {
+                        $sent++;
+                        continue;
+                    }
+
+                    $failed++;
+                    $exception = $report->error();
+                    Log::warning('Firebase push delivery failed for recipient.', [
+                        'user_id' => $userId,
+                        'exception' => $exception ? get_class($exception) : null,
+                        'code' => $exception?->getCode(),
+                    ]);
+                }
+            } catch (\Throwable $exception) {
+                $failed += count($batch);
+                Log::error('Firebase push batch failed.', [
+                    'recipient_count' => count($batch),
+                    'exception' => get_class($exception),
+                    'code' => $exception->getCode(),
+                ]);
             }
         }
 
-        Log::info('firebase response '.json_encode($responses));
+        Log::info('Firebase push delivery completed.', ['accepted' => $sent, 'failed' => $failed]);
+        return [
+            'sent' => $sent,
+            'failed' => $failed,
+            'error' => $failed ? 'Firebase rejected some push messages. Check the server log for delivery errors.' : null,
+        ];
     }
 }

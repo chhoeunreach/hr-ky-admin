@@ -5,11 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class SocialReward extends Model
 {
     use HasFactory;
+
+    public const PHOTO_FIELDS = ['fb_post_photo', 'fb_story_photo', 'tiktok_photo'];
 
     protected $table = 'hrs_addon_social_rewards';
 
@@ -32,9 +35,31 @@ class SocialReward extends Model
         'reward_points' => 'integer',
     ];
 
+    protected static function booted(): void
+    {
+        static::updated(function (SocialReward $reward) {
+            foreach (self::PHOTO_FIELDS as $field) {
+                if ($reward->wasChanged($field)) {
+                    self::removeUnusedPhoto($reward->getOriginal($field));
+                }
+            }
+        });
+
+        static::deleted(function (SocialReward $reward) {
+            foreach (self::PHOTO_FIELDS as $field) {
+                self::removeUnusedPhoto($reward->{$field});
+            }
+        });
+    }
+
     public function employee(): BelongsTo
     {
         return $this->belongsTo(User::class, 'existing_employee_id', 'id')->withTrashed();
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(SocialRewardAudit::class, 'target_record_id')->latest('id');
     }
 
     public function toApiArray(): array
@@ -61,7 +86,7 @@ class SocialReward extends Model
         ];
     }
 
-    private function photoUrl(?string $path): string
+    public function photoUrl(?string $path): string
     {
         if (!$path) {
             return '';
@@ -72,5 +97,24 @@ class SocialReward extends Model
         }
 
         return Storage::disk('public')->url($path);
+    }
+
+    public static function removeUnusedPhoto(?string $path): void
+    {
+        if (!$path || str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return;
+        }
+
+        $inUse = static::query()
+            ->where(function ($query) use ($path) {
+                foreach (self::PHOTO_FIELDS as $field) {
+                    $query->orWhere($field, $path);
+                }
+            })
+            ->exists();
+
+        if (!$inUse) {
+            rescue(fn () => Storage::disk('public')->delete($path), report: true);
+        }
     }
 }

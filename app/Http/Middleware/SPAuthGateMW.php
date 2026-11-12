@@ -25,7 +25,7 @@ class SPAuthGateMW
         $roleId = $user?->role_id ?? null;
 
         // Admin and Super Admin always have FULL access to all features and permissions
-        if (Auth::guard('admin')->check() || in_array($roleSlug, ['admin', 'supper-admin']) || in_array($roleId, [1, 7])) {
+        if (Auth::guard('admin')->check() || in_array($roleSlug, ['admin', 'super-admin', 'supper-admin'], true)) {
             Gate::before(function ($user = null, ?string $ability = null) {
                 return true; // Always allow for admin users
             });

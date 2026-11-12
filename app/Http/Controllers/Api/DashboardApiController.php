@@ -99,6 +99,7 @@ class DashboardApiController extends Controller
                 'key' => $advanceSalaryApproveKey,
                 'status' => $canApproveAdvanceSalary ? '1' : '0',
             ]);
+            $features = app(\App\Services\Authorization\MobilePermissions::class)->features($features);
             $homeCards = $this->getHomeCards($features);
             $features = $this->appendHomeCardFeatureAliases($features);
 
