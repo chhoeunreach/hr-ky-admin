@@ -3328,4 +3328,8 @@ return [
     'import_excel' => 'នាំចូល Excel',
     'select_device' => 'ជ្រើសរើសឧបករណ៍',
     'select_service' => 'ជ្រើសរើសសេវាកម្ម',
+    'flash_view' => 'ទិដ្ឋភាពរហ័ស',
+    'home_highlights' => 'ព័ត៌មានលេចធ្លោទំព័រដើម',
+    'social_feed' => 'ព័ត៌មានសង្គម',
+    'social_reports' => 'របាយការណ៍សង្គម',
 ];

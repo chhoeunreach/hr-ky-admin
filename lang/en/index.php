@@ -3257,4 +3257,8 @@ return [
     'import_excel' => 'Import Excel',
     'select_device' => 'Select Device',
     'select_service' => 'Select Service',
+    'flash_view' => 'Flash View',
+    'home_highlights' => 'Home Highlights',
+    'social_feed' => 'Social Feed',
+    'social_reports' => 'Social Reports',
 ];
