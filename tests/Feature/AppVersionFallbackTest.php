@@ -48,7 +48,7 @@ class AppVersionFallbackTest extends TestCase
         $this->assertNull($data['data']['server_fallback_url']);
     }
 
-    public function test_backup_qr_contains_both_addresses_and_the_page_keeps_legacy_qr(): void
+    public function test_show_qr_page_renders_only_the_single_scan_connect_qr(): void
     {
         config(['app.mobile_app_url' => 'http://192.168.0.113:8000',
             'app.mobile_app_fallback_url' => 'http://192.168.0.113:8001']);
@@ -59,11 +59,10 @@ class AppVersionFallbackTest extends TestCase
         ], json_decode(base64_decode($payload), true));
         $html = view('admin.print_qr', [
             'url' => base64_encode(MobileServerConfiguration::primaryUrl()),
-            'backupUrl' => $payload,
         ])->render();
-        $this->assertStringContainsString('Connect with automatic backup', $html);
-        $this->assertStringContainsString('For older mobile apps', $html);
-        $this->assertSame(2, substr_count($html, '<svg'));
+        $this->assertStringNotContainsString('Connect with automatic backup', $html);
+        $this->assertStringNotContainsString('For older mobile apps', $html);
+        $this->assertSame(1, substr_count($html, '<svg'));
     }
 
     public function test_invalid_or_same_server_backup_is_not_published(): void

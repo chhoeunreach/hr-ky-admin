@@ -152,9 +152,8 @@ class DashboardController extends Controller
         // Use the host actually serving this page so scanning connects the
         // phone to the current server instead of one static .env address.
         $url = base64_encode(\App\Helpers\MobileServerConfiguration::primaryUrlFromRequest($request));
-        $backupUrl = \App\Helpers\MobileServerConfiguration::qrPayloadForRequest($request);
 
-        return view('admin.print_qr', compact('url', 'backupUrl'));
+        return view('admin.print_qr', compact('url'));
     }
 
     public function employeeChat()
