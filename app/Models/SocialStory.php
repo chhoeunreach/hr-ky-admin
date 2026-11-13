@@ -24,6 +24,11 @@ class SocialStory extends Model
         return $this->hasMany(SocialStoryView::class);
     }
 
+    public function reactions()
+    {
+        return $this->hasMany(SocialStoryReaction::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('expires_at', '>', now());

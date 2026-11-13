@@ -58,6 +58,7 @@ class CommunityFeatureTest extends TestCase
         (require __DIR__.'/../../database/migrations/2026_11_11_000007_add_social_post_preferences.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_11_000008_add_social_post_location.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_12_000001_create_social_stories.php')->up();
+        (require __DIR__.'/../../database/migrations/2026_11_13_000001_create_social_story_reactions.php')->up();
         Gate::before(fn ($user,$ability) => in_array($ability,$this->abilities,true));
         Passport::actingAs(User::findOrFail(10));
         Route::middleware(\Illuminate\Routing\Middleware\SubstituteBindings::class)->group(function () {
@@ -109,9 +110,65 @@ class CommunityFeatureTest extends TestCase
 
         SocialStory::findOrFail($id)->update(['expires_at' => now()->subMinute()]);
         $this->getJson('/api/social-stories')->assertJsonCount(0, 'data');
-        Passport::actingAs(User::findOrFail(12));
+                Passport::actingAs(User::findOrFail(12));
         $this->getJson('/api/social-stories')->assertJsonCount(0, 'data');
     }
+
+    public function test_story_reactions_follow_the_facebook_flow(): void
+    {
+        $this->grantStories();
+        $id = $this->postJson('/api/social-stories', [
+            'media_type' => 'text',
+            'caption' => 'Team celebration',
+        ])->assertCreated()->json('data.id');
+        $this->assertDatabaseHas('social_stories', ['id' => $id, 'company_id' => 1]);
+
+        Passport::actingAs(User::findOrFail(11));
+        $this->getJson('/api/social-stories')
+            ->assertOk()
+            ->assertJsonPath('data.0.stories.0.can_react', true)
+            ->assertJsonPath('data.0.stories.0.my_reaction', null)
+            ->assertJsonPath('data.0.stories.0.reactions_count', 0);
+
+        $this->putJson('/api/social-stories/'.$id.'/reaction', ['reaction' => 'love'])
+            ->assertOk()
+            ->assertJsonPath('data.my_reaction', 'love')
+            ->assertJsonPath('data.reactions.love', 1)
+            ->assertJsonPath('data.reactions_count', 1);
+        $this->assertDatabaseHas('social_story_reactions', [
+            'social_story_id' => $id,
+            'user_id' => 11,
+            'reaction' => 'love',
+        ]);
+
+        $this->putJson('/api/social-stories/'.$id.'/reaction', ['reaction' => 'haha'])
+            ->assertOk()
+            ->assertJsonPath('data.my_reaction', 'haha')
+            ->assertJsonPath('data.reactions.love', null)
+            ->assertJsonPath('data.reactions.haha', 1)
+            ->assertJsonPath('data.reactions_count', 1);
+
+        Passport::actingAs(User::findOrFail(10));
+        $this->getJson('/api/social-stories/'.$id.'/reactions')
+            ->assertOk()
+            ->assertJsonPath('data.0.reaction', 'haha')
+            ->assertJsonPath('data.0.user.id', 11);
+        $this->putJson('/api/social-stories/'.$id.'/reaction', ['reaction' => 'love'])
+            ->assertForbidden();
+
+        Passport::actingAs(User::findOrFail(11));
+        $this->putJson('/api/social-stories/'.$id.'/reaction', ['reaction' => null])
+            ->assertOk()
+            ->assertJsonPath('data.my_reaction', null)
+            ->assertJsonPath('data.reactions_count', 0);
+        $this->assertDatabaseCount('social_story_reactions', 0);
+
+        Passport::actingAs(User::findOrFail(11));
+        $this->putJson('/api/social-stories/'.$id.'/reaction', ['reaction' => 'invalid'])
+            ->assertUnprocessable();
+    }
+
+
     public function test_direct_publishing_ownership_and_company_isolation(): void
     {
         $this->grantFeed();

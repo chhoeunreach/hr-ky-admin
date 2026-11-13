@@ -6,12 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\SocialStory;
 use App\Models\SocialStoryView;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class SocialStoryApiController extends Controller
 {
+    public const REACTIONS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
+
     public function index(Request $request)
     {
         $companyId = $this->company($request);
@@ -22,6 +25,7 @@ class SocialStoryApiController extends Controller
                 'author:id,name,avatar,department_id',
                 'author.department:id,dept_name',
                 'views' => fn ($query) => $query->where('user_id', $request->user()->id),
+                'reactions:id,social_story_id,user_id,reaction',
             ])
             ->latest('id')
             ->get();
@@ -121,6 +125,50 @@ class SocialStoryApiController extends Controller
         return response()->json(['message' => 'Story deleted.']);
     }
 
+    public function react(Request $request, SocialStory $story)
+    {
+        $this->scope($request, $story, true);
+        abort_if((int) $story->user_id === (int) $request->user()->id, 403, 'You cannot react to your own story.');
+        $data = $request->validate(['reaction' => ['nullable', Rule::in(self::REACTIONS)]]);
+        DB::transaction(function () use ($story, $request, $data) {
+            SocialStory::whereKey($story->id)->lockForUpdate()->firstOrFail();
+            if (empty($data['reaction'])) {
+                $story->reactions()->where('user_id', $request->user()->id)->delete();
+            } else {
+                $story->reactions()->updateOrCreate(
+                    ['user_id' => $request->user()->id],
+                    ['reaction' => $data['reaction']],
+                );
+            }
+        });
+
+        return response()->json([
+            'data' => $this->storyData($story->fresh()->load(['author.department', 'reactions']), $request),
+        ]);
+    }
+
+    public function reactions(Request $request, SocialStory $story)
+    {
+        $this->scope($request, $story, false);
+        abort_unless(
+            (int) $story->user_id === (int) $request->user()->id || Gate::allows('social_feed.moderate'),
+            403,
+            'Only the story owner can view reactions.',
+        );
+        $items = $story->reactions()
+            ->with(['user:id,name,avatar,department_id', 'user.department:id,dept_name'])
+            ->latest('id')
+            ->get()
+            ->map(fn ($reaction) => [
+                'reaction' => $reaction->reaction,
+                'user' => $this->author($reaction->user),
+                'created_at' => $reaction->created_at?->toIso8601String(),
+            ])
+            ->values();
+
+        return response()->json(['data' => $items]);
+    }
+
     private function company(Request $request): int
     {
         abort_if($request->user()->company_id === null, 403, 'Your employee account has no company assigned.');
@@ -136,6 +184,12 @@ class SocialStoryApiController extends Controller
     private function storyData(SocialStory $story, Request $request): array
     {
         $own = (int) $story->user_id === (int) $request->user()->id;
+        $reactions = $story->relationLoaded('reactions')
+            ? $story->reactions->countBy('reaction')->all()
+            : $story->reactions()->selectRaw('reaction, COUNT(*) as total')->groupBy('reaction')->pluck('total', 'reaction')->all();
+        $myReaction = $story->relationLoaded('reactions')
+            ? optional($story->reactions->firstWhere('user_id', $request->user()->id))->reaction
+            : $story->reactions()->where('user_id', $request->user()->id)->value('reaction');
         return [
             'id' => $story->id,
             'media_type' => $story->media_type,
@@ -149,7 +203,11 @@ class SocialStoryApiController extends Controller
             'expires_at' => $story->expires_at?->toIso8601String(),
             'is_mine' => $own,
             'can_delete' => $own && Gate::allows('social_feed.stories.delete'),
+            'can_react' => !$own,
             'is_seen' => $story->relationLoaded('views') ? $story->views->isNotEmpty() : false,
+            'reactions' => (object) $reactions,
+            'reactions_count' => (int) array_sum($reactions),
+            'my_reaction' => $myReaction,
             'author' => $this->author($story->author),
         ];
     }

@@ -81,6 +81,8 @@ return [
         'SocialStoryApiController@index' => ['social-feed', 'social_feed.stories.view'],
         'SocialStoryApiController@store' => ['social-feed', 'social_feed.stories.create'],
         'SocialStoryApiController@view' => ['social-feed', 'social_feed.stories.view'],
+        'SocialStoryApiController@react' => ['social-feed', 'social_feed.stories.view'],
+        'SocialStoryApiController@reactions' => ['social-feed', 'social_feed.stories.view'],
         'SocialStoryApiController@destroy' => ['social-feed', 'social_feed.stories.delete'],
         // Direct Firestore chat operations; also enforce these in Firebase rules.
         'DirectChat@read' => ['chat', 'view_employee_chat'],

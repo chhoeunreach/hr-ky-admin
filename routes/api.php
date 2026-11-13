@@ -139,6 +139,8 @@ Route::group([
         Route::get('social-stories', 'index');
         Route::post('social-stories', 'store')->middleware('throttle:20,1');
         Route::post('social-stories/{story}/view', 'view')->middleware('throttle:120,1');
+        Route::put('social-stories/{story}/reaction', 'react')->middleware('throttle:120,1');
+        Route::get('social-stories/{story}/reactions', 'reactions');
         Route::delete('social-stories/{story}', 'destroy');
     });
 
