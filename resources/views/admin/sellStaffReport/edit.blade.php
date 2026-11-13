@@ -138,8 +138,8 @@
                                     <td><input type="text" name="lines[{{ $index }}][model_number]" class="form-control" value="{{ $line['model_number'] ?? '' }}"></td>
                                     <td><input type="text" name="lines[{{ $index }}][color]" class="form-control" value="{{ $line['color'] ?? '' }}"></td>
                                     <td><input type="text" name="lines[{{ $index }}][storage]" class="form-control" value="{{ $line['storage'] ?? '' }}"></td>
-                                    <td><input type="number" min="1" step="0.01" name="lines[{{ $index }}][qty]" class="form-control" value="{{ $line['qty'] ?? 1 }}"></td>
-                                    <td><input type="number" min="0" step="0.01" name="lines[{{ $index }}][unit_price]" class="form-control" value="{{ $line['unit_price'] ?? '' }}"></td>
+                                    <td><input type="number" inputmode="numeric" required min="1" step="1" name="lines[{{ $index }}][qty]" class="form-control" value="{{ $line['qty'] ?? 1 }}"></td>
+                                    <td><input type="number" inputmode="decimal" required min="0" step="0.01" name="lines[{{ $index }}][unit_price]" class="form-control" value="{{ $line['unit_price'] ?? '' }}"></td>
                                     <td><button type="button" class="btn btn-danger btn-sm remove-line">{{ __('index.delete') }}</button></td>
                                 </tr>
                             @endforeach
@@ -166,7 +166,7 @@
 
             const buildInput = (index, key, type = 'text', value = '') => {
                 const step = type === 'number' ? ' step="0.01"' : '';
-                const min = type === 'number' ? ' min="0"' : '';
+                const min = type === 'number' ? ' min="0" inputmode="decimal" required' : '';
                 return `<input type="${type}"${min}${step} name="lines[${index}][${key}]" class="form-control" value="${value}">`;
             };
 
@@ -181,7 +181,7 @@
                     <td>${buildInput(lineIndex, 'model_number')}</td>
                     <td>${buildInput(lineIndex, 'color')}</td>
                     <td>${buildInput(lineIndex, 'storage')}</td>
-                    <td><input type="number" min="1" step="0.01" name="lines[${lineIndex}][qty]" class="form-control" value="1"></td>
+                    <td><input type="number" inputmode="numeric" required min="1" step="1" name="lines[${lineIndex}][qty]" class="form-control" value="1"></td>
                     <td>${buildInput(lineIndex, 'unit_price', 'number')}</td>
                     <td><button type="button" class="btn btn-danger btn-sm remove-line">{{ __('index.delete') }}</button></td>
                 `;

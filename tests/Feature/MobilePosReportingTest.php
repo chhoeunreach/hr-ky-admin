@@ -61,6 +61,17 @@ class MobilePosReportingTest extends TestCase
         Schema::create('permissions',function (Blueprint $t) {$t->id(); $t->string('permission_key');});
         Schema::create('permission_roles',function (Blueprint $t) {$t->id(); $t->integer('permission_id'); $t->integer('role_id');});
         DB::table('roles')->insert(['id'=>2,'name'=>'Employee','slug'=>'employee']);
+        // Exercise the real mobile permission middleware with explicit sales grants.
+        $abilities = ['mobile.menu.sell-staff-report'];
+        foreach (config('mobile_permissions.functions') as $action => $rule) {
+            if (str_starts_with($action, 'SellOutReportController@') && $rule !== null) {
+                $abilities[] = $rule[1];
+            }
+        }
+        foreach (array_unique($abilities) as $ability) {
+            $permissionId = DB::table('permissions')->insertGetId(['permission_key' => $ability]);
+            DB::table('permission_roles')->insert(['permission_id' => $permissionId, 'role_id' => 2]);
+        }
         Schema::create('branches',function (Blueprint $t) {$t->id(); $t->string('name');});
         Schema::create('departments',function (Blueprint $t) {$t->id(); $t->string('dept_name'); $t->integer('branch_id')->nullable();});
         Schema::create('office_times',function (Blueprint $t) {
@@ -211,6 +222,65 @@ class MobilePosReportingTest extends TestCase
         $this->getJson($this->url(['per_page'=>501]))->assertUnprocessable();
         \Illuminate\Support\Facades\Auth::forgetGuards();
         $this->getJson($this->url())->assertUnauthorized();
+    }
+
+    public function test_number_fields_round_trip_on_create_and_edit_for_all_services(): void
+    {
+        foreach (['Sell', 'Material', 'Iron', 'Repair', 'Buy In', 'SellSim', 'iCloud Cus'] as $type) {
+            // Multipart Flutter requests send numeric values as strings.
+            $payload = ['seller_name' => 'Employee', 'service_type' => $type,
+                'lines' => [['product_name' => 'Number entry', 'qty' => '2',
+                    'unit_price' => '12.50', 'serial_number' => 'SERIAL123']]];
+            $id = $this->postJson('/api/sell-out-reports', $payload)->assertCreated()
+                ->assertJsonPath('data.lines.0.qty', 2)
+                ->assertJsonPath('data.lines.0.unit_price', '12.50')
+                ->assertJsonPath('data.total_amount', '25.00')->json('data.id');
+            $payload['lines'][0]['qty'] = '3';
+            $payload['lines'][0]['unit_price'] = '0';
+            $this->putJson('/api/sell-out-reports/'.$id, $payload)->assertOk()
+                ->assertJsonPath('data.lines.0.qty', 3)
+                ->assertJsonPath('data.total_amount', '0.00');
+        }
+    }
+
+    public function test_api_rejects_invalid_numbers_without_changing_saved_reports(): void
+    {
+        foreach (['qty' => ['', '0', '-1', '1.5', 'abc'],
+            'unit_price' => ['', '-1', 'abc', 'NaN', 'Infinity']] as $field => $values) {
+            foreach ($values as $value) {
+                $payload = ['seller_name' => 'Employee', 'service_type' => 'Material',
+                    'lines' => [['product_name' => 'Number entry', 'qty' => '2', 'unit_price' => '12.50']]];
+                $payload['lines'][0][$field] = $value;
+                $this->postJson('/api/sell-out-reports', $payload)->assertUnprocessable()
+                    ->assertJsonValidationErrors('lines.0.'.$field);
+                $this->putJson('/api/sell-out-reports/1', $payload)->assertUnprocessable()
+                    ->assertJsonValidationErrors('lines.0.'.$field);
+            }
+        }
+        $this->assertSame(7, DB::table('sell_out_reports')->count());
+        $this->assertEquals(120, DB::table('sell_out_reports')->where('id', 1)->value('total_amount'));
+    }
+
+    public function test_admin_rejects_fractional_quantity_and_blank_price_before_saving(): void
+    {
+        \Illuminate\Support\Facades\Gate::before(fn () => true);
+        $controller = app(\App\Http\Controllers\Web\SellStaffReportController::class);
+        foreach (['store', 'update'] as $action) {
+            foreach (['qty' => '1.5', 'unit_price' => ''] as $field => $value) {
+                $payload = ['seller_name' => 'Employee', 'service_type' => 'Material',
+                    'lines' => [['product_name' => 'Number entry', 'sku' => 'SKU1', 'qty' => '2', 'unit_price' => '12.50']]];
+                $payload['lines'][0][$field] = $value;
+                $request = \Illuminate\Http\Request::create('/', 'POST', $payload);
+                try {
+                    $action === 'store' ? $controller->store($request) : $controller->update($request, 1);
+                    $this->fail('Invalid number must be rejected before database writes.');
+                } catch (\Illuminate\Validation\ValidationException $error) {
+                    $this->assertArrayHasKey('lines.0.'.$field, $error->errors());
+                }
+            }
+        }
+        $this->assertSame(7, DB::table('sell_out_reports')->count());
+        $this->assertEquals(120, DB::table('sell_out_reports')->where('id', 1)->value('total_amount'));
     }
 
     public function test_create_detail_and_edit_refresh_dashboard_totals_for_each_service(): void

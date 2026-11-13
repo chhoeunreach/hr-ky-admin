@@ -105,8 +105,8 @@ class SellStaffReportController extends Controller
             'lines.*.model_number' => ['nullable', 'string', 'max:255'],
             'lines.*.color' => ['nullable', 'string', 'max:255'],
             'lines.*.storage' => ['nullable', 'string', 'max:255'],
-            'lines.*.qty' => ['required', 'numeric', 'min:1'],
-            'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'lines.*.qty' => ['required', 'integer', 'min:1'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'photos' => ['nullable', 'array'],
             'photos.*' => ['file', 'mimes:jpg,jpeg,png,webp,heic', 'max:10240'],
         ]);
@@ -151,7 +151,7 @@ class SellStaffReportController extends Controller
 
             foreach ($lines as $lineData) {
                 $identifier = $this->resolvePrimaryIdentifier($lineData);
-                $qty = (float) ($lineData['qty'] ?? 1);
+                $qty = (int) $lineData['qty'];
                 $unitPrice = array_key_exists('unit_price', $lineData) && $lineData['unit_price'] !== null
                     ? (float) $lineData['unit_price']
                     : null;
@@ -255,8 +255,8 @@ class SellStaffReportController extends Controller
             'lines.*.model_number' => ['nullable', 'string', 'max:255'],
             'lines.*.color' => ['nullable', 'string', 'max:255'],
             'lines.*.storage' => ['nullable', 'string', 'max:255'],
-            'lines.*.qty' => ['required', 'numeric', 'min:1'],
-            'lines.*.unit_price' => ['nullable', 'numeric', 'min:0'],
+            'lines.*.qty' => ['required', 'integer', 'min:1'],
+            'lines.*.unit_price' => ['required', 'numeric', 'min:0'],
             'delete_photos' => ['nullable', 'array'],
             'delete_photos.*' => ['integer'],
             'photos' => ['nullable', 'array'],
@@ -302,7 +302,7 @@ class SellStaffReportController extends Controller
 
             foreach ($lines as $lineData) {
                 $identifier = $this->resolvePrimaryIdentifier($lineData);
-                $qty = (float) ($lineData['qty'] ?? 1);
+                $qty = (int) $lineData['qty'];
                 $unitPrice = array_key_exists('unit_price', $lineData) && $lineData['unit_price'] !== null
                     ? (float) $lineData['unit_price']
                     : null;
