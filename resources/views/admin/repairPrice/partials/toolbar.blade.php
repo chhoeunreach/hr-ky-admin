@@ -35,3 +35,7 @@
     'directorySearchInForm' => true,
     'directoryLive' => false,
 ])
+
+@if($repairEntity !== 'prices' && \Illuminate\Support\Facades\Gate::any($repairAbilities))
+    @include('admin.repairPrice.partials.catalog-transfer', ['catalogEntity' => $repairEntity, 'catalogTitle' => $repairTitle])
+@endif

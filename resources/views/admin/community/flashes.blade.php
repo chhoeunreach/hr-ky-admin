@@ -2,6 +2,7 @@
 @section('title', 'Flash View')
 @section('action', 'Manage announcements')
 @section('styles')
+<link rel="stylesheet" href="{{ asset('assets/css/directory-table-tools.css') }}?v={{ filemtime(public_path('assets/css/directory-table-tools.css')) }}">
 <style>
 .fv-page{--ink:#172b4d;--muted:#718096;--line:#e8edf3;--soft:#f6f8fb;color:var(--ink)}
 .fv-hero{position:relative;overflow:hidden;border:0;border-radius:16px;background:linear-gradient(120deg,#123b67,#176b78);color:#fff;box-shadow:0 10px 26px rgba(24,57,91,.14)}.fv-hero:after{content:"";position:absolute;width:240px;height:240px;border:1px solid rgba(255,255,255,.14);border-radius:50%;right:-55px;top:-110px;box-shadow:0 0 0 28px rgba(255,255,255,.04),0 0 0 58px rgba(255,255,255,.03)}.fv-hero .card-body{position:relative;z-index:1;padding:28px 32px}.fv-eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:#c1e7e9;font-weight:700}.fv-hero h2{color:white;font-size:1.6rem;font-weight:700;margin:.45rem 0}.fv-hero p{color:rgba(255,255,255,.78);margin:0;max-width:720px}
@@ -10,29 +11,75 @@
 .fv-table{margin:0}.fv-table thead th{background:var(--soft);border-top:0;color:#66768a;text-transform:uppercase;letter-spacing:.055em;font-size:.69rem;font-weight:700;padding:14px 15px;white-space:nowrap}.fv-table td{padding:15px;vertical-align:middle;border-color:#edf0f4}.fv-title{font-weight:650;color:#213650;max-width:230px}.fv-sub{color:var(--muted);font-size:.79rem;margin-top:4px}.fv-snippet{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:.78rem;margin-top:5px}.fv-kind{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;color:#53657a;border-radius:20px;padding:5px 9px;font-size:.77rem;font-weight:600}.fv-status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-weight:650;font-size:.76rem;white-space:nowrap}.fv-status:before{content:"";width:6px;height:6px;background:currentColor;border-radius:50%}.fv-status-live{background:#e7f7ef;color:#198754}.fv-status-scheduled{background:#fff5dd;color:#a87500}.fv-status-expired{background:#f0f2f5;color:#68778b}.fv-status-draft{background:#edf1f5;color:#66768a}.fv-audience{font-size:.8rem;color:#596b80;line-height:1.65;min-width:160px}.fv-audience strong{color:#334860;font-weight:600}.fv-chip{display:inline-block;max-width:180px;padding:3px 7px;margin:1px 2px 1px 0;border-radius:5px;background:#f1f5f9;color:#53657a;font-size:.73rem;white-space:normal}.fv-chip-all{background:#e8f5f4;color:#167279}.fv-schedule{font-size:.8rem;color:#596b80;min-width:165px}.fv-actions{display:flex;gap:6px;align-items:center;white-space:nowrap}.fv-actions form{margin:0}.fv-alert-meta{font-size:.76rem;color:var(--muted)}.fv-empty{text-align:center;padding:56px 20px}.fv-empty-icon{width:54px;height:54px;margin:0 auto 14px;border-radius:16px;background:#eaf4f5;color:#19777d;display:grid;place-items:center}
 .fv-title,.fv-snippet,.fv-audience,.fv-schedule{max-width:230px}.fv-title,.fv-snippet,.fv-cell-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;white-space:normal;overflow-wrap:anywhere}.fv-snippet{max-width:230px}.fv-cell-view{border:0;background:none;color:#14747a;padding:3px 0 0;font-size:.74rem;font-weight:650;text-decoration:none}.fv-cell-view:hover{text-decoration:underline;color:#0e555a}.fv-details-dialog{width:min(560px,calc(100vw - 28px));max-height:min(75vh,680px);padding:0;border:0;border-radius:14px;box-shadow:0 24px 80px rgba(17,36,57,.28);color:#263c54}.fv-details-dialog::backdrop{background:rgba(16,31,50,.5);backdrop-filter:blur(2px)}.fv-details-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 20px;border-bottom:1px solid #e8edf3;background:#f7f9fb}.fv-details-head h5{margin:0;font-size:1rem;font-weight:700}.fv-details-close{border:0;background:transparent;color:#617287;font-size:1.5rem;line-height:1}.fv-details-content{padding:20px;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;max-height:calc(75vh - 70px);line-height:1.6;font-size:.9rem}
 @media(max-width:1100px){.fv-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:767px){.fv-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.fv-hero .card-body{padding:22px}.fv-table td{padding:12px}.fv-actions{flex-wrap:wrap;white-space:normal}}
+.fv-table-card .directory-list-heading{border-bottom:1px solid var(--line)}
+#flash-list-block[aria-busy="true"]{opacity:.55;pointer-events:none}
 </style>
 @endsection
 @section('main-content')
 @php($status = $status ?? 'all')
 @php($search = $search ?? '')
+@php($mediaType = $mediaType ?? '')
+@php($displayPolicy = $displayPolicy ?? '')
+@php($perPage = $perPage ?? '25')
 @php($statusCounts = $statusCounts ?? ['all' => $items->total(), 'live' => 0, 'scheduled' => 0, 'draft' => 0, 'expired' => 0])
 <div class="fv-page">
+<div id="flashDirectoryMessage" class="alert alert-danger d-none" role="alert" data-failed="{{ __('flash.list_failed') }}"></div>
 @include('admin.section.flash_message')
 <div class="card fv-hero mb-4"><div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3"><div><div class="fv-eyebrow">Employee communications</div><h2>Flash View popups</h2><p>Create in-app announcements with media, audience targeting, scheduling, and instant alerts.</p></div><a class="btn btn-light text-primary fw-semibold" href="{{ route('admin.community.flash-create') }}"><i data-feather="plus" class="me-1"></i>Create announcement</a></div></div>
 <div class="fv-metrics mb-4">
-<a class="fv-metric {{ $status === 'all' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes') }}"><div class="fv-metric-label">All announcements<span class="fv-dot"></span></div><div class="fv-metric-value">{{ $statusCounts['all'] }}</div></a>
-<a class="fv-metric {{ $status === 'live' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', ['status' => 'live']) }}"><div class="fv-metric-label">Live<span class="fv-dot fv-dot-live"></span></div><div class="fv-metric-value">{{ $statusCounts['live'] }}</div></a>
-<a class="fv-metric {{ $status === 'scheduled' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', ['status' => 'scheduled']) }}"><div class="fv-metric-label">Scheduled<span class="fv-dot fv-dot-scheduled"></span></div><div class="fv-metric-value">{{ $statusCounts['scheduled'] }}</div></a>
-<a class="fv-metric {{ $status === 'draft' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', ['status' => 'draft']) }}"><div class="fv-metric-label">Drafts<span class="fv-dot fv-dot-draft"></span></div><div class="fv-metric-value">{{ $statusCounts['draft'] }}</div></a>
-<a class="fv-metric {{ $status === 'expired' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', ['status' => 'expired']) }}"><div class="fv-metric-label">Expired<span class="fv-dot fv-dot-expired"></span></div><div class="fv-metric-value">{{ $statusCounts['expired'] }}</div></a>
+<a class="fv-metric {{ $status === 'all' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', array_merge(request()->except('page'), ['status' => 'all'])) }}"><div class="fv-metric-label">All announcements<span class="fv-dot"></span></div><div class="fv-metric-value">{{ $statusCounts['all'] }}</div></a>
+<a class="fv-metric {{ $status === 'live' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', array_merge(request()->except('page'), ['status' => 'live'])) }}"><div class="fv-metric-label">Live<span class="fv-dot fv-dot-live"></span></div><div class="fv-metric-value">{{ $statusCounts['live'] }}</div></a>
+<a class="fv-metric {{ $status === 'scheduled' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', array_merge(request()->except('page'), ['status' => 'scheduled'])) }}"><div class="fv-metric-label">Scheduled<span class="fv-dot fv-dot-scheduled"></span></div><div class="fv-metric-value">{{ $statusCounts['scheduled'] }}</div></a>
+<a class="fv-metric {{ $status === 'draft' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', array_merge(request()->except('page'), ['status' => 'draft'])) }}"><div class="fv-metric-label">Drafts<span class="fv-dot fv-dot-draft"></span></div><div class="fv-metric-value">{{ $statusCounts['draft'] }}</div></a>
+<a class="fv-metric {{ $status === 'expired' ? 'is-selected' : '' }}" href="{{ route('admin.community.flashes', array_merge(request()->except('page'), ['status' => 'expired'])) }}"><div class="fv-metric-label">Expired<span class="fv-dot fv-dot-expired"></span></div><div class="fv-metric-value">{{ $statusCounts['expired'] }}</div></a>
 </div>
-<div class="card fv-table-card"><div class="card-body">
-<form class="fv-toolbar" method="get" action="{{ route('admin.community.flashes') }}">
-<div class="fv-search"><i data-feather="search" class="fv-search-icon"></i><input class="form-control" type="search" name="q" value="{{ $search }}" placeholder="Search titles and messages…" aria-label="Search Flash Views"></div>
-<select class="form-select fv-filter-status" name="status" aria-label="Filter by status"><option value="all" @selected($status === 'all')>All statuses</option><option value="live" @selected($status === 'live')>Live</option><option value="scheduled" @selected($status === 'scheduled')>Scheduled</option><option value="draft" @selected($status === 'draft')>Draft</option><option value="expired" @selected($status === 'expired')>Expired</option></select>
-<button class="btn btn-outline-primary" type="submit">Apply filters</button>@if($search || $status !== 'all')<a class="btn btn-light" href="{{ route('admin.community.flashes') }}">Clear</a>@endif
+<div class="directory-filter-panel mb-4">
+@include('admin.section.directory-filter-heading', ['directoryCollapse' => 'flashFilterCollapse', 'directoryExpanded' => false])
+<div class="collapse" id="flashFilterCollapse">
+<form id="flashFilterForm" class="directory-filter-form" method="get" action="{{ route('admin.community.flashes') }}">
+<input type="hidden" name="q" value="{{ $search }}">
+<div class="row g-3">
+<div class="col-md-4">
+<label class="form-label" for="flashStatus">{{ __('index.status') }}</label>
+<select class="form-select" id="flashStatus" name="status">
+@foreach(['all' => __('index.all'), 'live' => 'Live', 'scheduled' => 'Scheduled', 'draft' => 'Draft', 'expired' => 'Expired'] as $key => $label)
+<option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
+@endforeach
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label" for="flashMediaType">{{ __('flash.media_type') }}</label>
+<select class="form-select" id="flashMediaType" name="media_type">
+<option value="">{{ __('index.all') }}</option>
+@foreach(\App\Services\Community\CommunityMedia::TYPES as $type)<option value="{{ $type }}" @selected($mediaType === $type)>{{ ucfirst($type) }}</option>@endforeach
+</select>
+</div>
+<div class="col-md-4">
+<label class="form-label" for="flashDisplayPolicy">{{ __('flash.display_frequency') }}</label>
+<select class="form-select" id="flashDisplayPolicy" name="display_policy">
+<option value="">{{ __('index.all') }}</option>
+<option value="once" @selected($displayPolicy === 'once')>Once per employee</option>
+<option value="session" @selected($displayPolicy === 'session')>Every app session</option>
+</select>
+</div>
+</div>
+@include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.community.flashes')])
 </form>
-<div class="table-responsive"><table class="table fv-table"><thead><tr><th>Announcement</th><th>Status</th><th>Audience</th><th>Display</th><th>Schedule</th><th>Actions</th></tr></thead><tbody>
+</div>
+</div>
+<div class="card fv-table-card">
+@include('admin.section.directory-toolbar', [
+    'directoryTable' => 'flashTable', 'directoryForm' => 'flashFilterForm',
+    'directorySearch' => 'flashSearch', 'directoryRecords' => $items,
+    'directoryTitle' => __('index.flash_view'), 'directoryIcon' => 'zap',
+    'directoryPermission' => 'flash_view.manage', 'directoryAddUrl' => route('admin.community.flash-create'),
+    'directoryAddLabel' => 'Create announcement', 'directoryDefaultSize' => '25',
+    'directoryCurrentSize' => $perPage, 'directoryPageSizes' => [25, 50, 100, 200, 'all'],
+    'directorySearchKey' => 'q', 'directoryLive' => true,
+])
+<div id="flash-list-block" data-directory-total="{{ $items->total() }}">
+<div class="card-body">
+<div class="table-responsive"><table class="table fv-table" id="flashTable"><thead><tr><th>Announcement</th><th>Status</th><th>Audience</th><th>Display</th><th>Schedule</th><th data-directory-actions>Actions</th></tr></thead><tbody>
 @forelse($items as $item)
 @php($flashStatus = !$item->is_active ? 'Draft' : ($item->starts_at && $item->starts_at->isFuture() ? 'Scheduled' : ($item->ends_at && $item->ends_at->isPast() ? 'Expired' : 'Live')))
 @php($roleLabels = collect($item->role_ids ?? [])->map(fn ($id) => $roleNames[$id] ?? 'Role #'.$id))
@@ -44,33 +91,43 @@
 @php($bodyDetailId = 'flash-body-'.$item->id)
 @php($audienceDetailId = 'flash-audience-'.$item->id)
 @php($scheduleDetailId = 'flash-schedule-'.$item->id)
-<tr><td><div class="fv-title">{{ $item->title }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Announcement title" data-fv-source="{{ $titleDetailId }}">View full title</button><template id="{{ $titleDetailId }}">{{ $item->title }}</template>@if($item->body)<div class="fv-snippet mt-1">{{ $item->body }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Message" data-fv-source="{{ $bodyDetailId }}">View full message</button><template id="{{ $bodyDetailId }}">{{ $item->body }}</template>@endif<div class="fv-sub"><span class="fv-kind"><i data-feather="{{ $item->media_type === 'text' ? 'file-text' : ($item->media_type === 'image' ? 'image' : ($item->media_type === 'video' ? 'video' : ($item->media_type === 'document' ? 'file' : 'link'))) }}" style="width:13px;height:13px"></i>{{ ucfirst($item->media_type) }}</span> <span class="ms-1">Priority {{ $item->priority }}</span></div></td>
+<tr><td data-directory-value="{{ $item->title }}{{ $item->body ? ' — '.$item->body : '' }}"><div class="fv-title">{{ $item->title }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Announcement title" data-fv-source="{{ $titleDetailId }}">View full title</button><template id="{{ $titleDetailId }}">{{ $item->title }}</template>@if($item->body)<div class="fv-snippet mt-1">{{ $item->body }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Message" data-fv-source="{{ $bodyDetailId }}">View full message</button><template id="{{ $bodyDetailId }}">{{ $item->body }}</template>@endif<div class="fv-sub"><span class="fv-kind"><i data-feather="{{ $item->media_type === 'text' ? 'file-text' : ($item->media_type === 'image' ? 'image' : ($item->media_type === 'video' ? 'video' : ($item->media_type === 'document' ? 'file' : 'link'))) }}" style="width:13px;height:13px"></i>{{ ucfirst($item->media_type) }}</span> <span class="ms-1">Priority {{ $item->priority }}</span></div></td>
 <td><span class="fv-status fv-status-{{ strtolower($flashStatus) }}">{{ $flashStatus }}</span></td>
-<td class="fv-audience"><div class="fv-cell-clamp"><strong>Roles:</strong> {{ $roleLabels->isNotEmpty() ? $roleLabels->implode(', ') : 'All eligible' }}<br><strong>Branches:</strong> {{ $branchLabels->isNotEmpty() ? $branchLabels->implode(', ') : 'All' }}<br><strong>Departments:</strong> {{ $departmentLabels->isNotEmpty() ? $departmentLabels->implode(', ') : 'All' }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Audience" data-fv-source="{{ $audienceDetailId }}">View full audience</button><template id="{{ $audienceDetailId }}">{{ $audienceDetails }}</template></td>
+<td class="fv-audience" data-directory-value="{{ $audienceDetails }}"><div class="fv-cell-clamp"><strong>Roles:</strong> {{ $roleLabels->isNotEmpty() ? $roleLabels->implode(', ') : 'All eligible' }}<br><strong>Branches:</strong> {{ $branchLabels->isNotEmpty() ? $branchLabels->implode(', ') : 'All' }}<br><strong>Departments:</strong> {{ $departmentLabels->isNotEmpty() ? $departmentLabels->implode(', ') : 'All' }}</div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Audience" data-fv-source="{{ $audienceDetailId }}">View full audience</button><template id="{{ $audienceDetailId }}">{{ $audienceDetails }}</template></td>
 <td><div class="fv-audience">{{ $item->display_policy === 'once' ? 'Once per employee' : 'Every app session' }}<div class="fv-sub">{{ $item->display_policy === 'once' ? 'per revision' : 'while active' }}</div></div></td>
-<td class="fv-schedule"><div class="fv-cell-clamp">{{ $item->starts_at?->format('M j, Y H:i') ?? 'Immediately' }}<br><span class="fv-sub">Until {{ $item->ends_at?->format('M j, Y H:i') ?? 'No end date' }}</span></div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Schedule" data-fv-source="{{ $scheduleDetailId }}">View full schedule</button><template id="{{ $scheduleDetailId }}">{{ $scheduleDetails }}</template>@if($item->last_alert_sent_at)<div class="fv-alert-meta mt-1">Alert sent {{ $item->last_alert_sent_at->format('M j, H:i') }} · {{ $item->last_alert_recipient_count }} recipients</div>@endif</td>
+<td class="fv-schedule" data-directory-value="{{ $scheduleDetails }}"><div class="fv-cell-clamp">{{ $item->starts_at?->format('M j, Y H:i') ?? 'Immediately' }}<br><span class="fv-sub">Until {{ $item->ends_at?->format('M j, Y H:i') ?? 'No end date' }}</span></div><button type="button" class="fv-cell-view" data-fv-view data-fv-title="Schedule" data-fv-source="{{ $scheduleDetailId }}">View full schedule</button><template id="{{ $scheduleDetailId }}">{{ $scheduleDetails }}</template>@if($item->last_alert_sent_at)<div class="fv-alert-meta mt-1">Alert sent {{ $item->last_alert_sent_at->format('M j, H:i') }} · {{ $item->last_alert_recipient_count }} recipients</div>@endif</td>
 <td><div class="fv-actions"><a class="btn btn-sm btn-outline-primary" title="Edit and preview" href="{{ route('admin.community.flash-edit', $item) }}"><i data-feather="edit-2" style="width:14px;height:14px"></i></a>
 <form method="post" action="{{ route('admin.community.flash-toggle', $item) }}">@csrf<button class="btn btn-sm btn-outline-{{ $item->is_active ? 'warning' : 'success' }}" title="{{ $item->is_active ? 'Turn off' : 'Enable' }}"><i data-feather="{{ $item->is_active ? 'pause' : 'play' }}" style="width:14px;height:14px"></i></button></form>
 <form method="post" action="{{ route('admin.community.flash-send-alert', $item) }}" onsubmit="return confirm('Send this push alert to matching employees now?')">@csrf<button class="btn btn-sm btn-outline-info" @disabled($flashStatus !== 'Live') title="{{ $flashStatus === 'Live' ? 'Send push alert immediately' : 'Only live announcements can send alerts' }}"><i data-feather="bell" style="width:14px;height:14px"></i><span class="ms-1">Alert now</span></button></form>
 <form method="post" action="{{ route('admin.community.flash-delete', $item) }}" onsubmit="return confirm('Permanently delete this Flash View?')">@csrf @method('DELETE')<button class="btn btn-sm btn-outline-danger" title="Delete"><i data-feather="trash-2" style="width:14px;height:14px"></i></button></form></div></td></tr>
-@empty<tr><td colspan="6"><div class="fv-empty"><div class="fv-empty-icon"><i data-feather="{{ $search || $status !== 'all' ? 'search' : 'zap' }}"></i></div><h5>{{ $search || $status !== 'all' ? 'No matching announcements' : 'No announcements yet' }}</h5><p class="text-muted mb-3">{{ $search || $status !== 'all' ? 'Try changing your search or status filter.' : 'Create your first Flash View to share an announcement in the employee app.' }}</p>@if(!$search && $status === 'all')<a class="btn btn-primary" href="{{ route('admin.community.flash-create') }}"><i data-feather="plus" class="me-1"></i>Create announcement</a>@else<a class="btn btn-light" href="{{ route('admin.community.flashes') }}">Clear filters</a>@endif</div></td></tr>@endforelse
-</tbody></table></div>@if($items->hasPages())<div class="p-3 border-top">{{ $items->links() }}</div>@endif
-</div></div></div>
+@empty<tr><td colspan="6"><div class="fv-empty"><div class="fv-empty-icon"><i data-feather="{{ $search || $status !== 'all' || $mediaType || $displayPolicy ? 'search' : 'zap' }}"></i></div><h5>{{ $search || $status !== 'all' || $mediaType || $displayPolicy ? 'No matching announcements' : 'No announcements yet' }}</h5><p class="text-muted mb-3">{{ $search || $status !== 'all' || $mediaType || $displayPolicy ? 'Try changing your search or filters.' : 'Create your first Flash View to share an announcement in the employee app.' }}</p>@if(!$search && $status === 'all' && !$mediaType && !$displayPolicy)<a class="btn btn-primary" href="{{ route('admin.community.flash-create') }}"><i data-feather="plus" class="me-1"></i>Create announcement</a>@else<a class="btn btn-light" href="{{ route('admin.community.flashes') }}">Clear filters</a>@endif</div></td></tr>@endforelse
+</tbody></table></div>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-top">
+<span class="text-muted small">{{ __('flash.results', ['from' => $items->firstItem() ?? 0, 'to' => $items->lastItem() ?? 0, 'total' => $items->total()]) }}</span>
+{{ $items->links() }}
+</div>
+</div></div></div></div>
 <dialog class="fv-details-dialog" id="fv-details-dialog" aria-labelledby="fv-details-title"><div class="fv-details-head"><h5 id="fv-details-title">Full details</h5><button type="button" class="fv-details-close" data-fv-close aria-label="Close">&times;</button></div><div class="fv-details-content" id="fv-details-content"></div></dialog>
 <script>
 (() => {
   const dialog = document.getElementById('fv-details-dialog');
   const title = document.getElementById('fv-details-title');
   const content = document.getElementById('fv-details-content');
-  document.querySelectorAll('[data-fv-view]').forEach(button => button.addEventListener('click', () => {
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-fv-view]');
+    if (!button) return;
     const source = document.getElementById(button.dataset.fvSource);
     if (!source) return;
     title.textContent = button.dataset.fvTitle || 'Full details';
     content.textContent = source.content.textContent.trim();
     dialog.showModal();
-  }));
+  });
   dialog.querySelector('[data-fv-close]').addEventListener('click', () => dialog.close());
   dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
 })();
 </script>
+@endsection
+
+@section('scripts')
+<script src="{{ asset('assets/js/flash-directory.js') }}?v={{ filemtime(public_path('assets/js/flash-directory.js')) }}"></script>
 @endsection

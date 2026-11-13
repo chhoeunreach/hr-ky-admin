@@ -36,6 +36,10 @@ class CommunityController extends Controller
         $status = in_array($request->query('status'), ['live', 'scheduled', 'draft', 'expired'], true)
             ? $request->query('status') : 'all';
 
+        $mediaType = in_array($request->query('media_type'), CommunityMedia::TYPES, true) ? $request->query('media_type') : '';
+        $displayPolicy = in_array($request->query('display_policy'), ['once', 'session'], true) ? $request->query('display_policy') : '';
+        $perPage = in_array((string) $request->query('per_page'), ['25', '50', '100', '200', 'all'], true) ? (string) $request->query('per_page') : '25';
+
         $query = FlashView::query()
             ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
                 ->where('title', 'like', '%'.$search.'%')
@@ -48,7 +52,10 @@ class CommunityController extends Controller
             ->when($status === 'draft', fn ($query) => $query->where('is_active', false))
             ->when($status === 'expired', fn ($query) => $query->where('is_active', true)->whereNotNull('ends_at')->where('ends_at', '<=', $now));
 
-        $items = $query->orderByDesc('priority')->orderByDesc('id')->paginate(20)->withQueryString();
+        $query->when($mediaType !== '', fn ($query) => $query->where('media_type', $mediaType))
+            ->when($displayPolicy !== '', fn ($query) => $query->where('display_policy', $displayPolicy));
+        $items = $query->orderByDesc('priority')->orderByDesc('id')
+            ->paginate($perPage === 'all' ? max(1, (clone $query)->count()) : (int) $perPage)->withQueryString();
         $roleIds = $items->getCollection()->flatMap(fn ($item) => (array) $item->role_ids)->unique()->values();
         $branchIds = $items->getCollection()->flatMap(fn ($item) => (array) $item->branch_ids)->unique()->values();
         $departmentIds = $items->getCollection()->flatMap(fn ($item) => (array) $item->department_ids)->unique()->values();
@@ -58,6 +65,9 @@ class CommunityController extends Controller
             'statusCounts' => $statusCounts,
             'search' => $search,
             'status' => $status,
+            'mediaType' => $mediaType,
+            'displayPolicy' => $displayPolicy,
+            'perPage' => $perPage,
             'roleNames' => Role::whereIn('id', $roleIds)->pluck('name', 'id')->all(),
             'branchNames' => Branch::withoutGlobalScopes()->whereIn('id', $branchIds)->pluck('name', 'id')->all(),
             'departmentNames' => Department::withoutGlobalScopes()->whereIn('id', $departmentIds)->pluck('dept_name', 'id')->all(),

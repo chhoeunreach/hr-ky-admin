@@ -51,6 +51,8 @@ class RepairPriceManagementTest extends TestCase
         Route::middleware('web')->group(function () {
             Route::get('/_test/repair-management', [RepairPriceWebController::class, 'index']);
             Route::get('/_test/repair-import', [RepairPriceWebController::class, 'import']);
+            Route::post('/_test/repair-transfer/{entity}', [\App\Http\Controllers\Web\RepairCatalogTransferController::class, 'import']);
+            Route::get('/_test/repair-transfer/{entity}', [\App\Http\Controllers\Web\RepairCatalogTransferController::class, 'export']);
             Route::post('/_test/repair-prices', [RepairPriceWebController::class, 'storePrice']);
             Route::put('/_test/repair-prices/{id}', [RepairPriceWebController::class, 'updatePrice']);
             Route::delete('/_test/repair-prices/{id}', [RepairPriceWebController::class, 'deletePrice']);
@@ -61,6 +63,88 @@ class RepairPriceManagementTest extends TestCase
                 Route::delete('/_test/repair/'.$entity.'/{id}', [$controller, 'delete'.$singular]);
             }
         });
+    }
+
+    private function catalogFile(array $rows): \Illuminate\Http\UploadedFile
+    {
+        $file = fopen('php://temp', 'w+');
+        foreach ($rows as $row) fputcsv($file, $row);
+        rewind($file);
+        $content = stream_get_contents($file);
+        fclose($file);
+        return \Illuminate\Http\UploadedFile::fake()->createWithContent('catalog.csv', $content);
+    }
+
+    public function test_catalog_csv_round_trips_all_six_sections(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_brands', 'repair_price.manage_categories', 'repair_price.manage_devices', 'repair_price.manage_services'];
+        DB::table('repair_device_series')->insert(['id' => 1, 'repair_brand_id' => 1, 'repair_device_type_id' => 1, 'name' => 'Pro', 'slug' => 'pro']);
+        DB::table('repair_devices')->where('id', 1)->update(['repair_device_series_id' => 1, 'model_number' => 'A123']);
+        DB::table('repair_category_device')->insert(['repair_device_id' => 1, 'repair_category_id' => 1]);
+        DB::table('repair_brands')->where('id', 1)->update(['name' => '=Protected brand']);
+        foreach (\App\Imports\RepairCatalogImport::CATALOGS as $entity => [$model, , $columns]) {
+            $content = $this->get('/_test/repair-transfer/'.$entity)->assertOk()->streamedContent();
+            $this->assertStringStartsWith("\xEF\xBB\xBF", $content);
+            $this->assertStringContainsString(implode(',', $columns), $content);
+            $file = \Illuminate\Http\UploadedFile::fake()->createWithContent('catalog.csv', $content);
+            $this->post('/_test/repair-transfer/'.$entity, ['file' => $file, 'update_existing' => 1])->assertSessionHas('success');
+            $this->assertSame(1, $model::count());
+            $this->get('/_test/repair-transfer/'.$entity.'?template=1')->assertOk();
+        }
+        $this->assertDatabaseHas('repair_brands', ['id' => 1, 'name' => '=Protected brand']);
+        $this->assertDatabaseHas('repair_devices', ['id' => 1, 'model_number' => 'A123', 'repair_device_series_id' => 1]);
+        $this->assertDatabaseHas('repair_category_device', ['repair_device_id' => 1, 'repair_category_id' => 1]);
+    }
+
+    public function test_catalog_import_creates_skips_and_updates_without_duplicate_records(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_brands'];
+        $rows = [['name', 'slug', 'status'], ['Samsung', 'samsung', 0]];
+        $this->post('/_test/repair-transfer/brands', ['file' => $this->catalogFile($rows)])->assertSessionHas('success');
+        $this->assertDatabaseHas('repair_brands', ['name' => 'Samsung', 'status' => 0]);
+        $rows[1] = ['Samsung updated', 'samsung', 1];
+        $this->post('/_test/repair-transfer/brands', ['file' => $this->catalogFile($rows)])->assertSessionHas('success');
+        $this->assertDatabaseMissing('repair_brands', ['name' => 'Samsung updated']);
+        $this->post('/_test/repair-transfer/brands', ['file' => $this->catalogFile($rows), 'update_existing' => 1])->assertSessionHas('success');
+        $this->assertDatabaseHas('repair_brands', ['name' => 'Samsung updated', 'status' => 1]);
+        $this->assertDatabaseCount('repair_brands', 2);
+    }
+
+    public function test_catalog_export_includes_records_beyond_first_page_and_import_rejects_wrong_headings(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_brands'];
+        for ($i = 0; $i < 30; $i++) DB::table('repair_brands')->insert(['name' => 'Brand '.$i, 'slug' => 'brand-'.$i]);
+        $content = $this->get('/_test/repair-transfer/brands')->assertOk()->streamedContent();
+        $this->assertSame(32, substr_count($content, "\n"));
+        $this->assertStringContainsString('brand-29', $content);
+        $this->post('/_test/repair-transfer/brands', ['file' => $this->catalogFile([['wrong_heading'], ['Unexpected']])])->assertSessionHas('danger');
+        $this->assertDatabaseCount('repair_brands', 31);
+    }
+
+    public function test_invalid_catalog_import_rolls_back_the_whole_file_with_row_number(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_devices'];
+        $rows = [['name', 'brand_slug', 'type_slug'], ['Valid model', 'apple', 'phone'], ['Invalid model', 'missing', 'phone']];
+        $this->post('/_test/repair-transfer/devices', ['file' => $this->catalogFile($rows)])
+            ->assertSessionHas('danger', fn ($message) => str_contains($message, '3') && str_contains($message, 'missing'));
+        $this->assertDatabaseCount('repair_devices', 1);
+        $rows = [['name', 'brand_slug', 'type_slug', 'category_slugs'], ['Invalid category', 'apple', 'phone', 'missing']];
+        $this->post('/_test/repair-transfer/devices', ['file' => $this->catalogFile($rows)])->assertSessionHas('danger');
+        $rows = [['name', 'brand_slug', 'type_slug', 'series_slug'], ['Invalid series', 'apple', 'phone', 'missing']];
+        $this->post('/_test/repair-transfer/devices', ['file' => $this->catalogFile($rows)])->assertSessionHas('danger');
+        $this->assertDatabaseCount('repair_devices', 1);
+    }
+
+    public function test_catalog_transfer_permissions_unknown_entity_and_empty_file(): void
+    {
+        $this->abilities = ['repair_price.view'];
+        foreach (array_keys(\App\Imports\RepairCatalogImport::CATALOGS) as $entity) {
+            $this->get('/_test/repair-transfer/'.$entity)->assertForbidden();
+            $this->post('/_test/repair-transfer/'.$entity)->assertForbidden();
+        }
+        $this->get('/_test/repair-transfer/not-a-catalog')->assertNotFound();
+        $this->abilities[] = 'repair_price.manage_brands';
+        $this->post('/_test/repair-transfer/brands', ['file' => $this->catalogFile([['name', 'slug']])])->assertSessionHas('danger');
     }
 
     private function payload(array $changes = []): array
@@ -652,7 +736,7 @@ class RepairPriceManagementTest extends TestCase
             ->assertSee('data-price-step="4"', false)->assertSee('data-review-rows', false)
             ->assertSee(__('repair.review_heading'))->assertSee(__('repair.optional_price_details'));
         $this->abilities = ['repair_price.view'];
-        $response = $this->get('/_test/repair-management')->assertOk();
+        $response = $this->get('/_test/repair-management')->assertOk()->assertDontSee('id="catalogImport-', false);
         foreach (['Price', 'Device', 'Service', 'Brand', 'Category', 'Catalogtypes', 'Catalogseries'] as $entity) {
             $response->assertDontSee('id="add'.$entity.'Modal"', false)->assertDontSee('id="edit'.$entity.'Modal"', false);
         }
@@ -697,6 +781,10 @@ class RepairPriceManagementTest extends TestCase
                 ->assertSee('id="repair-'.$entity.'-form"', false)
                 ->assertSee('id="repair-'.$entity.'-search"', false)
                 ->assertSee('id="repair-'.$entity.'-per-page"', false);
+            if ($entity !== 'prices') {
+                $response->assertSee('id="catalogImport-'.$entity.'"', false)
+                    ->assertSee(route('admin.repair-price.catalog.export', ['entity' => $entity]), false);
+            }
         }
         $this->get('/_test/repair-management?active_tab=devices&search=missing')->assertOk()
             ->assertViewHas('devicesList', fn ($records) => $records->total() === 0);

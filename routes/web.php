@@ -430,6 +430,8 @@ Route::group([
             Route::get('import', [RepairPriceWebController::class, 'import'])->name('import');
             Route::post('import', [RepairPriceWebController::class, 'processImport'])->name('import.process');
             Route::get('sample-template', [RepairPriceWebController::class, 'downloadSample'])->name('sample-template');
+            Route::post('catalog/{entity}/import', [\App\Http\Controllers\Web\RepairCatalogTransferController::class, 'import'])->name('catalog.import');
+            Route::get('catalog/{entity}/export', [\App\Http\Controllers\Web\RepairCatalogTransferController::class, 'export'])->name('catalog.export');
             Route::post('types', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'storeType'])->name('types.store');
             Route::put('types/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'updateType'])->name('types.update');
             Route::delete('types/delete/{id}', [\App\Http\Controllers\Web\RepairCatalogWebController::class, 'deleteType'])->name('types.delete');

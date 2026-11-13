@@ -283,6 +283,38 @@ class CommunityFeatureTest extends TestCase
         Storage::disk('public')->assertExists('community/retained.jpg');
     }
 
+    public function test_flash_directory_filters_and_page_sizes_include_all_matching_export_rows(): void
+    {
+        $this->abilities = ['flash_view.manage'];
+        Schema::create('branches', function (Blueprint $t) { $t->id(); $t->string('name'); });
+        $controller = app(CommunityController::class);
+        for ($i = 0; $i < 31; $i++) {
+            FlashView::create(['title' => 'Team update '.$i, 'body' => 'Office news',
+                'media_type' => $i % 2 ? 'image' : 'text', 'display_policy' => $i % 2 ? 'session' : 'once',
+                'is_active' => true, 'priority' => $i]);
+        }
+        FlashView::create(['title' => 'Draft', 'is_active' => false, 'media_type' => 'text']);
+        FlashView::create(['title' => 'Scheduled', 'is_active' => true, 'starts_at' => now()->addDay()]);
+        FlashView::create(['title' => 'Expired', 'is_active' => true, 'ends_at' => now()->subDay()]);
+        $get = fn ($params = []) => $controller->flashes(\Illuminate\Http\Request::create('/_test/flashes', 'GET', $params))->getData()['items'];
+        $this->assertCount(25, $get()->items());
+        $this->assertCount(34, $get(['per_page' => 'all'])->items());
+        $this->assertSame(50, $get(['per_page' => '50'])->perPage());
+        $this->assertSame(25, $get(['per_page' => 'invalid'])->perPage());
+        $this->assertSame(31, $get(['status' => 'live'])->total());
+        foreach (['draft', 'scheduled', 'expired'] as $status) {
+            $this->assertSame(1, $get(['status' => $status])->total());
+        }
+        $filtered = $get(['status' => 'live', 'q' => 'Office', 'media_type' => 'text', 'display_policy' => 'once', 'per_page' => 'all']);
+        $this->assertCount(16, $filtered->items());
+        $this->assertSame('Team update 30', $filtered->first()->title);
+        $this->assertSame(0, $get(['status' => 'live', 'media_type' => 'image', 'display_policy' => 'once'])->total());
+        $this->assertSame(34, $get(['status' => 'invalid', 'media_type' => 'invalid', 'display_policy' => 'invalid'])->total());
+        $this->abilities = [];
+        $this->expectException(\Illuminate\Auth\Access\AuthorizationException::class);
+        $get();
+    }
+
     public function test_admin_templates_render_safe_form_preview_and_moderation_content(): void
     {
         $this->abilities=['flash_view.manage','social_feed.moderate'];
@@ -301,6 +333,13 @@ class CommunityFeatureTest extends TestCase
             $this->assertStringContainsString('name="show_again"',$html);
             $html = view('admin.community.flashes',['items'=>FlashView::paginate(20),'errors'=>$errors])->render();
             $this->assertStringContainsString('Flash View popups',$html);
+            $this->assertStringContainsString('id="flashFilterForm"', $html);
+            $this->assertStringContainsString('data-directory-table="flashTable"', $html);
+            $this->assertStringContainsString('data-directory-export="excel"', $html);
+            $this->assertStringContainsString('data-directory-columns', $html);
+            $this->assertStringContainsString('name="media_type"', $html);
+            $this->assertStringContainsString('name="display_policy"', $html);
+            $this->assertStringContainsString('id="flash-list-block"', $html);
             $post = $this->makePost();
             $post->comments()->create(['user_id'=>10,'body'=>'A visible comment']);
             $html = view('admin.community.feed',['posts'=>SocialPost::with('author')->withCount(['comments','reactions','shares'])->paginate(20),'errors'=>$errors])->render();

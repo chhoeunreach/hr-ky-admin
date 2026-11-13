@@ -1,6 +1,21 @@
 <?php
 
 return [
+    'catalog_import' => 'Import',
+    'catalog_export' => 'Export catalog CSV',
+    'catalog_template' => 'Download import template',
+    'catalog_file' => 'CSV or Excel file (up to 10 MB)',
+    'catalog_import_help' => 'Use the template headings or edit an exported catalog. Export catalog CSV includes every record in this section. Files are validated before changes are committed.',
+    'catalog_reference_help' => 'Use existing slugs for brand_slug, type_slug, series_slug, and category_slug. Separate category_slugs with |. Import brands, device types, categories, and series before models and services. Status: 1 = active, 0 = inactive.',
+    'catalog_update_existing' => 'Update matching records (otherwise skip them)',
+    'catalog_matching_help' => 'Matching uses slugs for brands, categories and types; brand + type + slug for series; brand + name for models; category + name for services. Blank optional cells clear existing values when updating. A blank category_slugs cell removes model category assignments; omit that column to keep them.',
+    'catalog_row_error' => 'Row :row: :error',
+    'catalog_reference_missing' => ':field references an unknown slug: :value.',
+    'catalog_series_mismatch' => 'The series must exist and belong to the selected brand and device type.',
+    'catalog_categories_missing' => 'One or more category slugs do not exist.',
+    'catalog_import_failed' => 'Import failed. Check the file format and template headings. No changes were saved.',
+    'catalog_empty_file' => 'The file has no catalog rows to import.',
+    'catalog_import_success' => 'Import complete: :inserted added, :updated updated, :skipped skipped.',
     'entry_mode' => 'Entry mode',
     'single_entry' => 'Single price',
     'single_entry_help' => 'One model and one repair service',
