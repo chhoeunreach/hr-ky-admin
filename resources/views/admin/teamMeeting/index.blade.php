@@ -48,11 +48,13 @@
                         </div>
                     @endif
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <select class="form-control" id="department_id" multiple name="department_id[]">
+                        <select class="form-control" id="department_id" multiple name="department_id[]"
+                                data-selection-popup="1" data-placeholder="{{ __('index.select_department') }}">
                         </select>
                     </div>
                     <div class="col-lg-3 col-md-6 mb-4">
-                        <select class="form-select" multiple name="participator[]" id="team_meeting">
+                        <select class="form-select" multiple name="participator[]" id="team_meeting"
+                                data-selection-popup="1" data-placeholder="{{ __('index.select_meeting_participants') }}">
                         </select>
                     </div>
 
@@ -191,11 +193,12 @@
     </section>
 
     @include('admin.teamMeeting.show')
+    @include('admin.post.common.selection-modal')
 @endsection
 
 @section('scripts')
     @include('admin.teamMeeting.common.scripts')
-
+    <script src="{{ asset('assets/js/post-selection-popup.js') }}?v={{ filemtime(public_path('assets/js/post-selection-popup.js')) }}"></script>
 @endsection
 
 

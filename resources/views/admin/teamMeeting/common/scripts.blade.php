@@ -117,12 +117,11 @@
         const formDepartmentIds = {!! isset($departmentIds) ? json_encode($departmentIds) : '[]' !!}.map(String);
         const formEmployeeIds = {!! isset($participatorIds) ? json_encode($participatorIds) : '[]' !!}.map(String);
 
-        const SELECT_ALL_VALUE = 'select_all';
         const departmentIds = filterDepartmentIds.length > 0 ? filterDepartmentIds : formDepartmentIds;
         let employeeIds = filterEmployeeIds.length > 0 ? filterEmployeeIds : formEmployeeIds; // Make this mutable
         // Common function to load departments
         const preloadDepartments = async (selectedBranchId) => {
-            $('#department_id').empty().append(`<option value="${SELECT_ALL_VALUE}">{{ __("index.select_all") }}</option>`);
+            $('#department_id').empty();
             if (!selectedBranchId) return;
 
             try {
@@ -147,17 +146,15 @@
 
                 $('#department_id').trigger('change.select2');
             } catch (error) {
-                $('#department_id').empty().append(`<option value="${SELECT_ALL_VALUE}">{{ __("index.select_all") }}</option>`)
-                    .append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
+                $('#department_id').empty().append('<option disabled>{{ __("index.error_loading_departments") }}</option>');
             }
         };
 
         // Common function to load and merge employees
         const preloadEmployees = async () => {
-            const selectedDepartments = ($('#department_id').val() || []).filter(id => id !== SELECT_ALL_VALUE);
+            const selectedDepartments = $('#department_id').val() || [];
             if (selectedDepartments.length === 0) {
-                $('#team_meeting').empty().append(`<option value="${SELECT_ALL_VALUE}">{{ __("index.select_all") }}</option>`)
-                    .append('<option disabled>{{ __("index.no_employees_found") }}</option>');
+                $('#team_meeting').empty().append('<option disabled>{{ __("index.no_employees_found") }}</option>');
                 employeeIds = [];
                 return;
             }
@@ -176,7 +173,7 @@
                 });
 
                 const data = await response.json();
-                $('#team_meeting').empty().append(`<option value="${SELECT_ALL_VALUE}">{{ __("index.select_all") }}</option>`); // Clear options every time
+                $('#team_meeting').empty(); // Clear options every time
 
                 if (!data || data.length === 0) {
                     $('#team_meeting').append('<option disabled>{{ __("index.no_employees_found") }}</option>');
@@ -196,26 +193,10 @@
                 });
 
                 // Update employeeIds to reflect current selections
-                employeeIds = ($('#team_meeting').val() || []).filter(id => id !== SELECT_ALL_VALUE);
+                employeeIds = $('#team_meeting').val() || [];
             } catch (error) {
-                $('#team_meeting').empty().append(`<option value="${SELECT_ALL_VALUE}">{{ __("index.select_all") }}</option>`)
-                    .append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
+                $('#team_meeting').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
             }
-        };
-
-        const applySelectAll = (selectElement) => {
-            const $select = $(selectElement);
-            const selectedValues = $select.val() || [];
-            if (!selectedValues.includes(SELECT_ALL_VALUE)) return;
-
-            const allValues = $select.find('option').map(function () {
-                const $option = $(this);
-                const value = $option.val();
-                if (!value || value === SELECT_ALL_VALUE || $option.is(':disabled')) return null;
-                return value;
-            }).get().filter(Boolean);
-
-            $select.val(allValues).trigger('change.select2');
         };
 
         const initializeDropdowns = async () => {
@@ -241,19 +222,10 @@
                 }
             }
 
-            $('#department_id').on('change', function () {
-                applySelectAll(this);
-                preloadEmployees();
-            });
+            $('#department_id').on('change', preloadEmployees);
 
             $('#team_meeting').on('change', function () {
-                applySelectAll(this);
-                employeeIds = ($(this).val() || []).filter(id => id !== SELECT_ALL_VALUE);
-            });
-
-            $('form').on('submit', function () {
-                applySelectAll('#department_id');
-                applySelectAll('#team_meeting');
+                employeeIds = $(this).val() || [];
             });
         };
 

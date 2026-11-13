@@ -49,8 +49,8 @@
     <div class="col-lg-4 col-md-6 mb-4 internalTrainer">
         <label for="department_id" class="form-label">{{ __('index.department') }} <span
                 style="color: red">*</span></label>
-        <select class="form-select" id="department_id" multiple name="department[][department_id]">
-            <option value="select_all">{{ __('index.select_all') }}</option>
+        <select class="form-select" id="department_id" multiple name="department[][department_id]"
+                data-selection-popup="1" data-placeholder="{{ __('index.select_department') }}">
             @if(isset($teamMeetingDetail) && isset($filteredDepartment))
                 @foreach($filteredDepartment as $department)
                     <option
@@ -114,8 +114,9 @@
                             style="color: red">*</span></label>
                     <br>
                     <select class="form-select" id="team_meeting" name="participator[][meeting_participator_id]"
-                            multiple="multiple" required>
-                        <option value="select_all">{{ __('index.select_all') }}</option>
+                            multiple="multiple" required
+                            data-selection-popup="1"
+                            data-placeholder="{{ __('index.select_meeting_participants') }}">
                     </select>
                 </div>
             </div>
