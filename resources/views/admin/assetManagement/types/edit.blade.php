@@ -12,8 +12,9 @@
 @endsection
 
 @section('main-content')
+@include('admin.section.management-ui')
 
-    <section class="content">
+    <section class="content management-page">
 
         @include('admin.section.flash_message')
 
@@ -21,7 +22,7 @@
 
         <div class="card">
             <div class="card-body">
-                <form id="" class="forms-sample" action="{{route('admin.asset-types.update',$assetTypeDetail->id)}}"  method="post">
+                <form id="assetTypeForm" class="forms-sample" action="{{route('admin.asset-types.update',$assetTypeDetail->id)}}"  method="post">
                     @method('PUT')
                     @csrf
                     @include('admin.assetManagement.types.common.form')

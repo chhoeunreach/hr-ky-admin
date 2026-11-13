@@ -7,7 +7,8 @@
 @section('action', __('index.lists'))
 
 @section('main-content')
-    <section class="content">
+@include('admin.section.management-ui')
+    <section class="content management-page">
         @include('admin.section.flash_message')
 
         <nav class="page-breadcrumb d-flex align-items-center justify-content-between">
@@ -160,7 +161,7 @@
     @include('admin.assetManagement.assetDetail.common.assignment_detail')
     @include('admin.assetManagement.assetDetail.show')
 
-    <div class="modal fade" id="repairDetail" tabindex="-1" aria-labelledby="repairDetailLabel" aria-hidden="true">
+    <div class="modal fade management-modal" id="repairDetail" tabindex="-1" aria-labelledby="repairDetailLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-sm">
                 <div class="modal-header text-center">

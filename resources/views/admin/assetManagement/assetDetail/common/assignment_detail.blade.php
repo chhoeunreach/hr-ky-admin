@@ -1,4 +1,5 @@
-<div class="modal fade" id="assignmentDetail" tabindex="-1" aria-labelledby="assignmentDetailLabel" aria-hidden="true">
+@include('admin.section.management-ui')
+<div class="modal fade management-modal" id="assignmentDetail" tabindex="-1" aria-labelledby="assignmentDetailLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow-sm">
             <div class="modal-header text-center">

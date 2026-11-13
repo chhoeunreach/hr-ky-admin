@@ -2,8 +2,9 @@
 @section('title', __('index.asset'))
 @section('action', __('index.edit'))
 @section('main-content')
+@include('admin.section.management-ui')
 
-    <section class="content">
+    <section class="content management-page">
         @include('admin.section.flash_message')
         @include('admin.assetManagement.assetDetail.common.breadcrumb')
         @include('admin.assetManagement.assetDetail.common.employee-assignment')

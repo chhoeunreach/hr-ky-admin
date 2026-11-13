@@ -12,8 +12,9 @@
 @endsection
 
 @section('main-content')
+@include('admin.section.management-ui')
 
-    <section class="content">
+    <section class="content management-page">
 
         @include('admin.section.flash_message')
 
@@ -21,7 +22,7 @@
 
         <div class="card">
             <div class="card-body pb-0">
-                <form id="" class="forms-sample" action="{{route('admin.asset-types.store')}}"  method="POST">
+                <form id="assetTypeForm" class="forms-sample" action="{{route('admin.asset-types.store')}}"  method="POST">
                     @csrf
                     @include('admin.assetManagement.types.common.form')
                 </form>

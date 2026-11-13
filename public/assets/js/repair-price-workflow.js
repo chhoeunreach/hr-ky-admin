@@ -76,7 +76,7 @@
                 partRow?.querySelector('[data-part-field="part_name"]').value || '—',
                 partRow?.querySelector('[data-part-field="part_type"]').value || '—'];
             ['part_cost', 'service_fee', 'selling_price'].forEach(field => text.push(priceText(row.querySelector('[data-price-field="' + field + '"]'))));
-            text.forEach(value => {const cell = document.createElement('td'); cell.textContent = value; result.append(cell);});
+            text.forEach((value, index) => {const cell = document.createElement('td'); cell.dataset.label = review.closest('table').tHead.rows[0].cells[index].textContent.trim(); cell.textContent = value; result.append(cell);});
             review.append(result);
         });
         form.querySelectorAll('[data-review-field]').forEach(item => {

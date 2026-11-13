@@ -5,8 +5,9 @@
 @section('action', __('index.create'))
 
 @section('main-content')
+@include('admin.section.management-ui')
 
-    <section class="content">
+    <section class="content management-page">
 
         @include('admin.section.flash_message')
 
@@ -14,7 +15,7 @@
 
         <div class="card">
             <div class="card-body">
-                <form id="" class="forms-sample" action="{{route('admin.assets.store')}}" enctype="multipart/form-data"  method="POST">
+                <form id="assetDetailsForm" class="forms-sample" action="{{route('admin.assets.store')}}" enctype="multipart/form-data"  method="POST">
                     @csrf
                     @include('admin.assetManagement.assetDetail.common.form')
                 </form>

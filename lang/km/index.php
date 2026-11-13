@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'management_asset_identity' => 'ព័ត៌មានទ្រព្យសម្បត្តិ',
+    'management_device_setup' => 'ការកំណត់ឧបករណ៍ និងការចូលប្រើ',
+    'management_purchase_condition' => 'ការទិញ ការធានា និងស្ថានភាព',
+    'management_files_notes' => 'ឯកសារភ្ជាប់ និងកំណត់ចំណាំ',
     'employee_additional_branches' => 'សិទ្ធិចូលប្រើសាខាបន្ថែម',
     'employee_additional_branches_placeholder' => 'ជ្រើសរើសសាខាបន្ថែម',
     'employee_additional_branches_help' => 'បុគ្គលិកនេះអាចចូលប្រើសាខាដើម និងសាខាដែលបានជ្រើសរើស តាមសិទ្ធិមុខងារដែលមានស្រាប់។ ទុកទទេដើម្បីចូលប្រើតែសាខាដើម។ សិទ្ធិតួនាទី Access All Branches នៅតែអនុញ្ញាតឱ្យចូលប្រើគ្រប់សាខា។',

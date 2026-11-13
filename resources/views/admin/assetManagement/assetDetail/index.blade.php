@@ -20,7 +20,8 @@
 @endsection
 
 @section('main-content')
-    <section class="content">
+@include('admin.section.management-ui')
+    <section class="content management-page">
         @include('admin.section.flash_message')
 
         @include('admin.assetManagement.assetDetail.common.breadcrumb')

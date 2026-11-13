@@ -1,8 +1,10 @@
-<div class="modal fade" id="assetReturnModal" tabindex="-1" aria-labelledby="assetReturnModalLabel" aria-hidden="true">
+@include('admin.section.management-ui')
+<div class="modal fade management-modal" id="assetReturnModal" tabindex="-1" aria-labelledby="assetReturnModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header text-center">
                 <h5 class="modal-title" id="assetReturnModalLabel">{{ __('index.return_asset') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
             </div>
             <div class="modal-body">
                 <form id="assetReturnForm" method="POST" action="" class="needs-validation" novalidate>
@@ -13,7 +15,7 @@
                     <div class="mb-3">
                         <label for="is_working" class="form-label">{{ __('index.is_working') }}</label>
                         <select name="is_working" id="is_working" class="form-select" required>
-                            <option selected disabled>{{ __('index.select') }}</option>
+                            <option value="" selected disabled>{{ __('index.select') }}</option>
                             <option value="yes">{{ __('index.yes') }}</option>
                             <option value="no">{{ __('index.no') }}</option>
                         </select>

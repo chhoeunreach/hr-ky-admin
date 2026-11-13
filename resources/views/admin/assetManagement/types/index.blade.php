@@ -14,8 +14,9 @@
     <link rel="stylesheet" href="{{ asset('assets/css/dataTables.dataTables.min.css') }}">
 @endsection
 @section('main-content')
+@include('admin.section.management-ui')
 
-    <section class="content">
+    <section class="content management-page">
         @include('admin.section.flash_message')
         @include('admin.assetManagement.types.common.breadcrumb')
         <div class="card mb-4">
@@ -130,7 +131,7 @@
         </div>
     </section>
     <!-- asset type create/edit modal -->
-    <div class="modal fade" id="assetTypeModal" tabindex="-1" aria-labelledby="assetTypeModalLabel" aria-hidden="true">
+    <div class="modal fade management-modal" id="assetTypeModal" tabindex="-1" aria-labelledby="assetTypeModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header text-center">

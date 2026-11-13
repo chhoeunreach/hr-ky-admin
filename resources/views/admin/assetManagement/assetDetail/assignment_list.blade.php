@@ -7,7 +7,8 @@
 @section('action', __('index.lists'))
 
 @section('main-content')
-    <section class="content">
+@include('admin.section.management-ui')
+    <section class="content management-page">
         @include('admin.section.flash_message')
 
         <nav class="page-breadcrumb d-flex align-items-center justify-content-between">

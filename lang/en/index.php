@@ -1,6 +1,10 @@
 <?php
 
 return [
+    'management_asset_identity' => 'Asset details',
+    'management_device_setup' => 'Device setup & access',
+    'management_purchase_condition' => 'Purchase, warranty & condition',
+    'management_files_notes' => 'Attachments & notes',
     'employee_additional_branches' => 'Additional branch access',
     'employee_additional_branches_placeholder' => 'Select additional branches',
     'employee_additional_branches_help' => 'This employee can access their home branch and the branches selected here, within their existing module permissions. Leave empty for home branch only. The role permission Access All Branches still grants access to every branch.',

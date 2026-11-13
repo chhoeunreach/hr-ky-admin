@@ -1,4 +1,4 @@
-<div class="row align-items-center">
+<div class="row align-items-start">
     <div class="col-lg-4 col-md-6 mb-4">
         @include('admin.assetManagement.types.common.branch-select')
     </div>
@@ -7,14 +7,15 @@
         <input type="text" class="form-control" id="name"
                required
                name="name"
-               value="{{ ( isset($assetTypeDetail) ? ($assetTypeDetail->name): old('name') )}}"
+               value="{{ old('name', $assetTypeDetail->name ?? '') }}"
                autocomplete="off"
                placeholder=""
         >
     </div>
 
     @canany(['create_type','edit_type'])
-        <div class="col-lg-4 col-md-6 mb-4 mt-lg-4">
+        <div class="col-12 management-form-actions">
+            <a class="btn btn-outline-secondary" href="{{ route('admin.asset-types.index') }}">{{ __('index.cancel') }}</a>
             <button type="submit" class="btn btn-primary"><i class="link-icon"
                                                              data-feather="{{isset($assetTypeDetail)? 'edit-2':'plus'}}"></i>
                 {{isset($assetTypeDetail)? __('index.update'):__('index.create') }}

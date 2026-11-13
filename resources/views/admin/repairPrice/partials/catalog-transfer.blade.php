@@ -3,7 +3,7 @@
     <a class="directory-tool-button" href="{{ route('admin.repair-price.catalog.export', ['entity' => $catalogEntity]) }}"><i data-feather="download"></i>{{ __('repair.catalog_export') }}</a>
     <a class="directory-tool-button" href="{{ route('admin.repair-price.catalog.export', ['entity' => $catalogEntity, 'template' => 1]) }}"><i data-feather="file-text"></i>{{ __('repair.catalog_template') }}</a>
 </div>
-<div class="modal fade" id="catalogImport-{{ $catalogEntity }}" tabindex="-1" aria-labelledby="catalogImportTitle-{{ $catalogEntity }}" aria-hidden="true">
+<div class="modal fade management-modal" id="catalogImport-{{ $catalogEntity }}" tabindex="-1" aria-labelledby="catalogImportTitle-{{ $catalogEntity }}" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
         <form method="post" action="{{ route('admin.repair-price.catalog.import', ['entity' => $catalogEntity]) }}" enctype="multipart/form-data">
             @csrf

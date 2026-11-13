@@ -2,6 +2,8 @@
     <input type="hidden" name="asset_modal" value="1">
 @endif
 
+<fieldset class="management-form-section">
+    <legend>{{ __('index.management_asset_identity') }}</legend>
 <div class="row">
     @if(auth('admin')->check() || !auth()->user()?->branch_id)
     <div class="col-lg-4 col-md-6 mb-4">
@@ -73,7 +75,17 @@
         @error('phone_numbers')<div class="text-danger small">{{ $message }}</div>@enderror
     </div>
 
+</div>
+</fieldset>
+<fieldset class="management-form-section">
+    <legend>{{ __('index.management_device_setup') }}</legend>
+<div class="row">
     @include('admin.assetManagement.assetDetail.common.device-form')
+</div>
+</fieldset>
+<fieldset class="management-form-section">
+    <legend>{{ __('index.management_purchase_condition') }}</legend>
+<div class="row">
 
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="purchased_date" class="form-label">{{ __('index.purchased_date') }} <span style="color: red">*</span></label>
@@ -132,6 +144,11 @@
             </select>
         </div>
     @endif
+</div>
+</fieldset>
+<fieldset class="management-form-section">
+    <legend>{{ __('index.management_files_notes') }}</legend>
+<div class="row">
     <div class="col-lg-6 col-md-6 mb-4">
         <label for="images" class="form-label">{{ __('index.asset_upload_files') }} @if(!isset($assetDetail))<span style="color: red">*</span>@endif </label>
         <div class="d-flex align-items-center gap-3 border rounded p-2 position-relative">
@@ -171,15 +188,14 @@
         <textarea class="form-control" name="note" id="tinymceExample" rows="2">{{ old('note', $assetDetail->note ?? '') }}</textarea>
     </div>
 
+</div>
+</fieldset>
     @canany(['edit_assets','create_assets'])
-        <div class="text-start">
+        <div class="management-form-actions">
+            @unless(request('asset_modal') === '1')<a class="btn btn-outline-secondary" href="{{ route('admin.assets.index') }}">{{ __('index.cancel') }}</a>@endunless
             <button type="submit" class="btn btn-primary">
                 <i class="link-icon" data-feather="plus"></i>
                 {{isset($assetDetail)? __('index.update'):__('index.create')}}
             </button>
         </div>
     @endcanany
-</div>
-
-
-

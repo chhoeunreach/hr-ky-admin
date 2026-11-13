@@ -1,5 +1,6 @@
+@include('admin.section.management-ui')
 <link rel="stylesheet" href="{{ asset('assets/css/asset-assignment.css') }}?v={{ filemtime(public_path('assets/css/asset-assignment.css')) }}">
-<div class="modal fade" id="assetAssignmentModal" tabindex="-1" aria-labelledby="assetAssignmentModalLabel" aria-hidden="true">
+<div class="modal fade management-modal" id="assetAssignmentModal" tabindex="-1" aria-labelledby="assetAssignmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">

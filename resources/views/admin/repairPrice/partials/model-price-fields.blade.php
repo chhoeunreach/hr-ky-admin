@@ -5,7 +5,7 @@
     <p class="form-text mt-0 text-primary"><i data-feather="zap" style="width:14px;height:14px;"></i> {{ __('repair.price_split_help', ['part' => $partSharePercent]) }}</p>
     <p class="text-muted small repair-model-prices-empty">{{ __('repair.select_models_and_services') }}</p>
     <div class="table-responsive">
-        <table class="table table-sm align-middle">
+        <table class="table table-sm align-middle" role="table">
             <thead><tr>
                 <th>{{ __('index.device_model') }}</th>
                 <th>{{ __('index.category') }}</th>
@@ -18,12 +18,12 @@
         </table>
     </div>
     <template class="repair-pair-price-template">
-        <tr class="repair-model-price-row">
-            <th scope="row" data-pair-model></th>
-            <td data-pair-category></td>
-            <td data-pair-service></td>
+        <tr class="repair-model-price-row" role="row">
+            <th scope="row" data-pair-model data-label="{{ __('index.device_model') }}"></th>
+            <td data-pair-category data-label="{{ __('index.category') }}"></td>
+            <td data-pair-service data-label="{{ __('index.repair_service') }}"></td>
             @foreach(['part_cost', 'service_fee', 'selling_price'] as $field)
-                <td>
+                <td data-label="{{ __('index.'.$field) }} ($)">
                     <input type="number" class="form-control form-control-sm" style="min-width: 100px;"
                            data-price-field="{{ $field }}" data-field-label="{{ __('index.'.$field) }}"
                            min="0" step="0.01" placeholder="0.00" @if($field === 'selling_price') required @endif @if($field === 'service_fee') readonly @endif disabled>

@@ -1,4 +1,5 @@
-<div class="modal fade asset-detail-modal" id="assetDetail" tabindex="-1" aria-labelledby="assetDetailLabel" aria-hidden="true">
+@include('admin.section.management-ui')
+<div class="modal fade management-modal asset-detail-modal" id="assetDetail" tabindex="-1" aria-labelledby="assetDetailLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header">

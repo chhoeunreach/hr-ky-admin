@@ -138,7 +138,8 @@
 @endsection
 
 @section('main-content')
-<div class="import-page">
+@include('admin.section.management-ui')
+<div class="import-page management-page">
     @include('admin.section.flash_message')
 
     <!-- Breadcrumb -->

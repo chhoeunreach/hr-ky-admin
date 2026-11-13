@@ -34,7 +34,9 @@
         tinymce.init({
             selector: '#tinymceExample',
             language: @json(app()->getLocale() === 'km' ? 'km' : 'en'),
-            height: 300,
+            height: window.innerWidth < 576 ? 220 : 280,
+            toolbar_mode: 'sliding',
+            min_height: 200,
             menubar: false,
             branding: false,
             statusbar: false,

@@ -414,7 +414,8 @@
 @endsection
 
 @section('main-content')
-<div class="repair-dashboard">
+@include('admin.section.management-ui')
+<div class="repair-dashboard management-page">
     @include('admin.section.flash_message')
 
     <!-- Header Section -->
