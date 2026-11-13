@@ -1,12 +1,13 @@
 <?php
 
 return [
+    'catalog_status_invalid' => 'ស្ថានភាពត្រូវតែជា 1/0, true/false, yes/no, active/inactive, enabled/disabled ឬ on/off។',
     'catalog_import' => 'នាំចូល',
     'catalog_export' => 'នាំចេញកាតាឡុក CSV',
     'catalog_template' => 'ទាញយកគំរូនាំចូល',
     'catalog_file' => 'ឯកសារ CSV ឬ Excel (រហូតដល់ 10 MB)',
     'catalog_import_help' => 'ប្រើចំណងជើងជួរឈរតាមគំរូ ឬកែសម្រួលកាតាឡុកដែលបាននាំចេញ។ ការនាំចេញរួមបញ្ចូលទិន្នន័យទាំងអស់ក្នុងផ្នែកនេះ។ ឯកសារត្រូវបានផ្ទៀងផ្ទាត់មុនរក្សាទុក។',
-    'catalog_reference_help' => 'ប្រើ slug ដែលមានស្រាប់សម្រាប់ brand_slug, type_slug, series_slug និង category_slug។ បំបែក category_slugs ដោយ |។ នាំចូលម៉ាក ប្រភេទឧបករណ៍ ប្រភេទ និងស៊េរី មុនម៉ូដែល និងសេវាកម្ម។ ស្ថានភាព៖ 1 = សកម្ម, 0 = អសកម្ម។',
+    'catalog_reference_help' => 'ប្រើ slug ដែលមានស្រាប់សម្រាប់ brand_slug, type_slug, series_slug និង category_slug។ បំបែក category_slugs ដោយ |។ នាំចូលម៉ាក ប្រភេទឧបករណ៍ ប្រភេទ និងស៊េរី មុនម៉ូដែល និងសេវាកម្ម។ ស្ថានភាព៖ 1/0, true/false, yes/no, active/inactive, enabled/disabled ឬ on/off។ បើទុកទទេ នឹងកំណត់ជាសកម្ម។',
     'catalog_update_existing' => 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យដែលត្រូវគ្នា (បើមិនជ្រើស នឹងរំលង)',
     'catalog_matching_help' => 'ប្រើ slug សម្រាប់ម៉ាក ប្រភេទ និងប្រភេទឧបករណ៍។ ស៊េរីប្រើម៉ាក + ប្រភេទឧបករណ៍ + slug។ ម៉ូដែលប្រើម៉ាក + ឈ្មោះ។ សេវាកម្មប្រើប្រភេទ + ឈ្មោះ។ ក្រឡាទទេនឹងសម្អាតតម្លៃពេលធ្វើបច្ចុប្បន្នភាព។ category_slugs ទទេនឹងដកការភ្ជាប់ប្រភេទពីម៉ូដែល។ លុបជួរឈរនេះដើម្បីរក្សាការភ្ជាប់ដដែល។',
     'catalog_row_error' => 'ជួរដេក :row៖ :error',

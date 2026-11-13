@@ -121,6 +121,38 @@ class RepairPriceManagementTest extends TestCase
         $this->assertDatabaseCount('repair_brands', 31);
     }
 
+    public function test_category_csv_import_accepts_common_status_labels_case_and_whitespace(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_categories'];
+        $rows = [['name', 'slug', 'status']];
+        $statuses = ['1', ' TRUE ', 'Yes', 'Active', 'Enabled', 'On', '0', ' FALSE ', 'No', 'Inactive', 'Disabled', 'Off', ''];
+        foreach ($statuses as $i => $status) $rows[] = ['Category '.$i, 'category-'.$i, $status];
+        $this->post('/_test/repair-transfer/categories', ['file' => $this->catalogFile($rows)])->assertSessionHas('success');
+        foreach ($statuses as $i => $status) {
+            $this->assertDatabaseHas('repair_categories', ['slug' => 'category-'.$i, 'status' => $i < 6 || $i === 12 ? 1 : 0]);
+        }
+    }
+
+    public function test_category_import_preserves_native_excel_boolean_false(): void
+    {
+        $import = new \App\Imports\RepairCatalogImport('categories');
+        $import->collection(collect([
+            ['name' => 'Excel enabled', 'slug' => 'excel-enabled', 'status' => true],
+            ['name' => 'Excel disabled', 'slug' => 'excel-disabled', 'status' => false],
+        ]));
+        $this->assertDatabaseHas('repair_categories', ['slug' => 'excel-enabled', 'status' => 1]);
+        $this->assertDatabaseHas('repair_categories', ['slug' => 'excel-disabled', 'status' => 0]);
+    }
+
+    public function test_invalid_category_status_reports_supported_values_and_rolls_back(): void
+    {
+        $this->abilities = ['repair_price.view', 'repair_price.manage_categories'];
+        $rows = [['name', 'slug', 'status'], ['Valid category', 'valid-category', 'Active'], ['Invalid category', 'invalid-category', 'Maybe']];
+        $this->post('/_test/repair-transfer/categories', ['file' => $this->catalogFile($rows)])
+            ->assertSessionHas('danger', fn ($message) => str_contains($message, '3') && str_contains($message, 'true/false'));
+        $this->assertDatabaseCount('repair_categories', 1);
+    }
+
     public function test_invalid_catalog_import_rolls_back_the_whole_file_with_row_number(): void
     {
         $this->abilities = ['repair_price.view', 'repair_price.manage_devices'];

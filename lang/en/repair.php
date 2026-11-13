@@ -1,12 +1,13 @@
 <?php
 
 return [
+    'catalog_status_invalid' => 'Status must be 1/0, true/false, yes/no, active/inactive, enabled/disabled, or on/off.',
     'catalog_import' => 'Import',
     'catalog_export' => 'Export catalog CSV',
     'catalog_template' => 'Download import template',
     'catalog_file' => 'CSV or Excel file (up to 10 MB)',
     'catalog_import_help' => 'Use the template headings or edit an exported catalog. Export catalog CSV includes every record in this section. Files are validated before changes are committed.',
-    'catalog_reference_help' => 'Use existing slugs for brand_slug, type_slug, series_slug, and category_slug. Separate category_slugs with |. Import brands, device types, categories, and series before models and services. Status: 1 = active, 0 = inactive.',
+    'catalog_reference_help' => 'Use existing slugs for brand_slug, type_slug, series_slug, and category_slug. Separate category_slugs with |. Import brands, device types, categories, and series before models and services. Status accepts 1/0, true/false, yes/no, active/inactive, enabled/disabled, or on/off. A blank status defaults to active.',
     'catalog_update_existing' => 'Update matching records (otherwise skip them)',
     'catalog_matching_help' => 'Matching uses slugs for brands, categories and types; brand + type + slug for series; brand + name for models; category + name for services. Blank optional cells clear existing values when updating. A blank category_slugs cell removes model category assignments; omit that column to keep them.',
     'catalog_row_error' => 'Row :row: :error',

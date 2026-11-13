@@ -43,11 +43,19 @@ class RepairCatalogImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
     {
         [$model, , $columns] = self::CATALOGS[$this->entity];
         $data = $row->only($columns)->map(function ($value) {
+            if (is_bool($value)) return $value ? '1' : '0';
             $value = $value === null ? null : trim((string) $value);
             // Undo the spreadsheet formula protection used by our CSV exporter.
             if ($value && preg_match("/^'[=+\\-@]/", $value)) $value = substr($value, 1);
             return $value === '' ? null : $value;
         })->all();
+        if (isset($data['status'])) {
+            $data['status'] = match (Str::lower($data['status'])) {
+                '1', 'true', 'yes', 'active', 'enabled', 'on' => true,
+                '0', 'false', 'no', 'inactive', 'disabled', 'off' => false,
+                default => $data['status'],
+            };
+        }
         $rules = [];
         foreach ($columns as $column) $rules[$column] = 'nullable|string|max:255';
         $rules['name'] = 'required|string|max:255';
@@ -58,7 +66,7 @@ class RepairCatalogImport implements ToCollection, WithHeadingRow, SkipsEmptyRow
         foreach (['brand_slug', 'type_slug', 'category_slug'] as $column) {
             if (in_array($column, $columns, true)) $rules[$column] = 'required|string|max:255';
         }
-        Validator::make($data, $rules)->validate();
+        Validator::make($data, $rules, ['status.boolean' => __('repair.catalog_status_invalid')])->validate();
         $data['status'] = isset($data['status']) ? (bool) $data['status'] : true;
         if (in_array('slug', $columns, true)) {
             $data['slug'] = $data['slug'] ?? Str::slug($data['name']);
