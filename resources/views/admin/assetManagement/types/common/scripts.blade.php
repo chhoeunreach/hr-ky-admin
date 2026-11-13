@@ -65,7 +65,7 @@
             $('#branch_id').val('').trigger('change');
 
             $('#name').val('');
-            $('#assetTypeModal').modal('show');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('assetTypeModal')).show();
         });
 
         $(document).on('click', '.edit-assetType', function() {
@@ -87,7 +87,7 @@
                     $('#name').val(assetType.name);
                     $('#branch_id').val(assetType.branch_id == null ? '' : assetType.branch_id).trigger('change');
 
-                    $('#assetTypeModal').modal('show');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('assetTypeModal')).show();
                 },
                 error: function(xhr) {
                     Swal.fire({
@@ -119,7 +119,7 @@
                     form.find('button[type="submit"]').prop('disabled', true); // Disable submit button
                 },
                 success: function(response) {
-                    $('#assetTypeModal').modal('hide');
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('assetTypeModal')).hide();
                     Swal.fire({
                         position: 'top-end',
                         icon: 'success',
@@ -132,7 +132,7 @@
                     });
                 },
                 error: function(xhr) {
-                    const errors = xhr.responseJSON.errors || { message: xhr.responseJSON.message };
+                    const errors = xhr.responseJSON?.errors || { message: xhr.responseJSON?.message || translations.loadError };
                     let errorMessage = '';
                     if (errors.message) {
                         errorMessage = errors.message;

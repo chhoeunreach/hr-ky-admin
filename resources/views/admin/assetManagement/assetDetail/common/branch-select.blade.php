@@ -1,6 +1,6 @@
 @php
-    $assetFilterAllowsAllBranches = ($assetBranchFilter ?? false) && \App\Helpers\AppHelper::canAccessAllBranches();
-    $assetOwnBranchId = auth('admin')->check() || $assetFilterAllowsAllBranches ? null : auth()->user()?->branch_id;
+    $assetAllowsAllBranches = \App\Helpers\AppHelper::canAccessAllBranches();
+    $assetOwnBranchId = auth('admin')->check() || $assetAllowsAllBranches ? null : auth()->user()?->branch_id;
     $assetBranchOptions = $assetOwnBranchId
         ? \App\Models\Branch::withoutGlobalScopes()->whereKey($assetOwnBranchId)->get(['id', 'name'])
         : (isset($companyDetail) ? $companyDetail->branches()->get() : collect());

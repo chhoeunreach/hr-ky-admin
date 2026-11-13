@@ -263,7 +263,7 @@ class AssetAssignmentController extends Controller
 
     public function returnlist()
     {
-        $this->authorize('asset_assign_list');
+        $this->authorize('asset_return_list');
         try {
             $select = ['*'];
             $with = ['asset.type:id,name','user:id,name'];
@@ -320,7 +320,7 @@ class AssetAssignmentController extends Controller
      */
     public function changeRepairStatus($id)
     {
-        $this->authorize('edit_assets');
+        $this->authorize('assign_repair_update');
         try {
             DB::beginTransaction();
             $this->assignmentService->toggleRepairStatus($id);

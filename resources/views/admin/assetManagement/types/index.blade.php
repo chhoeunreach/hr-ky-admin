@@ -25,7 +25,7 @@
             </div>
             <form class="forms-sample card-body pb-0" action="{{ route('admin.asset-types.index') }}" method="get">
                 <div class="row align-items-center">
-                    @if(!isset(auth()->user()->branch_id))
+                    @if(!isset(auth()->user()->branch_id) || \App\Helpers\AppHelper::canAccessAllBranches())
                         <div class="col-lg-3 col-md-6 mb-4">
                             <select class="form-select" id="branch" name="branch_id">
                                 <option  {{ !isset($filterParameters['branch_id']) || old('branch_id') ? 'selected': ''}}  disabled>{{ __('index.select_branch') }}

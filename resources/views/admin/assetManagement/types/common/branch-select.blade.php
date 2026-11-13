@@ -1,6 +1,6 @@
 @php
     $typeBranches = isset($companyDetail) ? $companyDetail->branches : ($branch ?? collect());
-    $ownBranchId = auth('admin')->check() ? null : auth()->user()?->branch_id;
+    $ownBranchId = \App\Helpers\AppHelper::canAccessAllBranches() ? null : auth()->user()?->branch_id;
     $selectedBranch = old('branch_id', $assetTypeDetail->branch_id ?? null);
 @endphp
 <label for="branch_id" class="form-label">{{ __('index.branch') }}</label>

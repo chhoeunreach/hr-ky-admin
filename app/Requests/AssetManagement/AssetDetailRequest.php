@@ -3,6 +3,7 @@
 namespace App\Requests\AssetManagement;
 
 use App\Models\Asset;
+use App\Helpers\AppHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ class AssetDetailRequest extends FormRequest
 
     public function prepareForValidation()
     {
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && auth()->user()?->branch_id && !AppHelper::canAccessAllBranches()) {
             $this->merge(['branch_id' => auth()->user()->branch_id]);
         }
     }
@@ -36,7 +37,7 @@ class AssetDetailRequest extends FormRequest
         $existingTypeId = ($this->isMethod('put') || $this->isMethod('patch')) ? $existingAsset?->type_id : null;
         $setByRule = Rule::exists('users', 'id')->whereNull('deleted_at')->where(fn ($query) => $query
             ->where('is_active', 1)->when($existingAsset?->set_by, fn ($query, $id) => $query->orWhere('id', $id)));
-        if (!auth('admin')->check() && auth()->user()?->branch_id) $setByRule->where('branch_id', auth()->user()->branch_id);
+        if (!auth('admin')->check() && auth()->user()?->branch_id && !AppHelper::canAccessAllBranches()) $setByRule->where('branch_id', auth()->user()->branch_id);
         $rules = [
             'branch_id' => ['required','exists:branches,id'],
             'name' => ['required','string'],

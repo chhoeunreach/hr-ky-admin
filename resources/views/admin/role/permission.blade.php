@@ -93,8 +93,7 @@
                     let isChecked = $(this).prop('checked');
 
                     // Apply this state to all child checkboxes
-                    $(this).parent().parent().siblings().children('.item').children()
-                        .find('.module_checkbox').prop('checked', isChecked);
+                    $(this).closest('.group-checkbox').find('.module_checkbox').prop('checked', isChecked);
                 });
             });
 

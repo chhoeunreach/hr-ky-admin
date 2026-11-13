@@ -16,6 +16,7 @@ use Tests\TestCase;
 class AssetsToolkitTest extends TestCase
 {
     private array $abilities = ['list_assets'];
+    private bool $useSavedRole = false;
 
     public function createApplication()
     {
@@ -71,7 +72,7 @@ class AssetsToolkitTest extends TestCase
         }
         $this->actingAs((new User())->forceFill(['id' => 10, 'name' => 'Asset officer', 'branch_id' => 2]));
         \Illuminate\Database\Eloquent\Model::clearBootedModels();
-        Gate::before(fn ($user, $ability) => in_array($ability, $this->abilities, true));
+        Gate::before(fn ($user, $ability) => $this->useSavedRole ? null : in_array($ability, $this->abilities, true));
         Route::get('/_test/assets-toolkit', [AssetController::class, 'index']);
     }
 
@@ -318,6 +319,67 @@ class AssetsToolkitTest extends TestCase
         auth()->user()->forceFill(['role_id' => 5, 'company_id' => 1])->unsetRelation('role');
         \Illuminate\Database\Eloquent\Model::clearBootedModels();
         $this->assertTrue(\App\Helpers\AppHelper::canAccessAllBranches());
+    }
+
+    public function test_saved_asset_module_permissions_allow_editing_other_branch_assets_and_types(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->grantAllBranchAssignmentRole();
+        $this->useSavedRole = true;
+        foreach (\App\Helpers\RolePermissionHelper::permissionArray() as $permission) {
+            if ($permission['permission_groups_id'] !== 26) continue;
+            $id = DB::table('permissions')->insertGetId(['permission_key' => $permission['permission_key']]);
+            DB::table('permission_roles')->insert(['role_id' => 5, 'permission_id' => $id]);
+        }
+        Schema::table('assets', function (Blueprint $table) {
+            $table->string('image')->nullable(); $table->boolean('warranty_available')->default(false); $table->date('warranty_end_date')->nullable();
+        });
+        Schema::table('asset_types', function (Blueprint $table) {
+            $table->integer('created_by')->nullable(); $table->integer('updated_by')->nullable(); $table->timestamps();
+        });
+        Schema::table('branches', fn (Blueprint $table) => $table->boolean('is_active')->default(true));
+        app('view')->getFinder()->prependLocation(base_path('tests/fixtures/repair-price-views'));
+        $company = (new \App\Models\Company)->forceFill(['id' => 1, 'name' => 'KY']);
+        $this->mock(\App\Repositories\CompanyRepository::class, fn ($mock) => $mock->shouldReceive('getCompanyDetail')->andReturn($company));
+        Route::middleware(['web', \App\Http\Middleware\SPAuthGateMW::class])->group(function () {
+            Route::get('/_test/role-assets/{asset}/edit', [AssetController::class, 'edit']);
+            Route::put('/_test/role-assets/{asset}', [AssetController::class, 'update']);
+            Route::post('/_test/role-asset-types', [\App\Http\Controllers\Web\AssetTypeController::class, 'store']);
+            Route::put('/_test/role-asset-types/{asset_type}', [\App\Http\Controllers\Web\AssetTypeController::class, 'update']);
+        });
+        $this->get('/_test/role-assets/32/edit?asset_modal=1')->assertOk()
+            ->assertSee('id="assetDetailsForm"', false)->assertSee('Other branch')->assertSee('Current branch')
+            ->assertSee('value="1" selected', false);
+        $this->put('/_test/role-assets/32', ['branch_id' => 1, 'type_id' => 1, 'name' => 'Edited from another branch',
+            'purchased_date' => '2026-10-01', 'warranty_available' => 0, 'is_available' => 1, 'set_by' => 13])
+            ->assertSessionHasNoErrors()->assertSessionHas('success');
+        $this->assertDatabaseHas('assets', ['id' => 32, 'branch_id' => 1, 'name' => 'Edited from another branch', 'set_by' => 13]);
+        $this->postJson('/_test/role-asset-types', ['branch_id' => 1, 'name' => 'Other branch equipment'])->assertOk();
+        $typeId = DB::table('asset_types')->where('name', 'Other branch equipment')->value('id');
+        $this->putJson('/_test/role-asset-types/'.$typeId, ['branch_id' => 1, 'name' => 'Other branch equipment'])->assertOk();
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::allows('edit_assets'));
+        $this->assertTrue(\Illuminate\Support\Facades\Gate::allows('assign_repair_update'));
+        $this->assertFalse(\Illuminate\Support\Facades\Gate::allows('delete_employee'));
+    }
+
+    public function test_return_and_repair_endpoints_use_their_declared_module_permissions(): void
+    {
+        app('view')->getFinder()->prependLocation(base_path('tests/fixtures/repair-price-views'));
+        Route::get('/_test/asset-returns-permission', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'returnlist']);
+        Route::get('/_test/asset-repair-permission/{id}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'changeRepairStatus']);
+        $this->abilities = ['asset_return_list', 'assign_repair_update'];
+        $this->mock(\App\Services\AssetManagement\AssetAssignmentService::class, function ($mock) {
+            $mock->shouldReceive('getReturnAssetsPaginated')->once()->andReturn(collect());
+            $mock->shouldReceive('getMaintenanceAssetsPaginated')->once()->andReturn(collect());
+            $mock->shouldReceive('toggleRepairStatus')->once()->with('1')->andReturn(true);
+        });
+        $response = $this->get('/_test/asset-returns-permission');
+        $this->assertTrue($response->original instanceof \Illuminate\View\View, (string) session('danger'));
+        $response->assertViewIs('admin.assetManagement.assetDetail.return_list');
+        $this->get('/_test/asset-repair-permission/1')->assertRedirect();
+        $this->abilities = ['edit_assets', 'asset_assign_list'];
+        $this->get('/_test/asset-returns-permission')->assertForbidden();
+        $this->get('/_test/asset-repair-permission/1')->assertForbidden();
     }
 
     public function test_all_branch_role_can_filter_assets_by_any_company_branch_or_all_branches(): void

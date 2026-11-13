@@ -2,6 +2,7 @@
 
 namespace App\Requests\AssetManagement;
 
+use App\Helpers\AppHelper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class AssetTypeRequest extends FormRequest
     public function rules()
     {
         $branchRule = Rule::exists('branches', 'id');
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && auth()->user()?->branch_id && !AppHelper::canAccessAllBranches()) {
             $branchRule->where('id', auth()->user()->branch_id);
         }
         return [
