@@ -306,6 +306,65 @@ class AssetsToolkitTest extends TestCase
         }
     }
 
+    private function grantAllBranchAssignmentRole(): void
+    {
+        Schema::create('roles', function (Blueprint $table) { $table->id(); $table->string('name'); $table->string('slug'); $table->boolean('is_active'); });
+        Schema::create('permissions', function (Blueprint $table) { $table->id(); $table->string('permission_key'); });
+        Schema::create('permission_roles', function (Blueprint $table) { $table->integer('role_id'); $table->integer('permission_id'); });
+        Schema::table('branches', fn (Blueprint $table) => $table->integer('company_id')->default(1));
+        DB::table('roles')->insert(['id' => 5, 'name' => 'Regional manager', 'slug' => 'regional-manager', 'is_active' => 1]);
+        DB::table('permissions')->insert(['id' => 1, 'permission_key' => 'access_all_branches']);
+        DB::table('permission_roles')->insert(['role_id' => 5, 'permission_id' => 1]);
+        auth()->user()->forceFill(['role_id' => 5, 'company_id' => 1])->unsetRelation('role');
+        \Illuminate\Database\Eloquent\Model::clearBootedModels();
+        $this->assertTrue(\App\Helpers\AppHelper::canAccessAllBranches());
+    }
+
+    public function test_all_branch_role_unlocks_assignment_branches_and_loads_their_employees(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->grantAllBranchAssignmentRole();
+        DB::table('branches')->insert(['id' => 3, 'name' => 'Foreign company branch', 'company_id' => 2]);
+        $response = $this->getJson('/_test/asset-assignment/1/options')->assertOk()
+            ->assertJsonCount(2, 'branches')->assertJsonCount(3, 'employees')
+            ->assertJsonPath('selected_branch_id', 2)->assertJsonPath('branch_locked', false);
+        $this->assertEqualsCanonicalizing([1, 2], array_column($response->json('branches'), 'id'));
+        $this->getJson('/_test/asset-assignment/1/options?branch_id=1')->assertOk()
+            ->assertJsonCount(1, 'employees')->assertJsonPath('employees.0.id', 13)
+            ->assertJsonPath('selected_branch_id', '1');
+        $this->getJson('/_test/asset-assignment/1/options?branch_id=3')->assertUnprocessable();
+        $this->abilities = ['list_assets'];
+        $this->getJson('/_test/asset-assignment/1/options')->assertForbidden();
+    }
+
+    public function test_all_branch_role_can_assign_an_asset_to_an_employee_in_another_branch(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->grantAllBranchAssignmentRole();
+        $data = ['asset_id' => 1, 'branch_id' => 1, 'department_id' => 7, 'user_id' => 13, 'assigned_date' => '2026-10-24'];
+        $this->postJson('/_test/asset-assignment/1', array_replace($data, ['department_id' => 5]))->assertUnprocessable();
+        $this->assertDatabaseHas('assets', ['id' => 1, 'branch_id' => 2, 'is_available' => 1]);
+        $this->postJson('/_test/asset-assignment/1', $data)->assertOk();
+        $this->assertDatabaseHas('assets', ['id' => 1, 'branch_id' => 1, 'is_available' => 0]);
+        $this->assertDatabaseHas('asset_assignments', ['asset_id' => 1, 'branch_id' => 1, 'department_id' => 7, 'user_id' => 13]);
+    }
+
+    public function test_all_branch_role_can_change_employee_across_branches_while_preserving_history(): void
+    {
+        $this->setupAssignmentSelection();
+        $this->grantAllBranchAssignmentRole();
+        Route::post('/_test/asset-transfer/{id}', [\App\Http\Controllers\Web\AssetAssignmentController::class, 'updateEmployee']);
+        $this->postJson('/_test/asset-assignment/1', ['asset_id' => 1, 'branch_id' => 2, 'department_id' => 5,
+            'user_id' => 10, 'assigned_date' => '2026-10-23'])->assertOk();
+        $this->postJson('/_test/asset-transfer/1', ['asset_id' => 1, 'branch_id' => 1, 'department_id' => 7,
+            'user_id' => 13, 'assigned_date' => '2026-10-24'])->assertOk();
+        $this->assertDatabaseHas('asset_assignments', ['asset_id' => 1, 'branch_id' => 2, 'user_id' => 10, 'returned_date' => '2026-10-24']);
+        $this->assertDatabaseHas('asset_assignments', ['asset_id' => 1, 'branch_id' => 1, 'user_id' => 13, 'returned_date' => null]);
+        $this->assertDatabaseHas('assets', ['id' => 1, 'branch_id' => 1, 'is_available' => 0]);
+        $this->assertDatabaseCount('asset_assignments', 2);
+        $this->assertSame(0, DB::transactionLevel());
+    }
+
     public function test_assignment_options_include_current_employee_and_full_searchable_identity(): void
     {
         $this->setupAssignmentSelection();

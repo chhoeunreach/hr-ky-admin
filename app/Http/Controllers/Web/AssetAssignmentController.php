@@ -83,9 +83,14 @@ class AssetAssignmentController extends Controller
 
     private function assignmentBranches(Asset $asset)
     {
-        return $asset->branch
-            ? collect([$asset->branch])
-            : Branch::orderBy('name')->get(['id', 'name']);
+        if ($asset->branch && !AppHelper::canAccessAllBranches()) {
+            return collect([$asset->branch]);
+        }
+        $companyId = (auth('admin')->user() ?? auth()->user())?->company_id;
+        $branches = Branch::when($companyId, fn ($query) => $query->where('company_id', $companyId))
+            ->orderBy('name')->get(['id', 'name']);
+        abort_if($asset->branch_id && !$branches->contains('id', $asset->branch_id), 403);
+        return $branches;
     }
 
     public function options(Request $request, $assetId)
@@ -97,7 +102,8 @@ class AssetAssignmentController extends Controller
         $branchId = $request->input('branch_id') ?: ($asset->branch?->id
             ?? ($branches->contains('id', auth()->user()?->branch_id) ? auth()->user()?->branch_id : null)
             ?? ($branches->count() === 1 ? $branches->first()->id : null));
-        $filterBranchId = $request->input('branch_id') ?: $asset->branch?->id;
+        $branchLocked = (bool) $asset->branch && !AppHelper::canAccessAllBranches();
+        $filterBranchId = $request->input('branch_id') ?: ($branchLocked ? $asset->branch?->id : null);
         $branchIds = $filterBranchId ? [$filterBranchId] : $branches->pluck('id')->all();
         $departments = Department::whereIn('branch_id', $branchIds)->where('is_active', 1)
             ->orderBy('dept_name')->get(['id', 'dept_name', 'branch_id']);
@@ -108,7 +114,7 @@ class AssetAssignmentController extends Controller
         return response()->json([
             'asset' => $asset->only(['id', 'name', 'asset_code', 'asset_serial_no', 'branch_id']) + ['branch_name' => $asset->branch?->name],
             'branches' => $branches->values(), 'selected_branch_id' => $branchId,
-            'branch_locked' => (bool) $asset->branch,
+            'branch_locked' => $branchLocked,
             'current_assignment' => $asset->assignment()->whereNull('returned_date')->first(['id', 'user_id', 'assigned_date']),
             'departments' => $departments, 'employees' => $employees,
         ]);
@@ -134,7 +140,10 @@ class AssetAssignmentController extends Controller
         $this->authorize('assign_asset');
         $assetDetail = Asset::with('branch:id,name')->findOrFail($id);
         $branches = $this->assignmentBranches($assetDetail);
-        $branchId = $assetDetail->branch?->id ?? $request->input('branch_id');
+        $originalBranchId = $assetDetail->branch_id;
+        $branchId = AppHelper::canAccessAllBranches()
+            ? ($request->input('branch_id') ?: $originalBranchId)
+            : ($originalBranchId ?? $request->input('branch_id'));
         try {
             $validatedData = $request->validate([
                 'asset_id' => ['required', 'integer', Rule::in([$assetDetail->id])],
@@ -155,7 +164,7 @@ class AssetAssignmentController extends Controller
             $validatedData['branch_id'] = $branchId;
             DB::beginTransaction();
             $assetDetail = Asset::whereKey($id)->lockForUpdate()->firstOrFail();
-            if ($assetDetail->branch_id && (int) $assetDetail->branch_id !== (int) $branchId) {
+            if ((int) $assetDetail->branch_id !== (int) $originalBranchId) {
                 throw ValidationException::withMessages(['branch_id' => __('index.asset_return_before_change')]);
             }
             $current = $assetDetail->assignment()->whereNull('returned_date')->lockForUpdate()->first();
@@ -176,14 +185,13 @@ class AssetAssignmentController extends Controller
                     'notes' => __('index.asset_employee_changed'),
                 ]);
             }
-            if (!$assetDetail->branch_id) $assetDetail->update(['branch_id' => $branchId]);
+            if ((int) $assetDetail->branch_id !== (int) $branchId) $assetDetail->update(['branch_id' => $branchId]);
             $validatedData['status'] = AssetAssignmentStatusEnum::assigned->value;
              $assetAssignmentDetail = $this->assignmentService->saveDetail($validatedData);
 
              if($assetAssignmentDetail){
                  $this->assetService->updateAssetDetail($id,[
                      'is_available'=>0,
-                     ...(!$assetDetail->branch ? ['branch_id' => $branchId] : []),
                  ]);
              }
             DB::commit();
