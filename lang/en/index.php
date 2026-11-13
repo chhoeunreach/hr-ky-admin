@@ -1859,6 +1859,7 @@ return [
     'assign_to_user' => 'Assign to Employee',
     'select_all' => 'Select All',
     'selected_count' => ':count selected',
+    'more' => 'more',
     'department_employee_links' => 'Employee assignments',
     'department_delete_reassign' => 'Reassign employee assignments and required links before deleting. Optional links can be removed by selecting Unlink related records below.',
     'department_delete_positions_required' => 'Reassign the linked positions first, or select Also remove unused positions.',

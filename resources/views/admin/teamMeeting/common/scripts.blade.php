@@ -194,10 +194,61 @@
 
                 // Update employeeIds to reflect current selections
                 employeeIds = $('#team_meeting').val() || [];
+                $('#team_meeting').trigger('change.select2');
             } catch (error) {
                 $('#team_meeting').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
             }
         };
+
+        // Show only a "N selected" badge inside the select2 field instead of the full list of tags
+        const updateSelectionSummary = function (element) {
+            const $element = $(element);
+            const control = $element.data('select2');
+            if (!control) return;
+
+            const options = $element.find('option').filter(function () {
+                return this.value !== '' && !this.disabled;
+            });
+            const selectedCount = options.filter(':selected').length;
+            const allSelected = options.length > 0 && selectedCount === options.length;
+            const $rendered = control.$selection.find('.select2-selection__rendered');
+
+            $rendered.find('.select2-selection__all-summary').remove();
+            $rendered.find('.select2-selection__choice').show();
+
+            if (selectedCount === 0) return;
+
+            const countLabel = @json(__('index.selected_count')).replace(':count', selectedCount.toLocaleString());
+            const $summary = $('<li class="select2-selection__all-summary"></li>')
+                .append($('<span class="badge bg-light text-primary border rounded-pill px-2 py-1"></span>')
+                    .text(allSelected ? @json(__('index.all')) + ' · ' + countLabel : countLabel))
+                .css({ float: 'left', marginTop: '4px', padding: '0 8px' });
+
+            const $search = $rendered.find('.select2-search--inline');
+            if ($search.length) {
+                $summary.insertBefore($search);
+            } else {
+                $rendered.append($summary);
+            }
+
+            $rendered.find('.select2-selection__choice').hide();
+        };
+
+        const watchSelectionSummary = function (selector) {
+            $(selector).each(function () {
+                const element = this;
+                const control = $(element).data('select2');
+
+                if (control) {
+                    control.on('selection:update', () => updateSelectionSummary(element));
+                }
+
+                $(element).on('change', () => window.setTimeout(() => updateSelectionSummary(element), 0));
+                updateSelectionSummary(element);
+            });
+        };
+
+        watchSelectionSummary('#department_id, #team_meeting');
 
         const initializeDropdowns = async () => {
             let selectedBranchId;

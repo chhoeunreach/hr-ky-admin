@@ -20,6 +20,26 @@
 
 @section('main-content')
 
+    <style>
+        .participant-column {
+            max-width: 260px;
+        }
+
+        .participant-column .participant-names {
+            display: inline-block;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .participant-column .participant-more {
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+    </style>
+
     <section class="content">
 
         @include('admin.section.flash_message')
@@ -120,12 +140,30 @@
                                 <td>{{ucfirst($value->title)}}</td>
                                 <td class="text-center">{{\App\Helpers\AppHelper::formatDateForView($value->meeting_date)}}</td>
                                 <td class="text-center">{{\App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceView($value->meeting_start_time)}}</td>
-                                <td class="notice-receiver">
-                                    <ul class="mb-0">
-                                        @foreach(($value->teamMeetingParticipator) as $key => $datum)
-                                            <li>{{ $datum->participator ? ucfirst($datum->participator->name) : 'N/A'}}</li>
-                                        @endforeach
-                                    </ul>
+                                <td class="notice-receiver participant-column">
+                                    @php
+                                        $participantNames = $value->teamMeetingParticipator
+                                            ->map(function ($participator) {
+                                                return $participator->participator ? ucfirst($participator->participator->name) : null;
+                                            })
+                                            ->filter()
+                                            ->values();
+                                        $visibleParticipantNames = $participantNames->take(2);
+                                        $remainingParticipantCount = $participantNames->count() - $visibleParticipantNames->count();
+                                    @endphp
+                                    @if($participantNames->isEmpty())
+                                        <span class="text-muted">N/A</span>
+                                    @else
+                                        <span class="participant-names" title="{{ $participantNames->implode(', ') }}">
+                                            {{ $visibleParticipantNames->implode(', ') }}
+                                        </span>
+                                        @if($remainingParticipantCount > 0)
+                                            <span class="participant-more badge bg-light text-dark"
+                                                  title="{{ $participantNames->implode(', ') }}">
+                                                +{{ $remainingParticipantCount }} {{ __('index.more') }}
+                                            </span>
+                                        @endif
+                                    @endif
                                 </td>
                                 <td class="text-center">
                                     @can('show_team_meeting')
