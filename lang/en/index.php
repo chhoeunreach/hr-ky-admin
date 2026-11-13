@@ -850,7 +850,7 @@ return [
     'notice_receiver' => 'Notice Receiver',
     'send_notice' => 'Send Notice',
     'all_employees' => 'All Employees',
-    'create_notice' => 'Create Notice',
+    'create_notice' => 'New Notice',
     'edit_notice' => 'Edit Notice',
     'notices' => 'Notices',
     'receiver' => 'Receiver',

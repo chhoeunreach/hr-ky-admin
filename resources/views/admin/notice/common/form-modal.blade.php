@@ -1,5 +1,5 @@
 <div class="modal fade" id="noticeFormModal" tabindex="-1" aria-labelledby="noticeFormModalTitle" aria-hidden="true"
-     data-add-title="{{ __('index.create_notice') }}" data-edit-title="{{ __('index.edit_notice') }}"
+     data-add-title="{{ __('notice.create_heading') }}" data-edit-title="{{ __('notice.edit_heading') }}"
      data-failed="{{ __('notice.list_failed') }}" data-saved-refresh-failed="{{ __('notice.refresh_failed') }}" data-loading="{{ __('index.loading') }}">
     <div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
         <div class="modal-header">
