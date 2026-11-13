@@ -16,7 +16,7 @@ class MeetingAttendanceController extends Controller
     private function meeting($id): TeamMeeting
     {
         return TeamMeeting::query()->where('company_id', AppHelper::getAuthUserCompanyId())
-            ->when(!auth('admin')->check() && auth()->user()?->branch_id,
+            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id,
                 fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->findOrFail($id);
     }
@@ -62,6 +62,34 @@ class MeetingAttendanceController extends Controller
         // Rotation must not republish the meeting or notify model observers.
         $meeting->incrementQuietly('attendance_qr_version');
         return back()->with('success', 'New QR created. Previously printed codes no longer work.');
+    }
+
+    public function joinList($id)
+    {
+        $this->authorize('show_team_meeting');
+        $meeting = $this->meeting($id);
+        $joined = $meeting->meetingAttendances()
+            ->with('user')
+            ->whereHas('user')
+            ->orderBy('checked_in_at')
+            ->get()
+            ->map(function ($attendance) {
+                return [
+                    'name' => ucfirst($attendance->user->name),
+                    'checked_in_at' => $attendance->checked_in_at?->format('Y-m-d H:i:s'),
+                ];
+            })->values();
+
+        return response()->json([
+            'meeting' => [
+                'id' => $meeting->id,
+                'title' => ucfirst($meeting->title),
+                'meeting_date' => AppHelper::formatDateForView($meeting->meeting_date, false),
+            ],
+            'joined_count' => $joined->count(),
+            'invited_count' => $meeting->teamMeetingParticipator()->count(),
+            'joined' => $joined,
+        ]);
     }
 
     public function export($id)

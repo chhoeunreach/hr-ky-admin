@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\AppHelper;
+
 use App\Http\Controllers\Controller;
 use App\Repositories\CompanyRepository;
 use App\Services\Nfc\NfcService;
@@ -40,7 +42,7 @@ class NFCController extends Controller
                 'employee_id' => $request->employee_id ?? null,
             ];
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
             $nfcData = $this->nfcService->getAllNfc($filterData);

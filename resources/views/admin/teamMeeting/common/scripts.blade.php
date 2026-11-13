@@ -90,6 +90,52 @@
             })
         });
 
+        const showJoinListMessage = function (message, cssClass) {
+            const $row = $('<tr>').append(
+                $('<td>').attr('colspan', 3).addClass('text-center ' + cssClass).text(message)
+            );
+            $('#meetingJoinList .join-list-rows').empty().append($row);
+        };
+
+        const renderJoinList = function (data) {
+            const $modal = $('#meetingJoinList');
+            $modal.find('.join-list-meeting-title').text(data.meeting.title);
+
+            const summary = @json(__('index.joined_count_summary'))
+                .replace(':joined', data.joined_count)
+                .replace(':invited', data.invited_count);
+            $modal.find('.join-list-summary').text(summary);
+
+            const $rows = $modal.find('.join-list-rows').empty();
+            if (!data.joined || data.joined.length === 0) {
+                showJoinListMessage(@json(__('index.no_employee_joined')), 'text-muted');
+                return;
+            }
+
+            data.joined.forEach(function (employee, index) {
+                $rows.append($('<tr>').append(
+                    $('<td>').text(index + 1),
+                    $('<td>').text(employee.name),
+                    $('<td>').text(employee.checked_in_at || '—')
+                ));
+            });
+        };
+
+        const loadJoinList = function (url) {
+            showJoinListMessage(@json(__('index.loading')), 'text-muted');
+            $.get(url).done(renderJoinList).fail(function () {
+                showJoinListMessage(@json(__('index.error_loading_join_list')), 'text-danger');
+            });
+        };
+
+        $('body').on('click', '.showJoinList', function (event) {
+            event.preventDefault();
+            $('#meetingJoinList .join-list-meeting-title').text($(this).data('title') || '');
+            $('#meetingJoinList .join-list-summary').text('');
+            $('#meetingJoinList').modal('show');
+            loadJoinList($(this).data('href'));
+        });
+
         $('.reset').click(function (event) {
             event.preventDefault();
             $('#team_meeting').val(null).trigger('change.select2');

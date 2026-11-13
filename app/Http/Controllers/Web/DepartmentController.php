@@ -378,7 +378,7 @@ class DepartmentController extends Controller
             'sort_direction' => $request->query('sort_direction') === 'asc' ? 'asc' : 'desc',
         ];
 
-        if(!auth('admin')->check() && auth()->check()){
+        if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
             $filterParameters['branch'] = [(string) auth()->user()->branch_id];
         }
         return $filterParameters;
@@ -392,7 +392,7 @@ class DepartmentController extends Controller
         return User::query()
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->whereIn('branch_id', $branches->pluck('id'))
-            ->when(!auth('admin')->check() && isset(auth()->user()->branch_id), function ($query) {
+            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && isset(auth()->user()->branch_id), function ($query) {
                 $query->where('branch_id', auth()->user()->branch_id);
             })
             ->where('status', 'verified')

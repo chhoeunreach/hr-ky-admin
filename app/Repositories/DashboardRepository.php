@@ -11,6 +11,10 @@ class DashboardRepository
 {
     private function getAuthenticatedBranchId(): ?int
     {
+        if (AppHelper::canAccessAllBranches()) {
+            return null;
+        }
+
         return auth()->user()->branch_id ?? null;
     }
 

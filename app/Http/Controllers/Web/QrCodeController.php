@@ -49,7 +49,7 @@ class QrCodeController extends Controller
                 'department_id' => $request->department_id ?? null,
             ];
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
             $qrData = $this->qrCodeService->getAllQr($filterData);
@@ -93,7 +93,7 @@ class QrCodeController extends Controller
             $this->authorize('create_qr');
 
             $validatedData = $request->all();
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $validatedData['branch_id'] = auth()->user()->branch_id;
             }
             DB::beginTransaction();

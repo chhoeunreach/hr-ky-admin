@@ -2,6 +2,8 @@
 
 namespace App\Services\Payroll;
 
+use App\Helpers\AppHelper;
+
 use App\Models\EmployeePayslip;
 use App\Models\SellOutReport;
 use App\Models\MonthlyPayrollRecord;
@@ -16,7 +18,7 @@ class MonthlyPayrollReportService
         $month = Carbon::createFromFormat('!Y-m', $filters['month']);
         $start = $month->copy()->startOfMonth();
         $end = $month->copy()->endOfMonth();
-        $branchId = !auth('admin')->check() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
+        $branchId = !auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
         if (empty($filters['live'])) {
             $savedRecords = MonthlyPayrollRecord::where('month', $filters['month'])
                 ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))->orderBy('branch_id')->get();
@@ -107,7 +109,7 @@ class MonthlyPayrollReportService
 
     public function yearly(array $filters, int $year): array
     {
-        $branchId = !auth('admin')->check() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
+        $branchId = !auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
         $records = MonthlyPayrollRecord::whereBetween('month', [$year.'-01', $year.'-12'])
             ->when($branchId, fn ($query, $id) => $query->where('branch_id', $id))->orderBy('month')->get();
         $months = collect(range(1, 12))->map(function ($number) use ($records, $filters, $year) {

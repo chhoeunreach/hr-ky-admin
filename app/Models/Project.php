@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -79,11 +80,27 @@ class Project extends Model
 
 
         if (Auth::check()) {
-            static::addGlobalScope('branch', function (Builder $builder) {
-                $user = Auth::user();
-                $branchId = $user->branch_id;
-                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+            $user = Auth::user();
+            $branchId = $user->branch_id;
+            $userId = $user->id;
+            $includeAssignedFromOtherBranches = AppHelper::canAccessAssignedWorkAcrossBranches($user);
+
+            static::addGlobalScope('branch', function (Builder $builder) use ($branchId, $userId, $includeAssignedFromOtherBranches) {
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
+                $builder->where(function (Builder $query) use ($branchId, $userId, $includeAssignedFromOtherBranches) {
+                    $query->whereHas('branch', function ($query) use ($branchId) {
+                        $query->where('id', $branchId);
+                    });
+
+                    if ($includeAssignedFromOtherBranches) {
+                        $query->orWhereHas('assignedMembers', function ($query) use ($userId) {
+                            $query->where('member_id', $userId);
+                        })->orWhereHas('projectLeaders', function ($query) use ($userId) {
+                            $query->where('leader_id', $userId);
+                        });
+                    }
                 });
             });
         }

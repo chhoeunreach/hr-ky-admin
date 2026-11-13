@@ -90,7 +90,7 @@ class AttendanceController extends Controller
                 $filterParameter['attendance_date'] = $request->attendance_date ?? AppHelper::getCurrentDateInBS();
                 $filterParameter['date_in_bs'] = true;
             }
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameter['branch_id'] = auth()->user()->branch_id;
             }
 
@@ -661,7 +661,7 @@ class AttendanceController extends Controller
                 $filterParameter['date_in_bs'] = true;
             }
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterParameter['branch_id'] = auth()->user()->branch_id;
             }
 
@@ -1393,7 +1393,7 @@ class AttendanceController extends Controller
                 'raw_date' => $date,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
             $logData = $this->attendanceLogService->getAttendanceLog($filterData);
@@ -1470,7 +1470,7 @@ class AttendanceController extends Controller
                 $filterData['employee_id'] = $request['employee_id'];
                 $filterData['department_id'] = $request['department_id'];
 
-                if(!auth('admin')->check() && auth()->check()){
+                if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                     $filterData['branch_id'] = auth()->user()->branch_id;
                 }
                 $firstDay = $startDate->format('Y-m-d');

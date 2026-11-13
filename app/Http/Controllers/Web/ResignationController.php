@@ -55,7 +55,7 @@ class ResignationController extends Controller
                 'department_id' => $request->department_id ?? null,
                 'resignation_date' => $request->resignation_date ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $select = ['*'];
@@ -82,7 +82,7 @@ class ResignationController extends Controller
         $request->validate(['employee_id' => ['nullable', 'integer', 'exists:users,id']]);
         $profileEmployee = $request->filled('employee_id')
             ? User::whereKey($request->employee_id)
-                ->when(!auth('admin')->check() && auth()->user()?->branch_id, fn ($query) => $query->where('branch_id', auth()->user()->branch_id))
+                ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id, fn ($query) => $query->where('branch_id', auth()->user()->branch_id))
                 ->firstOrFail()
             : null;
         $filterParameters = [
@@ -107,7 +107,7 @@ class ResignationController extends Controller
     public function employeeInformation(User $employee)
     {
         abort_unless(auth('admin')->check() || \Illuminate\Support\Facades\Gate::any(['create_resignation', 'update_resignation']), 403);
-        abort_if(!auth('admin')->check() && auth()->user()?->branch_id && $employee->branch_id != auth()->user()->branch_id, 404);
+        abort_if(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id && $employee->branch_id != auth()->user()->branch_id, 404);
 
         return response()->json(['data' => Resignation::employeeLetterInformation($employee)]);
     }

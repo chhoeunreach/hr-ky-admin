@@ -110,7 +110,7 @@ class EmployeeSalaryController extends Controller
                 'per_page' => $request->input('per_page') ?: '25', 'exporting' => $request->filled('export'),
                 'name_direction' => $request->input('name_direction') ?: 'asc',
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $employeeLists = $this->userRepository->getAllVerifiedActiveEmployeeWithSalaryGroup($filterParameters);
@@ -645,7 +645,7 @@ class EmployeeSalaryController extends Controller
     private function checkSalaryEmployeeBranch(int $employeeId): void
     {
         $employee = \App\Models\User::findOrFail($employeeId);
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
     }

@@ -1203,6 +1203,10 @@ return [
     'meeting_title'=>'Meeting title',
     'delete_team_meeting_confirmation'=>'Are you sure you want to Delete Team Meeting ?',
     'image_delete_confirmation'=>'Are you sure you want to Remove Image ?',
+    'employee_join'=>'ការចូលរួមរបស់បុគ្គលិក',
+    'employee_join_status'=>'ស្ថានភាពចូលរួមរបស់បុគ្គលិក',
+    'meeting_joined'=>'បានចូលរួម',
+    'meeting_pending'=>'មិនទាន់ចូលរួម',
     'create_team_meeting'=>'Create Team Meeting',
     'delete_team_meeting'=>'Delete team meeting detail',
     'edit_meeting_detail'=>'Edit meeting detail',
@@ -1212,6 +1216,12 @@ return [
     'team_meeting_filter'=>'Team Meeting Filter',
     'agenda'=>'Agenda',
     'creator'=>'Creator',
+    'join_list'=>'បញ្ជីអ្នកចូលរួម',
+    'meeting_join_list'=>'បញ្ជីអ្នកចូលរួមប្រជុំ',
+    'checked_in_at'=>'ពេលវេលាចុះឈ្មោះ',
+    'joined_count_summary'=>'បានចូលរួម៖ :joined ក្នុងចំណោម :invited នាក់ដែលបានអញ្ជើញ',
+    'no_employee_joined'=>'មិនទាន់មានបុគ្គលិកចូលរួមកិច្ចប្រជុំនេះនៅឡើយទេ។',
+    'error_loading_join_list'=>'មិនអាចផ្ទុកបញ្ជីអ្នកចូលរួមបានទេ។',
 
     /** Tada */
     'tada_attachment'=>'Tada Attachment',

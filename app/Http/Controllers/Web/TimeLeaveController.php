@@ -49,7 +49,7 @@ class TimeLeaveController extends Controller
                     ? (int) $request->input('per_page') : 25,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

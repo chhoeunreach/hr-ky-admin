@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +49,9 @@ class Client extends Model
 
         if (Auth::check()) {
             static::addGlobalScope('branch', function (Builder $builder) {
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
                 $branchId = Auth::user()->branch_id;
                 $builder->whereHas('branch', function ($query) use ($branchId) {
                     $query->where('id', $branchId);
@@ -59,7 +64,7 @@ class Client extends Model
     public static function filteredByBranch()
     {
         $query = static::query();
-        $branchId = auth()->user() ? auth()->user()->branch_id : null;
+        $branchId = auth()->user() && !AppHelper::canAccessAllBranches() ? auth()->user()->branch_id : null;
 
         return $query->when(isset($branchId), function ($query) use ($branchId) {
             $query->where('clients.branch_id', $branchId);

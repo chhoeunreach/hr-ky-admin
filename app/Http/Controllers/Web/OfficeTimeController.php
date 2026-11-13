@@ -34,7 +34,7 @@ class OfficeTimeController extends Controller
                 'category' => $request->category ?? null,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $shifts = ShiftTypeEnum::cases();

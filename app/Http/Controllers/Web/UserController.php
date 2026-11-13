@@ -110,7 +110,7 @@ class UserController extends Controller
                 'per_page' => $request->per_page ?? getRecordPerPage(),
             ];
 
-            if(!auth('admin')->check() && auth()->check() && filled(auth()->user()->branch_id)){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches() && filled(auth()->user()->branch_id)){
                 $filterParameters['branch_id'] = [auth()->user()->branch_id];
             }
 
@@ -168,7 +168,7 @@ class UserController extends Controller
                 'post_id' => $request->post_id ?? null,
             ];
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 
@@ -1313,7 +1313,7 @@ class UserController extends Controller
                 'date' =>  $request->date ?? ( $bsEnabled ? AppHelper::getCurrentDateInBS()  : date('Y-m-d')),
             ];
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
 
@@ -1343,7 +1343,7 @@ class UserController extends Controller
             'employee_id' => $request->employee_id ?? null,
         ];
 
-        if (!auth('admin')->check() && auth()->check()) {
+        if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
             $filterData['branch_id'] = auth()->user()->branch_id;
         }
 
@@ -1368,7 +1368,7 @@ class UserController extends Controller
                 'employee_id' => $request->employee_id ?? null,
             ];
 
-            if (!auth('admin')->check() && auth()->check()) {
+            if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
 

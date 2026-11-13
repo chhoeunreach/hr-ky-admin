@@ -33,12 +33,17 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Kreait\Firebase\Exception\FirebaseException;
 use Kreait\Firebase\Exception\MessagingException;
 
 class AppHelper
 {
     const IS_ACTIVE = 1;
+
+    const ASSIGNED_WORK_BRANCH_ACCESS_PERMISSION = 'access_assigned_work_across_branches';
+
+    const ALL_BRANCH_ACCESS_PERMISSION = 'access_all_branches';
 
     const MONTHS = [
         '1' => array(
@@ -1277,6 +1282,95 @@ class AppHelper
 
         return isset($hasPermission);
     }
+
+    /**
+     * Determine whether the user may see tasks/projects assigned to them even
+     * when those records belong to a different branch.
+     */
+    public static function canAccessAssignedWorkAcrossBranches(?User $user = null): bool
+    {
+        if (Auth::guard('admin')->check()) {
+            return true;
+        }
+
+        $user = $user ?: Auth::user();
+
+        if (!$user) {
+            return false;
+        }
+
+        $roleSlug = strtolower((string) ($user->role?->slug ?? ''));
+
+        if (in_array($roleSlug, ['admin', 'super-admin', 'supper-admin'], true)) {
+            return true;
+        }
+
+        $roleId = $user->role_id ?? $user->role?->id;
+
+        if (!$roleId) {
+            return false;
+        }
+
+        try {
+            if (!Schema::hasTable('permissions')
+                || !Schema::hasTable('permission_roles')
+                || !Schema::hasTable('roles')) {
+                return false;
+            }
+
+            return self::checkRoleIdWithGivenPermission(
+                $roleId,
+                self::ASSIGNED_WORK_BRANCH_ACCESS_PERMISSION
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
+    /**
+     * Determine whether the user may see every record in every branch,
+     * regardless of their own branch assignment.
+     */
+    public static function canAccessAllBranches(?User $user = null): bool
+    {
+        if (Auth::guard('admin')->check()) {
+            return true;
+        }
+
+        $user = $user ?: Auth::user();
+
+        if (!$user) {
+            return false;
+        }
+
+        $roleSlug = strtolower((string) ($user->role?->slug ?? ''));
+
+        if (in_array($roleSlug, ['admin', 'super-admin', 'supper-admin'], true)) {
+            return true;
+        }
+
+        $roleId = $user->role_id ?? $user->role?->id;
+
+        if (!$roleId) {
+            return false;
+        }
+
+        try {
+            if (!Schema::hasTable('permissions')
+                || !Schema::hasTable('permission_roles')
+                || !Schema::hasTable('roles')) {
+                return false;
+            }
+
+            return self::checkRoleIdWithGivenPermission(
+                $roleId,
+                self::ALL_BRANCH_ACCESS_PERMISSION
+            );
+        } catch (Exception) {
+            return false;
+        }
+    }
+
     public static function taskDate($date): string
     {
 

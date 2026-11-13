@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Helpers\AppHelper;
+
 use App\Models\Asset;
 use App\Models\AssetAssignment;
 use App\Models\AssetType;
@@ -71,7 +73,7 @@ class AssetRepository
     public function getReturnAssetsPaginated($select=['*'],$with=[])
     {
         $branchId = null;
-        if(!auth('admin')->check() && auth()->check()){
+        if(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->check()){
             $branchId = auth()->user()->branch_id;
         }
         return Asset::select($select)->with($with)

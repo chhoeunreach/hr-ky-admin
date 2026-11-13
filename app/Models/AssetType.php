@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -42,6 +44,9 @@ class AssetType extends Model
             $branchId = Auth::user()->branch_id;
 
             static::addGlobalScope('branch', function (Builder $builder) use($branchId){
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
                 $builder->where(function ($query) use ($branchId) {
                     $query->whereNull('asset_types.branch_id')->orWhere('asset_types.branch_id', $branchId);
                 });
