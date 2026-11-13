@@ -66,7 +66,7 @@ class AssetController extends Controller
                 'is_available' => $request->is_available ?? null,
                 'type_id' => $request->type_id ?? null,
             ];
-            if(!auth('admin')->check() && auth()->user()?->branch_id){
+            if(!auth('admin')->check() && auth()->user()?->branch_id && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

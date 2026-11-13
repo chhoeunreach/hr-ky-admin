@@ -320,6 +320,27 @@ class AssetsToolkitTest extends TestCase
         $this->assertTrue(\App\Helpers\AppHelper::canAccessAllBranches());
     }
 
+    public function test_all_branch_role_can_filter_assets_by_any_company_branch_or_all_branches(): void
+    {
+        $this->grantAllBranchAssignmentRole();
+        $this->abilities[] = 'export_assets';
+        DB::table('branches')->insert(['id' => 3, 'name' => 'Foreign company branch', 'company_id' => 2]);
+        $company = \Mockery::mock(\App\Models\Company::class)->makePartial();
+        $company->shouldReceive('branches')->andReturn(\App\Models\Branch::withoutGlobalScopes()->where('company_id', 1));
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $this->view('admin.assetManagement.assetDetail.common.branch-select', [
+                'assetBranchFilter' => true, 'filterParameters' => ['branch_id' => 1],
+                'companyDetail' => $company, 'errors' => new \Illuminate\Support\ViewErrorBag,
+            ])->assertSee('Current branch')->assertSee('Other branch')
+                ->assertSee('value="1" selected', false)->assertSee(__('index.all'))
+                ->assertDontSee('Foreign company branch');
+        }
+        $this->getJson('/_test/assets-toolkit?export=json&columns[]=asset_code')->assertOk()->assertJsonCount(32, 'rows');
+        $this->getJson('/_test/assets-toolkit?export=json&branch_id=1&columns[]=asset_code')->assertOk()->assertJsonCount(1, 'rows');
+        $this->getJson('/_test/assets-toolkit?export=json&branch_id=2&columns[]=asset_code')->assertOk()->assertJsonCount(31, 'rows');
+    }
+
     public function test_all_branch_role_unlocks_assignment_branches_and_loads_their_employees(): void
     {
         $this->setupAssignmentSelection();
