@@ -75,6 +75,40 @@ class AssetsToolkitTest extends TestCase
         Route::get('/_test/assets-toolkit', [AssetController::class, 'index']);
     }
 
+    public function test_asset_branch_dropdown_is_visible_preselected_and_contains_only_current_branch(): void
+    {
+        foreach (['en', 'km'] as $locale) {
+            app()->setLocale($locale);
+            $html = (string) $this->view('admin.assetManagement.assetDetail.common.branch-select', ['errors' => new \Illuminate\Support\ViewErrorBag]);
+            $this->assertStringContainsString('id="branch_id" name="branch_id"', $html);
+            $this->assertStringContainsString('value="2" selected', $html);
+            $this->assertStringContainsString('Current branch', $html);
+            $this->assertStringNotContainsString('Other branch', $html);
+            $this->assertSame(1, substr_count($html, '<option'));
+        }
+        session()->flashInput(['branch_id' => 1]);
+        $this->view('admin.assetManagement.assetDetail.common.branch-select', ['errors' => new \Illuminate\Support\ViewErrorBag])->assertSee('value="2" selected', false);
+    }
+
+    public function test_branchless_administrative_form_can_still_choose_company_branches(): void
+    {
+        auth()->user()->branch_id = null;
+        $company = \Mockery::mock(\App\Models\Company::class)->makePartial();
+        $company->shouldReceive('branches')->once()->andReturn(\App\Models\Branch::withoutGlobalScopes());
+        $this->view('admin.assetManagement.assetDetail.common.branch-select', ['companyDetail' => $company, 'errors' => new \Illuminate\Support\ViewErrorBag])
+            ->assertSee('Current branch')->assertSee('Other branch')->assertSee('value=""', false);
+    }
+
+    public function test_asset_directory_stays_on_current_branch_even_when_other_branches_are_assigned(): void
+    {
+        Schema::table('branches', fn (Blueprint $table) => $table->integer('company_id')->default(1));
+        auth()->user()->forceFill(['company_id' => 1, 'additional_branch_ids' => [1]]);
+        \Illuminate\Database\Eloquent\Model::clearBootedModels();
+        $this->assertSame(32, \App\Models\Asset::count());
+        $this->getJson('/_test/assets-toolkit?export=json&branch_id=1&columns[]=asset_code')
+            ->assertOk()->assertJsonCount(31, 'rows');
+    }
+
     public function test_search_and_row_count_cover_the_filtered_branch(): void
     {
         $repository = app(AssetRepository::class);

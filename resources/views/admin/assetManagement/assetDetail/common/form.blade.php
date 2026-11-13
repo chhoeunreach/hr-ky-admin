@@ -5,24 +5,9 @@
 <fieldset class="management-form-section">
     <legend>{{ __('index.management_asset_identity') }}</legend>
 <div class="row">
-    @if(auth('admin')->check() || !auth()->user()?->branch_id)
     <div class="col-lg-4 col-md-6 mb-4">
-        <label for="branch_id" class="form-label">{{ __('index.branch') }} <span style="color: red">*</span></label>
-        <select class="form-select" id="branch_id" name="branch_id" required>
-            <option value="" @selected(!old('branch_id', $assetDetail->branch_id ?? null)) disabled>{{ __('index.select_branch') }}
-            </option>
-            @if(isset($companyDetail))
-                @foreach($companyDetail->branches()->get() as $key => $branch)
-                    <option value="{{$branch->id}}"
-                        @selected(old('branch_id', $assetDetail->branch_id ?? null) == $branch->id)>
-                        {{ucfirst($branch->name)}}</option>
-                @endforeach
-            @endif
-        </select>
+        @include('admin.assetManagement.assetDetail.common.branch-select', ['assetBranchFilter' => false])
     </div>
-    @else
-        <input type="hidden" id="branch_id" name="branch_id" value="{{ auth()->user()?->branch_id }}">
-    @endif
     <div class="col-lg-4 col-md-6 mb-4">
         <label for="type" class="form-label">{{ __('index.type') }} <span style="color: red">*</span></label>
         <select class="form-select" id="type" name="type_id" required>

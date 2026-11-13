@@ -44,21 +44,9 @@
                 <input type="hidden" name="direction" value="{{ request('direction') }}">
 
                 <div class="row align-items-center">
-                    @if(!isset(auth()->user()->branch_id))
-                        <div class="col-lg-3 col-md-6 mb-4">
-                            <select class="form-select" id="branch_id" name="branch_id">
-                                <option selected disabled>{{ __('index.select_branch') }}
-                                </option>
-                                @if(isset($companyDetail))
-                                    @foreach($companyDetail->branches()->get() as $key => $branch)
-                                        <option value="{{$branch->id}}"
-                                            {{ (isset($filterParameters['branch_id']) && $filterParameters['branch_id']  == $branch->id) ? 'selected': '' }}>
-                                            {{ucfirst($branch->name)}}</option>
-                                    @endforeach
-                                @endif
-                            </select>
-                        </div>
-                    @endif
+                    <div class="col-lg-3 col-md-6 mb-4">
+                        @include('admin.assetManagement.assetDetail.common.branch-select', ['assetBranchFilter' => true])
+                    </div>
                     <div class="col-lg-3 col-md-6 mb-4">
                         <input type="text" placeholder="Asset name" id="asset" name="name"
                                value="{{$filterParameters['name']}}" class="form-control">
