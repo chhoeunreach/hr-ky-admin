@@ -53,7 +53,7 @@ class TerminationController extends Controller
                 'termination_date' => $request->termination_date ?? null,
                 'termination_type_id' => $request->termination_type_id ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

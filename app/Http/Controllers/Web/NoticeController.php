@@ -47,7 +47,7 @@ class NoticeController extends Controller
                 'per_page' => in_array((string) $request->input('per_page'), ['25', '50', '100', '200', 'all'], true) ? (string) $request->input('per_page') : '25',
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

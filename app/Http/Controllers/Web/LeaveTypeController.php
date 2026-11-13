@@ -42,7 +42,7 @@ class LeaveTypeController extends Controller
                     'type' => $request->type ?? null,
                 ];
 
-                if (!auth('admin')->check() && auth()->check()) {
+                if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                     $filterParameters['branch_id'] = auth()->user()->branch_id;
                 }
 
@@ -69,7 +69,7 @@ class LeaveTypeController extends Controller
                     'type' => $request->type ?? null,
                 ];
 
-                if (!auth('admin')->check() && auth()->check()) {
+                if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
                     $filterParameters['branch_id'] = auth()->user()->branch_id;
                 }
 

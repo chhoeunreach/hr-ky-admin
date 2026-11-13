@@ -19,7 +19,9 @@ class NotificationRepository
         $branchId = null;
         $authUserId = null;
         if(auth()->user()){
-            $branchId = auth()->user()->branch_id;
+            if (!AppHelper::canAccessAllBranches()) {
+                $branchId = auth()->user()->branch_id;
+            }
             $authUserId = auth()->user()->id;
         }
 

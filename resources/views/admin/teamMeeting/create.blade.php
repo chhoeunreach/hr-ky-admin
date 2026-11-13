@@ -14,7 +14,7 @@
 
 @section('title',__('index.team_meeting'))
 
-@section('action',__('index.create'))
+@section('action',__('index.create_team_meeting'))
 
 @section('button')
     <a href="{{route('admin.team-meetings.index')}}" >

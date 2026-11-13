@@ -60,7 +60,7 @@ class TrainingController extends Controller
                 'end_date' => $request->end_date ?? null,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

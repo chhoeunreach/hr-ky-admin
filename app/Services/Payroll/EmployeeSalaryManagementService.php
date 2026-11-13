@@ -2,6 +2,8 @@
 
 namespace App\Services\Payroll;
 
+use App\Helpers\AppHelper;
+
 use App\Models\EmployeeProfile;
 use App\Models\EmployeeProfileAuditLog;
 use App\Models\EmployeeSalary;
@@ -219,7 +221,7 @@ class EmployeeSalaryManagementService
     private function lockEmployee(int $employeeId): User
     {
         $employee = User::whereKey($employeeId)->lockForUpdate()->firstOrFail();
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
         return $employee;

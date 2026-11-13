@@ -19,13 +19,41 @@ class TeamMeetingService
 
     public function getAllCompanyTeamMeetings($filterParameters, $select = ['*'], $with = [])
     {
-        if(AppHelper::ifDateInBsEnabled()){
+        return $this->teamMeetingRepo->getAllCompanyTeamMeetings(
+            $this->convertMeetingDateFilters($filterParameters),
+            $select,
+            $with
+        );
+    }
+
+    public function getCompanyTeamMeetingList($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->teamMeetingRepo->getCompanyTeamMeetingList(
+            $this->convertMeetingDateFilters($filterParameters),
+            $select,
+            $with
+        );
+    }
+
+    public function getCompanyTeamMeetingJoinRecords($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->teamMeetingRepo->getCompanyTeamMeetingJoinRecords(
+            $this->convertMeetingDateFilters($filterParameters),
+            $select,
+            $with
+        );
+    }
+
+    private function convertMeetingDateFilters($filterParameters)
+    {
+        if (AppHelper::ifDateInBsEnabled()) {
             $filterParameters['meeting_from'] = isset($filterParameters['meeting_from']) ?
-                AppHelper::dateInYmdFormatNepToEng($filterParameters['meeting_from']): null;
+                AppHelper::dateInYmdFormatNepToEng($filterParameters['meeting_from']) : null;
             $filterParameters['meeting_to'] = isset($filterParameters['meeting_to']) ?
-                AppHelper::dateInYmdFormatNepToEng($filterParameters['meeting_to']): null;
+                AppHelper::dateInYmdFormatNepToEng($filterParameters['meeting_to']) : null;
         }
-        return $this->teamMeetingRepo->getAllCompanyTeamMeetings($filterParameters, $select, $with);
+
+        return $filterParameters;
     }
 
 

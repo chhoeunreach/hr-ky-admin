@@ -52,7 +52,7 @@ class TransferController extends Controller
                 'department_id' => $request->department_id ?? null,
                 'transfer_date' => $request->transfer_date ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

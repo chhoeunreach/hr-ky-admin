@@ -2,6 +2,10 @@
 
 From **Team Meetings**, choose **QR & Attendance** on a meeting. The register shows invited employees, pending/joined status, and the original check-in time. Search by name or filter by status, refresh to see new scans, and export the full register as CSV.
 
+The **Team Meeting** page shows a meeting list DataTable with a collapsible filter panel (date, branch, department, and participant) and a toolbar with search, page size, export actions, and column visibility. The **Create Team Meeting** action in the toolbar opens the form in a modal. The **Employee Join** page uses the same filter panel and toolbar pattern and shows the **Employee Join Status** DataTable: one row per employee with their status and check-in time, along with the meeting, date, and branch. The Employee Join page supports meeting date, branch, department, participant, and status filters. Both DataTables have search, adjustable page length, and sortable columns. Each meeting also has a **Join List** button showing only the employees who joined, with their original check-in times; the badge on the button is the number of recorded joins.
+
+Creating and editing a team meeting opens the form in a modal. Saving either form closes the modal and reloads the Team Meeting list so the new or updated meeting is visible.
+
 Users with `show_team_meeting` can view, print the QR, and export. Users with `edit_team_meeting` can enable or disable check-in, set its window, or replace the QR. Blank opening and closing times use the start and end of the meeting date in the configured application timezone. Replacing a QR immediately invalidates previous copies and preserves recorded attendance.
 
 ## Database setup

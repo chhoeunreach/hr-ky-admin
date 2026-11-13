@@ -45,7 +45,7 @@ class LeaveApprovalController extends Controller
                 'leave_type_id' => $request->leave_type_id ?? null,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $select = ['*'];

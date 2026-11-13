@@ -43,7 +43,7 @@ class PostController extends Controller
                 'is_active' => $request->is_active ?? null,
                 'per_page' => $request->per_page ?? 25,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = [auth()->user()->branch_id];
             }
             $postSelect = ['*'];

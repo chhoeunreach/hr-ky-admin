@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -68,13 +69,28 @@ class Task extends Model
         });
 
         if (Auth::check() && isset(Auth::user()->branch_id)) {
-            $branchId = Auth::user()->branch_id;
+            $user = Auth::user();
+            $branchId = $user->branch_id;
+            $userId = $user->id;
+            $includeAssignedFromOtherBranches = AppHelper::canAccessAssignedWorkAcrossBranches($user);
 
-            static::addGlobalScope('branch', function (Builder $builder) use($branchId){
-                $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+            static::addGlobalScope('branch', function (Builder $builder) use ($branchId, $userId, $includeAssignedFromOtherBranches) {
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
+                $builder->where(function (Builder $query) use ($branchId, $userId, $includeAssignedFromOtherBranches) {
+                    $query->whereHas('branch', function ($query) use ($branchId) {
+                        $query->where('id', $branchId);
+                    });
+
+                    if ($includeAssignedFromOtherBranches) {
+                        $query->orWhereHas('assignedMembers', function ($query) use ($userId) {
+                            $query->where('member_id', $userId);
+                        })->orWhereHas('project.projectLeaders', function ($query) use ($userId) {
+                            $query->where('leader_id', $userId);
+                        });
+                    }
                 });
-
             });
         }
 

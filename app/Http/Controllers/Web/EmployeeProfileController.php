@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Helpers\AppHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Branch;
@@ -249,7 +250,7 @@ class EmployeeProfileController extends Controller
                 'employee.branch:id,name',
                 'employee.department:id,dept_name',
             ])
-                ->when(auth()->user()?->branch_id && auth()->id() !== 1, function ($query) {
+                ->when(!AppHelper::canAccessAllBranches() && auth()->user()?->branch_id && auth()->id() !== 1, function ($query) {
                     $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('branch_id', auth()->user()->branch_id));
                 })
                 ->latest('incident_date')
@@ -670,7 +671,7 @@ class EmployeeProfileController extends Controller
     public function storeSalary(Request $request, User $employee): RedirectResponse
     {
         $this->authorizeEmployeeProfile($employee, 'employee.salary.history.manage');
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
 
@@ -748,7 +749,7 @@ class EmployeeProfileController extends Controller
     {
         $this->authorizeEmployeeProfile($employee, $ability);
         abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
     }
@@ -819,7 +820,7 @@ class EmployeeProfileController extends Controller
         $status = $request->validate(['approval_status' => ['required', Rule::in(['pending', 'approved', 'rejected', 'cancelled'])]])['approval_status'];
         $this->authorizeEmployeeProfile($employee, in_array($status, ['approved', 'rejected'], true) ? 'salary_increment' : 'employee.salary.history.manage');
         abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
         DB::transaction(function () use ($request, $employee, $salary, $status) {

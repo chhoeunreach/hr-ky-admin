@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Helpers\AppHelper;
+
 use App\Enum\PayslipStatusEnum;
 use App\Models\EmployeePayslip;
 use Illuminate\Support\Facades\DB;
@@ -248,7 +250,9 @@ class EmployeePayslipRepository
         $branchId = null;
         $authUserId = null;
         if(auth()->user()){
-            $branchId = auth()->user()->branch_id;
+            if (!AppHelper::canAccessAllBranches()) {
+                $branchId = auth()->user()->branch_id;
+            }
             $authUserId = auth()->user()->id;
         }
 

@@ -462,7 +462,7 @@ class LeaveController extends Controller
             'status' => $request->filled('status') ? $request->status : null,
         ];
 
-        if (!auth('admin')->check() && auth()->check()) {
+        if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
             $filterParameters['branch_id'] = auth()->user()->branch_id;
         }
 

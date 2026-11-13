@@ -53,7 +53,7 @@ class  TaskController extends Controller
                 'branch_id' => $request->branch_id ?? null,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAssignedWorkAcrossBranches() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

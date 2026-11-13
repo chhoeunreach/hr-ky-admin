@@ -134,6 +134,24 @@ class MeetingCheckInTest extends TestCase
         $this->assertStringContainsString('Employee,Joined,', $joined);
     }
 
+    public function test_admin_join_list_returns_only_employees_who_joined(): void
+    {
+        $this->actingAs($this->employee);
+        \Illuminate\Support\Facades\Gate::define('show_team_meeting', fn () => true);
+        $controller = app(\App\Http\Controllers\Web\MeetingAttendanceController::class);
+
+        $empty = $controller->joinList(1)->getData(true);
+        $this->assertSame(0, $empty['joined_count']);
+        $this->assertSame([], $empty['joined']);
+
+        $this->service->scan($this->service->qrPayload($this->meeting), $this->employee);
+        $data = $controller->joinList(1)->getData(true);
+        $this->assertSame(1, $data['joined_count']);
+        $this->assertSame(1, $data['invited_count']);
+        $this->assertSame('Employee', $data['joined'][0]['name']);
+        $this->assertSame('2026-11-12 10:00:00', $data['joined'][0]['checked_in_at']);
+    }
+
     public function test_admin_can_disable_check_in_and_rotate_qr(): void
     {
         $this->actingAs($this->employee);

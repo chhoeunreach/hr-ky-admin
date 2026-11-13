@@ -2,6 +2,8 @@
 
 namespace App\Repositories;
 
+use App\Helpers\AppHelper;
+
 use App\Models\TeamMeeting;
 use App\Traits\ImageService;
 use Illuminate\Support\Carbon;
@@ -10,13 +12,11 @@ class TeamMeetingRepository
 {
     use ImageService;
 
-    public function getAllCompanyTeamMeetings($filterParameters,$select=['*'],$with=[])
+    private function companyTeamMeetingsQuery($filterParameters, $select = ['*'], $with = [])
     {
         $branchId = null;
-        $authUserId = null;
-        if(auth()->user()){
+        if(auth()->user() && !AppHelper::canAccessAllBranches()){
             $branchId = auth()->user()->branch_id;
-            $authUserId = auth()->user()->id;
         }
 
         return TeamMeeting::select($select)->with($with)
@@ -44,6 +44,19 @@ class TeamMeetingRepository
                     $query->whereDate('meeting_date','<=',date('Y-m-d',strtotime($filterParameters['meeting_to'])));
                 }
             })
+            ->when(($filterParameters['attendance_status'] ?? null) === 'joined', function($query){
+                $query->whereHas('meetingAttendances');
+            })
+            ->when(($filterParameters['attendance_status'] ?? null) === 'pending', function($query){
+                $query->whereHas('teamMeetingParticipator', function($query){
+                    $query->whereNotExists(function($subQuery){
+                        $subQuery->selectRaw('1')
+                            ->from('meeting_attendances')
+                            ->whereColumn('meeting_attendances.user_id', 'team_meeting_members.meeting_participator_id')
+                            ->whereColumn('meeting_attendances.team_meeting_id', 'team_meetings.id');
+                    });
+                });
+            })
             ->where('company_id',$filterParameters['company_id'])
             ->when(isset($branchId), function ($query) use ($branchId) {
                 $query->whereHas('branch',function($subQuery) use ($branchId){
@@ -51,8 +64,23 @@ class TeamMeetingRepository
                 });
 
             })
-            ->orderBy('meeting_published_at','Desc')
-            ->paginate( getRecordPerPage());
+            ->orderBy('meeting_published_at','Desc');
+    }
+
+    public function getAllCompanyTeamMeetings($filterParameters,$select=['*'],$with=[])
+    {
+        return $this->companyTeamMeetingsQuery($filterParameters, $select, $with)
+            ->paginate(getRecordPerPage());
+    }
+
+    public function getCompanyTeamMeetingJoinRecords($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->companyTeamMeetingsQuery($filterParameters, $select, $with)->get();
+    }
+
+    public function getCompanyTeamMeetingList($filterParameters, $select = ['*'], $with = [])
+    {
+        return $this->companyTeamMeetingsQuery($filterParameters, $select, $with)->get();
     }
 
     public function getAllAssignedEmployeeTeamMeetings($perPage,$select=['*'])

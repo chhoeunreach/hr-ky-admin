@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -51,6 +53,9 @@ class Notice extends Model
             $user = Auth::user();
 
             static::addGlobalScope('branch', function (Builder $builder) use ($user) {
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
                 $branchId = $user->branch_id;
                 $builder->where(function ($query) use ($branchId) {
                     $query->where('branch_id', $branchId)

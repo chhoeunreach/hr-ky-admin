@@ -1199,6 +1199,10 @@ return [
     'meeting_title'=>'Meeting title',
     'delete_team_meeting_confirmation' => 'Delete this team meeting?',
     'image_delete_confirmation' => 'Remove this image?',
+    'employee_join'=>'Employee Join',
+    'employee_join_status'=>'Employee Join Status',
+    'meeting_joined'=>'Joined',
+    'meeting_pending'=>'Pending',
     'create_team_meeting'=>'Create Team Meeting',
     'delete_team_meeting'=>'Delete team meeting detail',
     'edit_meeting_detail'=>'Edit meeting detail',
@@ -1208,6 +1212,12 @@ return [
     'team_meeting_filter'=>'Team Meeting Filter',
     'agenda'=>'Agenda',
     'creator'=>'Creator',
+    'join_list'=>'Join List',
+    'meeting_join_list'=>'Meeting Join List',
+    'checked_in_at'=>'Checked in at',
+    'joined_count_summary'=>'Joined: :joined of :invited invited employees',
+    'no_employee_joined'=>'No employee has joined this meeting yet.',
+    'error_loading_join_list'=>'Unable to load the join list.',
 
     /** Tada */
     'tada_attachment'=>'Tada Attachment',

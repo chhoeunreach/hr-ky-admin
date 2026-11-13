@@ -55,7 +55,7 @@ class PromotionController extends Controller
                 'department_id' => $request->department_id ?? null,
                 'promotion_date' => $request->promotion_date ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
 

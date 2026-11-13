@@ -30,7 +30,7 @@ class EmployeeLogOutRequestController extends Controller
                 'employee_id' => $request->employee_id ?? null,
             ];
 
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterData['branch_id'] = auth()->user()->branch_id;
             }
             $select = [
@@ -71,6 +71,7 @@ class EmployeeLogOutRequestController extends Controller
             if (!$employee
                 || (int) $employee->company_id !== (int) AppHelper::getAuthUserCompanyId()
                 || (!auth('admin')->check()
+                    && !AppHelper::canAccessAllBranches()
                     && auth()->check()
                     && filled(auth()->user()->branch_id)
                     && (int) $employee->branch_id !== (int) auth()->user()->branch_id)

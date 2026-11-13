@@ -184,7 +184,7 @@ class SalaryHistoryController extends Controller
     private function checkEmployeeBranch(int $employeeId): \App\Models\User
     {
         $employee = \App\Models\User::findOrFail($employeeId);
-        if (!auth('admin')->check() && auth()->user()?->branch_id) {
+        if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
             abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
         }
         return $employee;

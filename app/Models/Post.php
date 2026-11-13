@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -29,6 +31,9 @@ class Post extends Model
         parent::boot();
 
         static::addGlobalScope('branch', function (Builder $builder) {
+            if (AppHelper::canAccessAllBranches()) {
+                return;
+            }
 
             $user = Auth::user();
             if (isset($user->branch_id) && (isset($user->id) && $user->id != 1)) {

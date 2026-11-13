@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use App\Helpers\AttendanceHelper;
 use App\Notifications\ResetPasswordNotification;
 use Carbon\Carbon;
@@ -140,6 +142,9 @@ class User extends Authenticatable
             $branchId = Auth::user()->branch_id;
 
             static::addGlobalScope('branch', function (Builder $builder) use($branchId){
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
                 $builder->whereHas('branch', function ($query) use ($branchId) {
                     $query->where('id', $branchId);
                 });

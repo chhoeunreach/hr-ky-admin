@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Helpers\AppHelper;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -67,6 +69,9 @@ class Notification extends Model
             $branchId = Auth::user()->branch_id;
 
             static::addGlobalScope('branch', function (Builder $builder) use($branchId){
+                if (AppHelper::canAccessAllBranches()) {
+                    return;
+                }
                 $builder->whereHas('createdBy', function ($query) use ($branchId) {
                         $query->where('branch_id', $branchId);
                     });

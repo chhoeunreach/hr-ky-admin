@@ -43,20 +43,97 @@ class TeamMeetingController extends Controller
                 'meeting_to' => $request->meeting_to ?? null,
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
+                'attendance_status' => $request->attendance_status ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $select = ['*'];
-            $with = ['teamMeetingParticipator'];
+            $with = ['teamMeetingParticipator.participator', 'meetingAttendances.user'];
 
-            $teamMeetings = $this->teamMeetingService->getAllCompanyTeamMeetings($filterParameters,$select, $with);
+            $teamMeetings = $this->teamMeetingService->getCompanyTeamMeetingList($filterParameters, $select, $with);
 
             $with = ['branches:id,name'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
 
             return view($this->view . 'index', compact('teamMeetings','filterParameters','companyDetail'));
+        } catch (Exception $exception) {
+            return redirect()->back()->with('danger', $exception->getMessage());
+        }
+    }
+
+    public function employeeJoin(Request $request)
+    {
+        $this->authorize('list_team_meeting');
+        try {
+            $filterParameters = [
+                'company_id' => AppHelper::getAuthUserCompanyId(),
+                'meeting_from' => $request->meeting_from ?? null,
+                'meeting_to' => $request->meeting_to ?? null,
+                'branch_id' => $request->branch_id ?? null,
+                'attendance_status' => $request->attendance_status ?? null,
+                'department_id' => $request->department_id ?? [],
+                'participator' => $request->participator ?? [],
+            ];
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
+                $filterParameters['branch_id'] = auth()->user()->branch_id;
+            }
+
+            $meetingFilterParameters = $filterParameters;
+            unset($meetingFilterParameters['department_id'], $meetingFilterParameters['participator']);
+
+            $joinMeetings = $this->teamMeetingService->getCompanyTeamMeetingJoinRecords(
+                $meetingFilterParameters,
+                ['id', 'title', 'meeting_date', 'branch_id'],
+                ['teamMeetingParticipator.participator:id,name,department_id', 'meetingAttendances.user:id,name,department_id', 'branch:id,name']
+            );
+
+            $departmentFilter = array_map('intval', array_filter((array) ($filterParameters['department_id'] ?? [])));
+            $participatorFilter = array_map('intval', array_filter((array) ($filterParameters['participator'] ?? [])));
+
+            $joinRecords = collect();
+            foreach ($joinMeetings as $joinMeeting) {
+                $attendanceByUser = $joinMeeting->meetingAttendances->keyBy('user_id');
+                $employees = $joinMeeting->teamMeetingParticipator->pluck('participator')->filter()
+                    ->merge($joinMeeting->meetingAttendances->pluck('user')->filter())
+                    ->unique('id');
+
+                foreach ($employees as $employee) {
+                    if (!empty($departmentFilter) && !in_array((int) $employee->department_id, $departmentFilter, true)) {
+                        continue;
+                    }
+                    if (!empty($participatorFilter) && !in_array((int) $employee->id, $participatorFilter, true)) {
+                        continue;
+                    }
+
+                    $attendance = $attendanceByUser->get($employee->id);
+                    $isJoined = (bool) $attendance;
+
+                    if (($filterParameters['attendance_status'] ?? null) === 'joined' && !$isJoined) {
+                        continue;
+                    }
+                    if (($filterParameters['attendance_status'] ?? null) === 'pending' && $isJoined) {
+                        continue;
+                    }
+
+                    $joinRecords->push([
+                        'employee' => ucfirst($employee->name),
+                        'meeting' => ucfirst($joinMeeting->title),
+                        'meeting_date' => AppHelper::formatDateForView($joinMeeting->meeting_date),
+                        'meeting_date_value' => $joinMeeting->meeting_date,
+                        'branch' => ucfirst($joinMeeting->branch->name ?? 'N/A'),
+                        'joined' => $isJoined,
+                        'checked_in_at' => $attendance?->checked_in_at,
+                    ]);
+                }
+            }
+
+            $with = ['branches:id,name'];
+            $select = ['id', 'name'];
+            $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
+
+            return view($this->view . 'employee-join', compact('filterParameters','companyDetail','joinRecords'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }

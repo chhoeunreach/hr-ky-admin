@@ -35,7 +35,7 @@ class SupportController extends Controller
                 'branch_id' => $request->branch_id ?? null,
                 'department_id' => $request->department_id ?? null,
             ];
-            if(!auth('admin')->check() && auth()->check()){
+            if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
                 $filterParameters['branch_id'] = auth()->user()->branch_id;
             }
             $with = [

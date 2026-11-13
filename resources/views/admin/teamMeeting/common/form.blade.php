@@ -160,7 +160,7 @@
             </button>
         @endif
         <button type="submit"
-                class="btn btn-primary mb-2">{{isset($teamMeetingDetail) ? __('index.update') : __('index.create')}} </button>
+                class="btn btn-primary mb-2">{{isset($teamMeetingDetail) ? __('index.update') : __('index.create_team_meeting')}} </button>
         <button type="submit" id="withTeamNotification" class="btn btn-primary mb-2">
             <i class="link-icon" data-feather="plus"></i>
             {{isset($teamMeetingDetail)?  __('index.update_send'): __('index.create_send')}}

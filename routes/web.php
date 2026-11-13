@@ -524,6 +524,9 @@ Route::group([
         Route::put('team-meetings/{id}/attendance', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'update'])->name('team-meetings.attendance.update');
         Route::post('team-meetings/{id}/attendance/rotate', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'rotate'])->name('team-meetings.attendance.rotate');
         Route::get('team-meetings/{id}/attendance/export', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'export'])->name('team-meetings.attendance.export');
+        Route::get('team-meetings/{id}/attendance/joined', [\App\Http\Controllers\Web\MeetingAttendanceController::class, 'joinList'])->name('team-meetings.attendance.joined');
+
+        Route::get('team-meetings/employee-join', [TeamMeetingController::class, 'employeeJoin'])->name('team-meetings.employee-join');
 
         Route::resource('team-meetings', TeamMeetingController::class);
         Route::get('team-meetings/delete/{id}', [TeamMeetingController::class, 'delete'])->name('team-meetings.delete');

@@ -309,6 +309,16 @@ class RolePermissionHelper
                 "permission_key" => "delete_branch",
                 "permission_groups_id" => 2
             ],
+            [
+                "name" => "Access Assigned Work Across Branches",
+                "permission_key" => "access_assigned_work_across_branches",
+                "permission_groups_id" => 2
+            ],
+            [
+                "name" => "Access All Branches",
+                "permission_key" => "access_all_branches",
+                "permission_groups_id" => 2
+            ],
 
             /** Department Permissions */
             [

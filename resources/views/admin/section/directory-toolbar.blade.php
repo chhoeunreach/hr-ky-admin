@@ -7,9 +7,9 @@
     <div class="directory-title"><i data-feather="{{ $directoryIcon }}"></i><h6>{{ $directoryTitle }}</h6><span class="directory-count" data-directory-count="{{ $directoryTable }}">{{ number_format(method_exists($directoryRecords, 'total') ? $directoryRecords->total() : $directoryRecords->count()) }}</span></div>
     @if($directoryCanAdd ?? \Illuminate\Support\Facades\Gate::allows($directoryPermission))
         @if($directoryAddModal ?? false)
-            <button type="button" class="directory-add border-0" data-bs-toggle="modal" data-bs-target="#{{ $directoryAddModal }}"><i data-feather="plus"></i>{{ __('index.add') }}</button>
+            <button type="button" class="directory-add border-0" data-bs-toggle="modal" data-bs-target="#{{ $directoryAddModal }}"><i data-feather="plus"></i>{{ $directoryAddLabel ?? __('index.add') }}</button>
         @else
-            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif @if($directoryAddNoticeModal ?? false) data-open-notice-form @endif><i data-feather="plus"></i>{{ __('index.add') }}</a>
+            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif @if($directoryAddNoticeModal ?? false) data-open-notice-form @endif @if($directoryAddRequestForm ?? false) data-open-request-form @endif @if($directoryAddModalTitle ?? false) data-request-modal-title="{{ $directoryAddModalTitle }}" @endif><i data-feather="plus"></i>{{ $directoryAddLabel ?? __('index.add') }}</a>
         @endif
     @endif
 </div>
