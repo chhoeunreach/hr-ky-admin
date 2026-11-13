@@ -48,7 +48,7 @@ class Event extends Model
                     return;
                 }
                  $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                    $query->whereIn('id', AppHelper::accessibleBranchIds());
                 });
 
             });

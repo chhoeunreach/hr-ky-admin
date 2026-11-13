@@ -78,7 +78,7 @@ class AssetRepository
         }
         return Asset::select($select)->with($with)
              ->when(!is_null($branchId), function($query) use ($branchId){
-                $query->where('branch_id', $branchId);
+                $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
             })
             ->whereHas('assignment', function ($query) {
                 $query->whereNotNull('returned_date');

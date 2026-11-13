@@ -51,7 +51,7 @@ class TrainerController extends Controller
             ];
 
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $select = ['*'];
             $with = ['employee:id,name,email,phone'];

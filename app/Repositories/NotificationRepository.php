@@ -31,7 +31,7 @@ class NotificationRepository
             })
             ->when(isset($branchId) && $authUserId != 1, function($query) use ($branchId){
                 $query->whereHas('createdBy',function($query) use ($branchId){
-                    $query->where('branch_id', $branchId);
+                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
                 });
             })
             ->orderBy('notification_publish_date','Desc')

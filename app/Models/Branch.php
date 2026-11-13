@@ -63,7 +63,7 @@ class Branch extends Model
                 $user = Auth::user();
                 if (isset($user->branch_id)) {
                     $branchId = $user->branch_id;
-                    $builder->where('id', $branchId);
+                    $builder->whereIn('id', AppHelper::accessibleBranchIds());
                 }
             });
         }

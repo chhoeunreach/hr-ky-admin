@@ -32,7 +32,7 @@ class AssetAssignment extends Model
                 if (AppHelper::canAccessAllBranches()) {
                     return;
                 }
-                $builder->where('branch_id', $branchId);
+                $builder->whereIn('branch_id', AppHelper::accessibleBranchIds());
             });
         }
     }

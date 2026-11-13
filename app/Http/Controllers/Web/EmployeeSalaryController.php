@@ -111,7 +111,7 @@ class EmployeeSalaryController extends Controller
                 'name_direction' => $request->input('name_direction') ?: 'asc',
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $employeeLists = $this->userRepository->getAllVerifiedActiveEmployeeWithSalaryGroup($filterParameters);
             $serviceDate = today();
@@ -646,7 +646,7 @@ class EmployeeSalaryController extends Controller
     {
         $employee = \App\Models\User::findOrFail($employeeId);
         if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
-            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+            abort_unless(AppHelper::canAccessBranch($employee->branch_id), 403);
         }
     }
 

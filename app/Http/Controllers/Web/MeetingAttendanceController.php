@@ -17,7 +17,7 @@ class MeetingAttendanceController extends Controller
     {
         return TeamMeeting::query()->where('company_id', AppHelper::getAuthUserCompanyId())
             ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id,
-                fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+                fn ($q) => $q->whereIn('branch_id', AppHelper::accessibleBranchIds()))
             ->findOrFail($id);
     }
 

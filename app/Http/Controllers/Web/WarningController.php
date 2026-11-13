@@ -49,7 +49,7 @@ class WarningController extends Controller
                 'warning_date' => $request->warning_date ?? null,
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             $select = ['*'];

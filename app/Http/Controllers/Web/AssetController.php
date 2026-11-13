@@ -67,7 +67,7 @@ class AssetController extends Controller
                 'type_id' => $request->type_id ?? null,
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             $select = ['*'];
@@ -91,7 +91,7 @@ class AssetController extends Controller
         $this->authorize('asset_assign_list');
         $request->validate(['asset_id' => ['nullable', 'integer'], 'event' => ['nullable', 'in:asset_created,asset_updated,asset_deleted,assignment_created,assignment_updated,assignment_deleted']]);
         $activities = \App\Models\AssetActivity::query()
-            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id, fn ($query) => $query->where('branch_id', auth()->user()->branch_id))
+            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id, fn ($query) => $query->whereIn('branch_id', AppHelper::accessibleBranchIds()))
             ->when($request->filled('asset_id'), fn ($query) => $query->where('asset_id', $request->integer('asset_id')))
             ->when($request->filled('event'), fn ($query) => $query->where('event', $request->input('event')))
             ->orderByDesc('id')->paginate(25)->withQueryString();

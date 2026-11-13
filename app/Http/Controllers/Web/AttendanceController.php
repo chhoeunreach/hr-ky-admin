@@ -1394,7 +1394,7 @@ class AttendanceController extends Controller
             ];
 
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterData['branch_id'] = auth()->user()->branch_id;
+                $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $logData = $this->attendanceLogService->getAttendanceLog($filterData);
             $biometricLogData = $this->attendanceLogService->getBiometricAttendanceLog($filterData);
@@ -1471,7 +1471,7 @@ class AttendanceController extends Controller
                 $filterData['department_id'] = $request['department_id'];
 
                 if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                    $filterData['branch_id'] = auth()->user()->branch_id;
+                    $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
                 }
                 $firstDay = $startDate->format('Y-m-d');
                 $lastDay = $endDate->format('Y-m-d');

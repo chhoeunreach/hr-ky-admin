@@ -11,6 +11,8 @@ use Illuminate\Validation\Rule;
 
 class UserCreateRequest extends FormRequest
 {
+    use \App\Requests\User\Concerns\ValidatesBranchAccess;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -23,14 +25,13 @@ class UserCreateRequest extends FormRequest
 
     public function prepareForValidation()
     {
+        $this->prepareBranchAccess();
         $this->merge([
             'joining_date' => $this->input('joining_date') ? AppHelper::getEnglishDate($this->input('joining_date')) : null,
             'dob' => $this->input('dob') ? AppHelper::getEnglishDate($this->input('dob')) : null,
         ]);
 
-        if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
-        }
+        $this->prepareHomeBranch(false);
     }
     /**
      * Get the validation rules that apply to the request.
@@ -42,7 +43,7 @@ class UserCreateRequest extends FormRequest
         $branchId = $this->input('branch_id');
         $departmentId = $this->input('department_id');
 
-        return [
+        return $this->branchAccessRules() + [
             'employee_code'=>'nullable',
             'name'=>'required|string|max:100|min:2',
             'english_name'=>'nullable|string|max:100',

@@ -16,6 +16,11 @@
             allowClear: true,
             width: '100%'
         });
+        $('#additionalBranchAccess').select2({
+            placeholder: $('#additionalBranchAccess').data('placeholder'),
+            closeOnSelect: false,
+            width: '100%'
+        });
         $("#post").select2({
             placeholder: $("#post").data('placeholder') || "{{ __('index.select_post') }}",
             allowClear: true,

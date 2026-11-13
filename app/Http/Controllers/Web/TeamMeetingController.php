@@ -46,7 +46,7 @@ class TeamMeetingController extends Controller
                 'attendance_status' => $request->attendance_status ?? null,
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $select = ['*'];
             $with = ['teamMeetingParticipator.participator', 'meetingAttendances.user'];
@@ -77,7 +77,7 @@ class TeamMeetingController extends Controller
                 'participator' => $request->participator ?? [],
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             $meetingFilterParameters = $filterParameters;

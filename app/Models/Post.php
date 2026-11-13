@@ -39,7 +39,7 @@ class Post extends Model
             if (isset($user->branch_id) && (isset($user->id) && $user->id != 1)) {
                 $branchId = $user->branch_id;
                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                    $query->whereIn('id', AppHelper::accessibleBranchIds());
                 });
             }
         });

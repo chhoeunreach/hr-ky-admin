@@ -34,7 +34,7 @@ class NfcAttendance extends Model
                     return;
                 }
                 $builder->whereHas('createdBy', function ($query) use ($branchId) {
-                    $query->where('branch_id', $branchId);
+                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
                 });
 
             });

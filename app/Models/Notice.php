@@ -58,8 +58,8 @@ class Notice extends Model
                 }
                 $branchId = $user->branch_id;
                 $builder->where(function ($query) use ($branchId) {
-                    $query->where('branch_id', $branchId)
-                        ->orWhereHas('branches', fn ($branches) => $branches->where('branches.id', $branchId));
+                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds())
+                        ->orWhereHas('branches', fn ($branches) => $branches->whereIn('branches.id', AppHelper::accessibleBranchIds()));
                 });
             });
         }

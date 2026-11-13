@@ -43,7 +43,7 @@ class NFCController extends Controller
             ];
 
             if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                $filterData['branch_id'] = auth()->user()->branch_id;
+                $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $nfcData = $this->nfcService->getAllNfc($filterData);
             $with = ['branches:id,name'];

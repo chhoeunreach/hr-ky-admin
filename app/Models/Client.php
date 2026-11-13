@@ -54,7 +54,7 @@ class Client extends Model
                 }
                 $branchId = Auth::user()->branch_id;
                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                    $query->whereIn('id', AppHelper::accessibleBranchIds());
                 });
             });
         }
@@ -67,7 +67,7 @@ class Client extends Model
         $branchId = auth()->user() && !AppHelper::canAccessAllBranches() ? auth()->user()->branch_id : null;
 
         return $query->when(isset($branchId), function ($query) use ($branchId) {
-            $query->where('clients.branch_id', $branchId);
+            $query->whereIn('clients.branch_id', AppHelper::accessibleBranchIds());
         });
     }
 

@@ -9,6 +9,8 @@ use Illuminate\Validation\Rule;
 
 class UserUpdateRequest extends FormRequest
 {
+    use \App\Requests\User\Concerns\ValidatesBranchAccess;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -21,13 +23,12 @@ class UserUpdateRequest extends FormRequest
 
     public function prepareForValidation()
     {
+        $this->prepareBranchAccess();
         $this->merge([
             'joining_date' => $this->input('joining_date') ? AppHelper::getEnglishDate($this->input('joining_date')) : null,
             'dob' => $this->input('dob') ? AppHelper::getEnglishDate($this->input('dob')) : null,
         ]);
-        if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
-        }
+        $this->prepareHomeBranch(true);
 
     }
     /**
@@ -40,7 +41,7 @@ class UserUpdateRequest extends FormRequest
         $branchId = $this->input('branch_id');
         $departmentId = $this->input('department_id');
 
-        return [
+        return $this->branchAccessRules() + [
             'name' => 'required|string|max:100|min:2',
             'english_name' => 'nullable|string|max:100',
             'email' => ['required','email', Rule::unique('users')->ignore($this->employee)],

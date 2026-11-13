@@ -43,7 +43,7 @@ class LeaveTypeController extends Controller
                 ];
 
                 if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                    $filterParameters['branch_id'] = auth()->user()->branch_id;
+                    $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
                 }
 
                 $leaveTypes = $this->leaveTypeRepo->getAllLeaveTypes($filterParameters, ['*'], ['branch:id,name']);
@@ -70,7 +70,7 @@ class LeaveTypeController extends Controller
                 ];
 
                 if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                    $filterParameters['branch_id'] = auth()->user()->branch_id;
+                    $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
                 }
 
                 $leaveTypes = $this->leaveTypeRepo->getAllLeaveTypes($filterParameters, ['leave_types.*'], ['branch:id,name']);

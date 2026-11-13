@@ -56,7 +56,7 @@ class Department extends Model
                 if (isset($user->branch_id)) {
                     $branchId = $user->branch_id;
                      $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                    $query->whereIn('id', AppHelper::accessibleBranchIds());
                 });
                 }
             });

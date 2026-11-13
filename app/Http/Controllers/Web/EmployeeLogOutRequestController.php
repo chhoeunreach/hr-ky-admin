@@ -31,7 +31,7 @@ class EmployeeLogOutRequestController extends Controller
             ];
 
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterData['branch_id'] = auth()->user()->branch_id;
+                $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $select = [
                 'id', 'name', 'english_name', 'employee_code', 'email', 'phone', 'avatar',
@@ -74,7 +74,7 @@ class EmployeeLogOutRequestController extends Controller
                     && !AppHelper::canAccessAllBranches()
                     && auth()->check()
                     && filled(auth()->user()->branch_id)
-                    && (int) $employee->branch_id !== (int) auth()->user()->branch_id)
+                    && !AppHelper::canAccessBranch($employee->branch_id))
                 || (int) $employee->logout_status !== User::LOGOUT_STATUS['pending']) {
                 return redirect()->back()->with('danger', __('index.no_records_found'));
             }

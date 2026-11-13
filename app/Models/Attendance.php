@@ -76,7 +76,7 @@ class Attendance extends Model
                 }
                 $branchId = $user->branch_id;
                 $builder->whereHas('employee', function ($query) use ($branchId) {
-                    $query->where('branch_id', $branchId);
+                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
                 });
 
             });

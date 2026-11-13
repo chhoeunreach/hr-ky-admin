@@ -251,7 +251,7 @@ class EmployeeProfileController extends Controller
                 'employee.department:id,dept_name',
             ])
                 ->when(!AppHelper::canAccessAllBranches() && auth()->user()?->branch_id && auth()->id() !== 1, function ($query) {
-                    $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->where('branch_id', auth()->user()->branch_id));
+                    $query->whereHas('employee', fn ($employeeQuery) => $employeeQuery->whereIn('branch_id', AppHelper::accessibleBranchIds()));
                 })
                 ->latest('incident_date')
                 ->latest('id')
@@ -672,7 +672,7 @@ class EmployeeProfileController extends Controller
     {
         $this->authorizeEmployeeProfile($employee, 'employee.salary.history.manage');
         if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
-            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+            abort_unless(AppHelper::canAccessBranch($employee->branch_id), 403);
         }
 
         $request->merge(['salary_form' => '1']);
@@ -750,7 +750,7 @@ class EmployeeProfileController extends Controller
         $this->authorizeEmployeeProfile($employee, $ability);
         abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
         if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
-            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+            abort_unless(AppHelper::canAccessBranch($employee->branch_id), 403);
         }
     }
 
@@ -821,7 +821,7 @@ class EmployeeProfileController extends Controller
         $this->authorizeEmployeeProfile($employee, in_array($status, ['approved', 'rejected'], true) ? 'salary_increment' : 'employee.salary.history.manage');
         abort_unless((int) $salary->employee_id === (int) $employee->id, 404);
         if (!auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id) {
-            abort_unless((int) $employee->branch_id === (int) auth()->user()->branch_id, 403);
+            abort_unless(AppHelper::canAccessBranch($employee->branch_id), 403);
         }
         DB::transaction(function () use ($request, $employee, $salary, $status) {
             User::whereKey($employee->id)->lockForUpdate()->firstOrFail();

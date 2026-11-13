@@ -284,7 +284,7 @@ class EmployeePayslipRepository
             })
             ->where('employee_payslips.is_bs_enabled', $isBsEnabled)
             ->when(isset($branchId) && ($authUserId != 1), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->orderBy('employee_payslips.status')
             ->get();

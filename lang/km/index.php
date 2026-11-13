@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'employee_additional_branches' => 'សិទ្ធិចូលប្រើសាខាបន្ថែម',
+    'employee_additional_branches_placeholder' => 'ជ្រើសរើសសាខាបន្ថែម',
+    'employee_additional_branches_help' => 'បុគ្គលិកនេះអាចចូលប្រើសាខាដើម និងសាខាដែលបានជ្រើសរើស តាមសិទ្ធិមុខងារដែលមានស្រាប់។ ទុកទទេដើម្បីចូលប្រើតែសាខាដើម។ សិទ្ធិតួនាទី Access All Branches នៅតែអនុញ្ញាតឱ្យចូលប្រើគ្រប់សាខា។',
     'responsibility_saved' => 'បានរក្សាទុកទំនួលខុសត្រូវ។',
     'responsibility_deleted' => 'បានលុបទំនួលខុសត្រូវ។',
     'employee_kpi_saved' => 'បានរក្សាទុកសូចនាករសមិទ្ធផល។',

@@ -36,8 +36,7 @@ class MonthlyPayrollController extends Controller
         DB::transaction(function () use ($payslipId, $data, &$month, &$branchId) {
             $payslip = EmployeePayslip::with('employee')->findOrFail($payslipId);
             $branchId = $payslip->employee?->branch_id;
-            $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
-            abort_if($allowedBranchId && (int) $branchId !== (int) $allowedBranchId, 403);
+            abort_unless(AppHelper::canAccessBranch($branchId), 403);
             abort_unless($branchId && $payslip->salary_cycle === 'monthly', 422);
             // Generation and saving acquire this same lock before snapshotting payroll.
             Branch::whereKey($branchId)->lockForUpdate()->firstOrFail();
@@ -74,7 +73,7 @@ class MonthlyPayrollController extends Controller
             'view' => ['nullable', 'in:monthly,yearly'], 'year' => ['nullable', 'integer', 'between:2000,2100'],
         ]);
         if ($request->filled('export')) $this->authorize('export_monthly_payroll');
-        $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
+        $allowedBranchId = AppHelper::employeeBranchFilter();
         $branchId = $allowedBranchId ?: $request->input('branch_id');
         $filters = ['month' => $request->input('month') ?: now()->format('Y-m'), 'branch_id' => $branchId,
             'department_id' => $request->input('department_id'), 'q' => trim((string) $request->input('q')),
@@ -118,9 +117,9 @@ class MonthlyPayrollController extends Controller
             'include_ssf' => ['nullable', 'boolean'], 'include_pf' => ['nullable', 'boolean'],
             'include_tada' => ['nullable', 'boolean'], 'include_advance_salary' => ['nullable', 'boolean'],
         ]);
-        $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
+        $allowedBranchId = AppHelper::employeeBranchFilter();
         $branchIds = array_map('intval', $data['branch_ids'] ?? (isset($data['branch_id']) ? [$data['branch_id']] : []));
-        abort_if($allowedBranchId && array_diff($branchIds, [(int) $allowedBranchId]), 403);
+        abort_if(auth()->user()?->branch_id && !AppHelper::canAccessAllBranches() && array_diff($branchIds, AppHelper::accessibleBranchIds()), 403);
         $branches = Branch::query()->when($allowedBranchId, fn ($query) => $query->whereKey($allowedBranchId))
             ->when($branchIds, fn ($query) => $query->whereIn('id', $branchIds))->orderBy('id')->get();
         abort_if($branchIds && $branches->count() !== count($branchIds), 403);
@@ -147,9 +146,8 @@ class MonthlyPayrollController extends Controller
         $preview = Cache::get('monthly-payroll-preview:'.$token);
         abort_unless($preview, 410, __('index.monthly_payroll_preview_expired'));
         abort_unless($preview['owner'] === $this->previewOwner(), 403);
-        $allowedBranchId = !auth('admin')->check() ? auth()->user()?->branch_id : null;
         $preview['payloads'] ??= [$preview['payload']]; // Keep existing single-branch preview links valid.
-        foreach ($preview['payloads'] as $payload) abort_if($allowedBranchId && (int) $payload['branch_id'] !== (int) $allowedBranchId, 403);
+        foreach ($preview['payloads'] as $payload) abort_unless(AppHelper::canAccessBranch($payload['branch_id']), 403);
         return $preview;
     }
 

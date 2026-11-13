@@ -111,7 +111,7 @@ class UserController extends Controller
             ];
 
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches() && filled(auth()->user()->branch_id)){
-                $filterParameters['branch_id'] = [auth()->user()->branch_id];
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($branchIds);
             }
 
             $with = ['branch:id,name', 'company:id,name', 'post:id,post_name', 'department:id,dept_name', 'role:id,name','officeTime:id,shift,opening_time,closing_time','supervisor:id,name'];
@@ -169,7 +169,7 @@ class UserController extends Controller
             ];
 
             if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             if (empty($filterParameters['branch_id'])) {
@@ -690,7 +690,10 @@ class UserController extends Controller
 
             $bsEnabled = AppHelper::ifDateInBsEnabled();
 
-            return view($this->view . 'create', compact('companyDetail', 'roles', 'employeeCode', 'bsEnabled'));
+            $additionalAccessBranches = AppHelper::canManageEmployeeBranchAccess()
+                ? \App\Models\Branch::withoutGlobalScopes()->where('company_id', AppHelper::getAuthUserCompanyId())->orderBy('name')->get(['id', 'name'])
+                : collect();
+            return view($this->view . 'create', compact('companyDetail', 'roles', 'employeeCode', 'bsEnabled', 'additionalAccessBranches'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -858,7 +861,10 @@ class UserController extends Controller
                 ->orderBy('name')->orderBy('id')
                 ->get(['id', 'name', 'english_name', 'username', 'employee_code', 'email', 'department_id', 'branch_id']);
 
-            return view($this->view . 'edit', compact('companyDetail', 'roles', 'userDetail', 'leaveTypes', 'employeeLeaveTypes', 'bsEnabled','filteredSupervisor','filteredPosts'));
+            $additionalAccessBranches = AppHelper::canManageEmployeeBranchAccess()
+                ? \App\Models\Branch::withoutGlobalScopes()->where('company_id', AppHelper::getAuthUserCompanyId())->orderBy('name')->get(['id', 'name'])
+                : collect();
+            return view($this->view . 'edit', compact('companyDetail', 'roles', 'userDetail', 'leaveTypes', 'employeeLeaveTypes', 'bsEnabled','filteredSupervisor','filteredPosts', 'additionalAccessBranches'));
         } catch (Exception $exception) {
 
             return redirect()->back()->with('danger', $exception->getFile());
@@ -1314,7 +1320,7 @@ class UserController extends Controller
             ];
 
             if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                $filterData['branch_id'] = auth()->user()->branch_id;
+                $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             $logData = $this->userRepo->getLocationLogs($filterData);
@@ -1344,7 +1350,7 @@ class UserController extends Controller
         ];
 
         if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-            $filterData['branch_id'] = auth()->user()->branch_id;
+            $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
         }
 
         $with = ['branches:id,name'];
@@ -1369,7 +1375,7 @@ class UserController extends Controller
             ];
 
             if (!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()) {
-                $filterData['branch_id'] = auth()->user()->branch_id;
+                $filterData['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
 
             $staff = User::with(['branch:id,name', 'department:id,dept_name'])

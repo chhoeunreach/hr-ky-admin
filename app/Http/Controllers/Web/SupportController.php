@@ -36,7 +36,7 @@ class SupportController extends Controller
                 'department_id' => $request->department_id ?? null,
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = auth()->user()->branch_id;
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($request->input('branch_id'));
             }
             $with = [
                 'createdBy:id,name,branch_id,department_id,phone',

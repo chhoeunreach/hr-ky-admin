@@ -91,7 +91,7 @@ class Project extends Model
                 }
                 $builder->where(function (Builder $query) use ($branchId, $userId, $includeAssignedFromOtherBranches) {
                     $query->whereHas('branch', function ($query) use ($branchId) {
-                        $query->where('id', $branchId);
+                        $query->whereIn('id', AppHelper::accessibleBranchIds());
                     });
 
                     if ($includeAssignedFromOtherBranches) {

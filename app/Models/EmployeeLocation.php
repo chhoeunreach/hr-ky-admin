@@ -32,7 +32,7 @@ class EmployeeLocation extends Model
             if (isset($user->branch_id) && (isset($user->id) && $user->id != 1)) {
                 $branchId = $user->branch_id;
                 $builder->whereHas('employee', function ($query) use ($branchId) {
-                    $query->where('branch_id', $branchId);
+                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
                 });
             }
         });

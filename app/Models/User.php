@@ -100,6 +100,7 @@ class User extends Authenticatable
         'company_id',
         'online_status',
         'branch_id',
+        'additional_branch_ids',
         'department_id',
         'post_id',
         'role_id',
@@ -123,6 +124,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'telegram_linked_at' => 'datetime',
         'app_theme_mode' => 'string',
+        'additional_branch_ids' => 'array',
     ];
 
     public static function boot()
@@ -146,7 +148,7 @@ class User extends Authenticatable
                     return;
                 }
                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                    $query->whereIn('id', AppHelper::accessibleBranchIds());
                 });
             });
         }

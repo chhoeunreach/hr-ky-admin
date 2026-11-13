@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'employee_additional_branches' => 'Additional branch access',
+    'employee_additional_branches_placeholder' => 'Select additional branches',
+    'employee_additional_branches_help' => 'This employee can access their home branch and the branches selected here, within their existing module permissions. Leave empty for home branch only. The role permission Access All Branches still grants access to every branch.',
     'responsibility_saved' => 'Responsibility saved.',
     'responsibility_deleted' => 'Responsibility deleted.',
     'employee_kpi_saved' => 'KPI saved.',

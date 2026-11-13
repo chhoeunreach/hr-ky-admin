@@ -35,7 +35,7 @@ class DashboardRepository
             ->whereNull('deleted_at')
             ->where('status', 'verified')
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
+                $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('company_id');
 
@@ -43,7 +43,7 @@ class DashboardRepository
             ->select('company_id', DB::raw('COUNT(id) as total_departments'))
             ->where('is_active', 1)
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('branch_id', $branchId);
+                $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('company_id');
 
@@ -53,7 +53,7 @@ class DashboardRepository
             ->whereDate('attendances.attendance_date', $currentDate)
             ->whereNotNull('attendances.check_in_at')
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('attendances.company_id');
 
@@ -65,7 +65,7 @@ class DashboardRepository
             ->whereNotNull('attendances.check_in_at')
             ->whereNotNull('attendances.check_out_at')
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('attendances.company_id');
 
@@ -77,7 +77,7 @@ class DashboardRepository
             ->whereDate('leave_requests_master.leave_to', '>=', $currentDate)
             ->where('leave_requests_master.status', 'approved')
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('leave_requests_master.company_id');
 
@@ -91,7 +91,7 @@ class DashboardRepository
                 $pendingLeavesRequests->whereYear('leave_requests_master.leave_requested_date', $date['year']);
             }
             $pendingLeavesRequests->when($branchId, function ($query) use ($branchId) {
-                return $query->where('users.branch_id', $branchId);
+                return $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             });
             $pendingLeavesRequests->groupBy('leave_requests_master.company_id');
 
@@ -101,7 +101,7 @@ class DashboardRepository
             ->whereDate('leave_requests_master.leave_from', '<=', $currentMonthEnd)
             ->whereDate('leave_requests_master.leave_to', '>=', $currentMonthStart)
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('leave_requests_master.company_id');
 
@@ -110,7 +110,7 @@ class DashboardRepository
             ->join('users', 'time_leaves.requested_by', '=', 'users.id')
             ->whereBetween('time_leaves.issue_date', [$currentMonthStart, $currentMonthEnd])
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('users.branch_id', $branchId);
+                $query->whereIn('users.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy('users.company_id');
 
@@ -140,7 +140,7 @@ class DashboardRepository
                 $join->on('projects.created_by', '=', 'users.id');
             })
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('projects.branch_id', $branchId);
+                $query->whereIn('projects.branch_id', AppHelper::accessibleBranchIds());
             })
             ->groupBy(DB::raw('COALESCE(users.company_id, 1)'));
 
@@ -373,7 +373,7 @@ class DashboardRepository
             ->where('branches.company_id', $companyId)
             ->where('branches.is_active', 1)
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('branches.id', $branchId);
+                $query->whereIn('branches.id', AppHelper::accessibleBranchIds());
             })
             ->orderBy('branches.name')
             ->get();
@@ -559,7 +559,7 @@ class DashboardRepository
             ->where('departments.company_id', $companyId)
             ->where('departments.is_active', 1)
             ->when(isset($branchId), function ($query) use ($branchId) {
-                $query->where('departments.branch_id', $branchId);
+                $query->whereIn('departments.branch_id', AppHelper::accessibleBranchIds());
             })
             ->orderBy('departments.dept_name')
             ->get();

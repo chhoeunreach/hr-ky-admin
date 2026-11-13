@@ -18,17 +18,17 @@ class MonthlyPayrollReportService
         $month = Carbon::createFromFormat('!Y-m', $filters['month']);
         $start = $month->copy()->startOfMonth();
         $end = $month->copy()->endOfMonth();
-        $branchId = !auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
+        $branchIds = AppHelper::branchIdsForFilter(AppHelper::employeeBranchFilter($filters['branch_id']));
         if (empty($filters['live'])) {
             $savedRecords = MonthlyPayrollRecord::where('month', $filters['month'])
-                ->when($branchId, fn ($query) => $query->where('branch_id', $branchId))->orderBy('branch_id')->get();
+                ->when($branchIds !== null, fn ($query) => $query->whereIn('branch_id', $branchIds))->orderBy('branch_id')->get();
             if ($savedRecords->isNotEmpty()) return $this->savedReport($savedRecords, $filters);
         }
         $query = EmployeePayslip::withoutGlobalScope('branch')->where('salary_cycle', 'monthly')
             ->whereBetween('salary_from', [$start->toDateString(), $end->toDateString()])
-            ->whereHas('employee', function ($employee) use ($filters, $branchId) {
+            ->whereHas('employee', function ($employee) use ($filters, $branchIds) {
                 $employee->withTrashed()
-                    ->when($branchId, fn ($q, $id) => $q->where('branch_id', $id))
+                    ->when($branchIds !== null, fn ($q) => $q->whereIn('branch_id', $branchIds))
                     ->when($filters['department_id'], fn ($q, $id) => $q->where('department_id', $id))
                     ->when($filters['q'], fn ($q, $term) => $q->where(function ($search) use ($term) {
                         $search->where('name', 'like', '%'.$term.'%')->orWhere('username', 'like', '%'.$term.'%')
@@ -109,9 +109,9 @@ class MonthlyPayrollReportService
 
     public function yearly(array $filters, int $year): array
     {
-        $branchId = !auth('admin')->check() && !AppHelper::canAccessAllBranches() && auth()->user()?->branch_id ? auth()->user()->branch_id : $filters['branch_id'];
+        $branchIds = AppHelper::branchIdsForFilter(AppHelper::employeeBranchFilter($filters['branch_id']));
         $records = MonthlyPayrollRecord::whereBetween('month', [$year.'-01', $year.'-12'])
-            ->when($branchId, fn ($query, $id) => $query->where('branch_id', $id))->orderBy('month')->get();
+            ->when($branchIds !== null, fn ($query) => $query->whereIn('branch_id', $branchIds))->orderBy('month')->get();
         $months = collect(range(1, 12))->map(function ($number) use ($records, $filters, $year) {
             $month = sprintf('%04d-%02d', $year, $number);
             $saved = $records->where('month', $month)->values();

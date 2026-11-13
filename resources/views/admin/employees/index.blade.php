@@ -108,7 +108,7 @@
             <form class="forms-sample directory-filter-form" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
                 <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                 <div class="row g-3 align-items-end">
-                    @if(!isset(auth()->user()->branch_id))
+                    @if(!isset(auth()->user()->branch_id) || \App\Helpers\AppHelper::canAccessAllBranches() || count(\App\Helpers\AppHelper::accessibleBranchIds()) > 1)
                         <div class="col-xl-3 col-md-6">
                             <label for="branch" class="form-label">{{ __('index.branch') }}</label>
                             @php

@@ -60,7 +60,7 @@ class TeamMeetingRepository
             ->where('company_id',$filterParameters['company_id'])
             ->when(isset($branchId), function ($query) use ($branchId) {
                 $query->whereHas('branch',function($subQuery) use ($branchId){
-                    $subQuery->where('id', $branchId);
+                    $subQuery->whereIn('id', AppHelper::accessibleBranchIds());
                 });
 
             })

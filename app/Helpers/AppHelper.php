@@ -1327,6 +1327,48 @@ class AppHelper
         }
     }
 
+    public static function canManageEmployeeBranchAccess(): bool
+    {
+        return auth('admin')->check() || (auth()->user()?->can('role_permission') ?? false);
+    }
+
+    /** The home branch is always included; extra branches must belong to the same company. */
+    public static function accessibleBranchIds(?User $user = null): array
+    {
+        $user = $user ?: Auth::user();
+        if (!$user) return [];
+        $ids = $user->branch_id ? [(int) $user->branch_id] : [];
+        $additional = array_values(array_filter(array_map('intval', (array) $user->additional_branch_ids), fn ($id) => $id > 0));
+        if ($additional && $user->company_id) {
+            $additional = DB::table('branches')->where('company_id', $user->company_id)->whereIn('id', $additional)->pluck('id')->map(fn ($id) => (int) $id)->all();
+            $ids = array_merge($ids, $additional);
+        }
+        return array_values(array_unique($ids));
+    }
+
+    /** Preserve requested filters for employees who have explicitly assigned extra branches. */
+    public static function employeeBranchFilter($requested = null)
+    {
+        $user = Auth::user();
+        if (!$user || !$user->branch_id || self::canAccessAllBranches() || count(self::accessibleBranchIds()) > 1) return $requested;
+        return is_array($requested) ? array_filter([$user?->branch_id]) : $user?->branch_id;
+    }
+
+    /** Null means unrestricted; an empty array means no matching allowed branch. */
+    public static function branchIdsForFilter($requested = null): ?array
+    {
+        $selected = array_values(array_filter(array_map('intval', (array) $requested), fn ($id) => $id > 0));
+        if (!Auth::check() || self::canAccessAllBranches() || !Auth::user()->branch_id) return $selected ?: null;
+        $allowed = self::accessibleBranchIds();
+        return $selected ? array_values(array_intersect($allowed, $selected)) : $allowed;
+    }
+
+    public static function canAccessBranch($branchId): bool
+    {
+        return self::canAccessAllBranches() || (Auth::user() && !Auth::user()->branch_id)
+            || in_array((int) $branchId, self::accessibleBranchIds(), true);
+    }
+
     /**
      * Determine whether the user may see every record in every branch,
      * regardless of their own branch assignment.

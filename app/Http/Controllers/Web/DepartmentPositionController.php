@@ -52,7 +52,7 @@ class DepartmentPositionController extends Controller
     private function departmentQuery()
     {
         return Department::where('company_id', AppHelper::getAuthUserCompanyId())
-            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && isset(auth()->user()->branch_id), fn ($query) => $query->where('branch_id', auth()->user()->branch_id));
+            ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && isset(auth()->user()->branch_id), fn ($query) => $query->whereIn('branch_id', AppHelper::accessibleBranchIds()));
     }
 
     private function positionQuery()

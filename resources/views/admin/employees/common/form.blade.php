@@ -342,7 +342,7 @@
         <div class="company-detail">
             <h5 class="mb-3 border-bottom pb-3">{{ __('index.company_detail') }}</h5>
             <div class="row">
-                @if(!isset(auth()->user()->branch_id))
+                @if(!isset(auth()->user()->branch_id) || \App\Helpers\AppHelper::canAccessAllBranches() || count(\App\Helpers\AppHelper::accessibleBranchIds()) > 1)
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="branch_id" class="form-label">{{ __('index.branch') }}</label>
                     <select class="form-select" id="branch" name="branch_id">
@@ -358,6 +358,8 @@
                     </select>
                 </div>
                 @endif
+
+                @include('admin.employees.common.branch-access')
 
                 <div class="col-lg-4 col-md-6 mb-3">
                     <label for="department" class="form-label">{{ __('index.departments') }}</label>

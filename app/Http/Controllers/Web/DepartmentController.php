@@ -393,7 +393,7 @@ class DepartmentController extends Controller
             ->where('company_id', AppHelper::getAuthUserCompanyId())
             ->whereIn('branch_id', $branches->pluck('id'))
             ->when(!auth('admin')->check() && !AppHelper::canAccessAllBranches() && isset(auth()->user()->branch_id), function ($query) {
-                $query->where('branch_id', auth()->user()->branch_id);
+                $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
             })
             ->where('status', 'verified')
             ->where('is_active', 1)

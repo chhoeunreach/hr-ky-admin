@@ -44,7 +44,7 @@ class PostController extends Controller
                 'per_page' => $request->per_page ?? 25,
             ];
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAllBranches()){
-                $filterParameters['branch_id'] = [auth()->user()->branch_id];
+                $filterParameters['branch_id'] = AppHelper::employeeBranchFilter($branchIds);
             }
             $postSelect = ['*'];
             $with = ['branch:id,name', 'department:id,dept_name','employees:id,name,post_id,avatar'];

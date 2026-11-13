@@ -172,6 +172,34 @@ class AssignedWorkBranchAccessTest extends TestCase
         Model::clearBootedModels();
     }
 
+    public function test_employee_branch_assignments_include_home_and_selected_branches_only(): void
+    {
+        Schema::table('branches', fn (Blueprint $table) => $table->integer('company_id')->default(1));
+        Schema::table('users', fn (Blueprint $table) => $table->integer('company_id')->default(1));
+        (require database_path('migrations/2026_11_13_000005_add_additional_branch_ids_to_users.php'))->up();
+        DB::table('branches')->insert([
+            ['id' => 3, 'name' => 'Unassigned branch', 'company_id' => 1],
+            ['id' => 4, 'name' => 'Other company', 'company_id' => 2],
+        ]);
+        DB::table('projects')->insert(['id' => 5, 'name' => 'Not accessible', 'branch_id' => 3]);
+        DB::table('tasks')->insert(['id' => 5, 'name' => 'Not accessible', 'branch_id' => 3]);
+        auth()->user()->forceFill(['company_id' => 1, 'additional_branch_ids' => [2, 4]]);
+        Model::clearBootedModels();
+        $this->assertSame([1, 2], AppHelper::accessibleBranchIds());
+        $this->assertFalse(AppHelper::canAccessAllBranches());
+        $this->assertEquals([1, 2], \App\Models\Branch::orderBy('id')->pluck('id')->all());
+        $this->assertEquals([1, 2, 3, 4], Project::orderBy('id')->pluck('id')->all());
+        $this->assertEquals([1, 2, 3, 4], Task::orderBy('id')->pluck('id')->all());
+        $this->assertTrue(AppHelper::canAccessBranch(2));
+        $this->assertFalse(AppHelper::canAccessBranch(3));
+        $this->assertSame([2], AppHelper::branchIdsForFilter(2));
+        $this->assertSame([], AppHelper::branchIdsForFilter(3));
+        $this->assertSame(2, AppHelper::employeeBranchFilter(2));
+        auth()->user()->forceFill(['additional_branch_ids' => []]);
+        $this->assertEquals([3], Task::orderBy('id')->pluck('id')->all());
+        $this->assertSame(1, AppHelper::employeeBranchFilter(2));
+    }
+
     public function test_assigned_cross_branch_work_stays_hidden_without_the_permission(): void
     {
         $this->assertFalse(AppHelper::canAccessAssignedWorkAcrossBranches());
