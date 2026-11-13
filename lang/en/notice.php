@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'title_help' => 'Keep the title short and easy to recognize.',
+    'description_help' => 'Include key details, dates, and any action employees need to take.',
+    'branch_help' => 'Choose one or more branches to load their employees.',
+    'mobile_alert_label' => 'Send a mobile alert',
+    'selected_count' => ':count selected',
     'publish_from' => 'Publish start date',
     'publish_to' => 'Publish end date',
     'refresh_failed' => 'The notice was saved, but the list could not be refreshed. Please click Refresh to update the list.',

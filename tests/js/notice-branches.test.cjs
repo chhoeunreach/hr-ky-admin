@@ -38,3 +38,29 @@ test('failed branch loading does not leave employees from another selection', as
     assert.equal(env.options.length, 1);
     assert.match(env.options[0], /option disabled/);
 });
+
+test('recipient summary reflects partial, complete and empty selections', () => {
+    let selected = ['1'];
+    const state = {};
+    const checkbox = {prop(key, value) {state[key] = value; return this;}};
+    const $ = selector => selector === '#notice' ? {val: () => selected}
+        : selector === '#notice option:not(:disabled)' ? {length: 2}
+        : selector === '#checkbox' ? checkbox : {text(value) {state.text = value;}};
+    const summary = blade.slice(blade.indexOf('        const updateRecipientSummary'), blade.indexOf("        $('#notice').on('change', updateRecipientSummary)"))
+        .replace(/@json\([^\n]+\)\.replace/, "':count selected'.replace");
+    const context = {$};
+    vm.runInNewContext(summary + '\nthis.update = updateRecipientSummary;', context);
+    context.update();
+    assert.equal(state.text, '1 selected');
+    assert.equal(state.indeterminate, true);
+    assert.equal(state.checked, false);
+    selected = ['1', '2'];
+    context.update();
+    assert.equal(state.checked, true);
+    assert.equal(state.indeterminate, false);
+    selected = [];
+    context.update();
+    assert.equal(state.text, '0 selected');
+    assert.equal(state.checked, false);
+    assert.equal(state.indeterminate, false);
+});

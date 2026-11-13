@@ -12,7 +12,7 @@
         if ($('#noticeDescription').length && typeof tinymce !== 'undefined') {
             tinymce.init({
                 selector: '#noticeDescription',
-                height: Math.max(320, Math.min(620, window.innerHeight - 270)),
+                height: Math.max(320, Math.min(460, window.innerHeight - 310)),
                 min_height: 300,
                 toolbar_mode: 'sliding',
                 resize: true,
@@ -96,11 +96,23 @@
         }
 
         $('#notice').select2({
-            placeholder:"{{ __('index.select_notice_receiver') }}"
+            placeholder: "{{ __('notice.select_recipients_placeholder') }}",
+            closeOnSelect: false,
+            width: '100%'
         });
 
-        $('#branch_id').select2({placeholder: @json(__('index.select_branch'))});
+        $('#branch_id').select2({placeholder: @json(__('notice.branch_placeholder')), closeOnSelect: !$('#notification').length, width: '100%'});
 
+
+        const updateRecipientSummary = () => {
+            const selected = $('#notice').val() || [];
+            const available = $('#notice option:not(:disabled)').length;
+            $('#noticeRecipientCount').text(@json(__('notice.selected_count')).replace(':count', selected.length));
+            $('#checkbox').prop('checked', available > 0 && selected.length === available)
+                .prop('indeterminate', selected.length > 0 && selected.length < available);
+        };
+        $('#notice').on('change', updateRecipientSummary);
+        updateRecipientSummary();
 
         $.ajaxSetup({
             headers: {
@@ -233,7 +245,7 @@
         const loadEmployees = async (selectedBranchId) => {
             const version = ++employeeLoadVersion;
             const branchIds = [].concat(selectedBranchId || []).filter(Boolean);
-            $('#notice').empty();
+            $('#notice').empty().trigger('change');
             $('#checkbox').prop('checked', false);
             if (!branchIds.length) return;
 

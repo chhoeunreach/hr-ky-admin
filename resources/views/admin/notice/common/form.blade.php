@@ -12,29 +12,36 @@
             <div class="notice-form-fields">
                 <div class="notice-form-title-field">
                     <label for="title" class="form-label">{{ __('index.notice_title') }} <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="title" name="title" required value="{{ old('title', $noticeDetail->title ?? '') }}" autocomplete="off" placeholder="{{ __('notice.title_placeholder') }}">
+                    <input type="text" class="form-control" id="title" name="title" maxlength="255" aria-describedby="noticeTitleHelp" required value="{{ old('title', $noticeDetail->title ?? '') }}" autocomplete="off" placeholder="{{ __('notice.title_placeholder') }}">
+                    <p id="noticeTitleHelp" class="notice-field-hint">{{ __('notice.title_help') }}</p>
+                    @error('title')<div class="notice-field-error" role="alert">{{ $message }}</div>@enderror
                 </div>
-                @if(!isset(auth()->user()->branch_id))
-                    <div>
-                        <label for="branch_id" class="form-label">{{ __('index.branch') }} <span class="text-danger">*</span></label>
-                        @php($selectedBranchIds = array_map('strval', (array) old('branch_ids', isset($noticeDetail) ? ($noticeDetail->branches->isNotEmpty() ? $noticeDetail->branches->modelKeys() : [$noticeDetail->branch_id]) : [])))
-                        <select class="form-select" id="branch_id" name="branch_ids[]" multiple required data-placeholder="{{ __('notice.branch_placeholder') }}">
-                            @foreach($companyDetail?->branches ?? [] as $branch)
-                                <option value="{{ $branch->id }}" @selected(in_array((string) $branch->id, $selectedBranchIds, true))>{{ $branch->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
             </div>
             <div class="notice-form-editor">
                 <label for="noticeDescription" class="form-label">{{ __('index.notice_description') }} <span class="text-danger">*</span></label>
-                <textarea class="form-control" name="description" id="noticeDescription" rows="16" placeholder="{{ __('notice.description_placeholder') }}">{{ old('description', $noticeDetail->description ?? '') }}</textarea>
+                <textarea class="form-control" name="description" id="noticeDescription" rows="12" aria-describedby="noticeDescriptionHelp" placeholder="{{ __('notice.description_placeholder') }}">{{ old('description', $noticeDetail->description ?? '') }}</textarea>
+                <p id="noticeDescriptionHelp" class="notice-field-hint">{{ __('notice.description_help') }}</p>
+                @error('description')<div class="notice-field-error" role="alert">{{ $message }}</div>@enderror
             </div>
         </div>
     </div>
     <aside class="notice-form-sidebar">
         <div class="notice-form-section">
             <div class="notice-form-section-heading"><i data-feather="users"></i><h6>{{ __('notice.recipients_heading') }}</h6></div>
+            @if(!isset(auth()->user()->branch_id))
+                <div class="notice-branch-field">
+                    <label for="branch_id" class="form-label">{{ __('index.branch') }} <span class="text-danger">*</span></label>
+                    @php($selectedBranchIds = array_map('strval', (array) old('branch_ids', isset($noticeDetail) ? ($noticeDetail->branches->isNotEmpty() ? $noticeDetail->branches->modelKeys() : [$noticeDetail->branch_id]) : [])))
+                    <select class="form-select" id="branch_id" name="branch_ids[]" multiple required aria-describedby="noticeBranchHelp" data-placeholder="{{ __('notice.branch_placeholder') }}">
+                        @foreach($companyDetail?->branches ?? [] as $branch)
+                            <option value="{{ $branch->id }}" @selected(in_array((string) $branch->id, $selectedBranchIds, true))>{{ $branch->name }}</option>
+                        @endforeach
+                    </select>
+                    <p id="noticeBranchHelp" class="notice-field-hint">{{ __('notice.branch_help') }}</p>
+                    @error('branch_ids')<div class="notice-field-error" role="alert">{{ $message }}</div>@enderror
+                    @error('branch_ids.*')<div class="notice-field-error" role="alert">{{ $message }}</div>@enderror
+                </div>
+            @endif
             <p class="notice-form-help">{{ __('notice.recipients_help') }}</p>
             <label for="notice" class="form-label">{{ __('notice.select_recipients') }} <span class="text-danger">*</span></label>
             <select class="form-select" id="notice" name="receiver[][notice_receiver_id]" multiple="multiple" required data-placeholder="{{ __('notice.select_recipients_placeholder') }}">
@@ -42,7 +49,11 @@
                     @if($receiver->employee)<option value="{{ $receiver->notice_receiver_id }}" selected>{{ $receiver->employee->name }}</option>@endif
                 @endforeach
             </select>
-            <label class="notice-select-all" for="checkbox"><input type="checkbox" id="checkbox">{{ __('notice.all_recipients') }}</label>
+            <div class="notice-recipient-tools">
+                <label class="notice-select-all" for="checkbox"><input type="checkbox" id="checkbox">{{ __('notice.all_recipients') }}</label>
+                <span class="notice-selection-count" id="noticeRecipientCount" aria-live="polite"></span>
+            </div>
+            @error('receiver')<div class="notice-field-error" role="alert">{{ $message }}</div>@enderror
         </div>
         <div class="notice-form-section">
             <div class="notice-form-section-heading"><i data-feather="settings"></i><h6>{{ __('notice.publishing_heading') }}</h6></div>
@@ -55,7 +66,7 @@
             <div class="notice-alert-option">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="send_work_alert" name="send_work_alert" value="1" @checked(old('send_work_alert', 1))>
-                    <label class="form-check-label" for="send_work_alert">{{ __('index.send_work_alert_to_mobile') }}</label>
+                    <label class="form-check-label" for="send_work_alert">{{ __('notice.mobile_alert_label') }}</label>
                 </div>
                 <p class="notice-form-help">{{ __('index.send_work_alert_hint') }}</p>
             </div>
