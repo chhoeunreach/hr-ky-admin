@@ -12,8 +12,8 @@
         if ($('#noticeDescription').length && typeof tinymce !== 'undefined') {
             tinymce.init({
                 selector: '#noticeDescription',
-                height: Math.max(320, Math.min(460, window.innerHeight - 310)),
-                min_height: 300,
+                height: Math.max(240, Math.min(400, window.innerHeight - 280)),
+                min_height: 200,
                 toolbar_mode: 'sliding',
                 resize: true,
                 menubar: false,
