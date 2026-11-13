@@ -35,7 +35,7 @@ class NoticeDirectoryTest extends TestCase
         DB::purge('sqlite');
         Schema::create('app_settings', function (Blueprint $t) {$t->string('slug'); $t->boolean('status');});
         Schema::create('companies', function (Blueprint $t) {$t->id(); $t->string('name');});
-        Schema::create('branches', function (Blueprint $t) {$t->id(); $t->string('name'); $t->integer('company_id');});
+        Schema::create('branches', function (Blueprint $t) {$t->id(); $t->string('name'); $t->integer('company_id'); $t->boolean('is_active')->default(true);});
         Schema::create('users', function (Blueprint $t) {$t->id(); $t->string('name'); $t->integer('company_id'); $t->softDeletes();});
         Schema::create('notices', function (Blueprint $t) {
             $t->id(); $t->string('title'); $t->text('description'); $t->dateTime('notice_publish_date');
@@ -43,6 +43,7 @@ class NoticeDirectoryTest extends TestCase
             $t->integer('created_by')->nullable(); $t->integer('updated_by')->nullable(); $t->timestamps();
         });
         Schema::create('notice_receivers', function (Blueprint $t) {$t->id(); $t->integer('notice_id'); $t->integer('notice_receiver_id');});
+        (require database_path('migrations/2026_11_13_000003_create_notice_branches_table.php'))->up();
         DB::table('companies')->insert(['id' => 1, 'name' => 'KY']);
         DB::table('branches')->insert([['id' => 1, 'name' => 'Main', 'company_id' => 1], ['id' => 2, 'name' => 'Other', 'company_id' => 1]]);
         DB::table('users')->insert([['id' => 1, 'name' => 'Dara', 'company_id' => 1], ['id' => 2, 'name' => 'Sok', 'company_id' => 1]]);
@@ -132,6 +133,53 @@ class NoticeDirectoryTest extends TestCase
         foreach (['/_test/notices/create?notice_modal=1', '/_test/notices/1/edit?notice_modal=1'] as $url) {
             $this->get($url)->assertOk()->assertSee('id="notification"', false)->assertSee('notice-form.js', false)->assertSee('id="noticeDescription"', false);
         }
+    }
+
+    public function test_multiple_branches_are_saved_prefilled_filtered_and_replaced(): void
+    {
+        $this->postJson('/_test/notices', $this->payload(['branch_ids' => [1, 2]]))->assertCreated();
+        $this->assertDatabaseCount('notices', 1);
+        $this->assertDatabaseCount('notice_branches', 2);
+        $this->assertSame(1, app(NoticeRepository::class)->getAllCompanyNotices(['branch_id' => 2])->total());
+        $this->get('/_test/notices/1/edit?notice_modal=1')->assertOk()
+            ->assertSee('name="branch_ids[]" multiple required', false)
+            ->assertSee('value="1" selected>Main', false)
+            ->assertSee('value="2" selected>Other', false);
+        $this->get('/_test/notices?branch_id=2')->assertOk()->assertSee('Main, Other');
+        $this->putJson('/_test/notices/1', $this->payload(['branch_ids' => [2]]))->assertOk();
+        $this->assertDatabaseCount('notice_branches', 1);
+        $this->assertDatabaseHas('notice_branches', ['notice_id' => 1, 'branch_id' => 2]);
+        $this->assertSame(0, app(NoticeRepository::class)->getAllCompanyNotices(['branch_id' => 1])->total());
+    }
+
+    public function test_employee_in_secondary_branch_can_find_notice(): void
+    {
+        $this->postJson('/_test/notices', $this->payload(['branch_ids' => [1, 2]]))->assertCreated();
+        auth('admin')->logout();
+        $this->actingAs(User::find(2)->forceFill(['branch_id' => 2]), 'web');
+        Notice::clearBootedModels();
+        $this->assertSame(1, Notice::query()->count());
+    }
+
+    public function test_migration_preserves_existing_notice_branch(): void
+    {
+        $this->seedNotices();
+        $migration = require database_path('migrations/2026_11_13_000003_create_notice_branches_table.php');
+        $migration->down();
+        $migration->up();
+        $this->assertDatabaseCount('notice_branches', 31);
+        $this->assertDatabaseHas('notice_branches', ['notice_id' => 1, 'branch_id' => 1]);
+        $this->assertDatabaseHas('notice_branches', ['notice_id' => 2, 'branch_id' => 2]);
+    }
+
+    public function test_invalid_branch_selection_does_not_create_notice(): void
+    {
+        foreach ([[], [1, 1], [999]] as $branches) {
+            $this->postJson('/_test/notices', $this->payload(['branch_ids' => $branches]))->assertUnprocessable();
+        }
+        DB::table('branches')->insert(['id' => 3, 'name' => 'Another company', 'company_id' => 2]);
+        $this->postJson('/_test/notices', $this->payload(['branch_ids' => [3]]))->assertUnprocessable();
+        $this->assertDatabaseCount('notices', 0);
     }
 
     public function test_modal_endpoints_keep_create_and_edit_permission_checks(): void

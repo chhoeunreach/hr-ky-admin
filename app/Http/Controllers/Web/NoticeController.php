@@ -53,10 +53,10 @@ class NoticeController extends Controller
 
 
             $select = ['*'];
-            $with = ['noticeReceiversDetail.employee:id,name', 'branch:id,name'];
+            $with = ['noticeReceiversDetail.employee:id,name', 'branch:id,name', 'branches:id,name'];
             $notices = $this->noticeService->getAllCompanyNotices($filterParameters, $select, $with);
 
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
             return view($this->view . 'index', compact('notices', 'filterParameters','companyDetail'));
@@ -70,7 +70,7 @@ class NoticeController extends Controller
         $this->authorize('create_notice');
         try {
 
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
             return view($this->view . 'create',
@@ -203,7 +203,7 @@ class NoticeController extends Controller
     {
         $this->authorize('edit_notice');
         try {
-            $with = ['noticeReceiversDetail'];
+            $with = ['noticeReceiversDetail', 'branches:id,name'];
             $selectNotice = ['*'];
             $noticeDetail = $this->noticeService->findOrFailNoticeDetailById($id, $selectNotice, $with);
             $receiverUserIds = [];
@@ -212,7 +212,7 @@ class NoticeController extends Controller
             }
 
 
-            $with = ['branches:id,name'];
+            $with = ['branches:id,name,company_id'];
             $select = ['id', 'name'];
             $companyDetail = $this->companyRepo->getCompanyDetail($select, $with);
 
@@ -283,7 +283,7 @@ class NoticeController extends Controller
     {
         $this->authorize('send_notice');
         try {
-            $with = ['noticeReceiversDetail'];
+            $with = ['noticeReceiversDetail', 'branches:id,name'];
             $select = ['*'];
             $noticeDetail = $this->noticeService->findOrFailNoticeDetailById($noticeId, $select, $with);
             $userIds = $this->getUserIdsForNoticeNotification($noticeDetail->noticeReceiversDetail);

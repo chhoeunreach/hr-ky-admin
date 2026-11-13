@@ -42,7 +42,9 @@ class NoticeService
         try {
             $validatedData['company_id'] = AppHelper::getAuthUserCompanyId();
             DB::beginTransaction();
+            $validatedData['branch_id'] = $validatedData['branch_ids'][0];
             $notice = $this->noticeRepo->store($validatedData);
+            $notice->branches()->sync($validatedData['branch_ids']);
             if ($notice) {
                 $this->createManyNoticeReceiver($notice, $validatedData);
             }
@@ -104,7 +106,9 @@ class NoticeService
     {
         try {
             DB::beginTransaction();
+            $validatedData['branch_id'] = $validatedData['branch_ids'][0];
             $notice = $this->noticeRepo->update($noticeDetail, $validatedData);
+            $notice->branches()->sync($validatedData['branch_ids']);
             if ($notice) {
                 $deleteReceiverDetail = $this->noticeRepo->deleteNoticeReceiversDetail($notice);
                 if ($deleteReceiverDetail) {

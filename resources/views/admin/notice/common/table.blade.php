@@ -23,7 +23,7 @@
                 <span class="notice-title">{{ $value->title }}</span>
                 @can('show_notice')<p class="notice-preview">{{ Str::limit($descriptionText, 110) }}</p>@endcan
             </td>
-            <td><span class="notice-branch">{{ $value->branch?->name ?? '—' }}</span></td>
+            <td><span class="notice-branch">{{ $value->branches->isNotEmpty() ? $value->branches->pluck('name')->join(', ') : ($value->branch?->name ?? '—') }}</span></td>
             <td class="notice-date">{{ $value->notice_publish_date ? convertDateTimeFormat($value->notice_publish_date) : __('index.not_published_yet') }}</td>
             <td class="notice-receivers" data-directory-value="{{ $receivers->implode(', ') }}">
                 @forelse($receivers->take(2) as $name)

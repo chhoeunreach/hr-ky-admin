@@ -14,10 +14,10 @@
                 @if(!isset(auth()->user()->branch_id))
                     <div>
                         <label for="branch_id" class="form-label">{{ __('index.branch') }} <span class="text-danger">*</span></label>
-                        <select class="form-select" id="branch_id" name="branch_id" required>
-                            <option value="" disabled @selected(!old('branch_id', $noticeDetail->branch_id ?? null))>{{ __('index.select_branch') }}</option>
+                        @php($selectedBranchIds = array_map('strval', (array) old('branch_ids', isset($noticeDetail) ? ($noticeDetail->branches->isNotEmpty() ? $noticeDetail->branches->modelKeys() : [$noticeDetail->branch_id]) : [])))
+                        <select class="form-select" id="branch_id" name="branch_ids[]" multiple required>
                             @foreach($companyDetail?->branches ?? [] as $branch)
-                                <option value="{{ $branch->id }}" @selected(old('branch_id', $noticeDetail->branch_id ?? null) == $branch->id)>{{ $branch->name }}</option>
+                                <option value="{{ $branch->id }}" @selected(in_array((string) $branch->id, $selectedBranchIds, true))>{{ $branch->name }}</option>
                             @endforeach
                         </select>
                     </div>

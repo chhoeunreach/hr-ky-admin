@@ -99,7 +99,7 @@
             placeholder:"{{ __('index.select_notice_receiver') }}"
         });
 
-        $('#branch_id').select2();
+        $('#branch_id').select2({placeholder: @json(__('index.select_branch'))});
 
 
         $.ajaxSetup({
@@ -225,32 +225,34 @@
             receiverUserIds = {!! isset($noticeDetail) && !empty($receiverUserIds) ? json_encode($receiverUserIds) : '[]' !!}.map(String);
         }
 
+        if ($('#notification').length) {
+            receiverUserIds = @json(collect(old('receiver', []))->pluck('notice_receiver_id')->all()).map(String).concat(receiverUserIds);
+        }
 
-
+        let employeeLoadVersion = 0;
         const loadEmployees = async (selectedBranchId) => {
-            if (!selectedBranchId) { $('#notice').empty(); return; }
+            const version = ++employeeLoadVersion;
+            const branchIds = [].concat(selectedBranchId || []).filter(Boolean);
+            $('#notice').empty();
+            $('#checkbox').prop('checked', false);
+            if (!branchIds.length) return;
 
             try {
-                const response = await $.ajax({
+                const responses = await Promise.all(branchIds.map(id => $.ajax({
                     type: 'GET',
-                    url: `{{ url('admin/get-branch-employee-data') }}/${selectedBranchId}`,
+                    url: `{{ url('admin/get-branch-employee-data') }}/${encodeURIComponent(id)}`,
+                })));
+                if (version !== employeeLoadVersion) return;
+                const users = new Map();
+                responses.forEach(response => (response.users || []).forEach(user => users.set(String(user.id), user)));
+                users.forEach(user => {
+                    const selected = receiverUserIds.includes(String(user.id));
+                    $('#notice').append(new Option(user.name, user.id, selected, selected));
                 });
-
-                // Clear existing options
-                $('#notice').empty();
-
-                if (response.users && response.users.length > 0) {
-                    // Populate employees
-                    response.users.forEach(user => {
-                        const isSelected = receiverUserIds.includes(String(user.id));
-                        $('#notice').append(new Option(user.name, user.id, isSelected, isSelected));
-                    });
-                } else {
-                    $('#notice').append('<option disabled>{{ __("index.employee_not_found") }}</option>');
-                }
-
+                if (!users.size) $('#notice').append('<option disabled>{{ __("index.employee_not_found") }}</option>');
+                $('#notice').trigger('change');
             } catch (error) {
-                console.error('Error loading data:', error);
+                if (version !== employeeLoadVersion) return;
                 $('#notice').append('<option disabled>{{ __("index.error_loading_employees") }}</option>');
             }
         };
@@ -266,7 +268,7 @@
                     const newBranchId = $('#branch_id').val();
 
                     // Only reset receiverUserIds if not in filter mode
-                    receiverUserIds = [];
+                    receiverUserIds = ($('#notice').val() || []).map(String);
 
                     await loadEmployees(newBranchId);
                 });
@@ -285,7 +287,7 @@
         // Handle "All Employees" checkbox
         $('#checkbox').on('change', function() {
             if(this.checked) {
-                $('#notice option').prop('selected', true);
+                $('#notice option:not(:disabled)').prop('selected', true);
             } else {
                 $('#notice option').prop('selected', false);
             }

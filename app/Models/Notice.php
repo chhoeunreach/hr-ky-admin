@@ -44,6 +44,7 @@ class Notice extends Model
 
         static::deleting(function ($noticeDetail) {
             $noticeDetail->noticeReceiversDetail()->delete();
+            $noticeDetail->branches()->detach();
         });
 
         if (Auth::check()  && isset(Auth::user()->branch_id)) {
@@ -51,8 +52,9 @@ class Notice extends Model
 
             static::addGlobalScope('branch', function (Builder $builder) use ($user) {
                 $branchId = $user->branch_id;
-                 $builder->whereHas('branch', function ($query) use ($branchId) {
-                    $query->where('id', $branchId);
+                $builder->where(function ($query) use ($branchId) {
+                    $query->where('branch_id', $branchId)
+                        ->orWhereHas('branches', fn ($branches) => $branches->where('branches.id', $branchId));
                 });
             });
         }
@@ -78,6 +80,11 @@ class Notice extends Model
     public function noticeReceiversDetail()
     {
         return $this->hasMany(NoticeReceiver::class, 'notice_id', 'id')->whereHas('employee');
+    }
+
+    public function branches(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'notice_branches');
     }
 
     public function branch(): BelongsTo

@@ -22,12 +22,14 @@ class NoticeRepository{
             ->when(isset($filterParameters['publish_date_to']), function($query) use ($filterParameters){
                 $query->whereDate('notice_publish_date','<=',$filterParameters['publish_date_to']);
             })
-            ->when(!empty($filterParameters['branch_id']), fn ($query) => $query->where('branch_id', $filterParameters['branch_id']))
+            ->when(!empty($filterParameters['branch_id']), fn ($query) => $query->where(fn ($branches) => $branches
+                ->where('branch_id', $filterParameters['branch_id'])
+                ->orWhereHas('branches', fn ($branch) => $branch->where('branches.id', $filterParameters['branch_id']))))
             ->when(isset($filterParameters['is_active']) && $filterParameters['is_active'] !== '', fn ($query) => $query->where('is_active', $filterParameters['is_active']))
             ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
                 $search = '%'.$filterParameters['search'].'%';
                 $query->where(fn ($q) => $q->where('title', 'like', $search)->orWhere('description', 'like', $search)
-                    ->orWhereHas('branch', fn ($b) => $b->where('name', 'like', $search))
+                    ->orWhereHas('branches', fn ($b) => $b->where('name', 'like', $search))
                     ->orWhereHas('noticeReceiversDetail.employee', fn ($u) => $u->where('name', 'like', $search)));
             })
 ;

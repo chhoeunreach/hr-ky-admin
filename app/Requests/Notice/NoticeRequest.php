@@ -32,7 +32,9 @@ class NoticeRequest extends FormRequest
     {
 
         if (!auth('admin')->check() && auth()->check()) {
-            $this->merge(['branch_id' => auth()->user()->branch_id]);
+            $this->merge(['branch_ids' => [auth()->user()->branch_id]]);
+        } elseif (!$this->has('branch_ids') && $this->filled('branch_id')) {
+            $this->merge(['branch_ids' => [$this->input('branch_id')]]);
         }
     }
 
@@ -44,7 +46,8 @@ class NoticeRequest extends FormRequest
     public function rules()
     {
         return [
-            'branch_id' => 'required|exists:branches,id',
+            'branch_ids' => 'required|array|min:1',
+            'branch_ids.*' => ['required', 'integer', 'distinct', Rule::exists('branches', 'id')->where('company_id', \App\Helpers\AppHelper::getAuthUserCompanyId())],
             'title' => 'required|string',
             'description' => 'required|string|min:10',
             'receiver' => 'required|array|min:1',
