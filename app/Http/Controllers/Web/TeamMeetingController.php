@@ -96,9 +96,17 @@ class TeamMeetingController extends Controller
                     $teamMeeting->id
                 );
             }
+            $message = __('message.team_meeting_create');
+            if ($request->query('request_modal') === '1') {
+                session()->flash('success', $message);
+                return view($this->view . 'modal-saved', [
+                    'redirectUrl' => route('admin.team-meetings.index'),
+                    'message' => $message,
+                ]);
+            }
             return redirect()
                 ->route('admin.team-meetings.index')
-                ->with('success', __('message.team_meeting_create'));
+                ->with('success', $message);
         } catch (Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('danger', $e->getMessage())->withInput();
@@ -220,7 +228,15 @@ class TeamMeetingController extends Controller
                 }
             }
 
-            return redirect()->route('admin.team-meetings.index')->with('success', __('message.team_meeting_update'));
+            $message = __('message.team_meeting_update');
+            if ($request->query('request_modal') === '1') {
+                session()->flash('success', $message);
+                return view($this->view . 'modal-saved', [
+                    'redirectUrl' => route('admin.team-meetings.index'),
+                    'message' => $message,
+                ]);
+            }
+            return redirect()->route('admin.team-meetings.index')->with('success', $message);
         } catch (Exception $exception) {
             DB::rollBack();
             return redirect()->back()->with('danger', $exception->getMessage())

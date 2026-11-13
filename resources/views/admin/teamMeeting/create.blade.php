@@ -1,6 +1,17 @@
 
 @extends('layouts.master')
 
+@if(request('request_modal') === '1')
+    @section('embedded', '1')
+    @section('styles')
+        <style>
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .content { margin: 0 !important; }
+        </style>
+    @endsection
+@endif
+
 @section('title',__('index.team_meeting'))
 
 @section('action',__('index.create'))
@@ -17,11 +28,13 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.teamMeeting.common.breadcrumb')
+        @if(request('request_modal') !== '1')
+            @include('admin.teamMeeting.common.breadcrumb')
+        @endif
 
         <div class="card">
             <div class="card-body pb-0">
-                <form id="notification" class="forms-sample" action="{{route('admin.team-meetings.store')}}" enctype="multipart/form-data" method="POST">
+                <form id="notification" class="forms-sample" action="{{ route('admin.team-meetings.store', request('request_modal') === '1' ? ['request_modal' => '1'] : []) }}" enctype="multipart/form-data" method="POST">
                     @csrf
                     @include('admin.teamMeeting.common.form')
                 </form>

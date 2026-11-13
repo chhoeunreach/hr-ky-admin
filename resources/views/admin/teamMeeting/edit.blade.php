@@ -1,6 +1,17 @@
 
 @extends('layouts.master')
 
+@if(request('request_modal') === '1')
+    @section('embedded', '1')
+    @section('styles')
+        <style>
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
+            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .content { margin: 0 !important; }
+        </style>
+    @endsection
+@endif
+
 @section('title',__('index.team_meeting'))
 
 @section('action',__('index.edit'))
@@ -17,13 +28,15 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.teamMeeting.common.breadcrumb')
+        @if(request('request_modal') !== '1')
+            @include('admin.teamMeeting.common.breadcrumb')
+        @endif
 
         <div class="row">
             <div class="col-md-12 grid-margin stretch-card">
                 <div class="card">
                     <div class="card-body">
-                        <form id="notification" class="forms-sample" action="{{route('admin.team-meetings.update',$teamMeetingDetail->id)}}" enctype="multipart/form-data"  method="post">
+                        <form id="notification" class="forms-sample" action="{{ request('request_modal') === '1' ? route('admin.team-meetings.update', ['team_meeting' => $teamMeetingDetail->id, 'request_modal' => '1']) : route('admin.team-meetings.update', $teamMeetingDetail->id) }}" enctype="multipart/form-data"  method="post">
                             @method('PUT')
                             @csrf
                             @include('admin.teamMeeting.common.form')

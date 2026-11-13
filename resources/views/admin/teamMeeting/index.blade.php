@@ -7,7 +7,9 @@
 
 @section('button')
     @can('create_team_meeting')
-        <a href="{{ route('admin.team-meetings.create')}}">
+        <a href="{{ route('admin.team-meetings.create')}}"
+           data-open-request-form
+           data-request-modal-title="{{ __('index.create_team_meeting') }}">
             <button class="btn btn-primary">
                 <i class="link-icon" data-feather="plus"></i>{{__('index.create_team_meeting')}}
             </button>
@@ -145,7 +147,10 @@
                                     <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                         @can('edit_team_meeting')
                                             <li class="me-2">
-                                                <a href="{{route('admin.team-meetings.edit',$value->id)}}" title="{{__('index.edit_meeting_detail')}} ">
+                                                <a href="{{route('admin.team-meetings.edit',$value->id)}}"
+                                                   data-open-request-form
+                                                   data-request-modal-title="{{ __('index.edit_meeting_detail') }}"
+                                                   title="{{__('index.edit_meeting_detail')}} ">
                                                     <i class="link-icon" data-feather="edit"></i>
                                                 </a>
                                             </li>

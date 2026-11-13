@@ -50,7 +50,8 @@
         <label for="department_id" class="form-label">{{ __('index.department') }} <span
                 style="color: red">*</span></label>
         <select class="form-select" id="department_id" multiple name="department[][department_id]">
-            @if(isset($trainingDetail))
+            <option value="select_all">{{ __('index.select_all') }}</option>
+            @if(isset($teamMeetingDetail) && isset($filteredDepartment))
                 @foreach($filteredDepartment as $department)
                     <option
                         value="{{ $department->id }}" {{ in_array($department->id, $departmentIds) ? 'selected' : '' }}>
@@ -114,7 +115,7 @@
                     <br>
                     <select class="form-select" id="team_meeting" name="participator[][meeting_participator_id]"
                             multiple="multiple" required>
-
+                        <option value="select_all">{{ __('index.select_all') }}</option>
                     </select>
                 </div>
             </div>
@@ -152,6 +153,11 @@
 
 
     <div class="mb-2 text-center text-md-start">
+        @if(request('request_modal') === '1')
+            <button type="button" class="btn btn-outline-secondary mb-2" data-close-request-form>
+                {{ __('index.cancel') }}
+            </button>
+        @endif
         <button type="submit"
                 class="btn btn-primary mb-2">{{isset($teamMeetingDetail) ? __('index.update') : __('index.create')}} </button>
         <button type="submit" id="withTeamNotification" class="btn btn-primary mb-2">
