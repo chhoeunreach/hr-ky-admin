@@ -59,6 +59,7 @@ class CommunityFeatureTest extends TestCase
         (require __DIR__.'/../../database/migrations/2026_11_11_000008_add_social_post_location.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_12_000001_create_social_stories.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_13_000001_create_social_story_reactions.php')->up();
+        (require __DIR__.'/../../database/migrations/2026_11_14_000001_add_social_post_background.php')->up();
         Gate::before(fn ($user,$ability) => in_array($ability,$this->abilities,true));
         Passport::actingAs(User::findOrFail(10));
         Route::middleware(\Illuminate\Routing\Middleware\SubstituteBindings::class)->group(function () {
@@ -277,6 +278,21 @@ class CommunityFeatureTest extends TestCase
         $this->assertTrue($flash->fresh()->visibleTo(User::findOrFail(10)));
         $this->assertFalse($flash->fresh()->visibleTo(User::findOrFail(11)));
         $this->assertFalse($flash->fresh()->visibleTo(User::findOrFail(12)));
+    }
+    public function test_post_background_is_stored_validated_and_exposed(): void
+    {
+        $this->grantFeed();
+        $id=$this->postJson('/api/social-feed',['body'=>'Hello team','media_type'=>'text','background'=>'sunset'])
+            ->assertCreated()->assertJsonPath('data.background','sunset')->json('data.id');
+        $this->assertSame('sunset',SocialPost::findOrFail($id)->background);
+        $this->postJson('/api/social-feed/'.$id,['body'=>'Updated','media_type'=>'text','background'=>'ocean'])
+            ->assertOk()->assertJsonPath('data.background','ocean');
+        $this->assertSame('ocean',SocialPost::findOrFail($id)->background);
+        $this->getJson('/api/social-feed/'.$id)->assertOk()->assertJsonPath('data.background','ocean');
+        $this->postJson('/api/social-feed',['body'=>'Bad','media_type'=>'text','background'=>'<script>'])->assertUnprocessable();
+        $this->postJson('/api/social-feed',['body'=>'Bad','media_type'=>'text','background'=>str_repeat('a',33)])->assertUnprocessable();
+        $this->postJson('/api/social-feed',['media_type'=>'image','media_url'=>'https://example.com/a.jpg','background'=>'sunset'])
+            ->assertCreated()->assertJsonPath('data.background',null);
     }
     public function test_upload_and_untrusted_media_validation(): void
     {
