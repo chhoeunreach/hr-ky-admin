@@ -195,7 +195,7 @@ class SocialStoryApiController extends Controller
             'media_type' => $story->media_type,
             'media_url' => app(\App\Services\Community\UploadedMediaUrl::class)->resolve($story->media_url),
             'playback_url' => $story->playback_url,
-            'thumbnail_url' => app(\App\Services\Community\UploadedMediaUrl::class)->resolve($story->thumbnail_url),
+            'thumbnail_url' => app(\App\Services\Community\UploadedMediaUrl::class)->resolve($story->thumbnail_url ?: $story->adaptive_thumbnail_url),
             'duration_seconds' => $story->duration_seconds,
             'aspect_ratio' => $story->aspect_ratio,
             'caption' => $story->caption,

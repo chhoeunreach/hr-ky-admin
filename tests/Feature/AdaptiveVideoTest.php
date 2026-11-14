@@ -25,6 +25,19 @@ class AdaptiveVideoTest extends TestCase
         $this->assertNull($service->playbackUrl(str_replace('example.test', 'remote.test', $url), 'video'));
         $this->assertNull($service->playbackUrl($url, 'image'));
         $this->assertNull($service->playbackUrl($url.'?signed=1', 'video'));
+        $this->assertNull($service->thumbnailUrl($url, 'video'));
+        Storage::disk('public')->put($service->directory('community/example.mp4').'/poster.jpg', 'jpg');
+        $this->assertStringEndsWith('/poster.jpg', $service->thumbnailUrl($url, 'video'));
+        $this->assertNull($service->thumbnailUrl(str_replace('example.test', 'remote.test', $url), 'video'));
+        $this->assertNull($service->thumbnailUrl($url, 'image'));
+    }
+
+    public function test_videos_are_dispatched_to_the_queue_when_enabled(): void
+    {
+        \Illuminate\Support\Facades\Queue::fake();
+        config(['community_video.queue' => true, 'queue.default' => 'redis']);
+        app(AdaptiveVideo::class)->enqueue('community/queued.mp4');
+        \Illuminate\Support\Facades\Queue::assertPushed(\App\Jobs\ProcessCommunityVideo::class, fn ($job) => $job->path === 'community/queued.mp4');
     }
 
     public function test_only_local_video_paths_are_queued_once(): void
@@ -101,6 +114,8 @@ class AdaptiveVideoTest extends TestCase
                 $this->assertSame(3, substr_count(file_get_contents($playlist), '#EXTINF:'));
             }
             Storage::disk('public')->assertExists($path);
+            Storage::disk('public')->assertExists($directory.'/poster.jpg');
+            $this->assertStringEndsWith('/poster.jpg', $service->thumbnailUrl('https://example.test/storage/'.$path, 'video'));
         }
     }
 }

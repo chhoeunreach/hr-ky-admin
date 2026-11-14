@@ -24,6 +24,8 @@ class SocialFeedApiController extends Controller
     private ?array $reactionSummaries = null;
     private array $myReactions = [];
     private array $savedIds = [];
+    private array $preferences = [];
+    private bool $summaryHydrated = false;
     public const REACTIONS = ['like', 'love', 'haha', 'wow', 'sad', 'angry'];
 
     private function company(Request $request): int
@@ -52,27 +54,112 @@ class SocialFeedApiController extends Controller
 
     private function hydrateSummary($posts, Request $request): void
     {
-        $ids = collect($posts->getCollection())->pluck('id')->merge(collect($posts->getCollection())->pluck('original_post_id')->filter())->unique()->values();
+        $collection = $posts instanceof LengthAwarePaginatorContract ? $posts->getCollection() : collect($posts);
+        $ids = $collection->pluck('id')->merge($collection->pluck('original_post_id')->filter())->unique()->values();
         $this->reactionSummaries = [];
         $this->myReactions = [];
         $this->savedIds = [];
+        $this->preferences = [];
+        $this->summaryHydrated = true;
         if ($ids->isEmpty()) return;
         foreach (DB::table('social_reactions')->whereIn('social_post_id', $ids)->selectRaw('social_post_id, reaction, COUNT(*) as total')->groupBy('social_post_id', 'reaction')->get() as $reaction) {
             $this->reactionSummaries[$reaction->social_post_id][$reaction->reaction] = (int) $reaction->total;
         }
         $this->myReactions = DB::table('social_reactions')->whereIn('social_post_id', $ids)->where('user_id', $request->user()->id)->pluck('reaction', 'social_post_id')->all();
         $this->savedIds = SocialPostSave::where('user_id', $request->user()->id)->whereIn('social_post_id', $ids)->pluck('social_post_id')->map(fn ($id) => (int) $id)->all();
+        $this->preferences = SocialPostPreference::where('user_id', $request->user()->id)->whereIn('social_post_id', $ids)->get()->keyBy('social_post_id')->all();
+    }
+
+    private function feedOrder($query)
+    {
+        return $query->orderByRaw('CASE WHEN pinned_at IS NULL THEN 0 ELSE 1 END DESC')
+            ->orderByRaw('CASE WHEN is_announcement = 1 THEN 1 ELSE 0 END DESC')
+            ->orderByDesc('id');
+    }
+
+    private function encodeCursor(SocialPost $post): string
+    {
+        $payload = json_encode([
+            'p' => $post->pinned_at === null ? 0 : 1,
+            'a' => $post->is_announcement ? 1 : 0,
+            'id' => (int) $post->id,
+        ]);
+        return rtrim(strtr(base64_encode($payload), '+/', '-_'), '=');
+    }
+
+    private function decodeCursor($raw): ?array
+    {
+        if (!is_string($raw) || $raw === '') return null;
+        $normalized = strtr($raw, '-_', '+/');
+        $padding = strlen($normalized) % 4;
+        if ($padding) $normalized .= str_repeat('=', 4 - $padding);
+        $decoded = base64_decode($normalized, true);
+        if ($decoded === false) return null;
+        $data = json_decode($decoded, true);
+        if (!is_array($data)) return null;
+        $pinned = $data['p'] ?? null;
+        $announcement = $data['a'] ?? null;
+        $id = $data['id'] ?? null;
+        if (!in_array($pinned, [0, 1], true) || !in_array($announcement, [0, 1], true) || !is_numeric($id) || (int) $id <= 0) return null;
+        return ['p' => (int) $pinned, 'a' => (int) $announcement, 'id' => (int) $id];
+    }
+
+    private function applyCursor($query, array $cursor): void
+    {
+        $pinned = 'CASE WHEN pinned_at IS NULL THEN 0 ELSE 1 END';
+        $announcement = 'CASE WHEN is_announcement = 1 THEN 1 ELSE 0 END';
+        $query->where(function ($outer) use ($cursor, $pinned, $announcement) {
+            $outer->whereRaw("$pinned < ?", [$cursor['p']])
+                ->orWhere(function ($samePinned) use ($cursor, $pinned, $announcement) {
+                    $samePinned->whereRaw("$pinned = ?", [$cursor['p']])
+                        ->where(function ($sameAnnouncement) use ($cursor, $announcement) {
+                            $sameAnnouncement->whereRaw("$announcement < ?", [$cursor['a']])
+                                ->orWhere(function ($sameId) use ($cursor, $announcement) {
+                                    $sameId->whereRaw("$announcement = ?", [$cursor['a']])
+                                        ->where('id', '<', $cursor['id']);
+                                });
+                        });
+                });
+        });
     }
 
     public function index(Request $request)
     {
         $this->company($request);
-        $posts = $this->paginator(SocialPost::query()->visibleTo($request->user())
-            ->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'original' => fn ($q) => $q->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media'])->withCount(['comments', 'reactions', 'shares'])])
-            ->withCount(['comments', 'reactions', 'shares'])->orderByDesc('pinned_at')->orderByDesc('is_announcement')->latest('id'), $request);
+        $perPage = min(30, max(5, (int) $request->integer('per_page', 12)));
+        $query = $this->feedOrder(SocialPost::query()->visibleTo($request->user())
+            ->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($q) => $q->withCount('votes'), 'original' => fn ($q) => $q->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($inner) => $inner->withCount('votes')])->withCount(['comments', 'reactions', 'shares'])])
+            ->withCount(['comments', 'reactions', 'shares']));
+
+        $cursor = $this->decodeCursor($request->query('cursor'));
+        if ($cursor !== null) {
+            $this->applyCursor($query, $cursor);
+            $rows = $query->limit($perPage + 1)->get();
+            $hasMore = $rows->count() > $perPage;
+            $rows = $rows->take($perPage)->values();
+            $this->hydrateSummary($rows, $request);
+            $data = $rows->map(fn ($post) => $this->postData($post, $request))->values();
+            $next = $hasMore && $rows->isNotEmpty() ? $this->encodeCursor($rows->last()) : null;
+            return response()->json([
+                'data' => $data,
+                'current_page' => max(1, (int) $request->integer('page', 1)),
+                'per_page' => $perPage,
+                'next_cursor' => $next,
+                'has_more' => $hasMore,
+                'next_page_url' => $next === null ? null : url()->current().'?'.http_build_query(['cursor' => $next, 'per_page' => $perPage]),
+            ]);
+        }
+
+        $posts = $query->paginate($perPage, ['*'], 'page', max(1, (int) $request->integer('page', 1)));
         $this->hydrateSummary($posts, $request);
-        $posts->setCollection($posts->getCollection()->map(fn ($post) => $this->postData($post, $request)));
-        return response()->json($posts);
+        $models = $posts->getCollection();
+        $hasMore = $posts->hasMorePages();
+        $nextCursor = $hasMore && $models->isNotEmpty() ? $this->encodeCursor($models->last()) : null;
+        $posts->setCollection($models->map(fn ($post) => $this->postData($post, $request)));
+        $payload = $posts->toArray();
+        $payload['next_cursor'] = $nextCursor;
+        $payload['has_more'] = $hasMore;
+        return response()->json($payload);
     }
 
     public function show(Request $request, SocialPost $post)
@@ -381,7 +468,7 @@ class SocialFeedApiController extends Controller
     {
         if (!$poll) return null;
         $selected = SocialPollVote::where('social_poll_id', $poll->id)->where('user_id', $request->user()->id)->pluck('social_poll_option_id')->map(fn ($id) => (int) $id)->all();
-        return ['id' => $poll->id, 'question' => $poll->question, 'allow_multiple' => (bool) $poll->allow_multiple, 'closes_at' => $poll->closes_at?->toIso8601String(), 'closed' => (bool) ($poll->closes_at && $poll->closes_at->isPast()), 'my_option_ids' => $selected, 'options' => $poll->options->map(fn ($option) => ['id' => $option->id, 'label' => $option->label, 'votes_count' => $option->votes()->count()])->values()];
+        return ['id' => $poll->id, 'question' => $poll->question, 'allow_multiple' => (bool) $poll->allow_multiple, 'closes_at' => $poll->closes_at?->toIso8601String(), 'closed' => (bool) ($poll->closes_at && $poll->closes_at->isPast()), 'my_option_ids' => $selected, 'options' => $poll->options->map(fn ($option) => ['id' => $option->id, 'label' => $option->label, 'votes_count' => (int) ($option->votes_count ?? $option->votes()->count())])->values()];
     }
 
     private function commentData(SocialComment $comment, Request $request): array
@@ -397,11 +484,13 @@ class SocialFeedApiController extends Controller
 
     public function postData(SocialPost $post, Request $request, bool $includeOriginal = true): array
     {
-        $post->loadMissing(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options']);
+        $post->loadMissing(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($query) => $query->withCount('votes')]);
         if (!array_key_exists('comments_count', $post->getAttributes())) $post->loadCount(['comments', 'reactions', 'shares']);
         $own = (int) $post->user_id === (int) $request->user()->id;
-        $preference = $post->preferences()->where('user_id', $request->user()->id)->first();
+        $preference = $this->summaryHydrated
+            ? ($this->preferences[$post->id] ?? null)
+            : $post->preferences()->where('user_id', $request->user()->id)->first();
         $reactions = $this->reactionSummaries !== null ? ($this->reactionSummaries[$post->id] ?? []) : $post->reactions()->selectRaw('reaction, COUNT(*) as total')->groupBy('reaction')->pluck('total', 'reaction')->all();
-        return app(\App\Services\Community\UploadedMediaUrl::class)->payload(['id' => $post->id, 'body' => $post->body, 'location_name' => $post->location_name, 'media_type' => $post->media_type, 'media_url' => $post->media_url, 'playback_url' => $post->playback_url, 'thumbnail_url' => $post->thumbnail_url, 'duration_seconds' => $post->duration_seconds, 'aspect_ratio' => $post->aspect_ratio, 'media' => $post->media->map(fn ($media) => ['id' => $media->id, 'media_type' => $media->media_type, 'media_url' => $media->media_url, 'playback_url' => $media->playback_url, 'thumbnail_url' => $media->thumbnail_url, 'duration_seconds' => $media->duration_seconds, 'aspect_ratio' => $media->aspect_ratio, 'file_name' => $media->file_name])->values(), 'poll' => $this->pollData($post->poll, $request), 'author' => $this->author($post->author), 'created_at' => $post->created_at->toIso8601String(), 'updated_at' => $post->updated_at->toIso8601String(), 'comments_count' => (int) $post->comments_count, 'reactions_count' => (int) $post->reactions_count, 'shares_count' => (int) $post->shares_count, 'reactions' => (object) $reactions, 'my_reaction' => $this->reactionSummaries !== null ? ($this->myReactions[$post->id] ?? null) : $post->reactions()->where('user_id', $request->user()->id)->value('reaction'), 'visibility' => $post->visibility ?: 'company', 'is_announcement' => (bool) $post->is_announcement, 'is_pinned' => (bool) $post->pinned_at, 'is_saved' => in_array((int) $post->id, $this->savedIds, true) || SocialPostSave::where('social_post_id', $post->id)->where('user_id', $request->user()->id)->exists(), 'notifications_enabled' => (bool) ($preference?->notifications_enabled ?? false), 'is_hidden' => (bool) ($preference?->hidden_at), 'can_edit' => $own && Gate::allows('social_feed.edit'), 'can_delete' => $own && Gate::allows('social_feed.delete'), 'can_pin' => Gate::allows('social_feed.pin') || Gate::allows('social_feed.moderate'), 'can_report' => !$own && Gate::allows('social_feed.report'), 'can_change_audience' => $own, 'original_post_id' => $post->original_post_id, 'original' => $includeOriginal && $post->original ? $this->postData($post->original, $request, false) : null]);
+        return app(\App\Services\Community\UploadedMediaUrl::class)->payload(['id' => $post->id, 'body' => $post->body, 'location_name' => $post->location_name, 'media_type' => $post->media_type, 'media_url' => $post->media_url, 'playback_url' => $post->playback_url, 'thumbnail_url' => $post->thumbnail_url ?: $post->adaptive_thumbnail_url, 'duration_seconds' => $post->duration_seconds, 'aspect_ratio' => $post->aspect_ratio, 'media' => $post->media->map(fn ($media) => ['id' => $media->id, 'media_type' => $media->media_type, 'media_url' => $media->media_url, 'playback_url' => $media->playback_url, 'thumbnail_url' => $media->thumbnail_url ?: $media->adaptive_thumbnail_url, 'duration_seconds' => $media->duration_seconds, 'aspect_ratio' => $media->aspect_ratio, 'file_name' => $media->file_name])->values(), 'poll' => $this->pollData($post->poll, $request), 'author' => $this->author($post->author), 'created_at' => $post->created_at->toIso8601String(), 'updated_at' => $post->updated_at->toIso8601String(), 'comments_count' => (int) $post->comments_count, 'reactions_count' => (int) $post->reactions_count, 'shares_count' => (int) $post->shares_count, 'reactions' => (object) $reactions, 'my_reaction' => $this->reactionSummaries !== null ? ($this->myReactions[$post->id] ?? null) : $post->reactions()->where('user_id', $request->user()->id)->value('reaction'), 'visibility' => $post->visibility ?: 'company', 'is_announcement' => (bool) $post->is_announcement, 'is_pinned' => (bool) $post->pinned_at, 'is_saved' => $this->summaryHydrated ? in_array((int) $post->id, $this->savedIds, true) : SocialPostSave::where('social_post_id', $post->id)->where('user_id', $request->user()->id)->exists(), 'notifications_enabled' => (bool) ($preference?->notifications_enabled ?? false), 'is_hidden' => (bool) ($preference?->hidden_at), 'can_edit' => $own && Gate::allows('social_feed.edit'), 'can_delete' => $own && Gate::allows('social_feed.delete'), 'can_pin' => Gate::allows('social_feed.pin') || Gate::allows('social_feed.moderate'), 'can_report' => !$own && Gate::allows('social_feed.report'), 'can_change_audience' => $own, 'original_post_id' => $post->original_post_id, 'original' => $includeOriginal && $post->original ? $this->postData($post->original, $request, false) : null]);
     }
 }

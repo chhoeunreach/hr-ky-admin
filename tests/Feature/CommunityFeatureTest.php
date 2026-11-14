@@ -306,8 +306,11 @@ class CommunityFeatureTest extends TestCase
     {
         $this->grantFeed();
         for ($i=0;$i<23;$i++) $this->makePost(['body'=>'Post '.$i]);
-        $this->getJson('/api/social-feed')->assertJsonCount(20,'data')->assertJsonPath('total',23);
-        $this->getJson('/api/social-feed?page=2')->assertJsonCount(3,'data');
+        $first=$this->getJson('/api/social-feed')->assertJsonCount(12,'data')->assertJsonPath('total',23)->assertJsonPath('has_more',true)->json();
+        $this->getJson('/api/social-feed?page=2')->assertJsonCount(11,'data');
+        $this->assertNotEmpty($first['next_cursor']);
+        $second=$this->getJson('/api/social-feed?per_page=12&cursor='.urlencode($first['next_cursor']))->assertOk()->assertJsonCount(11,'data')->assertJsonPath('has_more',false)->json();
+        $this->assertEmpty(collect($first['data'])->pluck('id')->intersect(collect($second['data'])->pluck('id')));
         $post=SocialPost::first();
         $this->postJson('/api/social-feed/'.$post->id.'/comments',['body'=>str_repeat('x',2001)])->assertUnprocessable();
         $this->postJson('/api/social-feed',['body'=>str_repeat('x',10001),'media_type'=>'text'])->assertUnprocessable();
