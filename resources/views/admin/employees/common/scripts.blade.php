@@ -426,6 +426,10 @@
 
         initEmployeeListControls();
 
+        window.refreshEmployeeList = refreshEmployeeList;
+        document.addEventListener('employee-directory:changed', function () {
+            refreshEmployeeList();
+        });
 
     });
     $(document).on('click', '#export_employee', function (e) {

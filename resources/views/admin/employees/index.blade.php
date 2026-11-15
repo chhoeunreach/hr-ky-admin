@@ -190,7 +190,7 @@
 
         <div id="employeeListSection">
         <div class="card border-0 shadow-sm employee-datatable-card" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0 !important;">
-            @include('admin.section.directory-toolbar', ['directoryTable' => 'employeeTable', 'directoryForm' => 'employeeFilterForm', 'directorySearch' => 'employeeListSearch', 'directoryRecords' => $users, 'directoryTitle' => __('index.employee_lists'), 'directoryIcon' => 'users', 'directoryPermission' => 'create_employee', 'directoryAddUrl' => route('admin.employees.create'), 'directoryDefaultSize' => '25', 'directorySearchKey' => 'search', 'directoryLive' => true])
+            @include('admin.section.directory-toolbar', ['directoryTable' => 'employeeTable', 'directoryForm' => 'employeeFilterForm', 'directorySearch' => 'employeeListSearch', 'directoryRecords' => $users, 'directoryTitle' => __('index.employee_lists'), 'directoryIcon' => 'users', 'directoryPermission' => 'create_employee', 'directoryAddUrl' => route('admin.employees.create'), 'directoryAddEmployeeForm' => true, 'directoryDefaultSize' => '25', 'directorySearchKey' => 'search', 'directoryLive' => true])
             <div class="card-body p-0">
                 <style>
                     .employee-toolbar {
@@ -743,8 +743,8 @@
                                             <a href="{{ route('admin.employees.edit', $value->id) }}"
                                                class="employee-edit-btn ms-auto"
                                                title="{{ __('index.edit_detail') }}"
-                                               target="_blank"
-                                               rel="noopener noreferrer">
+                                               data-open-employee-form
+                                               data-employee-form-title="{{ __('index.edit_detail') }} · {{ ucfirst($value->name) }}">
                                                 <i class="link-icon" data-feather="edit"></i>
                                             </a>
                                         @endcan
@@ -908,8 +908,8 @@
                                                         <li>
                                                             <a class="dropdown-item d-flex align-items-center gap-2 py-2"
                                                                href="{{ route('admin.employees.edit', $value->id) }}"
-                                                               target="_blank"
-                                                               rel="noopener noreferrer">
+                                                               data-open-employee-form
+                                                               data-employee-form-title="{{ __('index.edit_detail') }} · {{ ucfirst($value->name) }}">
                                                                 <i class="link-icon text-success" data-feather="edit-2" style="width: 14px; height: 14px;"></i>
                                                                 <span>{{ __('index.edit_detail') }}</span>
                                                             </a>
@@ -1094,7 +1094,7 @@
                                                 <span>{{ __('index.reset_filters') }}</span>
                                             </button>
                                             @can('create_employee')
-                                                <a href="{{ route('admin.employees.create') }}" class="btn btn-sm btn-primary rounded-3 px-3">
+                                                <a href="{{ route('admin.employees.create') }}" class="btn btn-sm btn-primary rounded-3 px-3" data-open-employee-form data-employee-form-title="{{ __('index.add_employee') }}">
                                                     <i class="link-icon" data-feather="plus" style="width: 13px; height: 13px;"></i>
                                                     <span>{{ __('index.add_employee') }}</span>
                                                 </a>
@@ -1126,12 +1126,18 @@
         </div>
 
     </section>
+    @include('admin.employees.profile.partials.form-modal', [
+        'formModalTitle' => __('index.employees_title'),
+        'formModalDirectoryUrl' => route('admin.employees.index'),
+        'formModalRefreshEvent' => 'employee-directory:changed',
+    ])
     @include('admin.employees.common.password')
     @include('admin.employees.common.device-activity-modal')
 @endsection
 
 @section('scripts')
     @include('admin.employees.common.scripts')
+    <script src="{{ asset('assets/js/employee-profile-form-modal.js') }}?v={{ filemtime(public_path('assets/js/employee-profile-form-modal.js')) }}"></script>
     <script>
         $(document).on('click', '.copyTelegramConnectLink', function () {
             var button = $(this);

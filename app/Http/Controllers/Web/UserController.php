@@ -745,6 +745,10 @@ class UserController extends Controller
 
             DB::commit();
             $this->sendNewEmployeeWelcomeTelegramNotification($user->id);
+            if ($request->input('employee_modal') === '1') {
+                session()->flash('success', __('message.add_user'));
+                return view('admin.employees.common.modal-saved', ['message' => __('message.add_user')]);
+            }
             return redirect()
                 ->route('admin.employees.index')
                 ->with('success', __('message.add_user'));

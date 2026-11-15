@@ -18,7 +18,9 @@
 
         @include('admin.section.flash_message')
 
-        @include('admin.employees.common.breadcrumb')
+        @if(request('employee_modal') !== '1')
+            @include('admin.employees.common.breadcrumb')
+        @endif
 
         <div class="card-user">
             <form class="forms-sample" id="employeeDetail" action="{{ route('admin.employees.store') }}" enctype="multipart/form-data" method="POST">
