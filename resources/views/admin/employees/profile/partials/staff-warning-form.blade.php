@@ -17,8 +17,8 @@
     $companyLogo = \App\Helpers\AppHelper::getCompanyLogo()
         ? asset(\App\Models\Company::UPLOAD_PATH . \App\Helpers\AppHelper::getCompanyLogo())
         : null;
-    $branchLogo = $employee->branch?->image
-        ? asset(\App\Models\Branch::UPLOAD_PATH . $employee->branch->image)
+    $branchLogo = $employee->branch?->logo
+        ? asset(\App\Models\Branch::UPLOAD_PATH . $employee->branch->logo)
         : null;
     $organizationLogo = $branchLogo ?: $companyLogo;
     $organizationName = $employee->company?->name ?: ($employee->branch?->name ?: config('app.name'));
