@@ -96,6 +96,7 @@
             if ($canViewReward) {
                 $tabs['rewards'] = __('index.rewards');
             }
+            $tabs['certificates'] = 'Certificates (វិញ្ញាបនបត្រ)';
             if ($canViewGoal) {
                 $tabs['goals'] = __('index.goals');
             }
@@ -2418,6 +2419,10 @@
                             @include('admin.employees.profile.partials.rewards')
                         </div>
                     @endif
+
+                    <div class="tab-pane fade" id="certificates" role="tabpanel">
+                        @include('admin.employees.profile.partials.certificates')
+                    </div>
 
                     @if($canViewGoal)
                         <div class="tab-pane fade" id="goals" role="tabpanel">

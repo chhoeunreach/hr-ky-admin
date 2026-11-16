@@ -1,0 +1,165 @@
+import { BorderStyleOption } from '../types/certificate';
+
+export interface FrameStyleMeta {
+  id: BorderStyleOption;
+  label: string;
+  khmerLabel: string;
+  badgeColor: string;
+  secondaryColor: string;
+  category: 'ribbon' | 'heritage' | 'modern';
+}
+
+export const FRAME_STYLES: FrameStyleMeta[] = [
+  {
+    id: 'navy-gold-ribbon',
+    label: 'Navy & Gold Ribbon',
+    khmerLabel: 'ស៊ុមបូខៀវក្រមៅ & មាស',
+    badgeColor: '#0A224E',
+    secondaryColor: '#D4A13A',
+    category: 'ribbon',
+  },
+  {
+    id: 'imperial-gold-wave-sash',
+    label: 'Imperial Gold & Navy Sash',
+    khmerLabel: 'ស៊ុមរលកមាស & បូខៀវរាជ្យ',
+    badgeColor: '#092653',
+    secondaryColor: '#F4D16B',
+    category: 'ribbon',
+  },
+  {
+    id: 'emerald-royal-ribbon',
+    label: 'Emerald & Gold Ribbon',
+    khmerLabel: 'ស៊ុមបូបៃតងមរកត & មាស',
+    badgeColor: '#064E3B',
+    secondaryColor: '#D4A13A',
+    category: 'ribbon',
+  },
+  {
+    id: 'crimson-imperial-ribbon',
+    label: 'Crimson & Gold Ribbon',
+    khmerLabel: 'ស៊ុមបូក្រហមឈាមជ្រូក & មាស',
+    badgeColor: '#5C0B24',
+    secondaryColor: '#D4A13A',
+    category: 'ribbon',
+  },
+  {
+    id: 'gold-wave-scroll',
+    label: 'Gold Wave & Corner Scroll',
+    khmerLabel: 'ស៊ុមមាសជ្រុងក្បាច់ & រលកមាស',
+    badgeColor: '#D4A13A',
+    secondaryColor: '#F5D77A',
+    category: 'heritage',
+  },
+  {
+    id: 'navy-gold-notched',
+    label: 'Navy Gold Notched Frame',
+    khmerLabel: 'ស៊ុមខៀវក្រមៅ & ជ្រុងមាសកាត់',
+    badgeColor: '#092653',
+    secondaryColor: '#D4A32C',
+    category: 'modern',
+  },
+  {
+    id: 'blue-guilloche-lace',
+    label: 'Royal Blue Guilloche Lace',
+    khmerLabel: 'ស៊ុមក្បាច់ឌីផ្លូម៉ាខៀវប្រណីត',
+    badgeColor: '#1E40AF',
+    secondaryColor: '#93C5FD',
+    category: 'heritage',
+  },
+  {
+    id: 'baroque-gold-wave',
+    label: 'Baroque Gold Flourish',
+    khmerLabel: 'ស៊ុមមាសក្បាច់ភ្ញីធំប្រណីត',
+    badgeColor: '#B8860B',
+    secondaryColor: '#F4D16B',
+    category: 'heritage',
+  },
+  {
+    id: 'blue-rosette-guilloche',
+    label: 'Blue Rosette Guilloche',
+    khmerLabel: 'ស៊ុមឌីផ្លូម៉ាផ្កាជ្រុងខៀវ',
+    badgeColor: '#1D4ED8',
+    secondaryColor: '#BFDBFE',
+    category: 'heritage',
+  },
+  {
+    id: 'khmer-kbach-lotus',
+    label: 'Khmer Kbach & Lotus',
+    khmerLabel: 'ស៊ុមក្បាច់ខ្មែរ & ផ្កាឈូក',
+    badgeColor: '#2D1328',
+    secondaryColor: '#C89B3C',
+    category: 'heritage',
+  },
+  {
+    id: 'royal-geometric-arch',
+    label: 'Royal Geometric Arch',
+    khmerLabel: 'ស៊ុមធរណីមាត្ររាជវង្ស',
+    badgeColor: '#0A224E',
+    secondaryColor: '#E6BA4E',
+    category: 'heritage',
+  },
+  {
+    id: 'art-deco-gilded',
+    label: 'Art Deco Gilded',
+    khmerLabel: 'ស៊ុមប្រណីត Art Deco',
+    badgeColor: '#1E293B',
+    secondaryColor: '#D4A13A',
+    category: 'modern',
+  },
+  {
+    id: 'golden-ring-frame',
+    label: 'Golden Ring Medallion',
+    khmerLabel: 'ស៊ុមមាសមេដាយរង្វង់',
+    badgeColor: '#C89B3C',
+    secondaryColor: '#2D1328',
+    category: 'heritage',
+  },
+  {
+    id: 'ornate-guilloche',
+    label: 'Ornate Guilloche',
+    khmerLabel: 'ស៊ុមក្បាច់ឌីផ្លូម៉ា',
+    badgeColor: '#85581A',
+    secondaryColor: '#C59B27',
+    category: 'heritage',
+  },
+  {
+    id: 'corner-flourish',
+    label: 'Victorian Scrollwork',
+    khmerLabel: 'ស៊ុមជ្រុងក្បាច់វិចតូរីយ៉ា',
+    badgeColor: '#B48222',
+    secondaryColor: '#0A224E',
+    category: 'heritage',
+  },
+  {
+    id: 'regal-ribbon',
+    label: 'Executive Gold Band',
+    khmerLabel: 'ស៊ុមមាសក្រាស់ផ្លូវការ',
+    badgeColor: '#D4A13A',
+    secondaryColor: '#0A224E',
+    category: 'modern',
+  },
+  {
+    id: 'double-hairline',
+    label: 'Double Hairline',
+    khmerLabel: 'ស៊ុមបន្ទាត់ភ្លោះ',
+    badgeColor: '#C59B27',
+    secondaryColor: '#0A224E',
+    category: 'modern',
+  },
+  {
+    id: 'minimal-box',
+    label: 'Minimalist Crosshair',
+    khmerLabel: 'ស៊ុមបែបទំនើបសាមញ្ញ',
+    badgeColor: '#64748B',
+    secondaryColor: '#D4A13A',
+    category: 'modern',
+  },
+  {
+    id: 'none',
+    label: 'No Frame (Clean Border)',
+    khmerLabel: 'គ្មានស៊ុម (លាក់ស៊ុម)',
+    badgeColor: '#CBD5E1',
+    secondaryColor: '#E2E8F0',
+    category: 'modern',
+  },
+];

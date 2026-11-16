@@ -261,6 +261,11 @@ class User extends Authenticatable
         return $this->hasMany(Award::class, 'employee_id', 'id');
     }
 
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class, 'user_id', 'id');
+    }
+
     public function attendanceLog()
     {
         return $this->hasOne(AttendanceLog::class, 'employee_id','id')->latestOfMany();

@@ -1,0 +1,15 @@
+# Quick Merge Steps for hr-ky-admin (React / TypeScript / Vite)
+1. Copy src/modules/certificates/ into your project's src/modules/certificates/ folder
+2. Copy public/assets/aistudio/unnamed_521b71dc.jpg into your project's public/assets/aistudio/
+3. Install required npm packages in your existing project:
+   npm install lucide-react html2canvas jspdf qrcode jszip motion
+   npm install -D @types/qrcode @types/jszip
+4. Import and mount <CertificateStudio /> in your route/page:
+   import { CertificateStudio } from './modules/certificates/certificateModule';
+
+   <CertificateStudio
+     embedded
+     employee={selectedEmployee}
+     externalEmployees={employees}
+     onSaveCertificate={(cert) => api.saveCertificate(cert)}
+   />

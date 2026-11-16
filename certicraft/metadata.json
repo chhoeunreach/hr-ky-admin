@@ -1,0 +1,6 @@
+{
+  "name": "CertiCraft Studio",
+  "description": "Design, customize, and export professional certificates for online courses, employee service excellence, and team leadership awards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

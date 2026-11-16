@@ -34,6 +34,7 @@
 {{--                @include('admin.section.partial.tada')--}}
                 @include('admin.section.partial.shiftManagement')
                 @include('admin.section.partial.trainingManagement')
+                @include('admin.section.partial.certificateManagement')
                 @include('admin.section.partial.hrAdminSetup')
                 @include('admin.section.partial.assetManagement')
 {{--                @include('admin.section.partial.warning')--}}

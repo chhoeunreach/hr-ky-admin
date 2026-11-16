@@ -595,7 +595,18 @@ class AttendanceMonthlyController extends Controller
                     $lateLabel .= ' (Allowed ' . $timingRules['late_check_in_allowed'] . ')';
                 }
 
-                return $this->cell('late', $lateLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+                $checkInTime = $checkIn ? Carbon::parse($checkIn)->format('H:i') : '';
+                $openingTime = $employee->officeTime?->opening_time
+                    ? Carbon::parse($employee->officeTime->opening_time)->format('H:i')
+                    : $checkInTime;
+
+                $cell = $this->cell('late', $lateLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+                $cell['quick_late'] = [
+                    'from' => $openingTime,
+                    'to' => $checkInTime,
+                ];
+
+                return $cell;
             }
 
             return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);

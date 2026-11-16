@@ -386,4 +386,18 @@ Route::group([
 
     /** SSF History */
     Route::get('payroll/ssf-history', [EmployeePayrollApiController::class, 'ssfHistory']);
+
+    /** Certificate Management API */
+    Route::get('certificates', [\App\Http\Controllers\Api\CertificateApiController::class, 'index']);
+    Route::post('certificates', [\App\Http\Controllers\Api\CertificateApiController::class, 'store']);
+    Route::get('certificates/employees', [\App\Http\Controllers\Api\CertificateApiController::class, 'getEmployees']);
+    Route::get('certificates/{id}', [\App\Http\Controllers\Api\CertificateApiController::class, 'show']);
+});
+
+/** Public / Studio HR Certificate API */
+Route::prefix('hr/certificates')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'index']);
+    Route::post('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'store']);
+    Route::get('/employees', [\App\Http\Controllers\Api\CertificateApiController::class, 'getEmployees']);
+    Route::get('/{id}', [\App\Http\Controllers\Api\CertificateApiController::class, 'show']);
 });

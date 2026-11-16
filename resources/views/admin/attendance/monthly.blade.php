@@ -2573,6 +2573,9 @@
                                             data-can-quick-attendance="{{ $day['status'] === 'absent' && !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-leave="{{ !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-time-leave="{{ !empty($day['can_quick_time_leave']) ? '1' : '0' }}"
+                                            data-can-quick-approve-late="{{ $day['status'] === 'late' && !empty($day['can_quick_time_leave']) && !empty($day['quick_late']['from']) && !empty($day['quick_late']['to']) ? '1' : '0' }}"
+                                            data-late-from="{{ $day['quick_late']['from'] ?? '' }}"
+                                            data-late-to="{{ $day['quick_late']['to'] ?? '' }}"
                                             data-fetch-url="{{ route('admin.leaves.employee-data', $employee->id) }}"
                                             data-attendance-store-url="{{ route('admin.attendances.store') }}"
                                             data-detail-url="{{ $day['detail_url'] }}"
@@ -2770,6 +2773,9 @@
                             </button>
                         @endcan
                         @can('create_time_leave_request')
+                            <button type="button" class="btn btn-outline-warning btn-sm quickApproveLateTrigger d-none" id="monthlyQuickApproveLateButton">
+                                {{ __('index.quick_approve_late') }}
+                            </button>
                             <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-none" id="monthlyQuickTimeLeaveButton">
                                 {{ __('index.quick_time_leave') }}
                             </button>
@@ -3175,6 +3181,9 @@
                 quickAttendance: @json(__('index.quick_attendance')),
                 quickLeave: @json(__('index.quick_leave')),
                 quickTimeLeave: @json(__('index.quick_time_leave')),
+                quickApproveLate: @json(__('index.quick_approve_late')),
+                quickApproveLateReason: @json(__('index.quick_approve_late_reason')),
+                quickApproveLateReasonFallback: @json(__('index.quick_approve_late_reason_fallback')),
                 loadingLeaveTypes: @json(__('index.loading_leave_types')),
                 noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
                 selectLeaveType: @json(__('index.select_leave_type')),
@@ -4305,6 +4314,7 @@
                 const canQuickAttendance = trigger.getAttribute('data-can-quick-attendance') === '1';
                 const canQuickLeave = trigger.getAttribute('data-can-quick-leave') === '1';
                 const canQuickTimeLeave = trigger.getAttribute('data-can-quick-time-leave') === '1';
+                const canQuickApproveLate = trigger.getAttribute('data-can-quick-approve-late') === '1';
                 monthlyDetailContext.userId = trigger.getAttribute('data-user-id') || '';
 
                 document.getElementById('monthlyAttendanceDetailModalLabel').textContent = `${employee} ${employeeCode}`;
@@ -4323,6 +4333,7 @@
 
                 const quickAttendanceButton = document.getElementById('monthlyQuickAttendanceButton');
                 const quickLeaveButton = document.getElementById('monthlyQuickLeaveButton');
+                const quickApproveLateButton = document.getElementById('monthlyQuickApproveLateButton');
                 const quickTimeLeaveButton = document.getElementById('monthlyQuickTimeLeaveButton');
                 const quickChatButton = document.getElementById('monthlyQuickChatButton');
 
@@ -4338,6 +4349,14 @@
                     quickLeaveButton.classList.toggle('d-none', !canQuickLeave);
                     setQuickActionData(quickLeaveButton, trigger);
                     quickLeaveButton.setAttribute('data-user-name', employee);
+                }
+
+                if (quickApproveLateButton) {
+                    quickApproveLateButton.classList.toggle('d-none', !canQuickApproveLate);
+                    setQuickActionData(quickApproveLateButton, trigger);
+                    quickApproveLateButton.setAttribute('data-user-name', employee);
+                    quickApproveLateButton.setAttribute('data-late-from', trigger.getAttribute('data-late-from') || '');
+                    quickApproveLateButton.setAttribute('data-late-to', trigger.getAttribute('data-late-to') || '');
                 }
 
                 if (quickTimeLeaveButton) {
@@ -4741,6 +4760,36 @@
                 document.getElementById('attendanceQuickTimeLeaveTo').value = '';
                 document.getElementById('attendanceQuickTimeLeaveReason').value = '';
                 document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `${i18n.quickTimeLeave}: ${userName}`;
+                document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = i18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
+                quickTimeLeaveModal.show();
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.quickApproveLateTrigger');
+                if (!element || !quickTimeLeaveModal) {
+                    return;
+                }
+
+                event.preventDefault();
+                detailModal?.hide();
+
+                const userName = element.getAttribute('data-user-name') || i18n.employee;
+                const attendanceDate = element.getAttribute('data-attendance-date');
+                const displayDate = element.getAttribute('data-display-date') || attendanceDate;
+                const lateFrom = element.getAttribute('data-late-from') || '';
+                const lateTo = element.getAttribute('data-late-to') || '';
+                const reason = lateFrom && lateTo
+                    ? (i18n.quickApproveLateReason || '')
+                        .replace(':from', lateFrom)
+                        .replace(':to', lateTo)
+                    : (i18n.quickApproveLateReasonFallback || '');
+
+                document.getElementById('attendanceQuickTimeLeaveUserId').value = element.getAttribute('data-user-id');
+                document.getElementById('attendanceQuickTimeLeaveDate').value = attendanceDate;
+                document.getElementById('attendanceQuickTimeLeaveFrom').value = lateFrom;
+                document.getElementById('attendanceQuickTimeLeaveTo').value = lateTo;
+                document.getElementById('attendanceQuickTimeLeaveReason').value = reason;
+                document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `${i18n.quickApproveLate}: ${userName}`;
                 document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = i18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
                 quickTimeLeaveModal.show();
             });

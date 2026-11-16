@@ -13,6 +13,7 @@ use App\Http\Controllers\Web\AttendanceMonthlyController;
 use App\Http\Controllers\Web\MonthlyPayrollController;
 use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
+use App\Http\Controllers\Web\CertificateController;
 use App\Http\Controllers\Web\AwardTypeController;
 use App\Http\Controllers\Web\BioAttendanceController;
 use App\Http\Controllers\Web\BonusController;
@@ -761,6 +762,25 @@ Route::group([
         ]);
         Route::get('awards/delete/{id}', [AwardController::class, 'delete'])->name('awards.delete');
 
+        /** Certificate Management Routes */
+        Route::get('certificates/templates', [CertificateController::class, 'templates'])->name('certificates.templates');
+        Route::post('certificates/templates', [CertificateController::class, 'storeTemplate'])->name('certificates.templates.store');
+        Route::get('certificates/templates/{id}/edit', [CertificateController::class, 'editTemplate'])->name('certificates.templates.edit');
+        Route::put('certificates/templates/{id}', [CertificateController::class, 'updateTemplate'])->name('certificates.templates.update');
+        Route::delete('certificates/templates/{id}', [CertificateController::class, 'destroyTemplate'])->name('certificates.templates.destroy');
+        Route::post('certificates/templates/{id}/set-default', [CertificateController::class, 'setDefaultTemplate'])->name('certificates.templates.setDefault');
+        Route::post('certificates/templates/{id}/reset', [CertificateController::class, 'resetTemplate'])->name('certificates.templates.reset');
+        Route::get('certificates/templates/{id}/preview', [CertificateController::class, 'previewTemplate'])->name('certificates.templates.preview');
+        Route::get('certificates/batch', [CertificateController::class, 'batchCreate'])->name('certificates.batch');
+        Route::get('certificates/batch/preview', [CertificateController::class, 'batchPreview'])->name('certificates.batchPreview');
+        Route::get('certificates/batch/print', [CertificateController::class, 'batchPrint'])->name('certificates.batchPrint');
+        Route::post('certificates/batch', [CertificateController::class, 'batchStore'])->name('certificates.batchStore');
+        Route::get('get-branch-certificate-data/{branchId}', [CertificateController::class, 'getBranchCertificateData']);
+        Route::resource('certificates', CertificateController::class);
+        Route::post('certificates/{id}/apply-template', [CertificateController::class, 'applyTemplate'])->name('certificates.applyTemplate');
+        Route::get('certificates/{id}/download-pdf', [CertificateController::class, 'downloadPdf'])->name('certificates.downloadPdf');
+        Route::get('certificates-studio', [CertificateController::class, 'studio'])->name('certificates.studio');
+
         /** language route */
         Route::get('language/change', [LanguageController::class, 'change'])->name('language.change');
 
@@ -974,6 +994,35 @@ Route::group([
         Route::get('attendance-settings/toggle-status/{id}', [AttendanceSettingController::class, 'toggleStatus'])->name('attendance-settings.toggle-status');
 
     });
+});
+
+/** Direct /certificates-studio route inside HR layout */
+Route::get('/certificates-studio', [\App\Http\Controllers\Web\CertificateController::class, 'studio']);
+
+/** Direct public verification endpoints (/verify/{id} and /cert/{id}) */
+Route::get('/verify/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('verify.direct');
+Route::get('/cert/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('verify.cert_direct');
+
+/** Public & Standalone Certificate Studio and Verification */
+Route::prefix('certificates')->group(function () {
+    Route::get('/', [\App\Http\Controllers\CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/studio', [\App\Http\Controllers\CertificateController::class, 'studio'])->name('certificates.studio');
+
+    // JSON API endpoints for Certificate Studio saving & listing
+    Route::get('/api/list', [\App\Http\Controllers\CertificateController::class, 'apiIndex'])->name('certificates.api.index');
+    Route::post('/api/save', [\App\Http\Controllers\CertificateController::class, 'store'])->name('certificates.api.store');
+    Route::put('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'update'])->name('certificates.api.update');
+    Route::delete('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'destroy'])->name('certificates.api.destroy');
+
+    // Layout Models & Templates API for CertiCraft Studio
+    Route::get('/api/templates', [\App\Http\Controllers\CertificateController::class, 'apiTemplates'])->name('certificates.api.templates');
+    Route::post('/api/template/save', [\App\Http\Controllers\CertificateController::class, 'apiSaveTemplate'])->name('certificates.api.template.save');
+    Route::post('/api/template/{id}/reset', [\App\Http\Controllers\CertificateController::class, 'apiResetTemplate'])->name('certificates.api.template.reset');
+
+    Route::get('/verify/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('certificates.verify');
+    Route::get('/{id}/verify', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('certificates.verify_legacy');
+    Route::get('/{id}', [\App\Http\Controllers\CertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/{id}/download-pdf', [\App\Http\Controllers\CertificateController::class, 'downloadPdf'])->name('certificates.downloadPdf');
 });
 
 Route::fallback(function() {
