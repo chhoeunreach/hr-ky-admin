@@ -136,6 +136,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
     public function test_new_forms_require_saved_revisions_and_retain_create_and_update_history(): void
     {
         $this->abilities[] = 'employee.warning_form.print';
+        $this->abilities[] = 'employee.warning_form.manage';
         $payload = $this->payload('warning');
         $this->postJson('/_test/profile-print', $payload)->assertUnprocessable();
         $created = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
@@ -149,14 +150,15 @@ class EmployeeProfilePrintRecordTest extends TestCase
         $this->postJson('/_test/profile-print', $changed + ['saved_form_id' => $updated])->assertCreated();
         $this->getJson('/_test/profile-form-history?form_type=warning')->assertOk()->assertJsonCount(2, 'data');
         $this->getJson('/_test/profile-form-history?form_type=warning&latest=1')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $updated)->assertJsonPath('data.0.fields', $payload['fields']);
-        $this->abilities = ['employee.profile.view'];
-        $this->getJson('/_test/profile-form-history?form_type=warning')->assertForbidden();
+        $this->abilities = ['employee.profile.view', 'employee.warning_form.view'];
+        $this->getJson('/_test/profile-form-history?form_type=warning')->assertOk();
         $this->postJson('/_test/profile-form', $payload)->assertForbidden();
     }
 
     public function test_staff_warning_numbers_are_unique_persisted_and_stable_across_revisions(): void
     {
         $this->abilities[] = 'employee.warning_form.print';
+        $this->abilities[] = 'employee.warning_form.manage';
         $payload = array_replace($this->payload('warning'), ['document_text' => 'Staff Warning / WRN-______']);
         $created = $this->postJson('/_test/profile-form', $payload)->assertCreated();
         $number = $created->json('warning_number');
@@ -179,6 +181,8 @@ class EmployeeProfilePrintRecordTest extends TestCase
     {
         $this->postJson('/_test/warning-number')->assertForbidden();
         $this->abilities[] = 'employee.warning_form.print';
+        $this->postJson('/_test/warning-number')->assertForbidden();
+        $this->abilities[] = 'employee.warning_form.manage';
         $reserved = $this->postJson('/_test/warning-number')->assertCreated();
         $number = $reserved->json('warning_number');
         $numberId = $reserved->json('warning_number_id');
@@ -204,20 +208,38 @@ class EmployeeProfilePrintRecordTest extends TestCase
     public function test_staff_warning_form_has_editable_details_and_noneditable_employee_identity(): void
     {
         $this->abilities[] = 'employee.warning_form.print';
+        $this->abilities[] = 'employee.warning_form.manage';
         Schema::create('companies', function (Blueprint $table) { $table->id(); $table->string('logo')->nullable(); });
         $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
         foreach (['branch', 'department', 'post', 'supervisor'] as $relation) $employee->setRelation($relation, null);
-        $this->view('admin.employees.profile.partials.staff-warning-form', ['employee' => $employee, 'discipline' => collect()])
+        $this->view('admin.employees.profile.partials.staff-warning-form', [
+            'employee' => $employee, 'discipline' => collect(), 'canManageWarningForm' => true,
+            'canPrintWarningForm' => true, 'canViewWarningForm' => true,
+        ])
             ->assertSee('name="incident_description"', false)->assertSee('name="employee_explanation"', false)
             ->assertSee('name="required_corrective_action"', false)->assertSee('name="warning_type"', false)
-            ->assertSee('name="warning_status"', false)->assertSee('type="date" name="warning_date"', false)
+            ->assertSee('name="warning_level"', false)->assertSee('type="date" name="warning_date"', false)
             ->assertSee('value="EMP020" readonly', false)->assertSee('data-warning-number', false)
-            ->assertDontSee('WRN-______', false);
+            ->assertSee('WRN-______', false);
+    }
+
+    public function test_warning_view_only_renders_read_only_form_without_print_controls(): void
+    {
+        Schema::create('companies', function (Blueprint $table) { $table->id(); $table->string('logo')->nullable(); });
+        $employee = (new User())->forceFill(['id' => 20, 'name' => 'Employee', 'employee_code' => 'EMP020']);
+        foreach (['branch', 'department', 'post', 'supervisor'] as $relation) $employee->setRelation($relation, null);
+        $this->view('admin.employees.profile.partials.staff-warning-form', [
+            'employee' => $employee, 'discipline' => collect(), 'canManageWarningForm' => false,
+            'canPrintWarningForm' => false, 'canViewWarningForm' => true,
+        ])
+            ->assertSee('name="incident_description" aria-label="Incident description (facts, dates, and impact)" disabled', false)
+            ->assertDontSee('onclick="printStaffWarningForm()"', false);
     }
 
     public function test_saved_form_cannot_be_reused_for_another_employee_or_form_type(): void
     {
         $this->abilities[] = 'employee.warning_form.print';
+        $this->abilities[] = 'employee.warning_form.manage';
         $payload = $this->payload('warning');
         $id = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
         EmployeeProfileAuditLog::whereKey($id)->update(['employee_id' => 30]);
@@ -256,6 +278,7 @@ class EmployeeProfilePrintRecordTest extends TestCase
         ];
         foreach ($forms as $type => $permission) {
             $this->abilities = ['employee.profile.view', $permission];
+            if ($type === 'warning') $this->abilities[] = 'employee.warning_form.manage';
             $payload = $this->payload($type);
             if (!isset($payload['source_request_id'])) {
                 $saved = $this->postJson('/_test/profile-form', $payload)->assertCreated();
@@ -282,6 +305,43 @@ class EmployeeProfilePrintRecordTest extends TestCase
     {
         $this->postJson('/_test/profile-print', $this->payload())->assertForbidden();
         $this->assertSame(0, EmployeeProfileAuditLog::count());
+    }
+
+    public function test_warning_print_permission_cannot_save_forms_or_reserve_numbers(): void
+    {
+        $this->abilities = ['employee.profile.view', 'employee.warning_form.print'];
+        $this->postJson('/_test/profile-form', $this->payload('warning'))->assertForbidden();
+        $this->postJson('/_test/warning-number')->assertForbidden();
+        $this->assertSame(0, EmployeeProfileAuditLog::count());
+    }
+
+    public function test_warning_manage_permission_can_save_but_cannot_print(): void
+    {
+        $this->abilities = ['employee.profile.view', 'employee.warning_form.manage'];
+        $payload = $this->payload('warning');
+        $savedFormId = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
+        $this->postJson('/_test/profile-print', $payload + ['saved_form_id' => $savedFormId])->assertForbidden();
+    }
+
+    public function test_warning_print_only_role_can_reprint_saved_values_in_the_active_language(): void
+    {
+        $payload = $this->payload('warning');
+        $this->abilities = ['employee.profile.view', 'employee.warning_form.manage'];
+        $savedFormId = $this->postJson('/_test/profile-form', $payload)->assertCreated()->json('saved_form_id');
+
+        $this->abilities = ['employee.profile.view', 'employee.warning_form.print'];
+        $localized = array_replace($payload, [
+            'document_text' => 'លិខិតព្រមានបុគ្គលិក',
+            'fields' => [
+                ['label' => 'មូលហេតុ', 'value' => 'Family event', 'checked' => null],
+                ['label' => 'ឈប់សម្រាកប្រចាំឆ្នាំ', 'value' => 'annual', 'checked' => true],
+            ],
+        ]);
+        $this->postJson('/_test/profile-print', $localized + ['saved_form_id' => $savedFormId])->assertCreated();
+
+        $tampered = $localized;
+        $tampered['fields'][0]['value'] = 'Changed by print-only role';
+        $this->postJson('/_test/profile-print', $tampered + ['saved_form_id' => $savedFormId])->assertUnprocessable();
     }
 
     public function test_print_permission_for_another_form_is_denied(): void

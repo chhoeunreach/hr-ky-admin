@@ -97,7 +97,10 @@
     historyModal.addEventListener('hidden.bs.modal', () => {historyGeneration++; historyBody.replaceChildren();});
     for (const [type, [selector, printFunction]] of Object.entries(forms)) {
         const paper = document.querySelector(selector);
-        if (!paper || !window.EmployeeFormPrintPermissions?.[type]) continue;
+        const canPrint = Boolean(window.EmployeeFormPrintPermissions?.[type]);
+        const canManage = type === 'warning' ? Boolean(config.warningCanManage) : canPrint;
+        const canView = type === 'warning' ? Boolean(config.warningCanView) : canPrint;
+        if (!paper || (!canPrint && !canManage && !canView)) continue;
         let touched = false;
         const printButtons = Array.from(document.querySelectorAll(`[onclick*="${printFunction}("]`));
         const toolbar = document.createElement('div'); toolbar.className = 'employee-complete-toolbar employee-warning-form-actions-inner d-flex flex-wrap align-items-center gap-2 no-print';
@@ -105,13 +108,15 @@
         const fresh = document.createElement('button'); fresh.type = 'button'; fresh.className = 'btn btn-outline-secondary btn-sm'; fresh.textContent = config.newForm;
         const history = document.createElement('button'); history.type = 'button'; history.className = 'btn btn-outline-secondary btn-sm'; history.textContent = config.history;
         const status = document.createElement('span'); status.className = 'small text-muted'; status.setAttribute('role', 'status');
-        toolbar.append(save, fresh, history, status);
+        if (canManage) toolbar.append(save, fresh);
+        if (canView || canPrint) toolbar.append(history);
+        toolbar.append(status);
         const toolbarHost = paper.closest('.tab-pane')?.querySelector(`[data-saved-form-toolbar="${type}"]`);
         if (toolbarHost) toolbarHost.append(toolbar); else paper.before(toolbar);
         const sync = () => {
             const id = window.EmployeeSavedForms.recordId(type, paper);
             printButtons.forEach(button => {button.disabled = !id;});
-            save.textContent = saved.has(type) ? config.update : config.create;
+            if (canManage) save.textContent = saved.has(type) ? config.update : config.create;
             const steps = paper.closest('.tab-pane')?.querySelectorAll('.employee-request-steps li') || [];
             const currentStep = id ? 3 : (touched ? 2 : 1);
             steps.forEach((step, index) => {
@@ -150,6 +155,7 @@
             return numberPromise;
         };
         const launchEditor = () => {
+            if (!canManage) return;
             if (type !== 'warning' || !config.warningNumberUrl) return openEditor(paper, save, persist, sync);
             save.disabled = true; fresh.disabled = true;
             ensureWarningNumber().then(ready => {if (ready) openEditor(paper, save, persist, sync);})
@@ -167,29 +173,32 @@
                     const warningNumber = paper.querySelector('[data-warning-number]');
                     if (warningNumber && record.warning_number) warningNumber.textContent = record.warning_number;
                     if (type === 'warning') {
-                        paper.querySelectorAll('input, textarea, select').forEach(field => {
+                        paper.querySelectorAll('input, textarea, select').forEach((field, index) => {
                             const label = field.getAttribute('aria-label') || field.name || field.id;
-                            const value = record.fields?.find(item => item.label === label);
+                            const value = record.fields?.find(item => item.label === label) || record.fields?.[index];
                             if (!value) return;
                             field.value = value.value ?? '';
                             if (field.matches('input[type="checkbox"], input[type="radio"]')) field.checked = Boolean(value.checked);
                         });
                         window.StaffWarningA4?.refresh(paper);
                     }
-                    saved.set(type, {id: record.id, signature: JSON.stringify({document_text: record.document_text, fields: record.fields})});
+                    const signature = type === 'warning' && !canManage
+                        ? JSON.stringify(snapshot(paper))
+                        : JSON.stringify({document_text: record.document_text, fields: record.fields});
+                    saved.set(type, {id: record.id, signature});
                     status.textContent = `${config.number} #${record.id}`; sync();
                 }
             } catch (_) { /* Creating a form remains available if history cannot load. */ }
-            if (type === 'warning') await ensureWarningNumber();
+            if (type === 'warning' && canManage) await ensureWarningNumber();
         })();
-        fresh.addEventListener('click', () => {
+        if (canManage) fresh.addEventListener('click', () => {
             touched = true; saved.delete(type); status.textContent = '';
             const warningNumber = paper.querySelector('[data-warning-number]');
             if (warningNumber) warningNumber.textContent = config.warningNumberUrl ? config.generatingWarningNumber : 'WRN-______';
             if (paper.dataset) delete paper.dataset.warningNumberId;
             sync(); launchEditor();
         });
-        history.addEventListener('click', () => {
+        if (canView || canPrint) history.addEventListener('click', () => {
             bootstrap.Modal.getOrCreateInstance(historyModal).show(history); loadHistory(type);
         });
         const persist = async () => {
@@ -215,6 +224,6 @@
             } catch (_) {status.textContent = config.error; return false;}
             finally {save.disabled = false; fresh.disabled = false; sync();}
         };
-        save.addEventListener('click', () => {touched = true; launchEditor();});
+        if (canManage) save.addEventListener('click', () => {touched = true; launchEditor();});
     }
 })();

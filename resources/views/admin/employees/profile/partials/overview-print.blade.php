@@ -1,7 +1,7 @@
 @php
     $formatDate = fn ($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') : '____/____/________';
     $line = fn ($value) => filled($value) ? $value : '____________';
-    $warningRecords = ($warningOverviewRecords ?? collect())->isNotEmpty() ? $warningOverviewRecords : ($discipline ?? collect());
+    $warningRecords = $warningOverviewRecords ?? collect();
     $generatedDate = now()->format('Y-m-d');
     $monthStart = now()->startOfMonth();
     $monthEnd = now()->endOfMonth();

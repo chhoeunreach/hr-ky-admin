@@ -58,8 +58,10 @@
             if ($canViewDocument) {
                 $tabs['contract-form'] = __('index.contract_form');
             }
-            if ($canViewDiscipline) {
+            if ($canViewDiscipline || $canPrintWarningOverview) {
                 $tabs['discipline'] = __('index.staff_warning_records');
+            }
+            if ($canViewWarningForm) {
                 $tabs['staff-warning-form'] = __('index.staff_warning_form');
             }
             if ($canViewEmployment) {
@@ -107,7 +109,7 @@
             $activeProfileTab = array_key_exists($requestedProfileTab, $tabs) ? $requestedProfileTab : $activeProfileTab;
         @endphp
 
-        @if($canViewDiscipline)
+        @if($canViewWarningForm)
             <link rel="stylesheet" href="{{ asset('assets/css/staff-warning-a4.css') }}?v={{ filemtime(public_path('assets/css/staff-warning-a4.css')) }}">
             <script defer src="{{ asset('assets/js/staff-warning-a4.js') }}?v={{ filemtime(public_path('assets/js/staff-warning-a4.js')) }}"></script>
         @endif
@@ -2274,12 +2276,18 @@
                         </div>
                     @endif
 
-                    @if($canViewDiscipline)
+                    @if($canViewDiscipline || $canPrintWarningOverview)
                         <div class="tab-pane fade" id="discipline" role="tabpanel">
-                            @include('admin.employees.profile.partials.overview-print')
-                            @include('admin.employees.profile.partials.discipline')
+                            @if($canPrintWarningOverview)
+                                @include('admin.employees.profile.partials.overview-print')
+                            @endif
+                            @if($canViewDiscipline)
+                                @include('admin.employees.profile.partials.discipline')
+                            @endif
                         </div>
+                    @endif
 
+                    @if($canViewWarningForm)
                         <div class="tab-pane fade" id="staff-warning-form" role="tabpanel">
                             @include('admin.employees.profile.partials.staff-warning-form')
                         </div>
@@ -2731,7 +2739,7 @@
         const employeeProfilePrintPermissions = {
             complete: @can('employee.complete_form.print') true @else false @endcan,
             overview: @can('employee.warning_overview.print') true @else false @endcan,
-            warning: @can('employee.warning_form.print') true @else false @endcan,
+            warning: {{ $canPrintWarningForm ? 'true' : 'false' }},
             contract: @can('employee.contract_form.print') true @else false @endcan,
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
             leaveLetter: {{ $canPrintLeaveForm ? 'true' : 'false' }},

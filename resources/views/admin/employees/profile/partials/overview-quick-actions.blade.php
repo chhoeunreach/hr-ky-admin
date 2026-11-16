@@ -23,9 +23,12 @@
             @endif
             @if($canViewDiscipline)
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('discipline')"><i class="link-icon" data-feather="alert-octagon"></i> {{ __('index.staff_warning') }}</button>
-                @can('employee.warning_overview.print')
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="printOverviewForm()"><i class="link-icon" data-feather="printer"></i> {{ __('index.print_overview_form') }}</button>
-                @endcan
+            @endif
+            @if($canViewWarningForm)
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('staff-warning-form')"><i class="link-icon" data-feather="file-text"></i> {{ __('index.staff_warning_form') }}</button>
+            @endif
+            @if($canPrintWarningOverview)
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="printOverviewForm()"><i class="link-icon" data-feather="printer"></i> {{ __('index.print_overview_form') }}</button>
             @endif
             @if($canViewDocument)
                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="employeeGotoTab('personal')"><i class="link-icon" data-feather="archive"></i> {{ __('index.view_documents') }}</button>

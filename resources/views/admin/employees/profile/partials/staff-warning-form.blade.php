@@ -1,16 +1,17 @@
 @php
     $warningRecord = $discipline->first();
     $formatDate = fn ($value) => $value ? \Illuminate\Support\Carbon::parse($value)->format('Y-m-d') : '';
-    $field = function ($label, $value, $type = 'text', $opts = []) {
+    $field = function ($label, $value, $type = 'text', $opts = []) use ($canManageWarningForm) {
         $name = $opts['name'] ?? \Illuminate\Support\Str::slug(explode(' / ', $label)[0], '_');
         $rows = $opts['rows'] ?? 1;
         $attrs = $opts['attrs'] ?? '';
         $readonly = !empty($opts['readonly']) ? ' readonly' : '';
+        $disabled = $canManageWarningForm ? '' : ' disabled';
         if ($type === 'textarea') {
-            $control = '<textarea class="employee-warning-input" rows="' . (int) $rows . '" name="' . e($name) . '" aria-label="' . e($label) . '"' . $attrs . '>' . e($value ?? '') . '</textarea>';
+            $control = '<textarea class="employee-warning-input" rows="' . (int) $rows . '" name="' . e($name) . '" aria-label="' . e($label) . '"' . $disabled . $attrs . '>' . e($value ?? '') . '</textarea>';
         } else {
             $extra = $type === 'number' ? ' min="0" step="1"' : '';
-            $control = '<input class="employee-warning-input" type="' . e($type) . '" name="' . e($name) . '" aria-label="' . e($label) . '" value="' . e($value ?? '') . '"' . $readonly . $extra . $attrs . '>';
+            $control = '<input class="employee-warning-input" type="' . e($type) . '" name="' . e($name) . '" aria-label="' . e($label) . '" value="' . e($value ?? '') . '"' . $readonly . $disabled . $extra . $attrs . '>';
         }
         return '<label class="employee-complete-field"><span>' . e($label) . '</span>' . $control . '</label>';
     };
@@ -44,11 +45,11 @@
 <div class="employee-complete-toolbar employee-request-preview-heading">
     <strong>{{ __('index.staff_warning_preview') }}</strong>
     <span>{{ __('index.staff_warning_preview_help') }}</span>
-    @can('employee.warning_form.print')
+    @if($canPrintWarningForm)
         <button type="button" class="btn btn-primary btn-sm" onclick="printStaffWarningForm()" data-print-busy-label="{{ __('index.staff_warning_saving_print') }}" data-save-linked-print disabled>
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }}
         </button>
-    @endcan
+    @endif
 </div>
 <div class="employee-warning-preview" role="region" aria-label="{{ __('index.staff_warning_preview') }}" tabindex="0">
 <div class="employee-complete-document">
@@ -88,13 +89,13 @@
                 {!! $field(__('index.staff_warning_incident_date'), $formatDate($warningRecord?->warning_date), 'date', ['name' => 'warning_date']) !!}
                 {!! $field(__('index.staff_warning_incident_time'), '', 'time', ['name' => 'time_of_incident']) !!}
                 {!! $field(__('index.staff_warning_location'), '', 'text', ['name' => 'location']) !!}
-                <label class="employee-complete-field"><span>{{ __('index.staff_warning_category') }}</span><select class="employee-warning-input" name="warning_type" aria-label="{{ __('index.staff_warning_category') }}"><option value="">{{ __('index.staff_warning_select_category') }}</option>@foreach(['attendance' => 'attendance', 'conduct' => 'conduct', 'performance' => 'performance', 'policy_violation' => 'policy', 'safety' => 'safety', 'other' => 'other'] as $category => $translation)<option value="{{ $category }}" @selected(str_replace(' ', '_', strtolower((string) $warningRecord?->warning_type)) === $category)>{{ __('index.staff_warning_category_' . $translation) }}</option>@endforeach</select></label>
+                <label class="employee-complete-field"><span>{{ __('index.staff_warning_category') }}</span><select class="employee-warning-input" name="warning_type" aria-label="{{ __('index.staff_warning_category') }}" @disabled(!$canManageWarningForm)><option value="">{{ __('index.staff_warning_select_category') }}</option>@foreach(['attendance' => 'attendance', 'conduct' => 'conduct', 'performance' => 'performance', 'policy_violation' => 'policy', 'safety' => 'safety', 'other' => 'other'] as $category => $translation)<option value="{{ $category }}" @selected(str_replace(' ', '_', strtolower((string) $warningRecord?->warning_type)) === $category)>{{ __('index.staff_warning_category_' . $translation) }}</option>@endforeach</select></label>
                 <div class="employee-warning-severity full-span" role="group" aria-label="{{ __('index.staff_warning_level') }}">
                     <span>{{ __('index.staff_warning_level') }}</span>
-                    <label><input type="radio" name="warning_level" value="verbal"> {{ __('index.staff_warning_level_verbal') }}</label>
-                    <label><input type="radio" name="warning_level" value="first_written"> {{ __('index.staff_warning_level_first') }}</label>
-                    <label><input type="radio" name="warning_level" value="second_written"> {{ __('index.staff_warning_level_second') }}</label>
-                    <label><input type="radio" name="warning_level" value="final"> {{ __('index.staff_warning_level_final') }}</label>
+                    <label><input type="radio" name="warning_level" value="verbal" @disabled(!$canManageWarningForm)> {{ __('index.staff_warning_level_verbal') }}</label>
+                    <label><input type="radio" name="warning_level" value="first_written" @disabled(!$canManageWarningForm)> {{ __('index.staff_warning_level_first') }}</label>
+                    <label><input type="radio" name="warning_level" value="second_written" @disabled(!$canManageWarningForm)> {{ __('index.staff_warning_level_second') }}</label>
+                    <label><input type="radio" name="warning_level" value="final" @disabled(!$canManageWarningForm)> {{ __('index.staff_warning_level_final') }}</label>
                 </div>
                 <div class="full-span">{!! $field(__('index.staff_warning_incident_description'), $warningRecord?->warning_reason, 'textarea', ['name' => 'incident_description', 'rows' => 2]) !!}</div>
                 <div class="full-span">{!! $field(__('index.staff_warning_policy_reference'), '', 'textarea', ['name' => 'policy_rule_violated', 'rows' => 1]) !!}</div>

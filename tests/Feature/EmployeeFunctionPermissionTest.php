@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\Web\EmployeeProfileController;
 use App\Http\Controllers\Web\EmployeeSalaryController;
 use App\Http\Controllers\Web\UserController;
+use App\Models\EmployeeDisciplinaryRecord;
 use App\Models\User;
 use App\Models\Role;
 use App\Http\Middleware\SPAuthGateMW;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Schema\Blueprint;
 use Tests\TestCase;
@@ -61,11 +63,17 @@ class EmployeeFunctionPermissionTest extends TestCase
             ['id' => 1, 'permission_key' => 'employee.profile.view'],
             ['id' => 2, 'permission_key' => 'edit_employee'],
             ['id' => 3, 'permission_key' => 'delete_employee'],
+            ['id' => 4, 'permission_key' => 'employee.warning_form.view'],
+            ['id' => 5, 'permission_key' => 'employee.warning_form.manage'],
+            ['id' => 6, 'permission_key' => 'employee.warning_form.print'],
         ]);
         DB::table('permission_roles')->insert([
             ['role_id' => 2, 'permission_id' => 1],
             ['role_id' => 2, 'permission_id' => 2],
+            ['role_id' => 2, 'permission_id' => 4],
+            ['role_id' => 2, 'permission_id' => 5],
             ['role_id' => 3, 'permission_id' => 3],
+            ['role_id' => 3, 'permission_id' => 6],
         ]);
         auth()->user()->forceFill(['role_id' => 2])->setRelation('role', (new Role)->forceFill(['slug' => 'hr-officer']));
         (new SPAuthGateMW)->handle(Request::create('/_test/role-permissions'), fn () => response('OK'));
@@ -73,6 +81,39 @@ class EmployeeFunctionPermissionTest extends TestCase
         $this->assertTrue(Gate::allows('edit_employee'));
         $this->assertFalse(Gate::allows('delete_employee'));
         $this->assertFalse(Gate::allows('employee.salary.history.manage'));
+        $this->assertTrue(Gate::allows('employee.warning_form.view'));
+        $this->assertTrue(Gate::allows('employee.warning_form.manage'));
+        $this->assertFalse(Gate::allows('employee.warning_form.print'));
+    }
+
+    public function test_warning_form_permission_migration_maps_existing_discipline_roles(): void
+    {
+        Schema::create('permissions', function (Blueprint $table) {
+            $table->id(); $table->string('name')->unique(); $table->string('permission_key')->unique(); $table->unsignedBigInteger('permission_groups_id')->nullable();
+        });
+        Schema::create('permission_roles', function (Blueprint $table) {
+            $table->unsignedBigInteger('permission_id'); $table->unsignedBigInteger('role_id');
+        });
+        DB::table('permissions')->insert([
+            ['id' => 1, 'name' => 'Employees', 'permission_key' => 'list_employee', 'permission_groups_id' => 5],
+            ['id' => 2, 'name' => 'Discipline view', 'permission_key' => 'employee.discipline.view', 'permission_groups_id' => 5],
+            ['id' => 3, 'name' => 'Discipline manage', 'permission_key' => 'employee.discipline.manage', 'permission_groups_id' => 5],
+            ['id' => 4, 'name' => 'Warning print', 'permission_key' => 'employee.warning_form.print', 'permission_groups_id' => 5],
+        ]);
+        DB::table('permission_roles')->insert([
+            ['permission_id' => 2, 'role_id' => 10],
+            ['permission_id' => 3, 'role_id' => 11],
+        ]);
+
+        (require database_path('migrations/2026_11_16_000001_add_employee_warning_form_view_manage_permissions.php'))->up();
+
+        $viewId = DB::table('permissions')->where('permission_key', 'employee.warning_form.view')->value('id');
+        $manageId = DB::table('permissions')->where('permission_key', 'employee.warning_form.manage')->value('id');
+        $this->assertDatabaseHas('permission_roles', ['role_id' => 10, 'permission_id' => $viewId]);
+        $this->assertDatabaseMissing('permission_roles', ['role_id' => 10, 'permission_id' => $manageId]);
+        $this->assertDatabaseHas('permission_roles', ['role_id' => 11, 'permission_id' => $viewId]);
+        $this->assertDatabaseHas('permission_roles', ['role_id' => 11, 'permission_id' => $manageId]);
+        $this->assertDatabaseMissing('permission_roles', ['permission_id' => 4]);
     }
 
     public function test_profile_view_does_not_allow_any_profile_mutations(): void
@@ -91,6 +132,21 @@ class EmployeeFunctionPermissionTest extends TestCase
         }
         Route::post('/_test/profile-permission/defaults', fn () => app(EmployeeProfileController::class)->applyDepartmentDefaults($employee));
         $this->postJson('/_test/profile-permission/defaults')->assertForbidden();
+    }
+
+    public function test_discipline_view_permission_allows_reading_warning_attachments_without_manage(): void
+    {
+        Storage::fake('local');
+        $employee = (new User)->forceFill(['id' => 20]);
+        $discipline = (new EmployeeDisciplinaryRecord)->forceFill([
+            'id' => 1, 'employee_id' => 20, 'attachment' => 'employee-discipline/warning-note.txt',
+        ]);
+        $this->abilities = ['employee.profile.view', 'employee.discipline.view'];
+        Route::get('/_test/discipline-attachment', fn (Request $request) =>
+            app(EmployeeProfileController::class)->viewDisciplineAttachment($request, $employee, $discipline));
+
+        // Missing files return 404 only after the viewer permission has passed.
+        $this->get('/_test/discipline-attachment')->assertNotFound();
     }
 
     public function test_payroll_helpers_deny_users_without_their_function_permissions(): void

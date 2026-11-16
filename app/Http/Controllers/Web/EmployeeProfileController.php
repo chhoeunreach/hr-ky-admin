@@ -240,11 +240,17 @@ class EmployeeProfileController extends Controller
         $canViewPerformance = $this->can('employee.performance.view') || $this->can('employee.performance.create') || $isOwnProfile;
         $canViewTraining = $this->can('employee.training.view') || $isOwnProfile;
         $canViewReward = $this->can('employee.reward.view');
-        $canViewDiscipline = $this->can('employee.discipline.view');
+        $canViewDiscipline = $this->can('employee.discipline.view') || $this->can('employee.discipline.manage');
+        $canPrintWarningOverview = $this->can('employee.warning_overview.print');
+        $canViewWarningForm = $this->can('employee.warning_form.view')
+            || $this->can('employee.warning_form.manage')
+            || $this->can('employee.warning_form.print');
+        $canManageWarningForm = $this->can('employee.warning_form.manage');
+        $canPrintWarningForm = $this->can('employee.warning_form.print');
         $canViewGoal = $this->can('employee.goal.view') || $isOwnProfile;
         $canViewDocument = $this->can('employee.document.view');
         $canViewAudit = $this->can('employee.audit.view');
-        $warningOverviewRecords = $canViewDiscipline
+        $warningOverviewRecords = $canPrintWarningOverview
             ? EmployeeDisciplinaryRecord::with([
                 'employee:id,name,english_name,employee_code,username,branch_id,department_id',
                 'employee.branch:id,name',
@@ -331,6 +337,10 @@ class EmployeeProfileController extends Controller
             'canViewTraining',
             'canViewReward',
             'canViewDiscipline',
+            'canPrintWarningOverview',
+            'canViewWarningForm',
+            'canManageWarningForm',
+            'canPrintWarningForm',
             'canViewGoal',
             'canViewDocument',
             'canViewAudit',
@@ -371,7 +381,7 @@ class EmployeeProfileController extends Controller
     public function reserveWarningNumber(Request $request, User $employee)
     {
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
-        $this->authorizeEmployeeProfile($employee, 'employee.warning_form.print');
+        $this->authorizeEmployeeProfile($employee, 'employee.warning_form.manage');
         $record = DB::transaction(function () use ($employee, $request) {
             $record = $this->audit($employee, 'document_number', 'reserved', null, null, ['form_type' => 'warning'], $request);
             $record->update(['new_values' => [
@@ -390,7 +400,14 @@ class EmployeeProfileController extends Controller
         $request->validate(['form_type' => ['required', Rule::in(array_keys($forms))], 'latest' => ['nullable', 'boolean']]);
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
         $ability = $forms[$request->input('form_type')][0];
-        if ($ability) $this->authorizeEmployeeProfile($employee, $ability);
+        if ($request->input('form_type') === 'warning') {
+            abort_unless(
+                $this->can('employee.warning_form.view')
+                    || $this->can('employee.warning_form.manage')
+                    || $this->can('employee.warning_form.print'),
+                403
+            );
+        } elseif ($ability) $this->authorizeEmployeeProfile($employee, $ability);
         else abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
         $records = EmployeeProfileAuditLog::where('employee_id', $employee->id)->where('module', 'document_form')
             ->where('new_values->form_type', $request->input('form_type'))->orderByDesc('id')->paginate($request->boolean('latest') ? 1 : 25);
@@ -424,15 +441,20 @@ class EmployeeProfileController extends Controller
         ]);
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
         [$ability, $title] = $forms[$data['form_type']];
-        if ($ability) {
+        if ($data['form_type'] === 'warning' && $saveOnly) {
+            $this->authorizeEmployeeProfile($employee, 'employee.warning_form.manage');
+        } elseif ($ability) {
             $this->authorizeEmployeeProfile($employee, $ability);
         } else {
             abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
         }
+        $warningPrintOnly = $data['form_type'] === 'warning'
+            && !$saveOnly
+            && !$this->can('employee.warning_form.manage');
 
         // Persist before the browser is allowed to open its print dialog.
         // This records a request; browsers cannot confirm physical printer completion.
-        $record = DB::transaction(function () use ($data, $employee, $request, $title, $linkedPrint, $saveOnly) {
+        $record = DB::transaction(function () use ($data, $employee, $request, $title, $linkedPrint, $saveOnly, $warningPrintOnly) {
             $source = null;
             $sourceType = null;
             if ($linkedPrint) {
@@ -454,9 +476,20 @@ class EmployeeProfileController extends Controller
                     ->where('new_values->form_type', $data['form_type'])->whereKey($data['saved_form_id'])->lockForUpdate()->first();
                 if (!$saved) throw ValidationException::withMessages(['saved_form_id' => __('index.create_form_before_print')]);
             }
-            if (!$saveOnly && !$linkedPrint && (data_get($saved?->new_values, 'document_text') !== $data['document_text']
-                || data_get($saved?->new_values, 'fields') !== $data['fields'])) {
-                throw ValidationException::withMessages(['saved_form_id' => __('index.save_changes_before_print')]);
+            if (!$saveOnly && !$linkedPrint) {
+                if ($warningPrintOnly) {
+                    $storedFields = data_get($saved?->new_values, 'fields', []);
+                    $fieldValues = static fn (array $fields) => array_map(
+                        static fn (array $field) => ['value' => $field['value'] ?? null, 'checked' => $field['checked'] ?? null],
+                        array_values($fields)
+                    );
+                    if (!$saved || $fieldValues($storedFields) !== $fieldValues($data['fields'])) {
+                        throw ValidationException::withMessages(['saved_form_id' => __('index.save_changes_before_print')]);
+                    }
+                } elseif (data_get($saved?->new_values, 'document_text') !== $data['document_text']
+                    || data_get($saved?->new_values, 'fields') !== $data['fields']) {
+                    throw ValidationException::withMessages(['saved_form_id' => __('index.save_changes_before_print')]);
+                }
             }
             $numberReservation = null;
             if ($saveOnly && !empty($data['warning_number_id'])) {
@@ -1195,7 +1228,11 @@ class EmployeeProfileController extends Controller
 
     public function viewDisciplineAttachment(Request $request, User $employee, EmployeeDisciplinaryRecord $discipline): BinaryFileResponse
     {
-        $this->authorizeEmployeeProfile($employee, 'employee.discipline.manage');
+        abort_unless(
+            $this->can('employee.discipline.view') || $this->can('employee.discipline.manage'),
+            403
+        );
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
         abort_unless($discipline->employee_id === $employee->id, 404);
         abort_unless($discipline->attachment && Storage::disk('local')->exists($discipline->attachment), 404);
 

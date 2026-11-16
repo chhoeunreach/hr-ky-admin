@@ -33,6 +33,8 @@
         'saveUrl' => route('admin.employees.profile.form-records.store', $employee),
         'historyUrl' => route('admin.employees.profile.form-records.index', $employee),
         'warningNumberUrl' => route('admin.employees.profile.form-records.warning-number', $employee),
+        'warningCanView' => $canViewWarningForm,
+        'warningCanManage' => $canManageWarningForm,
         'csrf' => csrf_token(), 'actions' => ['create' => __('index.create'), 'update' => __('index.update')],
         'create' => __('index.create_saved_print_form'), 'update' => __('index.update_saved_print_form'),
         'history' => __('index.saved_print_form_history'), 'newForm' => __('index.saved_print_form_new'),

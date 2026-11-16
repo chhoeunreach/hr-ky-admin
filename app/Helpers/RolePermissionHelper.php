@@ -421,6 +421,16 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Employee Staff Warning Form View",
+                "permission_key" => "employee.warning_form.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Staff Warning Form Manage",
+                "permission_key" => "employee.warning_form.manage",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Employee Staff Warning Form Print",
                 "permission_key" => "employee.warning_form.print",
                 "permission_groups_id" => 5
