@@ -127,7 +127,70 @@ class CertificateService
             $commonData['khmer_subtitle'] = $commonData['khmer_subtitle'] ?? $template->khmer_subtitle;
             $commonData['hr_competency_track'] = $commonData['hr_competency_track'] ?? $template->hr_competency_track;
             $commonData['signatories_json'] = !empty($template->signatories_json) ? $template->signatories_json : ($commonData['signatories_json'] ?? []);
-            $commonData['payload_json'] = $template->payload_json ?: null;
+            
+            $tplPayload = is_array($template->payload_json) ? $template->payload_json : [];
+            if (isset($commonData['organization_sub_banner'])) {
+                $tplPayload['organizationSubBanner'] = $commonData['organization_sub_banner'];
+            }
+            if (isset($commonData['show_organization_sub_banner'])) {
+                $tplPayload['visibility']['showOrganizationSubBanner'] = filter_var($commonData['show_organization_sub_banner'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (isset($commonData['show_storefront_watermark'])) {
+                $tplPayload['visibility']['showStorefrontWatermark'] = filter_var($commonData['show_storefront_watermark'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (isset($commonData['show_digital_hours_badge'])) {
+                $tplPayload['digitalHr']['showDigitalHoursBadge'] = filter_var($commonData['show_digital_hours_badge'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (!empty($commonData['hanging_medal_style'])) {
+                $tplPayload['hangingMedalStyle'] = $commonData['hanging_medal_style'];
+            }
+            if (isset($commonData['seal_enabled'])) {
+                $tplPayload['seal']['enabled'] = filter_var($commonData['seal_enabled'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (!empty($commonData['seal_style'])) {
+                $tplPayload['seal']['style'] = $commonData['seal_style'];
+            }
+            if (!empty($commonData['seal_ribbon_color'])) {
+                $tplPayload['seal']['ribbonColor'] = $commonData['seal_ribbon_color'];
+            }
+            if (isset($commonData['show_watermark'])) {
+                $tplPayload['styling']['showWatermark'] = filter_var($commonData['show_watermark'], FILTER_VALIDATE_BOOLEAN);
+            }
+            if (isset($commonData['show_qr_code'])) {
+                $tplPayload['showQrCode'] = filter_var($commonData['show_qr_code'], FILTER_VALIDATE_BOOLEAN);
+            }
+
+            // Custom Signatories Override
+            $customSigs = [];
+            if (!empty($commonData['sig1_name'])) {
+                $customSigs[0] = [
+                    'name' => $commonData['sig1_name'],
+                    'khmerName' => $commonData['sig1_khmer_name'] ?? '',
+                    'role' => $commonData['sig1_role'] ?? '',
+                    'khmerRole' => $commonData['sig1_khmer_role'] ?? '',
+                    'organization' => $commonData['sig1_organization'] ?? '',
+                    'signatureStyle' => $commonData['sig1_style'] ?? 'alex-brush',
+                ];
+            }
+            if (!empty($commonData['sig2_name'])) {
+                $customSigs[1] = [
+                    'name' => $commonData['sig2_name'],
+                    'khmerName' => $commonData['sig2_khmer_name'] ?? '',
+                    'role' => $commonData['sig2_role'] ?? '',
+                    'khmerRole' => $commonData['sig2_khmer_role'] ?? '',
+                    'organization' => $commonData['sig2_organization'] ?? '',
+                    'signatureStyle' => $commonData['sig2_style'] ?? 'great-vibes',
+                ];
+            }
+            if (!empty($customSigs)) {
+                $existingSigs = $commonData['signatories_json'] ?: ($tplPayload['signatories'] ?? []);
+                if (!empty($customSigs[0])) $existingSigs[0] = array_merge($existingSigs[0] ?? [], $customSigs[0]);
+                if (!empty($customSigs[1])) $existingSigs[1] = array_merge($existingSigs[1] ?? [], $customSigs[1]);
+                $commonData['signatories_json'] = $existingSigs;
+                $tplPayload['signatories'] = $existingSigs;
+            }
+
+            $commonData['payload_json'] = $tplPayload ?: null;
         }
 
         $users = User::whereIn('id', $employeeIds)->get();
@@ -348,6 +411,79 @@ class CertificateService
             }
             $payload['digitalHr']['employeeId'] = $employeeCode;
             $payload['employeeId'] = $employeeCode;
+        }
+
+        // Apply explicit form customization overrides from Batch Issue / Preview (matches CertiCraft Studio)
+        if (array_key_exists('organization_sub_banner', $data) && $data['organization_sub_banner'] !== null) {
+            $payload['organizationSubBanner'] = $data['organization_sub_banner'];
+        }
+        if (!isset($payload['visibility']) || !is_array($payload['visibility'])) {
+            $payload['visibility'] = [];
+        }
+        if (array_key_exists('show_organization_sub_banner', $data) && $data['show_organization_sub_banner'] !== null) {
+            $payload['visibility']['showOrganizationSubBanner'] = filter_var($data['show_organization_sub_banner'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('show_storefront_watermark', $data) && $data['show_storefront_watermark'] !== null) {
+            $payload['visibility']['showStorefrontWatermark'] = filter_var($data['show_storefront_watermark'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('show_digital_hours_badge', $data) && $data['show_digital_hours_badge'] !== null) {
+            if (!isset($payload['digitalHr']) || !is_array($payload['digitalHr'])) {
+                $payload['digitalHr'] = [];
+            }
+            $payload['digitalHr']['showDigitalHoursBadge'] = filter_var($data['show_digital_hours_badge'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('hanging_medal_style', $data) && !empty($data['hanging_medal_style'])) {
+            $payload['hangingMedalStyle'] = $data['hanging_medal_style'];
+        }
+        if (!isset($payload['seal']) || !is_array($payload['seal'])) {
+            $payload['seal'] = [];
+        }
+        if (array_key_exists('seal_enabled', $data) && $data['seal_enabled'] !== null) {
+            $payload['seal']['enabled'] = filter_var($data['seal_enabled'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('seal_style', $data) && !empty($data['seal_style'])) {
+            $payload['seal']['style'] = $data['seal_style'];
+        }
+        if (array_key_exists('seal_ribbon_color', $data) && !empty($data['seal_ribbon_color'])) {
+            $payload['seal']['ribbonColor'] = $data['seal_ribbon_color'];
+        }
+        if (!isset($payload['styling']) || !is_array($payload['styling'])) {
+            $payload['styling'] = [];
+        }
+        if (array_key_exists('show_watermark', $data) && $data['show_watermark'] !== null) {
+            $payload['styling']['showWatermark'] = filter_var($data['show_watermark'], FILTER_VALIDATE_BOOLEAN);
+        }
+        if (array_key_exists('show_qr_code', $data) && $data['show_qr_code'] !== null) {
+            $payload['showQrCode'] = filter_var($data['show_qr_code'], FILTER_VALIDATE_BOOLEAN);
+        }
+
+        // Custom Signatories Override
+        $customSigs = [];
+        if (!empty($data['sig1_name'])) {
+            $customSigs[0] = [
+                'name' => $data['sig1_name'],
+                'khmerName' => $data['sig1_khmer_name'] ?? '',
+                'role' => $data['sig1_role'] ?? '',
+                'khmerRole' => $data['sig1_khmer_role'] ?? '',
+                'organization' => $data['sig1_organization'] ?? '',
+                'signatureStyle' => $data['sig1_style'] ?? 'alex-brush',
+            ];
+        }
+        if (!empty($data['sig2_name'])) {
+            $customSigs[1] = [
+                'name' => $data['sig2_name'],
+                'khmerName' => $data['sig2_khmer_name'] ?? '',
+                'role' => $data['sig2_role'] ?? '',
+                'khmerRole' => $data['sig2_khmer_role'] ?? '',
+                'organization' => $data['sig2_organization'] ?? '',
+                'signatureStyle' => $data['sig2_style'] ?? 'great-vibes',
+            ];
+        }
+        if (!empty($customSigs)) {
+            $existingSigs = $payload['signatories'] ?? [];
+            if (!empty($customSigs[0])) $existingSigs[0] = array_merge($existingSigs[0] ?? [], $customSigs[0]);
+            if (!empty($customSigs[1])) $existingSigs[1] = array_merge($existingSigs[1] ?? [], $customSigs[1]);
+            $payload['signatories'] = $existingSigs;
         }
 
         return $payload;

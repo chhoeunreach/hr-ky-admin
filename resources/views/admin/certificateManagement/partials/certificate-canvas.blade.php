@@ -173,11 +173,44 @@
         ])
     @endif
 
+    <!-- Subtle Isometric Architectural Storefront Watermark (Right Flank) matching CertiCraft Studio -->
+    @if(($visibility['showStorefrontWatermark'] ?? $isImperialSash) && $showWatermark)
+        <div class="pointer-events-none absolute z-[1] right-[44px] bottom-[176px]"
+             style="opacity: {{ min(0.16, ($watermarkOpacity ?? 0.14) * 0.95) }};">
+            <svg width="210" height="165" viewBox="0 0 210 165" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Perspective Storefront Fascia -->
+                <polygon points="16,46 136,12 198,28 198,144 136,136 16,154" fill="{{ $primaryNavy }}" fill-opacity="0.06" stroke="{{ $primaryNavy }}" stroke-width="1.2" />
+                <!-- Signboard Panel -->
+                <polygon points="20,46 136,14 136,68 20,88" fill="#FFFFFF" fill-opacity="0.55" stroke="{{ $primaryNavy }}" stroke-width="1.1" />
+                <!-- Roof Overhang -->
+                <polygon points="10,44 138,8 204,26 198,32 136,14 16,48" fill="{{ $primaryNavy }}" fill-opacity="0.14" stroke="{{ $primaryNavy }}" stroke-width="1" />
+                <!-- Storefront K Emblem & Sign Text -->
+                <g transform="translate(76, 40) skewY(-14)">
+                    <text x="0" y="-4" text-anchor="middle" fill="{{ $primaryNavy }}" font-size="18" font-weight="900" font-family="'Cinzel', serif">
+                        {{ strtoupper(substr(trim($certificate['issuer']['name'] ?? 'K'), 0, 1)) }}
+                    </text>
+                    <text x="0" y="9" text-anchor="middle" fill="{{ $primaryNavy }}" font-size="9.5" font-weight="800" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="0.8">
+                        {{ strtoupper(substr($certificate['issuer']['name'] ?? 'KNEAYERNG', 0, 12)) }}
+                    </text>
+                    <text x="0" y="17" text-anchor="middle" fill="{{ $primaryNavy }}" font-size="5.2" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="1.2">
+                        {{ strtoupper(substr($certificate['issuer']['department'] ?? 'PHONE SHOP', 0, 14)) }}
+                    </text>
+                </g>
+                <!-- Glass Display Windows & Double Entrance Doors -->
+                <polygon points="26,94 60,88 60,148 26,152" fill="#FFFFFF" fill-opacity="0.45" stroke="{{ $primaryNavy }}" stroke-width="1" />
+                <polygon points="66,87 104,80 104,142 66,147" fill="{{ $primaryNavy }}" fill-opacity="0.08" stroke="{{ $primaryNavy }}" stroke-width="1.1" />
+                <line x1="85" y1="84" x2="85" y2="144" stroke="{{ $primaryNavy }}" stroke-width="1" />
+                <polygon points="110,79 134,74 134,136 110,141" fill="#FFFFFF" fill-opacity="0.45" stroke="{{ $primaryNavy }}" stroke-width="1" />
+                <polygon points="140,74 192,80 192,143 140,136" fill="{{ $primaryNavy }}" fill-opacity="0.06" stroke="{{ $primaryNavy }}" stroke-width="1" />
+            </svg>
+        </div>
+    @endif
+
     <!-- Top-Left Vertical Hanging Ribbon & Crest Medallion -->
     @if($isImperialSash)
-        <!-- Solid Metallic Gold Hanging Sash (V6) -->
+        <!-- Solid Metallic Gold Hanging Sash (V6) with Scalloped Rosette Crest matching CertiCraft Studio -->
         <div class="cert-ribbon-zone absolute top-0 left-12 z-20 pointer-events-none drop-shadow-xl">
-            <svg width="150" height="280" viewBox="0 0 160 296" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="156" height="344" viewBox="0 0 160 352" fill="none" xmlns="http://www.w3.org/2000/svg" class="overflow-visible">
                 <defs>
                     <linearGradient id="v6GSash_{{ $uid }}" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="#B88218" />
@@ -191,6 +224,12 @@
                         <stop offset="50%" stop-color="#092653" />
                         <stop offset="100%" stop-color="#041029" />
                     </linearGradient>
+                    <linearGradient id="v6GoldRail_{{ $uid }}" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#F9DF86" />
+                        <stop offset="35%" stop-color="#D4A32C" />
+                        <stop offset="70%" stop-color="#FFF0B0" />
+                        <stop offset="100%" stop-color="#9C6B14" />
+                    </linearGradient>
                     <radialGradient id="v6GRos_{{ $uid }}" cx="38%" cy="32%" r="68%">
                         <stop offset="0%" stop-color="#FFFCE6" />
                         <stop offset="28%" stop-color="#F8DE82" />
@@ -198,19 +237,82 @@
                         <stop offset="88%" stop-color="#A37116" />
                         <stop offset="100%" stop-color="#6E490A" />
                     </radialGradient>
+                    <radialGradient id="v6NavyMed_{{ $uid }}" cx="40%" cy="35%" r="68%">
+                        <stop offset="0%" stop-color="#123C7D" />
+                        <stop offset="55%" stop-color="#092653" />
+                        <stop offset="100%" stop-color="#04122B" />
+                    </radialGradient>
                 </defs>
-                <rect x="46" y="0" width="68" height="140" fill="url(#v6GSash_{{ $uid }})" />
-                <rect x="49" y="0" width="2" height="140" fill="#FFF7D1" opacity="0.7" />
-                <rect x="109" y="0" width="2" height="140" fill="#8C5D0E" opacity="0.45" />
-                <polygon points="46,180 72,184 48,272 34,258 18,268" fill="url(#v6NTail_{{ $uid }})" stroke="#D4A32C" stroke-width="1.8" />
-                <polygon points="88,184 114,180 142,268 126,258 112,272" fill="url(#v6NTail_{{ $uid }})" stroke="#D4A32C" stroke-width="1.8" />
-                <polygon points="62,182 98,182 100,278 80,294 60,278" fill="url(#v6GSash_{{ $uid }})" stroke="#8F6110" stroke-width="1.5" />
-                <g transform="translate(80, 142)">
-                    <circle r="56" fill="url(#v6GRos_{{ $uid }})" stroke="#7A500A" stroke-width="1.8" />
-                    <circle r="47" fill="none" stroke="#FFF7CC" stroke-width="1.2" opacity="0.85" />
-                    <circle r="42" fill="#092653" stroke="#D4A32C" stroke-width="2.2" />
-                    <text x="0" y="8" text-anchor="middle" fill="#F8DE82" font-size="28" font-weight="bold" font-family="'Cinzel', serif">K</text>
-                    <text x="0" y="24" text-anchor="middle" fill="#F8DE82" font-size="6.5" font-weight="bold" font-family="'Cinzel', serif" letter-spacing="1">KNEA YOENG</text>
+                <!-- Gold Vertical Band -->
+                <rect x="46" y="0" width="68" height="175" fill="url(#v6GSash_{{ $uid }})" />
+                <rect x="49" y="0" width="2" height="175" fill="#FFF7D1" opacity="0.7" />
+                <rect x="109" y="0" width="2" height="175" fill="#8C5D0E" opacity="0.45" />
+
+                <!-- Bottom 3 Hanging Swallowtail Tails -->
+                <polygon points="48,228 74,234 52,324 38,308 22,318" fill="url(#v6NTail_{{ $uid }})" stroke="url(#v6GoldRail_{{ $uid }})" stroke-width="2" />
+                <polygon points="86,234 112,228 138,318 122,308 108,324" fill="url(#v6NTail_{{ $uid }})" stroke="url(#v6GoldRail_{{ $uid }})" stroke-width="2" />
+                <polygon points="64,230 96,230 98,322 80,340 62,322" fill="url(#v6GRos_{{ $uid }})" stroke="#8F6110" stroke-width="1.5" />
+                <polygon points="69,232 91,232 92,318 80,331 68,318" fill="none" stroke="#FFF7CC" stroke-width="0.9" opacity="0.7" />
+
+                <!-- Scalloped Metallic Gold Rosette Medallion matching CertiCraft Studio -->
+                <g transform="translate(80, 178)">
+                    @php
+                        $medallionScallopsV6 = '';
+                        for ($i = 0; $i < 24; $i++) {
+                            $a1 = ($i / 24) * M_PI * 2;
+                            $aMid = (($i + 0.5) / 24) * M_PI * 2;
+                            $rOut = 72;
+                            $rIn = 64.5;
+                            $x1 = cos($a1) * $rOut;
+                            $y1 = sin($a1) * $rOut;
+                            $x2 = cos($aMid) * $rIn;
+                            $y2 = sin($aMid) * $rIn;
+                            $medallionScallopsV6 .= ($i === 0 ? 'M' : 'L') . " {$x1} {$y1} L {$x2} {$y2} ";
+                        }
+                        $medallionScallopsV6 .= 'Z';
+                    @endphp
+                    <path d="{{ $medallionScallopsV6 }}" fill="url(#v6GRos_{{ $uid }})" stroke="#8A5D0F" stroke-width="1.4" />
+                    <circle r="58" fill="none" stroke="#FFF4B8" stroke-width="1.4" opacity="0.85" />
+                    <circle r="53" fill="url(#v6NavyMed_{{ $uid }})" stroke="url(#v6GoldRail_{{ $uid }})" stroke-width="2.4" />
+                    <circle r="48.5" fill="none" stroke="#F9DF86" stroke-width="0.7" opacity="0.65" />
+
+                    <!-- Royal 3-Point Crown -->
+                    <g transform="translate(0, -33)">
+                        <path d="M -10 5 L -12 -5 L -5 0 L 0 -8 L 5 0 L 12 -5 L 10 5 Z" fill="url(#v6GoldRail_{{ $uid }})" stroke="#784E0A" stroke-width="0.6" />
+                        <rect x="-10" y="6" width="20" height="2.4" rx="0.8" fill="url(#v6GoldRail_{{ $uid }})" />
+                        <circle cx="-12" cy="-6.2" r="1.4" fill="#FFF7C8" />
+                        <circle cx="0" cy="-9.5" r="1.7" fill="#FFF7C8" />
+                        <circle cx="12" cy="-6.2" r="1.4" fill="#FFF7C8" />
+                    </g>
+
+                    <!-- Center Gold K Monogram -->
+                    <text x="0" y="2" text-anchor="middle" fill="url(#v6GoldRail_{{ $uid }})" font-size="30" font-weight="900" font-family="'Cinzel', serif" stroke="#784E0A" stroke-width="0.4">K</text>
+
+                    <!-- Text Inside Medallion -->
+                    <text x="0" y="15" text-anchor="middle" fill="#FFF6CE" font-size="7.4" font-weight="800" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="0.8">KNEAYERNG</text>
+                    <text x="0" y="23" text-anchor="middle" fill="#F4D16B" font-size="5.4" font-weight="700" font-family="'Plus Jakarta Sans', sans-serif" letter-spacing="1.1">PHONE SHOP</text>
+
+                    <!-- Flanking Gold Laurels -->
+                    @foreach([-1, 1] as $side)
+                        <g transform="scale({{ $side }}, 1)" fill="url(#v6GoldRail_{{ $uid }})">
+                            @for($idx = 0; $idx < 7; $idx++)
+                                @php
+                                    $angle = (-15 + $idx * 17) * (M_PI / 180);
+                                    $lx = -38 * cos($angle * 0.45);
+                                    $ly = 24 - $idx * 7.8;
+                                    $rot = -35 + $idx * 12;
+                                @endphp
+                                <ellipse cx="{{ $lx }}" cy="{{ $ly }}" rx="4.2" ry="1.9" transform="rotate({{ $rot }}, {{ $lx }}, {{ $ly }})" />
+                            @endfor
+                        </g>
+                    @endforeach
+
+                    <!-- 3 Gold Stars -->
+                    <g fill="#FFF2B2" stroke="#8C5E0E" stroke-width="0.3">
+                        <polygon transform="translate(-13, 35) scale(0.36)" points="0,-10 2.9,-3.2 10,-3.2 4.3,1.2 6.5,8.2 0,4 -6.5,8.2 -4.3,1.2 -10,-3.2 -2.9,-3.2" />
+                        <polygon transform="translate(0, 38) scale(0.46)" points="0,-10 2.9,-3.2 10,-3.2 4.3,1.2 6.5,8.2 0,4 -6.5,8.2 -4.3,1.2 -10,-3.2 -2.9,-3.2" />
+                        <polygon transform="translate(13, 35) scale(0.36)" points="0,-10 2.9,-3.2 10,-3.2 4.3,1.2 6.5,8.2 0,4 -6.5,8.2 -4.3,1.2 -10,-3.2 -2.9,-3.2" />
+                    </g>
                 </g>
             </svg>
         </div>

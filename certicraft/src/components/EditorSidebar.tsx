@@ -214,8 +214,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   const handleSelectQuickEmployee = (emp: QuickEmployee) => {
     const isSameEmployee = data.digitalHr?.employeeId === emp.employeeId;
     const generatedCredentialId = `KY-CERT-${new Date().getFullYear()}-${emp.employeeId
-      .replace(/[^A-Z0-9-]/gi, '')
-      .slice(-6)}`;
+      .replace(/[^A-Z0-9]/gi, '')
+      .slice(-5)}`;
 
     onChange({
       ...data,

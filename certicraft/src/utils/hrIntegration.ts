@@ -102,7 +102,7 @@ export function mapHrEmployeeToCertificate(
     issueDate: norm.issueDate || basePreset.issueDate,
     credentialId:
       norm.credentialId ||
-      `KY-CERT-${new Date().getFullYear()}-${norm.employeeId.replace(/[^A-Z0-9-]/gi, '').slice(-6)}`,
+      `KY-CERT-${new Date().getFullYear()}-${norm.employeeId.replace(/[^A-Z0-9]/gi, '').slice(-5)}`,
     digitalHr: {
       employeeId: norm.employeeId,
       department: norm.department,

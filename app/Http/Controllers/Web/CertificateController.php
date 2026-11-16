@@ -375,6 +375,8 @@ class CertificateController extends Controller
             'banner_text' => 'nullable|string|max:190',
             'subtitle' => 'nullable|string|max:250',
             'khmer_subtitle' => 'nullable|string|max:250',
+            'organization_sub_banner' => 'nullable|string|max:190',
+            'show_organization_sub_banner' => 'nullable|boolean',
             'course_or_achievement_title' => 'nullable|string|max:250',
             'khmer_course_or_achievement_title' => 'nullable|string|max:250',
             'citation' => 'nullable|string|max:2000',
@@ -392,6 +394,10 @@ class CertificateController extends Controller
             'recipient_photo_shape' => 'nullable|string|max:40',
             'show_watermark' => 'nullable|boolean',
             'watermark_opacity' => 'nullable|numeric|min:0|max:1',
+            'show_storefront_watermark' => 'nullable|boolean',
+            'show_digital_hours_badge' => 'nullable|boolean',
+            'hanging_medal_style' => 'nullable|string|max:60',
+            'show_qr_code' => 'nullable|boolean',
             'font_english_title' => 'nullable|string|max:60',
             'font_body' => 'nullable|string|max:60',
             'font_signature' => 'nullable|string|max:60',
@@ -412,6 +418,7 @@ class CertificateController extends Controller
             'sig2_style' => 'nullable|string|max:50',
 
             // Seal
+            'seal_enabled' => 'nullable|boolean',
             'seal_style' => 'nullable|string|max:60',
             'seal_ribbon_color' => 'nullable|string|max:30',
             'seal_primary_text' => 'nullable|string|max:120',
@@ -506,7 +513,11 @@ class CertificateController extends Controller
         if (!empty($validated['seal_ribbon_color'])) $seal['ribbonColor'] = $validated['seal_ribbon_color'];
         if (array_key_exists('seal_primary_text', $validated)) $seal['primaryText'] = $validated['seal_primary_text'];
         if (array_key_exists('seal_secondary_text', $validated)) $seal['secondaryText'] = $validated['seal_secondary_text'];
-        $seal['enabled'] = true;
+        if ($request->has('seal_enabled')) {
+            $seal['enabled'] = $request->boolean('seal_enabled');
+        } else {
+            $seal['enabled'] = true;
+        }
         $template->seal_json = $seal;
 
         // 6. Build & Sync Comprehensive Payload JSON (for CertiCraft Studio & Previews)
@@ -525,6 +536,7 @@ class CertificateController extends Controller
         if (!empty($validated['banner_text'])) $p['bannerText'] = $validated['banner_text'];
         if (array_key_exists('subtitle', $validated)) $p['subtitle'] = $validated['subtitle'];
         if (array_key_exists('khmer_subtitle', $validated)) $p['khmerSubtitle'] = $validated['khmer_subtitle'];
+        if (array_key_exists('organization_sub_banner', $validated)) $p['organizationSubBanner'] = $validated['organization_sub_banner'];
         if (array_key_exists('authority_preamble', $validated)) $p['authorityPreamble'] = $validated['authority_preamble'];
         if (array_key_exists('khmer_preamble', $validated)) $p['khmerPreamble'] = $validated['khmer_preamble'];
         if (array_key_exists('course_or_achievement_title', $validated)) $p['courseOrAchievementTitle'] = $validated['course_or_achievement_title'];
@@ -535,6 +547,12 @@ class CertificateController extends Controller
 
         if ($request->has('show_recipient_photo')) $p['showRecipientPhoto'] = $request->boolean('show_recipient_photo');
         if (!empty($validated['recipient_photo_shape'])) $p['recipientPhotoShape'] = $validated['recipient_photo_shape'];
+        if (!empty($validated['hanging_medal_style'])) $p['hangingMedalStyle'] = $validated['hanging_medal_style'];
+        if ($request->has('show_qr_code')) $p['showQrCode'] = $request->boolean('show_qr_code');
+
+        if (!isset($p['visibility']) || !is_array($p['visibility'])) $p['visibility'] = [];
+        if ($request->has('show_organization_sub_banner')) $p['visibility']['showOrganizationSubBanner'] = $request->boolean('show_organization_sub_banner');
+        if ($request->has('show_storefront_watermark')) $p['visibility']['showStorefrontWatermark'] = $request->boolean('show_storefront_watermark');
 
         if (!isset($p['issuer']) || !is_array($p['issuer'])) $p['issuer'] = [];
         if (array_key_exists('issuer_name', $validated)) $p['issuer']['name'] = $validated['issuer_name'];
@@ -546,6 +564,7 @@ class CertificateController extends Controller
         if (isset($validated['training_hours'])) $p['digitalHr']['trainingHours'] = (int) $validated['training_hours'];
         if (array_key_exists('compliance_status', $validated)) $p['digitalHr']['complianceStatus'] = $validated['compliance_status'];
         if (array_key_exists('hr_competency_track', $validated)) $p['digitalHr']['hrCompetencyTrack'] = $validated['hr_competency_track'];
+        if ($request->has('show_digital_hours_badge')) $p['digitalHr']['showDigitalHoursBadge'] = $request->boolean('show_digital_hours_badge');
 
         $p['styling'] = $styling;
         $p['signatories'] = $signatories;
@@ -817,6 +836,28 @@ class CertificateController extends Controller
                 'hr_competency_track',
                 'issue_date',
                 'khmer_issue_date',
+                'organization_sub_banner',
+                'show_organization_sub_banner',
+                'hanging_medal_style',
+                'seal_enabled',
+                'seal_style',
+                'seal_ribbon_color',
+                'show_digital_hours_badge',
+                'show_storefront_watermark',
+                'show_watermark',
+                'show_qr_code',
+                'sig1_name',
+                'sig1_khmer_name',
+                'sig1_role',
+                'sig1_khmer_role',
+                'sig1_organization',
+                'sig1_style',
+                'sig2_name',
+                'sig2_khmer_name',
+                'sig2_role',
+                'sig2_khmer_role',
+                'sig2_organization',
+                'sig2_style',
             ]),
             $user,
             $template
@@ -1115,6 +1156,28 @@ class CertificateController extends Controller
             'compliance_status' => 'nullable|string',
             'issue_date' => 'required|string',
             'khmer_issue_date' => 'nullable|string',
+            'organization_sub_banner' => 'nullable|string|max:255',
+            'show_organization_sub_banner' => 'nullable|boolean',
+            'hanging_medal_style' => 'nullable|string|max:50',
+            'seal_enabled' => 'nullable|boolean',
+            'seal_style' => 'nullable|string|max:50',
+            'seal_ribbon_color' => 'nullable|string|max:30',
+            'show_digital_hours_badge' => 'nullable|boolean',
+            'show_storefront_watermark' => 'nullable|boolean',
+            'show_watermark' => 'nullable|boolean',
+            'show_qr_code' => 'nullable|boolean',
+            'sig1_name' => 'nullable|string|max:190',
+            'sig1_khmer_name' => 'nullable|string|max:190',
+            'sig1_role' => 'nullable|string|max:190',
+            'sig1_khmer_role' => 'nullable|string|max:190',
+            'sig1_organization' => 'nullable|string|max:190',
+            'sig1_style' => 'nullable|string|max:50',
+            'sig2_name' => 'nullable|string|max:190',
+            'sig2_khmer_name' => 'nullable|string|max:190',
+            'sig2_role' => 'nullable|string|max:190',
+            'sig2_khmer_role' => 'nullable|string|max:190',
+            'sig2_organization' => 'nullable|string|max:190',
+            'sig2_style' => 'nullable|string|max:50',
         ]);
 
         try {

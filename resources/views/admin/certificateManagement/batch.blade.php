@@ -24,6 +24,23 @@
     $sdSubtitle = $sd['subtitle'] ?? ($selectedTemplate?->subtitle ?? '');
     $sdKhmerSubtitle = $sd['khmerSubtitle'] ?? ($selectedTemplate?->khmer_subtitle ?? '');
     $sdTrack = $sdDigitalHr['hrCompetencyTrack'] ?? ($selectedTemplate?->hr_competency_track ?? '');
+
+    $sdVisibility = is_array($sd['visibility'] ?? null) ? $sd['visibility'] : [];
+    $sdSeal = is_array($sd['seal'] ?? null) ? $sd['seal'] : [];
+    $sdStyling = is_array($sd['styling'] ?? null) ? $sd['styling'] : [];
+    $sdSignatories = is_array($sd['signatories'] ?? null) ? $sd['signatories'] : [];
+    $sdSig1 = $sdSignatories[0] ?? [];
+    $sdSig2 = $sdSignatories[1] ?? [];
+    $sdSubBanner = $sd['organizationSubBanner'] ?? ($selectedTemplate?->payload_json['organizationSubBanner'] ?? 'KNEAYERNG PHONE SHOP');
+    $sdShowSubBanner = $sdVisibility['showOrganizationSubBanner'] ?? true;
+    $sdShowDigitalBadge = !empty($sdDigitalHr['showDigitalHoursBadge']);
+    $sdHangingStyle = $sd['hangingMedalStyle'] ?? ($selectedTemplate?->layout_template === 'executive-imperial-sash' ? 'gold-sash' : 'navy-sash');
+    $sdSealEnabled = !empty($sdSeal['enabled']) && ($sdSeal['style'] ?? '') !== 'none';
+    $sdSealStyle = $sdSeal['style'] ?? 'crown-laurel';
+    $sdSealRibbon = $sdSeal['ribbonColor'] ?? 'navy';
+    $sdShowStorefrontWm = $sdVisibility['showStorefrontWatermark'] ?? ($selectedTemplate?->layout_template === 'executive-imperial-sash');
+    $sdShowWatermark = $sdStyling['showWatermark'] ?? true;
+    $sdShowQrCode = $sd['showQrCode'] ?? true;
 @endphp
 
 @section('styles')
@@ -180,6 +197,13 @@
                         $label = '[' . $tmpl->version_tag . '] ' . ($displayKhmer ? $displayKhmer . ($displayEng && $displayEng !== $displayKhmer ? ' · ' . $displayEng : '') : $displayEng) . ' (' . $tmpl->template_code . ')';
                         $tp = method_exists($tmpl, 'toStudioPayload') ? ($tmpl->toStudioPayload() ?? []) : [];
                         $tpDigitalHr = is_array($tp['digitalHr'] ?? null) ? $tp['digitalHr'] : [];
+                        $tpVisibility = is_array($tp['visibility'] ?? null) ? $tp['visibility'] : [];
+                        $tpSeal = is_array($tp['seal'] ?? null) ? $tp['seal'] : [];
+                        $tpStyling = is_array($tp['styling'] ?? null) ? $tp['styling'] : [];
+                        $tpSignatories = is_array($tp['signatories'] ?? null) ? $tp['signatories'] : [];
+                        $tpSig1 = $tpSignatories[0] ?? [];
+                        $tpSig2 = $tpSignatories[1] ?? [];
+                        $tpHanging = $tp['hangingMedalStyle'] ?? ($tmpl->layout_template === 'executive-imperial-sash' ? 'gold-sash' : 'navy-sash');
                     @endphp
                     <option value="{{ $tmpl->id }}" {{ (isset($selectedTemplate) && $selectedTemplate->id == $tmpl->id) ? 'selected' : '' }}
                         data-id="{{ $tmpl->id }}"
@@ -196,7 +220,29 @@
                         data-ach="{{ $tp['courseOrAchievementTitle'] ?? $tmpl->course_or_achievement_title }}"
                         data-khmer-ach="{{ $tp['khmerCourseOrAchievementTitle'] ?? $tmpl->khmer_course_or_achievement_title }}"
                         data-cit="{{ $tp['citation'] ?? $tmpl->citation }}"
-                        data-khmer-cit="{{ $tp['khmerCitation'] ?? $tmpl->khmer_citation }}">
+                        data-khmer-cit="{{ $tp['khmerCitation'] ?? $tmpl->khmer_citation }}"
+                        data-sub-banner="{{ $tp['organizationSubBanner'] ?? ($tmpl->payload_json['organizationSubBanner'] ?? 'KNEAYERNG PHONE SHOP') }}"
+                        data-show-sub-banner="{{ ($tpVisibility['showOrganizationSubBanner'] ?? true) ? '1' : '0' }}"
+                        data-hanging-medal-style="{{ $tpHanging }}"
+                        data-seal-enabled="{{ (!empty($tpSeal['enabled']) && ($tpSeal['style'] ?? '') !== 'none') ? '1' : '0' }}"
+                        data-seal-style="{{ $tpSeal['style'] ?? 'crown-laurel' }}"
+                        data-seal-ribbon-color="{{ $tpSeal['ribbonColor'] ?? 'navy' }}"
+                        data-show-digital-hours-badge="{{ (!empty($tpDigitalHr['showDigitalHoursBadge'])) ? '1' : '0' }}"
+                        data-show-storefront-watermark="{{ ($tpVisibility['showStorefrontWatermark'] ?? ($tmpl->layout_template === 'executive-imperial-sash')) ? '1' : '0' }}"
+                        data-show-watermark="{{ ($tpStyling['showWatermark'] ?? true) ? '1' : '0' }}"
+                        data-show-qr-code="{{ ($tp['showQrCode'] ?? true) ? '1' : '0' }}"
+                        data-sig1-name="{{ $tpSig1['name'] ?? 'CHHOEUN REACH' }}"
+                        data-sig1-khmer-name="{{ $tpSig1['khmerName'] ?? 'ឈឿន រាជ' }}"
+                        data-sig1-role="{{ $tpSig1['role'] ?? 'IT Manager / Branch Manager' }}"
+                        data-sig1-khmer-role="{{ $tpSig1['khmerRole'] ?? 'ប្រធានផ្នែកព័ត៌មានវិទ្យា / ប្រធានសាខា' }}"
+                        data-sig1-organization="{{ $tpSig1['organization'] ?? 'Admin • HR • System • Stock' }}"
+                        data-sig1-style="{{ $tpSig1['signatureStyle'] ?? 'alex-brush' }}"
+                        data-sig2-name="{{ $tpSig2['name'] ?? 'SOPHEA MENG' }}"
+                        data-sig2-khmer-name="{{ $tpSig2['khmerName'] ?? 'ម៉េង សោភា' }}"
+                        data-sig2-role="{{ $tpSig2['role'] ?? 'HR Manager / HR Supervisor' }}"
+                        data-sig2-khmer-role="{{ $tpSig2['khmerRole'] ?? 'ប្រធានផ្នែកធនធានមនុស្ស' }}"
+                        data-sig2-organization="{{ $tpSig2['organization'] ?? 'Human Resource Department' }}"
+                        data-sig2-style="{{ $tpSig2['signatureStyle'] ?? 'great-vibes' }}">
                         {{ $label }} {{ $tmpl->is_default ? '★' : '' }}
                     </option>
                 @endforeach

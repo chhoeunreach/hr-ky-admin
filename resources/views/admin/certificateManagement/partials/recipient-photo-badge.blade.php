@@ -65,8 +65,8 @@
 
     <!-- Employee Profile ID Pill (Exact Studio renderProfilePhotoBadge styling) -->
     @if(!$compact && ($vis['showEmployeeIdBadge'] ?? true) !== false && !empty($employeeId))
-        <div class="px-2 py-0.5 rounded-full bg-white/95 border shadow-xs text-[8px] font-mono font-bold tracking-wider whitespace-nowrap"
-             style="color: {{ $badgePrimary }}; border-color: rgba(212, 161, 58, 0.75);">
+        <div class="px-2.5 py-0.5 rounded-full shadow-xs text-[8.5px] font-mono font-bold tracking-wider whitespace-nowrap"
+             style="background-color: {{ $badgePrimary }}; color: #FFFFFF; border: 1.2px solid {{ $badgeAccent }};">
             {{ $idPrefix ? $idPrefix . ' ' : '' }}{{ $employeeId }}
         </div>
     @endif

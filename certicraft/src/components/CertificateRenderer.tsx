@@ -1181,6 +1181,40 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
                         <div className="h-[1.4px] flex-1 bg-gradient-to-l from-transparent via-[#D4A32C] to-[#F4D16B]" />
                       </div>
                     )}
+
+                    {/* Organization Sub-Banner (Layout Model setting: organizationSubBanner / recipientTitle) */}
+                    {vis.showOrganizationSubBanner !== false && (data.organizationSubBanner || data.recipientTitle) && (
+                      <div className={`flex items-center justify-center gap-3.5 ${isLandscape ? 'w-[520px]' : 'w-[400px]'} mt-2`}>
+                        <div className="h-[1.4px] flex-1 bg-gradient-to-r from-transparent via-[#D4A32C] to-[#F4D16B]" />
+                        <span
+                          className="text-[12px] font-bold tracking-[0.2em] uppercase font-sans-clean whitespace-nowrap"
+                          style={getFieldInlineStyle(data, 'organizationSubBanner', { color: primaryNavy })}
+                        >
+                          {data.organizationSubBanner || data.recipientTitle}
+                        </span>
+                        <div className="h-[1.4px] flex-1 bg-gradient-to-l from-transparent via-[#D4A32C] to-[#F4D16B]" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* OPTIONAL DIGITAL HR ACCREDITED HOURS BADGE (Layout Model setting) */}
+                {data.digitalHr?.showDigitalHoursBadge && (
+                  <div
+                    onClick={() => onEditField?.('digitalHr')}
+                    className="mx-auto mt-1 px-4 py-0.5 rounded-xs border border-[#C89328]/50 bg-[#FDF8EC] flex items-center gap-3 text-[9.5px] leading-none cursor-pointer hover:border-[#C89328]"
+                    style={{ color: primaryNavy }}
+                    title="Click to manage Digital HR Hours"
+                  >
+                    <span className="font-bold tracking-wider uppercase font-cinzel">
+                      ⚜ Digital HR Accredited: {data.digitalHr.trainingHours}.0 Hrs
+                    </span>
+                    {data.digitalHr.employeeId && (
+                      <>
+                        <span className="text-[#C89328]">|</span>
+                        <span className="font-mono font-semibold">ID: {data.digitalHr.employeeId}</span>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

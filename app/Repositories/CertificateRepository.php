@@ -170,6 +170,36 @@ class CertificateRepository
                     if (isset($commonData['khmer_issue_date'])) {
                         $payload['khmerIssueDate'] = $commonData['khmer_issue_date'];
                     }
+                    if (isset($commonData['organization_sub_banner'])) {
+                        $payload['organizationSubBanner'] = $commonData['organization_sub_banner'];
+                    }
+                    if (isset($commonData['show_organization_sub_banner'])) {
+                        $payload['visibility']['showOrganizationSubBanner'] = filter_var($commonData['show_organization_sub_banner'], FILTER_VALIDATE_BOOLEAN);
+                    }
+                    if (isset($commonData['show_storefront_watermark'])) {
+                        $payload['visibility']['showStorefrontWatermark'] = filter_var($commonData['show_storefront_watermark'], FILTER_VALIDATE_BOOLEAN);
+                    }
+                    if (isset($commonData['show_digital_hours_badge'])) {
+                        $payload['digitalHr']['showDigitalHoursBadge'] = filter_var($commonData['show_digital_hours_badge'], FILTER_VALIDATE_BOOLEAN);
+                    }
+                    if (!empty($commonData['hanging_medal_style'])) {
+                        $payload['hangingMedalStyle'] = $commonData['hanging_medal_style'];
+                    }
+                    if (isset($commonData['seal_enabled'])) {
+                        $payload['seal']['enabled'] = filter_var($commonData['seal_enabled'], FILTER_VALIDATE_BOOLEAN);
+                    }
+                    if (!empty($commonData['seal_style'])) {
+                        $payload['seal']['style'] = $commonData['seal_style'];
+                    }
+                    if (!empty($commonData['seal_ribbon_color'])) {
+                        $payload['seal']['ribbonColor'] = $commonData['seal_ribbon_color'];
+                    }
+                    if (isset($commonData['show_watermark'])) {
+                        $payload['styling']['showWatermark'] = filter_var($commonData['show_watermark'], FILTER_VALIDATE_BOOLEAN);
+                    }
+                    if (isset($commonData['show_qr_code'])) {
+                        $payload['showQrCode'] = filter_var($commonData['show_qr_code'], FILTER_VALIDATE_BOOLEAN);
+                    }
                 }
 
                 $data = array_merge($commonData, [
