@@ -461,7 +461,7 @@
                                 <div class="row g-3 mb-4">
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold">ឈ្មោះជាភាសាអង់គ្លេស</label>
-                                        <input type="text" name="sig2_name" class="form-control" value="{{ old('sig2_name', $sig2['name'] ?? 'SOPHEA MENG') }}">
+                                        <input type="text" name="sig2_name" class="form-control" value="{{ old('sig2_name', $sig2['name'] ?? 'PET POEUN') }}">
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold">ឈ្មោះជាភាសាខ្មែរ</label>

@@ -51,7 +51,7 @@
                                 data-sig1-khmer="{{ $tmpl->signatories_json[0]['khmerName'] ?? 'ឈឿន រាជ' }}"
                                 data-sig1-role="{{ $tmpl->signatories_json[0]['role'] ?? 'IT Manager / Branch Manager' }}"
                                 data-sig1-krole="{{ $tmpl->signatories_json[0]['khmerRole'] ?? 'ប្រធានផ្នែកព័ត៌មានវិទ្យា / ប្រធានសាខា' }}"
-                                data-sig2-name="{{ $tmpl->signatories_json[1]['name'] ?? 'SOPHEA MENG' }}"
+                                data-sig2-name="{{ $tmpl->signatories_json[1]['name'] ?? 'PET POEUN' }}"
                                 data-sig2-khmer="{{ $tmpl->signatories_json[1]['khmerName'] ?? 'ម៉េង សោភា' }}"
                                 data-sig2-role="{{ $tmpl->signatories_json[1]['role'] ?? 'HR Manager / HR Supervisor' }}"
                                 data-sig2-krole="{{ $tmpl->signatories_json[1]['khmerRole'] ?? 'ប្រធានផ្នែកធនធានមនុស្ស' }}">
@@ -190,7 +190,7 @@
                                 <h6 class="fw-bold text-secondary mb-2">Signatory 2 (HR Executive)</h6>
                                 <div class="mb-2">
                                     <label class="form-label small">Name (English)</label>
-                                    <input type="text" name="signatory_2_name" class="form-control form-control-sm" value="Sophea Meng">
+                                    <input type="text" name="signatory_2_name" class="form-control form-control-sm" value="PET POEUN">
                                 </div>
                                 <div class="mb-2">
                                     <label class="form-label small">Name (Khmer)</label>

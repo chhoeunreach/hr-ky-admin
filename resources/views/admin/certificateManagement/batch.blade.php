@@ -237,7 +237,7 @@
                         data-sig1-khmer-role="{{ $tpSig1['khmerRole'] ?? 'ប្រធានផ្នែកព័ត៌មានវិទ្យា / ប្រធានសាខា' }}"
                         data-sig1-organization="{{ $tpSig1['organization'] ?? 'Admin • HR • System • Stock' }}"
                         data-sig1-style="{{ $tpSig1['signatureStyle'] ?? 'alex-brush' }}"
-                        data-sig2-name="{{ $tpSig2['name'] ?? 'SOPHEA MENG' }}"
+                        data-sig2-name="{{ $tpSig2['name'] ?? 'PET POEUN' }}"
                         data-sig2-khmer-name="{{ $tpSig2['khmerName'] ?? 'ម៉េង សោភា' }}"
                         data-sig2-role="{{ $tpSig2['role'] ?? 'HR Manager / HR Supervisor' }}"
                         data-sig2-khmer-role="{{ $tpSig2['khmerRole'] ?? 'ប្រធានផ្នែកធនធានមនុស្ស' }}"

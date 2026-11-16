@@ -81,7 +81,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager / HR Supervisor',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -199,7 +199,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager / HR Supervisor',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -317,7 +317,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager / HR Supervisor',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -433,7 +433,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager / HR Supervisor',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -627,7 +627,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager (HR Signature)',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស (HR)',
@@ -724,7 +724,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'Sophea Meng',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'Head of People & Organizational Culture',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស និងវប្បធម៌ស្ថាប័ន',
@@ -818,7 +818,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'Sophea Meng',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'Head of People & Organizational Culture',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -913,7 +913,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'Sophea Meng',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'Chief People & Culture Officer',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស និងវប្បធម៌',
@@ -1008,7 +1008,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'Sophea Meng',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'Chief People & Culture Officer',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -1733,7 +1733,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
       },
       {
         id: 's2',
-        name: 'SOPHEA MENG',
+        name: 'PET POEUN',
         khmerName: 'ម៉េង សោភា',
         role: 'HR Manager (HR Signature)',
         khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស (HR)',

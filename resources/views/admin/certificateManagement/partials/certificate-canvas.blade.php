@@ -781,7 +781,7 @@
             <div class="cert-seal-spacer w-[60px] shrink-0"></div>
             @endif
 
-            <!-- Zone 4: Signatory #2 (SOPHEA MENG) -->
+            <!-- Zone 4: Signatory #2 (PET POEUN) -->
             @if($hasSig2 && $sig2)
             <div class="cert-signature-zone cert-signature-right w-[180px] flex flex-col items-center text-center pb-1">
                 <div class="h-12 flex items-end justify-center w-full mb-1">
@@ -789,13 +789,13 @@
                         <img src="{{ $sig2['customSignatureData'] }}" alt="Signature" class="max-h-12 object-contain" />
                     @else
                         <span class="font-script text-[29px] leading-none select-none text-[#092653]">
-                            {{ preg_replace('/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s*/', '', $sig2['name'] ?? 'SOPHEA MENG') }}
+                            {{ preg_replace('/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s*/', '', $sig2['name'] ?? 'PET POEUN') }}
                         </span>
                     @endif
                 </div>
                 <div class="w-full h-[1.4px] bg-[#092653]"></div>
                 <div class="mt-1.5 text-[12.5px] font-bold tracking-[0.04em] uppercase font-sans-clean text-[#092653] leading-tight">
-                    {{ $sig2['name'] ?? 'SOPHEA MENG' }}
+                    {{ $sig2['name'] ?? 'PET POEUN' }}
                 </div>
                 <div class="mt-0.5 text-[10.5px] font-semibold font-sans-clean text-[#092653] leading-tight">
                     {{ $sig2['role'] ?? 'HR Manager / HR Supervisor' }}

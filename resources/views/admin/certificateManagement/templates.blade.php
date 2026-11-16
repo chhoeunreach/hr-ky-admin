@@ -963,7 +963,7 @@
         document.getElementById('edit_sig1_organization').value = sig1.organization || 'Admin • HR • System • Stock';
         document.getElementById('edit_sig1_style').value = sig1.signatureStyle || 'alex-brush';
 
-        document.getElementById('edit_sig2_name').value = sig2.name || 'SOPHEA MENG';
+        document.getElementById('edit_sig2_name').value = sig2.name || 'PET POEUN';
         document.getElementById('edit_sig2_khmer_name').value = sig2.khmerName || 'ម៉េង សោភា';
         document.getElementById('edit_sig2_role').value = sig2.role || 'HR Manager / HR Supervisor';
         document.getElementById('edit_sig2_khmer_role').value = sig2.khmerRole || 'ប្រធានផ្នែកធនធានមនុស្ស';

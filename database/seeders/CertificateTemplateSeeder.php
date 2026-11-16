@@ -32,7 +32,7 @@ class CertificateTemplateSeeder extends Seeder
             ],
             [
                 'id' => 's2',
-                'name' => 'SOPHEA MENG',
+                'name' => 'PET POEUN',
                 'khmerName' => 'ម៉េង សោភា',
                 'role' => 'HR Manager / HR Supervisor',
                 'khmerRole' => 'ប្រធានផ្នែកធនធានមនុស្ស',

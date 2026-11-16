@@ -131,7 +131,7 @@ class Certificate extends Model
                     'khmerRole' => 'ស្ថាបនិក និងនាយកប្រតិបត្តិ',
                 ],
                 [
-                    'name' => 'Sophea Meng',
+                    'name' => 'PET POEUN',
                     'khmerName' => 'ម៉េង សោភា',
                     'role' => 'Chief People Officer',
                     'khmerRole' => 'ប្រធានផ្នែកធនធានមនុស្ស',

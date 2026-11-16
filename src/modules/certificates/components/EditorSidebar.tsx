@@ -902,7 +902,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   const handleAddHrSignatory = () => {
     const newSig = {
       id: `s-${Date.now()}`,
-      name: 'SOPHEA MENG',
+      name: 'PET POEUN',
       khmerName: 'ម៉េង សោភា',
       role: 'HR Manager (HR Signature)',
       khmerRole: 'ប្រធានផ្នែកធនធានមនុស្ស (HR)',

@@ -74,7 +74,7 @@ class CertificateService
                     'khmerRole' => $validatedData['signatory_1_khmer_role'] ?? 'ស្ថាបនិក និងនាយកប្រតិបត្តិ',
                 ],
                 [
-                    'name' => $validatedData['signatory_2_name'] ?? 'Sophea Meng',
+                    'name' => $validatedData['signatory_2_name'] ?? 'PET POEUN',
                     'khmerName' => $validatedData['signatory_2_khmer'] ?? 'ម៉េង សោភា',
                     'role' => $validatedData['signatory_2_role'] ?? 'Chief People Officer',
                     'khmerRole' => $validatedData['signatory_2_khmer_role'] ?? 'ប្រធានផ្នែកធនធានមនុស្ស',
@@ -575,7 +575,7 @@ class CertificateService
                     'khmerRole' => 'ស្ថាបនិក និងនាយកប្រតិបត្តិ',
                 ],
                 [
-                    'name' => 'Sophea Meng',
+                    'name' => 'PET POEUN',
                     'khmerName' => 'ម៉េង សោភា',
                     'role' => 'Chief People Officer',
                     'khmerRole' => 'ប្រធានផ្នែកធនធានមនុស្ស',

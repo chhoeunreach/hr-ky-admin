@@ -361,7 +361,7 @@
                         'khmerRole' => 'ស្ថាបនិក និងនាយកប្រតិបត្តិ'
                     ];
                     $sig2 = $certificate['signatories'][1] ?? [
-                        'name' => 'Sophea Meng',
+                        'name' => 'PET POEUN',
                         'khmerName' => 'ម៉េង សោភា',
                         'role' => 'Chief People Officer',
                         'khmerRole' => 'ប្រធានផ្នែកធនធានមនុស្ស'
