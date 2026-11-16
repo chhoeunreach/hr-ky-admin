@@ -1,5 +1,7 @@
 @php
     $embed = request()->boolean('embed') || request()->boolean('content_only');
+    $studioJs = basename((glob(public_path('certicraft/assets/index-*.js')) ?: [])[0] ?? '');
+    $studioCss = basename((glob(public_path('certicraft/assets/index-*.css')) ?: [])[0] ?? '');
 @endphp
 @if($embed)
 <!DOCTYPE html>
@@ -12,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Battambang:wght@400;700&family=Cinzel:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Great+Vibes&family=JetBrains+Mono:wght@400;500;600&family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700;800&family=Moul&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" crossorigin href="{{ asset('certicraft/assets/index--J-rHrUf.css') }}">
+    <link rel="stylesheet" crossorigin href="{{ asset('certicraft/assets/' . $studioCss) }}">
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #fff; }
         #root { width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
@@ -37,7 +39,7 @@
           templates: @json($templates ?? []),
       };
     </script>
-    <script type="module" crossorigin src="{{ asset('certicraft/assets/index-C0hBGPWS.js') }}"></script>
+    <script type="module" crossorigin src="{{ asset('certicraft/assets/' . $studioJs) }}"></script>
 </body>
 </html>
 @else
@@ -52,7 +54,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Battambang:wght@400;700&family=Cinzel:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Great+Vibes&family=JetBrains+Mono:wght@400;500;600&family=Kantumruy+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@400;500;600;700;800&family=Moul&family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-    <link rel="stylesheet" crossorigin href="{{ asset('certicraft/assets/index--J-rHrUf.css') }}">
+    <link rel="stylesheet" crossorigin href="{{ asset('certicraft/assets/' . $studioCss) }}">
 
     <style>
         .certicraft-wrapper-card {
@@ -133,6 +135,6 @@
           templates: @json($templates ?? []),
       };
     </script>
-    <script type="module" crossorigin src="{{ asset('certicraft/assets/index-C0hBGPWS.js') }}"></script>
+    <script type="module" crossorigin src="{{ asset('certicraft/assets/' . $studioJs) }}"></script>
 @endsection
 @endif
