@@ -12,6 +12,7 @@ use App\Models\SocialPostPreference;
 use App\Models\SocialPoll;
 use App\Models\SocialPollVote;
 use App\Services\Community\CommunityMedia;
+use App\Services\Community\FeedResponseCache;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -125,8 +126,19 @@ class SocialFeedApiController extends Controller
 
     public function index(Request $request)
     {
-        $this->company($request);
+        $company = $this->company($request);
         $perPage = min(30, max(5, (int) $request->integer('per_page', 12)));
+        $payload = FeedResponseCache::remember(
+            $request,
+            $company,
+            fn () => $this->feedPayload($request, $perPage)
+        );
+
+        return response()->json($payload);
+    }
+
+    private function feedPayload(Request $request, int $perPage): array
+    {
         $query = $this->feedOrder(SocialPost::query()->visibleTo($request->user())
             ->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($q) => $q->withCount('votes'), 'original' => fn ($q) => $q->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($inner) => $inner->withCount('votes')])->withCount(['comments', 'reactions', 'shares'])])
             ->withCount(['comments', 'reactions', 'shares']));
@@ -140,14 +152,15 @@ class SocialFeedApiController extends Controller
             $this->hydrateSummary($rows, $request);
             $data = $rows->map(fn ($post) => $this->postData($post, $request))->values();
             $next = $hasMore && $rows->isNotEmpty() ? $this->encodeCursor($rows->last()) : null;
-            return response()->json([
+
+            return [
                 'data' => $data,
                 'current_page' => max(1, (int) $request->integer('page', 1)),
                 'per_page' => $perPage,
                 'next_cursor' => $next,
                 'has_more' => $hasMore,
                 'next_page_url' => $next === null ? null : url()->current().'?'.http_build_query(['cursor' => $next, 'per_page' => $perPage]),
-            ]);
+            ];
         }
 
         $posts = $query->paginate($perPage, ['*'], 'page', max(1, (int) $request->integer('page', 1)));
@@ -159,7 +172,8 @@ class SocialFeedApiController extends Controller
         $payload = $posts->toArray();
         $payload['next_cursor'] = $nextCursor;
         $payload['has_more'] = $hasMore;
-        return response()->json($payload);
+
+        return $payload;
     }
 
     public function show(Request $request, SocialPost $post)

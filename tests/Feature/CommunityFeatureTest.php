@@ -60,6 +60,7 @@ class CommunityFeatureTest extends TestCase
         (require __DIR__.'/../../database/migrations/2026_11_12_000001_create_social_stories.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_13_000001_create_social_story_reactions.php')->up();
         (require __DIR__.'/../../database/migrations/2026_11_14_000001_add_social_post_background.php')->up();
+        (require __DIR__.'/../../database/migrations/2026_11_14_000002_add_social_feed_performance_indexes.php')->up();
         Gate::before(fn ($user,$ability) => in_array($ability,$this->abilities,true));
         Passport::actingAs(User::findOrFail(10));
         Route::middleware(\Illuminate\Routing\Middleware\SubstituteBindings::class)->group(function () {
@@ -466,6 +467,10 @@ class CommunityFeatureTest extends TestCase
 
     public function test_mobile_permission_and_community_migrations_work_together_and_roll_back(): void
     {
+        $indexes = require __DIR__.'/../../database/migrations/2026_11_14_000002_add_social_feed_performance_indexes.php';
+        $indexes->down();
+        $indexes->up();
+
         // Existing installs may have registered mobile menu/function abilities first.
         $permissions = require __DIR__.'/../../database/migrations/2026_11_11_000001_add_mobile_menu_function_permissions.php';
         $community = require __DIR__.'/../../database/migrations/2026_11_11_000002_create_flash_views_and_social_feed.php';
@@ -521,4 +526,35 @@ class CommunityFeatureTest extends TestCase
         $this->delete('/_test/community/posts/'.$post->id)->assertRedirect();
         $this->assertNull(SocialPost::find($post->id));
     }
+    public function test_feed_cache_invalidates_when_a_post_changes(): void
+    {
+        config(['social_feed.cache_ttl' => 30, 'cache.default' => 'array']);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->grantFeed();
+        $post = $this->makePost(['body' => 'Cached body']);
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('social_feed:version:1'));
+
+        $this->getJson('/api/social-feed?page=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.body', 'Cached body');
+
+        $post->update(['body' => 'Updated body']);
+        $this->getJson('/api/social-feed?page=1')
+            ->assertOk()
+            ->assertJsonPath('data.0.body', 'Updated body');
+    }
+
+    public function test_large_api_responses_are_gzipped_when_requested(): void
+    {
+        $this->grantFeed();
+        $this->makePost(['body' => str_repeat('large payload ', 600)]);
+
+        $response = $this->withHeaders(['Accept-Encoding' => 'gzip'])
+            ->getJson('/api/social-feed?page=1');
+        $response->assertOk()->assertHeader('Content-Encoding', 'gzip');
+        $decoded = gzdecode($response->getContent());
+        $this->assertIsString($decoded);
+        $this->assertStringContainsString('large payload', $decoded);
+    }
+
 }

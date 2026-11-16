@@ -100,16 +100,27 @@
         if (!paper || !window.EmployeeFormPrintPermissions?.[type]) continue;
         let touched = false;
         const printButtons = Array.from(document.querySelectorAll(`[onclick*="${printFunction}("]`));
-        const toolbar = document.createElement('div'); toolbar.className = 'employee-complete-toolbar d-flex flex-wrap align-items-center gap-2 mb-3 no-print';
+        const toolbar = document.createElement('div'); toolbar.className = 'employee-complete-toolbar employee-warning-form-actions-inner d-flex flex-wrap align-items-center gap-2 no-print';
         const save = document.createElement('button'); save.type = 'button'; save.className = 'btn btn-primary btn-sm'; save.textContent = config.create;
         const fresh = document.createElement('button'); fresh.type = 'button'; fresh.className = 'btn btn-outline-secondary btn-sm'; fresh.textContent = config.newForm;
         const history = document.createElement('button'); history.type = 'button'; history.className = 'btn btn-outline-secondary btn-sm'; history.textContent = config.history;
         const status = document.createElement('span'); status.className = 'small text-muted'; status.setAttribute('role', 'status');
-        toolbar.append(save, fresh, history, status); paper.before(toolbar);
+        toolbar.append(save, fresh, history, status);
+        const toolbarHost = paper.closest('.tab-pane')?.querySelector(`[data-saved-form-toolbar="${type}"]`);
+        if (toolbarHost) toolbarHost.append(toolbar); else paper.before(toolbar);
         const sync = () => {
             const id = window.EmployeeSavedForms.recordId(type, paper);
             printButtons.forEach(button => {button.disabled = !id;});
             save.textContent = saved.has(type) ? config.update : config.create;
+            const steps = paper.closest('.tab-pane')?.querySelectorAll('.employee-request-steps li') || [];
+            const currentStep = id ? 3 : (touched ? 2 : 1);
+            steps.forEach((step, index) => {
+                const number = index + 1;
+                step.classList.toggle('is-complete', number < currentStep);
+                step.classList.toggle('is-current', number === currentStep);
+                if (number === currentStep) step.setAttribute('aria-current', 'step');
+                else step.removeAttribute('aria-current');
+            });
         };
         const changed = () => {touched = true; sync();};
         paper.addEventListener('input', changed); paper.addEventListener('change', changed); sync();

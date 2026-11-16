@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Task;
 use App\Observers\TaskObserver;
+use App\Services\Community\FeedResponseCache;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
+        FeedResponseCache::registerInvalidation();
         Paginator::useBootstrap();
 //        JsonResource::withoutWrapping();
         Relation::enforceMorphMap([

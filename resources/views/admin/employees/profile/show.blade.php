@@ -107,6 +107,11 @@
             $activeProfileTab = array_key_exists($requestedProfileTab, $tabs) ? $requestedProfileTab : $activeProfileTab;
         @endphp
 
+        @if($canViewDiscipline)
+            <link rel="stylesheet" href="{{ asset('assets/css/staff-warning-a4.css') }}?v={{ filemtime(public_path('assets/css/staff-warning-a4.css')) }}">
+            <script defer src="{{ asset('assets/js/staff-warning-a4.js') }}?v={{ filemtime(public_path('assets/js/staff-warning-a4.js')) }}"></script>
+        @endif
+
         <style>
             .employee-360-hero {
                 display: grid;
@@ -412,9 +417,189 @@
                 color: var(--employee-complete-accent);
             }
             .employee-warning-paper {
-                max-width: 190mm;
-                min-height: 277mm;
-                padding: 12mm 12mm;
+                --employee-complete-accent: #7f1d1d;
+                --employee-complete-accent-soft: #fff7f7;
+                --employee-complete-accent-rail: rgba(127, 29, 29, .12);
+                max-width: 178mm;
+                min-height: 252mm;
+                padding: 9mm 9mm 8mm;
+            }
+            .employee-warning-workspace .employee-request-workspace-header { padding-bottom: 16px; }
+            .employee-warning-workspace .employee-request-steps { margin-bottom: 0; }
+            .employee-warning-workspace .employee-request-steps li.is-current {
+                background: #fff7f7;
+                border-color: #fecaca;
+            }
+            .employee-warning-workspace .is-current .employee-request-step-number { background: #991b1b; }
+            .employee-warning-form-actions {
+                border-top: 1px solid #e8edf4;
+                margin-top: 18px;
+                padding: 14px 24px 18px;
+            }
+            .employee-warning-form-actions-inner .btn-primary { background: #991b1b; border-color: #991b1b; }
+            .employee-warning-form-actions-inner .btn-primary:hover { background: #7f1d1d; border-color: #7f1d1d; }
+            .employee-warning-form-actions-inner [role="status"] { margin-left: auto; }
+            .employee-warning-preview {
+                background: #eef1f5;
+                border: 1px solid #dde3eb;
+                border-radius: 8px;
+                overflow-x: auto;
+                padding: 24px;
+            }
+            .employee-warning-preview:focus-visible { outline: 2px solid #991b1b; outline-offset: 2px; }
+            .employee-warning-preview-heading { margin-top: 20px; }
+            .employee-warning-preview-heading .btn { margin-left: auto; }
+            @media (max-width: 767px) {
+                .employee-warning-workspace .employee-request-steps { grid-template-columns: 1fr; }
+                .employee-warning-form-actions { padding: 14px 18px 18px; }
+                .employee-warning-preview { padding: 12px; }
+                .employee-warning-preview-heading { align-items: stretch; }
+                .employee-warning-preview-heading .btn { margin-left: 0; }
+            }
+            .employee-warning-paper {
+                border-top: 4px solid #7f1d1d;
+            }
+            .employee-warning-paper .employee-complete-header {
+                display: grid;
+                grid-template-columns: 20mm 1fr auto;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 7px;
+                min-height: 24mm;
+                padding-bottom: 7px;
+                text-align: left;
+            }
+            .employee-warning-paper .employee-complete-header img {
+                background: #fff;
+                border: 1px solid #e2e8f0;
+                border-radius: 5px;
+                height: 19mm;
+                object-fit: contain;
+                padding: 2mm;
+                width: 19mm;
+            }
+            .employee-warning-paper .employee-complete-header::before { display: none; }
+            .employee-warning-paper .employee-warning-title-block { text-align: center; }
+            .employee-warning-paper .employee-warning-company {
+                color: #334155;
+                font-size: 10px;
+                font-weight: 700;
+                margin-bottom: 2px;
+            }
+            .employee-warning-paper .employee-warning-title {
+                color: #7f1d1d;
+                font-size: 15px;
+                letter-spacing: .35px;
+                line-height: 1.2;
+                margin-bottom: 2px;
+            }
+            .employee-warning-paper .employee-warning-subtitle {
+                color: #64748b;
+                font-size: 9px;
+                font-weight: 600;
+            }
+            .employee-warning-paper .employee-warning-meta {
+                color: #64748b;
+                font-size: 8px;
+                text-align: right;
+                white-space: nowrap;
+            }
+            .employee-warning-paper .employee-complete-section { margin-bottom: 6px; }
+            .employee-warning-paper .employee-complete-section h6 {
+                background: #f8fafc;
+                border-left-color: #7f1d1d;
+                font-size: 9px;
+                margin-bottom: 3px;
+                padding: 4px 7px;
+            }
+            .employee-warning-paper .employee-complete-grid {
+                border-left: 1px solid #cbd5e1;
+                border-top: 1px solid #cbd5e1;
+                display: grid;
+            }
+            .employee-warning-paper .warning-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .employee-warning-paper .warning-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .employee-warning-paper .warning-sign-grid { grid-template-columns: 1.4fr .6fr 1.4fr .6fr 1.4fr .6fr; }
+            .employee-warning-paper .full-span { grid-column: 1 / -1; }
+            .employee-warning-paper .employee-complete-field {
+                display: flex;
+                flex-direction: column;
+                min-height: 38px;
+                border-bottom: 1px solid #cbd5e1;
+                border-right: 1px solid #cbd5e1;
+            }
+            .employee-warning-paper .employee-complete-field > span {
+                background: #f8fafc;
+                border: 0;
+                color: #475569;
+                font-size: 7.5px;
+                line-height: 1.2;
+                min-height: 17px;
+                padding: 3px 5px 1px;
+            }
+            .employee-warning-paper .employee-warning-input {
+                background: #fff;
+                border: 0;
+                border-top: 1px solid #eef2f7;
+                border-radius: 0;
+                color: #0f172a;
+                font: inherit;
+                font-size: 9px;
+                min-height: 20px;
+                outline: 0;
+                padding: 2px 5px;
+                width: 100%;
+            }
+            .employee-warning-paper .employee-warning-input[readonly] {
+                background: #fbfcfe;
+                font-weight: 600;
+            }
+            .employee-warning-paper select.employee-warning-input { cursor: pointer; }
+            .employee-warning-paper textarea.employee-warning-input {
+                min-height: 31px;
+                resize: vertical;
+            }
+            .employee-warning-paper .employee-warning-severity {
+                align-items: center;
+                border: 1px solid #cbd5e1;
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                padding: 4px 7px;
+            }
+            .employee-warning-paper .employee-warning-severity > span {
+                color: #475569;
+                font-size: 8px;
+                font-weight: 700;
+                grid-column: 1 / -1;
+                padding-bottom: 3px;
+            }
+            .employee-warning-paper .employee-warning-severity label {
+                align-items: center;
+                color: #334155;
+                display: flex;
+                font-size: 8px;
+                gap: 4px;
+                min-height: 19px;
+            }
+            .employee-warning-paper .employee-warning-ack-text {
+                color: #475569;
+                font-size: 7.5px;
+                line-height: 1.35;
+                margin: 5px 0;
+            }
+            .employee-warning-paper .employee-complete-footer {
+                border-top: 1px solid #cbd5e1;
+                color: #64748b;
+                font-size: 7.5px;
+                margin-top: 6px;
+                padding-top: 4px;
+                text-align: center;
+            }
+            @media (max-width: 575.98px) {
+                .employee-warning-paper .warning-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .employee-warning-paper .warning-grid-2 { grid-template-columns: 1fr; }
+                .employee-warning-paper .employee-warning-severity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+                .employee-warning-paper .warning-sign-grid { grid-template-columns: 1fr 1fr; }
             }
             .employee-warning-title {
                 color: #991b1b;
@@ -1503,8 +1688,23 @@
                     font-size: 9.5px;
                 }
                 .employee-warning-paper {
-                    min-height: 277mm;
-                    padding: 8mm 8mm 6mm;
+                    box-sizing: border-box;
+                    max-width: none;
+                    min-height: 297mm;
+                    padding: 8mm 8mm 7mm;
+                    width: 210mm;
+                }
+                .employee-warning-print-value {
+                    color: #0f172a;
+                    display: block;
+                    font-size: 9px;
+                    min-height: 20px;
+                    overflow-wrap: anywhere;
+                    padding: 2px 5px;
+                    white-space: pre-wrap;
+                }
+                #employeeWarningPrintRoot .employee-warning-status-item input {
+                    accent-color: #7f1d1d;
                 }
                 .employee-contract-paper {
                     min-height: 277mm;

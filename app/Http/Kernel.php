@@ -45,6 +45,7 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\ApiLanguageManager::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\CompressApiResponse::class,
         ],
     ];
 
