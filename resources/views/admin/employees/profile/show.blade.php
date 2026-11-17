@@ -74,6 +74,9 @@
                 $tabs['salary'] = __('index.salary');
                 $tabs['salary-certificate'] = __('index.salary_certificate');
             }
+            if ($canViewEmployment || $canViewSalary || auth('admin')->check()) {
+                $tabs['employment-certificate'] = __('index.employment_certificate');
+            }
             if ($canViewLeaveRecords) {
                 $tabs['leave-letter'] = __('index.leave_letter');
             }
@@ -1561,6 +1564,8 @@
                 #employeeContractPrintRoot *,
                 #employeeSalaryCertificatePrintRoot,
                 #employeeSalaryCertificatePrintRoot *,
+                #employeeEmploymentCertificatePrintRoot,
+                #employeeEmploymentCertificatePrintRoot *,
                 #employeeLeaveLetterPrintRoot,
                 #employeeLeaveLetterPrintRoot *,
                 #employeeTimeLeaveLetterPrintRoot,
@@ -1576,6 +1581,7 @@
                 body.printing-warning-form .main-wrapper,
                 body.printing-contract-form .main-wrapper,
                 body.printing-salary-certificate .main-wrapper,
+                body.printing-employment-certificate .main-wrapper,
                 body.printing-leave-letter .main-wrapper,
                 body.printing-time-leave-letter .main-wrapper,
                 body.printing-attendance-daily-report .main-wrapper,
@@ -1587,6 +1593,7 @@
                 body.printing-warning-form #employeeWarningPrintRoot,
                 body.printing-contract-form #employeeContractPrintRoot,
                 body.printing-salary-certificate #employeeSalaryCertificatePrintRoot,
+                body.printing-employment-certificate #employeeEmploymentCertificatePrintRoot,
                 body.printing-leave-letter #employeeLeaveLetterPrintRoot,
                 body.printing-time-leave-letter #employeeTimeLeaveLetterPrintRoot,
                 body.printing-attendance-daily-report #employeeAttendanceDailyReportPrintRoot,
@@ -1739,6 +1746,17 @@
                 }
                 #employeeSalaryCertificatePrintRoot {
                     page: salary-certificate;
+                }
+                @page employment-certificate {
+                    size: A4 portrait;
+                    margin: 0;
+                }
+                #employeeEmploymentCertificatePrintRoot {
+                    page: employment-certificate;
+                }
+                .employee-employment-certificate-paper,
+                .employee-employment-certificate-paper * {
+                    break-inside: avoid;
                 }
                 .employee-salary-certificate-paper .employee-salary-certificate-letterhead,
                 .employee-salary-certificate-paper .employee-salary-certificate-employee-grid,
@@ -2575,6 +2593,12 @@
                         </div>
                     @endif
 
+                    @if($canViewEmployment || $canViewSalary || auth('admin')->check())
+                        <div class="tab-pane fade {{ $activeProfileTab === 'employment-certificate' ? 'show active' : '' }}" id="employment-certificate" role="tabpanel">
+                            @include('admin.employees.profile.partials.employment-certificate')
+                        </div>
+                    @endif
+
                     @if($canViewLeaveRecords)
                         <div class="tab-pane fade {{ $activeProfileTab === 'leave-letter' ? 'show active' : '' }}" id="leave-letter" role="tabpanel">
                             @include('admin.employees.profile.partials.leave-letter')
@@ -2737,6 +2761,7 @@
             document.body.classList.remove('printing-warning-form');
             document.body.classList.remove('printing-contract-form');
             document.body.classList.remove('printing-salary-certificate');
+            document.body.classList.remove('printing-employment-certificate');
             document.body.classList.remove('printing-leave-letter');
             document.body.classList.remove('printing-time-leave-letter');
             document.body.classList.remove('printing-attendance-daily-report');
@@ -2746,6 +2771,7 @@
             document.getElementById('employeeWarningPrintRoot')?.remove();
             document.getElementById('employeeContractPrintRoot')?.remove();
             document.getElementById('employeeSalaryCertificatePrintRoot')?.remove();
+            document.getElementById('employeeEmploymentCertificatePrintRoot')?.remove();
             document.getElementById('employeeLeaveLetterPrintRoot')?.remove();
             document.getElementById('employeeTimeLeaveLetterPrintRoot')?.remove();
             document.getElementById('employeeAttendanceDailyReportPrintRoot')?.remove();
@@ -2758,6 +2784,7 @@
             warning: {{ $canPrintWarningForm ? 'true' : 'false' }},
             contract: @can('employee.contract_form.print') true @else false @endcan,
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
+            employmentCertificate: {{ ($canViewEmployment || $canViewSalary || auth('admin')->check()) ? 'true' : 'false' }},
             leaveLetter: {{ $canPrintLeaveForm ? 'true' : 'false' }},
             timeLeaveLetter: {{ $canPrintTimeLeaveForm ? 'true' : 'false' }},
             attendanceDailyReport: {{ $canPrintAttendanceDailyReport ? 'true' : 'false' }},
@@ -3555,6 +3582,10 @@
 
         function printSalaryCertificate() {
             printEmployeeProfilePaper('#salary-certificate .employee-salary-certificate-paper', 'employeeSalaryCertificatePrintRoot', 'printing-salary-certificate', 'salaryCertificate');
+        }
+
+        function printEmploymentCertificate() {
+            printEmployeeProfilePaper('#employment-certificate .employee-employment-certificate-paper', 'employeeEmploymentCertificatePrintRoot', 'printing-employment-certificate', 'employmentCertificate');
         }
 
         function printLeaveLetter() {

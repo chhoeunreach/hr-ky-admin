@@ -366,6 +366,7 @@ class EmployeeProfileController extends Controller
             'warning' => ['employee.warning_form.print', 'Staff Warning Form'],
             'contract' => ['employee.contract_form.print', 'Employment Contract'],
             'salaryCertificate' => [null, 'Salary Certificate'],
+            'employmentCertificate' => [null, 'Employment Certificate'],
             'leaveLetter' => ['employee.leave_form.print', __('index.leave_request_form')],
             'timeLeaveLetter' => ['employee.time_leave_form.print', __('index.time_leave_request_form')],
             'attendanceDailyReport' => ['employee.attendance_daily_report.print', 'Attendance Daily Report'],
@@ -597,6 +598,86 @@ class EmployeeProfileController extends Controller
         $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));
         $employeeName = trim($employeeName, '-') ?: 'Employee-' . $employee->id;
         $filename = 'Salary-Certificate-' . $employeeName . '-' . now()->format('Ymd') . '.doc';
+
+        return response($content, 200, [
+            'Content-Type' => 'application/msword; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
+    }
+
+    public function downloadEmploymentCertificateWord(Request $request, User $employee)
+    {
+        $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
+        abort_unless(
+            $this->can('employee.employment.view') || $this->can('employee.salary.view') || auth('admin')->check(),
+            403
+        );
+
+        $employee->load([
+            'branch:id,name,address,phone,logo',
+            'department:id,dept_name',
+            'post:id,post_name',
+            'employee360Profile',
+            'employeeSalary',
+        ]);
+
+        $profile = $employee->employee360Profile ?: new EmployeeProfile(['employee_id' => $employee->id]);
+        if ($employee->employeeSalary) {
+            $salaryAmounts = app(\App\Services\Payroll\EmployeeSalaryManagementService::class)->amounts($employee->employeeSalary);
+            $profile->current_base_salary = $salaryAmounts['base'];
+            $profile->allowances = $salaryAmounts['allowance'];
+        }
+        $latestSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)->where('approval_status', 'approved')
+            ->latest('effective_date')
+            ->latest('id')
+            ->first();
+        $firstSalary = EmployeeSalaryHistory::where('employee_id', $employee->id)
+            ->oldest('effective_date')
+            ->oldest('id')
+            ->first();
+        $contract = EmployeeContract::where('employee_id', $employee->id)->first();
+        $logoRelativePath = $employee->branch?->logo
+            ? Branch::UPLOAD_PATH . $employee->branch->logo
+            : 'assets/images/logo.png';
+        $logoPath = public_path($logoRelativePath);
+        $certificateLogoData = null;
+        if (File::isFile($logoPath)) {
+            $certificateLogoData = 'data:' . File::mimeType($logoPath)
+                . ';base64,' . base64_encode(File::get($logoPath));
+        }
+
+        $purpose = $request->input('purpose', 'ការងាររដ្ឋបាល ទំនាក់ទំនងស្ថាប័នធនាគារ និងបំពេញបែបបទផ្សេងៗតាមផ្លូវច្បាប់');
+        $includeSalary = $request->boolean('include_salary', true);
+        $authorizedName = $request->input('authorized_name', auth('admin')->user()?->name ?: (auth()->user()?->name ?: 'ម៉េង សោភា'));
+        $authorizedRole = $request->input('authorized_role', 'ប្រធានផ្នែកធនធានមនុស្ស / HR Manager');
+        $referenceNumber = $request->input('reference_number', 'EMP-CERT-' . str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT) . '/' . now()->format('Y'));
+
+        $content = view('admin.employees.profile.exports.employment-certificate-word', compact(
+            'employee',
+            'profile',
+            'latestSalary',
+            'firstSalary',
+            'contract',
+            'certificateLogoData',
+            'purpose',
+            'includeSalary',
+            'authorizedName',
+            'authorizedRole',
+            'referenceNumber'
+        ))->render();
+
+        $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));
+        $employeeName = trim($employeeName, '-') ?: 'Employee-' . $employee->id;
+        $filename = 'Employment-Certificate-' . $employeeName . '-' . now()->format('Ymd') . '.doc';
+
+        return response($content, 200, [
+            'Content-Type' => 'application/msword; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control' => 'max-age=0, no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+        ]);
     }
 
     public function updateProfile(Request $request, User $employee): RedirectResponse

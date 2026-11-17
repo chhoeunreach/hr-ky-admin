@@ -3440,4 +3440,15 @@ return [
     'staff_warning_hr_signature' => 'តំណាងធនធានមនុស្ស',
     'staff_warning_date' => 'កាលបរិច្ឆេទ',
     'staff_warning_footer' => 'កំណត់ត្រាសម្ងាត់ផ្នែកធនធានមនុស្ស។ សូមរក្សាទុកដោយសុវត្ថិភាពក្នុងសំណុំឯកសារបុគ្គលិក។',
+
+    // Employment Certificate
+    'employment_certificate' => 'លិខិតបញ្ជាក់ការងារ',
+    'employment_certificate_khmer' => 'លិខិតបញ្ជាក់ការងារ',
+    'employment_certificate_download_word' => 'ទាញយក Word (.doc)',
+    'employment_certificate_title' => 'លិខិតបញ្ជាក់ការងារ',
+    'employment_certificate_letterhead_sub' => 'ផ្នែករដ្ឋបាល និងធនធានមនុស្ស',
+    'employment_certificate_certified' => 'បញ្ជាក់',
+    'employment_certificate_not_certified' => 'មិនបញ្ជាក់',
+    'employment_certificate_currently_working' => 'កំពុងបម្រើការងារ',
+    'employment_certificate_purpose_default' => 'ការងាររដ្ឋបាល ទំនាក់ទំនងស្ថាប័នធនាគារ និងបំពេញបែបបទផ្សេងៗតាមផ្លូវច្បាប់។',
 ];

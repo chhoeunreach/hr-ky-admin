@@ -3369,4 +3369,15 @@ return [
     'staff_warning_hr_signature' => 'HR representative',
     'staff_warning_date' => 'Date',
     'staff_warning_footer' => 'Confidential HR record. File securely in the employee personnel record.',
+
+    // Employment Certificate
+    'employment_certificate' => 'Employment Certificate',
+    'employment_certificate_khmer' => 'លិខិតបញ្ជាក់ការងារ',
+    'employment_certificate_download_word' => 'Download Word (.doc)',
+    'employment_certificate_title' => 'CERTIFICATE OF EMPLOYMENT',
+    'employment_certificate_letterhead_sub' => 'Administration & Human Resources Department',
+    'employment_certificate_certified' => 'Certified',
+    'employment_certificate_not_certified' => 'Not Certified',
+    'employment_certificate_currently_working' => 'Currently Employed',
+    'employment_certificate_purpose_default' => 'Administrative affairs, banking procedures, and official legal documentation.',
 ];

@@ -302,6 +302,7 @@ Route::group([
             Route::get('form-records', [EmployeeProfileController::class, 'printFormHistory'])->name('form-records.index');
             Route::post('print-records', [EmployeeProfileController::class, 'recordPrint'])->name('print-records.store');
             Route::get('salary-certificate/word', [EmployeeProfileController::class, 'downloadSalaryCertificateWord'])->name('salary-certificate.word');
+            Route::get('employment-certificate/word', [EmployeeProfileController::class, 'downloadEmploymentCertificateWord'])->name('employment-certificate.word');
             Route::put('/', [EmployeeProfileController::class, 'updateProfile'])->name('update');
             Route::post('employment-history', [EmployeeProfileController::class, 'storeEmployment'])->name('employment.store');
             Route::patch('salary-history/{salary}/status', [EmployeeProfileController::class, 'updateSalaryStatus'])->name('salary.status');
