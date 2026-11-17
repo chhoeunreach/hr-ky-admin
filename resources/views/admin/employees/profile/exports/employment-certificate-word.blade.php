@@ -156,14 +156,14 @@
     <style>
         @page EmploymentCertificate {
             size: 595.3pt 841.9pt; /* A4 Portrait */
-            margin: 36pt 45pt 36pt 45pt;
+            margin: 22pt 36pt 22pt 36pt; /* Compact margins to avoid spillover */
             mso-page-orientation: portrait;
         }
         div.EmploymentCertificate { page: EmploymentCertificate; }
         body {
             font-family: "Khmer OS Battambang", "Khmer OS", "Khmer Busra", Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
+            font-size: 10pt;
+            line-height: 1.45;
             color: #1e293b;
             background: #ffffff;
             margin: 0;
@@ -179,81 +179,82 @@
         }
         .header-table td {
             vertical-align: top;
-            padding-bottom: 8pt;
+            padding-bottom: 5pt;
             border-bottom: 1.5pt solid #092653;
         }
         .company-title {
             color: #092653;
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: bold;
             font-family: "Khmer OS Moul", "Khmer OS", Arial, sans-serif;
         }
         .meta-info {
-            font-size: 9.5pt;
+            font-size: 8.5pt;
             color: #475569;
-            line-height: 1.4;
+            line-height: 1.35;
         }
         .doc-title {
             text-align: center;
-            margin-top: 18pt;
-            margin-bottom: 16pt;
+            margin-top: 7pt;
+            margin-bottom: 7pt;
         }
         .doc-title h2 {
             font-family: "Khmer OS Moul", "Khmer OS", Arial, sans-serif;
-            font-size: 17pt;
+            font-size: 15pt;
             color: #092653;
             margin: 0;
             padding: 0;
         }
         .doc-title .eng-sub {
             font-family: "Cinzel", "Times New Roman", serif;
-            font-size: 10.5pt;
+            font-size: 9pt;
             font-weight: bold;
             letter-spacing: 2px;
             color: #64748b;
-            margin-top: 2pt;
+            margin-top: 1pt;
         }
         .intro-text {
-            font-size: 11pt;
-            line-height: 1.7;
-            margin-bottom: 12pt;
+            font-size: 10pt;
+            line-height: 1.45;
+            margin-bottom: 6pt;
             text-align: justify;
         }
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 14pt;
+            margin-bottom: 6pt;
         }
         .data-table td {
             border: 1pt solid #94a3b8;
-            padding: 5.5pt 8pt;
-            font-size: 10.5pt;
+            padding: 3.5pt 6pt;
+            font-size: 9.5pt;
+            line-height: 1.35;
             vertical-align: middle;
         }
         .data-table .label-col {
-            width: 30%;
+            width: 28%;
             background-color: #f8fafc;
             font-weight: bold;
             color: #1e293b;
         }
         .data-table .val-col {
-            width: 70%;
+            width: 72%;
         }
         .box-check {
-            font-size: 12pt;
+            font-size: 11pt;
             font-family: "Arial", sans-serif;
             font-weight: bold;
-            margin-right: 3pt;
+            margin-right: 2pt;
         }
         .closing-text {
-            font-size: 10.5pt;
-            line-height: 1.7;
-            margin-bottom: 16pt;
+            font-size: 9.5pt;
+            line-height: 1.45;
+            margin-bottom: 8pt;
             text-align: justify;
         }
         .signature-table {
             width: 100%;
-            margin-top: 28pt;
+            margin-top: 8pt;
             table-layout: fixed;
         }
         .signature-table td {
@@ -362,8 +363,8 @@
 
         <!-- Concluding Confirmation Statement -->
         <div class="closing-text">
-            បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅ {{ $companyNameKhmer }} តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong>{{ $certPurpose }}</strong>។<br><br>
-            យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានជាក់ស្ដែង គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ។<br><br>
+            បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅ {{ $companyNameKhmer }} តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong>{{ $certPurpose }}</strong>。<br>
+            យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានជាក់ស្ដែង គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ。<br>
             <strong>សូមអរគុណ។</strong>
         </div>
 
@@ -377,9 +378,9 @@
                 <td>
                     <strong>ហត្ថលេខា និងឈ្មោះអ្នកមានសិទ្ធិ</strong><br>
                     <span style="font-size: 8.5pt; color: #64748b;">(Authorized Signature & Name)</span>
-                    <br><br><br><br>
+                    <div style="height: 38pt;"></div>
                     <strong>({{ $repName }})</strong><br>
-                    <span style="font-size: 9.5pt; color: #334155;">តួនាទី៖ {{ $repRole }}</span>
+                    <span style="font-size: 9pt; color: #334155;">តួនាទី៖ {{ $repRole }}</span>
                 </td>
             </tr>
         </table>

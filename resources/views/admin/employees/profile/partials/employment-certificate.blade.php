@@ -235,27 +235,27 @@
 
         <!-- Company Letterhead Header -->
         <header class="employee-employment-certificate-header">
-            <div class="d-flex align-items-start justify-content-between gap-3 border-bottom pb-2.5">
-                <div class="d-flex align-items-center gap-3">
-                    <img class="employee-employment-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo" style="width: 58px; height: 58px; object-fit: contain;">
+            <div class="d-flex align-items-start justify-content-between gap-3 border-bottom pb-1.5">
+                <div class="d-flex align-items-center gap-2.5">
+                    <img class="employee-employment-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo" style="width: 46px; height: 46px; object-fit: contain;">
                     <div>
-                        <div class="fw-bold font-moul text-primary" style="font-size: 14.5px; line-height: 1.4; color: #092653 !important;">
+                        <div class="fw-bold font-moul text-primary" style="font-size: 13.5px; line-height: 1.35; color: #092653 !important;">
                             {{ $companyNameKhmer }}
                         </div>
-                        <div class="small text-muted font-kantumruy" style="font-size: 11.5px; margin-top: 2px;">
+                        <div class="small text-muted font-kantumruy" style="font-size: 11px; margin-top: 1px;">
                             <strong>អាសយដ្ឋាន៖</strong> <span id="empCertAddressSpan">{{ $branchAddress }}</span>
                         </div>
-                        <div class="small text-muted font-kantumruy" style="font-size: 11px;">
+                        <div class="small text-muted font-kantumruy" style="font-size: 10.5px;">
                             <strong>ទូរស័ព្ទ៖</strong> {{ $branchPhone }} &nbsp;·&nbsp; <strong>អ៊ីមែល៖</strong> {{ $branchEmail }}
                         </div>
                     </div>
                 </div>
 
                 <div class="text-end font-kantumruy shrink-0" style="min-width: 175px;">
-                    <div class="small text-muted">
+                    <div class="small text-muted" style="font-size: 11px;">
                         <strong>លេខ៖</strong> <span id="empCertRefDisplay" class="font-monospace fw-bold text-dark">{{ $certificateNumber }}</span>
                     </div>
-                    <div class="small text-muted mt-1" style="font-size: 11px;">
+                    <div class="small text-muted" style="font-size: 10.5px; margin-top: 1px;">
                         <span id="empCertDateDisplay">{{ $issueDateKhmer }}</span>
                     </div>
                 </div>
@@ -263,35 +263,35 @@
         </header>
 
         <!-- Document Main Title -->
-        <div class="text-center my-3.5">
-            <h2 class="font-moul mb-1 text-primary" style="font-size: 21px; color: #092653 !important; letter-spacing: 0.5px;">
+        <div class="text-center my-2">
+            <h2 class="font-moul mb-0.5 text-primary" style="font-size: 19px; color: #092653 !important; letter-spacing: 0.5px;">
                 លិខិតបញ្ជាក់ការងារ
             </h2>
-            <div class="font-cinzel text-secondary fw-bold" style="font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">
+            <div class="font-cinzel text-secondary fw-bold" style="font-size: 11px; letter-spacing: 2px; text-transform: uppercase;">
                 Certificate of Employment
             </div>
-            <div class="mx-auto mt-1" style="width: 120px; height: 2px; background: linear-gradient(to right, transparent, #D4A32C, transparent);"></div>
+            <div class="mx-auto" style="width: 110px; height: 1.5px; margin-top: 3px; background: linear-gradient(to right, transparent, #D4A32C, transparent);"></div>
         </div>
 
         <!-- Preamble / Introduction Statement -->
-        <div class="font-kantumruy mb-3" style="font-size: 13px; line-height: 1.8; text-align: justify;">
+        <div class="font-kantumruy mb-2" style="font-size: 12px; line-height: 1.6; text-align: justify;">
             យើងខ្ញុំ <strong id="empCertRepNameDisplay" class="text-dark">{{ $authorizedSignatoryName }}</strong> ជា [<span id="empCertRepRoleDisplay">{{ $authorizedSignatoryRole }}</span>] នៃ <strong class="text-dark">{{ $companyNameKhmer }}</strong> សូមបញ្ជាក់ថា៖
         </div>
 
-        <!-- Employment Verification Table (Exact User Specification) -->
-        <table class="table table-bordered employee-employment-table font-kantumruy mb-3" style="font-size: 12.5px; border-color: #cbd5e1;">
+        <!-- Employment Verification Table -->
+        <table class="table table-bordered employee-employment-table font-kantumruy mb-2" style="font-size: 11.5px; border-color: #cbd5e1; margin-bottom: 7px;">
             <tbody>
                 <tr>
                     <td class="fw-bold bg-light" style="width: 28%; vertical-align: middle;">គោត្តនាម និងនាម</td>
                     <td style="width: 72%;">
-                        <strong class="text-dark" style="font-size: 13.5px;">{{ $fullNameDisplay }}</strong>
+                        <strong class="text-dark" style="font-size: 12.5px;">{{ $fullNameDisplay }}</strong>
                     </td>
                 </tr>
                 <tr>
                     <td class="fw-bold bg-light" style="vertical-align: middle;">ភេទ និង ថ្ងៃខែឆ្នាំកំណើត</td>
                     <td>
                         <span><strong>ភេទ៖</strong> {{ $genderDisplay }}</span>
-                        <span class="mx-3 text-muted">|</span>
+                        <span class="mx-2.5 text-muted">|</span>
                         <span><strong>ថ្ងៃខែឆ្នាំកំណើត៖</strong> {{ $dobDisplay }}</span>
                     </td>
                 </tr>
@@ -323,24 +323,24 @@
                     <td class="fw-bold bg-light" style="vertical-align: middle;">រយៈពេលបម្រើការងារសរុប</td>
                     <td>
                         <strong class="text-dark" id="empCertDurationDisplay">{{ $totalDurationDisplay }}</strong>
-                        <span class="small text-muted ms-2">(គិតត្រឹមកាលបរិច្ឆេទចេញលិខិត)</span>
+                        <span class="small text-muted ms-1.5" style="font-size: 10px;">(គិតត្រឹមកាលបរិច្ឆេទចេញលិខិត)</span>
                     </td>
                 </tr>
                 <tr>
                     <td class="fw-bold bg-light" style="vertical-align: middle;">ម៉ោងបំពេញការងារ (Time In / Out)</td>
                     <td>
                         <span><strong>ម៉ោងចូល (Time In)៖</strong> <span class="fw-bold text-dark" id="empCertTimeInDisplay">{{ $defaultTimeIn }}</span></span>
-                        <span class="mx-3 text-muted">|</span>
+                        <span class="mx-2.5 text-muted">|</span>
                         <span><strong>ម៉ោងចេញ (Time Out)៖</strong> <span class="fw-bold text-dark" id="empCertTimeOutDisplay">{{ $defaultTimeOut }}</span></span>
                         @if($shiftName)
-                            <span class="text-muted ms-2">({{ $shiftName }})</span>
+                            <span class="text-muted ms-1.5" style="font-size: 10.5px;">({{ $shiftName }})</span>
                         @endif
                     </td>
                 </tr>
                 <tr>
                     <td class="fw-bold bg-light" style="vertical-align: middle;">ប្រភេទកិច្ចសន្យា</td>
                     <td>
-                        <div class="d-flex align-items-center gap-4 flex-wrap">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
                             <span><span class="emp-cert-box">{{ $isUDC ? '☑' : '□' }}</span> មិនកំណត់ថិរវេលា (UDC)</span>
                             <span><span class="emp-cert-box">{{ $isFDC ? '☑' : '□' }}</span> មានកំណត់ថិរវេលា (FDC)</span>
                             <span><span class="emp-cert-box">{{ $isOtherContract ? '☑' : '□' }}</span> ផ្សេងៗ</span>
@@ -350,7 +350,7 @@
                 <tr>
                     <td class="fw-bold bg-light" style="vertical-align: middle;">ស្ថានភាពការងារបច្ចុប្បន្ន</td>
                     <td>
-                        <div class="d-flex align-items-center gap-4 flex-wrap">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
                             <span><span class="emp-cert-box">{{ $isCurrentActive ? '☑' : '□' }}</span> កំពុងបម្រើការងារ</span>
                             <span><span class="emp-cert-box">{{ !$isCurrentActive ? '☑' : '□' }}</span> ផ្សេងៗ៖ {{ !$isCurrentActive ? ($profile->employment_status ?: 'បានឈប់សម្រាក') : '................................................' }}</span>
                         </div>
@@ -361,10 +361,10 @@
                     <td>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <div>
-                                <span class="font-monospace fw-bold text-success fs-6" id="empCertSalaryAmountSpan">{{ $salaryDisplay }}</span>
+                                <span class="font-monospace fw-bold text-success" style="font-size: 13px;" id="empCertSalaryAmountSpan">{{ $salaryDisplay }}</span>
                                 <span class="fw-semibold">USD / ខែ</span>
                             </div>
-                            <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-2.5">
                                 <span><span class="emp-cert-box" id="empCertBoxCertified">☑</span> បញ្ជាក់</span>
                                 <span><span class="emp-cert-box" id="empCertBoxUncertified">□</span> មិនបញ្ជាក់</span>
                             </div>
@@ -375,8 +375,8 @@
         </table>
 
         <!-- Concluding Confirmation Statement -->
-        <div class="font-kantumruy mb-3" style="font-size: 12.5px; line-height: 1.85; text-align: justify;">
-            <p class="mb-2">
+        <div class="font-kantumruy mb-2" style="font-size: 11.5px; line-height: 1.55; text-align: justify;">
+            <p class="mb-1">
                 បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅ <strong class="text-dark">{{ $companyNameKhmer }}</strong> តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong id="empCertPurposeDisplay" class="text-dark">{{ $defaultPurpose }}</strong>។
             </p>
             <p class="mb-1">
@@ -386,27 +386,28 @@
         </div>
 
         <!-- Signature & Stamp Section -->
-        <div class="row font-kantumruy mt-4 pt-2">
+        <div class="row font-kantumruy mt-2 pt-1">
             <div class="col-6 text-center">
                 <!-- Left Column placeholder / Stamp -->
-                <div class="text-muted small" style="min-height: 80px;">
-                    <div class="fw-bold text-dark mb-1">ត្រាផ្លូវការ</div>
-                    <small class="text-muted">(Official Stamp)</small>
+                <div class="text-muted small">
+                    <div class="fw-bold text-dark mb-0.5" style="font-size: 12px;">ត្រាផ្លូវការ</div>
+                    <small class="text-muted" style="font-size: 10px;">(Official Stamp)</small>
+                    <div style="height: 48px;"></div>
                 </div>
             </div>
 
             <div class="col-6 text-center">
-                <div class="fw-bold text-dark mb-1">ហត្ថលេខា និងឈ្មោះអ្នកមានសិទ្ធិ</div>
-                <small class="text-muted">(Authorized Signature & Name)</small>
+                <div class="fw-bold text-dark mb-0.5" style="font-size: 12px;">ហត្ថលេខា និងឈ្មោះអ្នកមានសិទ្ធិ</div>
+                <small class="text-muted" style="font-size: 10px;">(Authorized Signature & Name)</small>
 
-                <div style="height: 65px;" class="d-flex align-items-end justify-content-center">
+                <div style="height: 48px;" class="d-flex align-items-end justify-content-center">
                     <!-- Signature space -->
                 </div>
 
-                <div class="fw-bold text-dark" style="font-size: 13.5px;" id="empCertSignNameDisplay">
+                <div class="fw-bold text-dark" style="font-size: 12.5px;" id="empCertSignNameDisplay">
                     ({{ $authorizedSignatoryName }})
                 </div>
-                <div class="small text-muted mt-0.5" id="empCertSignRoleDisplay">
+                <div class="small text-muted mt-0.5" style="font-size: 11px;" id="empCertSignRoleDisplay">
                     តួនាទី៖ {{ $authorizedSignatoryRole }}
                 </div>
             </div>
@@ -417,32 +418,42 @@
 
 <style>
     .employee-employment-certificate-paper {
+        --emp-cert-page-margin: 10mm;
         background: #ffffff;
-        width: 100%;
-        max-width: 820px;
-        min-height: 1040px;
+        width: 210mm;
+        max-width: 210mm;
+        height: 296mm;
+        min-height: 296mm;
         margin: 0 auto;
-        padding: 40px 48px;
+        padding: var(--emp-cert-page-margin);
+        position: relative !important;
+        overflow: hidden;
+        overflow-wrap: anywhere;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
+        border-radius: 4px;
         box-sizing: border-box;
     }
+    .employee-employment-certificate-content {
+        display: flow-root;
+        position: absolute;
+        top: var(--emp-cert-page-margin);
+        left: var(--emp-cert-page-margin);
+        right: var(--emp-cert-page-margin);
+        transform: scale(var(--emp-cert-scale, 1));
+        transform-origin: top center;
+    }
     .employee-employment-table td {
-        padding: 7px 12px;
-        line-height: 1.5;
+        padding: 4px 9px;
+        line-height: 1.4;
         vertical-align: middle;
     }
     .emp-cert-box {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: bold;
         margin-right: 2px;
     }
     @media print {
-        @page {
-            size: A4 portrait;
-            margin: 12mm 15mm;
-        }
         body * {
             visibility: hidden;
         }
@@ -587,6 +598,10 @@
             if (paper) {
                 paper.dispatchEvent(new Event('input', { bubbles: true }));
             }
+        }
+
+        if (typeof window.fitEmploymentCertificatePreview === 'function') {
+            window.fitEmploymentCertificatePreview();
         }
     }
 

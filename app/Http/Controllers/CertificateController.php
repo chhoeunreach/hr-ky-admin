@@ -978,4 +978,18 @@ class CertificateController extends Controller
             ],
         ];
     }
+
+    /**
+     * Enforce certificate permissions for the standalone Studio/API endpoints.
+     * Admin-guard sessions keep their existing full-access behaviour; all other
+     * sessions must hold the matching role permission.
+     */
+    private function authorizeCertificate(string $permission): void
+    {
+        if (Auth::guard('admin')->check()) {
+            return;
+        }
+
+        $this->authorize($permission);
+    }
 }

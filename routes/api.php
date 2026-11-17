@@ -394,8 +394,10 @@ Route::group([
     Route::get('certificates/{id}', [\App\Http\Controllers\Api\CertificateApiController::class, 'show']);
 });
 
-/** Public / Studio HR Certificate API */
-Route::prefix('hr/certificates')->group(function () {
+/** HR Certificate API (authenticated + permission checked) */
+Route::prefix('hr/certificates')
+    ->middleware(['auth:api', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])
+    ->group(function () {
     Route::get('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'index']);
     Route::post('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'store']);
     Route::get('/employees', [\App\Http\Controllers\Api\CertificateApiController::class, 'getEmployees']);

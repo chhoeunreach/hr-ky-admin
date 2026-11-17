@@ -12,6 +12,7 @@ return [
         'attendance' => 'mobile.menu.attendance',
         'award' => 'mobile.menu.award',
         'change-password' => 'mobile.menu.change-password',
+        'certificate' => 'certificate_list',
         'chat' => 'mobile.menu.chat',
         'company-rules' => 'mobile.menu.company-rules',
         'complaint' => 'mobile.menu.complaint',
@@ -47,6 +48,10 @@ return [
     ],
     // null denotes authenticated session/bootstrap infrastructure.
     'functions' => [
+        'CertificateApiController@index' => ['certificate', 'certificate_list'],
+        'CertificateApiController@show' => ['certificate', 'certificate_list'],
+        'CertificateApiController@store' => ['certificate', 'certificate_create'],
+        'CertificateApiController@getEmployees' => ['certificate', 'certificate_create'],
         'FlashViewApiController@index' => ['flash-view', 'flash_view.view'],
         'FlashViewApiController@acknowledge' => ['flash-view', 'flash_view.view'],
         'HomeHighlightApiController@index' => ['home-highlights', 'home_highlight.view'],

@@ -9,12 +9,14 @@
         <a href="{{ route('admin.certificates.templates') }}" class="btn btn-outline-primary">
             <i class="link-icon" data-feather="layout"></i> {{ __('index.certificate_templates') }}
         </a>
+        @can('certificate_create')
         <a href="{{ route('admin.certificates.batch') }}" class="btn btn-outline-info">
             <i class="link-icon" data-feather="users"></i> {{ __('index.batch_issue_certificate') }}
         </a>
         <a href="{{ route('admin.certificates.create') }}" class="btn btn-primary">
             <i class="link-icon" data-feather="plus"></i> {{ __('index.issue_certificate') }}
         </a>
+        @endcan
     </div>
 @endsection
 
@@ -377,15 +379,20 @@
                                         <button type="button" class="btn btn-outline-primary" title="View / Preview Certificate" onclick="openPrintPreviewModal('{{ route('admin.certificates.show', $cert->credential_id) }}', 'Certificate Preview — {{ addslashes($cert->credential_id) }}')">
                                             <i data-feather="eye" style="width: 14px; height: 14px;"></i>
                                         </button>
+                                        @can('certificate_download')
                                         <a href="{{ route('admin.certificates.downloadPdf', $cert->credential_id) }}" class="btn btn-outline-secondary" title="Download PDF">
                                             <i data-feather="download" style="width: 14px; height: 14px;"></i>
                                         </a>
+                                        @endcan
                                         <a href="{{ route('certificates.verify', $cert->credential_id) }}" target="_blank" class="btn btn-outline-success" title="Verify QR">
                                             <i data-feather="check-circle" style="width: 14px; height: 14px;"></i>
                                         </a>
+                                        @can('certificate_edit')
                                         <a href="{{ route('admin.certificates.edit', $cert->id) }}" class="btn btn-outline-info" title="Edit">
                                             <i data-feather="edit-2" style="width: 14px; height: 14px;"></i>
                                         </a>
+                                        @endcan
+                                        @can('certificate_delete')
                                         <form action="{{ route('admin.certificates.destroy', $cert->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this certificate?');">
                                             @csrf
                                             @method('DELETE')
@@ -393,6 +400,7 @@
                                                 <i data-feather="trash-2" style="width: 14px; height: 14px;"></i>
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

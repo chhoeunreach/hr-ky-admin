@@ -628,14 +628,21 @@ class CertificateController extends Controller
     {
         $this->authorizeAccess('certificate_create');
 
-        $users = User::select('id', 'name', 'english_name', 'employee_code', 'department_id', 'branch_id')
-            ->where('status', 'verified')
-            ->orWhereNull('status')
-            ->orderBy('name')
-            ->get();
+        $usersQuery = User::select('id', 'name', 'english_name', 'employee_code', 'department_id', 'branch_id')
+            ->where(function ($q) {
+                $q->where('status', 'verified')->orWhereNull('status');
+            });
+        $branchesQuery = Branch::select('id', 'name');
 
+        if (!AppHelper::canAccessAllBranches()) {
+            $allowedBranchIds = AppHelper::accessibleBranchIds() ?: [0];
+            $usersQuery->whereIn('branch_id', $allowedBranchIds);
+            $branchesQuery->whereIn('id', $allowedBranchIds);
+        }
+
+        $users = $usersQuery->orderBy('name')->get();
         $departments = Department::select('id', 'dept_name')->get();
-        $branches = Branch::select('id', 'name')->get();
+        $branches = $branchesQuery->get();
 
         $selectedEmployeeId = $request->query('employee_id');
         $selectedUser = $selectedEmployeeId ? User::find($selectedEmployeeId) : null;
@@ -671,10 +678,12 @@ class CertificateController extends Controller
     {
         $this->authorizeAccess('certificate_create');
 
+        $validated = $request->validated();
+        $this->authorizeIssuanceBranch($validated['branch_id'] ?? null, $validated['user_id'] ?? null);
+
         try {
             DB::beginTransaction();
 
-            $validated = $request->validated();
             $validated['created_by'] = Auth::id();
 
             $certificate = $this->certificateService->saveCertificate($validated);
@@ -696,6 +705,7 @@ class CertificateController extends Controller
     public function show(Request $request, $id)
     {
         $this->authorizeAccess('certificate_list');
+        $this->authorizeCertificateRecord($id);
 
         $templateId = $request->query('template_id') ?? $request->query('template');
         $layout = $request->query('layout');
@@ -768,6 +778,7 @@ class CertificateController extends Controller
     public function applyTemplate(Request $request, $id)
     {
         $this->authorizeAccess('certificate_edit');
+        $this->authorizeCertificateRecord($id);
 
         $templateId = $request->input('template_id');
         $template = CertificateTemplate::findOrFail($templateId);
@@ -890,6 +901,10 @@ class CertificateController extends Controller
         $ids = array_filter((array) $request->query('ids', []));
         $certificates = [];
         foreach ($ids as $id) {
+            if (!$this->canAccessCertificateRecord($id)) {
+                continue;
+            }
+
             try {
                 $data = $this->certificateService->resolveTemplateData($id);
                 if (!empty($data['recipientName'])) {
@@ -912,6 +927,7 @@ class CertificateController extends Controller
     public function edit($id)
     {
         $this->authorizeAccess('certificate_edit');
+        $this->authorizeCertificateRecord($id);
 
         $certificate = $this->certificateService->findCertificateById($id);
         if (!$certificate) {
@@ -931,11 +947,14 @@ class CertificateController extends Controller
     public function update(CertificateRequest $request, $id)
     {
         $this->authorizeAccess('certificate_edit');
+        $this->authorizeCertificateRecord($id);
+
+        $validated = $request->validated();
+        $this->authorizeIssuanceBranch($validated['branch_id'] ?? null, $validated['user_id'] ?? null);
 
         try {
             DB::beginTransaction();
 
-            $validated = $request->validated();
             $this->certificateService->updateCertificate($id, $validated);
 
             DB::commit();
@@ -953,6 +972,7 @@ class CertificateController extends Controller
     public function destroy($id)
     {
         $this->authorizeAccess('certificate_delete');
+        $this->authorizeCertificateRecord($id);
 
         try {
             DB::beginTransaction();
@@ -974,6 +994,7 @@ class CertificateController extends Controller
     public function downloadPdf(Request $request, $id)
     {
         $this->authorizeAccess('certificate_download');
+        $this->authorizeCertificateRecord($id);
 
         $templateId = $request->query('template_id') ?? $request->query('template');
         $certificate = $this->certificateService->resolveTemplateData($id);
@@ -1127,14 +1148,22 @@ class CertificateController extends Controller
     {
         $this->authorizeAccess('certificate_create');
 
-        $branches = Branch::select('id', 'name')->get();
-        $departments = Department::select('id', 'dept_name', 'branch_id')->get();
-        $users = User::select('id', 'name', 'english_name', 'employee_code', 'avatar', 'department_id', 'branch_id')
+        $branchesQuery = Branch::select('id', 'name');
+        $usersQuery = User::select('id', 'name', 'english_name', 'employee_code', 'avatar', 'department_id', 'branch_id')
             ->with(['branch:id,name', 'department:id,dept_name'])
-            ->where('status', 'verified')
-            ->orWhereNull('status')
-            ->orderBy('name')
-            ->get();
+            ->where(function ($q) {
+                $q->where('status', 'verified')->orWhereNull('status');
+            });
+
+        if (!AppHelper::canAccessAllBranches()) {
+            $allowedBranchIds = AppHelper::accessibleBranchIds() ?: [0];
+            $branchesQuery->whereIn('id', $allowedBranchIds);
+            $usersQuery->whereIn('branch_id', $allowedBranchIds);
+        }
+
+        $branches = $branchesQuery->get();
+        $departments = Department::select('id', 'dept_name', 'branch_id')->get();
+        $users = $usersQuery->orderBy('name')->get();
 
         $dCardOverrides = EmployeeAvatar::loadDCardOverrides();
         $employeePhotos = $users->mapWithKeys(fn (User $user) => [
@@ -1197,10 +1226,21 @@ class CertificateController extends Controller
             'sig2_style' => 'nullable|string|max:50',
         ]);
 
+        $employeeIds = $validated['employee_ids'];
+
+        if (!AppHelper::canAccessAllBranches()) {
+            $allowedBranchIds = AppHelper::accessibleBranchIds() ?: [0];
+            $allowedEmployeeIds = User::whereIn('id', $employeeIds)
+                ->whereIn('branch_id', $allowedBranchIds)
+                ->pluck('id')
+                ->all();
+
+            abort_if(count($allowedEmployeeIds) !== count(array_unique($employeeIds)), 403);
+        }
+
         try {
             DB::beginTransaction();
 
-            $employeeIds = $validated['employee_ids'];
             unset($validated['employee_ids']);
             $validated['created_by'] = Auth::id();
 
@@ -1225,6 +1265,10 @@ class CertificateController extends Controller
     public function getBranchCertificateData($branchId): JsonResponse
     {
         $this->authorizeAnyAccess(['certificate_create', 'certificate_edit', 'certificate_list']);
+
+        if (!AppHelper::canAccessBranch($branchId)) {
+            abort(403);
+        }
 
         try {
             $departments = Department::where('branch_id', $branchId)->select('id', 'dept_name')->get();
@@ -1259,6 +1303,44 @@ class CertificateController extends Controller
     private function authorizeAccess(string $permission): void
     {
         $this->authorize($permission);
+    }
+
+    /**
+     * Restrict a single certificate record to the user's accessible branches.
+     * Admin-guard sessions and users with cross-branch access are unrestricted.
+     */
+    private function canAccessCertificateRecord(string|int $id): bool
+    {
+        if (Auth::guard('admin')->check() || AppHelper::canAccessAllBranches()) {
+            return true;
+        }
+
+        $record = Certificate::where('credential_id', $id)->orWhere('id', $id)->first();
+
+        return !$record || !$record->branch_id || AppHelper::canAccessBranch($record->branch_id);
+    }
+
+    private function authorizeCertificateRecord(string|int $id): void
+    {
+        abort_unless($this->canAccessCertificateRecord($id), 403);
+    }
+
+    /**
+     * Prevent issuing a certificate into a branch the user cannot access.
+     */
+    private function authorizeIssuanceBranch($branchId = null, $userId = null): void
+    {
+        if (AppHelper::canAccessAllBranches()) {
+            return;
+        }
+
+        if (!$branchId && $userId) {
+            $branchId = User::where('id', $userId)->value('branch_id');
+        }
+
+        if ($branchId && !AppHelper::canAccessBranch($branchId)) {
+            abort(403);
+        }
     }
 
     /**

@@ -50,15 +50,21 @@
             <li class="breadcrumb-item active" aria-current="page">{{ __('index.certificate_templates') }}</li>
         </ol>
         <div class="d-flex gap-2">
+            @can('certificate_create')
             <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
                 <i class="link-icon" data-feather="plus"></i> {{ __('index.add_layout_model') }}
             </button>
+            @endcan
+            @can('certificate_studio')
             <a href="{{ route('admin.certificates.studio') }}" class="btn btn-primary btn-sm">
                 <i class="link-icon" data-feather="layout"></i> {{ __('index.certificate_studio') }}
             </a>
+            @endcan
+            @can('certificate_create')
             <a href="{{ route('admin.certificates.create') }}" class="btn btn-outline-success btn-sm">
                 <i class="link-icon" data-feather="plus"></i> {{ __('index.issue_certificate') }}
             </a>
+            @endcan
             <a href="{{ route('admin.certificates.index') }}" class="btn btn-secondary btn-sm">
                 <i class="link-icon" data-feather="arrow-left"></i> {{ __('index.certificate_directory') }}
             </a>
@@ -77,12 +83,16 @@
                     </p>
                 </div>
                 <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+                    @can('certificate_create')
                     <button type="button" class="btn btn-light text-primary fw-bold px-3 py-2 shadow-sm" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
                         <i class="link-icon" data-feather="plus-circle"></i> + {{ __('index.add_layout_model') }}
                     </button>
+                    @endcan
+                    @can('certificate_studio')
                     <a href="{{ route('admin.certificates.studio') }}" class="btn btn-warning text-dark fw-bold px-3 py-2 shadow">
                         <i class="link-icon" data-feather="edit-3"></i> {{ __('index.certificate_studio') }}
                     </a>
+                    @endcan
                 </div>
             </div>
         </div>
@@ -158,12 +168,14 @@
                                 ★ គំរូលំនាំដើម (Default)
                             </span>
                         @else
+                            @can('certificate_edit')
                             <form action="{{ route('admin.certificates.templates.setDefault', $tmpl->id) }}" method="POST" class="d-inline">
                                 @csrf
                                 <button type="submit" class="btn btn-link btn-xs p-0 text-muted text-decoration-none" title="កំណត់ជាគំរូលំនាំដើម">
                                     <small>កំណត់ជា Default</small>
                                 </button>
                             </form>
+                            @endcan
                         @endif
                     </div>
 
@@ -203,6 +215,7 @@
                                     <i class="link-icon" data-feather="eye"></i> {{ __('index.view_layout_model') }}
                                 </button>
 
+                                @can('certificate_studio')
                                 <!-- Open real settings in CertiCraft Studio (content-only preview) -->
                                 <a href="{{ route('admin.certificates.studio', ['template_id' => $tmpl->id, 'embed' => 1]) }}"
                                    target="_blank" class="btn btn-outline-secondary btn-sm px-2" title="{{ __('index.open_in_new_tab') }} — Studio (content only)">
@@ -214,7 +227,9 @@
                                    title="{{ __('index.edit_layout_model') }} — CertiCraft Studio 🎨">
                                     <i class="link-icon" data-feather="edit-3"></i> Edit in Studio 🎨
                                 </a>
-                                
+                                @endcan
+
+                                @can('certificate_edit')
                                 <!-- Reset to Default -->
                                 <form action="{{ route('admin.certificates.templates.reset', $tmpl->id) }}" method="POST" class="d-inline" onsubmit="return confirm('តើអ្នកពិតជាចង់កំណត់គំរូ [{{ $tmpl->khmer_title ?: $tmpl->title }}] ឡើងវិញទៅលំនាំដើមមែនទេ?');">
                                     @csrf
@@ -222,7 +237,9 @@
                                         <i class="link-icon" data-feather="rotate-ccw"></i>
                                     </button>
                                 </form>
+                                @endcan
 
+                                @can('certificate_delete')
                                 <!-- Delete Template -->
                                 <form action="{{ route('admin.certificates.templates.destroy', $tmpl->id) }}" method="POST" class="d-inline" onsubmit="return confirm('តើអ្នកពិតជាចង់លុបគំរូ [{{ $tmpl->khmer_title ?: $tmpl->title }}] នេះមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានទេ។');">
                                     @csrf
@@ -231,9 +248,11 @@
                                         <i class="link-icon" data-feather="trash-2"></i>
                                     </button>
                                 </form>
+                                @endcan
                             </div>
 
                             <!-- Issue Certificate Action Row -->
+                            @can('certificate_create')
                             <div class="btn-group btn-group-sm w-100">
                                 <a href="{{ route('admin.certificates.create', ['template_id' => $tmpl->id]) }}" 
                                    class="btn btn-primary" title="ចេញវិញ្ញាបនបត្រជូនបុគ្គលិក">
@@ -244,6 +263,7 @@
                                     <i class="link-icon" data-feather="users"></i> {{ __('index.batch_issue_certificate') }}
                                 </a>
                             </div>
+                            @endcan
                         </div>
                     </div>
                 </div>
@@ -252,9 +272,11 @@
             <div class="col-12 text-center py-5">
                 <i data-feather="layout" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
                 <h5 class="text-muted">មិនមានគំរូ layout ក្នុងជម្រើសនេះទេ</h5>
+                @can('certificate_create')
                 <button type="button" class="btn btn-primary mt-2" data-bs-toggle="modal" data-bs-target="#createTemplateModal">
                     <i class="link-icon" data-feather="plus-circle"></i> + {{ __('index.add_layout_model') }}
                 </button>
+                @endcan
             </div>
         @endforelse
     </div>

@@ -998,32 +998,38 @@ Route::group([
 });
 
 /** Direct /certificates-studio route inside HR layout */
-Route::get('/certificates-studio', [\App\Http\Controllers\Web\CertificateController::class, 'studio']);
+Route::get('/certificates-studio', [\App\Http\Controllers\Web\CertificateController::class, 'studio'])
+    ->middleware(['admin.auth', 'permission']);
 
 /** Direct public verification endpoints (/verify/{id} and /cert/{id}) */
 Route::get('/verify/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('verify.direct');
 Route::get('/cert/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('verify.cert_direct');
 
-/** Public & Standalone Certificate Studio and Verification */
+/** Standalone Certificate Studio, management APIs and public verification */
 Route::prefix('certificates')->group(function () {
-    Route::get('/', [\App\Http\Controllers\CertificateController::class, 'index'])->name('certificates.index');
-    Route::get('/studio', [\App\Http\Controllers\CertificateController::class, 'studio'])->name('certificates.studio');
+    // Studio + all management/write endpoints require an admin-panel session.
+    // Controller methods additionally check the specific certificate permission.
+    Route::middleware(['admin.auth', 'permission'])->group(function () {
+        Route::get('/', [\App\Http\Controllers\CertificateController::class, 'index'])->name('certificates.index');
+        Route::get('/studio', [\App\Http\Controllers\CertificateController::class, 'studio'])->name('certificates.studio');
 
-    // JSON API endpoints for Certificate Studio saving & listing
-    Route::get('/api/list', [\App\Http\Controllers\CertificateController::class, 'apiIndex'])->name('certificates.api.index');
-    Route::post('/api/save', [\App\Http\Controllers\CertificateController::class, 'store'])->name('certificates.api.store');
-    Route::put('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'update'])->name('certificates.api.update');
-    Route::delete('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'destroy'])->name('certificates.api.destroy');
+        // JSON API endpoints for Certificate Studio saving & listing
+        Route::get('/api/list', [\App\Http\Controllers\CertificateController::class, 'apiIndex'])->name('certificates.api.index');
+        Route::post('/api/save', [\App\Http\Controllers\CertificateController::class, 'store'])->name('certificates.api.store');
+        Route::put('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'update'])->name('certificates.api.update');
+        Route::delete('/api/{id}', [\App\Http\Controllers\CertificateController::class, 'destroy'])->name('certificates.api.destroy');
 
-    // Layout Models & Templates API for CertiCraft Studio
-    Route::get('/api/templates', [\App\Http\Controllers\CertificateController::class, 'apiTemplates'])->name('certificates.api.templates');
-    Route::post('/api/template/save', [\App\Http\Controllers\CertificateController::class, 'apiSaveTemplate'])->name('certificates.api.template.save');
-    Route::post('/api/template/{id}/reset', [\App\Http\Controllers\CertificateController::class, 'apiResetTemplate'])->name('certificates.api.template.reset');
+        // Layout Models & Templates API for CertiCraft Studio
+        Route::get('/api/templates', [\App\Http\Controllers\CertificateController::class, 'apiTemplates'])->name('certificates.api.templates');
+        Route::post('/api/template/save', [\App\Http\Controllers\CertificateController::class, 'apiSaveTemplate'])->name('certificates.api.template.save');
+        Route::post('/api/template/{id}/reset', [\App\Http\Controllers\CertificateController::class, 'apiResetTemplate'])->name('certificates.api.template.reset');
+    });
 
+    // Public QR verification and single-certificate viewing/download (no bulk data).
     Route::get('/verify/{id}', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('certificates.verify');
     Route::get('/{id}/verify', [\App\Http\Controllers\CertificateController::class, 'verify'])->name('certificates.verify_legacy');
-    Route::get('/{id}', [\App\Http\Controllers\CertificateController::class, 'show'])->name('certificates.show');
     Route::get('/{id}/download-pdf', [\App\Http\Controllers\CertificateController::class, 'downloadPdf'])->name('certificates.downloadPdf');
+    Route::get('/{id}', [\App\Http\Controllers\CertificateController::class, 'show'])->name('certificates.show');
 });
 
 Route::fallback(function() {

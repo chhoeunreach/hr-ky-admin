@@ -882,8 +882,34 @@
                 transform: scale(var(--certificate-scale, 1));
                 transform-origin: top center;
             }
-            #salary-certificate {
+            #salary-certificate,
+            #employment-certificate {
                 overflow-x: auto;
+            }
+            .employee-complete-paper.employee-employment-certificate-paper {
+                --emp-cert-page-margin: 10mm;
+                background: #ffffff;
+                border: 0;
+                border-radius: 0;
+                max-width: 210mm;
+                height: 296mm;
+                min-height: 296mm;
+                padding: var(--emp-cert-page-margin);
+                position: relative !important;
+                width: 210mm;
+                margin: 0 auto;
+                overflow: hidden;
+                overflow-wrap: anywhere;
+                box-sizing: border-box;
+            }
+            .employee-employment-certificate-content {
+                display: flow-root;
+                position: absolute;
+                top: var(--emp-cert-page-margin);
+                left: var(--emp-cert-page-margin);
+                right: var(--emp-cert-page-margin);
+                transform: scale(var(--emp-cert-scale, 1));
+                transform-origin: top center;
             }
             .employee-salary-certificate-paper .employee-salary-certificate-signature {
                 margin-top: 8mm;
@@ -2820,6 +2846,27 @@
 
         fitSalaryCertificatePreview();
 
+        function fitEmploymentCertificate(paper) {
+            const content = paper?.querySelector('.employee-employment-certificate-content');
+            if (!content || !paper.clientHeight) return;
+            const styles = getComputedStyle(paper);
+            const availableHeight = paper.clientHeight - parseFloat(styles.paddingTop) - parseFloat(styles.paddingBottom);
+            // Leave a pixel for print rounding; measure unscaled content after fonts load.
+            const scale = Math.min(1, (availableHeight - 1) / content.scrollHeight);
+            paper.style.setProperty('--emp-cert-scale', String(scale));
+        }
+
+        async function fitEmploymentCertificatePreview() {
+            if (document.fonts) await document.fonts.ready;
+            const paper = document.querySelector('#employment-certificate .employee-employment-certificate-paper');
+            if (!paper) return;
+            await Promise.all(Array.from(paper.querySelectorAll('img')).map(img => img.decode ? img.decode().catch(() => {}) : Promise.resolve()));
+            fitEmploymentCertificate(paper);
+        }
+
+        window.fitEmploymentCertificatePreview = fitEmploymentCertificatePreview;
+        fitEmploymentCertificatePreview();
+
         let employeePrintPending = false;
 
         async function printEmployeeProfilePaper(sourceSelector, rootId, bodyClass, printType) {
@@ -2921,7 +2968,7 @@
                 savedNotice?.classList.remove('d-none');
                 savedNotice?.classList.add('d-block');
                 if (document.fonts) await document.fonts.ready;
-                if (linkedPrint || printType === 'salaryCertificate' || printType === 'warning') {
+                if (linkedPrint || printType === 'salaryCertificate' || printType === 'employmentCertificate' || printType === 'warning') {
                     await Promise.all(Array.from(printPaper.querySelectorAll('img')).map(function (img) {
                         return img.decode ? img.decode().catch(function () {}) : Promise.resolve();
                     }));
@@ -2933,6 +2980,12 @@
                     fitSalaryCertificate(printPaper);
                     printRoot.style.cssText = '';
                     fitSalaryCertificate(paper);
+                }
+                if (printType === 'employmentCertificate') {
+                    printRoot.style.cssText = 'display:block; position:fixed; left:-10000px; top:0;';
+                    fitEmploymentCertificate(printPaper);
+                    printRoot.style.cssText = '';
+                    fitEmploymentCertificate(paper);
                 }
                 if (printType === 'warning') {
                     printRoot.style.cssText = 'display:block; position:fixed; left:-10000px; top:0;';
@@ -3693,6 +3746,7 @@
             const tab = event.target.getAttribute('data-bs-target')?.slice(1);
             if (!tab) return;
             if (tab === 'salary-certificate') fitSalaryCertificatePreview();
+            if (tab === 'employment-certificate') fitEmploymentCertificatePreview();
 
             const url = new URL(window.location.href);
             if (tab === 'overview') {
