@@ -79,6 +79,7 @@
                 {!! $field(__('index.staff_warning_branch'), $employee->branch?->name, 'text', ['name' => 'branch', 'readonly' => true]) !!}
                 {!! $field(__('index.staff_warning_supervisor'), $employee->supervisor?->name, 'text', ['name' => 'supervisor', 'readonly' => true]) !!}
                 {!! $field(__('index.staff_warning_issued_by'), '', 'text', ['name' => 'issued_by']) !!}
+                {!! $field(__('index.staff_warning_reported_by'), '', 'text', ['name' => 'reported_by']) !!}
                 {!! $field(__('index.staff_warning_issue_date'), now()->format('Y-m-d'), 'date', ['name' => 'issue_date']) !!}
             </div>
         </section>

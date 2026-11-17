@@ -126,6 +126,22 @@
         z-index: 20;
     }
     .batch-gallery-a4-frame.is-loaded { opacity: 1; }
+    .batch-staff-list { max-height: 560px; overflow-y: auto; }
+    .batch-staff-item {
+        align-items: center; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+        cursor: pointer; display: grid; gap: 10px; grid-template-columns: 18px 42px minmax(0, 1fr);
+        margin-bottom: 7px; padding: 8px; transition: background .15s ease, border-color .15s ease;
+    }
+    .batch-staff-item:hover { border-color: #93c5fd; }
+    .batch-staff-item.is-selected { background: #eff6ff; border-color: #3b82f6; }
+    .batch-staff-item .staff-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #f1f5f9; }
+    .batch-staff-item .staff-name { display: block; }
+    .batch-staff-item .staff-meta { color: #64748b; display: block; font-size: 11px; line-height: 1.45; }
+    .batch-staff-pager { align-items: center; display: flex; gap: 8px; justify-content: space-between; margin-top: 10px; }
+    .batch-staff-pager button { background: #fff; border: 1px solid #dbe3ee; border-radius: 7px; color: #334155; font-size: 12px; font-weight: 700; min-height: 30px; padding: 4px 9px; }
+    .batch-staff-pager button:disabled { cursor: not-allowed; opacity: .45; }
+    .batch-staff-pager span { color: #64748b; font-size: 11px; text-align: center; }
+    .batch-staff-filter-panel { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: grid; gap: 8px; padding: 10px; }
 </style>
 @endsection
 
@@ -271,46 +287,56 @@
                     <div class="card-body">
                         <div class="mb-2">
                             <input type="text" id="staff_search" class="form-control form-control-sm"
-                                   placeholder="🔍 ស្វែងរកឈ្មោះ / Search name or employee code..."
-                                   oninput="applyStaffFilters()">
+                                   placeholder="🔍 Search name, ID, branch or department..."
+                                   oninput="staffPickerPage = 1; applyStaffFilters()">
                         </div>
-                        <div class="mb-3">
-                            <select id="dept_filter" class="form-select form-select-sm" onchange="applyStaffFilters()">
+                        <div class="batch-staff-filter-panel mb-3">
+                            <select id="branch_filter" class="form-select form-select-sm" onchange="staffPickerPage = 1; applyStaffFilters()">
+                                <option value="">All Branches</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                            <select id="dept_filter" class="form-select form-select-sm" onchange="staffPickerPage = 1; applyStaffFilters()">
                                 <option value="">All Departments</option>
                                 @foreach($departments as $dept)
                                     <option value="{{ $dept->id }}">{{ $dept->dept_name }}</option>
                                 @endforeach
                             </select>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearStaffFilters()">Clear filters</button>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="toggleSelectVisible()">
-                                Select visible
-                            </button>
-                            <button type="button" class="btn btn-xs btn-outline-secondary" onclick="clearSelection()">
-                                Clear
-                            </button>
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="selectAllStaff()">Select all</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleSelectVisible()">Select visible</button>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearSelection()">Clear selection</button>
                         </div>
 
-                        <div class="staff-list border rounded p-1" style="max-height: 460px; overflow-y: auto;">
+                        <div class="staff-list batch-staff-list">
                             @forelse($users as $user)
                                 @php
-                                    $searchText = trim(($user->name ?? '') . ' ' . ($user->english_name ?? '') . ' ' . ($user->employee_code ?? ''));
+                                    $searchText = trim(($user->name ?? '') . ' ' . ($user->english_name ?? '') . ' ' . ($user->employee_code ?? '') . ' ' . ($user->branch?->name ?? '') . ' ' . ($user->department?->dept_name ?? ''));
                                 @endphp
-                                <div class="form-check p-2 border-bottom staff-item"
+                                <label class="batch-staff-item staff-item"
                                      data-dept="{{ $user->department_id }}"
+                                     data-branch="{{ $user->branch_id }}"
                                      data-search="{{ \Illuminate\Support\Str::lower($searchText) }}">
                                     <input class="form-check-input staff-checkbox" type="checkbox" name="employee_ids[]"
                                            value="{{ $user->id }}" id="emp_{{ $user->id }}" onchange="onStaffSelectionChange()">
-                                    <label class="form-check-label w-100 cursor-pointer" for="emp_{{ $user->id }}">
-                                        <div class="fw-bold text-dark">{{ $user->name }}</div>
-                                        <div class="small text-muted">{{ $user->english_name ?: 'No Latin Name' }} · <span class="font-monospace">{{ $user->employee_code }}</span></div>
-                                    </label>
-                                </div>
+                                    <img class="staff-avatar" src="{{ $user->avatar_url }}" alt="" loading="lazy" onerror="this.src='{{ asset('assets/images/img.png') }}'">
+                                    <span class="min-w-0">
+                                        <strong class="staff-name fw-bold text-dark">{{ $user->name }}</strong>
+                                        <small class="staff-meta">{{ $user->english_name ?: 'No Latin Name' }}</small>
+                                        <small class="staff-meta"><span class="font-monospace">{{ $user->employee_code ?: '—' }}</span> · {{ $user->department?->dept_name ?: 'No department' }} · {{ $user->branch?->name ?: 'No branch' }}</small>
+                                    </span>
+                                </label>
                             @empty
                                 <div class="text-center text-muted py-4 small">No employees found.</div>
                             @endforelse
                         </div>
+                        <div id="staffPickerPager" class="batch-staff-pager"></div>
                     </div>
                 </div>
             </div>
@@ -572,6 +598,8 @@
     var batchPreviewUrl = @json(route('admin.certificates.batchPreview'));
     var batchA4PreviewBaseUrl = @json(url('admin/certificates/templates'));
     var batchGalleryCategory = 'all';
+    var staffPickerPage = 1;
+    var staffPickerPageSize = 20;
 
     /* ---------------- CertiCraft Studio-style Layout Model gallery ---------------- */
 
@@ -762,12 +790,52 @@
     function applyStaffFilters() {
         var search = (document.getElementById('staff_search')?.value || '').trim().toLowerCase();
         var deptId = document.getElementById('dept_filter')?.value || '';
-
-        document.querySelectorAll('.staff-item').forEach(function (item) {
+        var branchId = document.getElementById('branch_filter')?.value || '';
+        var items = Array.from(document.querySelectorAll('.staff-item'));
+        var matching = items.filter(function (item) {
             var matchesDept = !deptId || item.getAttribute('data-dept') === deptId;
+            var matchesBranch = !branchId || item.getAttribute('data-branch') === branchId;
             var matchesSearch = !search || (item.getAttribute('data-search') || '').indexOf(search) !== -1;
-            item.style.display = (matchesDept && matchesSearch) ? 'block' : 'none';
+            return matchesDept && matchesBranch && matchesSearch;
         });
+        var totalPages = Math.max(1, Math.ceil(matching.length / staffPickerPageSize));
+        staffPickerPage = Math.min(Math.max(staffPickerPage, 1), totalPages);
+        var start = (staffPickerPage - 1) * staffPickerPageSize;
+        var visible = new Set(matching.slice(start, start + staffPickerPageSize));
+        items.forEach(function (item) { item.style.display = visible.has(item) ? 'grid' : 'none'; });
+
+        var pager = document.getElementById('staffPickerPager');
+        if (pager) {
+            var end = Math.min(start + staffPickerPageSize, matching.length);
+            pager.innerHTML = '<button type="button" onclick="changeStaffPickerPage(-1)" ' + (staffPickerPage <= 1 ? 'disabled' : '') + '>Previous</button>' +
+                '<span>' + (matching.length ? (start + 1) + '–' + end + ' of ' + matching.length : '0 employees') + ' · Page ' + staffPickerPage + '/' + totalPages + '</span>' +
+                '<button type="button" onclick="changeStaffPickerPage(1)" ' + (staffPickerPage >= totalPages ? 'disabled' : '') + '>Next</button>';
+        }
+    }
+
+    function changeStaffPickerPage(direction) {
+        staffPickerPage += direction;
+        applyStaffFilters();
+    }
+
+    function clearStaffFilters() {
+        ['staff_search', 'branch_filter', 'dept_filter'].forEach(function (id) {
+            var field = document.getElementById(id);
+            if (field) field.value = '';
+        });
+        staffPickerPage = 1;
+        applyStaffFilters();
+    }
+
+    function syncStaffOptionStyles() {
+        document.querySelectorAll('.staff-item').forEach(function (item) {
+            item.classList.toggle('is-selected', Boolean(item.querySelector('.staff-checkbox')?.checked));
+        });
+    }
+
+    function selectAllStaff() {
+        document.querySelectorAll('.staff-checkbox').forEach(function (cb) { cb.checked = true; });
+        onStaffSelectionChange();
     }
 
     function toggleSelectVisible() {
@@ -785,6 +853,7 @@
 
     function onStaffSelectionChange() {
         var count = updateSelectedCount();
+        syncStaffOptionStyles();
         var label = document.getElementById('preview_employee_label');
         var selected = document.querySelector('.staff-checkbox:checked');
         if (label) {

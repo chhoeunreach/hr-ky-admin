@@ -1118,7 +1118,8 @@ class CertificateController extends Controller
 
         $branches = Branch::select('id', 'name')->get();
         $departments = Department::select('id', 'dept_name', 'branch_id')->get();
-        $users = User::select('id', 'name', 'english_name', 'employee_code', 'department_id', 'branch_id')
+        $users = User::select('id', 'name', 'english_name', 'employee_code', 'avatar', 'department_id', 'branch_id')
+            ->with(['branch:id,name', 'department:id,dept_name'])
             ->where('status', 'verified')
             ->orWhereNull('status')
             ->orderBy('name')
