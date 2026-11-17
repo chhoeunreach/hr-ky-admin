@@ -118,12 +118,18 @@
             <h6 class="employee-warning-ack-heading">4. {{ __('index.staff_warning_ack_section') }}</h6>
             <p class="employee-warning-ack-text">{{ __('index.staff_warning_acknowledgement') }}</p>
             <div class="employee-complete-grid warning-sign-grid">
-                {!! $field(__('index.staff_warning_employee_signature'), '', 'text', ['name' => 'employee_signature']) !!}
-                {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'employee_signature_date']) !!}
-                {!! $field(__('index.staff_warning_manager_signature'), '', 'text', ['name' => 'supervisor_manager_signature']) !!}
-                {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'manager_signature_date']) !!}
-                {!! $field(__('index.staff_warning_hr_signature'), '', 'text', ['name' => 'hr_signature']) !!}
-                {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'hr_signature_date']) !!}
+                <div class="warning-signature-block">
+                    {!! $field(__('index.staff_warning_employee_signature'), '', 'text', ['name' => 'employee_signature']) !!}
+                    {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'employee_signature_date']) !!}
+                </div>
+                <div class="warning-signature-block">
+                    {!! $field(__('index.staff_warning_manager_signature'), '', 'text', ['name' => 'supervisor_manager_signature']) !!}
+                    {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'manager_signature_date']) !!}
+                </div>
+                <div class="warning-signature-block">
+                    {!! $field(__('index.staff_warning_hr_signature'), '', 'text', ['name' => 'hr_signature']) !!}
+                    {!! $field(__('index.staff_warning_date'), '', 'date', ['name' => 'hr_signature_date']) !!}
+                </div>
             </div>
         </section>
 

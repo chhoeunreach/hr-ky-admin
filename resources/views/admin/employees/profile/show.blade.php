@@ -521,7 +521,23 @@
             }
             .employee-warning-paper .warning-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
             .employee-warning-paper .warning-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .employee-warning-paper .warning-sign-grid { grid-template-columns: 1.4fr .6fr 1.4fr .6fr 1.4fr .6fr; }
+            .employee-warning-paper .warning-sign-grid {
+                border: 0;
+                gap: 6px;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .employee-warning-paper .warning-signature-block {
+                border: 1px solid #cbd5e1;
+                display: grid;
+                grid-template-columns: 1fr;
+                min-width: 0;
+            }
+            .employee-warning-paper .warning-signature-block .employee-complete-field {
+                border: 0;
+                border-bottom: 1px solid #cbd5e1;
+            }
+            .employee-warning-paper .warning-signature-block .employee-complete-field:last-child { border-bottom: 0; }
+            .employee-warning-paper .warning-signature-block .employee-warning-input { min-height: 24px; }
             .employee-warning-paper .full-span { grid-column: 1 / -1; }
             .employee-warning-paper .employee-complete-field {
                 display: flex;
@@ -601,7 +617,7 @@
                 .employee-warning-paper .warning-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
                 .employee-warning-paper .warning-grid-2 { grid-template-columns: 1fr; }
                 .employee-warning-paper .employee-warning-severity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-                .employee-warning-paper .warning-sign-grid { grid-template-columns: 1fr 1fr; }
+                .employee-warning-paper .warning-sign-grid { grid-template-columns: 1fr; }
             }
             .employee-warning-title {
                 color: #991b1b;
