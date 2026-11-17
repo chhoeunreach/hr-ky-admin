@@ -48,6 +48,64 @@
 
     $joiningDateDisplay = $employee->joining_date ? $formatKhmerDate($employee->joining_date) : '................................................';
 
+    // Work Duration Calculation (Total Year, Month, Day)
+    $calcDuration = function ($startDate, $endDate = null) use ($toKhmerNum) {
+        if (!$startDate) return '................................................';
+        try {
+            $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
+            $end = $endDate ? \Illuminate\Support\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
+            if ($start->greaterThan($end)) return '................................................';
+            $diff = $start->diff($end);
+            $y = $diff->y;
+            $m = $diff->m;
+            $d = $diff->d;
+
+            $partsKhmer = [];
+            $partsEng = [];
+            if ($y > 0) {
+                $partsKhmer[] = $toKhmerNum($y) . ' ឆ្នាំ';
+                $partsEng[] = $y . ' ' . ($y > 1 ? 'Years' : 'Year');
+            }
+            if ($m > 0) {
+                $partsKhmer[] = $toKhmerNum($m) . ' ខែ';
+                $partsEng[] = $m . ' ' . ($m > 1 ? 'Months' : 'Month');
+            }
+            if ($d > 0 || empty($partsKhmer)) {
+                $partsKhmer[] = $toKhmerNum($d) . ' ថ្ងៃ';
+                $partsEng[] = $d . ' ' . ($d > 1 ? 'Days' : 'Day');
+            }
+
+            $khmerText = implode(' ', $partsKhmer);
+            $engText = implode(', ', $partsEng);
+            return $khmerText . ($engText ? ' (' . $engText . ')' : '');
+        } catch (\Throwable $e) {
+            return '................................................';
+        }
+    };
+
+    $endDateForTenure = (!$isCurrentActive && filled($profile->last_working_date))
+        ? $profile->last_working_date
+        : now();
+    $totalDurationDisplay = $workDuration ?? $calcDuration($employee->joining_date, $endDateForTenure);
+
+    // Working Time (Time In & Time Out)
+    $formatTime = function ($time) {
+        if (!$time) return null;
+        try {
+            return \Illuminate\Support\Carbon::parse($time)->format('h:i A');
+        } catch (\Throwable $e) {
+            return (string) $time;
+        }
+    };
+
+    $timeInDisplay = $timeIn ?? ($employee->officeTime?->opening_time
+        ? $formatTime($employee->officeTime->opening_time)
+        : '08:00 AM');
+    $timeOutDisplay = $timeOut ?? ($employee->officeTime?->closing_time
+        ? $formatTime($employee->officeTime->closing_time)
+        : '05:00 PM');
+    $shiftName = $employee->officeTime?->shift ?: '';
+
     // Contract type detection
     $contractType = strtolower((string) ($contract?->contract_type ?? ''));
     $isUDC = ($contractType === 'udc' || str_contains($contractType, 'undetermined') || str_contains($contractType, 'មិនកំណត់'));
@@ -264,6 +322,19 @@
             <tr>
                 <td class="label-col">ថ្ងៃចូលបម្រើការងារ</td>
                 <td class="val-col">{{ $joiningDateDisplay }}</td>
+            </tr>
+            <tr>
+                <td class="label-col">រយៈពេលបម្រើការងារសរុប</td>
+                <td class="val-col"><strong>{{ $totalDurationDisplay }}</strong> <span style="font-size: 9pt; color: #64748b;">(គិតត្រឹមកាលបរិច្ឆេទចេញលិខិត)</span></td>
+            </tr>
+            <tr>
+                <td class="label-col">ម៉ោងបំពេញការងារ (Time In / Out)</td>
+                <td class="val-col">
+                    <strong>ម៉ោងចូល (Time In)៖</strong> {{ $timeInDisplay }} &nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;&nbsp; <strong>ម៉ោងចេញ (Time Out)៖</strong> {{ $timeOutDisplay }}
+                    @if($shiftName)
+                        <span style="font-size: 9.5pt; color: #475569;">({{ $shiftName }})</span>
+                    @endif
+                </td>
             </tr>
             <tr>
                 <td class="label-col">ប្រភេទកិច្ចសន្យា</td>

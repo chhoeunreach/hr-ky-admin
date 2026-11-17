@@ -52,6 +52,64 @@
 
     $joiningDateDisplay = $employee->joining_date ? $formatKhmerDate($employee->joining_date) : '................................................';
 
+    // Work Duration Calculation (Total Year, Month, Day)
+    $calcDuration = function ($startDate, $endDate = null) use ($toKhmerNum) {
+        if (!$startDate) return '................................................';
+        try {
+            $start = \Illuminate\Support\Carbon::parse($startDate)->startOfDay();
+            $end = $endDate ? \Illuminate\Support\Carbon::parse($endDate)->endOfDay() : now()->endOfDay();
+            if ($start->greaterThan($end)) return '................................................';
+            $diff = $start->diff($end);
+            $y = $diff->y;
+            $m = $diff->m;
+            $d = $diff->d;
+
+            $partsKhmer = [];
+            $partsEng = [];
+            if ($y > 0) {
+                $partsKhmer[] = $toKhmerNum($y) . ' ឆ្នាំ';
+                $partsEng[] = $y . ' ' . ($y > 1 ? 'Years' : 'Year');
+            }
+            if ($m > 0) {
+                $partsKhmer[] = $toKhmerNum($m) . ' ខែ';
+                $partsEng[] = $m . ' ' . ($m > 1 ? 'Months' : 'Month');
+            }
+            if ($d > 0 || empty($partsKhmer)) {
+                $partsKhmer[] = $toKhmerNum($d) . ' ថ្ងៃ';
+                $partsEng[] = $d . ' ' . ($d > 1 ? 'Days' : 'Day');
+            }
+
+            $khmerText = implode(' ', $partsKhmer);
+            $engText = implode(', ', $partsEng);
+            return $khmerText . ($engText ? ' (' . $engText . ')' : '');
+        } catch (\Throwable $e) {
+            return '................................................';
+        }
+    };
+
+    $endDateForTenure = (!$isCurrentActive && filled($profile->last_working_date))
+        ? $profile->last_working_date
+        : now();
+    $totalDurationDisplay = $calcDuration($employee->joining_date, $endDateForTenure);
+
+    // Working Time (Time In & Time Out)
+    $formatTime = function ($time) {
+        if (!$time) return null;
+        try {
+            return \Illuminate\Support\Carbon::parse($time)->format('h:i A');
+        } catch (\Throwable $e) {
+            return (string) $time;
+        }
+    };
+
+    $defaultTimeIn = $employee->officeTime?->opening_time
+        ? $formatTime($employee->officeTime->opening_time)
+        : '08:00 AM';
+    $defaultTimeOut = $employee->officeTime?->closing_time
+        ? $formatTime($employee->officeTime->closing_time)
+        : '05:00 PM';
+    $shiftName = $employee->officeTime?->shift ?: '';
+
     // Contract type detection
     $contractType = strtolower((string) ($contract?->contract_type ?? ''));
     $isUDC = ($contractType === 'udc' || str_contains($contractType, 'undetermined') || str_contains($contractType, 'មិនកំណត់'));
@@ -123,21 +181,33 @@
                 <label class="form-label small fw-bold mb-1">លេខយោងលិខិត (Ref No.)</label>
                 <input type="text" id="empCertRefInput" class="form-control form-control-sm" value="{{ $certificateNumber }}" oninput="onEmpCertCustomChange()">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label small fw-bold mb-1">អាសយដ្ឋានសាខា (Branch Address)</label>
                 <input type="text" id="empCertAddressInput" class="form-control form-control-sm" value="{{ $branchAddress }}" oninput="onEmpCertCustomChange()">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-6">
+                <label class="form-label small fw-bold mb-1">គោលបំណងចេញលិខិត (Purpose)</label>
+                <input type="text" id="empCertPurposeInput" class="form-control form-control-sm" value="{{ $defaultPurpose }}" oninput="onEmpCertCustomChange()">
+            </div>
+            <div class="col-md-3">
                 <label class="form-label small fw-bold mb-1">ឈ្មោះអ្នកតំណាង</label>
                 <input type="text" id="empCertRepNameInput" class="form-control form-control-sm" value="{{ $authorizedSignatoryName }}" oninput="onEmpCertCustomChange()">
             </div>
-            <div class="col-md-2">
+            <div class="col-md-3">
                 <label class="form-label small fw-bold mb-1">តួនាទីអ្នកតំណាង</label>
                 <input type="text" id="empCertRepRoleInput" class="form-control form-control-sm" value="{{ $authorizedSignatoryRole }}" oninput="onEmpCertCustomChange()">
             </div>
-            <div class="col-md-3">
-                <label class="form-label small fw-bold mb-1">គោលបំណងចេញលិខិត (Purpose)</label>
-                <input type="text" id="empCertPurposeInput" class="form-control form-control-sm" value="{{ $defaultPurpose }}" oninput="onEmpCertCustomChange()">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">ម៉ោងចូល (Time In)</label>
+                <input type="text" id="empCertTimeInInput" class="form-control form-control-sm" value="{{ $defaultTimeIn }}" oninput="onEmpCertCustomChange()">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">ម៉ោងចេញ (Time Out)</label>
+                <input type="text" id="empCertTimeOutInput" class="form-control form-control-sm" value="{{ $defaultTimeOut }}" oninput="onEmpCertCustomChange()">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">រយៈពេលការងារ (Tenure)</label>
+                <input type="text" id="empCertDurationInput" class="form-control form-control-sm" value="{{ $totalDurationDisplay }}" oninput="onEmpCertCustomChange()">
             </div>
         </div>
     </div>
@@ -153,6 +223,9 @@
             <input type="text" name="authorized_name" id="empCertHiddenRepName" value="{{ $authorizedSignatoryName }}" aria-label="Authorized Signatory Name">
             <input type="text" name="authorized_role" id="empCertHiddenRepRole" value="{{ $authorizedSignatoryRole }}" aria-label="Authorized Signatory Role">
             <input type="text" name="purpose" id="empCertHiddenPurpose" value="{{ $defaultPurpose }}" aria-label="Purpose">
+            <input type="text" name="time_in" id="empCertHiddenTimeIn" value="{{ $defaultTimeIn }}" aria-label="Time In">
+            <input type="text" name="time_out" id="empCertHiddenTimeOut" value="{{ $defaultTimeOut }}" aria-label="Time Out">
+            <input type="text" name="work_duration" id="empCertHiddenDuration" value="{{ $totalDurationDisplay }}" aria-label="Total Work Duration">
             <input type="checkbox" name="include_salary" id="empCertHiddenIncludeSalary" checked aria-label="Include Salary">
         </div>
 
@@ -240,6 +313,24 @@
                     <td class="fw-bold bg-light" style="vertical-align: middle;">ថ្ងៃចូលបម្រើការងារ</td>
                     <td>
                         <span>{{ $joiningDateDisplay }}</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold bg-light" style="vertical-align: middle;">រយៈពេលបម្រើការងារសរុប</td>
+                    <td>
+                        <strong class="text-dark" id="empCertDurationDisplay">{{ $totalDurationDisplay }}</strong>
+                        <span class="small text-muted ms-2">(គិតត្រឹមកាលបរិច្ឆេទចេញលិខិត)</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-bold bg-light" style="vertical-align: middle;">ម៉ោងបំពេញការងារ (Time In / Out)</td>
+                    <td>
+                        <span><strong>ម៉ោងចូល (Time In)៖</strong> <span class="fw-bold text-dark" id="empCertTimeInDisplay">{{ $defaultTimeIn }}</span></span>
+                        <span class="mx-3 text-muted">|</span>
+                        <span><strong>ម៉ោងចេញ (Time Out)៖</strong> <span class="fw-bold text-dark" id="empCertTimeOutDisplay">{{ $defaultTimeOut }}</span></span>
+                        @if($shiftName)
+                            <span class="text-muted ms-2">({{ $shiftName }})</span>
+                        @endif
                     </td>
                 </tr>
                 <tr>
@@ -386,6 +477,9 @@
         var repNameInput = document.getElementById('empCertRepNameInput');
         var repRoleInput = document.getElementById('empCertRepRoleInput');
         var purposeInput = document.getElementById('empCertPurposeInput');
+        var timeInInput = document.getElementById('empCertTimeInInput');
+        var timeOutInput = document.getElementById('empCertTimeOutInput');
+        var durationInput = document.getElementById('empCertDurationInput');
 
         var isSalaryChecked = toggleSalary ? toggleSalary.checked : true;
         var boxCert = document.getElementById('empCertBoxCertified');
@@ -443,6 +537,27 @@
             if (hiddenPurpose) hiddenPurpose.value = purposeInput.value;
         }
 
+        if (timeInInput) {
+            var timeInDisplay = document.getElementById('empCertTimeInDisplay');
+            if (timeInDisplay) timeInDisplay.innerText = timeInInput.value;
+            var hiddenTimeIn = document.getElementById('empCertHiddenTimeIn');
+            if (hiddenTimeIn) hiddenTimeIn.value = timeInInput.value;
+        }
+
+        if (timeOutInput) {
+            var timeOutDisplay = document.getElementById('empCertTimeOutDisplay');
+            if (timeOutDisplay) timeOutDisplay.innerText = timeOutInput.value;
+            var hiddenTimeOut = document.getElementById('empCertHiddenTimeOut');
+            if (hiddenTimeOut) hiddenTimeOut.value = timeOutInput.value;
+        }
+
+        if (durationInput) {
+            var durationDisplay = document.getElementById('empCertDurationDisplay');
+            if (durationDisplay) durationDisplay.innerText = durationInput.value;
+            var hiddenDuration = document.getElementById('empCertHiddenDuration');
+            if (hiddenDuration) hiddenDuration.value = durationInput.value;
+        }
+
         var hiddenSal = document.getElementById('empCertHiddenIncludeSalary');
         if (hiddenSal) hiddenSal.checked = isSalaryChecked;
 
@@ -457,6 +572,9 @@
             if (repNameInput && repNameInput.value) params.set('authorized_name', repNameInput.value);
             if (repRoleInput && repRoleInput.value) params.set('authorized_role', repRoleInput.value);
             if (purposeInput && purposeInput.value) params.set('purpose', purposeInput.value);
+            if (timeInInput && timeInInput.value) params.set('time_in', timeInInput.value);
+            if (timeOutInput && timeOutInput.value) params.set('time_out', timeOutInput.value);
+            if (durationInput && durationInput.value) params.set('work_duration', durationInput.value);
             wordBtn.href = base + '?' + params.toString();
         }
 
@@ -475,6 +593,9 @@
         var hiddenRole = document.getElementById('empCertHiddenRepRole');
         var hiddenPurp = document.getElementById('empCertHiddenPurpose');
         var hiddenSal = document.getElementById('empCertHiddenIncludeSalary');
+        var hiddenTimeIn = document.getElementById('empCertHiddenTimeIn');
+        var hiddenTimeOut = document.getElementById('empCertHiddenTimeOut');
+        var hiddenDuration = document.getElementById('empCertHiddenDuration');
 
         var refInput = document.getElementById('empCertRefInput');
         var addrInput = document.getElementById('empCertAddressInput');
@@ -482,6 +603,9 @@
         var roleInput = document.getElementById('empCertRepRoleInput');
         var purpInput = document.getElementById('empCertPurposeInput');
         var salToggle = document.getElementById('empCertToggleSalary');
+        var timeInInput = document.getElementById('empCertTimeInInput');
+        var timeOutInput = document.getElementById('empCertTimeOutInput');
+        var durationInput = document.getElementById('empCertDurationInput');
 
         if (hiddenRef && refInput) refInput.value = hiddenRef.value;
         if (hiddenAddr && addrInput) addrInput.value = hiddenAddr.value;
@@ -489,6 +613,9 @@
         if (hiddenRole && roleInput) roleInput.value = hiddenRole.value;
         if (hiddenPurp && purpInput) purpInput.value = hiddenPurp.value;
         if (hiddenSal && salToggle) salToggle.checked = Boolean(hiddenSal.checked);
+        if (hiddenTimeIn && timeInInput) timeInInput.value = hiddenTimeIn.value;
+        if (hiddenTimeOut && timeOutInput) timeOutInput.value = hiddenTimeOut.value;
+        if (hiddenDuration && durationInput) durationInput.value = hiddenDuration.value;
 
         onEmpCertCustomChange(false);
     };

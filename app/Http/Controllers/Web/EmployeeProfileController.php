@@ -576,6 +576,7 @@ class EmployeeProfileController extends Controller
             'company:id,name,address,phone,email,website_url',
             'department:id,dept_name',
             'post:id,post_name',
+            'officeTime:id,shift,opening_time,closing_time',
             'employee360Profile',
             'employeeSalary',
         ]);
@@ -637,6 +638,7 @@ class EmployeeProfileController extends Controller
             'company:id,name,address,phone,email,website_url',
             'department:id,dept_name',
             'post:id,post_name',
+            'officeTime:id,shift,opening_time,closing_time',
             'employee360Profile',
             'employeeSalary',
         ]);
@@ -673,6 +675,9 @@ class EmployeeProfileController extends Controller
         $referenceNumber = $request->input('reference_number', 'EMP-CERT-' . str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT) . '/' . now()->format('Y'));
         $defaultBranchAddress = $employee->branch?->address ?: ($employee->company?->address ?: 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា');
         $branchAddress = $request->input('branch_address', $defaultBranchAddress);
+        $timeIn = $request->input('time_in');
+        $timeOut = $request->input('time_out');
+        $workDuration = $request->input('work_duration');
 
         $content = view('admin.employees.profile.exports.employment-certificate-word', compact(
             'employee',
@@ -686,7 +691,10 @@ class EmployeeProfileController extends Controller
             'authorizedName',
             'authorizedRole',
             'referenceNumber',
-            'branchAddress'
+            'branchAddress',
+            'timeIn',
+            'timeOut',
+            'workDuration'
         ))->render();
 
         $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));
