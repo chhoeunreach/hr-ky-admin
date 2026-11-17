@@ -63,10 +63,19 @@
     $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
 
     // Company & Branch Meta
-    $companyNameKhmer = 'ក្រុមហ៊ុន/សហគ្រាស គ្នាយើង (KNEAYERNG PHONE SHOP)';
-    $branchAddress = $employee->branch?->address ?: 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា';
-    $branchPhone = $employee->branch?->phone ?: '012 345 678 / 098 765 432';
-    $branchEmail = $employee->branch?->email ?: 'kneayerngphoneshop@gmail.com';
+    $companyNameKhmer = 'គ្នាយើង (KNEAYERNG PHONE SHOP)';
+    $branchAddress = trim((string) ($employee->branch?->address ?: ($employee->company?->address ?: '')));
+    if (empty($branchAddress)) {
+        $branchAddress = 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា';
+    }
+    $branchPhone = trim((string) ($employee->branch?->phone ?: ($employee->company?->phone ?: '')));
+    if (empty($branchPhone)) {
+        $branchPhone = '012 345 678 / 098 765 432';
+    }
+    $branchEmail = trim((string) ($employee->company?->email ?: ''));
+    if (empty($branchEmail)) {
+        $branchEmail = 'kneayerngphoneshop@gmail.com';
+    }
     $branchWebsite = 'www.kneayerng.com';
 
     $certificateNumber = 'EMP-CERT-' . str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT) . '/' . now()->format('Y');
@@ -78,7 +87,8 @@
 @endphp
 
 <div class="employee-complete-toolbar employee-employment-certificate-toolbar mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div data-saved-form-toolbar="employmentCertificate" class="d-inline-flex align-items-center gap-2"></div>
         <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmploymentCertificate()">
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }} (A4)
         </button>
@@ -109,15 +119,19 @@
 <div class="card mb-3 border shadow-sm d-none" id="empCertSettingsCard">
     <div class="card-body p-3 bg-light">
         <div class="row g-2">
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small fw-bold mb-1">លេខយោងលិខិត (Ref No.)</label>
                 <input type="text" id="empCertRefInput" class="form-control form-control-sm" value="{{ $certificateNumber }}" oninput="onEmpCertCustomChange()">
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-bold mb-1">ឈ្មោះអ្នកតំណាង / ចុះហត្ថលេខា</label>
+                <label class="form-label small fw-bold mb-1">អាសយដ្ឋានសាខា (Branch Address)</label>
+                <input type="text" id="empCertAddressInput" class="form-control form-control-sm" value="{{ $branchAddress }}" oninput="onEmpCertCustomChange()">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold mb-1">ឈ្មោះអ្នកតំណាង</label>
                 <input type="text" id="empCertRepNameInput" class="form-control form-control-sm" value="{{ $authorizedSignatoryName }}" oninput="onEmpCertCustomChange()">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small fw-bold mb-1">តួនាទីអ្នកតំណាង</label>
                 <input type="text" id="empCertRepRoleInput" class="form-control form-control-sm" value="{{ $authorizedSignatoryRole }}" oninput="onEmpCertCustomChange()">
             </div>
@@ -131,6 +145,16 @@
 
 <div class="employee-complete-paper employee-employment-certificate-paper">
     <div class="employee-employment-certificate-content">
+
+        <!-- Hidden form fields for history tracking & snapshot -->
+        <div class="d-none" aria-hidden="true">
+            <input type="text" name="ref_number" id="empCertHiddenRef" value="{{ $certificateNumber }}" aria-label="Reference Number">
+            <input type="text" name="branch_address" id="empCertHiddenAddress" value="{{ $branchAddress }}" aria-label="Branch Address">
+            <input type="text" name="authorized_name" id="empCertHiddenRepName" value="{{ $authorizedSignatoryName }}" aria-label="Authorized Signatory Name">
+            <input type="text" name="authorized_role" id="empCertHiddenRepRole" value="{{ $authorizedSignatoryRole }}" aria-label="Authorized Signatory Role">
+            <input type="text" name="purpose" id="empCertHiddenPurpose" value="{{ $defaultPurpose }}" aria-label="Purpose">
+            <input type="checkbox" name="include_salary" id="empCertHiddenIncludeSalary" checked aria-label="Include Salary">
+        </div>
 
         <!-- Company Letterhead Header -->
         <header class="employee-employment-certificate-header">
@@ -174,7 +198,7 @@
 
         <!-- Preamble / Introduction Statement -->
         <div class="font-kantumruy mb-3" style="font-size: 13px; line-height: 1.8; text-align: justify;">
-            យើងខ្ញុំ <strong id="empCertRepNameDisplay" class="text-dark">{{ $authorizedSignatoryName }}</strong> ជា [<span id="empCertRepRoleDisplay">{{ $authorizedSignatoryRole }}</span>] នៃក្រុមហ៊ុន/សហគ្រាសខាងលើ សូមបញ្ជាក់ថា៖
+            យើងខ្ញុំ <strong id="empCertRepNameDisplay" class="text-dark">{{ $authorizedSignatoryName }}</strong> ជា [<span id="empCertRepRoleDisplay">{{ $authorizedSignatoryRole }}</span>] នៃ <strong class="text-dark">{{ $companyNameKhmer }}</strong> សូមបញ្ជាក់ថា៖
         </div>
 
         <!-- Employment Verification Table (Exact User Specification) -->
@@ -258,10 +282,10 @@
         <!-- Concluding Confirmation Statement -->
         <div class="font-kantumruy mb-3" style="font-size: 12.5px; line-height: 1.85; text-align: justify;">
             <p class="mb-2">
-                បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅក្រុមហ៊ុន/សហគ្រាសរបស់យើងខ្ញុំ តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong id="empCertPurposeDisplay" class="text-dark">{{ $defaultPurpose }}</strong>។
+                បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅ <strong class="text-dark">{{ $companyNameKhmer }}</strong> តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong id="empCertPurposeDisplay" class="text-dark">{{ $defaultPurpose }}</strong>។
             </p>
             <p class="mb-1">
-                យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានដែលមាននៅក្នុងក្រុមហ៊ុន/សហគ្រាស គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ។
+                យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានជាក់ស្ដែង គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ។
             </p>
             <p class="fw-bold mb-0">សូមអរគុណ។</p>
         </div>
@@ -271,8 +295,8 @@
             <div class="col-6 text-center">
                 <!-- Left Column placeholder / Stamp -->
                 <div class="text-muted small" style="min-height: 80px;">
-                    <div class="fw-bold text-dark mb-1">ត្រាក្រុមហ៊ុន/សហគ្រាស</div>
-                    <small class="text-muted">(Company Official Stamp)</small>
+                    <div class="fw-bold text-dark mb-1">ត្រាផ្លូវការ</div>
+                    <small class="text-muted">(Official Stamp)</small>
                 </div>
             </div>
 
@@ -354,9 +378,11 @@
         if (card) card.classList.toggle('d-none');
     }
 
-    function onEmpCertCustomChange() {
+    function onEmpCertCustomChange(dispatchToPaper) {
+        if (typeof dispatchToPaper === 'undefined') dispatchToPaper = true;
         var toggleSalary = document.getElementById('empCertToggleSalary');
         var refInput = document.getElementById('empCertRefInput');
+        var addressInput = document.getElementById('empCertAddressInput');
         var repNameInput = document.getElementById('empCertRepNameInput');
         var repRoleInput = document.getElementById('empCertRepRoleInput');
         var purposeInput = document.getElementById('empCertPurposeInput');
@@ -381,6 +407,15 @@
         if (refInput) {
             var refDisplay = document.getElementById('empCertRefDisplay');
             if (refDisplay) refDisplay.innerText = refInput.value;
+            var hiddenRef = document.getElementById('empCertHiddenRef');
+            if (hiddenRef) hiddenRef.value = refInput.value;
+        }
+
+        if (addressInput) {
+            var addressSpan = document.getElementById('empCertAddressSpan');
+            if (addressSpan) addressSpan.innerText = addressInput.value;
+            var hiddenAddress = document.getElementById('empCertHiddenAddress');
+            if (hiddenAddress) hiddenAddress.value = addressInput.value;
         }
 
         if (repNameInput) {
@@ -388,6 +423,8 @@
             var signNameDisplay = document.getElementById('empCertSignNameDisplay');
             if (repNameDisplay) repNameDisplay.innerText = repNameInput.value;
             if (signNameDisplay) signNameDisplay.innerText = '(' + repNameInput.value + ')';
+            var hiddenRep = document.getElementById('empCertHiddenRepName');
+            if (hiddenRep) hiddenRep.value = repNameInput.value;
         }
 
         if (repRoleInput) {
@@ -395,12 +432,19 @@
             var signRoleDisplay = document.getElementById('empCertSignRoleDisplay');
             if (repRoleDisplay) repRoleDisplay.innerText = repRoleInput.value;
             if (signRoleDisplay) signRoleDisplay.innerText = 'តួនាទី៖ ' + repRoleInput.value;
+            var hiddenRole = document.getElementById('empCertHiddenRepRole');
+            if (hiddenRole) hiddenRole.value = repRoleInput.value;
         }
 
         if (purposeInput) {
             var purposeDisplay = document.getElementById('empCertPurposeDisplay');
             if (purposeDisplay) purposeDisplay.innerText = purposeInput.value;
+            var hiddenPurpose = document.getElementById('empCertHiddenPurpose');
+            if (hiddenPurpose) hiddenPurpose.value = purposeInput.value;
         }
+
+        var hiddenSal = document.getElementById('empCertHiddenIncludeSalary');
+        if (hiddenSal) hiddenSal.checked = isSalaryChecked;
 
         // Update word download button URL with current query parameters
         var wordBtn = document.getElementById('downloadEmploymentCertificateWordBtn');
@@ -409,10 +453,43 @@
             var params = new URLSearchParams();
             params.set('include_salary', isSalaryChecked ? '1' : '0');
             if (refInput && refInput.value) params.set('reference_number', refInput.value);
+            if (addressInput && addressInput.value) params.set('branch_address', addressInput.value);
             if (repNameInput && repNameInput.value) params.set('authorized_name', repNameInput.value);
             if (repRoleInput && repRoleInput.value) params.set('authorized_role', repRoleInput.value);
             if (purposeInput && purposeInput.value) params.set('purpose', purposeInput.value);
             wordBtn.href = base + '?' + params.toString();
         }
+
+        if (dispatchToPaper) {
+            var paper = document.querySelector('#employment-certificate .employee-employment-certificate-paper');
+            if (paper) {
+                paper.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        }
     }
+
+    window.syncEmpCertFromHidden = function() {
+        var hiddenRef = document.getElementById('empCertHiddenRef');
+        var hiddenAddr = document.getElementById('empCertHiddenAddress');
+        var hiddenRep = document.getElementById('empCertHiddenRepName');
+        var hiddenRole = document.getElementById('empCertHiddenRepRole');
+        var hiddenPurp = document.getElementById('empCertHiddenPurpose');
+        var hiddenSal = document.getElementById('empCertHiddenIncludeSalary');
+
+        var refInput = document.getElementById('empCertRefInput');
+        var addrInput = document.getElementById('empCertAddressInput');
+        var repInput = document.getElementById('empCertRepNameInput');
+        var roleInput = document.getElementById('empCertRepRoleInput');
+        var purpInput = document.getElementById('empCertPurposeInput');
+        var salToggle = document.getElementById('empCertToggleSalary');
+
+        if (hiddenRef && refInput) refInput.value = hiddenRef.value;
+        if (hiddenAddr && addrInput) addrInput.value = hiddenAddr.value;
+        if (hiddenRep && repInput) repInput.value = hiddenRep.value;
+        if (hiddenRole && roleInput) roleInput.value = hiddenRole.value;
+        if (hiddenPurp && purpInput) purpInput.value = hiddenPurp.value;
+        if (hiddenSal && salToggle) salToggle.checked = Boolean(hiddenSal.checked);
+
+        onEmpCertCustomChange(false);
+    };
 </script>

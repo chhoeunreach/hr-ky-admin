@@ -7,6 +7,7 @@
         overview: ['#discipline .employee-overview-paper', 'printOverviewForm'],
         warning: ['#staff-warning-form .employee-warning-paper', 'printStaffWarningForm'],
         salaryCertificate: ['#salary-certificate .employee-salary-certificate-paper', 'printSalaryCertificate'],
+        employmentCertificate: ['#employment-certificate .employee-employment-certificate-paper', 'printEmploymentCertificate'],
         attendanceDailyReport: ['#attendance-daily-report .employee-attendance-daily-report-paper', 'printAttendanceDailyReport'],
     };
     const saved = new Map();
@@ -172,7 +173,7 @@
                 if (record && !touched && !saved.has(type)) {
                     const warningNumber = paper.querySelector('[data-warning-number]');
                     if (warningNumber && record.warning_number) warningNumber.textContent = record.warning_number;
-                    if (type === 'warning') {
+                    if (type === 'warning' || type === 'employmentCertificate') {
                         paper.querySelectorAll('input, textarea, select').forEach((field, index) => {
                             const label = field.getAttribute('aria-label') || field.name || field.id;
                             const value = record.fields?.find(item => item.label === label) || record.fields?.[index];
@@ -180,9 +181,12 @@
                             field.value = value.value ?? '';
                             if (field.matches('input[type="checkbox"], input[type="radio"]')) field.checked = Boolean(value.checked);
                         });
-                        window.StaffWarningA4?.refresh(paper);
+                        if (type === 'warning') window.StaffWarningA4?.refresh(paper);
+                        if (type === 'employmentCertificate' && window.syncEmpCertFromHidden) {
+                            window.syncEmpCertFromHidden();
+                        }
                     }
-                    const signature = type === 'warning' && !canManage
+                    const signature = (type === 'warning' || type === 'employmentCertificate') && !canManage
                         ? JSON.stringify(snapshot(paper))
                         : JSON.stringify({document_text: record.document_text, fields: record.fields});
                     saved.set(type, {id: record.id, signature});

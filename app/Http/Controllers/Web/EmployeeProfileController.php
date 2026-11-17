@@ -163,7 +163,8 @@ class EmployeeProfileController extends Controller
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
 
         $employee->load([
-            'branch:id,name,logo',
+            'branch:id,name,address,phone,logo,company_id',
+            'company:id,name,address,phone,email,website_url',
             'department:id,dept_name',
             'post:id,post_name',
             'supervisor:id,name',
@@ -408,8 +409,17 @@ class EmployeeProfileController extends Controller
                     || $this->can('employee.warning_form.print'),
                 403
             );
-        } elseif ($ability) $this->authorizeEmployeeProfile($employee, $ability);
-        else abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
+        } elseif ($ability) {
+            $this->authorizeEmployeeProfile($employee, $ability);
+        } else {
+            abort_unless(
+                $this->can('employee.salary.view')
+                    || $this->can('employee.salary.history.view')
+                    || $this->can('employee.employment.view')
+                    || auth('admin')->check(),
+                403
+            );
+        }
         $records = EmployeeProfileAuditLog::where('employee_id', $employee->id)->where('module', 'document_form')
             ->where('new_values->form_type', $request->input('form_type'))->orderByDesc('id')->paginate($request->boolean('latest') ? 1 : 25);
         return response()->json($records->through(fn ($record) => [
@@ -447,7 +457,13 @@ class EmployeeProfileController extends Controller
         } elseif ($ability) {
             $this->authorizeEmployeeProfile($employee, $ability);
         } else {
-            abort_unless($this->can('employee.salary.view') || $this->can('employee.salary.history.view'), 403);
+            abort_unless(
+                $this->can('employee.salary.view')
+                    || $this->can('employee.salary.history.view')
+                    || $this->can('employee.employment.view')
+                    || auth('admin')->check(),
+                403
+            );
         }
         $warningPrintOnly = $data['form_type'] === 'warning'
             && !$saveOnly
@@ -556,7 +572,8 @@ class EmployeeProfileController extends Controller
         );
 
         $employee->load([
-            'branch:id,name,logo',
+            'branch:id,name,address,phone,logo,company_id',
+            'company:id,name,address,phone,email,website_url',
             'department:id,dept_name',
             'post:id,post_name',
             'employee360Profile',
@@ -616,7 +633,8 @@ class EmployeeProfileController extends Controller
         );
 
         $employee->load([
-            'branch:id,name,address,phone,logo',
+            'branch:id,name,address,phone,logo,company_id',
+            'company:id,name,address,phone,email,website_url',
             'department:id,dept_name',
             'post:id,post_name',
             'employee360Profile',
@@ -653,6 +671,8 @@ class EmployeeProfileController extends Controller
         $authorizedName = $request->input('authorized_name', auth('admin')->user()?->name ?: (auth()->user()?->name ?: 'ម៉េង សោភា'));
         $authorizedRole = $request->input('authorized_role', 'ប្រធានផ្នែកធនធានមនុស្ស / HR Manager');
         $referenceNumber = $request->input('reference_number', 'EMP-CERT-' . str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT) . '/' . now()->format('Y'));
+        $defaultBranchAddress = $employee->branch?->address ?: ($employee->company?->address ?: 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា');
+        $branchAddress = $request->input('branch_address', $defaultBranchAddress);
 
         $content = view('admin.employees.profile.exports.employment-certificate-word', compact(
             'employee',
@@ -665,7 +685,8 @@ class EmployeeProfileController extends Controller
             'includeSalary',
             'authorizedName',
             'authorizedRole',
-            'referenceNumber'
+            'referenceNumber',
+            'branchAddress'
         ))->render();
 
         $employeeName = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) ($employee->english_name ?: $employee->name ?: $employee->employee_code));

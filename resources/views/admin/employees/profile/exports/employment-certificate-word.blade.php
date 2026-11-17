@@ -59,10 +59,19 @@
     $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
 
     // Company & Branch Meta
-    $companyNameKhmer = 'ក្រុមហ៊ុន/សហគ្រាស គ្នាយើង (KNEAYERNG PHONE SHOP)';
-    $branchAddress = $employee->branch?->address ?: 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា';
-    $branchPhone = $employee->branch?->phone ?: '012 345 678 / 098 765 432';
-    $branchEmail = $employee->branch?->email ?: 'kneayerngphoneshop@gmail.com';
+    $companyNameKhmer = 'គ្នាយើង (KNEAYERNG PHONE SHOP)';
+    $branchAddress = trim((string) ($branchAddress ?? ($employee->branch?->address ?: ($employee->company?->address ?: ''))));
+    if (empty($branchAddress)) {
+        $branchAddress = 'រាជធានីភ្នំពេញ ព្រះរាជាណាចក្រកម្ពុជា';
+    }
+    $branchPhone = trim((string) ($employee->branch?->phone ?: ($employee->company?->phone ?: '')));
+    if (empty($branchPhone)) {
+        $branchPhone = '012 345 678 / 098 765 432';
+    }
+    $branchEmail = trim((string) ($employee->company?->email ?: ''));
+    if (empty($branchEmail)) {
+        $branchEmail = 'kneayerngphoneshop@gmail.com';
+    }
 
     $refNum = $referenceNumber ?? ('EMP-CERT-' . str_pad((string) $employee->id, 5, '0', STR_PAD_LEFT) . '/' . now()->format('Y'));
     $issueDateKhmer = 'ធ្វើនៅរាជធានីភ្នំពេញ, ថ្ងៃទី ' . $toKhmerNum(now()->format('d')) . ' ខែ ' . ($khmerMonths[(int) now()->format('m')] ?? '') . ' ឆ្នាំ ' . $toKhmerNum(now()->format('Y'));
@@ -225,7 +234,7 @@
 
         <!-- Introduction Statement -->
         <div class="intro-text">
-            យើងខ្ញុំ <strong>{{ $repName }}</strong> ជា [{{ $repRole }}] នៃក្រុមហ៊ុន/សហគ្រាសខាងលើ សូមបញ្ជាក់ថា៖
+            យើងខ្ញុំ <strong>{{ $repName }}</strong> ជា [{{ $repRole }}] នៃ {{ $companyNameKhmer }} សូមបញ្ជាក់ថា៖
         </div>
 
         <!-- Verification Data Table -->
@@ -282,8 +291,8 @@
 
         <!-- Concluding Confirmation Statement -->
         <div class="closing-text">
-            បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅក្រុមហ៊ុន/សហគ្រាសរបស់យើងខ្ញុំ តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong>{{ $certPurpose }}</strong>។<br><br>
-            យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានដែលមាននៅក្នុងក្រុមហ៊ុន/សហគ្រាស គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ។<br><br>
+            បុគ្គលខាងលើពិតជាបាន/កំពុងបម្រើការងារនៅ {{ $companyNameKhmer }} តាមព័ត៌មានដែលបានបញ្ជាក់ខាងលើ។ លិខិតនេះត្រូវបានចេញជូនតាមសំណើរបស់សាមីខ្លួន ដើម្បីប្រើប្រាស់សម្រាប់ <strong>{{ $certPurpose }}</strong>។<br><br>
+            យើងខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានខាងលើត្រឹមត្រូវតាមឯកសារ និងព័ត៌មានជាក់ស្ដែង គិតត្រឹមកាលបរិច្ឆេទចេញលិខិតនេះ។<br><br>
             <strong>សូមអរគុណ។</strong>
         </div>
 
@@ -291,8 +300,8 @@
         <table class="signature-table">
             <tr>
                 <td>
-                    <strong>ត្រាក្រុមហ៊ុន/សហគ្រាស</strong><br>
-                    <span style="font-size: 8.5pt; color: #64748b;">(Company Stamp)</span>
+                    <strong>ត្រាផ្លូវការ</strong><br>
+                    <span style="font-size: 8.5pt; color: #64748b;">(Official Stamp)</span>
                 </td>
                 <td>
                     <strong>ហត្ថលេខា និងឈ្មោះអ្នកមានសិទ្ធិ</strong><br>
