@@ -7,6 +7,7 @@ use App\Models\Certificate;
 use App\Models\CertificateTemplate;
 use App\Models\User;
 use App\Repositories\CertificateRepository;
+use App\Support\EmployeeAvatar;
 use Exception;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -194,10 +195,11 @@ class CertificateService
         }
 
         $users = User::whereIn('id', $employeeIds)->get();
+        $dCardOverrides = EmployeeAvatar::loadDCardOverrides();
         $recipients = [];
 
         foreach ($users as $u) {
-            $photo = $u->avatar ? asset(User::AVATAR_UPLOAD_PATH . $u->avatar) : null;
+            $photo = EmployeeAvatar::url($u, $dCardOverrides);
 
             $recipients[] = [
                 'user_id' => $u->id,
@@ -245,7 +247,7 @@ class CertificateService
             $recipientTitle = $user?->post?->post_name ?: ($data['recipient_title'] ?? ($tplPayload['recipientTitle'] ?? 'Team Leader · KNEAYERNG PHONE SHOP'));
             $khmerRecipientTitle = $data['khmer_recipient_title'] ?? ($tplPayload['khmerRecipientTitle'] ?? 'ប្រធានក្រុម · ហាងទូរស័ព្ទដៃ គ្នា​យើង');
             $employeeCode = $user?->employee_code ?: ($tplPayload['digitalHr']['employeeId'] ?? ('EMP-KY-' . ($user?->id ?? '000')));
-            $photo = ($user && $user->avatar) ? asset(User::AVATAR_UPLOAD_PATH . $user->avatar) : null;
+            $photo = $user ? EmployeeAvatar::url($user) : ($tplPayload['recipientPhotoUrl'] ?? null);
         }
 
         $category = $data['category'] ?? $template?->category ?? 'course';

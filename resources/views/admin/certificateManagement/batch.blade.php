@@ -325,7 +325,7 @@
                                      data-search="{{ \Illuminate\Support\Str::lower($searchText) }}">
                                     <input class="form-check-input staff-checkbox" type="checkbox" name="employee_ids[]"
                                            value="{{ $user->id }}" id="emp_{{ $user->id }}" onchange="onStaffSelectionChange()">
-                                    <img class="staff-avatar" src="{{ $user->avatar_url }}" alt="" loading="lazy" onerror="this.src='{{ asset('assets/images/img.png') }}'">
+                                    <img class="staff-avatar" src="{{ $employeePhotos[$user->id] ?? $user->avatar_url }}" alt="" loading="lazy" onerror="this.src='{{ asset('assets/images/img.png') }}'">
                                     <span class="min-w-0">
                                         <strong class="staff-name fw-bold text-dark">{{ $user->name }}</strong>
                                         <small class="staff-meta">{{ $user->english_name ?: 'No Latin Name' }}</small>

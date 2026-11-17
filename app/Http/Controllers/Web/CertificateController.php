@@ -15,6 +15,7 @@ use App\Repositories\DepartmentRepository;
 use App\Repositories\UserRepository;
 use App\Requests\CertificateManagement\CertificateRequest;
 use App\Services\CertificateManagement\CertificateService;
+use App\Support\EmployeeAvatar;
 use App\Traits\CustomAuthorizesRequests;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
@@ -1125,10 +1126,15 @@ class CertificateController extends Controller
             ->orderBy('name')
             ->get();
 
+        $dCardOverrides = EmployeeAvatar::loadDCardOverrides();
+        $employeePhotos = $users->mapWithKeys(fn (User $user) => [
+            $user->id => EmployeeAvatar::url($user, $dCardOverrides),
+        ]);
+
         $templates = CertificateTemplate::where('is_active', true)->orderBy('sort_order')->get();
         $selectedTemplate = $templates->firstWhere('is_default', true) ?? $templates->first();
 
-        return view($this->view . 'batch', compact('branches', 'departments', 'users', 'templates', 'selectedTemplate'));
+        return view($this->view . 'batch', compact('branches', 'departments', 'users', 'employeePhotos', 'templates', 'selectedTemplate'));
     }
 
     /**
