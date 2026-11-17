@@ -3351,6 +3351,9 @@ return [
     'select_service' => 'ជ្រើសរើសសេវាកម្ម',
     'flash_view' => 'ទិដ្ឋភាពរហ័ស',
     'home_highlights' => 'ព័ត៌មានលេចធ្លោទំព័រដើម',
+    'mobile_tool' => 'ឧបករណ៍ទូរស័ព្ទ',
+    'banner_slides' => 'ស្លាយប៊េនណេរ',
+    'mobile_quotes' => 'ពាក្យសម្រង់',
     'social_feed' => 'ព័ត៌មានសង្គម',
     'social_reports' => 'របាយការណ៍សង្គម',
 

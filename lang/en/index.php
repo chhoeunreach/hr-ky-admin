@@ -3280,6 +3280,9 @@ return [
     'select_service' => 'Select Service',
     'flash_view' => 'Flash View',
     'home_highlights' => 'Home Highlights',
+    'mobile_tool' => 'Mobile Tool',
+    'banner_slides' => 'Banner Slides',
+    'mobile_quotes' => 'Quotes',
     'social_feed' => 'Social Feed',
     'social_reports' => 'Social Reports',
 

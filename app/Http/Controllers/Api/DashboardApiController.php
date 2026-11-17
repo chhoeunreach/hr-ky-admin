@@ -119,6 +119,8 @@ class DashboardApiController extends Controller
             $dashboard['user'] = new UserReportResource($userDetail);
             $dashboard['employee_today_attendance'] = new EmployeeTodayAttendance($userDetail);
             $dashboard['monthly_attendance_summary'] = app(\App\Services\Attendance\EmployeeMonthlyAttendanceSummary::class)->forEmployee($userDetail);
+            $dashboard['top_bonus_employees'] = app(\App\Services\Attendance\DepartmentMonthlyBonusLeaderboard::class)
+                ->forEmployeeDepartment($userDetail);
             $dashboard['overview'] = new OverviewResource($overview);
             $dashboard['office_time'] = new OfficeTimeResource($userDetail);
             $dashboard['company'] = new CompanyWeekendResource($userDetail);

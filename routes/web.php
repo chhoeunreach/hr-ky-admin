@@ -13,6 +13,8 @@ use App\Http\Controllers\Web\AttendanceMonthlyController;
 use App\Http\Controllers\Web\MonthlyPayrollController;
 use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
+use App\Http\Controllers\Web\BannerSlideshowController;
+use App\Http\Controllers\Web\MobileQuoteController;
 use App\Http\Controllers\Web\CertificateController;
 use App\Http\Controllers\Web\AwardTypeController;
 use App\Http\Controllers\Web\BioAttendanceController;
@@ -184,6 +186,17 @@ Route::group([
             Route::post('{homeHighlight}/toggle', 'toggle')->name('toggle');
             Route::post('{homeHighlight}/send-now', 'sendNow')->middleware('throttle:5,1')->name('send-now');
             Route::delete('{homeHighlight}', 'destroy')->name('destroy');
+        });
+
+        Route::prefix('mobile-tools')->name('mobile-tools.')->group(function () {
+            Route::get('banner-slides', [BannerSlideshowController::class, 'edit'])->name('banner-slides');
+            Route::post('banner-slides', [BannerSlideshowController::class, 'update'])->name('banner-slides.update');
+            Route::post('banner-slides/reset', [BannerSlideshowController::class, 'reset'])->name('banner-slides.reset');
+            Route::get('quotes', [MobileQuoteController::class, 'index'])->name('quotes');
+            Route::post('quotes', [MobileQuoteController::class, 'store'])->name('quotes.store');
+            Route::post('quotes/{quoteId}/update', [MobileQuoteController::class, 'update'])->name('quotes.update');
+            Route::post('quotes/{quoteId}/toggle', [MobileQuoteController::class, 'toggle'])->name('quotes.toggle');
+            Route::delete('quotes/{quoteId}', [MobileQuoteController::class, 'destroy'])->name('quotes.destroy');
         });
 
 

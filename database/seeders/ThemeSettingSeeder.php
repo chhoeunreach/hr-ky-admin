@@ -17,10 +17,10 @@ class ThemeSettingSeeder extends Seeder
         ThemeSetting::updateOrCreate(
             ['id' => 1],
             [
-                'primary_color' => '#0F766E',
-                'hover_color' => '#115E59',
-                'dark_primary_color' => '#14B8A6',
-                'dark_hover_color' => '#0F766E',
+                'primary_color' => '#0B5FFF',
+                'hover_color' => '#0A4FD6',
+                'dark_primary_color' => '#5EB1FF',
+                'dark_hover_color' => '#0B5FFF',
             ]
         );
     }

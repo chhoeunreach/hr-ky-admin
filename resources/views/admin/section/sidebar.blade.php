@@ -26,6 +26,7 @@
 {{--                @include('admin.section.partial.holiday')--}}
                 @include('admin.section.partial.notice')
                 @include('admin.section.partial.community')
+                @include('admin.section.partial.mobileTool')
                 @include('admin.section.partial.socialMarketing')
                 @include('admin.section.partial.payroll')
                 @include('admin.section.partial.leave')

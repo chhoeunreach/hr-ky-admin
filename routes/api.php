@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
 use App\Http\Controllers\Api\HomeHighlightApiController;
+use App\Http\Controllers\Api\BannerSlideshowApiController;
 use App\Http\Controllers\Api\Kiosk\KioskApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
@@ -106,6 +107,14 @@ Route::group([
         Route::get('/', 'index');
         Route::get('history', 'history');
         Route::get('{homeHighlight}', 'show');
+    });
+    Route::controller(BannerSlideshowApiController::class)->prefix('banner-slideshow')->group(function () {
+        Route::get('/', 'show');
+        Route::put('/', 'update');
+        Route::post('reset', 'reset');
+    });
+    Route::controller(\App\Http\Controllers\Api\MobileQuoteApiController::class)->prefix('quotes')->group(function () {
+        Route::get('/', 'index');
     });
     Route::controller(\App\Http\Controllers\Api\SocialFeedApiController::class)->group(function () {
         Route::get('social-feed', 'index');
