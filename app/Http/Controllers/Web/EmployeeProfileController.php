@@ -227,6 +227,14 @@ class EmployeeProfileController extends Controller
             ->latest('created_at')->latest('id')->paginate(25, ['*'], 'history_page')
             ->withQueryString()->appends(['tab' => 'history']);
         $canViewEmployment = $this->can('employee.employment.view');
+        $canViewEmploymentCertificate = $this->can('employee.employment_certificate.view')
+            || $this->can('employee.employment.view')
+            || $this->can('employee.salary.view')
+            || auth('admin')->check();
+        $canPrintEmploymentCertificate = $this->can('employee.employment_certificate.print')
+            || $canViewEmploymentCertificate;
+        $canExportEmploymentCertificate = $this->can('employee.employment_certificate.export')
+            || $canViewEmploymentCertificate;
         $canViewResignationForm = $this->can('employee.resignation_form.view');
         $canPrintResignationForm = $this->can('employee.resignation_form.print');
         $canExportResignationForm = $this->can('employee.resignation_form.export');
@@ -328,6 +336,9 @@ class EmployeeProfileController extends Controller
             'previousEmployee',
             'nextEmployee',
             'canViewEmployment',
+            'canViewEmploymentCertificate',
+            'canPrintEmploymentCertificate',
+            'canExportEmploymentCertificate',
             'canViewResignationForm',
             'canPrintResignationForm',
             'canExportResignationForm',
@@ -367,7 +378,7 @@ class EmployeeProfileController extends Controller
             'warning' => ['employee.warning_form.print', 'Staff Warning Form'],
             'contract' => ['employee.contract_form.print', 'Employment Contract'],
             'salaryCertificate' => [null, 'Salary Certificate'],
-            'employmentCertificate' => [null, 'Employment Certificate'],
+            'employmentCertificate' => ['employee.employment_certificate.print', 'Employment Certificate'],
             'leaveLetter' => ['employee.leave_form.print', __('index.leave_request_form')],
             'timeLeaveLetter' => ['employee.time_leave_form.print', __('index.time_leave_request_form')],
             'attendanceDailyReport' => ['employee.attendance_daily_report.print', 'Attendance Daily Report'],
@@ -407,6 +418,15 @@ class EmployeeProfileController extends Controller
                 $this->can('employee.warning_form.view')
                     || $this->can('employee.warning_form.manage')
                     || $this->can('employee.warning_form.print'),
+                403
+            );
+        } elseif ($request->input('form_type') === 'employmentCertificate') {
+            abort_unless(
+                $this->can('employee.employment_certificate.view')
+                    || $this->can('employee.employment_certificate.print')
+                    || $this->can('employee.employment.view')
+                    || $this->can('employee.salary.view')
+                    || auth('admin')->check(),
                 403
             );
         } elseif ($ability) {
@@ -454,6 +474,15 @@ class EmployeeProfileController extends Controller
         [$ability, $title] = $forms[$data['form_type']];
         if ($data['form_type'] === 'warning' && $saveOnly) {
             $this->authorizeEmployeeProfile($employee, 'employee.warning_form.manage');
+        } elseif ($data['form_type'] === 'employmentCertificate') {
+            abort_unless(
+                $this->can('employee.employment_certificate.print')
+                    || ($saveOnly && $this->can('employee.employment_certificate.view'))
+                    || $this->can('employee.employment.view')
+                    || $this->can('employee.salary.view')
+                    || auth('admin')->check(),
+                403
+            );
         } elseif ($ability) {
             $this->authorizeEmployeeProfile($employee, $ability);
         } else {
@@ -629,7 +658,11 @@ class EmployeeProfileController extends Controller
     {
         $this->authorizeEmployeeProfile($employee, 'employee.profile.view');
         abort_unless(
-            $this->can('employee.employment.view') || $this->can('employee.salary.view') || auth('admin')->check(),
+            $this->can('employee.employment_certificate.export')
+                || $this->can('employee.employment_certificate.view')
+                || $this->can('employee.employment.view')
+                || $this->can('employee.salary.view')
+                || auth('admin')->check(),
             403
         );
 

@@ -486,6 +486,21 @@ class RolePermissionHelper
                 "permission_groups_id" => 5
             ],
             [
+                "name" => "Employee Employment Certificate View",
+                "permission_key" => "employee.employment_certificate.view",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Employment Certificate Print",
+                "permission_key" => "employee.employment_certificate.print",
+                "permission_groups_id" => 5
+            ],
+            [
+                "name" => "Employee Employment Certificate Export Word",
+                "permission_key" => "employee.employment_certificate.export",
+                "permission_groups_id" => 5
+            ],
+            [
                 "name" => "Employee Employment View",
                 "permission_key" => "employee.employment.view",
                 "permission_groups_id" => 5

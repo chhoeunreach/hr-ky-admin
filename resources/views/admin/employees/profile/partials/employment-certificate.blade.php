@@ -87,6 +87,10 @@
         }
     };
 
+    // Employment status
+    $employmentStatus = $profile->employment_status ?: ((int) $employee->is_active === 1 ? 'active' : 'inactive');
+    $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
+
     $endDateForTenure = (!$isCurrentActive && filled($profile->last_working_date))
         ? $profile->last_working_date
         : now();
@@ -116,10 +120,6 @@
     $isFDC = ($contractType === 'fdc' || str_contains($contractType, 'fixed') || str_contains($contractType, 'កំណត់'));
     $isOtherContract = !$isUDC && !$isFDC && filled($contractType);
 
-    // Employment status
-    $employmentStatus = $profile->employment_status ?: ((int) $employee->is_active === 1 ? 'active' : 'inactive');
-    $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
-
     // Company & Branch Meta
     $companyNameKhmer = 'គ្នាយើង (KNEAYERNG PHONE SHOP)';
     $branchAddress = trim((string) ($employee->branch?->address ?: ($employee->company?->address ?: '')));
@@ -147,15 +147,19 @@
 <div class="employee-complete-toolbar employee-employment-certificate-toolbar mb-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="d-flex align-items-center gap-2 flex-wrap">
         <div data-saved-form-toolbar="employmentCertificate" class="d-inline-flex align-items-center gap-2"></div>
+        @if($canPrintEmploymentCertificate ?? true)
         <button type="button" class="btn btn-outline-primary btn-sm" onclick="printEmploymentCertificate()">
             <i class="link-icon" data-feather="printer"></i> {{ __('index.print') }} (A4)
         </button>
+        @endif
+        @if($canExportEmploymentCertificate ?? true)
         <a href="{{ route('admin.employees.profile.employment-certificate.word', $employee->id) }}"
            id="downloadEmploymentCertificateWordBtn"
            class="btn btn-success btn-sm"
            target="_blank">
             <i class="link-icon" data-feather="file-text"></i> {{ __('index.employment_certificate_download_word') }}
         </a>
+        @endif
     </div>
 
     <!-- Quick Customizer Controls -->

@@ -83,6 +83,10 @@
         }
     };
 
+    // Employment status
+    $employmentStatus = $profile->employment_status ?: ((int) $employee->is_active === 1 ? 'active' : 'inactive');
+    $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
+
     $endDateForTenure = (!$isCurrentActive && filled($profile->last_working_date))
         ? $profile->last_working_date
         : now();
@@ -111,10 +115,6 @@
     $isUDC = ($contractType === 'udc' || str_contains($contractType, 'undetermined') || str_contains($contractType, 'មិនកំណត់'));
     $isFDC = ($contractType === 'fdc' || str_contains($contractType, 'fixed') || str_contains($contractType, 'កំណត់'));
     $isOtherContract = !$isUDC && !$isFDC && filled($contractType);
-
-    // Employment status
-    $employmentStatus = $profile->employment_status ?: ((int) $employee->is_active === 1 ? 'active' : 'inactive');
-    $isCurrentActive = ($employmentStatus === 'active' || (int) $employee->is_active === 1);
 
     // Company & Branch Meta
     $companyNameKhmer = 'គ្នាយើង (KNEAYERNG PHONE SHOP)';

@@ -74,7 +74,7 @@
                 $tabs['salary'] = __('index.salary');
                 $tabs['salary-certificate'] = __('index.salary_certificate');
             }
-            if ($canViewEmployment || $canViewSalary || auth('admin')->check()) {
+            if ($canViewEmploymentCertificate ?? ($canViewEmployment || $canViewSalary || auth('admin')->check())) {
                 $tabs['employment-certificate'] = __('index.employment_certificate');
             }
             if ($canViewLeaveRecords) {
@@ -2593,7 +2593,7 @@
                         </div>
                     @endif
 
-                    @if($canViewEmployment || $canViewSalary || auth('admin')->check())
+                    @if($canViewEmploymentCertificate ?? ($canViewEmployment || $canViewSalary || auth('admin')->check()))
                         <div class="tab-pane fade {{ $activeProfileTab === 'employment-certificate' ? 'show active' : '' }}" id="employment-certificate" role="tabpanel">
                             @include('admin.employees.profile.partials.employment-certificate')
                         </div>
@@ -2784,7 +2784,7 @@
             warning: {{ $canPrintWarningForm ? 'true' : 'false' }},
             contract: @can('employee.contract_form.print') true @else false @endcan,
             salaryCertificate: {{ $canViewSalary ? 'true' : 'false' }},
-            employmentCertificate: {{ ($canViewEmployment || $canViewSalary || auth('admin')->check()) ? 'true' : 'false' }},
+            employmentCertificate: {{ ($canPrintEmploymentCertificate ?? ($canViewEmployment || $canViewSalary || auth('admin')->check())) ? 'true' : 'false' }},
             leaveLetter: {{ $canPrintLeaveForm ? 'true' : 'false' }},
             timeLeaveLetter: {{ $canPrintTimeLeaveForm ? 'true' : 'false' }},
             attendanceDailyReport: {{ $canPrintAttendanceDailyReport ? 'true' : 'false' }},
@@ -2792,6 +2792,7 @@
         };
 
         const employeeProfileExportPermissions = {
+            employmentCertificate: {{ ($canExportEmploymentCertificate ?? ($canViewEmployment || $canViewSalary || auth('admin')->check())) ? 'true' : 'false' }},
             leaveForm: {{ $canExportLeaveForm ? 'true' : 'false' }},
             timeLeaveForm: {{ $canExportTimeLeaveForm ? 'true' : 'false' }},
             attendanceDailyReport: {{ $canExportAttendanceDailyReport ? 'true' : 'false' }},

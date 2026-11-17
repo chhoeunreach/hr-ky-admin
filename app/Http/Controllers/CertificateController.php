@@ -26,6 +26,8 @@ class CertificateController extends Controller
      */
     public function index(Request $request)
     {
+        $this->authorizeCertificate('certificate_list');
+
         $search = trim((string) $request->query('q', ''));
         $certificates = null;
 
@@ -61,6 +63,8 @@ class CertificateController extends Controller
      */
     public function studio(Request $request)
     {
+        $this->authorizeCertificate('certificate_studio');
+
         $initialCertificate = null;
         $selectedEmployee = null;
         $employees = $this->loadHrEmployees();
@@ -148,6 +152,8 @@ class CertificateController extends Controller
      */
     public function apiIndex()
     {
+        $this->authorizeCertificate('certificate_list');
+
         $certificates = [];
         try {
             $certificates = Certificate::with(['user', 'branch', 'departmentRel'])
@@ -183,6 +189,8 @@ class CertificateController extends Controller
      */
     public function apiTemplates()
     {
+        $this->authorizeCertificate('certificate_list');
+
         try {
             $templates = CertificateTemplate::where('is_active', true)
                 ->orderBy('sort_order')
@@ -215,6 +223,8 @@ class CertificateController extends Controller
         if (!$existing && $code !== '') {
             $existing = CertificateTemplate::where('template_code', $code)->first();
         }
+
+        $this->authorizeCertificate($existing ? 'certificate_edit' : 'certificate_create');
 
         // A brand new layout model always gets its own unique code.
         if ($existing) {
@@ -346,6 +356,8 @@ class CertificateController extends Controller
      */
     public function apiResetTemplate($id)
     {
+        $this->authorizeCertificate('certificate_edit');
+
         $template = is_numeric($id)
             ? CertificateTemplate::find($id)
             : CertificateTemplate::where('template_code', $id)->first();
@@ -406,6 +418,8 @@ class CertificateController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorizeCertificate('certificate_create');
+
         $payload = $request->all();
 
         $credentialId = trim((string) ($payload['credentialId'] ?? $payload['id'] ?? ''));
@@ -505,6 +519,8 @@ class CertificateController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $this->authorizeCertificate('certificate_edit');
+
         $request->merge(['credentialId' => $request->input('credentialId', $id)]);
         return $this->store($request);
     }
@@ -514,6 +530,8 @@ class CertificateController extends Controller
      */
     public function destroy($id)
     {
+        $this->authorizeCertificate('certificate_delete');
+
         $deleted = false;
         try {
             $deleted = (bool) Certificate::where('credential_id', $id)

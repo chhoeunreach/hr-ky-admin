@@ -93,6 +93,8 @@ class CertificateController extends Controller
      */
     public function templates(Request $request)
     {
+        $this->authorizeAccess('certificate_list');
+
         $category = $request->query('category');
         $query = CertificateTemplate::orderBy('sort_order');
         if ($category && $category !== 'all') {
@@ -117,6 +119,8 @@ class CertificateController extends Controller
      */
     public function setDefaultTemplate($id)
     {
+        $this->authorizeAccess('certificate_edit');
+
         CertificateTemplate::query()->update(['is_default' => false]);
         CertificateTemplate::where('id', $id)->update(['is_default' => true]);
         $template = CertificateTemplate::findOrFail($id);
@@ -129,6 +133,8 @@ class CertificateController extends Controller
      */
     public function resetTemplate($id)
     {
+        $this->authorizeAccess('certificate_edit');
+
         $template = CertificateTemplate::findOrFail($id);
         $ok = \Database\Seeders\CertificateTemplateSeeder::resetTemplateToDefault($template);
 
@@ -689,6 +695,8 @@ class CertificateController extends Controller
      */
     public function show(Request $request, $id)
     {
+        $this->authorizeAccess('certificate_list');
+
         $templateId = $request->query('template_id') ?? $request->query('template');
         $layout = $request->query('layout');
 
@@ -965,6 +973,8 @@ class CertificateController extends Controller
      */
     public function downloadPdf(Request $request, $id)
     {
+        $this->authorizeAccess('certificate_download');
+
         $templateId = $request->query('template_id') ?? $request->query('template');
         $certificate = $this->certificateService->resolveTemplateData($id);
 
@@ -1214,6 +1224,8 @@ class CertificateController extends Controller
      */
     public function getBranchCertificateData($branchId): JsonResponse
     {
+        $this->authorizeAnyAccess(['certificate_create', 'certificate_edit', 'certificate_list']);
+
         try {
             $departments = Department::where('branch_id', $branchId)->select('id', 'dept_name')->get();
             $employees = User::where('branch_id', $branchId)
@@ -1237,21 +1249,32 @@ class CertificateController extends Controller
     }
 
     /**
-     * Safe authorization helper.
+     * Enforce a certificate permission for the current request.
+     *
+     * CustomAuthorizesRequests already treats admin-guard sessions as full
+     * access and delegates everyone else to Gate::authorize(). The `permission`
+     * middleware registers each role's permission as a Gate ability, so a
+     * missing/denied ability correctly aborts with 403.
      */
     private function authorizeAccess(string $permission): void
     {
-        if (Auth::guard('admin')->check()) {
-            return;
+        $this->authorize($permission);
+    }
+
+    /**
+     * Allow access when the user has any of the given permissions.
+     */
+    private function authorizeAnyAccess(array $permissions): void
+    {
+        foreach ($permissions as $permission) {
+            try {
+                $this->authorize($permission);
+                return;
+            } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+                // Try the next permission.
+            }
         }
 
-        $user = Auth::user();
-        if ($user && ($user->role_id === 1 || $user->can($permission))) {
-            return;
-        }
-
-        if ($user && method_exists($user, 'hasPermissionTo')) {
-            $this->authorize($permission);
-        }
+        $this->authorize($permissions[0] ?? 'certificate_list');
     }
 }
