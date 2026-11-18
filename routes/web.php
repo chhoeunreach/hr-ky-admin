@@ -191,6 +191,12 @@ Route::group([
         Route::prefix('mobile-tools')->name('mobile-tools.')->group(function () {
             Route::get('banner-slides', [BannerSlideshowController::class, 'edit'])->name('banner-slides');
             Route::post('banner-slides', [BannerSlideshowController::class, 'update'])->name('banner-slides.update');
+            Route::post('banner-slides/store', [BannerSlideshowController::class, 'storeSlide'])->name('banner-slides.store');
+            Route::post('banner-slides/{slideId}/update', [BannerSlideshowController::class, 'updateSlide'])->name('banner-slides.update-slide');
+            Route::post('banner-slides/{slideId}/toggle', [BannerSlideshowController::class, 'toggleSlide'])->name('banner-slides.toggle');
+            Route::post('banner-slides/{slideId}/reorder', [BannerSlideshowController::class, 'reorderSlide'])->name('banner-slides.reorder');
+            Route::delete('banner-slides/{slideId}', [BannerSlideshowController::class, 'destroySlide'])->name('banner-slides.destroy');
+            Route::post('banner-slides/playback', [BannerSlideshowController::class, 'updatePlayback'])->name('banner-slides.playback');
             Route::post('banner-slides/reset', [BannerSlideshowController::class, 'reset'])->name('banner-slides.reset');
             Route::get('quotes', [MobileQuoteController::class, 'index'])->name('quotes');
             Route::post('quotes/playback', [MobileQuoteController::class, 'updatePlayback'])->name('quotes.playback');
