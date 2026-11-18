@@ -19,8 +19,8 @@
 .qb-preview-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;color:#94a3b8;font-size:.82rem}
 .qb-banner{
     position:relative;
-    width:100%;
-    height:250px;
+    width:min(100%,360px);
+    aspect-ratio:3/1;
     border-radius:22px;
     overflow:hidden;
     background-color:#0f172a;
@@ -39,10 +39,10 @@
 /* Mock Phone Header on Left */
 .qb-mock-header{
     position:absolute;
-    left:20px;
-    top:18px;
-    bottom:18px;
-    width:42%;
+    left:16px;
+    top:12px;
+    bottom:12px;
+    width:50%;
     display:flex;
     flex-direction:column;
     justify-content:center;
@@ -61,8 +61,8 @@
     cursor:grab;
     user-select:none;
     touch-action:none;
-    max-width:55%;
-    padding:8px 12px;
+    width:50%;
+    padding:0;
     border-radius:10px;
     transform:translate(-50%, -50%);
     transition:box-shadow .15s ease;
@@ -81,19 +81,26 @@
     box-shadow:0 12px 28px rgba(0,0,0,0.5);
 }
 .qb-quote-mark{
-    font-size:1.6rem;
+    font-size:22px;
     font-weight:900;
     line-height:1;
-    display:inline-block;
+    display:block;
     color:#ffd54f;
 }
 .qb-quote-text{
-    word-break:break-word;
-    white-space:pre-line;
-    line-height:1.35;
+    overflow-wrap:anywhere;
+    white-space:pre-wrap;
+    line-height:1.34;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:4;
+    overflow:hidden;
 }
 .qb-quote-author{
-    margin-top:4px;
+    margin-top:2px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
     font-size:.78rem;
     opacity:.85;
     font-weight:600;
@@ -191,6 +198,9 @@
 @endsection
 
 @section('main-content')
+@php
+    $homeQuoteId = collect($quotes)->first(fn ($quote) => !empty($quote['enabled']) && !empty($quote['text']))['id'] ?? null;
+@endphp
 <div class="mt-page">
 @include('admin.section.flash_message')
 
@@ -219,7 +229,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div>
                 <h5 class="mb-0 fw-bold text-dark">Add a quote</h5>
-                <small class="text-muted">Drag the quote directly on the banner to position it. Real-time preview matches the mobile app hero banner.</small>
+                <small class="text-muted">Drag the quote directly on the banner to position it. The preview shows how this quote is laid out on Home. The app uses the first enabled quote. Slideshow images take precedence over quote wallpaper.</small>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetQuoteStudio('add')">
@@ -237,7 +247,7 @@
                 <div class="col-xl-7">
                     <div class="qb-preview-wrapper shadow">
                         <div class="qb-preview-header">
-                            <div><i data-feather="smartphone" style="width:14px;height:14px" class="me-1 text-info"></i> Live Banner Canvas (Mobile 1:1)</div>
+                            <div><i data-feather="smartphone" style="width:14px;height:14px" class="me-1 text-info"></i> Live Banner Canvas (Mobile layout)</div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-dark border border-secondary text-info" id="pos_indicator_add">X: 65% | Y: 30%</span>
                                 <div class="form-check form-switch mb-0">
@@ -248,7 +258,7 @@
                         </div>
 
                         <!-- THE BANNER -->
-                        <div class="qb-banner" id="banner_canvas_add" style="background-image: url('{{ asset('assets/images/angkor_wat_banner.jpg') }}');">
+                        <div class="qb-banner" id="banner_canvas_add" style="background-image: url('{{ asset('assets/images/angkor_wat_banner.png') }}');">
                             <div class="qb-banner-overlay" id="banner_overlay_add"></div>
 
                             <!-- MOCK CLOCK & GREETING -->
@@ -269,7 +279,6 @@
                                     <span class="qb-quote-mark" id="quote_mark_add">“</span>
                                     <span class="qb-quote-text" id="preview_text_add">ការងារជាក្រុម នាំមកនូវលទ្ធផលល្អ
 សាមគ្គីភាពនាំឱ្យមានជ័យជំនះ</span>
-                                    <span class="qb-quote-mark">”</span>
                                 </div>
                                 <div class="qb-quote-author" id="preview_author_add">— Digital HR</div>
                             </div>
@@ -555,7 +564,7 @@
                             <div class="mb-3">
                                 <div class="qb-ctrl-label">Banner Background Wallpaper</div>
                                 <select class="form-select" id="banner_bg_add" onchange="changeBannerBackground('add')">
-                                    <option value="{{ asset('assets/images/angkor_wat_banner.jpg') }}" selected>Angkor Wat Sunrise (Default Official)</option>
+                                    <option value="{{ asset('assets/images/angkor_wat_banner.png') }}" selected>Angkor Wat Sunrise (Default Official)</option>
                                     <option value="gradient:royal">Dark Royal Navy Gradient</option>
                                     <option value="gradient:sunset">Sunset Horizon Gradient</option>
                                     <option value="gradient:emerald">Deep Emerald Gradient</option>
@@ -564,7 +573,7 @@
 
                             <div class="mb-3">
                                 <div class="qb-ctrl-label">Custom Image URL</div>
-                                <input type="url" class="form-control form-control-sm" id="banner_custom_url_add" placeholder="https://example.com/banner.jpg" onchange="changeBannerCustomUrl('add')">
+                                <input type="url" class="form-control form-control-sm" id="banner_custom_url_add" placeholder="https://example.com/banner.jpg" oninput="changeBannerCustomUrl('add')">
                             </div>
 
                             <div class="mb-2">
@@ -580,8 +589,9 @@
                     <!-- SUBMIT BUTTON -->
                     <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
                         <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
-                            <i data-feather="plus" class="me-1"></i> Save & Add Quote
+                            <i data-feather="plus" class="me-1"></i> Save quote
                         </button>
+                        <button type="submit" class="btn btn-outline-primary" name="show_on_home" value="1">Save and show on Home</button>
                     </div>
                 </div>
             </div>
@@ -656,7 +666,7 @@
                         </td>
                         <td>
                             <span class="mt-status {{ !empty($quote['enabled']) ? 'mt-status-on' : 'mt-status-off' }}">
-                                {{ !empty($quote['enabled']) ? 'Enabled' : 'Disabled' }}
+                                {{ $homeQuoteId === $quote['id'] ? 'Showing on Home' : (!empty($quote['enabled']) ? 'Enabled' : 'Disabled') }}
                             </span>
                         </td>
                         <td>
@@ -721,7 +731,7 @@
         'gradientAngle' => $st['gradientAngle'] ?? 90,
         'shadowBlur' => $st['shadowBlur'] ?? 5,
         'shadowColor' => $st['shadowColor'] ?? 'rgba(0,0,0,0.7)',
-        'bannerImage' => $st['bannerImage'] ?? asset('assets/images/angkor_wat_banner.jpg'),
+        'bannerImage' => $st['bannerImage'] ?? asset('assets/images/angkor_wat_banner.png'),
         'bannerOverlay' => $st['bannerOverlay'] ?? 0.35,
     ];
 @endphp
@@ -751,6 +761,16 @@
                                     </span>
                                 </div>
 
+                            @if(!empty($previewSlides))
+                            <label for="preview_slide_edit_{{ $idx }}" class="text-light small">Preview background</label>
+                            <select class="form-select form-select-sm mb-2" id="preview_slide_edit_{{ $idx }}" onchange="applyStyle('edit_{{ $idx }}')">
+                                <option value="">Quote wallpaper</option>
+                                @foreach($previewSlides as $previewSlide)
+                                <option value="{{ $previewSlide['imageUrl'] }}">{{ ($previewSlide['title'] ?? '') ?: 'Slideshow image '.$loop->iteration }}</option>
+                                @endforeach
+                            </select>
+                            @endif
+
                                 <div class="qb-banner" id="banner_canvas_edit_{{ $idx }}" style="background-image: url('{{ $initialStyle['bannerImage'] }}');">
                                     <div class="qb-banner-overlay" id="banner_overlay_edit_{{ $idx }}"></div>
 
@@ -759,8 +779,7 @@
                                         <div>
                                             <span class="qb-quote-mark" id="quote_mark_edit_{{ $idx }}">“</span>
                                             <span class="qb-quote-text" id="preview_text_edit_{{ $idx }}">{{ $quote['text'] }}</span>
-                                            <span class="qb-quote-mark">”</span>
-                                        </div>
+                                                </div>
                                         <div class="qb-quote-author" id="preview_author_edit_{{ $idx }}">
                                             @if(!empty($quote['author']))— {{ $quote['author'] }}@endif
                                         </div>
@@ -812,6 +831,9 @@
                                 </li>
                                 <li class="nav-item">
                                     <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#mtab-rot-{{ $idx }}" type="button">Rotate</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#mtab-wallpaper-{{ $idx }}" type="button">Wallpaper</button>
                                 </li>
                             </ul>
 
@@ -895,6 +917,17 @@
                                     </div>
                                     <input type="range" class="form-range" id="rotation_edit_{{ $idx }}" min="-45" max="45" step="1" value="{{ $initialStyle['rotation'] }}" oninput="applyStyle('edit_{{ $idx }}')">
                                 </div>
+                                <div class="tab-pane fade" id="mtab-wallpaper-{{ $idx }}">
+                                    <label class="form-label" for="banner_custom_url_edit_{{ $idx }}">Wallpaper URL or preset</label>
+                                    <input class="form-control form-control-sm" type="text"
+                                        id="banner_custom_url_edit_{{ $idx }}" value="{{ $initialStyle['bannerImage'] }}"
+                                        list="quote-wallpapers"
+                                        oninput="changeBannerCustomUrl('edit_{{ $idx }}')">
+                                    <label class="form-label mt-2" for="banner_overlay_slider_edit_{{ $idx }}">Darkening overlay</label>
+                                    <span id="overlay_val_edit_{{ $idx }}">{{ round($initialStyle['bannerOverlay'] * 100) }}%</span>
+                                    <input type="range" class="form-range" id="banner_overlay_slider_edit_{{ $idx }}" min="0" max="80"
+                                        value="{{ round($initialStyle['bannerOverlay'] * 100) }}" oninput="applyOverlay('edit_{{ $idx }}')">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -905,6 +938,7 @@
                     <button type="submit" class="btn btn-primary fw-bold">
                         <i data-feather="check" class="me-1"></i> Save Changes
                     </button>
+                    <button type="submit" class="btn btn-outline-primary" name="show_on_home" value="1">Save and show on Home</button>
                 </div>
             </form>
         </div>
@@ -913,6 +947,13 @@
 @endforeach
 
 </div>
+
+<datalist id="quote-wallpapers">
+    <option value="{{ asset('assets/images/angkor_wat_banner.png') }}">Angkor Wat</option>
+    <option value="gradient:royal">Royal Navy</option>
+    <option value="gradient:sunset">Sunset Horizon</option>
+    <option value="gradient:emerald">Deep Emerald</option>
+</datalist>
 
 <script>
 // Global State storage for studio instances (e.g. 'add' or 'edit_0')
@@ -939,7 +980,7 @@ function initStudioState(scope, defaults) {
         gradientAngle: 90,
         shadowBlur: 5,
         shadowColor: 'rgba(0,0,0,0.7)',
-        bannerImage: '{{ asset("assets/images/angkor_wat_banner.jpg") }}',
+        bannerImage: '{{ asset("assets/images/angkor_wat_banner.png") }}',
         bannerOverlay: 0.35,
     }, defaults || {});
 }
@@ -949,7 +990,7 @@ function updateLiveText(scope) {
     const input = document.getElementById(`quote_text_${scope}`);
     const preview = document.getElementById(`preview_text_${scope}`);
     if (input && preview) {
-        preview.textContent = input.value || 'Quote text preview';
+        preview.textContent = (input.value || 'Quote text preview') + ' ”';
     }
 }
 
@@ -1037,6 +1078,9 @@ function applyStyle(scope) {
         if (rValEl) rValEl.textContent = `${s.rotation}°`;
     }
 
+    const slide = document.getElementById(`preview_slide_${scope}`)?.value;
+    renderQuoteWallpaper(scope, slide || s.bannerImage);
+
     // Apply to DOM preview box
     const box = document.getElementById(`quote_box_${scope}`);
     const textEl = document.getElementById(`preview_text_${scope}`);
@@ -1052,7 +1096,8 @@ function applyStyle(scope) {
 
     if (textEl) {
         textEl.style.fontFamily = `'${s.fontFamily}', sans-serif`;
-        textEl.style.fontSize = `${s.fontSize}px`;
+        textEl.style.fontSize = `${Math.min(40, Math.max(8, s.fontSize))}px`;
+        textEl.style.opacity = s.opacity;
         textEl.style.fontWeight = s.fontWeight;
         textEl.style.fontStyle = s.fontStyle;
 
@@ -1083,14 +1128,22 @@ function applyStyle(scope) {
     if (authorEl) {
         authorEl.style.fontFamily = `'${s.fontFamily}', sans-serif`;
         authorEl.style.color = s.color;
+        authorEl.style.fontSize = `${Math.min(12, Math.max(7.5, Math.min(40, s.fontSize) * .82))}px`;
+        authorEl.style.fontStyle = s.fontStyle;
+        authorEl.style.opacity = Math.max(.2, s.opacity * .85);
         authorEl.style.textAlign = s.textAlign;
     }
 
     if (markEl) {
-        markEl.style.color = s.gradientEnabled ? s.gradientStart : (s.color || '#ffd54f');
+        markEl.style.color = s.gradientEnabled ? s.gradientStart : '#ffd54f';
     }
 
     // Update coordinates badge
+    const overlay = document.getElementById(`banner_overlay_${scope}`);
+    if (overlay) {
+        const opacity = Math.max(0, Math.min(.8, slide ? .35 : s.bannerOverlay));
+        overlay.style.background = `linear-gradient(90deg, rgba(10,25,47,${Math.min(1, opacity + .3)}), rgba(10,25,47,${opacity * .7}), rgba(10,25,47,${Math.min(1, opacity + .2)}))`;
+    }
     const badge = document.getElementById(`pos_indicator_${scope}`);
     if (badge) {
         badge.textContent = `X: ${Math.round(s.posX)}% | Y: ${Math.round(s.posY)}%`;
@@ -1181,35 +1234,43 @@ function changeBannerBackground(scope) {
     const canvas = document.getElementById(`banner_canvas_${scope}`);
     if (!select || !canvas) return;
 
-    const val = select.value;
-    if (val.startsWith('gradient:royal')) {
-        canvas.style.backgroundImage = 'none';
-        canvas.style.backgroundColor = '#0b192c';
-        canvas.style.background = 'linear-gradient(135deg, #0b192c, #1e3e62)';
-    } else if (val.startsWith('gradient:sunset')) {
-        canvas.style.backgroundImage = 'none';
-        canvas.style.background = 'linear-gradient(135deg, #1e1b4b, #831843, #f59e0b)';
-    } else if (val.startsWith('gradient:emerald')) {
-        canvas.style.backgroundImage = 'none';
-        canvas.style.background = 'linear-gradient(135deg, #064e3b, #047857, #10b981)';
-    } else {
-        canvas.style.backgroundColor = '#0f172a';
-        canvas.style.backgroundImage = `url('${val}')`;
-    }
     const s = window.quoteStudioState[scope];
-    if (s) s.bannerImage = val;
+    if (!s) return;
+    s.bannerImage = select.value;
+    applyStyle(scope);
 }
 
 function changeBannerCustomUrl(scope) {
     const input = document.getElementById(`banner_custom_url_${scope}`);
+    const s = window.quoteStudioState[scope];
+    if (!input || !s) return;
+    const select = document.getElementById(`banner_bg_${scope}`);
+    s.bannerImage = input.value.trim() || select?.value || '';
+    applyStyle(scope);
+}
+
+function renderQuoteWallpaper(scope, wallpaper) {
     const canvas = document.getElementById(`banner_canvas_${scope}`);
-    if (!input || !canvas) return;
-    const url = input.value.trim();
-    if (url) {
-        canvas.style.backgroundImage = `url('${url}')`;
-        const s = window.quoteStudioState[scope];
-        if (s) s.bannerImage = url;
+    if (!canvas) return;
+    const gradients = {
+        'gradient:royal': 'linear-gradient(135deg, #0b192c, #1e3e62)',
+        'gradient:sunset': 'linear-gradient(135deg, #1e1b4b, #831843, #f59e0b)',
+        'gradient:emerald': 'linear-gradient(135deg, #064e3b, #047857, #10b981)',
+    };
+    const fallback = @json(asset('assets/images/angkor_wat_banner.png'));
+    if (Object.hasOwn(gradients, wallpaper)) {
+        canvas.style.backgroundImage = gradients[wallpaper];
+        return;
     }
+    let url = fallback;
+    try {
+        const candidate = new URL(wallpaper || fallback, document.baseURI);
+        if (['http:', 'https:'].includes(candidate.protocol)) {
+            url = candidate.pathname.endsWith('/assets/images/angkor_wat_banner.jpg')
+                ? fallback : candidate.href;
+        }
+    } catch (_) {}
+    canvas.style.backgroundImage = `url(${JSON.stringify(url)})`;
 }
 
 function applyOverlay(scope) {
@@ -1219,9 +1280,11 @@ function applyOverlay(scope) {
         const val = parseInt(slider.value, 10) / 100;
         const textVal = document.getElementById(`overlay_val_${scope}`);
         if (textVal) textVal.textContent = `${slider.value}%`;
-        overlay.style.background = `linear-gradient(90deg, rgba(10,25,47,${val + 0.3}) 0%, rgba(10,25,47,${val * 0.7}) 50%, rgba(10,25,47,${val + 0.2}) 100%)`;
         const s = window.quoteStudioState[scope];
-        if (s) s.bannerOverlay = val;
+        if (s) {
+            s.bannerOverlay = val;
+            applyStyle(scope);
+        }
     }
 }
 

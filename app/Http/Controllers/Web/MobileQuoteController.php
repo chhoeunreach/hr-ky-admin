@@ -15,7 +15,14 @@ class MobileQuoteController extends Controller
     {
         $this->authorize('quote.manage');
 
+        $bannerValue = AppSetting::query()->where('slug', 'home-banner-slideshow')->value('value');
+        $banner = is_string($bannerValue) ? json_decode($bannerValue, true) : null;
+        $slides = is_array($banner['slides'] ?? null) ? $banner['slides'] : [];
+        $previewSlides = array_values(array_filter($slides, fn ($slide) => is_array($slide)
+            && !empty($slide['enabled']) && !empty($slide['imageUrl'])));
+
         return view('admin.mobile_tool.quotes', [
+            'previewSlides' => $previewSlides,
             'quotes' => $this->quotes(),
         ]);
     }
@@ -26,13 +33,19 @@ class MobileQuoteController extends Controller
         $data = $this->validateQuote($request);
 
         $quotes = $this->quotes();
-        $quotes[] = [
+        $quote = [
             'id' => 'quote_'.bin2hex(random_bytes(8)),
             'text' => $data['text'],
             'author' => $data['author'] ?? null,
             'enabled' => (bool) ($data['enabled'] ?? true),
             'style' => $this->sanitizeStyle($request->input('style')),
         ];
+        if ($request->boolean('show_on_home')) {
+            $quote['enabled'] = true;
+            array_unshift($quotes, $quote);
+        } else {
+            $quotes[] = $quote;
+        }
         $this->save($quotes);
 
         return redirect()->route('admin.mobile-tools.quotes')->with('success', 'Quote added.');
@@ -54,6 +67,12 @@ class MobileQuoteController extends Controller
         $quotes[$index]['enabled'] = (bool) ($data['enabled'] ?? $quotes[$index]['enabled']);
         if ($request->has('style')) {
             $quotes[$index]['style'] = $this->sanitizeStyle($request->input('style'));
+        }
+        if ($request->boolean('show_on_home')) {
+            $quote = $quotes[$index];
+            $quote['enabled'] = true;
+            array_splice($quotes, $index, 1);
+            array_unshift($quotes, $quote);
         }
         $this->save($quotes);
 

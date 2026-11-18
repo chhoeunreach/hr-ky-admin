@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\BannerSlideshowTransitions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class BannerSlideshowApiController extends Controller
 {
@@ -34,7 +36,7 @@ class BannerSlideshowApiController extends Controller
             'showIndicators' => ['required', 'boolean'],
             'pauseOnTouch' => ['required', 'boolean'],
             'loop' => ['required', 'boolean'],
-            'transition' => ['required', 'in:fade,slide'],
+            'transition' => ['required', Rule::in(array_keys(BannerSlideshowTransitions::OPTIONS))],
         ]);
 
         $config = [

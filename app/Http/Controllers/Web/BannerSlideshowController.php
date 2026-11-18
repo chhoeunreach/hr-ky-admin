@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\BannerSlideshowTransitions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 
 class BannerSlideshowController extends Controller
@@ -43,7 +45,7 @@ class BannerSlideshowController extends Controller
             'showIndicators' => ['required', 'boolean'],
             'pauseOnTouch' => ['required', 'boolean'],
             'loop' => ['required', 'boolean'],
-            'transition' => ['required', 'in:fade,slide'],
+            'transition' => ['required', Rule::in(array_keys(BannerSlideshowTransitions::OPTIONS))],
         ]);
 
         $previous = $this->config();
