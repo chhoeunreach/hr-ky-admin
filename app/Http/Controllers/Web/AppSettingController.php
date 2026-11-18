@@ -82,6 +82,8 @@ class AppSettingController extends Controller
 
             $request->validate([
                 'android_apk' => ['required', 'file', 'max:512000'],
+            ], [], [
+                'android_apk' => __('seeder.android-apk'),
             ]);
 
             $file = $request->file('android_apk');
@@ -163,6 +165,19 @@ class AppSettingController extends Controller
                 'alert_message' => ['nullable', 'string', 'max:1000'],
                 'android_url' => ['nullable', 'string', 'max:255'],
                 'ios_url' => ['nullable', 'string', 'max:255'],
+            ], [], [
+                'target_version' => __('index.target_app_version'),
+                'min_version' => __('index.min_required_version'),
+                'force_update' => __('index.force_update_alert'),
+                'enabled' => __('index.version_check_enabled'),
+                'alert_title_km' => __('index.alert_title_km'),
+                'alert_message_km' => __('index.alert_message_km'),
+                'alert_title_en' => __('index.alert_title_en'),
+                'alert_message_en' => __('index.alert_message_en'),
+                'alert_title' => __('index.alert_title'),
+                'alert_message' => __('index.alert_message'),
+                'android_url' => __('index.android_download_url'),
+                'ios_url' => __('index.ios_download_url'),
             ]);
 
             $isEnabled = $request->boolean('enabled');
@@ -174,16 +189,16 @@ class AppSettingController extends Controller
             $msgEn = trim((string)($validated['alert_message_en'] ?? ''));
 
             if (empty($titleKm)) {
-                $titleKm = 'មានកំណែអាប់ដេតថ្មី';
+                $titleKm = __('app_settings.default_alert_title', [], 'km');
             }
             if (empty($msgKm)) {
-                $msgKm = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
+                $msgKm = __('app_settings.default_alert_message', [], 'km');
             }
             if (empty($titleEn)) {
-                $titleEn = 'New Version Available';
+                $titleEn = __('app_settings.default_alert_title', [], 'en');
             }
             if (empty($msgEn)) {
-                $msgEn = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
+                $msgEn = __('app_settings.default_alert_message', [], 'en');
             }
 
             $currentLocale = app()->getLocale();
@@ -241,6 +256,12 @@ class AppSettingController extends Controller
             ], [
                 'employee_ids.required_if' => __('index.specific_employees_required'),
                 'employee_ids.min' => __('index.specific_employees_required'),
+            ], [
+                'alert_title' => __('index.alert_title'),
+                'alert_message' => __('index.alert_message'),
+                'target_audience' => __('index.target_audience'),
+                'employee_ids' => __('index.employees'),
+                'employee_ids.*' => __('index.employee'),
             ]);
 
             $versionSettings = AppHelper::getAppVersionSettings();

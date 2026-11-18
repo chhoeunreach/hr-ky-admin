@@ -1,6 +1,28 @@
 @extends('layouts.master')
-@section('title',__('index.app_setting'))
+@section('title', __('index.app_settings'))
+
+@section('styles')
+    <style>
+        .app-settings-apk-input:focus + label {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+    </style>
+@endsection
+
 @section('main-content')
+    @php
+        $alertLocale = app()->getLocale() === 'km' ? 'km' : 'en';
+        $alertCopy = [];
+        foreach (['km', 'en'] as $language) {
+            $alertCopy[$language] = [
+                'title' => __('app_settings.default_alert_title', [], $language),
+                'message' => __('app_settings.default_alert_message', [], $language),
+                'later' => __('index.later', [], $language),
+                'update' => __('index.update_now', [], $language),
+            ];
+        }
+    @endphp
 
     <section class="content">
         @include('admin.section.flash_message')
@@ -104,7 +126,7 @@
                                     </label>
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-light text-muted py-1 px-2.5"><i data-feather="download" style="width: 14px; height: 14px;"></i></span>
-                                        <input type="url" name="android_url" id="androidUrlInput" class="form-control form-control-sm" placeholder="https://hr.kytech.info or Play Store link" value="{{ $appVersionSetting['android_url'] ?? '' }}">
+                                        <input type="url" name="android_url" id="androidUrlInput" class="form-control form-control-sm" placeholder="{{ __('app_settings.android_url_placeholder') }}" value="{{ $appVersionSetting['android_url'] ?? '' }}">
                                     </div>
                                 </div>
                                 <div class="col-sm-6">
@@ -148,14 +170,14 @@
                                                 <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleKmInput">
                                                     @lang('index.alert_title_km') <span class="text-danger">*</span>
                                                 </label>
-                                                <input type="text" name="alert_title_km" id="alertTitleKmInput" class="form-control form-control-sm" placeholder="មានកំណែអាប់ដេតថ្មី" value="{{ $appVersionSetting['alert_title_km'] ?? 'មានកំណែអាប់ដេតថ្មី' }}" required>
+                                                <input type="text" name="alert_title_km" id="alertTitleKmInput" lang="km" class="form-control form-control-sm" placeholder="{{ $alertCopy['km']['title'] }}" value="{{ $appVersionSetting['alert_title_km'] ?? $alertCopy['km']['title'] }}" required>
                                             </div>
                                             <div class="col-sm-7">
                                                 <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageKmInput">
                                                     <span>@lang('index.alert_message_km') <span class="text-danger">*</span></span>
                                                     <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
                                                 </label>
-                                                <textarea name="alert_message_km" id="alertMessageKmInput" class="form-control form-control-sm" rows="2" placeholder="មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។" required>{{ $appVersionSetting['alert_message_km'] ?? 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។' }}</textarea>
+                                                <textarea name="alert_message_km" id="alertMessageKmInput" lang="km" class="form-control form-control-sm" rows="2" placeholder="{{ $alertCopy['km']['message'] }}" required>{{ $appVersionSetting['alert_message_km'] ?? $alertCopy['km']['message'] }}</textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -167,14 +189,14 @@
                                                 <label class="form-label small fw-semibold text-secondary mb-1.5" for="alertTitleEnInput">
                                                     @lang('index.alert_title_en') <span class="text-danger">*</span>
                                                 </label>
-                                                <input type="text" name="alert_title_en" id="alertTitleEnInput" class="form-control form-control-sm" placeholder="New Version Available" value="{{ $appVersionSetting['alert_title_en'] ?? 'New Version Available' }}" required>
+                                                <input type="text" name="alert_title_en" id="alertTitleEnInput" lang="en" class="form-control form-control-sm" placeholder="{{ $alertCopy['en']['title'] }}" value="{{ $appVersionSetting['alert_title_en'] ?? $alertCopy['en']['title'] }}" required>
                                             </div>
                                             <div class="col-sm-7">
                                                 <label class="form-label small fw-semibold text-secondary mb-1.5 d-flex align-items-center justify-content-between" for="alertMessageEnInput">
                                                     <span>@lang('index.alert_message_en') <span class="text-danger">*</span></span>
                                                     <span class="badge bg-light text-muted border py-0.5 px-1.5" style="font-size: 10px;">@lang('index.placeholders_hint')</span>
                                                 </label>
-                                                <textarea name="alert_message_en" id="alertMessageEnInput" class="form-control form-control-sm" rows="2" placeholder="A new version of the app (:target_version) is available..." required>{{ $appVersionSetting['alert_message_en'] ?? 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.' }}</textarea>
+                                                <textarea name="alert_message_en" id="alertMessageEnInput" lang="en" class="form-control form-control-sm" rows="2" placeholder="{{ $alertCopy['en']['message'] }}" required>{{ $appVersionSetting['alert_message_en'] ?? $alertCopy['en']['message'] }}</textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -194,8 +216,8 @@
                                     </span>
                                     <div class="d-flex align-items-center gap-1.5">
                                         <div class="btn-group btn-group-xs" role="group" id="previewLangGroup">
-                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ app()->getLocale() === 'km' ? 'active' : '' }}" id="btnPreviewKm" style="font-size: 10.5px;">🇰🇭 KM</button>
-                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ app()->getLocale() !== 'km' ? 'active' : '' }}" id="btnPreviewEn" style="font-size: 10.5px;">🇬🇧 EN</button>
+                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ $alertLocale === 'km' ? 'active' : '' }}" id="btnPreviewKm" aria-label="{{ __('index.khmer_language') }}" style="font-size: 10.5px;">🇰🇭 KM</button>
+                                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2 {{ $alertLocale === 'en' ? 'active' : '' }}" id="btnPreviewEn" aria-label="{{ __('index.english_language') }}" style="font-size: 10.5px;">🇬🇧 EN</button>
                                         </div>
                                         <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5" style="font-size: 10px;" id="previewModeBadge">
                                             {{ !empty($appVersionSetting['force_update']) ? __('index.force_update_alert') : __('index.soft_alert') }}
@@ -204,18 +226,18 @@
                                 </div>
 
                                 <!-- Compact Dialog Preview Box -->
-                                <div class="bg-white rounded-3 p-3 shadow-sm border text-center my-auto" style="border-color: #e2e8f0 !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;">
+                                <div id="alertPreviewDialog" lang="{{ $alertLocale }}" class="bg-white rounded-3 p-3 shadow-sm border text-center my-auto" style="border-color: #e2e8f0 !important; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;">
                                     <div class="mx-auto mb-2 p-2 bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px;">
                                         <i data-feather="alert-circle" style="width: 18px; height: 18px;"></i>
                                     </div>
-                                    <h6 class="fw-bold text-dark mb-1" id="previewTitle" style="font-size: 13px;">{{ $appVersionSetting['alert_title'] ?? __('index.new_version_available') }}</h6>
+                                    <h6 class="fw-bold text-dark mb-1" id="previewTitle" style="font-size: 13px;">{{ $appVersionSetting['alert_title'] ?? $alertCopy[$alertLocale]['title'] }}</h6>
                                     <p class="text-muted mb-2.5" id="previewMessage" style="font-size: 11.5px; line-height: 1.45; max-height: 48px; overflow: hidden;"></p>
                                     <div class="d-flex align-items-center justify-content-center gap-2">
                                         <button type="button" class="btn btn-outline-secondary btn-xs py-1 px-3 rounded-pill" id="previewLaterBtn" style="font-size: 10.5px;">
-                                            @lang('index.later')
+                                            {{ $alertCopy[$alertLocale]['later'] }}
                                         </button>
                                         <button type="button" class="btn btn-primary btn-xs py-1 px-3 rounded-pill fw-semibold" id="previewUpdateBtn" style="font-size: 10.5px;">
-                                            @lang('index.update_now')
+                                            {{ $alertCopy[$alertLocale]['update'] }}
                                         </button>
                                     </div>
                                 </div>
@@ -247,10 +269,15 @@
                         </tr>
                         </thead>
                         <tbody>
-                            @forelse($appSettings as $key => $value)
-
+                            @forelse($appSettings as $value)
+                                @php
+                                    $settingKey = $value->slug === 'override-bssid' || $value->name === 'override bssid'
+                                        ? 'index.check_router_bssid'
+                                        : 'seeder.' . $value->slug;
+                                    $settingLabel = __($settingKey);
+                                @endphp
                                 <tr>
-                                    <td><strong> {{( $value->name =='override bssid') ? __('index.check_router_bssid'):__('seeder.'.$value->slug)}} </strong> </td>
+                                    <td><strong>{{ $settingLabel === $settingKey ? $value->name : $settingLabel }}</strong></td>
                                     <td class="text-center">
                                         @if($value->slug === 'android-apk')
                                             <form action="{{ route('admin.app-settings.android-apk.update') }}" method="post" enctype="multipart/form-data" class="d-flex flex-wrap justify-content-center align-items-center gap-2">
@@ -260,7 +287,11 @@
                                                            type="checkbox" {{($value->status) == 1 ?'checked':''}}>
                                                     <span class="slider round"></span>
                                                 </label>
-                                                <input type="file" name="android_apk" class="form-control form-control-sm" accept=".apk" required style="max-width: 260px;">
+                                                <div class="d-flex align-items-center gap-2" style="max-width: 260px;">
+                                                    <input type="file" name="android_apk" id="androidApk-{{ $value->id }}" class="app-settings-apk-input visually-hidden" accept=".apk" aria-describedby="androidApkFileName-{{ $value->id }}" required>
+                                                    <label for="androidApk-{{ $value->id }}" class="btn btn-outline-secondary btn-sm flex-shrink-0 mb-0">@lang('app_settings.choose_file')</label>
+                                                    <span class="small text-muted text-truncate" id="androidApkFileName-{{ $value->id }}" role="status">@lang('app_settings.no_file_selected')</span>
+                                                </div>
                                                 <button type="submit" class="btn btn-primary btn-sm">
                                                     <i class="link-icon" data-feather="upload"></i> @lang('index.upload_android_apk')
                                                 </button>
@@ -294,11 +325,11 @@
             </div>
         </div>
 
-        <div class="modal fade" id="addslider" tabindex="-1" aria-labelledby="addslider" aria-hidden="true">
+        <div class="modal fade" id="addslider" tabindex="-1" aria-labelledby="exportTableDataLabel" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header text-center">
-                        <h5 class="modal-title" id="exampleModalLabel">@lang('index.export_table_data')</h5>
+                        <h5 class="modal-title" id="exportTableDataLabel">@lang('index.export_table_data')</h5>
                     </div>
                     <div class="modal-body">
                         <a href="{{route('admin.leave-type-export')}}">
@@ -329,14 +360,14 @@
                             </div>
                             <h5 class="modal-title fw-semibold text-dark" id="sendUpdateAlertModalLabel" style="font-size: 15.5px;">@lang('index.send_update_alert_to_users')</h5>
                         </div>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                     </div>
                     <form action="{{ route('admin.app-settings.send-update-alert') }}" method="POST" id="sendUpdateAlertForm">
                         @csrf
                         <div class="modal-body p-4">
                             <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-start gap-2" style="font-size: 12px;">
                                 <i data-feather="info" style="width: 15px; height: 15px; flex-shrink: 0;" class="mt-0.5"></i>
-                                <span>@lang('index.send_alert_notice')</span>
+                                <span>@lang('app_settings.send_alert_notice')</span>
                             </div>
 
                             <!-- Target Version Badge -->
@@ -393,13 +424,13 @@
                             <!-- Alert Title -->
                             <div class="mb-3">
                                 <label class="form-label fw-medium text-dark small" for="modalAlertTitle">@lang('index.alert_title') <span class="text-danger">*</span></label>
-                                <input type="text" name="alert_title" id="modalAlertTitle" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? ($appVersionSetting['alert_title_km'] ?? 'មានកំណែអាប់ដេតថ្មី') }}" required>
+                                <input type="text" name="alert_title" id="modalAlertTitle" lang="{{ $alertLocale }}" class="form-control form-control-sm" value="{{ $appVersionSetting['alert_title'] ?? $alertCopy[$alertLocale]['title'] }}" required>
                             </div>
 
                             <!-- Alert Message -->
                             <div class="mb-2">
                                 <label class="form-label fw-medium text-dark small" for="modalAlertMessage">@lang('index.alert_message') <span class="text-danger">*</span></label>
-                                <textarea name="alert_message" id="modalAlertMessage" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? ($appVersionSetting['alert_message_km'] ?? 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។') }}</textarea>
+                                <textarea name="alert_message" id="modalAlertMessage" lang="{{ $alertLocale }}" class="form-control form-control-sm" rows="3" required>{{ $appVersionSetting['alert_message'] ?? $alertCopy[$alertLocale]['message'] }}</textarea>
                             </div>
                         </div>
                         <div class="modal-footer bg-light py-2.5 px-4 border-top">
@@ -429,9 +460,19 @@
                 $('#targetEmployeeIds').select2({
                     dropdownParent: $('#sendUpdateAlertModal'),
                     placeholder: @json(__('index.select_employees')),
+                    language: {
+                        noResults: () => @json(__('index.asset_select_no_results')),
+                        searching: () => @json(__('index.asset_select_searching')),
+                        removeAllItems: () => @json(__('app_settings.remove_all_employees'))
+                    },
                     width: '100%'
                 });
             }
+
+            $('.app-settings-apk-input').on('change', function () {
+                var fileName = document.getElementById(this.getAttribute('aria-describedby'));
+                fileName.textContent = this.files.length ? this.files[0].name : @json(__('app_settings.no_file_selected'));
+            });
 
             function toggleEmployeeTarget() {
                 var selectedEmployees = $('#sendUpdateAlertForm input[name="target_audience"]:checked').val() === 'employees';
@@ -457,10 +498,10 @@
                 var status = $(this).prop('checked') === true ? 1 : 0;
                 var href = $(this).attr('href');
                 Swal.fire({
-                    title: '@lang('index.change_status_confirm')',
+                    title: @json(__('index.change_status_confirm')),
                     showDenyButton: true,
-                    confirmButtonText: `@lang('index.yes')`,
-                    denyButtonText: `@lang('index.no')`,
+                    confirmButtonText: @json(__('index.yes')),
+                    denyButtonText: @json(__('index.no')),
                     padding:'10px 50px 10px 50px',
                     // width:'500px',
                     allowOutsideClick: false
@@ -474,7 +515,8 @@
             });
 
             // App Version Real-time Preview and Simulator
-            var activeLang = @json(app()->getLocale() === 'km' ? 'km' : 'en');
+            var activeLang = @json($alertLocale);
+            var alertCopy = @json($alertCopy);
             var textEnabled = @json(__('index.enabled'));
             var textDisabled = @json(__('index.disabled'));
             var textSoftAlert = @json(__('index.soft_alert'));
@@ -484,10 +526,13 @@
             var tplAlertShown = @json(__('index.verdict_alert_shown'));
             var tplUpToDate = @json(__('index.verdict_up_to_date'));
 
-            var defaultKmTitle = 'មានកំណែអាប់ដេតថ្មី';
-            var defaultKmMsg = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
-            var defaultEnTitle = 'New Version Available';
-            var defaultEnMsg = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
+            function readAlert(language) {
+                var languageSuffix = language === 'km' ? 'Km' : 'En';
+                return {
+                    title: $('#alertTitle' + languageSuffix + 'Input').val() || alertCopy[language].title,
+                    message: $('#alertMessage' + languageSuffix + 'Input').val() || alertCopy[language].message
+                };
+            }
 
             function compareVersions(v1, v2) {
                 var clean1 = (v1 || '').replace(/^[vV]/, '').split('+')[0].split('-')[0].trim();
@@ -513,37 +558,24 @@
                 var isForce = $('#forceUpdateSwitch').is(':checked');
                 var isEnabled = $('#versionCheckEnabledSwitch').is(':checked');
 
-                var title = (activeLang === 'km')
-                    ? ($('#alertTitleKmInput').val() || defaultKmTitle)
-                    : ($('#alertTitleEnInput').val() || defaultEnTitle);
-
-                var rawMsg = (activeLang === 'km')
-                    ? ($('#alertMessageKmInput').val() || defaultKmMsg)
-                    : ($('#alertMessageEnInput').val() || defaultEnMsg);
+                var alert = readAlert(activeLang);
 
                 // Synchronize fallback hidden fields
-                $('#alertTitleInput').val(title);
-                $('#alertMessageInput').val(rawMsg);
+                $('#alertTitleInput').val(alert.title);
+                $('#alertMessageInput').val(alert.message);
 
-                var formattedMsg = rawMsg
+                var formattedMsg = alert.message
                     .replace(/:target_version/g, targetVer)
                     .replace(/:min_version/g, minVer)
                     .replace(/:current_version/g, $('#testVersionInput').val() || targetVer);
 
-                $('#previewTitle').text(title);
+                $('#alertPreviewDialog').attr('lang', activeLang);
+                $('#previewTitle').text(alert.title);
                 $('#previewMessage').text(formattedMsg);
-
-                if (activeLang === 'km') {
-                    $('#previewLaterBtn').text('ពេលក្រោយ');
-                    $('#previewUpdateBtn').text('អាប់ដេតឥឡូវនេះ');
-                    $('#btnPreviewKm').addClass('active');
-                    $('#btnPreviewEn').removeClass('active');
-                } else {
-                    $('#previewLaterBtn').text('Later');
-                    $('#previewUpdateBtn').text('Update Now');
-                    $('#btnPreviewEn').addClass('active');
-                    $('#btnPreviewKm').removeClass('active');
-                }
+                $('#previewLaterBtn').text(alertCopy[activeLang].later);
+                $('#previewUpdateBtn').text(alertCopy[activeLang].update);
+                $('#btnPreviewKm').toggleClass('active', activeLang === 'km');
+                $('#btnPreviewEn').toggleClass('active', activeLang === 'en');
 
                 if (isForce) {
                     $('#previewModeBadge').attr('class', 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2.5 py-0.5').text(textForceUpdate);
@@ -668,26 +700,24 @@
             $('#runTestVersionBtn').on('click', runVersionSimulator);
 
             // Modal language buttons
+            function setModalAlertLanguage(language) {
+                var alert = readAlert(language);
+                $('#modalAlertTitle').attr('lang', language).val(alert.title);
+                $('#modalAlertMessage').attr('lang', language).val(alert.message);
+                $('#btnModalLangKm').toggleClass('active', language === 'km');
+                $('#btnModalLangEn').toggleClass('active', language === 'en');
+            }
+
             $('#btnModalLangKm').on('click', function () {
-                $('#modalAlertTitle').val($('#alertTitleKmInput').val() || defaultKmTitle);
-                $('#modalAlertMessage').val($('#alertMessageKmInput').val() || defaultKmMsg);
-                $('#btnModalLangKm').addClass('active');
-                $('#btnModalLangEn').removeClass('active');
+                setModalAlertLanguage('km');
             });
 
             $('#btnModalLangEn').on('click', function () {
-                $('#modalAlertTitle').val($('#alertTitleEnInput').val() || defaultEnTitle);
-                $('#modalAlertMessage').val($('#alertMessageEnInput').val() || defaultEnMsg);
-                $('#btnModalLangEn').addClass('active');
-                $('#btnModalLangKm').removeClass('active');
+                setModalAlertLanguage('en');
             });
 
             $('#sendUpdateAlertModal').on('show.bs.modal', function () {
-                if (activeLang === 'km') {
-                    $('#btnModalLangKm').click();
-                } else {
-                    $('#btnModalLangEn').click();
-                }
+                setModalAlertLanguage(activeLang);
             });
 
             // Initial render

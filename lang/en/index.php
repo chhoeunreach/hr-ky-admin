@@ -1438,7 +1438,7 @@ return [
     'export_table_data' => 'Export Table Data',
     'leave_requests' => 'Leave Requests',
     'employee_lists' => 'Employee Lists',
-    'attendances' => 'Attendances',
+    'attendances' => 'Attendance',
     'confirm_change_status' => 'Change the status of this record?',
     'yes' => 'Yes',
     'no' => 'No',

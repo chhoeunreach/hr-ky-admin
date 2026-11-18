@@ -331,10 +331,10 @@ class AppHelper
     {
         $setting = AppSetting::where('slug', 'app-version-update')->first();
 
-        $defaultKmTitle = 'មានកំណែអាប់ដេតថ្មី';
-        $defaultKmMessage = 'មានកំណែថ្មីនៃកម្មវិធី (:target_version)។ សូមធ្វើបច្ចុប្បន្នភាពដើម្បីរីករាយជាមួយមុខងារថ្មីៗ និងការកែលម្អ។';
-        $defaultEnTitle = 'New Version Available';
-        $defaultEnMessage = 'A new version of the app (:target_version) is available. Please update to enjoy the latest features and improvements.';
+        $defaultKmTitle = __('app_settings.default_alert_title', [], 'km');
+        $defaultKmMessage = __('app_settings.default_alert_message', [], 'km');
+        $defaultEnTitle = __('app_settings.default_alert_title', [], 'en');
+        $defaultEnMessage = __('app_settings.default_alert_message', [], 'en');
 
         $targetLocale = $locale ?: app()->getLocale();
 

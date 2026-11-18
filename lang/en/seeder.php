@@ -5,16 +5,21 @@ use Illuminate\Support\Str;
 return [
     /** App Setting */
 
-    'authorize-login' => 'authorize login',
-    'override-bssid' => 'override bssid',
-    '24-hour-format' => '24 hour format',
+    'authorize-login' => 'Authorize Login',
+    'override-bssid' => 'Override BSSID',
+    '24-hour-format' => '24-Hour Format',
     'bs' => 'Date In BS',
     'attendance_note' => 'Attendance Note',
     'attendance_selfie' => 'Attendance Selfie',
     'reset-leave-count' => 'Reset Leave Count on 1st Shrawan',
     'enable-employee-location' => 'Enable Employee Location',
-    'allow-multiple-leave-request' => 'Allow Multiple Leave Request',
+    'allow-multiple-leave-request' => 'Allow Multiple Leave Requests',
     'android-apk' => 'Android APK',
+    'dark-theme' => 'Dark Theme',
+    'rtl' => 'Right-to-Left Layout',
+    'home-banner-slideshow' => 'Home Banner Slideshow',
+    'mobile-quote-playback' => 'Mobile Quote Playback',
+    'mobile-quotes' => 'Mobile Quotes',
 
     /** General Setting */
 

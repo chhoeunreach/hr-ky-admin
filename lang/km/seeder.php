@@ -14,7 +14,12 @@ return [
     'reset-leave-count' => 'កំណត់ចំនួនឈប់សម្រាកឡើងវិញនៅថ្ងៃទី 1 ខែ Shrawan',
     'enable-employee-location' => 'បើកទីតាំងបុគ្គលិក',
     'allow-multiple-leave-request' => 'អនុញ្ញាតសំណើឈប់សម្រាកច្រើន',
-    'android-apk' => 'Android APK',
+    'android-apk' => 'ឯកសារ APK សម្រាប់ Android',
+    'dark-theme' => 'រូបរាងងងឹត',
+    'rtl' => 'ប្លង់ពីស្តាំទៅឆ្វេង',
+    'home-banner-slideshow' => 'ការបង្ហាញផ្ទាំងបដាបន្តបន្ទាប់លើទំព័រដើម',
+    'mobile-quote-playback' => 'ការចាក់ពាក្យសម្រង់ក្នុងកម្មវិធីទូរស័ព្ទ',
+    'mobile-quotes' => 'ពាក្យសម្រង់ក្នុងកម្មវិធីទូរស័ព្ទ',
 
     /** General Setting */
 
