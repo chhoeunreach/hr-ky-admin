@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\MobileQuotePlayback;
 use Illuminate\Http\JsonResponse;
 
 class MobileQuoteApiController extends Controller
@@ -32,6 +33,6 @@ class MobileQuoteApiController extends Controller
             ];
         }
 
-        return response()->json(['data' => ['quotes' => $active]]);
+        return response()->json(['data' => ['quotes' => $active, 'playback' => MobileQuotePlayback::settings()]]);
     }
 }

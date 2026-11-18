@@ -229,7 +229,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div>
                 <h5 class="mb-0 fw-bold text-dark">Add a quote</h5>
-                <small class="text-muted">Drag the quote directly on the banner to position it. The preview shows how this quote is laid out on Home. The app uses the first enabled quote. Slideshow images take precedence over quote wallpaper.</small>
+                <small class="text-muted">Drag the quote directly on the banner to position it. The preview shows how this quote is laid out on Home. Use the playback settings to rotate enabled quotes. Slideshow images take precedence over quote wallpaper.</small>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetQuoteStudio('add')">
@@ -265,7 +265,7 @@
                             <div class="qb-mock-header" id="mock_header_add">
                                 <div class="qb-mock-khmer">សូមស្វាគមន៍!</div>
                                 <div class="qb-mock-sub" id="mock_greeting_add">Good Morning!</div>
-                                <div class="qb-mock-clock" id="mock_clock_add">08:30 <span id="mock_sec_add">:15</span></div>
+                                <div class="qb-mock-clock" data-quote-clock id="mock_clock_add">08:30 <span id="mock_sec_add">:15</span></div>
                                 <div class="qb-mock-date">
                                     <i data-feather="calendar" style="width:11px;height:11px"></i>
                                     <span id="mock_date_add">{{ now()->format('l, F j, Y') }}</span>
@@ -561,28 +561,7 @@
 
                         <!-- TAB 5: BANNER BACKGROUND -->
                         <div class="tab-pane fade" id="tab-banner-add">
-                            <div class="mb-3">
-                                <div class="qb-ctrl-label">Banner Background Wallpaper</div>
-                                <select class="form-select" id="banner_bg_add" onchange="changeBannerBackground('add')">
-                                    <option value="{{ asset('assets/images/angkor_wat_banner.png') }}" selected>Angkor Wat Sunrise (Default Official)</option>
-                                    <option value="gradient:royal">Dark Royal Navy Gradient</option>
-                                    <option value="gradient:sunset">Sunset Horizon Gradient</option>
-                                    <option value="gradient:emerald">Deep Emerald Gradient</option>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <div class="qb-ctrl-label">Custom Image URL</div>
-                                <input type="url" class="form-control form-control-sm" id="banner_custom_url_add" placeholder="https://example.com/banner.jpg" oninput="changeBannerCustomUrl('add')">
-                            </div>
-
-                            <div class="mb-2">
-                                <div class="qb-ctrl-label">
-                                    <span>Darkening Overlay Opacity</span>
-                                    <span id="overlay_val_add" class="text-primary fw-bold">35%</span>
-                                </div>
-                                <input type="range" class="form-range" id="banner_overlay_slider_add" min="0" max="80" value="35" oninput="applyOverlay('add')">
-                            </div>
+                            @include('admin.mobile_tool.quote_banner_controls', ['scope' => 'add', 'bannerStyle' => []])
                         </div>
                     </div>
 
@@ -602,6 +581,7 @@
 <!-- ========================================== -->
 <!-- 2. QUOTES LIST TABLE                       -->
 <!-- ========================================== -->
+@include('admin.mobile_tool.quote_playback')
 <div class="card mt-card">
     <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0 fw-bold">Configured Mobile Quotes ({{ count($quotes) }})</h5>
@@ -666,7 +646,7 @@
                         </td>
                         <td>
                             <span class="mt-status {{ !empty($quote['enabled']) ? 'mt-status-on' : 'mt-status-off' }}">
-                                {{ $homeQuoteId === $quote['id'] ? 'Showing on Home' : (!empty($quote['enabled']) ? 'Enabled' : 'Disabled') }}
+                                {{ $homeQuoteId === $quote['id'] ? 'First on Home' : (!empty($quote['enabled']) ? 'Enabled' : 'Disabled') }}
                             </span>
                         </td>
                         <td>
@@ -759,6 +739,10 @@
                                     <span class="badge bg-dark border border-secondary text-info" id="pos_indicator_edit_{{ $idx }}">
                                         X: {{ round($initialStyle['posX']) }}% | Y: {{ round($initialStyle['posY']) }}%
                                     </span>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input" type="checkbox" id="toggle_mock_edit_{{ $idx }}" checked onchange="toggleMockWidgets('edit_{{ $idx }}')">
+                                        <label class="form-check-label text-light small" for="toggle_mock_edit_{{ $idx }}">Show Clock</label>
+                                    </div>
                                 </div>
 
                             @if(!empty($previewSlides))
@@ -773,6 +757,16 @@
 
                                 <div class="qb-banner" id="banner_canvas_edit_{{ $idx }}" style="background-image: url('{{ $initialStyle['bannerImage'] }}');">
                                     <div class="qb-banner-overlay" id="banner_overlay_edit_{{ $idx }}"></div>
+
+                                    <div class="qb-mock-header" id="mock_header_edit_{{ $idx }}">
+                                <div class="qb-mock-khmer">សូមស្វាគមន៍!</div>
+                                <div class="qb-mock-sub" id="mock_greeting_edit_{{ $idx }}">Good Morning!</div>
+                                <div class="qb-mock-clock" data-quote-clock id="mock_clock_edit_{{ $idx }}">08:30 <span id="mock_sec_edit_{{ $idx }}">:15</span></div>
+                                <div class="qb-mock-date">
+                                    <i data-feather="calendar" style="width:11px;height:11px"></i>
+                                    <span id="mock_date_edit_{{ $idx }}">{{ now()->format('l, F j, Y') }}</span>
+                                </div>
+                            </div>
 
                                     <div class="qb-quote-box" id="quote_box_edit_{{ $idx }}" style="left:{{ $initialStyle['posX'] }}%; top:{{ $initialStyle['posY'] }}%;">
                                         <div class="qb-drag-badge">Drag to move</div>
@@ -795,6 +789,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @include('admin.mobile_tool.quote_banner_controls', ['scope' => 'edit_'.$idx, 'bannerStyle' => $initialStyle])
                         </div>
 
                         <!-- CONTROLS IN MODAL -->
@@ -831,9 +826,6 @@
                                 </li>
                                 <li class="nav-item">
                                     <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#mtab-rot-{{ $idx }}" type="button">Rotate</button>
-                                </li>
-                                <li class="nav-item">
-                                    <button class="nav-link py-1 px-2" data-bs-toggle="pill" data-bs-target="#mtab-wallpaper-{{ $idx }}" type="button">Wallpaper</button>
                                 </li>
                             </ul>
 
@@ -917,17 +909,6 @@
                                     </div>
                                     <input type="range" class="form-range" id="rotation_edit_{{ $idx }}" min="-45" max="45" step="1" value="{{ $initialStyle['rotation'] }}" oninput="applyStyle('edit_{{ $idx }}')">
                                 </div>
-                                <div class="tab-pane fade" id="mtab-wallpaper-{{ $idx }}">
-                                    <label class="form-label" for="banner_custom_url_edit_{{ $idx }}">Wallpaper URL or preset</label>
-                                    <input class="form-control form-control-sm" type="text"
-                                        id="banner_custom_url_edit_{{ $idx }}" value="{{ $initialStyle['bannerImage'] }}"
-                                        list="quote-wallpapers"
-                                        oninput="changeBannerCustomUrl('edit_{{ $idx }}')">
-                                    <label class="form-label mt-2" for="banner_overlay_slider_edit_{{ $idx }}">Darkening overlay</label>
-                                    <span id="overlay_val_edit_{{ $idx }}">{{ round($initialStyle['bannerOverlay'] * 100) }}%</span>
-                                    <input type="range" class="form-range" id="banner_overlay_slider_edit_{{ $idx }}" min="0" max="80"
-                                        value="{{ round($initialStyle['bannerOverlay'] * 100) }}" oninput="applyOverlay('edit_{{ $idx }}')">
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -947,13 +928,6 @@
 @endforeach
 
 </div>
-
-<datalist id="quote-wallpapers">
-    <option value="{{ asset('assets/images/angkor_wat_banner.png') }}">Angkor Wat</option>
-    <option value="gradient:royal">Royal Navy</option>
-    <option value="gradient:sunset">Sunset Horizon</option>
-    <option value="gradient:emerald">Deep Emerald</option>
-</datalist>
 
 <script>
 // Global State storage for studio instances (e.g. 'add' or 'edit_0')
@@ -1144,6 +1118,11 @@ function applyStyle(scope) {
         const opacity = Math.max(0, Math.min(.8, slide ? .35 : s.bannerOverlay));
         overlay.style.background = `linear-gradient(90deg, rgba(10,25,47,${Math.min(1, opacity + .3)}), rgba(10,25,47,${opacity * .7}), rgba(10,25,47,${Math.min(1, opacity + .2)}))`;
     }
+    const overlayValue = document.getElementById(`overlay_val_${scope}`);
+    if (overlayValue) {
+        const savedOpacity = Math.max(0, Math.min(80, Math.round(s.bannerOverlay * 100)));
+        overlayValue.textContent = `${savedOpacity}%`;
+    }
     const badge = document.getElementById(`pos_indicator_${scope}`);
     if (badge) {
         badge.textContent = `X: ${Math.round(s.posX)}% | Y: ${Math.round(s.posY)}%`;
@@ -1237,7 +1216,9 @@ function changeBannerBackground(scope) {
     const s = window.quoteStudioState[scope];
     if (!s) return;
     s.bannerImage = select.value;
-    applyStyle(scope);
+    const input = document.getElementById(`banner_custom_url_${scope}`);
+    if (input) input.value = '';
+    previewQuoteWallpaper(scope);
 }
 
 function changeBannerCustomUrl(scope) {
@@ -1246,7 +1227,7 @@ function changeBannerCustomUrl(scope) {
     if (!input || !s) return;
     const select = document.getElementById(`banner_bg_${scope}`);
     s.bannerImage = input.value.trim() || select?.value || '';
-    applyStyle(scope);
+    previewQuoteWallpaper(scope);
 }
 
 function renderQuoteWallpaper(scope, wallpaper) {
@@ -1273,19 +1254,19 @@ function renderQuoteWallpaper(scope, wallpaper) {
     canvas.style.backgroundImage = `url(${JSON.stringify(url)})`;
 }
 
+function previewQuoteWallpaper(scope) {
+    const preview = document.getElementById(`preview_slide_${scope}`);
+    if (preview) preview.value = '';
+    applyStyle(scope);
+}
+
 function applyOverlay(scope) {
     const slider = document.getElementById(`banner_overlay_slider_${scope}`);
-    const overlay = document.getElementById(`banner_overlay_${scope}`);
-    if (slider && overlay) {
-        const val = parseInt(slider.value, 10) / 100;
-        const textVal = document.getElementById(`overlay_val_${scope}`);
-        if (textVal) textVal.textContent = `${slider.value}%`;
-        const s = window.quoteStudioState[scope];
-        if (s) {
-            s.bannerOverlay = val;
-            applyStyle(scope);
-        }
-    }
+    const settings = window.quoteStudioState[scope];
+    if (!slider || !settings) return;
+
+    settings.bannerOverlay = Number(slider.value) / 100;
+    previewQuoteWallpaper(scope);
 }
 
 function toggleMockWidgets(scope) {
@@ -1420,12 +1401,19 @@ function syncFormInputsFromState(scope) {
 
     const rotEl = document.getElementById(`rotation_${scope}`);
     if (rotEl) rotEl.value = s.rotation;
+
+    const overlayEl = document.getElementById(`banner_overlay_slider_${scope}`);
+    if (overlayEl) overlayEl.value = Math.round(s.bannerOverlay * 100);
+    const wallpaperEl = document.getElementById(`banner_bg_${scope}`);
+    if (wallpaperEl) wallpaperEl.value = s.bannerImage;
+    const customUrlEl = document.getElementById(`banner_custom_url_${scope}`);
+    if (customUrlEl) customUrlEl.value = wallpaperEl?.value ? '' : s.bannerImage;
 }
 
 function resetQuoteStudio(scope) {
     initStudioState(scope);
     syncFormInputsFromState(scope);
-    applyStyle(scope);
+    previewQuoteWallpaper(scope);
 }
 
 // Drag & Drop Handler
@@ -1495,17 +1483,111 @@ function startLiveClock() {
         const h = String(now.getHours()).padStart(2, '0');
         const m = String(now.getMinutes()).padStart(2, '0');
         const s = String(now.getSeconds()).padStart(2, '0');
-        const clockAdd = document.getElementById('mock_clock_add');
-        if (clockAdd) {
-            clockAdd.innerHTML = `${h}:${m} <span>:${s}</span>`;
+        for (const clock of document.querySelectorAll('[data-quote-clock]')) {
+            clock.firstChild.textContent = `${h}:${m} `;
+            clock.querySelector('span').textContent = `:${s}`;
         }
     }
     tick();
     setInterval(tick, 1000);
 }
 
+function setupQuotePlayback() {
+    const form = document.getElementById('quote-playback-form');
+    if (!form) return;
+    const quotes = @js(array_values(array_filter($quotes, fn ($quote) => !empty($quote['enabled']) && !empty($quote['text']))));
+    const canvas = document.getElementById('banner_canvas_playback');
+    const box = document.getElementById('quote_box_playback');
+    const text = document.getElementById('preview_text_playback');
+    const author = document.getElementById('preview_author_playback');
+    const position = document.getElementById('quote-playback-position');
+    const previousButton = document.getElementById('quote-playback-prev');
+    const nextButton = document.getElementById('quote-playback-next');
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let index = 0;
+    let timer;
+    let pointerHeld = false;
+    let animation;
+    let previousBox;
+    const option = key => form.elements.namedItem(key).value === '1';
+
+    function schedule() {
+        clearTimeout(timer);
+        if (quotes.length < 2 || !option('autoplay') || reducedMotion.matches
+            || (pointerHeld && option('pauseOnTouch')) || (!option('loop') && index === quotes.length - 1)) return;
+        const seconds = Math.min(30, Math.max(2, Number(form.elements.intervalSeconds.value) || 5));
+        timer = setTimeout(() => step(1), seconds * 1000);
+    }
+
+    function render(animate) {
+        const quote = quotes[index];
+        const transition = form.elements.transition.value;
+        animation?.cancel();
+        previousBox?.remove();
+        const animateQuote = animate && transition !== 'instant' && !reducedMotion.matches;
+        const previous = animateQuote ? box.cloneNode(true) : null;
+        if (previous) {
+            previous.removeAttribute('id');
+            previous.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+            previous.setAttribute('aria-hidden', 'true');
+            box.before(previous);
+            previousBox = previous;
+        }
+        initStudioState('playback', quote?.style || {});
+        text.textContent = quote ? quote.text + ' ”' : '';
+        author.textContent = quote?.author ? '— ' + quote.author : '';
+        box.hidden = !quote;
+        position.textContent = quote ? `Quote ${index + 1} of ${quotes.length}` : 'Enable a quote to preview playback.';
+        previousButton.disabled = nextButton.disabled = quotes.length < 2;
+        applyStyle('playback');
+        if (previous) {
+            const transforms = {
+                slide: `translateX(${canvas.clientWidth * .08}px)`,
+                'slide-up': `translateY(${canvas.clientHeight * .08}px)`,
+            };
+            const offset = transforms[transition] || '';
+            const move = element => transition === 'zoom'
+                ? element.style.transform + ' scale(.92)'
+                : `${offset} ${element.style.transform}`.trim();
+            previous.animate(
+                [{opacity: 1, transform: previous.style.transform}, {opacity: 0, transform: move(previous)}],
+                {duration: 480, easing: 'cubic-bezier(.55,.055,.675,.19)'}
+            ).onfinish = () => previous.remove();
+            animation = box.animate(
+                [{opacity: 0, transform: move(box)}, {opacity: 1, transform: box.style.transform}],
+                {duration: 480, easing: 'cubic-bezier(.215,.61,.355,1)'}
+            );
+        }
+        schedule();
+    }
+
+    function step(direction) {
+        if (quotes.length < 2) return;
+        index = (index + direction + quotes.length) % quotes.length;
+        render(true);
+    }
+    previousButton.onclick = () => step(-1);
+    nextButton.onclick = () => step(1);
+    form.addEventListener('change', schedule);
+    reducedMotion.addEventListener('change', schedule);
+    canvas.addEventListener('pointerdown', event => {
+        canvas.setPointerCapture(event.pointerId);
+        pointerHeld = true;
+        schedule();
+    });
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+        canvas.addEventListener(event, () => {
+            pointerHeld = false;
+            schedule();
+        });
+    }
+    render(false);
+}
+
 // DOM Ready initialization
 document.addEventListener('DOMContentLoaded', function() {
+    setupQuotePlayback();
+
     // 1. Initialize Add Form
     initStudioState('add', {
         fontFamily: 'Kantumruy Pro',

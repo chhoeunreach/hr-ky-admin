@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppSetting;
+use App\Support\BannerSlideshowTransitions;
+use App\Support\MobileQuotePlayback;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class MobileQuoteController extends Controller
 {
@@ -24,7 +27,31 @@ class MobileQuoteController extends Controller
         return view('admin.mobile_tool.quotes', [
             'previewSlides' => $previewSlides,
             'quotes' => $this->quotes(),
+            'playback' => MobileQuotePlayback::settings(),
         ]);
+    }
+
+    public function updatePlayback(Request $request)
+    {
+        $this->authorize('quote.manage');
+        $settings = $request->validate([
+            'autoplay' => ['required', 'boolean'],
+            'intervalSeconds' => ['required', 'integer', 'between:2,30'],
+            'transition' => ['required', Rule::in(array_keys(BannerSlideshowTransitions::OPTIONS))],
+            'loop' => ['required', 'boolean'],
+            'pauseOnTouch' => ['required', 'boolean'],
+        ]);
+
+        foreach (['autoplay', 'loop', 'pauseOnTouch'] as $key) {
+            $settings[$key] = $request->boolean($key);
+        }
+
+        AppSetting::query()->updateOrCreate(
+            ['slug' => MobileQuotePlayback::SLUG],
+            ['name' => 'Mobile Quote Playback', 'value' => json_encode($settings, JSON_THROW_ON_ERROR), 'status' => 1]
+        );
+
+        return redirect()->route('admin.mobile-tools.quotes')->with('success', 'Quote playback settings saved.');
     }
 
     public function store(Request $request)

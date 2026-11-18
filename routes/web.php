@@ -193,6 +193,7 @@ Route::group([
             Route::post('banner-slides', [BannerSlideshowController::class, 'update'])->name('banner-slides.update');
             Route::post('banner-slides/reset', [BannerSlideshowController::class, 'reset'])->name('banner-slides.reset');
             Route::get('quotes', [MobileQuoteController::class, 'index'])->name('quotes');
+            Route::post('quotes/playback', [MobileQuoteController::class, 'updatePlayback'])->name('quotes.playback');
             Route::post('quotes', [MobileQuoteController::class, 'store'])->name('quotes.store');
             Route::post('quotes/{quoteId}/update', [MobileQuoteController::class, 'update'])->name('quotes.update');
             Route::post('quotes/{quoteId}/toggle', [MobileQuoteController::class, 'toggle'])->name('quotes.toggle');
