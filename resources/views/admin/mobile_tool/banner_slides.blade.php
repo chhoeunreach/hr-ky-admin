@@ -71,7 +71,8 @@
     background: linear-gradient(90deg, rgba(10, 25, 47, 0.72), rgba(10, 25, 47, 0.35), rgba(10, 25, 47, 0.6));
     pointer-events: none;
 }
-.mt-preview.mt-animated-border::before {
+.mt-preview.mt-animated-border::before,
+.phone-banner-box.mt-animated-border::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -87,7 +88,8 @@
     to { opacity: .95; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .mt-preview.mt-animated-border::before { animation: none; }
+    .mt-preview.mt-animated-border::before,
+    .phone-banner-box.mt-animated-border::before { animation: none; }
 }
 .mt-preview-copy {
     position: absolute;
@@ -183,6 +185,11 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.12);
     display: inline-block;
     vertical-align: middle;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.slide-thumb:hover {
+    transform: scale(1.04);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 .slide-thumb img {
     width: 100%;
@@ -252,6 +259,226 @@
     align-items: center;
     border: 1px solid #1e293b;
 }
+
+/* ======================================================== */
+/* REAL MOBILE PHONE SCREEN MOCKUP                          */
+/* ======================================================== */
+.phone-mockup {
+    width: 320px;
+    background: #090d16;
+    border-radius: 40px;
+    padding: 10px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), 0 0 0 2px #334155, 0 0 0 6px #0f172a;
+    position: relative;
+    color: #fff;
+    user-select: none;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+.phone-notch-island {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90px;
+    height: 20px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.notch-sensor {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #0f172a;
+}
+.notch-lens {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid #0f172a;
+}
+.phone-screen {
+    background: #0f172a;
+    border-radius: 32px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.phone-status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #f8fafc;
+    position: relative;
+    z-index: 10;
+}
+.phone-app-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 14px 10px;
+}
+.phone-user-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.phone-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #06b6d4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 12px;
+    color: #fff;
+    border: 2px solid #1e293b;
+}
+.phone-user-text {
+    line-height: 1.2;
+}
+.phone-user-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+.phone-user-role {
+    font-size: 9px;
+    color: #94a3b8;
+}
+
+/* Real Phone Banner Carousel */
+.phone-banner-box {
+    position: relative;
+    width: calc(100% - 20px);
+    margin: 0 auto 12px;
+    aspect-ratio: 3 / 1;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #020617;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+.phone-banner-box img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity .35s ease;
+}
+.phone-banner-box::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(10, 25, 47, 0.75), rgba(10, 25, 47, 0.32), rgba(10, 25, 47, 0.65));
+    pointer-events: none;
+}
+.phone-banner-copy {
+    position: absolute;
+    z-index: 2;
+    inset: 8px auto 8px 12px;
+    width: 60%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+}
+.phone-banner-badge {
+    align-self: flex-start;
+    background: rgba(255, 255, 255, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 7px;
+    padding: 1px 6px;
+    font-size: 8.5px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 2px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.phone-banner-clock {
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    margin: 2px 0 2px;
+    color: #fff;
+}
+.phone-banner-clock small {
+    font-size: 12px;
+    opacity: 0.9;
+}
+.phone-banner-dots {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.5);
+}
+.phone-banner-dots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.45);
+}
+.phone-banner-dots span.active {
+    width: 11px;
+    background: #00e5ff;
+}
+
+/* Mock Phone App Bottom Body */
+.phone-mock-body {
+    padding: 0 10px 14px;
+}
+.phone-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.phone-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+}
+.phone-grid-item {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 8px 3px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font-size: 8.5px;
+    font-weight: 600;
+    color: #cbd5e1;
+}
+.phone-home-bar {
+    width: 100px;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.35);
+    margin: 8px auto 6px;
+}
 </style>
 @endsection
 
@@ -268,6 +495,9 @@
                 <p>Manage the dynamic banner image carousel displayed on the mobile app home screen. Configure individual slides, direct link actions, and live playback timing.</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-light text-primary fw-bold shadow-sm" onclick="openRealPreviewModal(0)">
+                    <i data-feather="smartphone" class="me-1" style="width:16px;height:16px"></i> Real Mobile Preview
+                </button>
                 <button type="button" class="btn btn-light text-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addSlideModal">
                     <i data-feather="plus-circle" class="me-1" style="width:16px;height:16px"></i> Add Slide
                 </button>
@@ -297,6 +527,9 @@
                 <span class="badge bg-light text-secondary border ms-1" id="previewSlideCounter">Slide 1 of {{ max(1, count($config['slides'])) }}</span>
             </div>
             <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-sm btn-outline-info fw-semibold" onclick="openRealPreviewModal(activeSlideIdx)">
+                    <i data-feather="maximize-2" style="width:13px;height:13px" class="me-1"></i> Open in Phone Screen
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-prev" title="Previous Slide">
                     <i data-feather="chevron-left" style="width:14px;height:14px"></i> Prev
                 </button>
@@ -427,9 +660,9 @@
                             </div>
                         </td>
 
-                        <!-- Thumbnail Preview -->
+                        <!-- Thumbnail Preview with Click-to-Preview Modal -->
                         <td>
-                            <div class="slide-thumb">
+                            <div class="slide-thumb" role="button" onclick="openRealPreviewModal({{ $index }})" style="cursor:pointer;" title="Click to open Real Mobile Preview">
                                 <img src="{{ $imgSource }}" alt="Slide {{ $index + 1 }}" onerror="this.src='{{ asset('assets/images/angkor_wat_banner.png') }}'">
                                 @if(!$hasCustomImage)
                                     <div class="fallback-badge">Wallpaper</div>
@@ -486,7 +719,7 @@
                         <!-- Actions -->
                         <td class="text-end">
                             <div class="action-btn-group">
-                                <button type="button" class="btn btn-sm btn-outline-info" title="Preview Slide" onclick="jumpToSlide({{ $index }})">
+                                <button type="button" class="btn btn-sm btn-outline-info" title="View Real Mobile Preview" onclick="openRealPreviewModal({{ $index }})">
                                     <i data-feather="eye" style="width:14px;height:14px"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-primary" title="Edit Slide" data-bs-toggle="modal" data-bs-target="#editSlideModal-{{ $slideId }}">
@@ -521,6 +754,208 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- MODAL: REAL MOBILE SCREEN PREVIEW                        -->
+<!-- ======================================================== -->
+<div class="modal fade" id="realPreviewModal" tabindex="-1" aria-labelledby="realPreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-bottom border-secondary py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-feather="smartphone" class="text-info" style="width:22px;height:22px"></i>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="realPreviewModalLabel">Real Mobile Screen Preview</h5>
+                        <small class="text-muted" id="realPreviewSubTitle">Actual 1:1 view as displayed on employee mobile phone</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Slide switcher in header -->
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" id="modalNavPrev" onclick="stepModalSlide(-1)" title="Previous Slide">
+                            <i data-feather="chevron-left" style="width:14px;height:14px"></i> Prev
+                        </button>
+                        <button type="button" class="btn btn-outline-light disabled text-info fw-bold" id="modalNavCounter">
+                            Slide 1 of 1
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="modalNavNext" onclick="stepModalSlide(1)" title="Next Slide">
+                            Next <i data-feather="chevron-right" style="width:14px;height:14px"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+            </div>
+
+            <div class="modal-body p-4 bg-light">
+                <div class="row g-4 align-items-center justify-content-center">
+                    <!-- LEFT COLUMN: REALISTIC PHONE FRAME -->
+                    <div class="col-lg-5 d-flex justify-content-center">
+                        <div class="phone-mockup">
+                            <!-- Dynamic Island / Speaker Notch -->
+                            <div class="phone-notch-island">
+                                <div class="notch-sensor"></div>
+                                <div class="notch-lens"></div>
+                            </div>
+
+                            <!-- Phone Screen -->
+                            <div class="phone-screen">
+                                <!-- Status Bar (Live Clock, 5G, Wi-Fi, Battery) -->
+                                <div class="phone-status-bar">
+                                    <span class="phone-real-time" id="phoneStatusTime">09:41</span>
+                                    <div class="d-flex align-items-center gap-2 text-white" style="font-size: 11px;">
+                                        <i data-feather="bar-chart-2" style="width:12px;height:12px"></i>
+                                        <i data-feather="wifi" style="width:12px;height:12px"></i>
+                                        <i data-feather="battery" style="width:14px;height:14px"></i>
+                                    </div>
+                                </div>
+
+                                <!-- App Header Profile Bar -->
+                                <div class="phone-app-topbar">
+                                    <div class="phone-user-badge">
+                                        <div class="phone-avatar">CR</div>
+                                        <div class="phone-user-text">
+                                            <div class="phone-user-name">CHHOEUN REACH</div>
+                                            <div class="phone-user-role">IT & Branch Manager</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-danger rounded-pill p-1" style="font-size: 9px;"><i data-feather="bell" style="width:11px;height:11px;color:#fff"></i></span>
+                                    </div>
+                                </div>
+
+                                <!-- REAL BANNER SLIDE CANVAS -->
+                                <div class="phone-banner-box {{ !empty($config['animateBorder']) ? 'mt-animated-border' : '' }}" id="modalPhoneBannerBox">
+                                    <img src="{{ asset('assets/images/angkor_wat_banner.png') }}"
+                                         id="modalPhoneBannerImg"
+                                         data-fallback="{{ asset('assets/images/angkor_wat_banner.png') }}"
+                                         alt="Banner">
+                                    <div class="phone-banner-copy">
+                                        <span class="phone-banner-badge" id="modalPhoneBannerTitle" hidden></span>
+                                        <strong style="font-size:13px;color:#fff;">សូមស្វាគមន៍!</strong>
+                                        <span style="font-size:9.5px;color:rgba(255,255,255,0.9);">Good Morning!</span>
+                                        <span class="phone-banner-clock" id="modalPhoneLiveClock">08:30<small>:15</small></span>
+                                        <span style="font-size:8px;color:rgba(255,255,255,0.85);" id="modalPhoneLiveDate">{{ now()->format('l, F j, Y') }}</span>
+                                    </div>
+                                    <div class="phone-banner-dots" id="modalPhoneDots"></div>
+                                </div>
+
+                                <!-- MOCK APP SCREEN BODY (ATTENDANCE & ACTIONS) -->
+                                <div class="phone-mock-body">
+                                    <!-- Quick Attendance Action Card -->
+                                    <div class="phone-card">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span style="font-size:10px;font-weight:700;color:#e2e8f0;">វត្តមានថ្ងៃនេះ • Attendance</span>
+                                            <span class="badge bg-success" style="font-size:8.5px;">On Time</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded-3 border border-secondary" style="font-size:10px;">
+                                            <div>
+                                                <small class="text-muted d-block" style="font-size:8px;">Check In</small>
+                                                <strong class="text-success">08:00 AM</strong>
+                                            </div>
+                                            <div class="vr bg-secondary"></div>
+                                            <div>
+                                                <small class="text-muted d-block" style="font-size:8px;">Check Out</small>
+                                                <strong class="text-warning">--:-- --</strong>
+                                            </div>
+                                            <button type="button" class="btn btn-primary btn-sm py-0 px-2 fw-bold" style="font-size:9.5px;">Check Out</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quick Feature Grid -->
+                                    <div class="phone-grid">
+                                        <div class="phone-grid-item">
+                                            <i data-feather="calendar" style="width:13px;height:13px;color:#38bdf8;"></i>
+                                            <span>Leave</span>
+                                        </div>
+                                        <div class="phone-grid-item">
+                                            <i data-feather="dollar-sign" style="width:13px;height:13px;color:#4ade80;"></i>
+                                            <span>Payroll</span>
+                                        </div>
+                                        <div class="phone-grid-item">
+                                            <i data-feather="award" style="width:13px;height:13px;color:#facc15;"></i>
+                                            <span>Certificates</span>
+                                        </div>
+                                        <div class="phone-grid-item">
+                                            <i data-feather="message-circle" style="width:13px;height:13px;color:#f472b6;"></i>
+                                            <span>Quotes</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Home Bottom Bar Indicator -->
+                                <div class="phone-home-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN: SLIDE DETAILS, ACTIONS & CONTROLS -->
+                    <div class="col-lg-7">
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                                    <div>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-bold mb-1" id="modalSlideOrderBadge">Slide 1</span>
+                                        <h4 class="fw-bold text-dark mb-0" id="modalDetailTitle">Slide Title</h4>
+                                        <span class="font-monospace text-muted small" id="modalDetailId">ID: slide_xxx</span>
+                                    </div>
+                                    <span class="mt-status mt-status-on" id="modalDetailStatusBadge">Active</span>
+                                </div>
+
+                                <div class="list-group list-group-flush mb-4 rounded-3 border">
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                        <span class="text-muted small fw-semibold"><i data-feather="image" style="width:14px;height:14px" class="me-1"></i> Image Source:</span>
+                                        <span class="badge bg-light text-dark border" id="modalDetailImgSource">Custom Image</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                        <span class="text-muted small fw-semibold"><i data-feather="link" style="width:14px;height:14px" class="me-1"></i> Target Link:</span>
+                                        <div id="modalDetailLinkWrapper">
+                                            <a href="#" target="_blank" class="text-decoration-none fw-semibold" id="modalDetailLink">None</a>
+                                        </div>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                        <span class="text-muted small fw-semibold"><i data-feather="clock" style="width:14px;height:14px" class="me-1"></i> Playback Timing:</span>
+                                        <span class="fw-semibold text-secondary small">{{ $config['intervalSeconds'] }} seconds ({{ ucfirst($config['transition']) }})</span>
+                                    </div>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                                        <span class="text-muted small fw-semibold"><i data-feather="zap" style="width:14px;height:14px" class="me-1"></i> Border Animation:</span>
+                                        <span class="badge {{ !empty($config['animateBorder']) ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary' }}">
+                                            {{ !empty($config['animateBorder']) ? 'Neon Glow Enabled' : 'Disabled' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Slide Selector Pills -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold text-muted small text-uppercase">Jump to Slide</label>
+                                    <div class="d-flex flex-wrap gap-2" id="modalSlidePills">
+                                        <!-- Populated dynamically via JS -->
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons in Modal -->
+                                <div class="d-flex flex-wrap gap-2 pt-2 border-top">
+                                    <button type="button" class="btn btn-primary fw-bold" id="modalEditSlideBtn">
+                                        <i data-feather="edit-2" class="me-1" style="width:14px;height:14px"></i> Edit This Slide
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary fw-bold" id="modalToggleSlideBtn">
+                                        <i data-feather="power" class="me-1" style="width:14px;height:14px"></i> Toggle Status
+                                    </button>
+                                    <button type="button" class="btn btn-outline-light text-dark border fw-bold" data-bs-dismiss="modal">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top py-2">
+                <small class="text-muted me-auto">💡 This preview shows how the banner slide integrates directly with the live mobile home screen.</small>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close Preview</button>
+            </div>
         </div>
     </div>
 </div>
@@ -953,7 +1388,7 @@ function renderPlayback() {
             const shown = { opacity: 1, transform: 'none' };
 
             animationRef = liveImg.animate([hidden, shown], { duration: 420, easing: 'cubic-bezier(.215,.61,.355,1)' });
-            clone.animate([shown, hidden], { duration: 420, easing: 'cubic-bezier(.55,.055,.675,.19)' })
+            clone.animate([shown, hidden], { duration: 420, easing: 'bezier(.55,.055,.675,.19)' })
                  .onfinish = () => clone.remove();
         }
         liveImg.src = newSrc;
@@ -994,16 +1429,6 @@ function renderPlayback() {
     }
 }
 
-function jumpToSlide(index) {
-    const playable = getPlayableSlides();
-    const foundIdx = playable.findIndex(s => s && s.id === slidesData[index]?.id);
-    activeSlideIdx = foundIdx >= 0 ? foundIdx : index;
-    renderPlayback();
-
-    // Scroll smoothly to preview section
-    document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
 // Preview navigation buttons
 document.getElementById('preview-prev').onclick = () => {
     activeSlideIdx--;
@@ -1037,6 +1462,180 @@ if (playbackConfig.pauseOnTouch && livePreview) {
             pointerHeld = false;
             renderPlayback();
         });
+    });
+}
+
+// ==========================================
+// REAL MOBILE SCREEN PREVIEW MODAL LOGIC
+// ==========================================
+let currentModalSlideIdx = 0;
+let realPhoneClockInterval = null;
+
+function updateRealPhoneClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    // Status bar clock
+    const statusTime = document.getElementById('phoneStatusTime');
+    if (statusTime) statusTime.textContent = `${hours}:${minutes}`;
+
+    // Banner Clock
+    const bannerClock = document.getElementById('modalPhoneLiveClock');
+    if (bannerClock) bannerClock.innerHTML = `${hours}:${minutes}<small>:${seconds}</small>`;
+}
+
+function openRealPreviewModal(index) {
+    if (!slidesData || !slidesData.length) return;
+    currentModalSlideIdx = (index >= 0 && index < slidesData.length) ? index : 0;
+    renderRealModalContent();
+
+    // Show modal
+    const modalEl = document.getElementById('realPreviewModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    // Start ticking clock
+    clearInterval(realPhoneClockInterval);
+    updateRealPhoneClock();
+    realPhoneClockInterval = setInterval(updateRealPhoneClock, 1000);
+}
+
+function stepModalSlide(direction) {
+    if (!slidesData || !slidesData.length) return;
+    currentModalSlideIdx = (currentModalSlideIdx + direction + slidesData.length) % slidesData.length;
+    renderRealModalContent();
+}
+
+function renderRealModalContent() {
+    const slide = slidesData[currentModalSlideIdx];
+    if (!slide) return;
+
+    const count = slidesData.length;
+    const imgUrl = slide.imageUrl || defaultWallpaper;
+    const hasCustomImg = !!slide.imageUrl;
+    const title = (slide.title || '').trim();
+    const slideId = slide.id || ('slide_' + currentModalSlideIdx);
+    const isEnabled = !!slide.enabled;
+
+    // Header counter & title
+    const navCounter = document.getElementById('modalNavCounter');
+    if (navCounter) navCounter.textContent = `Slide ${currentModalSlideIdx + 1} of ${count}`;
+
+    const subTitle = document.getElementById('realPreviewSubTitle');
+    if (subTitle) subTitle.textContent = `Viewing Slide #${currentModalSlideIdx + 1}: ${title || 'No Title Set'}`;
+
+    // Phone Mockup elements
+    const phoneImg = document.getElementById('modalPhoneBannerImg');
+    if (phoneImg) phoneImg.src = imgUrl;
+
+    const phoneTitle = document.getElementById('modalPhoneBannerTitle');
+    if (phoneTitle) {
+        phoneTitle.textContent = title;
+        phoneTitle.hidden = !title;
+    }
+
+    // Dots in phone banner
+    const phoneDots = document.getElementById('modalPhoneDots');
+    if (phoneDots) {
+        if (playbackConfig.showIndicators && count > 1) {
+            phoneDots.hidden = false;
+            phoneDots.replaceChildren(...slidesData.map((_, i) => {
+                const s = document.createElement('span');
+                if (i === currentModalSlideIdx) s.className = 'active';
+                return s;
+            }));
+        } else {
+            phoneDots.hidden = true;
+        }
+    }
+
+    // Details Column
+    const orderBadge = document.getElementById('modalSlideOrderBadge');
+    if (orderBadge) orderBadge.textContent = `Slide #${currentModalSlideIdx + 1}`;
+
+    const detailTitle = document.getElementById('modalDetailTitle');
+    if (detailTitle) detailTitle.textContent = title || '— (No Title Set)';
+
+    const detailId = document.getElementById('modalDetailId');
+    if (detailId) detailId.textContent = `ID: ${slideId}`;
+
+    const statusBadge = document.getElementById('modalDetailStatusBadge');
+    if (statusBadge) {
+        statusBadge.className = isEnabled ? 'mt-status mt-status-on' : 'mt-status mt-status-off';
+        statusBadge.textContent = isEnabled ? 'Active (Visible on Mobile)' : 'Inactive (Hidden)';
+    }
+
+    const sourceBadge = document.getElementById('modalDetailImgSource');
+    if (sourceBadge) {
+        sourceBadge.textContent = hasCustomImg ? 'Custom Image Uploaded' : 'Default Home Wallpaper';
+        sourceBadge.className = hasCustomImg ? 'badge bg-primary-subtle text-primary border' : 'badge bg-secondary-subtle text-secondary border';
+    }
+
+    const linkWrapper = document.getElementById('modalDetailLinkWrapper');
+    if (linkWrapper) {
+        if (slide.linkUrl) {
+            linkWrapper.innerHTML = `<a href="${slide.linkUrl}" target="_blank" rel="noopener noreferrer" class="text-decoration-none fw-semibold text-primary d-inline-flex align-items-center gap-1 text-truncate" style="max-width:320px;" title="${slide.linkUrl}">
+                <i data-feather="external-link" style="width:12px;height:12px;flex-shrink:0;"></i> <span class="text-truncate">${slide.linkUrl}</span>
+            </a>`;
+        } else {
+            linkWrapper.innerHTML = `<span class="text-muted small">None (Display banner only)</span>`;
+        }
+    }
+
+    // Slide Pills Selector
+    const pillsContainer = document.getElementById('modalSlidePills');
+    if (pillsContainer) {
+        pillsContainer.innerHTML = '';
+        slidesData.forEach((s, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `btn btn-sm ${idx === currentModalSlideIdx ? 'btn-primary fw-bold' : 'btn-outline-secondary'}`;
+            btn.textContent = `#${idx + 1} ${s.title ? '(' + s.title.slice(0, 16) + '...)' : ''}`;
+            btn.onclick = () => {
+                currentModalSlideIdx = idx;
+                renderRealModalContent();
+            };
+            pillsContainer.appendChild(btn);
+        });
+    }
+
+    // Edit button in modal: Closes preview modal and opens the edit modal for this slide
+    const editBtn = document.getElementById('modalEditSlideBtn');
+    if (editBtn) {
+        editBtn.onclick = () => {
+            const previewModal = bootstrap.Modal.getInstance(document.getElementById('realPreviewModal'));
+            if (previewModal) previewModal.hide();
+            setTimeout(() => {
+                const editModalEl = document.getElementById(`editSlideModal-${slideId}`);
+                if (editModalEl) {
+                    bootstrap.Modal.getOrCreateInstance(editModalEl).show();
+                }
+            }, 350);
+        };
+    }
+
+    // Toggle button in modal: submits toggle form
+    const toggleBtn = document.getElementById('modalToggleSlideBtn');
+    if (toggleBtn) {
+        toggleBtn.innerHTML = isEnabled ?
+            '<i data-feather="pause" class="me-1" style="width:14px;height:14px"></i> Set Inactive' :
+            '<i data-feather="play" class="me-1" style="width:14px;height:14px"></i> Set Active';
+        toggleBtn.className = isEnabled ? 'btn btn-outline-warning fw-bold' : 'btn btn-outline-success fw-bold';
+        toggleBtn.onclick = () => {
+            const toggleForm = document.querySelector(`#slide-row-${slideId} form[action*="toggle"]`);
+            if (toggleForm) toggleForm.submit();
+        };
+    }
+
+    if (window.feather) feather.replace();
+}
+
+const realPreviewModalEl = document.getElementById('realPreviewModal');
+if (realPreviewModalEl) {
+    realPreviewModalEl.addEventListener('hidden.bs.modal', () => {
+        clearInterval(realPhoneClockInterval);
     });
 }
 
@@ -1098,7 +1697,7 @@ if (resetFiltersBtn) {
 }
 
 // ==========================================
-// MODAL LIVE PREVIEWS
+// MODAL LIVE PREVIEWS (ADD & EDIT)
 // ==========================================
 function updateAddModalPreview() {
     const titleVal = (document.getElementById('add_title').value || '').trim();
@@ -1171,7 +1770,7 @@ function updateEditModalPreview(slideId) {
     }
 
     if (fileInput && fileInput.files && fileInput.files.length) {
-        return; // File reader handles this
+        return;
     }
 
     if (urlInput && urlInput.value.trim()) {
