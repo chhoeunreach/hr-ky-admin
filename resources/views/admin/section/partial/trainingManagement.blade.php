@@ -1,5 +1,5 @@
 
-@canany(['training_type_list'])
+@canany(['training_type_list', 'list_trainer', 'list_training'])
     <li class="nav-item  {{ request()->routeIs('admin.training-types.*') || request()->routeIs('admin.trainers.*') || request()->routeIs('admin.training.*')  ? 'active' : '' }}    ">
         <a class="nav-link"   data-href="#" data-bs-toggle="collapse" href="#trainingManagement" role="button" aria-expanded="false" aria-controls="shiftManagment">
             <i class="link-icon" data-feather="book"></i>

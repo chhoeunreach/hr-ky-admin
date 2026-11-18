@@ -1,5 +1,5 @@
 @php use App\Helpers\AppHelper; @endphp
-@canany(['view_company','list_branch','list_department','list_department'])
+@if(AppHelper::checkSuperAdmin() || auth()->user()?->canAny(['view_company','list_branch','list_department','list_post']))
     <li class="nav-item  {{
                            request()->routeIs('admin.company.*') ||
                            request()->routeIs('admin.branch.*') ||
@@ -55,5 +55,5 @@
             </ul>
         </div>
     </li>
-@endcanany
+@endif
 

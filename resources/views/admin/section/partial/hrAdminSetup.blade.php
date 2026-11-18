@@ -1,4 +1,4 @@
-@canany(['award_type_list','award_list','termination_type_list','list_termination','list_promotion','list_transfer'])
+@canany(['award_type_list','award_list','termination_type_list','list_termination','list_resignation','list_warning','list_complaint','list_promotion','list_transfer','list_holiday'])
     <li class="nav-item {{ request()->routeIs('admin.award-types.*') || request()->routeIs('admin.awards.*') || request()->routeIs('admin.holidays.*') || request()->routeIs('admin.termination-types.*')
  || request()->routeIs('admin.termination.*') || request()->routeIs('admin.resignation.*') || request()->routeIs('admin.warning.*') || request()->routeIs('admin.complaint.*')|| request()->routeIs('admin.promotion.*')
                       || request()->routeIs('admin.transfer.*')  ? 'active' : '' }} ">

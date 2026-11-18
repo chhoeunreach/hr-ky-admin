@@ -1,5 +1,5 @@
 
-@canany(['view_query_list'])
+@can('view_query_list')
     <li class="nav-item {{ request()->routeIs('admin.supports.*')  ? 'active' : '' }}">
         <a
             href="{{ route('admin.supports.index') }}"

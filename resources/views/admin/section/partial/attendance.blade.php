@@ -49,11 +49,13 @@
                        class="nav-link {{ $isDailyAttendanceChecklist ? 'active' : '' }}">{{ __('index.attendance_confirmation_report') }}</a>
                 </li>
                 @endcan
+                @canany(['attendance_csv_export', 'list_attendance'])
                 <li class="nav-item">
                     <a href="{{route('admin.attendance.export')}}"
                        data-href="{{route('admin.attendance.export')}}"
                        class="nav-link {{request()->routeIs('admin.attendance.export') ? 'active' : ''}}">{{ __('index.attendance_report') }}</a>
                 </li>
+                @endcanany
 
             </ul>
         </div>

@@ -1,3 +1,4 @@
+@if(\App\Helpers\AppHelper::checkSuperAdmin() || auth()->user()?->can('app_setting'))
 <li class="nav-item {{ request()->routeIs('admin.app-links.*') ? 'active' : '' }}">
     <a href="{{ route('admin.app-links.index') }}"
        data-href="{{ route('admin.app-links.index') }}" class="nav-link">
@@ -5,3 +6,4 @@
         <span class="link-title">{{ __('index.link_list') ?? 'List Link' }}</span>
     </a>
 </li>
+@endif
