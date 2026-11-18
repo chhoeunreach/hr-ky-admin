@@ -16,10 +16,7 @@ class BannerSlideshowApiController extends Controller
 
     public function show(): JsonResponse
     {
-        $value = AppSetting::query()->where('slug', self::SETTING_SLUG)->value('value');
-        $config = is_string($value) ? json_decode($value, true) : null;
-
-        return response()->json(['data' => is_array($config) ? $config : self::defaults()]);
+        return response()->json(['data' => $this->config()]);
     }
 
     public function update(Request $request): JsonResponse
@@ -34,6 +31,7 @@ class BannerSlideshowApiController extends Controller
             'intervalSeconds' => ['required', 'integer', 'between:2,30'],
             'autoplay' => ['required', 'boolean'],
             'showIndicators' => ['required', 'boolean'],
+            'animateBorder' => ['sometimes', 'boolean'],
             'pauseOnTouch' => ['required', 'boolean'],
             'loop' => ['required', 'boolean'],
             'transition' => ['required', Rule::in(array_keys(BannerSlideshowTransitions::OPTIONS))],
@@ -49,11 +47,14 @@ class BannerSlideshowApiController extends Controller
             'transition' => $validated['transition'],
         ];
 
-        DB::transaction(function () use ($config): void {
+        $config = DB::transaction(function () use ($config, $validated): array {
+            $config['animateBorder'] = (bool) ($validated['animateBorder'] ?? $this->config()['animateBorder']);
             AppSetting::query()->updateOrCreate(
                 ['slug' => self::SETTING_SLUG],
                 ['name' => 'Home Banner Slideshow', 'value' => json_encode($config, JSON_THROW_ON_ERROR), 'status' => 1]
             );
+
+            return $config;
         });
 
         return response()->json(['message' => 'Banner slideshow saved.', 'data' => $config]);
@@ -66,6 +67,14 @@ class BannerSlideshowApiController extends Controller
         return response()->json(['message' => 'Banner slideshow reset.', 'data' => self::defaults()]);
     }
 
+    private function config(): array
+    {
+        $value = AppSetting::query()->where('slug', self::SETTING_SLUG)->value('value');
+        $config = is_string($value) ? json_decode($value, true) : null;
+
+        return is_array($config) ? array_replace(self::defaults(), $config) : self::defaults();
+    }
+
     private static function defaults(): array
     {
         return [
@@ -73,6 +82,7 @@ class BannerSlideshowApiController extends Controller
             'intervalSeconds' => 5,
             'autoplay' => true,
             'showIndicators' => true,
+            'animateBorder' => false,
             'pauseOnTouch' => true,
             'loop' => true,
             'transition' => 'fade',

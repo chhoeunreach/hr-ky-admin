@@ -16,6 +16,9 @@
 .mt-preview{position:relative;width:min(100%,360px);aspect-ratio:3/1;overflow:hidden;border-radius:22px;background:#0f172a;margin-top:8px;color:#fff}
 .mt-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .mt-preview::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,25,47,.65),rgba(10,25,47,.245),rgba(10,25,47,.55));pointer-events:none}
+.mt-preview.mt-animated-border::before{content:'';position:absolute;inset:0;z-index:3;border:2px solid #fff;border-radius:inherit;pointer-events:none;animation:mt-border-pulse 1.2s ease-in-out infinite alternate}
+@keyframes mt-border-pulse{from{opacity:.18}to{opacity:.8}}
+@media(prefers-reduced-motion:reduce){.mt-preview.mt-animated-border::before{content:none}}
 .mt-preview-copy{position:absolute;z-index:1;inset:12px auto 12px 16px;width:50%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;font:600 11.5px system-ui,sans-serif}
 .mt-preview-title{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#ffffff3d;border:1px solid #ffffff59;border-radius:10px;padding:2px 7px;font-size:9.5px;font-weight:800;margin-bottom:2px}
 .mt-preview-title[hidden]{display:none}
@@ -27,7 +30,7 @@
 .mt-preview-dots[hidden]{display:none}
 .mt-preview-dots span{width:5px;height:5px;border-radius:8px;background:#ffffff73}
 .mt-preview-dots .active{width:12px;background:#fff}
-.mt-settings{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px}
+.mt-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(134px,1fr));gap:14px}
 @media(max-width:992px){.mt-settings{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .mt-actions{display:flex;gap:10px;flex-wrap:wrap}
 </style>
@@ -91,6 +94,11 @@
 @foreach(\App\Support\BannerSlideshowTransitions::OPTIONS as $value => $label)
 <option value="{{ $value }}" @selected(old('transition', $config['transition']) === $value)>{{ $label }}</option>
 @endforeach
+</select></div>
+<div><label class="form-label" for="animateBorder">Border animation</label>
+<select class="form-select" id="animateBorder" name="animateBorder">
+<option value="0" @selected(!(bool) old('animateBorder', $config['animateBorder']))>Off</option>
+<option value="1" @selected((bool) old('animateBorder', $config['animateBorder']))>On</option>
 </select></div>
 </div>
 </div></div>
@@ -228,6 +236,7 @@ function renderPlayback() {
         lastSource = source;
         lastSlide = selected;
     }
+    live.classList.toggle('mt-animated-border', option('animateBorder'));
     dots.hidden = !option('showIndicators') || rows.length < 2;
     dots.replaceChildren(...rows.map((_, index) => {
         const dot = document.createElement('span');

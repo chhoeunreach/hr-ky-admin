@@ -36,6 +36,6 @@
         <output id="overlay_val_{{ $scope }}" for="banner_overlay_slider_{{ $scope }}" class="text-primary fw-bold">{{ $overlayPercent }}%</output>
     </div>
     <input type="range" class="form-range" id="banner_overlay_slider_{{ $scope }}" min="0" max="80"
-        value="{{ $overlayPercent }}" oninput="applyOverlay(@js($scope))">
-    <div class="form-text">These settings apply to the quote wallpaper. Slideshow images use their own overlay.</div>
+        value="{{ $overlayPercent }}" oninput="applyStyle(@js($scope))">
+    <div class="form-text">The overlay darkens the banner behind this quote, including when a slideshow image is visible.</div>
 </fieldset>

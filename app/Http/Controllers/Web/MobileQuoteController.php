@@ -185,7 +185,7 @@ class MobileQuoteController extends Controller
         $shadowX = isset($raw['shadowX']) && is_numeric($raw['shadowX']) ? max(-30, min(30, (float) $raw['shadowX'])) : 0;
         $shadowY = isset($raw['shadowY']) && is_numeric($raw['shadowY']) ? max(-30, min(30, (float) $raw['shadowY'])) : 2;
         $bannerImage = isset($raw['bannerImage']) ? substr(trim((string) $raw['bannerImage']), 0, 2048) : '/assets/images/angkor_wat_banner.jpg';
-        $bannerOverlay = isset($raw['bannerOverlay']) && is_numeric($raw['bannerOverlay']) ? max(0.0, min(0.9, (float) $raw['bannerOverlay'])) : 0.25;
+        $bannerOverlay = isset($raw['bannerOverlay']) && is_numeric($raw['bannerOverlay']) ? max(0.0, min(0.8, (float) $raw['bannerOverlay'])) : 0.35;
 
         return [
             'fontFamily' => $fontFamily ?: 'Kantumruy Pro',

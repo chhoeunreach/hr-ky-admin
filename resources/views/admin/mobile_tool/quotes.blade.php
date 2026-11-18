@@ -32,7 +32,7 @@
 .qb-banner-overlay{
     position:absolute;
     inset:0;
-    background:linear-gradient(90deg, rgba(10,25,47,0.78) 0%, rgba(10,25,47,0.3) 50%, rgba(10,25,47,0.65) 100%);
+    background-color:rgba(10,25,47,0.35);
     pointer-events:none;
 }
 
@@ -1112,17 +1112,15 @@ function applyStyle(scope) {
         markEl.style.color = s.gradientEnabled ? s.gradientStart : '#ffd54f';
     }
 
-    // Update coordinates badge
+    const slider = document.getElementById(`banner_overlay_slider_${scope}`);
+    if (slider) s.bannerOverlay = Number(slider.value) / 100;
+    const opacity = Math.max(0, Math.min(.8, s.bannerOverlay ?? .35));
     const overlay = document.getElementById(`banner_overlay_${scope}`);
-    if (overlay) {
-        const opacity = Math.max(0, Math.min(.8, slide ? .35 : s.bannerOverlay));
-        overlay.style.background = `linear-gradient(90deg, rgba(10,25,47,${Math.min(1, opacity + .3)}), rgba(10,25,47,${opacity * .7}), rgba(10,25,47,${Math.min(1, opacity + .2)}))`;
-    }
+    if (overlay) overlay.style.backgroundColor = `rgba(10,25,47,${opacity})`;
+
     const overlayValue = document.getElementById(`overlay_val_${scope}`);
-    if (overlayValue) {
-        const savedOpacity = Math.max(0, Math.min(80, Math.round(s.bannerOverlay * 100)));
-        overlayValue.textContent = `${savedOpacity}%`;
-    }
+    if (overlayValue) overlayValue.textContent = `${Math.round(opacity * 100)}%`;
+
     const badge = document.getElementById(`pos_indicator_${scope}`);
     if (badge) {
         badge.textContent = `X: ${Math.round(s.posX)}% | Y: ${Math.round(s.posY)}%`;
@@ -1258,15 +1256,6 @@ function previewQuoteWallpaper(scope) {
     const preview = document.getElementById(`preview_slide_${scope}`);
     if (preview) preview.value = '';
     applyStyle(scope);
-}
-
-function applyOverlay(scope) {
-    const slider = document.getElementById(`banner_overlay_slider_${scope}`);
-    const settings = window.quoteStudioState[scope];
-    if (!slider || !settings) return;
-
-    settings.bannerOverlay = Number(slider.value) / 100;
-    previewQuoteWallpaper(scope);
 }
 
 function toggleMockWidgets(scope) {
@@ -1469,6 +1458,7 @@ function setupDraggableQuote(scope) {
 
 // Serialize Style before submitting
 function prepareStylePayload(scope) {
+    applyStyle(scope);
     const s = window.quoteStudioState[scope];
     const input = document.getElementById(`style_json_${scope}`);
     if (s && input) {
