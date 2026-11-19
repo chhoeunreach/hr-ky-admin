@@ -292,6 +292,7 @@ return [
     'loading' => 'Loading...',
     'quick_action' => 'Quick Action',
     'quick_leave' => 'Quick Leave',
+    'quick_leave_request' => 'Quick Leave Request',
     'create_approved_leave_today' => 'Create an already approved leave for today.',
     'create_approved_leave_selected_day' => 'This will create an already approved leave for the selected attendance day.',
     'optional_note' => 'Optional note',

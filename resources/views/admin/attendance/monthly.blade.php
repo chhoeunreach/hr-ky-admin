@@ -1071,7 +1071,6 @@
         .indicator-time-leave-approved { background: #0891b2; }
         .indicator-time-leave-request { background: #f59e0b; }
         .indicator-open-checkout { background: #dc2626; }
-        .indicator-print { background: #2563eb; font-size: 6px; }
 
         .monthly-detail-modal-list {
             margin: 0;
@@ -2607,20 +2606,13 @@
                                         <span class="monthly-status-dot status-{{ $day['status'] }}">
                                             {{ ['present' => 'P', 'late' => 'L', 'absent' => 'A', 'leave' => 'LV', 'off_day' => 'O', 'empty' => '-'][$day['status']] ?? '-' }}
                                         </span>
-                                        @if(!empty($day['indicators']) || !empty($day['has_approved']))
+                                        @if(!empty($day['indicators']))
                                             <span class="monthly-cell-indicators">
-                                                @if(!empty($day['has_approved']))
-                                                    <span class="monthly-cell-indicator indicator-print" title="{{ __('index.approved') }} - {{ __('index.print') }}">
-                                                        🖨️
+                                                @foreach(array_slice($day['indicators'], 0, 2) as $indicator)
+                                                    <span class="monthly-cell-indicator indicator-{{ $indicator['type'] }}" title="{{ $indicator['label'] }}">
+                                                        {{ $indicator['short'] }}
                                                     </span>
-                                                @endif
-                                                @if(!empty($day['indicators']))
-                                                    @foreach(array_slice($day['indicators'], 0, !empty($day['has_approved']) ? 1 : 2) as $indicator)
-                                                        <span class="monthly-cell-indicator indicator-{{ $indicator['type'] }}" title="{{ $indicator['label'] }}">
-                                                            {{ $indicator['short'] }}
-                                                        </span>
-                                                    @endforeach
-                                                @endif
+                                                @endforeach
                                             </span>
                                         @endif
                                     </button>
@@ -2801,27 +2793,32 @@
                             </button>
                             <ul class="dropdown-menu" id="monthlyDetailPrintMenuList"></ul>
                         </div>
-                        @canany(['attendance_create', 'attendance_update'])
+                        @if(auth('admin')->check() || auth()->user()->canany(['attendance_create', 'attendance_update']))
                             <button type="button" class="btn btn-outline-success btn-sm quickAttendanceTrigger d-none" id="monthlyQuickAttendanceButton">
-                                {{ __('index.quick_attendance') }}
+                                <i data-feather="plus-circle"></i>
+                                <span>{{ __('index.quick_attendance') }}</span>
                             </button>
-                        @endcanany
-                        @can('quick_leave')
-                            <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-none" id="monthlyQuickLeaveButton">
-                                {{ __('index.quick_approve_leave') }}
-                            </button>
-                        @endcan
-                        @can('create_time_leave_request')
+                        @endif
+                        @if(auth('admin')->check() || auth()->user()->canany(['create_time_leave_request', 'quick_time_leave', 'time_leave_create', 'access_admin_leave']))
                             <button type="button" class="btn btn-outline-warning btn-sm quickApproveLateTrigger d-none" id="monthlyQuickApproveLateButton">
-                                {{ __('index.quick_approve_late') }}
+                                <i data-feather="check"></i>
+                                <span>{{ __('index.quick_approve_late') }}</span>
                             </button>
-                            <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-none" id="monthlyQuickTimeLeaveButton">
-                                {{ __('index.quick_time_leave') }}
+                            <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-inline-flex align-items-center gap-1" id="monthlyQuickTimeLeaveButton">
+                                <i data-feather="clock"></i>
+                                <span>{{ __('index.quick_time_leave') }}</span>
                             </button>
-                        @endcan
+                        @endif
+                        @if(auth('admin')->check() || auth()->user()->canany(['quick_leave', 'create_leave_request', 'leave_request_create', 'access_admin_leave']))
+                            <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-inline-flex align-items-center gap-1" id="monthlyQuickLeaveButton">
+                                <i data-feather="calendar"></i>
+                                <span>{{ __('index.quick_leave_request') }}</span>
+                            </button>
+                        @endif
                         @if($canViewEmployeeChat)
-                            <button type="button" class="btn btn-outline-secondary btn-sm openAttendanceChat" id="monthlyQuickChatButton">
-                                {{ __('index.quick_chat') }}
+                            <button type="button" class="btn btn-outline-secondary btn-sm openAttendanceChat d-inline-flex align-items-center gap-1" id="monthlyQuickChatButton">
+                                <i data-feather="message-circle"></i>
+                                <span>{{ __('index.quick_chat') }}</span>
                             </button>
                         @endif
                         <a href="#" class="btn btn-primary btn-sm" id="monthlyAttendanceDetailLink">{{ __('index.open_day_detail') }}</a>
@@ -2916,7 +2913,7 @@
 
         @include('admin.attendance.common.create-attendance-form')
 
-        @can('quick_leave')
+        @if(auth('admin')->check() || auth()->user()->canany(['quick_leave', 'create_leave_request', 'leave_request_create', 'access_admin_leave']))
             <div class="modal fade" id="attendanceQuickLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickLeaveModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -2953,9 +2950,9 @@
                     </div>
                 </div>
             </div>
-        @endcan
+        @endif
 
-        @can('create_time_leave_request')
+        @if(auth('admin')->check() || auth()->user()->canany(['create_time_leave_request', 'quick_time_leave', 'time_leave_create', 'access_admin_leave']))
             <div class="modal fade" id="attendanceQuickTimeLeaveModal" tabindex="-1" aria-labelledby="attendanceQuickTimeLeaveModalLabel" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
@@ -2995,7 +2992,7 @@
                     </div>
                 </div>
             </div>
-        @endcan
+        @endif
 
         <div class="modal fade" id="attendanceQuickSavedModal" tabindex="-1" aria-labelledby="attendanceQuickSavedModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -4460,12 +4457,6 @@
                     quickAttendanceButton.setAttribute('data-cdate', trigger.getAttribute('data-display-date') || date);
                 }
 
-                if (quickLeaveButton) {
-                    quickLeaveButton.classList.toggle('d-none', !canQuickLeave);
-                    setQuickActionData(quickLeaveButton, trigger);
-                    quickLeaveButton.setAttribute('data-user-name', employee);
-                }
-
                 if (quickApproveLateButton) {
                     quickApproveLateButton.classList.toggle('d-none', !canQuickApproveLate);
                     setQuickActionData(quickApproveLateButton, trigger);
@@ -4475,9 +4466,15 @@
                 }
 
                 if (quickTimeLeaveButton) {
-                    quickTimeLeaveButton.classList.toggle('d-none', !canQuickTimeLeave);
                     setQuickActionData(quickTimeLeaveButton, trigger);
                     quickTimeLeaveButton.setAttribute('data-user-name', employee);
+                    quickTimeLeaveButton.classList.remove('d-none');
+                }
+
+                if (quickLeaveButton) {
+                    setQuickActionData(quickLeaveButton, trigger);
+                    quickLeaveButton.setAttribute('data-user-name', employee);
+                    quickLeaveButton.classList.remove('d-none');
                 }
 
                 if (quickChatButton) {
@@ -4487,6 +4484,8 @@
                     quickChatButton.setAttribute('data-employee-subtitle', trigger.getAttribute('data-employee-subtitle') || employeeCode);
                     quickChatButton.setAttribute('data-employee-online', trigger.getAttribute('data-employee-online') || '0');
                 }
+
+                safeFeatherReplace();
 
                 if (showModal) {
                     detailModal.show();
@@ -4680,6 +4679,8 @@
                     list.appendChild(item);
                 });
 
+                safeFeatherReplace();
+
                 if (!matchedDays.length) {
                     list.innerHTML = `<div class="text-muted small">${escapeHtml(i18n.noMatchingDaysFound)}</div>`;
                 }
@@ -4759,6 +4760,8 @@
                     item.appendChild(actionButton);
                     list.appendChild(item);
                 });
+
+                safeFeatherReplace();
 
                 if (!matchedDays.length) {
                     list.innerHTML = `<div class="text-muted small">${escapeHtml(i18n.noMatchingDaysFound)}</div>`;

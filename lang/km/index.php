@@ -293,6 +293,7 @@ return [
     'loading' => 'កំពុងផ្ទុក...',
     'quick_action' => 'សកម្មភាពរហ័ស',
     'quick_leave' => 'ឈប់សម្រាករហ័ស',
+    'quick_leave_request' => 'ស្នើសុំច្បាប់រហ័ស',
     'leave_type' => 'ប្រភេទឈប់សម្រាក',
     'loading_leave_types' => 'កំពុងផ្ទុកប្រភេទឈប់សម្រាក...',
     'create_approved_leave_today' => 'បង្កើតឈប់សម្រាកដែលបានអនុម័តរួចសម្រាប់ថ្ងៃនេះ។',
