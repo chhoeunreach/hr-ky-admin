@@ -3766,6 +3766,16 @@
             }
         }
 
+        if (profileParams.get('auto_print') === '1') {
+            setTimeout(() => {
+                if (requestedTab === 'leave-letter') {
+                    printLeaveLetter();
+                } else if (requestedTab === 'time-leave-letter') {
+                    printTimeLeaveLetter();
+                }
+            }, 700);
+        }
+
         @if(old('contract_form_modal'))
             employeeGotoTab('contract-form');
             bootstrap.Modal.getOrCreateInstance(document.getElementById('contractEditModal')).show();

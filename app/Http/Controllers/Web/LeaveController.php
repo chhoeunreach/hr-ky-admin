@@ -224,13 +224,39 @@ class LeaveController extends Controller
                     'admin_remark' => ['nullable', 'required_if:status,rejected', 'string', 'min:10'],
                 ]);
                 DB::beginTransaction();
-                $this->leaveService->updateLeaveRequestStatus($validatedData, $leaveRequestId);
+                $leaveRequestDetail = $this->leaveService->updateLeaveRequestStatus($validatedData, $leaveRequestId);
                 DB::commit();
+
+                $employeeId = $leaveRequestDetail?->requested_by ?? null;
+                $printUrl = ($validatedData['status'] === 'approved' && $employeeId) ? route('admin.employees.profile.show', [
+                    'employee' => $employeeId,
+                    'tab' => 'leave-letter',
+                    'leave_request_id' => $leaveRequestId,
+                ]) : null;
+                $autoPrintUrl = ($validatedData['status'] === 'approved' && $employeeId) ? route('admin.employees.profile.show', [
+                    'employee' => $employeeId,
+                    'tab' => 'leave-letter',
+                    'leave_request_id' => $leaveRequestId,
+                    'auto_print' => 1,
+                ]) : null;
+
+                if ($validatedData['status'] === 'approved' && $employeeId) {
+                    session()->flash('saved_request', [
+                        'id' => $leaveRequestId,
+                        'employee_id' => $employeeId,
+                        'type' => 'leave',
+                        'print_url' => $printUrl,
+                        'auto_print_url' => $autoPrintUrl,
+                    ]);
+                    session()->flash('print_url', $printUrl);
+                }
 
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
                         'message' => __('message.leave_status_updated'),
+                        'print_url' => $printUrl,
+                        'auto_print_url' => $autoPrintUrl,
                     ]);
                 }
 

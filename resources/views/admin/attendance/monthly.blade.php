@@ -1070,6 +1070,7 @@
         .indicator-time-leave-approved { background: #0891b2; }
         .indicator-time-leave-request { background: #f59e0b; }
         .indicator-open-checkout { background: #dc2626; }
+        .indicator-print { background: #2563eb; font-size: 6px; }
 
         .monthly-detail-modal-list {
             margin: 0;
@@ -2084,6 +2085,25 @@
     <section class="content monthly-attendance-page">
         @include('admin.section.flash_message')
 
+        @if(session('saved_request') && !empty(session('saved_request.print_url')))
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm border border-success" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-feather="check-circle" class="text-success"></i>
+                    <div>
+                        <strong>{{ __('index.saved_successfully') ?? 'Saved Successfully!' }}</strong>
+                        <span class="ms-1">{{ session('success') }}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ session('saved_request.print_url') }}" target="_blank" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i data-feather="printer"></i>
+                        <span>{{ __('index.print') ?? 'Print' }} {{ ucfirst(str_replace('_', ' ', session('saved_request.type', 'Request'))) }}</span>
+                    </a>
+                    <button type="button" class="btn-close position-static p-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+
         <nav class="page-breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">{{ __('index.home') }}</a></li>
@@ -2570,6 +2590,9 @@
                                             data-details='@json($day["details"] ?? array_merge([$day["label"]], array_column($day["indicators"] ?? [], "label")))'
                                             data-indicators='@json($day["indicators"] ?? [])'
                                             data-actions='@json($day["actions"] ?? [])'
+                                            data-approved-leaves='@json($day["approved_leaves"] ?? [])'
+                                            data-approved-time-leaves='@json($day["approved_time_leaves"] ?? [])'
+                                            data-has-approved="{{ !empty($day['has_approved']) ? '1' : '0' }}"
                                             data-can-quick-attendance="{{ $day['status'] === 'absent' && !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-leave="{{ !empty($day['can_quick_leave']) ? '1' : '0' }}"
                                             data-can-quick-time-leave="{{ !empty($day['can_quick_time_leave']) ? '1' : '0' }}"
@@ -2583,13 +2606,20 @@
                                         <span class="monthly-status-dot status-{{ $day['status'] }}">
                                             {{ ['present' => 'P', 'late' => 'L', 'absent' => 'A', 'leave' => 'LV', 'off_day' => 'O', 'empty' => '-'][$day['status']] ?? '-' }}
                                         </span>
-                                        @if(!empty($day['indicators']))
+                                        @if(!empty($day['indicators']) || !empty($day['has_approved']))
                                             <span class="monthly-cell-indicators">
-                                                @foreach(array_slice($day['indicators'], 0, 2) as $indicator)
-                                                    <span class="monthly-cell-indicator indicator-{{ $indicator['type'] }}" title="{{ $indicator['label'] }}">
-                                                        {{ $indicator['short'] }}
+                                                @if(!empty($day['has_approved']))
+                                                    <span class="monthly-cell-indicator indicator-print" title="{{ __('index.approved') }} - {{ __('index.print') }}">
+                                                        🖨️
                                                     </span>
-                                                @endforeach
+                                                @endif
+                                                @if(!empty($day['indicators']))
+                                                    @foreach(array_slice($day['indicators'], 0, !empty($day['has_approved']) ? 1 : 2) as $indicator)
+                                                        <span class="monthly-cell-indicator indicator-{{ $indicator['type'] }}" title="{{ $indicator['label'] }}">
+                                                            {{ $indicator['short'] }}
+                                                        </span>
+                                                    @endforeach
+                                                @endif
                                             </span>
                                         @endif
                                     </button>
@@ -2760,8 +2790,16 @@
                     <div class="modal-body">
                         <ul class="monthly-detail-modal-list" id="monthlyAttendanceDetailList"></ul>
                         <div class="monthly-detail-actions" id="monthlyAttendanceRequestActions"></div>
+                        <div id="monthlyApprovedPrintSection" class="monthly-approved-print-section mt-3"></div>
                     </div>
                     <div class="modal-footer">
+                        <div class="dropdown d-none" id="monthlyDetailPrintDropdown">
+                            <button class="btn btn-outline-primary btn-sm dropdown-toggle d-inline-flex align-items-center gap-1" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i data-feather="printer"></i>
+                                <span>{{ __('index.print') }}</span>
+                            </button>
+                            <ul class="dropdown-menu" id="monthlyDetailPrintMenuList"></ul>
+                        </div>
                         @canany(['attendance_create', 'attendance_update'])
                             <button type="button" class="btn btn-outline-success btn-sm quickAttendanceTrigger d-none" id="monthlyQuickAttendanceButton">
                                 {{ __('index.quick_attendance') }}
@@ -2958,7 +2996,26 @@
             </div>
         @endcan
 
-        @if($canViewEmployeeChat)
+        <div class="modal fade" id="attendanceQuickSavedModal" tabindex="-1" aria-labelledby="attendanceQuickSavedModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content text-center p-3 shadow">
+                    <div class="modal-body pb-2">
+                        <div class="mb-3 text-success">
+                            <i data-feather="check-circle" style="width:48px;height:48px;"></i>
+                        </div>
+                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') ?? 'Saved Successfully' }}</h5>
+                        <p class="text-muted small mb-0" id="quickSavedModalMessage"></p>
+                    </div>
+                    <div class="modal-footer justify-content-center border-0 pt-2 gap-2">
+                        <a href="#" id="quickSavedPrintBtn" target="_blank" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i data-feather="printer"></i>
+                            <span>{{ __('index.print') ?? 'Print Form' }}</span>
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('index.close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
             <div class="modal fade" id="attendanceChatModal" tabindex="-1" aria-labelledby="attendanceChatModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content">
@@ -3209,6 +3266,11 @@
                 notEligible: 'Not eligible',
                 workingDays: 'Working days',
                 monthlyBonus: 'Monthly bonus',
+                approvedRequests: @json(__('index.approved') . ' ' . __('index.leave_requests')),
+                printNow: @json(__('index.print')),
+                savedSuccessfully: @json(__('index.saved_successfully') ?? 'Saved Successfully!'),
+                print: @json(__('index.print')),
+                close: @json(__('index.close')),
             };
 
             const initMonthlyTableSorting = () => {
@@ -3737,6 +3799,46 @@
                 });
             };
 
+            const promptPrintAfterSave = (data) => {
+                if (!data?.print_url) {
+                    return;
+                }
+
+                const printUrl = data.print_url;
+                const message = data.message || (i18n.savedSuccessfully || 'Saved successfully.');
+
+                const savedModalEl = document.getElementById('attendanceQuickSavedModal');
+                if (savedModalEl) {
+                    const savedModal = bootstrap.Modal.getOrCreateInstance(savedModalEl);
+                    const msgEl = document.getElementById('quickSavedModalMessage');
+                    if (msgEl) {
+                        msgEl.textContent = message;
+                    }
+                    const printBtn = document.getElementById('quickSavedPrintBtn');
+                    if (printBtn) {
+                        printBtn.href = printUrl;
+                    }
+                    savedModal.show();
+                    safeFeatherReplace();
+                } else if (window.Swal) {
+                    Swal.fire({
+                        title: i18n.savedSuccessfully || 'Saved Successfully!',
+                        text: message,
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: '🖨️ ' + (i18n.printNow || 'Print Form Now'),
+                        cancelButtonText: i18n.close || 'Close',
+                        confirmButtonColor: '#0d6efd',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open(printUrl, '_blank');
+                        }
+                    });
+                } else if (confirm(message + '\n\nDo you want to print the form now?')) {
+                    window.open(printUrl, '_blank');
+                }
+            };
+
             const submitMonthlyActionForm = async (form, modalInstance = null) => {
                 const submitButton = form.querySelector('[type="submit"]');
                 const originalHtml = submitButton?.innerHTML;
@@ -3763,7 +3865,13 @@
 
                     const data = await response.json();
                     modalInstance?.hide();
-                    monthlyActionMessage('Success', data.message || 'Saved successfully.', 'success');
+
+                    if (data.print_url) {
+                        promptPrintAfterSave(data);
+                    } else {
+                        monthlyActionMessage('Success', data.message || 'Saved successfully.', 'success');
+                    }
+
                     await refreshMonthlyEmployeeRow(userId);
                 } catch (error) {
                     monthlyActionMessage('Error', error.message || 'Unable to save. Please try again.', 'error');

@@ -555,7 +555,53 @@ class AttendanceMonthlyController extends Controller
     {
         $leaveRequests = $leaveRequests ?? [];
         $indicators = $this->statusIndicators($leaveRequests, $timeLeaves);
-        $approvedLeave = collect($leaveRequests ?? [])->firstWhere('status', 'approved');
+        $approvedLeaves = collect($leaveRequests)
+            ->where('status', 'approved')
+            ->values()
+            ->map(fn ($leave) => [
+                'id' => $leave['id'],
+                'type' => 'leave',
+                'label' => $leave['label'] ?? 'Leave',
+                'period' => $leave['from'] === $leave['to'] ? $leave['from'] : ($leave['from'] . ' - ' . $leave['to']),
+                'reason' => $leave['reason'] ?? '',
+                'print_url' => route('admin.employees.profile.show', [
+                    'employee' => $employee->id,
+                    'tab' => 'leave-letter',
+                    'leave_request_id' => $leave['id'],
+                ]),
+                'auto_print_url' => route('admin.employees.profile.show', [
+                    'employee' => $employee->id,
+                    'tab' => 'leave-letter',
+                    'leave_request_id' => $leave['id'],
+                    'auto_print' => 1,
+                ]),
+            ])
+            ->all();
+
+        $approvedTimeLeaves = $timeLeaves
+            ->where('status', 'approved')
+            ->values()
+            ->map(fn ($timeLeave) => [
+                'id' => $timeLeave->id,
+                'type' => 'time_leave',
+                'label' => 'Time Leave (' . ($timeLeave->start_time ?: '') . ' - ' . ($timeLeave->end_time ?: '') . ')',
+                'period' => ($timeLeave->start_time ?: '') . ' - ' . ($timeLeave->end_time ?: ''),
+                'reason' => strip_tags((string) $timeLeave->reasons),
+                'print_url' => route('admin.employees.profile.show', [
+                    'employee' => $employee->id,
+                    'tab' => 'time-leave-letter',
+                    'time_leave_request_id' => $timeLeave->id,
+                ]),
+                'auto_print_url' => route('admin.employees.profile.show', [
+                    'employee' => $employee->id,
+                    'tab' => 'time-leave-letter',
+                    'time_leave_request_id' => $timeLeave->id,
+                    'auto_print' => 1,
+                ]),
+            ])
+            ->all();
+
+        $approvedLeave = collect($leaveRequests)->firstWhere('status', 'approved');
         $approvedTimeLeave = $timeLeaves->firstWhere('status', 'approved');
         $details = $this->dayDetails($employee, $date, $attendances, $leaveRequests, $timeLeaves, $nonAttendanceReason);
         $actions = $this->dayActions($leaveRequests, $timeLeaves);
@@ -574,7 +620,7 @@ class AttendanceMonthlyController extends Controller
                 : $indicators;
 
             if (!is_null($firstAttendance->attendance_status) && (int) $firstAttendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
-                return $this->cell('absent', 'Rejected', $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+                return $this->cell('absent', 'Rejected', $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
             }
 
             $checkIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
@@ -600,7 +646,7 @@ class AttendanceMonthlyController extends Controller
                     ? Carbon::parse($employee->officeTime->opening_time)->format('H:i')
                     : $checkInTime;
 
-                $cell = $this->cell('late', $lateLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+                $cell = $this->cell('late', $lateLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
                 $cell['quick_late'] = [
                     'from' => $openingTime,
                     'to' => $checkInTime,
@@ -609,31 +655,31 @@ class AttendanceMonthlyController extends Controller
                 return $cell;
             }
 
-            return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave);
+            return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
         }
 
         if ($approvedLeave) {
             $label = $this->leaveDisplayLabel($approvedLeave);
 
-            return $this->cell($approvedLeave['type'], $label, $indicators, $details, $actions, false, false);
+            return $this->cell($approvedLeave['type'], $label, $indicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
         }
 
         if ($approvedTimeLeave) {
-            return $this->cell('leave', 'Approved Time Leave', $indicators, $details, $actions, false, false);
+            return $this->cell('leave', 'Approved Time Leave', $indicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
         }
 
         if (Carbon::parse($date)->isFuture()) {
-            return $this->cell('empty', 'Upcoming', $indicators, $details, $actions, false, false);
+            return $this->cell('empty', 'Upcoming', $indicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
         }
 
         if ($nonAttendanceReason) {
-            return $this->cell('off_day', $nonAttendanceReason, $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave);
+            return $this->cell('off_day', $nonAttendanceReason, $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
         }
 
-        return $this->cell('absent', 'Absent', $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave);
+        return $this->cell('absent', 'Absent', $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
     }
 
-    private function cell(string $status, string $label, array $indicators = [], array $details = [], array $actions = [], bool $canQuickLeave = true, bool $canQuickTimeLeave = true): array
+    private function cell(string $status, string $label, array $indicators = [], array $details = [], array $actions = [], bool $canQuickLeave = true, bool $canQuickTimeLeave = true, array $approvedLeaves = [], array $approvedTimeLeaves = []): array
     {
         $tooltipParts = array_filter(array_merge([$label], array_column($indicators, 'label')));
 
@@ -645,6 +691,9 @@ class AttendanceMonthlyController extends Controller
             'actions' => $actions,
             'can_quick_leave' => $canQuickLeave,
             'can_quick_time_leave' => $canQuickTimeLeave,
+            'approved_leaves' => $approvedLeaves,
+            'approved_time_leaves' => $approvedTimeLeaves,
+            'has_approved' => !empty($approvedLeaves) || !empty($approvedTimeLeaves),
             'tooltip' => implode(' | ', $tooltipParts),
         ];
     }

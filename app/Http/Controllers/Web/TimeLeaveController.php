@@ -173,10 +173,36 @@ class TimeLeaveController extends Controller
             }
             DB::commit();
 
+            $employeeId = $leaveRequestDetail?->requested_by ?? null;
+            $printUrl = ($validatedData['status'] === LeaveStatusEnum::approved->value && $employeeId) ? route('admin.employees.profile.show', [
+                'employee' => $employeeId,
+                'tab' => 'time-leave-letter',
+                'time_leave_request_id' => $leaveRequestId,
+            ]) : null;
+            $autoPrintUrl = ($validatedData['status'] === LeaveStatusEnum::approved->value && $employeeId) ? route('admin.employees.profile.show', [
+                'employee' => $employeeId,
+                'tab' => 'time-leave-letter',
+                'time_leave_request_id' => $leaveRequestId,
+                'auto_print' => 1,
+            ]) : null;
+
+            if ($validatedData['status'] === LeaveStatusEnum::approved->value && $employeeId) {
+                session()->flash('saved_request', [
+                    'id' => $leaveRequestId,
+                    'employee_id' => $employeeId,
+                    'type' => 'time_leave',
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
+                ]);
+                session()->flash('print_url', $printUrl);
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => __('message.status_update'),
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
                 ]);
             }
 

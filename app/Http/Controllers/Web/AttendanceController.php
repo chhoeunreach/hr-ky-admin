@@ -431,18 +431,45 @@ class AttendanceController extends Controller
             ];
 
             DB::beginTransaction();
-            app(\App\Services\Leave\LeaveService::class)->storeLeaveRequest($leaveRequestData);
+            $leaveRequest = app(\App\Services\Leave\LeaveService::class)->storeLeaveRequest($leaveRequestData);
             DB::commit();
+
+            $leaveRequestId = $leaveRequest?->id ?? null;
+            $printUrl = $leaveRequestId ? route('admin.employees.profile.show', [
+                'employee' => $employee->id,
+                'tab' => 'leave-letter',
+                'leave_request_id' => $leaveRequestId,
+            ]) : null;
+            $autoPrintUrl = $leaveRequestId ? route('admin.employees.profile.show', [
+                'employee' => $employee->id,
+                'tab' => 'leave-letter',
+                'leave_request_id' => $leaveRequestId,
+                'auto_print' => 1,
+            ]) : null;
 
             $message = 'Approved leave added from attendance list successfully.';
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => $message,
+                    'id' => $leaveRequestId,
+                    'employee_id' => $employee->id,
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
+                    'request_type' => 'leave',
                 ]);
             }
 
-            return redirect()->back()->with('success', $message);
+            return redirect()->back()
+                ->with('success', $message)
+                ->with('saved_request', [
+                    'id' => $leaveRequestId,
+                    'employee_id' => $employee->id,
+                    'type' => 'leave',
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
+                ])
+                ->with('print_url', $printUrl);
         } catch (Exception $exception) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
@@ -514,15 +541,42 @@ class AttendanceController extends Controller
             $this->applyApprovedTimeLeaveToAttendance($employee->id, $timeLeaveData['issue_date'], $timeLeave['start_time'], $timeLeave['end_time']);
             DB::commit();
 
+            $timeLeaveId = $timeLeave['id'] ?? null;
+            $printUrl = $timeLeaveId ? route('admin.employees.profile.show', [
+                'employee' => $employee->id,
+                'tab' => 'time-leave-letter',
+                'time_leave_request_id' => $timeLeaveId,
+            ]) : null;
+            $autoPrintUrl = $timeLeaveId ? route('admin.employees.profile.show', [
+                'employee' => $employee->id,
+                'tab' => 'time-leave-letter',
+                'time_leave_request_id' => $timeLeaveId,
+                'auto_print' => 1,
+            ]) : null;
+
             $message = 'Approved time leave added from attendance list successfully.';
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => $message,
+                    'id' => $timeLeaveId,
+                    'employee_id' => $employee->id,
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
+                    'request_type' => 'time_leave',
                 ]);
             }
 
-            return redirect()->back()->with('success', $message);
+            return redirect()->back()
+                ->with('success', $message)
+                ->with('saved_request', [
+                    'id' => $timeLeaveId,
+                    'employee_id' => $employee->id,
+                    'type' => 'time_leave',
+                    'print_url' => $printUrl,
+                    'auto_print_url' => $autoPrintUrl,
+                ])
+                ->with('print_url', $printUrl);
         } catch (Exception $exception) {
             if (DB::transactionLevel() > 0) {
                 DB::rollBack();
