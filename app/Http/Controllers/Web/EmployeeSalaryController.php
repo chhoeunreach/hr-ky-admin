@@ -865,14 +865,14 @@ class EmployeeSalaryController extends Controller
 
     public function salaryImport(): Factory|View|Application
     {
-        $this->authorize('create_salary');
+        $this->authorize('add_salary');
 
         return view($this->view.'importSalaries');
     }
 
     public function importSalaries(Request $request): RedirectResponse
     {
-        $this->authorize('create_salary');
+        $this->authorize('add_salary');
 
         try {
             $request->validate([

@@ -2181,6 +2181,11 @@ class RolePermissionHelper
                 "permission_key" => "create_device",
                 "permission_groups_id" => 28
             ],
+            [
+                "name" => "Edit Device",
+                "permission_key" => "edit_device",
+                "permission_groups_id" => 28
+            ],
 
             /** Setting Permissions */
             [
