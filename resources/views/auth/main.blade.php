@@ -10,9 +10,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <meta name="description" content="Digital HR Complete HR Attendance System">
-    <meta name="author" content="Digital HR">
-    <meta name="keywords" content="Digital HR">
+    <meta name="description" content="KNEAYERNG HRMS Complete HR Attendance System">
+    <meta name="author" content="KNEAYERNG HRMS">
+    <meta name="keywords" content="KNEAYERNG HRMS">
 
     <title>@yield('title')</title>
     <style>

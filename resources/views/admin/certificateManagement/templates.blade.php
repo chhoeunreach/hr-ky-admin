@@ -200,7 +200,7 @@
                             <div class="p-2 rounded bg-light small mb-3 border">
                                 <div class="text-muted d-flex justify-content-between align-items-center" style="font-size: 11px;">
                                     <span><strong>ស្ថាប័ន:</strong> {{ $tmpl->issuer_name }}</span>
-                                    <span class="badge bg-success-subtle text-success border border-success-subtle">🕒 {{ $tmpl->training_hours }}h Digital HR</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">🕒 {{ $tmpl->training_hours }}h KNEAYERNG HRMS</span>
                                 </div>
                             </div>
                         </div>
@@ -338,7 +338,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <label class="form-label fw-bold">ម៉ោងបណ្តុះបណ្តាល (CPD Digital HR Hours)</label>
+                                <label class="form-label fw-bold">ម៉ោងបណ្តុះបណ្តាល (CPD KNEAYERNG HRMS Hours)</label>
                                 <input type="number" name="training_hours" class="form-control" value="45" min="0" max="999">
                             </div>
                             <div class="col-md-6">

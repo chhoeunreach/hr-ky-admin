@@ -392,7 +392,7 @@ class CertificateService
         if ($template) {
             // Finally fill every remaining key from the complete Layout Model payload so the
             // Batch preview shows exactly what CertiCraft Studio saved (organization sub-banner,
-            // QR toggle, expiry/validity, digital HR badge, issuer fields, etc.).
+            // QR toggle, expiry/validity, KNEAYERNG HRMS badge, issuer fields, etc.).
             // The recipient/form-specific values built above always win over Studio defaults.
             $studioPayload = $template->toStudioPayload();
             $authoritative = array_filter($payload, static fn ($value) => $value !== null);

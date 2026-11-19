@@ -306,12 +306,12 @@
             <div class="w-80 h-[1.5px] bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent mx-auto mt-1"></div>
         </div>
 
-        <!-- DIGITAL HR & CPD ACCREDITATION PLAQUE -->
+        <!-- KNEAYERNG HRMS & CPD ACCREDITATION PLAQUE -->
         <div class="mx-auto px-6 py-2 border border-[#C89B3C]/70 bg-amber-50/80 rounded-lg flex items-center justify-between gap-8 max-w-xl shadow-sm relative z-10">
             <div class="text-left">
-                <div class="font-cinzel text-[8.5px] uppercase tracking-widest text-[#C89B3C] font-extrabold">CPD & DIGITAL HR ACCREDITED</div>
+                <div class="font-cinzel text-[8.5px] uppercase tracking-widest text-[#C89B3C] font-extrabold">CPD & KNEAYERNG HRMS ACCREDITED</div>
                 <div class="font-cinzel font-bold text-xs text-amber-950">
-                    <span>{{ $certificate['digitalHr']['trainingHours'] ?? 60 }}</span>.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / DIGITAL HR HOURS
+                    <span>{{ $certificate['digitalHr']['trainingHours'] ?? 60 }}</span>.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / KNEAYERNG HRMS HOURS
                 </div>
             </div>
             <div class="text-right text-[9.5px] font-mono text-slate-700">

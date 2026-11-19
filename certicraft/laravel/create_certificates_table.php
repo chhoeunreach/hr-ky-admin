@@ -42,7 +42,7 @@ return new class extends Migration
             $table->text('citation');
             $table->text('khmer_citation')->nullable();
 
-            // Digital HR & Training Hours
+            // KNEAYERNG HRMS & Training Hours
             $table->string('employee_id')->nullable();
             $table->integer('training_hours')->default(0);
             $table->string('hr_competency_track')->nullable();

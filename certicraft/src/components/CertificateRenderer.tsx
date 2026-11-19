@@ -1198,16 +1198,16 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
                   </div>
                 )}
 
-                {/* OPTIONAL DIGITAL HR ACCREDITED HOURS BADGE (Layout Model setting) */}
+                {/* OPTIONAL KNEAYERNG HRMS ACCREDITED HOURS BADGE (Layout Model setting) */}
                 {data.digitalHr?.showDigitalHoursBadge && (
                   <div
                     onClick={() => onEditField?.('digitalHr')}
                     className="mx-auto mt-1 px-4 py-0.5 rounded-xs border border-[#C89328]/50 bg-[#FDF8EC] flex items-center gap-3 text-[9.5px] leading-none cursor-pointer hover:border-[#C89328]"
                     style={{ color: primaryNavy }}
-                    title="Click to manage Digital HR Hours"
+                    title="Click to manage KNEAYERNG HRMS Hours"
                   >
                     <span className="font-bold tracking-wider uppercase font-cinzel">
-                      ⚜ Digital HR Accredited: {data.digitalHr.trainingHours}.0 Hrs
+                      ⚜ KNEAYERNG HRMS Accredited: {data.digitalHr.trainingHours}.0 Hrs
                     </span>
                     {data.digitalHr.employeeId && (
                       <>
@@ -1918,16 +1918,16 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
                 )}
               </div>
 
-              {/* OPTIONAL DIGITAL HR ACCREDITED HOURS BADGE */}
+              {/* OPTIONAL KNEAYERNG HRMS ACCREDITED HOURS BADGE */}
               {data.digitalHr?.showDigitalHoursBadge && (
                 <div
                   onClick={() => onEditField?.('digitalHr')}
                   className="mx-auto px-4 py-1 rounded-xs border border-[#C89328]/50 bg-[#FDF8EC] flex items-center gap-4 text-[10px] cursor-pointer hover:border-[#C89328]"
                   style={{ color: primaryNavy }}
-                  title="Click to manage Digital HR Hours"
+                  title="Click to manage KNEAYERNG HRMS Hours"
                 >
                   <span className="font-bold tracking-wider uppercase font-cinzel">
-                    ⚜ Digital HR Accredited: {data.digitalHr.trainingHours}.0 Hrs
+                    ⚜ KNEAYERNG HRMS Accredited: {data.digitalHr.trainingHours}.0 Hrs
                   </span>
                   <span className="text-[#C89328]">|</span>
                   <span className="font-mono font-semibold">ID: {data.digitalHr.employeeId}</span>
@@ -2671,12 +2671,12 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
             </div>
           )}
 
-          {/* Executive Engraved CPD & Digital HR Accreditation Plaque */}
+          {/* Executive Engraved CPD & KNEAYERNG HRMS Accreditation Plaque */}
           {data.digitalHr?.showDigitalHoursBadge && (
             <div
               onClick={() => onEditField?.('digitalHr')}
               className="relative mx-auto px-5 py-1 rounded-xs border-2 border-double border-amber-600/40 bg-gradient-to-b from-amber-500/5 via-amber-500/10 to-amber-500/5 shadow-2xs cursor-pointer hover:border-amber-600/70 hover:scale-[1.01] transition-all group max-w-xl"
-              title="Click to manage Digital HR Accredited Training Hours & Compliance"
+              title="Click to manage KNEAYERNG HRMS Accredited Training Hours & Compliance"
             >
               <span className="absolute -top-1.5 -left-1.5 text-amber-600 text-[10px] select-none font-serif">✤</span>
               <span className="absolute -top-1.5 -right-1.5 text-amber-600 text-[10px] select-none font-serif">✤</span>
@@ -2691,7 +2691,7 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
                       {data.languageMode === 'khmer' ? 'ការទទួលស្គាល់ការអភិវឌ្ឍវិជ្ជាជីវៈបន្ត (CPD)' : 'Accredited Continuing Professional Development (CPD)'}
                     </div>
                     <div className="text-[11.5px] font-extrabold tracking-wider font-cinzel text-amber-950 dark:text-amber-100 mt-0.5 leading-none">
-                      {data.digitalHr.trainingHours}.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / DIGITAL HR HOURS
+                      {data.digitalHr.trainingHours}.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / KNEAYERNG HRMS HOURS
                     </div>
                   </div>
                 </div>
@@ -2885,7 +2885,7 @@ export const CertificateRenderer: React.FC<CertificateRendererProps> = ({
           {vis.showSecurityFooter !== false && (
             <div className="w-full text-center overflow-hidden pt-1 border-t border-amber-600/10">
               <p className="text-[7px] font-mono-code uppercase tracking-[0.2em] opacity-40 truncate select-none text-slate-700 dark:text-slate-400">
-                ★ OFFICIAL ACCREDITED CREDENTIAL · DIGITAL HR AUDIT REPOSITORY · {data.issuer.name} · VERIFICATION HASH: {data.credentialId.replace(/[^A-Z0-9]/g, '').slice(0, 12)} · TAMPER-EVIDENT PERPETUAL RECORD ★
+                ★ OFFICIAL ACCREDITED CREDENTIAL · KNEAYERNG HRMS AUDIT REPOSITORY · {data.issuer.name} · VERIFICATION HASH: {data.credentialId.replace(/[^A-Z0-9]/g, '').slice(0, 12)} · TAMPER-EVIDENT PERPETUAL RECORD ★
               </p>
             </div>
           )}

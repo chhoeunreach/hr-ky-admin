@@ -46,7 +46,7 @@ return new class extends Migration
                 $table->text('citation')->nullable();
                 $table->text('khmer_citation')->nullable();
 
-                // Digital HR & Training Hours
+                // KNEAYERNG HRMS & Training Hours
                 $table->string('employee_id')->nullable(); // Employee code or reference
                 $table->unsignedBigInteger('user_id')->nullable(); // Foreign reference to users table
                 $table->unsignedBigInteger('branch_id')->nullable();

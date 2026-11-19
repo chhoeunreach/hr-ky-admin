@@ -1113,7 +1113,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
     },
     certificateTitle: 'CERTIFICATE OF COURSE COMPLETION',
     khmerTitle: 'វិញ្ញាបនបត្របញ្ជាក់ការសិក្សា',
-    authorityPreamble: 'UPON THE RECOMMENDATION OF THE ACADEMIC FACULTY & DIGITAL HR STANDARDS COUNCIL',
+    authorityPreamble: 'UPON THE RECOMMENDATION OF THE ACADEMIC FACULTY & KNEAYERNG HRMS STANDARDS COUNCIL',
     khmerPreamble: 'យោងតាមការវាយតម្លៃ និងសេចក្តីសម្រេចរបស់ក្រុមប្រឹក្សាសិក្សាធិការ',
     subtitle: 'This is to certify that the candidate named below has fulfilled all prescribed requirements and is awarded to',
     khmerSubtitle: 'វិញ្ញាបនបត្រនេះបញ្ជាក់ថា សិក្ខាកាមដែលមានឈ្មោះខាងក្រោមបានបញ្ចប់ដោយជោគជ័យនូវវគ្គសិក្សា',
@@ -1562,7 +1562,7 @@ export const CERTIFICATE_PRESETS: CertificateData[] = [
     khmerRecipientTitle: 'អ្នកជំនាញមានវិញ្ញាបនបត្រទទួលស្គាល់',
     recipientName: 'KIMSENG RITHY',
     khmerRecipientName: 'គឹមសេង រិទ្ធី',
-    courseOrAchievementTitle: 'Digital HR, POS Inventory & Smart Retail Operations',
+    courseOrAchievementTitle: 'KNEAYERNG HRMS, POS Inventory & Smart Retail Operations',
     khmerCourseOrAchievementTitle: 'ប្រព័ន្ធធនធានមនុស្សឌីជីថល និងការគ្រប់គ្រងស្តុកទំនើប',
     citation:
       'For completing practical workshops in cloud inventory synchronization, customer CRM workflows, and data-accurate reporting standards.',

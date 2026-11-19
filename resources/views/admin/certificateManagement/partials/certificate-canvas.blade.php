@@ -566,12 +566,12 @@
             @endif
         </div>
 
-        <!-- OPTIONAL DIGITAL HR ACCREDITED HOURS BADGE (Layout Model setting) -->
+        <!-- OPTIONAL KNEAYERNG HRMS ACCREDITED HOURS BADGE (Layout Model setting) -->
         @if($showDigitalHoursBadge)
             <div class="mx-auto mt-1 px-4 py-0.5 rounded-xs border border-[#C89328]/50 bg-[#FDF8EC] flex items-center gap-3 text-[9.5px] leading-none"
                  style="color: {{ $primaryNavy }};">
                 <span class="font-bold tracking-wider uppercase font-cinzel">
-                    ⚜ Digital HR Accredited: {{ $digitalHr['trainingHours'] ?? $certificate['training_hours'] ?? 0 }}.0 Hrs
+                    ⚜ KNEAYERNG HRMS Accredited: {{ $digitalHr['trainingHours'] ?? $certificate['training_hours'] ?? 0 }}.0 Hrs
                 </span>
                 @if(!empty($digitalHr['employeeId']))
                     <span class="text-[#C89328]">|</span>

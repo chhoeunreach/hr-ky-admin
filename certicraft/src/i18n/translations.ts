@@ -59,12 +59,12 @@ export interface TranslationDictionary {
 export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
   en: {
     appName: 'CertiCraft Studio',
-    tagline: 'Professional Certificate & Digital HR Credential Generator',
+    tagline: 'Professional Certificate & KNEAYERNG HRMS Credential Generator',
     teamLeaders: 'Team Leaders',
     bestStaff: 'Best of Staff',
     serviceAwards: 'Service Awards',
     courseDiplomas: 'Training & Development (CPD)',
-    digitalHr: 'Digital HR (Hours)',
+    digitalHr: 'KNEAYERNG HRMS (Hours)',
     batchGenerator: 'Batch Generator',
     exportCertificate: 'Export Certificate',
     exportWindowsLaravel: 'Merge / Export Project',
@@ -104,7 +104,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     khmerAchievementTitle: 'Khmer Course / Award Title',
     khmerCitation: 'Khmer Citation / Commendation',
     institutionalPreamble: 'Institutional Authority Preamble',
-    certifiedHours: 'Digital HR Hours Certified',
+    certifiedHours: 'KNEAYERNG HRMS Hours Certified',
     employeeRegistryId: 'Employee Registry ID',
     complianceTrack: 'HR Competency Track',
     officialSeal: 'Official 3D Seal',

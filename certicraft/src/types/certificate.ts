@@ -260,7 +260,7 @@ export interface CertificateData {
   // Extra metrics (e.g., CSAT 99.4%, Distinction, 40 CPD Hours, Team Size 25)
   metrics: MetricBadge[];
 
-  // Digital HR & Training Hours Integration
+  // KNEAYERNG HRMS & Training Hours Integration
   digitalHr: DigitalHrRecord;
 
   // Dates & Credentials

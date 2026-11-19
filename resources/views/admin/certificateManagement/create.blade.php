@@ -262,11 +262,11 @@
                     </div>
                 </div>
 
-                <!-- Digital HR & Compliance -->
+                <!-- KNEAYERNG HRMS & Compliance -->
                 <div class="card shadow-sm border-0 mb-4">
                     <div class="card-header bg-white py-3">
                         <h6 class="card-title mb-0 fw-bold text-primary">
-                            <i data-feather="award" class="me-1" style="width: 18px; height: 18px;"></i> Digital HR & Accreditation
+                            <i data-feather="award" class="me-1" style="width: 18px; height: 18px;"></i> KNEAYERNG HRMS & Accreditation
                         </h6>
                     </div>
                     <div class="card-body">

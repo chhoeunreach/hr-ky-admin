@@ -3302,7 +3302,7 @@ return [
     'select_layout_model' => 'Select Layout Model',
     'certificate_recipient' => 'Recipient',
     'certificate_title_label' => 'Certificate Title',
-    'digital_hr_hours' => 'Digital HR Hours',
+    'digital_hr_hours' => 'KNEAYERNG HRMS Hours',
     'certificate_signatories' => 'Signatories',
     'view_layout_model' => 'View A4',
     'view_full_a4' => 'View Full A4',

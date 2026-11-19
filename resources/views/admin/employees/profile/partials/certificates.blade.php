@@ -26,7 +26,7 @@
                 <th>Credential ID</th>
                 <th>Certificate Title</th>
                 <th>Category</th>
-                <th>Digital HR Hours</th>
+                <th>KNEAYERNG HRMS Hours</th>
                 <th>Issue Date</th>
                 <th class="text-end">Actions</th>
             </tr>

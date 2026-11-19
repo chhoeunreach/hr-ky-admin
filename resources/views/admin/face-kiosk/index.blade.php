@@ -59,7 +59,7 @@
                                 ->generate(session('kiosk_provisioning_payload')) !!}
                         </div>
                         <p class="text-muted mb-0 mt-3">
-                            Scan this code with the Digital HRS Face Kiosk app.
+                            Scan this code with the KNEAYERNG HRMSS Face Kiosk app.
                         </p>
                     </div>
                 </div>

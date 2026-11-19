@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class CertificateController extends Controller
 {
     /**
-     * Display a listing of issued certificates and Digital HR records.
+     * Display a listing of issued certificates and KNEAYERNG HRMS records.
      */
     public function index()
     {

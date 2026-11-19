@@ -78,12 +78,12 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
             </p>
           </div>
 
-          {/* Digital HR Training Hours Record */}
+          {/* KNEAYERNG HRMS Training Hours Record */}
           {data.digitalHr && (
             <div className="p-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 flex items-center justify-between">
               <div>
                 <span className="text-[10px] uppercase font-bold text-amber-800 dark:text-amber-400 block">
-                  Digital HR Accredited Hours
+                  KNEAYERNG HRMS Accredited Hours
                 </span>
                 <span className="text-sm font-extrabold font-mono text-amber-900 dark:text-amber-200">
                   {data.digitalHr.trainingHours} Hours Certified

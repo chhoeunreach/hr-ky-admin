@@ -55,7 +55,7 @@
 
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-between">
                 <div>
-                    <div class="text-xs uppercase font-semibold text-slate-400">Digital HR Training</div>
+                    <div class="text-xs uppercase font-semibold text-slate-400">KNEAYERNG HRMS Training</div>
                     <div class="text-2xl font-bold text-slate-900 mt-1">165+ <span class="text-sm font-normal text-slate-500">Hours</span></div>
                     <div class="text-xs text-emerald-600 font-medium mt-0.5">CPD Verified</div>
                 </div>

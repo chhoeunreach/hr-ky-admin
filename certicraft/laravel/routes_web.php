@@ -5,7 +5,7 @@ use App\Http\Controllers\CertificateController;
 
 /*
 |--------------------------------------------------------------------------
-| Web & API Routes for Certificate Management & Digital HR
+| Web & API Routes for Certificate Management & KNEAYERNG HRMS
 |--------------------------------------------------------------------------
 |
 | Paste these routes into your routes/web.php or routes/api.php file.

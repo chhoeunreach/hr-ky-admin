@@ -503,7 +503,7 @@
                                                  alt="{{ $companyDetail ? ucfirst($companyDetail->name) : 'Company logo' }}">
                                         </div>
                                         <div class="login-brand-title">
-                                            {{ $companyDetail  ? ucfirst($companyDetail->name) : 'Digital HR' }}
+                                            {{ $companyDetail  ? ucfirst($companyDetail->name) : 'KNEAYERNG HRMS' }}
                                         </div>
                                         <p class="login-brand-copy mb-0">
                                             Secure workforce access for attendance, payroll, approvals, and daily operations.
@@ -538,7 +538,7 @@
                                 <div class="login-form-panel">
                                     <div class="auth-form-wrapper login-form-inner">
                                         <div class="mb-3">
-                                            <a href="#" class="login-company d-block mb-2">{{ $companyDetail  ? ucfirst($companyDetail->name) : 'Digital HR'}}</a>
+                                            <a href="#" class="login-company d-block mb-2">{{ $companyDetail  ? ucfirst($companyDetail->name) : 'KNEAYERNG HRMS'}}</a>
                                             <p class="login-subtitle mb-0">
                                                 {{ __('auth.welcome_back') }}. Sign in to manage attendance, payroll, leave, approvals, and employee records.
                                             </p>

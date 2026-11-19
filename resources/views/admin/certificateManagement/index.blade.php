@@ -109,7 +109,7 @@
                 <div class="card-body p-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <p class="text-muted small mb-1 text-uppercase fw-bold">Digital HR Hours</p>
+                            <p class="text-muted small mb-1 text-uppercase fw-bold">KNEAYERNG HRMS Hours</p>
                             <h3 class="mb-0 fw-bold text-success">{{ $totalTrainingHours ?? 0 }} hrs</h3>
                         </div>
                         <div class="avatar bg-success-subtle text-success p-2 rounded-circle">
@@ -238,7 +238,7 @@
                             <th>Certificate Title</th>
                             <th>Category</th>
                             <th style="min-width: 250px;">Layout Model / Settings</th>
-                            <th>Digital HR</th>
+                            <th>KNEAYERNG HRMS</th>
                             <th>Issue Date</th>
                             <th class="text-end pe-3" style="width: 220px;">Actions</th>
                         </tr>

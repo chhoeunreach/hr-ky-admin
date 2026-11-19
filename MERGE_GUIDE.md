@@ -56,7 +56,7 @@ export function HrCertificatesPage({ selectedEmployee, staffList, navigate }: an
         embedded
         defaultLanguage="km"
         employee={selectedEmployee}       // Auto-fills name, Khmer name, role, photo, HR ID & hours
-        externalEmployees={staffList}     // Feeds hr-ky-admin staff into Digital HR & Batch PDFs
+        externalEmployees={staffList}     // Feeds hr-ky-admin staff into KNEAYERNG HRMS & Batch PDFs
         onBack={() => navigate('/employees')}
         onSaveCertificate={handleSaveToHrAdmin}
       />

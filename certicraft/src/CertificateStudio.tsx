@@ -54,7 +54,7 @@ export interface CertificateStudioProps {
   initialData?: Partial<CertificateData>;
   /** Selected employee payload from hr-ky-admin or another HRMS */
   employee?: HrAdminEmployeeInput | null;
-  /** Employee roster from hr-ky-admin for Digital HR Picker & Batch Generator */
+  /** Employee roster from hr-ky-admin for KNEAYERNG HRMS Picker & Batch Generator */
   externalEmployees?: HrAdminEmployeeInput[];
   /** Custom localStorage draft key when running multiple modules */
   storageKey?: string;
@@ -710,7 +710,7 @@ export const CertificateStudio: React.FC<CertificateStudioProps> = ({
             type="button"
             onClick={() => setIsDigitalHrModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-amber-800 dark:text-amber-200 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/60 dark:to-amber-900/40 border border-amber-300 dark:border-amber-700/80 rounded-md transition-colors hover:border-amber-400 cursor-pointer shadow-2xs whitespace-nowrap shrink-0"
-            title="Open Digital HR & Training Hours Hub"
+            title="Open KNEAYERNG HRMS & Training Hours Hub"
           >
             <Clock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
             <span>HR: {certificateData.digitalHr?.trainingHours || 60}h</span>

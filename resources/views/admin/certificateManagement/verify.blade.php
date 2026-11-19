@@ -98,7 +98,7 @@
                 <div class="py-2.5 flex justify-between items-center">
                     <span class="text-slate-500 font-medium">ម៉ោងបណ្តុះបណ្តាល / CPD Hours:</span>
                     <span class="font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                        {{ $verification['training_hours'] }}.0 Digital HR Hours
+                        {{ $verification['training_hours'] }}.0 KNEAYERNG HRMS Hours
                     </span>
                 </div>
 

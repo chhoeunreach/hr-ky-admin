@@ -17,7 +17,7 @@
     $sdKhmerTitle = $sd['khmerTitle'] ?? ($selectedTemplate?->khmer_certificate_title ?? $selectedTemplate?->khmer_title ?? 'វិញ្ញាបនបត្របញ្ចប់ការបណ្តុះបណ្តាលវិជ្ជាជីវៈ');
     $sdTitle = $sd['certificateTitle'] ?? ($selectedTemplate?->certificate_title ?? $selectedTemplate?->title ?? 'CERTIFICATE OF PROFESSIONAL TRAINING COMPLETION');
     $sdKhmerAch = $sd['khmerCourseOrAchievementTitle'] ?? ($selectedTemplate?->khmer_course_or_achievement_title ?? 'វគ្គបណ្តុះបណ្តាលភាពជាអ្នកដឹកនាំ និងប្រតិបត្តិការឌីជីថល HR');
-    $sdAch = $sd['courseOrAchievementTitle'] ?? ($selectedTemplate?->course_or_achievement_title ?? 'Advanced Digital HR Operations & Leadership Development Program');
+    $sdAch = $sd['courseOrAchievementTitle'] ?? ($selectedTemplate?->course_or_achievement_title ?? 'Advanced KNEAYERNG HRMS Operations & Leadership Development Program');
     $sdKhmerCitation = $sd['khmerCitation'] ?? ($selectedTemplate?->khmer_citation ?? 'បានបំពេញតាមគ្រប់លក្ខខណ្ឌតម្រូវនៃកម្មវិធី និងទទួលបានលទ្ធផលគាប់ប្រសើរ។');
     $sdCitation = $sd['citation'] ?? ($selectedTemplate?->citation ?? 'Having successfully completed all module curricula, practical assessments, and professional milestones.');
     $sdStatus = $sdDigitalHr['complianceStatus'] ?? ($selectedTemplate?->compliance_status ?? 'Certified & Accredited');

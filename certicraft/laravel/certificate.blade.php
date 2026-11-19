@@ -80,11 +80,11 @@
             <div class="w-72 h-[1.5px] bg-gradient-to-r from-transparent via-[#C89B3C] to-transparent mx-auto mt-1"></div>
         </div>
 
-        <!-- Digital HR Plaque -->
+        <!-- KNEAYERNG HRMS Plaque -->
         <div class="mx-auto px-6 py-2 border-2 border-[#C89B3C]/50 bg-amber-50/50 rounded flex items-center justify-between gap-6 max-w-lg">
             <div class="text-left">
-                <div class="font-cinzel text-[9px] uppercase tracking-wider text-[#C89B3C] font-bold">CPD & Digital HR Accredited</div>
-                <div class="font-cinzel font-bold text-xs text-amber-950">{{ $certificate['digitalHr']['trainingHours'] }}.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / DIGITAL HR HOURS</div>
+                <div class="font-cinzel text-[9px] uppercase tracking-wider text-[#C89B3C] font-bold">CPD & KNEAYERNG HRMS Accredited</div>
+                <div class="font-cinzel font-bold text-xs text-amber-950">{{ $certificate['digitalHr']['trainingHours'] }}.0 ម៉ោងបណ្តុះបណ្តាលឌីជីថល / KNEAYERNG HRMS HOURS</div>
             </div>
             <div class="text-right text-[10px] font-mono font-semibold text-slate-700">
                 REG: {{ $certificate['digitalHr']['employeeId'] }}<br>

@@ -181,7 +181,7 @@ class CertificateApiController extends Controller
     }
 
     /**
-     * Feed active staff to Digital HR & Batch Generator in CertificateStudio.
+     * Feed active staff to KNEAYERNG HRMS & Batch Generator in CertificateStudio.
      */
     public function getEmployees(Request $request): JsonResponse
     {

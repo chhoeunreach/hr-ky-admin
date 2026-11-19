@@ -4,6 +4,7 @@
 
     $canViewEmployeeChat = auth('admin')->check() || Gate::allows('view_employee_chat');
     $canSendEmployeeChat = auth('admin')->check() || Gate::allows('send_employee_chat');
+    $canAccessEmployeeChat = $canViewEmployeeChat || $canSendEmployeeChat;
     $canViewAttendanceDetail = auth('admin')->check() || Gate::allows('attendance_show');
     $duplicateDepartmentNames = isset($departments)
         ? $departments
@@ -3016,6 +3017,8 @@
                 </div>
             </div>
         </div>
+
+        @if($canAccessEmployeeChat)
             <div class="modal fade" id="attendanceChatModal" tabindex="-1" aria-labelledby="attendanceChatModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered modal-lg">
                     <div class="modal-content">

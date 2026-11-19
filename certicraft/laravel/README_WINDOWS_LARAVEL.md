@@ -1,5 +1,5 @@
 # Laravel 10/11 & Windows Deployment Guide
-### CertiCraft Studio — Khmer & English Certificate Generator with Digital HR Hours
+### CertiCraft Studio — Khmer & English Certificate Generator with KNEAYERNG HRMS Hours
 
 This guide explains how to install and run this application on **Windows** using either:
 1. **Option A: Standalone Windows App** (Node.js + React + Vite) with 1-click batch files.

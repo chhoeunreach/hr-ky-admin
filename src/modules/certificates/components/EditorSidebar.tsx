@@ -143,6 +143,10 @@ interface EditorSidebarProps {
   externalEmployees?: HrAdminEmployeeInput[];
   activeTab?: string;
   onTabChange?: (tab: 'presets' | 'content' | 'styling' | 'hr' | 'signatures') => void;
+  onSaveTemplateSettings?: () => Promise<void> | void;
+  onResetTemplateToDefault?: () => Promise<void> | void;
+  templateSaveNotice?: string | null;
+  templateResetNotice?: string | null;
   uiLang?: 'en' | 'km';
 }
 
@@ -156,6 +160,10 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   externalEmployees,
   activeTab: initialActiveTab,
   onTabChange,
+  onSaveTemplateSettings,
+  onResetTemplateToDefault,
+  templateSaveNotice,
+  templateResetNotice,
   uiLang = 'en',
 }) => {
   const t = TRANSLATIONS[uiLang];
@@ -975,7 +983,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           }`}
         >
           <Clock className="w-3.5 h-3.5 mb-0.5" />
-          <span>Digital HR</span>
+          <span>KNEAYERNG HRMS</span>
         </button>
         <button
           type="button"
@@ -1167,7 +1175,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                       <span>{preset.issuer.khmerName || preset.issuer.name}</span>
                       <span>·</span>
                       <span className="text-amber-700 dark:text-amber-300 font-semibold font-mono">
-                        {preset.digitalHr?.trainingHours}h Digital HR
+                        {preset.digitalHr?.trainingHours}h KNEAYERNG HRMS
                       </span>
                       {preset.signatories.some((s) => /hr|human\s*resource|people/i.test(`${s.role} ${s.organization || ''}`)) && (
                         <span className="px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-[9px]">
@@ -2604,7 +2612,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                               ),
                           },
                           {
-                            label: uiLang === 'km' ? 'ផ្លាកម៉ោង HR' : 'Digital HR Tag',
+                            label: uiLang === 'km' ? 'ផ្លាកម៉ោង HR' : 'KNEAYERNG HRMS Tag',
                             active: Boolean(data.digitalHr?.showDigitalHoursBadge),
                             toggle: () =>
                               updateDigitalHr('showDigitalHoursBadge', !data.digitalHr?.showDigitalHoursBadge),
@@ -3348,15 +3356,15 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
           </div>
         )}
 
-        {/* ===================== TAB 4: DIGITAL HR INTEGRATION ===================== */}
+        {/* ===================== TAB 4: KNEAYERNG HRMS INTEGRATION ===================== */}
         {tab === 'hr' && (
           <div className="space-y-4">
-            {/* Highlight Digital HR Hours Box */}
+            {/* Highlight KNEAYERNG HRMS Hours Box */}
             <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-amber-100/60 dark:from-amber-950/40 dark:to-amber-900/30 border border-amber-300 dark:border-amber-800 flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 block">
-                    Accredited Digital HR Training Hours
+                    Accredited KNEAYERNG HRMS Training Hours
                   </span>
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-3xl font-extrabold font-mono text-amber-900 dark:text-amber-200 tabular-nums">
@@ -3442,7 +3450,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 className="rounded text-amber-600"
               />
               <label htmlFor="sidebarBadgeToggle" className="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                Show "Digital HR Certified Hours" Gold Badge on Certificate
+                Show "KNEAYERNG HRMS Certified Hours" Gold Badge on Certificate
               </label>
             </div>
           </div>

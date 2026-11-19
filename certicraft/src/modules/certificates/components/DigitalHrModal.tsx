@@ -182,7 +182,7 @@ export const DigitalHrModal: React.FC<DigitalHrModalProps> = ({
       showDigitalHoursBadge: showBadge,
     };
     onUpdateDigitalHr(updated);
-    setNotification('Digital HR records updated on certificate!');
+    setNotification('KNEAYERNG HRMS records updated on certificate!');
     setTimeout(() => setNotification(null), 2500);
   };
 
@@ -239,7 +239,7 @@ export const DigitalHrModal: React.FC<DigitalHrModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                  Digital HR & Training Hours Platform
+                  KNEAYERNG HRMS & Training Hours Platform
                 </h3>
                 <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 rounded-full">
                   HRMS Sync
@@ -318,7 +318,7 @@ export const DigitalHrModal: React.FC<DigitalHrModalProps> = ({
                       {trainingHours}
                     </span>
                     <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                      Digital HR Hours Certified
+                      KNEAYERNG HRMS Hours Certified
                     </span>
                   </div>
                   <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80 mt-1">
@@ -433,7 +433,7 @@ export const DigitalHrModal: React.FC<DigitalHrModalProps> = ({
                   className="rounded text-amber-600 focus:ring-amber-500"
                 />
                 <label htmlFor="showBadgeCheckbox" className="font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
-                  Display Official "Digital HR Certified Hours" Gold Badge on Certificate
+                  Display Official "KNEAYERNG HRMS Certified Hours" Gold Badge on Certificate
                 </label>
               </div>
             </div>

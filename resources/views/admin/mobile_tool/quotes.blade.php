@@ -280,7 +280,7 @@
                                     <span class="qb-quote-text" id="preview_text_add">ការងារជាក្រុម នាំមកនូវលទ្ធផលល្អ
 សាមគ្គីភាពនាំឱ្យមានជ័យជំនះ</span>
                                 </div>
-                                <div class="qb-quote-author" id="preview_author_add">— Digital HR</div>
+                                <div class="qb-quote-author" id="preview_author_add">— KNEAYERNG HRMS</div>
                             </div>
                         </div>
 
@@ -324,7 +324,7 @@
                     <div class="row g-2 mb-3">
                         <div class="col-sm-8">
                             <label class="form-label fw-bold" for="quote_author_add">Author / Attribution</label>
-                            <input class="form-control" type="text" id="quote_author_add" name="author" maxlength="120" value="{{ old('author', 'Digital HR') }}" placeholder="Steve Jobs / Anonymous" oninput="updateLiveAuthor('add')">
+                            <input class="form-control" type="text" id="quote_author_add" name="author" maxlength="120" value="{{ old('author', 'KNEAYERNG HRMS') }}" placeholder="Steve Jobs / Anonymous" oninput="updateLiveAuthor('add')">
                         </div>
                         <div class="col-sm-4 d-flex align-items-end">
                             <div class="form-check form-switch mb-2">

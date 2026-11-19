@@ -55,7 +55,7 @@
 
             <div class="flex justify-between items-center py-2 border-b border-slate-700/60">
                 <span class="text-slate-400">Accredited Hours:</span>
-                <span class="font-bold text-emerald-400 font-mono">{{ $verification['training_hours'] ?? 60 }} Digital HR Hours</span>
+                <span class="font-bold text-emerald-400 font-mono">{{ $verification['training_hours'] ?? 60 }} KNEAYERNG HRMS Hours</span>
             </div>
 
             <div class="flex justify-between items-center py-2 border-b border-slate-700/60">

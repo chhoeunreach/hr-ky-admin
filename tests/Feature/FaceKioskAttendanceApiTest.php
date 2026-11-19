@@ -208,7 +208,7 @@ class FaceKioskAttendanceApiTest extends TestCase
     private function seedKiosk(): void
     {
         $companyId = DB::table('companies')->insertGetId([
-            'name' => 'Digital HRS',
+            'name' => 'KNEAYERNG HRMSS',
             'is_active' => true,
         ]);
         $branchId = DB::table('branches')->insertGetId([
