@@ -1378,6 +1378,25 @@
 
         @include('admin.section.flash_message')
 
+        @if(session('saved_request') && !empty(session('saved_request.print_url')))
+            <div class="alert alert-success alert-dismissible fade show d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm border border-success" role="alert">
+                <div class="d-flex align-items-center gap-2">
+                    <i data-feather="check-circle" class="text-success"></i>
+                    <div>
+                        <strong>{{ __('index.saved_successfully') ?? 'Saved Successfully!' }}</strong>
+                        <span class="ms-1">{{ session('success') }}</span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ session('saved_request.print_url') }}" target="_blank" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                        <i data-feather="printer"></i>
+                        <span>{{ __('index.print') ?? 'Print' }} {{ ucfirst(str_replace('_', ' ', session('saved_request.type', 'Request'))) }}</span>
+                    </a>
+                    <button type="button" class="btn-close position-static p-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        @endif
+
         <div class="attendance-page-loader" id="attendancePageLoader" aria-hidden="true">
             <div class="attendance-loader-panel" role="status" aria-live="polite">
                 <div class="attendance-loader-spinner"></div>
@@ -2064,7 +2083,7 @@
 
                                             @if($firstAttendance->leave_request_id || $firstAttendance->time_leave_id)
                                                 @if($firstAttendance->leave_request_id)
-                                                    <div class="attendance-leave-content">
+                                                    <div class="attendance-leave-content d-inline-flex align-items-center gap-1">
                                                         @canany(['update_leave_request','access_admin_leave'])
                                                             <a href="#"
                                                                class="attendanceLeaveRequestUpdate"
@@ -2088,11 +2107,19 @@
                                                                 <span class="attendance-leave-pill-status">{{ ucfirst($firstAttendance->leave_request_status) }}</span>
                                                             </span>
                                                         @endcanany
+                                                        @if($firstAttendance->leave_request_status === 'approved')
+                                                            <a href="{{ route('admin.employees.profile.show', ['employee' => $firstAttendance->user_id, 'tab' => 'leave-letter', 'leave_request_id' => $firstAttendance->leave_request_id]) }}"
+                                                               target="_blank"
+                                                               class="btn btn-outline-primary btn-xs ms-1 py-0 px-1 d-inline-flex align-items-center"
+                                                               title="{{ __('index.print') }}">
+                                                                <i data-feather="printer" style="width:12px;height:12px;"></i>
+                                                            </a>
+                                                        @endif
                                                     </div>
                                                 @endif
 
-                                                @if(!$firstAttendance->leave_request_id && $firstAttendance->time_leave_id)
-                                                    <div class="attendance-leave-content">
+                                                @if($firstAttendance->time_leave_id)
+                                                    <div class="attendance-leave-content d-inline-flex align-items-center gap-1">
                                                         @if(auth('admin')->check() || \Illuminate\Support\Facades\Gate::allows('update_time_leave'))
                                                             <a href="#"
                                                                class="attendanceTimeLeaveRequestUpdate"
@@ -2123,6 +2150,14 @@
                                                                     {{ \App\Helpers\AppHelper::convertLeaveTimeFormat($firstAttendance->time_leave_end_time) }}
                                                                 </span>
                                                             </span>
+                                                        @endif
+                                                        @if($firstAttendance->time_leave_status === 'approved')
+                                                            <a href="{{ route('admin.employees.profile.show', ['employee' => $firstAttendance->user_id, 'tab' => 'time-leave-letter', 'time_leave_request_id' => $firstAttendance->time_leave_id]) }}"
+                                                               target="_blank"
+                                                               class="btn btn-outline-info btn-xs ms-1 py-0 px-1 d-inline-flex align-items-center"
+                                                               title="{{ __('index.print') }}">
+                                                                <i data-feather="printer" style="width:12px;height:12px;"></i>
+                                                            </a>
                                                         @endif
                                                     </div>
                                                 @endif
@@ -2711,6 +2746,27 @@
             </div>
         </div>
 
+        <div class="modal fade" id="attendanceQuickSavedModal" tabindex="-1" aria-labelledby="attendanceQuickSavedModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content text-center p-3 shadow">
+                    <div class="modal-body pb-2">
+                        <div class="mb-3 text-success">
+                            <i data-feather="check-circle" style="width:48px;height:48px;"></i>
+                        </div>
+                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') ?? 'Saved Successfully' }}</h5>
+                        <p class="text-muted small mb-0" id="quickSavedModalMessage"></p>
+                    </div>
+                    <div class="modal-footer justify-content-center border-0 pt-2 gap-2">
+                        <a href="#" id="quickSavedPrintBtn" target="_blank" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i data-feather="printer"></i>
+                            <span>{{ __('index.print') ?? 'Print Form' }}</span>
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('index.close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- note for checkin and checkout -->
         <div id="noteModal" class="modal" tabindex="-1">
             <div class="modal-dialog">
@@ -3149,8 +3205,22 @@
                                 </button>
                             </div>
                         ` : ''}
+                        ${record.is_approved && record.print_url ? `
+                            <div class="attendance-leave-detail-actions mt-2 justify-content-end">
+                                <a href="${escapeAttendanceHtml(record.print_url)}"
+                                   target="_blank"
+                                   class="btn btn-outline-primary btn-xs d-inline-flex align-items-center gap-1">
+                                    <i data-feather="printer" style="width:12px;height:12px;"></i>
+                                    <span>{{ __('index.print') }}</span>
+                                </a>
+                            </div>
+                        ` : ''}
                     </div>
                 `).join('');
+
+                if (window.feather) {
+                    feather.replace();
+                }
             };
 
             document.addEventListener('click', function(e) {
@@ -3596,6 +3666,75 @@
                 });
             };
 
+            const attendanceI18n = {
+                employeeChat: @json(__('index.employee_chat')),
+                employee: @json(__('index.employee')),
+                loadingConversation: @json(__('index.loading_conversation')),
+                loadingMessages: @json(__('index.loading_messages')),
+                sendingMessage: @json(__('index.sending_message')),
+                unableSendMessage: @json(__('index.unable_send_message')),
+                messageSentSuccessfully: @json(__('index.message_sent_successfully')),
+                unableSendMessageNow: @json(__('index.unable_send_message_now')),
+                selectEmployeeStartChatting: @json(__('index.select_employee_start_chatting')),
+                sendChatHint: @json(__('index.send_chat_hint')),
+                chatReadOnly: @json(__('index.chat_read_only')),
+                quickLeave: @json(__('index.quick_leave')),
+                quickTimeLeave: @json(__('index.quick_time_leave')),
+                loadingLeaveTypes: @json(__('index.loading_leave_types')),
+                noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
+                noLeaveTypesAvailableEmployee: @json(__('index.no_leave_types_available_employee')),
+                selectLeaveType: @json(__('index.select_leave_type')),
+                unableLoadLeaveTypes: @json(__('index.unable_load_leave_types')),
+                unableLoadLeaveTypesTryAgain: @json(__('index.unable_load_leave_types_try_again')),
+                createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
+                createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
+                savedSuccessfully: @json(__('index.saved_successfully') ?? 'Saved Successfully'),
+                printNow: @json(__('index.print') ?? 'Print Form'),
+                close: @json(__('index.close') ?? 'Close'),
+            };
+
+            const promptPrintAfterSave = (data) => {
+                if (!data?.print_url) {
+                    return;
+                }
+
+                const printUrl = data.print_url;
+                const message = data.message || (attendanceI18n.savedSuccessfully || 'Saved successfully.');
+
+                const savedModalEl = document.getElementById('attendanceQuickSavedModal');
+                if (savedModalEl) {
+                    const savedModal = bootstrap.Modal.getOrCreateInstance(savedModalEl);
+                    const msgEl = document.getElementById('quickSavedModalMessage');
+                    if (msgEl) {
+                        msgEl.textContent = message;
+                    }
+                    const printBtn = document.getElementById('quickSavedPrintBtn');
+                    if (printBtn) {
+                        printBtn.href = printUrl;
+                    }
+                    savedModal.show();
+                    if (window.feather) {
+                        feather.replace();
+                    }
+                } else if (window.Swal) {
+                    Swal.fire({
+                        title: attendanceI18n.savedSuccessfully || 'Saved Successfully!',
+                        text: message,
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: '🖨️ ' + (attendanceI18n.printNow || 'Print Form Now'),
+                        cancelButtonText: attendanceI18n.close || 'Close',
+                        confirmButtonColor: '#0d6efd',
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.open(printUrl, '_blank');
+                        }
+                    });
+                } else if (confirm(message + '\n\nDo you want to print the form now?')) {
+                    window.open(printUrl, '_blank');
+                }
+            };
+
             const submitAttendanceActionForm = async (form, modalInstance = null) => {
                 const submitButton = form.querySelector('[type="submit"]');
                 const originalHtml = submitButton?.innerHTML;
@@ -3623,7 +3762,11 @@
                     const data = await response.json();
                     modalInstance?.hide();
                     attendanceLeaveDetailModal?.hide();
-                    attendanceActionMessage('Success', data.message || 'Saved successfully.', 'success');
+                    if (data.print_url) {
+                        promptPrintAfterSave(data);
+                    } else {
+                        attendanceActionMessage('Success', data.message || 'Saved successfully.', 'success');
+                    }
                     await refreshAttendanceEmployeeRow(userId);
                 } catch (error) {
                     attendanceActionMessage('Error', error.message || 'Unable to save. Please try again.', 'error');
@@ -3821,29 +3964,6 @@
             const attendanceChatSubtitle = document.getElementById('attendanceChatSubtitle');
             const attendanceChatStatus = document.getElementById('attendanceChatStatus');
             const attendanceChatStatusText = document.getElementById('attendanceChatStatusText');
-            const attendanceI18n = {
-                employeeChat: @json(__('index.employee_chat')),
-                employee: @json(__('index.employee')),
-                loadingConversation: @json(__('index.loading_conversation')),
-                loadingMessages: @json(__('index.loading_messages')),
-                sendingMessage: @json(__('index.sending_message')),
-                unableSendMessage: @json(__('index.unable_send_message')),
-                messageSentSuccessfully: @json(__('index.message_sent_successfully')),
-                unableSendMessageNow: @json(__('index.unable_send_message_now')),
-                selectEmployeeStartChatting: @json(__('index.select_employee_start_chatting')),
-                sendChatHint: @json(__('index.send_chat_hint')),
-                chatReadOnly: @json(__('index.chat_read_only')),
-                quickLeave: @json(__('index.quick_leave')),
-                quickTimeLeave: @json(__('index.quick_time_leave')),
-                loadingLeaveTypes: @json(__('index.loading_leave_types')),
-                noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
-                noLeaveTypesAvailableEmployee: @json(__('index.no_leave_types_available_employee')),
-                selectLeaveType: @json(__('index.select_leave_type')),
-                unableLoadLeaveTypes: @json(__('index.unable_load_leave_types')),
-                unableLoadLeaveTypesTryAgain: @json(__('index.unable_load_leave_types_try_again')),
-                createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
-                createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
-            };
             const attendanceQuickLeaveModalElement = document.getElementById('attendanceQuickLeaveModal');
             const attendanceQuickLeaveModal = attendanceQuickLeaveModalElement ? new bootstrap.Modal(attendanceQuickLeaveModalElement) : null;
             const attendanceQuickLeaveUserId = document.getElementById('attendanceQuickLeaveUserId');

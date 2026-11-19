@@ -269,6 +269,12 @@ class AttendanceController extends Controller
                         'raw_admin_remark' => strip_tags((string) $leaveRequest->admin_remark),
                         'referred_by' => $leaveRequest->referredBy?->name ?: 'N/A',
                         'can_update' => $canUpdateLeave,
+                        'is_approved' => strtolower((string) $leaveRequest->status) === 'approved',
+                        'print_url' => route('admin.employees.profile.show', [
+                            'employee' => $employee->id,
+                            'tab' => 'leave-letter',
+                            'leave_request_id' => $leaveRequest->id,
+                        ]),
                         'update_url' => route('admin.leave-request.update-status', $leaveRequest->id),
                         'approvers_url' => url('/admin/leave-request/get-approvers/' . $leaveRequest->id),
                         'leave_type_id' => $leaveRequest->leave_type_id,
@@ -288,7 +294,7 @@ class AttendanceController extends Controller
                 ->when($category === 'time_leave', fn ($query) => $query->where('status', LeaveStatusEnum::approved->value))
                 ->orderBy('issue_date')
                 ->get()
-                ->map(function ($timeLeave) use ($canUpdateTimeLeave) {
+                ->map(function ($timeLeave) use ($canUpdateTimeLeave, $employee) {
                     $requestedBy = $timeLeave->leaveRequestedBy?->name
                         ?: $timeLeave->leaveRequestedBy?->username
                         ?: 'N/A';
@@ -298,6 +304,12 @@ class AttendanceController extends Controller
                         'type' => 'time_leave',
                         'title' => __('index.time_leave_request'),
                         'status' => ucfirst((string) $timeLeave->status),
+                        'is_approved' => strtolower((string) $timeLeave->status) === 'approved',
+                        'print_url' => route('admin.employees.profile.show', [
+                            'employee' => $employee->id,
+                            'tab' => 'time-leave-letter',
+                            'time_leave_request_id' => $timeLeave->id,
+                        ]),
                         'requested_by' => $requestedBy,
                         'employee_code' => $timeLeave->leaveRequestedBy?->employee_code ?: 'N/A',
                         'branch' => $timeLeave->branch?->name ?: 'N/A',

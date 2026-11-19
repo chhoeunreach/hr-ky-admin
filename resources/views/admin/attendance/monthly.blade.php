@@ -4439,6 +4439,10 @@
 
                 renderRequestActions(actions);
 
+                const approvedLeaves = readJsonData(trigger, 'data-approved-leaves');
+                const approvedTimeLeaves = readJsonData(trigger, 'data-approved-time-leaves');
+                renderApprovedPrintActions(approvedLeaves, approvedTimeLeaves);
+
                 const quickAttendanceButton = document.getElementById('monthlyQuickAttendanceButton');
                 const quickLeaveButton = document.getElementById('monthlyQuickLeaveButton');
                 const quickApproveLateButton = document.getElementById('monthlyQuickApproveLateButton');
@@ -4542,6 +4546,80 @@
                         container.appendChild(card);
                     }
                 });
+            };
+
+            const renderApprovedPrintActions = (approvedLeaves = [], approvedTimeLeaves = []) => {
+                const container = document.getElementById('monthlyApprovedPrintSection');
+                const dropdown = document.getElementById('monthlyDetailPrintDropdown');
+                const menuList = document.getElementById('monthlyDetailPrintMenuList');
+
+                if (container) {
+                    container.innerHTML = '';
+                }
+                if (menuList) {
+                    menuList.innerHTML = '';
+                }
+
+                const allApproved = [
+                    ...(Array.isArray(approvedLeaves) ? approvedLeaves : []).map((item) => ({ ...item, isTimeLeave: false })),
+                    ...(Array.isArray(approvedTimeLeaves) ? approvedTimeLeaves : []).map((item) => ({ ...item, isTimeLeave: true })),
+                ];
+
+                if (!allApproved.length) {
+                    if (container) container.style.display = 'none';
+                    if (dropdown) dropdown.classList.add('d-none');
+                    return;
+                }
+
+                if (container) {
+                    container.style.display = '';
+                    const sectionCard = document.createElement('div');
+                    sectionCard.className = 'monthly-detail-action-card border-success-subtle bg-light';
+
+                    const title = document.createElement('strong');
+                    title.className = 'text-success d-flex align-items-center gap-1 mb-2';
+                    title.innerHTML = `<i data-feather="check-circle" style="width:14px;height:14px;"></i> ${escapeHtml(i18n.approvedRequests || 'Approved Requests')}`;
+                    sectionCard.appendChild(title);
+
+                    allApproved.forEach((item) => {
+                        const row = document.createElement('div');
+                        row.className = 'd-flex align-items-center justify-content-between p-2 mb-2 bg-white border rounded shadow-sm';
+                        row.innerHTML = `
+                            <div class="me-2 min-w-0">
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span class="badge ${item.isTimeLeave ? 'bg-info' : 'bg-primary'} badge-sm">${item.isTimeLeave ? (i18n.quickTimeLeave || 'Time Leave') : (i18n.quickLeave || 'Leave')}</span>
+                                    <strong class="text-truncate">${escapeHtml(item.label)}</strong>
+                                </div>
+                                <div class="text-muted small mt-1">${escapeHtml(item.period || '')}${item.reason ? ' &bull; ' + escapeHtml(item.reason) : ''}</div>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="${item.print_url}" target="_blank" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" title="${escapeHtml(i18n.print || 'Print Form')}">
+                                    <i data-feather="printer" style="width:14px;height:14px;"></i>
+                                    <span>${escapeHtml(i18n.print || 'Print')}</span>
+                                </a>
+                            </div>
+                        `;
+                        sectionCard.appendChild(row);
+                    });
+
+                    container.appendChild(sectionCard);
+                }
+
+                if (dropdown && menuList) {
+                    dropdown.classList.remove('d-none');
+                    allApproved.forEach((item) => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <a class="dropdown-item d-flex align-items-center gap-2" href="${item.print_url}" target="_blank">
+                                <i data-feather="printer" style="width:14px;height:14px;"></i>
+                                <span>${escapeHtml(item.label)} (${escapeHtml(item.period || '')})</span>
+                            </a>
+                        `;
+                        menuList.appendChild(li);
+                    });
+                }
+
+                safeFeatherReplace();
             };
 
             if (modal) {
@@ -5085,6 +5163,38 @@
                 }
                 chatForm?.reset();
             });
+
+            const quickLeaveForm = document.getElementById('attendanceQuickLeaveForm');
+            if (quickLeaveForm) {
+                quickLeaveForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitMonthlyActionForm(quickLeaveForm, quickLeaveModal);
+                });
+            }
+
+            const quickTimeLeaveForm = document.getElementById('attendanceQuickTimeLeaveForm');
+            if (quickTimeLeaveForm) {
+                quickTimeLeaveForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitMonthlyActionForm(quickTimeLeaveForm, quickTimeLeaveModal);
+                });
+            }
+
+            const updateLeaveStatusForm = document.getElementById('attendanceUpdateLeaveStatus');
+            if (updateLeaveStatusForm) {
+                updateLeaveStatusForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitMonthlyActionForm(updateLeaveStatusForm, statusModal);
+                });
+            }
+
+            const createAttendanceForm = document.getElementById('createAttendance');
+            if (createAttendanceForm) {
+                createAttendanceForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    submitMonthlyActionForm(createAttendanceForm, quickAttendanceModal);
+                });
+            }
         });
     </script>
 @endsection
