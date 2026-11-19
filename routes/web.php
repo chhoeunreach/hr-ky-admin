@@ -11,6 +11,7 @@ use App\Http\Controllers\Web\AttachmentController;
 use App\Http\Controllers\Web\AttendanceController;
 use App\Http\Controllers\Web\AttendanceMonthlyController;
 use App\Http\Controllers\Web\MonthlyPayrollController;
+use App\Http\Controllers\Web\PayrollQueueController;
 use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
 use App\Http\Controllers\Web\BannerSlideshowController;
@@ -140,6 +141,12 @@ Route::post('telegram/notify', [TelegramNotificationController::class, 'send'])-
 Route::get('telegram/test', function () {
     return view('telegram-test');
 })->name('telegram.test');
+
+/** Payday Queue Employee Routes */
+Route::get('payroll-queue/join/{token}', [PayrollQueueController::class, 'joinQueue'])->name('payroll-queue.join');
+Route::post('payroll-queue/join/{token}', [PayrollQueueController::class, 'submitJoinQueue'])->name('payroll-queue.submit-join');
+Route::get('payroll-queue/ticket/{ticketId}', [PayrollQueueController::class, 'myTicket'])->name('payroll-queue.my-ticket');
+Route::get('payroll-queue/ticket/{ticketId}/status', [PayrollQueueController::class, 'ticketStatus'])->name('payroll-queue.ticket-status');
 
 Route::group([
     'prefix' => 'admin',
@@ -501,6 +508,18 @@ Route::group([
         Route::post('monthly-payroll/generate', [MonthlyPayrollController::class, 'generate'])->name('monthly-payroll.generate');
         Route::get('monthly-payroll/preview/{token}', [MonthlyPayrollController::class, 'preview'])->name('monthly-payroll.preview');
         Route::post('monthly-payroll/preview/{token}/save', [MonthlyPayrollController::class, 'savePreview'])->name('monthly-payroll.preview.save');
+
+        /** Payday Queue & Waiting Management System */
+        Route::get('payroll-queue', [PayrollQueueController::class, 'index'])->name('payroll-queue.index');
+        Route::get('payroll-queue/{sessionId}/live-status', [PayrollQueueController::class, 'liveStatus'])->name('payroll-queue.live-status');
+        Route::post('payroll-queue/{sessionId}/call-next', [PayrollQueueController::class, 'callNext'])->name('payroll-queue.call-next');
+        Route::post('payroll-queue/ticket/{ticketId}/recall', [PayrollQueueController::class, 'recallTicket'])->name('payroll-queue.recall');
+        Route::post('payroll-queue/ticket/{ticketId}/skip', [PayrollQueueController::class, 'skipTicket'])->name('payroll-queue.skip');
+        Route::get('payroll-queue/ticket/{ticketId}/breakdown', [PayrollQueueController::class, 'getPayslipBreakdown'])->name('payroll-queue.breakdown');
+        Route::post('payroll-queue/ticket/{ticketId}/disburse', [PayrollQueueController::class, 'disburseSalary'])->name('payroll-queue.disburse');
+        Route::get('payroll-queue/ticket/{ticketId}/print-slip', [PayrollQueueController::class, 'printSlip'])->name('payroll-queue.print-slip');
+        Route::get('payroll-queue/{sessionId}/display', [PayrollQueueController::class, 'display'])->name('payroll-queue.display');
+        Route::get('payroll-queue/reception-monitor-16-9', [PayrollQueueController::class, 'receptionMonitor'])->name('payroll-queue.reception-monitor');
         Route::get('attendance-monthly/filter-options', [AttendanceMonthlyController::class, 'filterOptions'])->name('attendance-monthly.filter-options');
         Route::get('attendance-monthly/controls', [AttendanceSettingController::class, 'monthlyControls'])->name('attendance-monthly.controls');
         Route::put('attendance-monthly/controls', [AttendanceSettingController::class, 'updateMonthlyControls'])->name('attendance-monthly.controls.update');

@@ -2,66 +2,47 @@
 
 namespace App\Models;
 
-use App\Helpers\AppHelper;
-
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendanceLog extends Model
 {
     use HasFactory;
 
     protected $table = 'attendance_logs';
-    public $timestamps = true;
-    const RECORDS_PER_PAGE = 20;
+
     protected $fillable = [
-        'employee_id',
-        'attendance_type',
-        'identifier',
-        'action',
-        'latitude',
-        'longitude',
-        'note',
-        'source',
-        'created_by',
-        'attendance_id',
-        'created_at',
-        'updated_at'
+        'user_id',
+        'company_id',
+        'branch_id',
+        'date',
+        'check_in_at',
+        'check_out_at',
+        'method',
+        'location_token',
+        'status',
+        'notes',
     ];
 
-    public static function boot()
+    protected $casts = [
+        'date' => 'date',
+        'check_in_at' => 'datetime',
+        'check_out_at' => 'datetime',
+    ];
+
+    public function user(): BelongsTo
     {
-        parent::boot();
-
-        static::addGlobalScope('branch', function (Builder $builder) {
-            if (AppHelper::canAccessAllBranches()) {
-                return;
-            }
-
-            $user = Auth::user();
-            if (isset($user->branch_id) && (isset($user->id) && $user->id != 1)) {
-                $branchId = $user->branch_id;
-                $builder->whereHas('user', function ($query) use ($branchId) {
-                    $query->whereIn('branch_id', AppHelper::accessibleBranchIds());
-                });
-            }
-        });
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function user()
+    public function branch(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'employee_id', 'id');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
-    public function attendance()
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Attendance::class, 'attendance_id', 'id');
-    }
-
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by', 'id');
+        return $this->belongsTo(Company::class, 'company_id');
     }
 }

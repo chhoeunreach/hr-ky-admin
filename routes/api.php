@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\TrainingApiController;
 use App\Http\Controllers\Api\UserThemeController;
 use App\Http\Controllers\Api\UserProfileApiController;
 use App\Http\Controllers\Api\WarningApiController;
+use App\Http\Controllers\Api\HrQueueApiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthApiController;
 
@@ -411,4 +412,14 @@ Route::prefix('hr/certificates')
     Route::post('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'store']);
     Route::get('/employees', [\App\Http\Controllers\Api\CertificateApiController::class, 'getEmployees']);
     Route::get('/{id}', [\App\Http\Controllers\Api\CertificateApiController::class, 'show']);
+});
+
+/** HR Queue, QR Attendance & Payroll Disbursement Module */
+Route::prefix('v1/hr-queue')->group(function () {
+    Route::post('qr/generate', [HrQueueApiController::class, 'generateQrPass']);
+    Route::post('queue/scan', [HrQueueApiController::class, 'scanToQueue']);
+    Route::post('queue/call-next', [HrQueueApiController::class, 'callNext']);
+    Route::get('payroll/breakdown', [HrQueueApiController::class, 'getSalaryBreakdown']);
+    Route::post('payroll/disburse', [HrQueueApiController::class, 'disbursePayroll']);
+    Route::get('live', [HrQueueApiController::class, 'getLiveState']);
 });

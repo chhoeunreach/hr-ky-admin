@@ -9,7 +9,12 @@
     @include('admin.section.flash_message')
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 monthly-payroll-heading">
         <div><h4 class="mb-1">{{ __('index.monthly_payroll') }}</h4><p class="text-muted small mb-0">{{ __('index.monthly_payroll_source') }}</p></div>
-        @can('view_payroll_list')<a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employee-salary.payroll') }}">{{ __('index.monthly_payroll_manage') }}</a>@endcan
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary btn-sm" href="{{ route('admin.payroll-queue.index', ['month' => $filters['month'], 'branch_id' => $filters['branch_id']]) }}">
+                <i data-feather="users" class="me-1"></i>{{ __('index.payroll_queue_system') }}
+            </a>
+            @can('view_payroll_list')<a class="btn btn-outline-primary btn-sm" href="{{ route('admin.employee-salary.payroll') }}">{{ __('index.monthly_payroll_manage') }}</a>@endcan
+        </div>
     </div>
     @include('admin.payroll.monthly.period-navigation')
     @include('admin.payroll.monthly.summary')
