@@ -31,6 +31,11 @@
         }
         ?>
 
+        @php
+            $canDeleteLeaveRequest = auth('admin')->check()
+                || \Illuminate\Support\Facades\Gate::any(['delete_leave_request', 'access_admin_leave']);
+        @endphp
+
     <section class="content">
 
         @include('admin.section.flash_message')
@@ -149,6 +154,9 @@
                                 @canany(['update_leave_request','access_admin_leave'])
                                     <th class="text-center">{{ __('index.status') }}</th>
                                 @endcanany
+                                @if($canDeleteLeaveRequest)
+                                    <th class="text-center">{{ __('index.action') }}</th>
+                                @endif
                             </tr>
                             </thead>
                             <tbody>
@@ -199,6 +207,15 @@
                                                 </a>
                                             </td>
 
+                                        @if($canDeleteLeaveRequest)
+                                            <td class="text-center">
+                                                <a class="deleteLeaveRequest"
+                                                   data-href="{{ route('admin.leave-request.delete', $value->id) }}"
+                                                   title="{{ __('index.delete') }}">
+                                                    <i class="link-icon" data-feather="delete"></i>
+                                                </a>
+                                            </td>
+                                        @endif
                                     </tr>
                                 @else
                                     @php
@@ -255,6 +272,15 @@
                                                     </a>
                                                 </td>
                                             @endcanany
+                                        @if($canDeleteLeaveRequest)
+                                            <td class="text-center">
+                                                <a class="deleteLeaveRequest"
+                                                   data-href="{{ route('admin.leave-request.delete', $value->id) }}"
+                                                   title="{{ __('index.delete') }}">
+                                                    <i class="link-icon" data-feather="delete"></i>
+                                                </a>
+                                            </td>
+                                        @endif
                                         </tr>
                                     @elseif( ($value->requestApproval->where('leave_request_id', $value->id)->contains('approved_by', auth()->user()->id) || ($approver == auth()->user()->id && $value->status != 'pending')) || ($inRole && $value->status !='pending'))
                                         <tr>
@@ -309,6 +335,15 @@
                                                     @endif
                                                 </td>
                                             @endcanany
+                                        @if($canDeleteLeaveRequest)
+                                            <td class="text-center">
+                                                <a class="deleteLeaveRequest"
+                                                   data-href="{{ route('admin.leave-request.delete', $value->id) }}"
+                                                   title="{{ __('index.delete') }}">
+                                                    <i class="link-icon" data-feather="delete"></i>
+                                                </a>
+                                            </td>
+                                        @endif
                                         </tr>
                                     @else
 
@@ -374,6 +409,29 @@
                 .catch(error => console.error('Error:', error));
         });
 
+        document.addEventListener('click', function (event) {
+            const deleteLink = event.target.closest('.deleteLeaveRequest');
+
+            if (!deleteLink) {
+                return;
+            }
+
+            event.preventDefault();
+            const url = deleteLink.getAttribute('data-href');
+
+            Swal.fire({
+                title: @json(__('index.delete_leave_request_confirmation')),
+                showDenyButton: true,
+                confirmButtonText: @json(__('index.yes')),
+                denyButtonText: @json(__('index.no')),
+                padding: '10px 50px 10px 50px',
+                allowOutsideClick: false
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = url;
+                }
+            });
+        });
 
     </script>
 @endsection

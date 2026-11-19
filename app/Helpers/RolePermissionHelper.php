@@ -853,6 +853,11 @@ class RolePermissionHelper
                 "permission_groups_id" => 8
             ],
             [
+                "name" => "Delete Leave Request",
+                "permission_key" => "delete_leave_request",
+                "permission_groups_id" => 8
+            ],
+            [
                 "name" => "Quick Leave",
                 "permission_key" => "quick_leave",
                 "permission_groups_id" => 8

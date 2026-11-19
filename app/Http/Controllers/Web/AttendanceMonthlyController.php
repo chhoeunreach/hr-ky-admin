@@ -347,6 +347,7 @@ class AttendanceMonthlyController extends Controller
                 'time_leave' => 0,
                 'time_leave_request' => 0,
                 'no_checkout' => 0,
+                'early_check_out' => 0,
             ];
 
             foreach ($calendarDays as $day) {
@@ -424,6 +425,7 @@ class AttendanceMonthlyController extends Controller
                         'TL' => $signalTotals['time_leave']++,
                         'TR' => $signalTotals['time_leave_request']++,
                         'NC' => $signalTotals['no_checkout']++,
+                        'EC' => $signalTotals['early_check_out']++,
                         default => null,
                     };
                 }
@@ -611,8 +613,12 @@ class AttendanceMonthlyController extends Controller
         $approvedTimeLeave = $timeLeaves->firstWhere('status', 'approved');
         $details = $this->dayDetails($employee, $date, $attendances, $leaveRequests, $timeLeaves, $nonAttendanceReason);
         $actions = $this->dayActions($leaveRequests, $timeLeaves);
-        $canQuickLeave = empty($leaveRequests);
-        $canQuickTimeLeave = empty($leaveRequests) && $timeLeaves->isEmpty();
+        $hasLeaveRequests = !empty($leaveRequests);
+        $hasTimeLeaves = $timeLeaves->isNotEmpty();
+        $isOffDay = !empty($nonAttendanceReason);
+
+        $canQuickLeave = !$hasLeaveRequests && !$isOffDay;
+        $canQuickTimeLeave = !$hasLeaveRequests && !$hasTimeLeaves && !$isOffDay && $attendances->isNotEmpty();
 
         if ($attendances->isNotEmpty()) {
             $firstAttendance = $attendances->first();
@@ -626,19 +632,38 @@ class AttendanceMonthlyController extends Controller
                 : $indicators;
 
             if (!is_null($firstAttendance->attendance_status) && (int) $firstAttendance->attendance_status === Attendance::ATTENDANCE_REJECTED) {
-                return $this->cell('absent', 'Rejected', $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
+                return $this->cell('absent', 'Rejected', $attendanceIndicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
             }
 
             $checkIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
             $checkInLabel = $checkIn ? ' - In ' . Carbon::parse($checkIn)->format('H:i') : '';
             $timingRules = $this->attendanceTimingRules($employee, $firstAttendance);
-            if ($timingRules['late_check_in'] && $this->hasLateExcuse($leaveRequests, $timeLeaves)) {
+            $hasLeaveOrTimeLeaveExcuse = $this->hasLateExcuse($leaveRequests, $timeLeaves);
+            if ($timingRules['late_check_in'] && $hasLeaveOrTimeLeaveExcuse) {
                 $timingRules['late_check_in'] = false;
                 $details[] = __('index.monthly_attendance_late_excused');
+            }
+            if ($timingRules['early_check_out'] && $hasLeaveOrTimeLeaveExcuse) {
+                $timingRules['early_check_out'] = false;
+                $details[] = __('index.monthly_attendance_early_checkout_excused');
             }
             $timingDetails = $this->attendanceTimingRuleDetails($timingRules);
             if ($timingDetails !== []) {
                 $details = array_merge($details, $timingDetails);
+            }
+
+            $checkOut = $firstAttendance->check_out_at ?: $firstAttendance->night_checkout;
+            $checkOutTime = $checkOut ? Carbon::parse($checkOut)->format('H:i') : '';
+            $closingTime = $employee->officeTime?->closing_time
+                ? Carbon::parse($employee->officeTime->closing_time)->format('H:i')
+                : '';
+
+            if ($timingRules['early_check_out']) {
+                $attendanceIndicators[] = [
+                    'type' => 'early-checkout',
+                    'short' => 'EC',
+                    'label' => 'Early Checkout: ' . $checkOutTime . ($closingTime ? ' (Closing ' . $closingTime . ')' : ''),
+                ];
             }
 
             if ($timingRules['late_check_in']) {
@@ -657,11 +682,25 @@ class AttendanceMonthlyController extends Controller
                     'from' => $openingTime,
                     'to' => $checkInTime,
                 ];
+                if ($timingRules['early_check_out'] && $checkOutTime && $closingTime) {
+                    $cell['quick_early_exit'] = [
+                        'from' => $checkOutTime,
+                        'to' => $closingTime,
+                    ];
+                }
 
                 return $cell;
             }
 
-            return $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
+            $cell = $this->cell('present', ($openCheckout ? 'Present - no checkout' : 'Present') . $checkInLabel, $attendanceIndicators, $details, $actions, false, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
+            if ($timingRules['early_check_out'] && $checkOutTime && $closingTime) {
+                $cell['quick_early_exit'] = [
+                    'from' => $checkOutTime,
+                    'to' => $closingTime,
+                ];
+            }
+
+            return $cell;
         }
 
         if ($approvedLeave) {
@@ -675,14 +714,14 @@ class AttendanceMonthlyController extends Controller
         }
 
         if (Carbon::parse($date)->isFuture()) {
-            return $this->cell('empty', 'Upcoming', $indicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
+            return $this->cell('empty', 'Upcoming', $indicators, $details, $actions, $canQuickLeave, false, $approvedLeaves, $approvedTimeLeaves);
         }
 
         if ($nonAttendanceReason) {
-            return $this->cell('off_day', $nonAttendanceReason, $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
+            return $this->cell('off_day', $nonAttendanceReason, $indicators, $details, $actions, false, false, $approvedLeaves, $approvedTimeLeaves);
         }
 
-        return $this->cell('absent', 'Absent', $indicators, $details, $actions, $canQuickLeave, $canQuickTimeLeave, $approvedLeaves, $approvedTimeLeaves);
+        return $this->cell('absent', 'Absent', $indicators, $details, $actions, $canQuickLeave, false, $approvedLeaves, $approvedTimeLeaves);
     }
 
     private function cell(string $status, string $label, array $indicators = [], array $details = [], array $actions = [], bool $canQuickLeave = true, bool $canQuickTimeLeave = true, array $approvedLeaves = [], array $approvedTimeLeaves = []): array
@@ -861,16 +900,17 @@ class AttendanceMonthlyController extends Controller
             $checkOutAt = Carbon::parse($checkOut);
             $closingTime = Carbon::parse($shift->closing_time);
 
+            $allowed = $closingTime->copy();
             if ((int) $shift->is_early_check_out === 1 && $shift->checkout_before !== null) {
-                $allowed = $closingTime->copy()->subMinutes((int) $shift->checkout_before);
-                $rules['early_check_out'] = $checkOutAt->lt($allowed);
-                $rules['early_check_out_allowed'] = $allowed->format('H:i');
+                $allowed->subMinutes((int) $shift->checkout_before);
             }
+            $rules['early_check_out'] = $checkOutAt->lt($allowed);
+            $rules['early_check_out_allowed'] = $allowed->format('H:i');
 
             if ((int) $shift->is_late_check_out === 1 && $shift->checkout_after !== null) {
-                $allowed = $closingTime->copy()->addMinutes((int) $shift->checkout_after);
-                $rules['late_check_out'] = $checkOutAt->gt($allowed);
-                $rules['late_check_out_allowed'] = $allowed->format('H:i');
+                $allowedLate = $closingTime->copy()->addMinutes((int) $shift->checkout_after);
+                $rules['late_check_out'] = $checkOutAt->gt($allowedLate);
+                $rules['late_check_out_allowed'] = $allowedLate->format('H:i');
             }
         }
 
@@ -973,6 +1013,8 @@ class AttendanceMonthlyController extends Controller
             'not_yet_check_in_employees' => $rows->filter(fn ($row) => ($row['totals']['absent'] ?? 0) > 0)->count(),
             'not_yet_check_out' => $rows->sum(fn ($row) => $row['signal_totals']['no_checkout'] ?? 0),
             'not_yet_check_out_employees' => $rows->filter(fn ($row) => ($row['signal_totals']['no_checkout'] ?? 0) > 0)->count(),
+            'early_check_out' => $rows->sum(fn ($row) => $row['signal_totals']['early_check_out'] ?? 0),
+            'early_check_out_employees' => $rows->filter(fn ($row) => ($row['signal_totals']['early_check_out'] ?? 0) > 0)->count(),
             'leave_requests' => $rows->sum(fn ($row) => ($row['signal_totals']['pending_leave'] ?? 0) + ($row['signal_totals']['pending_day_off'] ?? 0)),
             'time_leave_requests' => $rows->sum(fn ($row) => $row['signal_totals']['time_leave_request'] ?? 0),
             'late_more_than_three' => $rows->filter(fn ($row) => ($row['totals']['late'] ?? 0) >= 3)->count(),
@@ -1104,7 +1146,7 @@ class AttendanceMonthlyController extends Controller
         foreach ($calendarDays as $day) {
             $headings[] = $day['day'] . "\n" . $day['weekday'];
         }
-        foreach (['present', 'late', 'absent', 'leave', 'off_day', 'total', 'bonus', 'pending_day_off', 'pending_leave', 'time_leave', 'time_leave_request', 'no_checkout'] as $key) {
+        foreach (['present', 'late', 'absent', 'leave', 'off_day', 'total', 'bonus', 'pending_day_off', 'pending_leave', 'time_leave', 'time_leave_request', 'no_checkout', 'early_check_out'] as $key) {
             $headings[] = __('index.' . $key);
         }
         array_splice($headings, 4 + count($calendarDays), 0, [__('index.approved_time_leave')]);
@@ -1157,10 +1199,11 @@ class AttendanceMonthlyController extends Controller
             'Time Leave',
             'Time Leave Request',
             'No Checkout',
+            'Early Check Out',
         ]);
 
         if ($includeBonus) {
-            array_splice($headings, -5, 0, ['Bonus']);
+            array_splice($headings, -6, 0, ['Bonus']);
         }
 
         $exportRows = $rows->map(function (array $row) use ($includeBonus) {
@@ -1188,10 +1231,11 @@ class AttendanceMonthlyController extends Controller
                 $row['signal_totals']['time_leave'] ?? 0,
                 $row['signal_totals']['time_leave_request'] ?? 0,
                 $row['signal_totals']['no_checkout'] ?? 0,
+                $row['signal_totals']['early_check_out'] ?? 0,
             ]);
 
             if ($includeBonus) {
-                array_splice($line, -5, 0, [$row['bonus_amount'] ?? 0]);
+                array_splice($line, -6, 0, [$row['bonus_amount'] ?? 0]);
             }
 
             return $line;

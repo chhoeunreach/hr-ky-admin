@@ -518,6 +518,7 @@ Route::group([
         Route::post('leave-request/store', [LeaveController::class, 'storeLeaveRequest'])->name('employee-leave-request.store');
         Route::get('leave-request/show/{leaveId}', [LeaveController::class, 'show'])->name('leave-request.show');
         Route::put('leave-request/status-update/{leaveRequestId}', [LeaveController::class, 'updateLeaveRequestStatus'])->name('leave-request.update-status');
+        Route::get('leave-request/delete/{leaveRequestId}', [LeaveController::class, 'delete'])->name('leave-request.delete');
         Route::get('leave-request/create', [LeaveController::class, 'createLeaveRequest'])->name('leave-request.create');
         Route::get('leave-request/add', [LeaveController::class, 'addLeaveRequest'])->name('leave-request.add');
         Route::post('leave-request/add', [LeaveController::class, 'saveLeaveRequest'])->name('leave-request.save');

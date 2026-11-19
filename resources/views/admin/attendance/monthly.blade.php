@@ -631,6 +631,7 @@
         .stat-bonus .monthly-stat-icon { color: #15803d; background: #ecfdf3; }
         .stat-not-in .monthly-stat-icon { color: #dc2626; background: #fef2f2; }
         .stat-not-out .monthly-stat-icon { color: #b45309; background: #fffbeb; }
+        .stat-early-out .monthly-stat-icon { color: #ea580c; background: #fff7ed; }
         .stat-leave-request .monthly-stat-icon { color: #7c3aed; background: #f5f3ff; }
         .stat-time-leave-request .monthly-stat-icon { color: #0891b2; background: #ecfeff; }
         .stat-late-more .monthly-stat-icon { color: #be123c; background: #fff1f2; }
@@ -1071,6 +1072,7 @@
         .indicator-time-leave-approved { background: #0891b2; }
         .indicator-time-leave-request { background: #f59e0b; }
         .indicator-open-checkout { background: #dc2626; }
+        .indicator-early-checkout { background: #ea580c; }
 
         .monthly-detail-modal-list {
             margin: 0;
@@ -2090,7 +2092,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <i data-feather="check-circle" class="text-success"></i>
                     <div>
-                        <strong>{{ __('index.saved_successfully') ?? 'Saved Successfully!' }}</strong>
+                        <strong>{{ __('index.saved_successfully') }}</strong>
                         <span class="ms-1">{{ session('success') }}</span>
                     </div>
                 </div>
@@ -2348,6 +2350,18 @@
                     </div>
                     <div class="col-xl-2 col-md-4 col-sm-6">
                         <button type="button"
+                                class="monthly-stat-card stat-early-out"
+                                data-table-filter="early_check_out">
+                            <span class="monthly-stat-icon"><i data-feather="log-out"></i></span>
+                            <div>
+                                <p class="monthly-stat-title">{{ __('index.early_check_out') }}</p>
+                                <p class="monthly-stat-value">{{ number_format($summary['early_check_out_employees'] ?? 0) }}</p>
+                                <p class="monthly-stat-subtitle">{{ __('index.employees') }}</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-xl-2 col-md-4 col-sm-6">
+                        <button type="button"
                                 class="monthly-stat-card stat-leave-request"
                                 data-table-filter="leave_requests">
                             <span class="monthly-stat-icon"><i data-feather="file-text"></i></span>
@@ -2486,6 +2500,7 @@
                         <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 10 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 11 }}" data-sort-type="number" title="Sort"><span>{{ __('index.time_leave_request') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                         <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 12 }}" data-sort-type="number" title="Sort"><span>{{ __('index.no_checkout') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
+                        <th class="monthly-signal-column"><button type="button" class="monthly-sort-header" data-sort-column="{{ $summaryColumnStart + 13 }}" data-sort-type="number" title="Sort"><span>{{ __('index.early_check_out') }}</span><span class="monthly-sort-icon">&varr;</span></button></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -2504,6 +2519,7 @@
                             data-filter-bonus="{{ $row['bonus_amount'] ?? 0 }}"
                             data-filter-not_yet_check_in="{{ $row['totals']['absent'] ?? 0 }}"
                             data-filter-not_yet_check_out="{{ $row['signal_totals']['no_checkout'] ?? 0 }}"
+                            data-filter-early_check_out="{{ $row['signal_totals']['early_check_out'] ?? 0 }}"
                             data-filter-leave_requests="{{ ($row['signal_totals']['pending_leave'] ?? 0) + ($row['signal_totals']['pending_day_off'] ?? 0) }}"
                             data-filter-time_leave_requests="{{ $row['signal_totals']['time_leave_request'] ?? 0 }}"
                             data-filter-late_more_than_three="{{ ($row['totals']['late'] ?? 0) >= 3 ? 1 : 0 }}"
@@ -2599,6 +2615,9 @@
                                             data-can-quick-approve-late="{{ $day['status'] === 'late' && !empty($day['can_quick_time_leave']) && !empty($day['quick_late']['from']) && !empty($day['quick_late']['to']) ? '1' : '0' }}"
                                             data-late-from="{{ $day['quick_late']['from'] ?? '' }}"
                                             data-late-to="{{ $day['quick_late']['to'] ?? '' }}"
+                                            data-can-quick-approve-early-exit="{{ !empty($day['can_quick_time_leave']) && !empty($day['quick_early_exit']['from']) && !empty($day['quick_early_exit']['to']) ? '1' : '0' }}"
+                                            data-early-exit-from="{{ $day['quick_early_exit']['from'] ?? '' }}"
+                                            data-early-exit-to="{{ $day['quick_early_exit']['to'] ?? '' }}"
                                             data-fetch-url="{{ route('admin.leaves.employee-data', $employee->id) }}"
                                             data-attendance-store-url="{{ route('admin.attendances.store') }}"
                                             data-detail-url="{{ $day['detail_url'] }}"
@@ -2711,10 +2730,15 @@
                                     <span class="monthly-signal-value {{ ($row['signal_totals']['no_checkout'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['no_checkout'] ?? 0 }}</span>
                                 </button>
                             </td>
+                            <td class="monthly-signal-column" data-sort-value="{{ $row['signal_totals']['early_check_out'] ?? 0 }}">
+                                <button type="button" class="monthly-signal-button" data-signal="EC" data-signal-title="{{ __('index.early_check_out') }}" @disabled(($row['signal_totals']['early_check_out'] ?? 0) <= 0)>
+                                    <span class="monthly-signal-value {{ ($row['signal_totals']['early_check_out'] ?? 0) > 0 ? 'has-value' : '' }}">{{ $row['signal_totals']['early_check_out'] ?? 0 }}</span>
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="{{ count($calendarDays) + 15 }}">
+                            <td colspan="{{ count($calendarDays) + 16 }}">
                                 <div class="monthly-empty-state">
                                     <strong>{{ __('index.no_monthly_attendance_records_found') }}</strong>
                                     <div>{{ __('index.try_changing_month_filters') }}</div>
@@ -2738,6 +2762,7 @@
                     <span><i class="monthly-cell-indicator indicator-time-leave-approved">TL</i> {{ __('index.time_leave') }}</span>
                     <span><i class="monthly-cell-indicator indicator-time-leave-request">TR</i> {{ __('index.time_leave_request') }}</span>
                     <span><i class="monthly-cell-indicator indicator-open-checkout">NC</i> {{ __('index.no_checkout') }}</span>
+                    <span><i class="monthly-cell-indicator indicator-early-checkout">EC</i> {{ __('index.early_check_out') }}</span>
                 </div>
                 <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 monthly-pagination-wrap">
                     {{ $monthlyRows->links() }}
@@ -2804,13 +2829,17 @@
                                 <i data-feather="check"></i>
                                 <span>{{ __('index.quick_approve_late') }}</span>
                             </button>
-                            <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-inline-flex align-items-center gap-1" id="monthlyQuickTimeLeaveButton">
+                            <button type="button" class="btn btn-outline-warning btn-sm quickApproveEarlyExitTrigger d-none" id="monthlyQuickApproveEarlyExitButton">
+                                <i data-feather="log-out"></i>
+                                <span>{{ __('index.quick_approve_early_exit') }}</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm quickApproveTimeLeaveTrigger d-none align-items-center gap-1" id="monthlyQuickTimeLeaveButton">
                                 <i data-feather="clock"></i>
                                 <span>{{ __('index.quick_time_leave') }}</span>
                             </button>
                         @endif
                         @if(auth('admin')->check() || auth()->user()->canany(['quick_leave', 'create_leave_request', 'leave_request_create', 'access_admin_leave']))
-                            <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-inline-flex align-items-center gap-1" id="monthlyQuickLeaveButton">
+                            <button type="button" class="btn btn-outline-primary btn-sm quickApproveLeaveTrigger d-none align-items-center gap-1" id="monthlyQuickLeaveButton">
                                 <i data-feather="calendar"></i>
                                 <span>{{ __('index.quick_leave_request') }}</span>
                             </button>
@@ -3001,7 +3030,7 @@
                         <div class="mb-3 text-success">
                             <i data-feather="check-circle" style="width:48px;height:48px;"></i>
                         </div>
-                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') ?? 'Saved Successfully' }}</h5>
+                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') }}</h5>
                         <p class="text-muted small mb-0" id="quickSavedModalMessage"></p>
                     </div>
                     <div class="modal-footer justify-content-center border-0 pt-2 gap-2">
@@ -3241,6 +3270,9 @@
                 quickApproveLate: @json(__('index.quick_approve_late')),
                 quickApproveLateReason: @json(__('index.quick_approve_late_reason')),
                 quickApproveLateReasonFallback: @json(__('index.quick_approve_late_reason_fallback')),
+                quickApproveEarlyExit: @json(__('index.quick_approve_early_exit')),
+                quickApproveEarlyExitReason: @json(__('index.quick_approve_early_exit_reason')),
+                quickApproveEarlyExitReasonFallback: @json(__('index.quick_approve_early_exit_reason_fallback')),
                 loadingLeaveTypes: @json(__('index.loading_leave_types')),
                 noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
                 selectLeaveType: @json(__('index.select_leave_type')),
@@ -3268,7 +3300,7 @@
                 monthlyBonus: 'Monthly bonus',
                 approvedRequests: @json(__('index.approved') . ' ' . __('index.leave_requests')),
                 printNow: @json(__('index.print')),
-                savedSuccessfully: @json(__('index.saved_successfully') ?? 'Saved Successfully!'),
+                savedSuccessfully: @json(__('index.saved_successfully')),
                 print: @json(__('index.print')),
                 close: @json(__('index.close')),
             };
@@ -4511,6 +4543,7 @@
                 const canQuickLeave = trigger.getAttribute('data-can-quick-leave') === '1';
                 const canQuickTimeLeave = trigger.getAttribute('data-can-quick-time-leave') === '1';
                 const canQuickApproveLate = trigger.getAttribute('data-can-quick-approve-late') === '1';
+                const canQuickApproveEarlyExit = trigger.getAttribute('data-can-quick-approve-early-exit') === '1';
                 monthlyDetailContext.userId = trigger.getAttribute('data-user-id') || '';
 
                 document.getElementById('monthlyAttendanceDetailModalLabel').textContent = `${employee} ${employeeCode}`;
@@ -4534,6 +4567,7 @@
                 const quickAttendanceButton = document.getElementById('monthlyQuickAttendanceButton');
                 const quickLeaveButton = document.getElementById('monthlyQuickLeaveButton');
                 const quickApproveLateButton = document.getElementById('monthlyQuickApproveLateButton');
+                const quickApproveEarlyExitButton = document.getElementById('monthlyQuickApproveEarlyExitButton');
                 const quickTimeLeaveButton = document.getElementById('monthlyQuickTimeLeaveButton');
                 const quickChatButton = document.getElementById('monthlyQuickChatButton');
 
@@ -4553,16 +4587,30 @@
                     quickApproveLateButton.setAttribute('data-late-to', trigger.getAttribute('data-late-to') || '');
                 }
 
+                if (quickApproveEarlyExitButton) {
+                    quickApproveEarlyExitButton.classList.toggle('d-none', !canQuickApproveEarlyExit);
+                    setQuickActionData(quickApproveEarlyExitButton, trigger);
+                    quickApproveEarlyExitButton.setAttribute('data-user-name', employee);
+                    quickApproveEarlyExitButton.setAttribute('data-early-exit-from', trigger.getAttribute('data-early-exit-from') || '');
+                    quickApproveEarlyExitButton.setAttribute('data-early-exit-to', trigger.getAttribute('data-early-exit-to') || '');
+                }
+
                 if (quickTimeLeaveButton) {
-                    setQuickActionData(quickTimeLeaveButton, trigger);
-                    quickTimeLeaveButton.setAttribute('data-user-name', employee);
-                    quickTimeLeaveButton.classList.remove('d-none');
+                    quickTimeLeaveButton.classList.toggle('d-none', !canQuickTimeLeave);
+                    quickTimeLeaveButton.classList.toggle('d-inline-flex', canQuickTimeLeave);
+                    if (canQuickTimeLeave) {
+                        setQuickActionData(quickTimeLeaveButton, trigger);
+                        quickTimeLeaveButton.setAttribute('data-user-name', employee);
+                    }
                 }
 
                 if (quickLeaveButton) {
-                    setQuickActionData(quickLeaveButton, trigger);
-                    quickLeaveButton.setAttribute('data-user-name', employee);
-                    quickLeaveButton.classList.remove('d-none');
+                    quickLeaveButton.classList.toggle('d-none', !canQuickLeave);
+                    quickLeaveButton.classList.toggle('d-inline-flex', canQuickLeave);
+                    if (canQuickLeave) {
+                        setQuickActionData(quickLeaveButton, trigger);
+                        quickLeaveButton.setAttribute('data-user-name', employee);
+                    }
                 }
 
                 if (quickChatButton) {
@@ -5040,6 +5088,36 @@
                 document.getElementById('attendanceQuickTimeLeaveTo').value = '';
                 document.getElementById('attendanceQuickTimeLeaveReason').value = '';
                 document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `${i18n.quickTimeLeave}: ${userName}`;
+                document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = i18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
+                quickTimeLeaveModal.show();
+            });
+
+            document.addEventListener('click', function (event) {
+                const element = event.target.closest('.quickApproveEarlyExitTrigger');
+                if (!element || !quickTimeLeaveModal) {
+                    return;
+                }
+
+                event.preventDefault();
+                detailModal?.hide();
+
+                const userName = element.getAttribute('data-user-name') || i18n.employee;
+                const attendanceDate = element.getAttribute('data-attendance-date');
+                const displayDate = element.getAttribute('data-display-date') || attendanceDate;
+                const earlyExitFrom = element.getAttribute('data-early-exit-from') || '';
+                const earlyExitTo = element.getAttribute('data-early-exit-to') || '';
+                const reason = earlyExitFrom && earlyExitTo
+                    ? (i18n.quickApproveEarlyExitReason || '')
+                        .replace(':from', earlyExitFrom)
+                        .replace(':to', earlyExitTo)
+                    : (i18n.quickApproveEarlyExitReasonFallback || '');
+
+                document.getElementById('attendanceQuickTimeLeaveUserId').value = element.getAttribute('data-user-id');
+                document.getElementById('attendanceQuickTimeLeaveDate').value = attendanceDate;
+                document.getElementById('attendanceQuickTimeLeaveFrom').value = earlyExitFrom;
+                document.getElementById('attendanceQuickTimeLeaveTo').value = earlyExitTo;
+                document.getElementById('attendanceQuickTimeLeaveReason').value = reason;
+                document.getElementById('attendanceQuickTimeLeaveModalLabel').textContent = `${i18n.quickApproveEarlyExit}: ${userName}`;
                 document.getElementById('attendanceQuickTimeLeaveHelpText').textContent = i18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
                 quickTimeLeaveModal.show();
             });

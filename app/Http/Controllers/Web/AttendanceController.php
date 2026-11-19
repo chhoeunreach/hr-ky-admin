@@ -548,6 +548,17 @@ class AttendanceController extends Controller
                 throw new Exception(__('message.leave_pending_error', ['status' => $existingTimeLeave->status]), 400);
             }
 
+            $existingLeave = LeaveRequestMaster::query()
+                ->where('requested_by', $employee->id)
+                ->whereDate('leave_from', '<=', $validatedData['attendance_date'])
+                ->whereDate('leave_to', '>=', $validatedData['attendance_date'])
+                ->whereIn('status', [LeaveRequestMaster::STATUS[0], LeaveRequestMaster::STATUS[1]])
+                ->first();
+
+            if ($existingLeave) {
+                throw new Exception('Cannot request time leave. Employee already has a leave request or day off on this date.', 400);
+            }
+
             $timeLeaveData = [
                 'branch_id' => $employee->branch_id,
                 'department_id' => $employee->department_id,

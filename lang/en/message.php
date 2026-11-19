@@ -130,6 +130,7 @@ return [
 
     /** Leave */
     'leave_status_updated' => 'Status Updated Successfully',
+    'leave_request_deleted' => 'Leave Request Deleted Successfully',
     'leave_submitted' => 'Leave request submitted Successfully',
     'leave_notification_title' => 'Leave Request Notification',
     'leave_notification_message' => ':name has requested :days day(s) leave from :from_date on :request_date. Reason: :reason',

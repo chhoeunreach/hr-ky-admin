@@ -234,6 +234,11 @@ class LeaveRepository
         return $leaveRequestDetail->update($validatedData);
     }
 
+    public function delete($leaveRequestDetail)
+    {
+        return $leaveRequestDetail->delete();
+    }
+
     public function findLeaveRequestCountByLeaveTypeId($leaveTypeId)
     {
         return LeaveRequestMaster::select('id')->where('leave_type_id', $leaveTypeId)->count();

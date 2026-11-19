@@ -322,6 +322,11 @@ class LeaveService
 
     }
 
+    public function deleteLeaveRequest($leaveRequestDetail)
+    {
+        return $this->leaveRepo->delete($leaveRequestDetail);
+    }
+
     /**
      * @return array|void
      * @throws Exception

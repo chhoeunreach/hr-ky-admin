@@ -290,6 +290,52 @@ class LeaveController extends Controller
     }
 
 
+    public function delete(Request $request, $leaveRequestId)
+    {
+        if (auth('admin')->user() || Gate::allows('delete_leave_request') || Gate::allows('access_admin_leave')) {
+            try {
+                DB::beginTransaction();
+
+                $leaveRequest = $this->leaveService->findEmployeeLeaveRequestById($leaveRequestId);
+
+                if (!$leaveRequest) {
+                    throw new Exception(__('message.leave_request_not_found'), 404);
+                }
+
+                $leaveRequest->requestApproval()->delete();
+                $this->leaveService->deleteLeaveRequest($leaveRequest);
+
+                DB::commit();
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => __('message.leave_request_deleted'),
+                    ]);
+                }
+
+                return redirect()
+                    ->back()
+                    ->with('success', __('message.leave_request_deleted'));
+            } catch (Exception $exception) {
+                if (DB::transactionLevel() > 0) {
+                    DB::rollBack();
+                }
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $exception->getMessage(),
+                    ], 422);
+                }
+
+                return redirect()->back()->with('danger', $exception->getMessage());
+            }
+        }
+
+        abort(403);
+    }
+
     public function createLeaveRequest()
     {
 

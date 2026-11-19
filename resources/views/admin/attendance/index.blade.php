@@ -1383,7 +1383,7 @@
                 <div class="d-flex align-items-center gap-2">
                     <i data-feather="check-circle" class="text-success"></i>
                     <div>
-                        <strong>{{ __('index.saved_successfully') ?? 'Saved Successfully!' }}</strong>
+                        <strong>{{ __('index.saved_successfully') }}</strong>
                         <span class="ms-1">{{ session('success') }}</span>
                     </div>
                 </div>
@@ -2068,15 +2068,31 @@
                                             </div>
                                             @endif
                                         <div class="d-inline-flex flex-column align-items-center gap-2 attendance-status-actions">
-                                            @if(!$firstAttendance->leave_request_id && !$firstAttendance->time_leave_id)
+                                            @if(!$rowHasAnyRequest && !$rowIsDayOff && !$rowIsLeave)
                                                 @can('create_time_leave_request')
+                                                    @php
+                                                        $dailyCheckIn = $firstAttendance->check_in_at ?: $firstAttendance->night_checkin;
+                                                        $dailyCheckOut = $firstAttendance->check_out_at ?: $firstAttendance->night_checkout;
+                                                        $dailyOpening = $firstAttendance->attendance_office_opening_time ?: $firstAttendance->office_opening_time;
+                                                        $dailyClosing = $firstAttendance->attendance_office_closing_time ?: $firstAttendance->office_closing_time;
+                                                        $isEarly = !empty($firstAttendanceBadgeMeta['early']);
+                                                        $isLate = !empty($firstAttendanceBadgeMeta['late']);
+                                                        $timeLeaveBtnLabel = $isEarly ? __('index.quick_approve_early_exit') : ($isLate ? __('index.quick_approve_late') : __('index.quick_time_leave'));
+                                                        $timeLeaveBtnClass = ($isEarly || $isLate) ? 'btn-outline-warning' : 'btn-outline-info';
+                                                    @endphp
                                                     <a href="#"
-                                                       class="btn btn-outline-info btn-xs quickApproveTimeLeaveTrigger"
+                                                       class="btn {{ $timeLeaveBtnClass }} btn-xs quickApproveTimeLeaveTrigger"
                                                        data-user-id="{{ $firstAttendance->user_id }}"
                                                        data-user-name="{{ ucfirst($firstAttendance->user_name) }}"
                                                        data-attendance-date="{{ $selectedAttendanceDate }}"
-                                                       data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}">
-                                                        {{ __('index.quick_time_leave') }}
+                                                       data-display-date="{{ \App\Helpers\AttendanceHelper::formattedAttendanceDate($isBsEnabled, $selectedAttendanceDate) }}"
+                                                       data-is-early="{{ $isEarly ? '1' : '0' }}"
+                                                       data-early-from="{{ $dailyCheckOut ? \Carbon\Carbon::parse($dailyCheckOut)->format('H:i') : '' }}"
+                                                       data-early-to="{{ $dailyClosing ? \Carbon\Carbon::parse($dailyClosing)->format('H:i') : '' }}"
+                                                       data-is-late="{{ $isLate ? '1' : '0' }}"
+                                                       data-late-from="{{ $dailyOpening ? \Carbon\Carbon::parse($dailyOpening)->format('H:i') : '' }}"
+                                                       data-late-to="{{ $dailyCheckIn ? \Carbon\Carbon::parse($dailyCheckIn)->format('H:i') : '' }}">
+                                                        {{ $timeLeaveBtnLabel }}
                                                     </a>
                                                 @endcan
                                             @endif
@@ -2753,7 +2769,7 @@
                         <div class="mb-3 text-success">
                             <i data-feather="check-circle" style="width:48px;height:48px;"></i>
                         </div>
-                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') ?? 'Saved Successfully' }}</h5>
+                        <h5 class="modal-title mb-2" id="attendanceQuickSavedModalLabel">{{ __('index.saved_successfully') }}</h5>
                         <p class="text-muted small mb-0" id="quickSavedModalMessage"></p>
                     </div>
                     <div class="modal-footer justify-content-center border-0 pt-2 gap-2">
@@ -3680,6 +3696,12 @@
                 chatReadOnly: @json(__('index.chat_read_only')),
                 quickLeave: @json(__('index.quick_leave')),
                 quickTimeLeave: @json(__('index.quick_time_leave')),
+                quickApproveLate: @json(__('index.quick_approve_late')),
+                quickApproveLateReason: @json(__('index.quick_approve_late_reason')),
+                quickApproveLateReasonFallback: @json(__('index.quick_approve_late_reason_fallback')),
+                quickApproveEarlyExit: @json(__('index.quick_approve_early_exit')),
+                quickApproveEarlyExitReason: @json(__('index.quick_approve_early_exit_reason')),
+                quickApproveEarlyExitReasonFallback: @json(__('index.quick_approve_early_exit_reason_fallback')),
                 loadingLeaveTypes: @json(__('index.loading_leave_types')),
                 noLeaveTypesAvailable: @json(__('index.no_leave_types_available')),
                 noLeaveTypesAvailableEmployee: @json(__('index.no_leave_types_available_employee')),
@@ -3688,7 +3710,7 @@
                 unableLoadLeaveTypesTryAgain: @json(__('index.unable_load_leave_types_try_again')),
                 createApprovedLeaveForDate: @json(__('index.create_approved_leave_for_date')),
                 createApprovedTimeLeaveForDate: @json(__('index.create_approved_time_leave_for_date')),
-                savedSuccessfully: @json(__('index.saved_successfully') ?? 'Saved Successfully'),
+                savedSuccessfully: @json(__('index.saved_successfully')),
                 printNow: @json(__('index.print') ?? 'Print Form'),
                 close: @json(__('index.close') ?? 'Close'),
             };
@@ -4155,26 +4177,52 @@
                     return;
                 }
 
-                    event.preventDefault();
+                event.preventDefault();
 
-                    if (!attendanceQuickTimeLeaveModal) {
-                        return;
-                    }
+                if (!attendanceQuickTimeLeaveModal) {
+                    return;
+                }
 
-                    const userId = element.getAttribute('data-user-id');
-                    const userName = element.getAttribute('data-user-name');
-                    const attendanceDate = element.getAttribute('data-attendance-date');
-                    const displayDate = element.getAttribute('data-display-date');
+                const userId = element.getAttribute('data-user-id');
+                const userName = element.getAttribute('data-user-name');
+                const attendanceDate = element.getAttribute('data-attendance-date');
+                const displayDate = element.getAttribute('data-display-date');
+                const isEarly = element.getAttribute('data-is-early') === '1';
+                const isLate = element.getAttribute('data-is-late') === '1';
+                const earlyFrom = element.getAttribute('data-early-from') || '';
+                const earlyTo = element.getAttribute('data-early-to') || '';
+                const lateFrom = element.getAttribute('data-late-from') || '';
+                const lateTo = element.getAttribute('data-late-to') || '';
 
-                    attendanceQuickTimeLeaveUserId.value = userId;
-                    attendanceQuickTimeLeaveDate.value = attendanceDate;
+                attendanceQuickTimeLeaveUserId.value = userId;
+                attendanceQuickTimeLeaveDate.value = attendanceDate;
+
+                if (isEarly && earlyFrom && earlyTo) {
+                    attendanceQuickTimeLeaveFrom.value = earlyFrom;
+                    attendanceQuickTimeLeaveTo.value = earlyTo;
+                    const reasonTemplate = attendanceI18n.quickApproveEarlyExitReason || attendanceI18n.quickApproveEarlyExitReasonFallback || 'Early checkout from :from to :to';
+                    attendanceQuickTimeLeaveReason.value = reasonTemplate
+                        .replace(':from', earlyFrom)
+                        .replace(':to', earlyTo);
+                    attendanceQuickTimeLeaveLabel.textContent = `${attendanceI18n.quickApproveEarlyExit || attendanceI18n.quickTimeLeave}: ${userName}`;
+                } else if (isLate && lateFrom && lateTo) {
+                    attendanceQuickTimeLeaveFrom.value = lateFrom;
+                    attendanceQuickTimeLeaveTo.value = lateTo;
+                    const reasonTemplate = attendanceI18n.quickApproveLateReason || attendanceI18n.quickApproveLateReasonFallback || 'Late arrival from :from to :to';
+                    attendanceQuickTimeLeaveReason.value = reasonTemplate
+                        .replace(':from', lateFrom)
+                        .replace(':to', lateTo);
+                    attendanceQuickTimeLeaveLabel.textContent = `${attendanceI18n.quickApproveLate || attendanceI18n.quickTimeLeave}: ${userName}`;
+                } else {
                     attendanceQuickTimeLeaveFrom.value = '';
                     attendanceQuickTimeLeaveTo.value = '';
                     attendanceQuickTimeLeaveReason.value = '';
                     attendanceQuickTimeLeaveLabel.textContent = `${attendanceI18n.quickTimeLeave}: ${userName}`;
-                    attendanceQuickTimeLeaveHelpText.textContent = attendanceI18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
+                }
 
-                    attendanceQuickTimeLeaveModal.show();
+                attendanceQuickTimeLeaveHelpText.textContent = attendanceI18n.createApprovedTimeLeaveForDate.replace(':date', displayDate);
+
+                attendanceQuickTimeLeaveModal.show();
             });
 
             const attendanceChatScrollToBottom = () => {
