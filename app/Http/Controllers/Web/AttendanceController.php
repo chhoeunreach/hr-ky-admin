@@ -425,6 +425,17 @@ class AttendanceController extends Controller
                 throw new Exception('Attendance already exists for this day.');
             }
 
+            $leaveExists = LeaveRequestMaster::query()
+                ->where('requested_by', $employee->id)
+                ->whereDate('leave_from', '<=', $validatedData['attendance_date'])
+                ->whereDate('leave_to', '>=', $validatedData['attendance_date'])
+                ->whereIn('status', [LeaveRequestMaster::STATUS[0], LeaveRequestMaster::STATUS[1]])
+                ->exists();
+
+            if ($leaveExists) {
+                throw new Exception('Leave request already exists for this date.');
+            }
+
             $leaveType = $this->leaveTypeRepo->findLeaveTypeDetailById($validatedData['leave_type_id'], ['id', 'name']);
             $requestedDate = $validatedData['attendance_date'];
 
@@ -451,12 +462,15 @@ class AttendanceController extends Controller
                 'employee' => $employee->id,
                 'tab' => 'leave-letter',
                 'leave_request_id' => $leaveRequestId,
+                'lang' => 'km',
             ]) : null;
             $autoPrintUrl = $leaveRequestId ? route('admin.employees.profile.show', [
                 'employee' => $employee->id,
                 'tab' => 'leave-letter',
                 'leave_request_id' => $leaveRequestId,
                 'auto_print' => 1,
+                'lang' => 'km',
+                'embedded' => 1,
             ]) : null;
 
             $message = 'Approved leave added from attendance list successfully.';
@@ -558,12 +572,15 @@ class AttendanceController extends Controller
                 'employee' => $employee->id,
                 'tab' => 'time-leave-letter',
                 'time_leave_request_id' => $timeLeaveId,
+                'lang' => 'km',
             ]) : null;
             $autoPrintUrl = $timeLeaveId ? route('admin.employees.profile.show', [
                 'employee' => $employee->id,
                 'tab' => 'time-leave-letter',
                 'time_leave_request_id' => $timeLeaveId,
                 'auto_print' => 1,
+                'lang' => 'km',
+                'embedded' => 1,
             ]) : null;
 
             $message = 'Approved time leave added from attendance list successfully.';

@@ -568,12 +568,15 @@ class AttendanceMonthlyController extends Controller
                     'employee' => $employee->id,
                     'tab' => 'leave-letter',
                     'leave_request_id' => $leave['id'],
+                    'lang' => 'km',
                 ]),
                 'auto_print_url' => route('admin.employees.profile.show', [
                     'employee' => $employee->id,
                     'tab' => 'leave-letter',
                     'leave_request_id' => $leave['id'],
                     'auto_print' => 1,
+                    'lang' => 'km',
+                    'embedded' => 1,
                 ]),
             ])
             ->all();
@@ -591,12 +594,15 @@ class AttendanceMonthlyController extends Controller
                     'employee' => $employee->id,
                     'tab' => 'time-leave-letter',
                     'time_leave_request_id' => $timeLeave->id,
+                    'lang' => 'km',
                 ]),
                 'auto_print_url' => route('admin.employees.profile.show', [
                     'employee' => $employee->id,
                     'tab' => 'time-leave-letter',
                     'time_leave_request_id' => $timeLeave->id,
                     'auto_print' => 1,
+                    'lang' => 'km',
+                    'embedded' => 1,
                 ]),
             ])
             ->all();

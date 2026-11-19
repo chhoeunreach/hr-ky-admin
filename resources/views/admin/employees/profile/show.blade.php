@@ -1,16 +1,17 @@
 @extends('layouts.master')
 
-@if(request('request_modal') === '1' && request('tab') === 'leave-letter')
+@if((request('request_modal') === '1' || request('embedded') === '1' || request('auto_print') === '1') && in_array(request('tab'), ['leave-letter', 'time-leave-letter']))
     @section('embedded', '1')
     @section('styles')
         <style>
             .page-wrapper { margin-left: 0 !important; width: 100% !important; }
-            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .page-content { padding: 0.5rem !important; margin-top: 0 !important; }
             .employee-360 > :not(style):not(link):not(.card),
             .employee-360 > .card > .card-header { display: none !important; }
             .employee-request-header-actions > .btn-outline-secondary { display: none !important; }
-            .employee-360 > .card { margin-bottom: 0; }
+            .employee-360 > .card { margin-bottom: 0; border: none !important; box-shadow: none !important; }
             .employee-360 > .card > .card-body { padding: 0; }
+            .employee-complete-toolbar { display: none !important; }
         </style>
     @endsection
 @endif

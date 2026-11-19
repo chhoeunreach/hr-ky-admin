@@ -18,11 +18,21 @@ class LanguageManager
     public function handle(Request $request, Closure $next)
     {
         $supportedLocales = array_keys(config('app.supported_locales', []));
-        $locale = session('locale', config('app.locale'));
+        $requestedLocale = $request->query('lang', $request->query('locale'));
 
-        if (in_array($locale, $supportedLocales, true)) {
-            App::setLocale($locale);
-            session(['locale' => $locale]);
+        if ($requestedLocale && in_array($requestedLocale, $supportedLocales, true)) {
+            App::setLocale($requestedLocale);
+            if (!$request->ajax() && !$request->has('auto_print')) {
+                session(['locale' => $requestedLocale]);
+            }
+        } else {
+            $locale = session('locale', config('app.locale', 'km'));
+            if (in_array($locale, $supportedLocales, true)) {
+                App::setLocale($locale);
+                session(['locale' => $locale]);
+            } else {
+                App::setLocale(config('app.locale', 'km'));
+            }
         }
 
         return $next($request);

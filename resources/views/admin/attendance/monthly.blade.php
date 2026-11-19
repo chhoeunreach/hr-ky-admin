@@ -3005,10 +3005,10 @@
                         <p class="text-muted small mb-0" id="quickSavedModalMessage"></p>
                     </div>
                     <div class="modal-footer justify-content-center border-0 pt-2 gap-2">
-                        <a href="#" id="quickSavedPrintBtn" target="_blank" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
+                        <button type="button" id="quickSavedPrintBtn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1 shadow-sm">
                             <i data-feather="printer"></i>
                             <span>{{ __('index.print') ?? 'Print Form' }}</span>
-                        </a>
+                        </button>
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{{ __('index.close') }}</button>
                     </div>
                 </div>
@@ -3799,12 +3799,83 @@
                 });
             };
 
-            const promptPrintAfterSave = (data) => {
-                if (!data?.print_url) {
+            let currentQuickPrintUrl = '';
+
+            const directPrintUrl = (url, triggerBtn = null) => {
+                if (!url) {
                     return;
                 }
 
-                const printUrl = data.print_url;
+                let originalHtml = '';
+                if (triggerBtn) {
+                    originalHtml = triggerBtn.innerHTML;
+                    triggerBtn.disabled = true;
+                    triggerBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> <span>' + (i18n.loading || 'Loading...') + '</span>';
+                }
+
+                try {
+                    const urlObj = new URL(url, window.location.origin);
+                    if (!urlObj.searchParams.has('lang') && !urlObj.searchParams.has('locale')) {
+                        urlObj.searchParams.set('lang', 'km');
+                    }
+                    urlObj.searchParams.set('auto_print', '1');
+                    urlObj.searchParams.set('embedded', '1');
+
+                    let iframe = document.getElementById('quickPrintSilentIframe');
+                    if (!iframe) {
+                        iframe = document.createElement('iframe');
+                        iframe.id = 'quickPrintSilentIframe';
+                        iframe.style.position = 'fixed';
+                        iframe.style.right = '0';
+                        iframe.style.bottom = '0';
+                        iframe.style.width = '0';
+                        iframe.style.height = '0';
+                        iframe.style.border = '0';
+                        iframe.style.visibility = 'hidden';
+                        iframe.setAttribute('aria-hidden', 'true');
+                        document.body.appendChild(iframe);
+                    }
+
+                    const restoreBtn = () => {
+                        if (triggerBtn) {
+                            triggerBtn.disabled = false;
+                            triggerBtn.innerHTML = originalHtml;
+                            safeFeatherReplace();
+                        }
+                    };
+
+                    iframe.onload = function () {
+                        setTimeout(() => {
+                            restoreBtn();
+                            try {
+                                if (iframe.contentWindow) {
+                                    iframe.contentWindow.focus();
+                                }
+                            } catch (e) {
+                                console.warn('Iframe print access:', e);
+                            }
+                        }, 1200);
+                    };
+
+                    iframe.src = urlObj.toString();
+                    setTimeout(restoreBtn, 4500);
+                } catch (e) {
+                    console.error('Error preparing direct print:', e);
+                    if (triggerBtn) {
+                        triggerBtn.disabled = false;
+                        triggerBtn.innerHTML = originalHtml;
+                        safeFeatherReplace();
+                    }
+                }
+            };
+
+            const promptPrintAfterSave = (data) => {
+                const printUrl = data?.auto_print_url || data?.print_url;
+                if (!printUrl) {
+                    return;
+                }
+
+                currentQuickPrintUrl = printUrl;
                 const message = data.message || (i18n.savedSuccessfully || 'Saved successfully.');
 
                 const savedModalEl = document.getElementById('attendanceQuickSavedModal');
@@ -3816,7 +3887,7 @@
                     }
                     const printBtn = document.getElementById('quickSavedPrintBtn');
                     if (printBtn) {
-                        printBtn.href = printUrl;
+                        printBtn.setAttribute('data-print-url', printUrl);
                     }
                     savedModal.show();
                     safeFeatherReplace();
@@ -3831,15 +3902,31 @@
                         confirmButtonColor: '#0d6efd',
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.open(printUrl, '_blank');
+                            directPrintUrl(printUrl);
                         }
                     });
                 } else if (confirm(message + '\n\nDo you want to print the form now?')) {
-                    window.open(printUrl, '_blank');
+                    directPrintUrl(printUrl);
                 }
             };
 
+            document.addEventListener('click', function (event) {
+                const printBtn = event.target.closest('#quickSavedPrintBtn, .quick-direct-print-btn');
+                if (printBtn) {
+                    event.preventDefault();
+                    const url = printBtn.getAttribute('data-print-url') || printBtn.getAttribute('href') || currentQuickPrintUrl;
+                    if (url && url !== '#') {
+                        directPrintUrl(url, printBtn);
+                    }
+                }
+            });
+
             const submitMonthlyActionForm = async (form, modalInstance = null) => {
+                if (!form || form.dataset.submitting === '1') {
+                    return;
+                }
+                form.dataset.submitting = '1';
+
                 const submitButton = form.querySelector('[type="submit"]');
                 const originalHtml = submitButton?.innerHTML;
                 const userId = monthlyActionUserId(form);
@@ -3876,6 +3963,7 @@
                 } catch (error) {
                     monthlyActionMessage('Error', error.message || 'Unable to save. Please try again.', 'error');
                 } finally {
+                    form.dataset.submitting = '0';
                     if (submitButton) {
                         submitButton.disabled = false;
                         submitButton.innerHTML = originalHtml;
@@ -4595,10 +4683,10 @@
                                 <div class="text-muted small mt-1">${escapeHtml(item.period || '')}${item.reason ? ' &bull; ' + escapeHtml(item.reason) : ''}</div>
                             </div>
                             <div class="flex-shrink-0">
-                                <a href="${item.print_url}" target="_blank" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1" title="${escapeHtml(i18n.print || 'Print Form')}">
+                                <button type="button" data-print-url="${item.auto_print_url || item.print_url}" class="btn btn-outline-primary btn-sm d-inline-flex align-items-center gap-1 quick-direct-print-btn" title="${escapeHtml(i18n.print || 'Print Form')}">
                                     <i data-feather="printer" style="width:14px;height:14px;"></i>
                                     <span>${escapeHtml(i18n.print || 'Print')}</span>
-                                </a>
+                                </button>
                             </div>
                         `;
                         sectionCard.appendChild(row);
@@ -4612,7 +4700,7 @@
                     allApproved.forEach((item) => {
                         const li = document.createElement('li');
                         li.innerHTML = `
-                            <a class="dropdown-item d-flex align-items-center gap-2" href="${item.print_url}" target="_blank">
+                            <a class="dropdown-item d-flex align-items-center gap-2 quick-direct-print-btn" href="#" data-print-url="${item.auto_print_url || item.print_url}">
                                 <i data-feather="printer" style="width:14px;height:14px;"></i>
                                 <span>${escapeHtml(item.label)} (${escapeHtml(item.period || '')})</span>
                             </a>
@@ -5169,38 +5257,6 @@
                 }
                 chatForm?.reset();
             });
-
-            const quickLeaveForm = document.getElementById('attendanceQuickLeaveForm');
-            if (quickLeaveForm) {
-                quickLeaveForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    submitMonthlyActionForm(quickLeaveForm, quickLeaveModal);
-                });
-            }
-
-            const quickTimeLeaveForm = document.getElementById('attendanceQuickTimeLeaveForm');
-            if (quickTimeLeaveForm) {
-                quickTimeLeaveForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    submitMonthlyActionForm(quickTimeLeaveForm, quickTimeLeaveModal);
-                });
-            }
-
-            const updateLeaveStatusForm = document.getElementById('attendanceUpdateLeaveStatus');
-            if (updateLeaveStatusForm) {
-                updateLeaveStatusForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    submitMonthlyActionForm(updateLeaveStatusForm, statusModal);
-                });
-            }
-
-            const createAttendanceForm = document.getElementById('createAttendance');
-            if (createAttendanceForm) {
-                createAttendanceForm.addEventListener('submit', function (event) {
-                    event.preventDefault();
-                    submitMonthlyActionForm(createAttendanceForm, quickAttendanceModal);
-                });
-            }
         });
     </script>
 @endsection
