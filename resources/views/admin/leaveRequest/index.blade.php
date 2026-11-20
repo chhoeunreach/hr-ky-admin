@@ -154,6 +154,7 @@
                                 @canany(['update_leave_request','access_admin_leave'])
                                     <th class="text-center">{{ __('index.status') }}</th>
                                 @endcanany
+                                <th class="text-center">{{ __('index.print') ?? 'Print' }}</th>
                                 @if($canDeleteLeaveRequest)
                                     <th class="text-center">{{ __('index.action') }}</th>
                                 @endif
@@ -174,7 +175,7 @@
 
                                 @if(auth('admin')->user())
                                     <tr>
-                                        <td class="text-center">{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
+                                        <td class="text-center">{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }}</td>
                                         <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                         <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                         <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
@@ -207,6 +208,12 @@
                                                 </a>
                                             </td>
 
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-primary btn-xs quick-print-leave" data-print-url="{{ route('admin.leave-request.print', $value->id) }}" title="{{ __('index.print') ?? 'Print Form' }}">
+                                                    <i class="link-icon" data-feather="printer"></i> {{ __('index.print') ?? 'Print' }}
+                                                </button>
+                                            </td>
+
                                         @if($canDeleteLeaveRequest)
                                             <td class="text-center">
                                                 <a class="deleteLeaveRequest"
@@ -234,7 +241,7 @@
                                     @endphp
                                     @if(($approver == auth()->user()->id && $value->status =='pending')  || ($inRole && $value->status =='pending'))
                                         <tr>
-                                            <td>{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
+                                            <td class="text-center">{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }}</td>
                                             <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
@@ -272,6 +279,13 @@
                                                     </a>
                                                 </td>
                                             @endcanany
+
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-primary btn-xs quick-print-leave" data-print-url="{{ route('admin.leave-request.print', $value->id) }}" title="{{ __('index.print') ?? 'Print Form' }}">
+                                                    <i class="link-icon" data-feather="printer"></i> {{ __('index.print') ?? 'Print' }}
+                                                </button>
+                                            </td>
+
                                         @if($canDeleteLeaveRequest)
                                             <td class="text-center">
                                                 <a class="deleteLeaveRequest"
@@ -284,7 +298,7 @@
                                         </tr>
                                     @elseif( ($value->requestApproval->where('leave_request_id', $value->id)->contains('approved_by', auth()->user()->id) || ($approver == auth()->user()->id && $value->status != 'pending')) || ($inRole && $value->status !='pending'))
                                         <tr>
-                                            <td>{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }} @include('admin.employees.profile.partials.request-print-link', ['requestRecord' => $value, 'printPermission' => 'employee.leave_form.print', 'printTab' => 'leave-letter', 'printRequestField' => 'leave_request_id'])</td>
+                                            <td class="text-center">{{ ($leaveDetails->firstItem() ?? 0) + $loop->index }}</td>
                                             <td>{{ $value->leaveType ? ucfirst($value->leaveType->name) : ''}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_from)}}</td>
                                             <td>{{\App\Helpers\AppHelper::convertLeaveDateFormat($value->leave_to)}}</td>
@@ -335,6 +349,13 @@
                                                     @endif
                                                 </td>
                                             @endcanany
+
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-outline-primary btn-xs quick-print-leave" data-print-url="{{ route('admin.leave-request.print', $value->id) }}" title="{{ __('index.print') ?? 'Print Form' }}">
+                                                    <i class="link-icon" data-feather="printer"></i> {{ __('index.print') ?? 'Print' }}
+                                                </button>
+                                            </td>
+
                                         @if($canDeleteLeaveRequest)
                                             <td class="text-center">
                                                 <a class="deleteLeaveRequest"
@@ -399,6 +420,10 @@
                         document.getElementById('adminRemark').innerText = leaveRequest.admin_remark || 'N/A';
 
                         const modalElement = document.getElementById('addslider');
+                        const printBtn = document.getElementById('btnModalPrintLeave');
+                        if (printBtn) {
+                            printBtn.setAttribute('data-print-url', `{{ url('admin/leave-request') }}/${leaveRequest.id}/print`);
+                        }
 
                         if (modalElement) {
                             const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
@@ -407,6 +432,43 @@
                     }
                 })
                 .catch(error => console.error('Error:', error));
+        });
+
+        function directPrintUrl(url) {
+            if (!url) return;
+            try {
+                const urlObj = new URL(url, window.location.origin);
+                urlObj.searchParams.set('auto_print', '1');
+                const finalUrl = urlObj.toString();
+
+                let iframe = document.getElementById('leave-print-iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'leave-print-iframe';
+                    iframe.style.position = 'fixed';
+                    iframe.style.right = '0';
+                    iframe.style.bottom = '0';
+                    iframe.style.width = '0';
+                    iframe.style.height = '0';
+                    iframe.style.border = '0';
+                    document.body.appendChild(iframe);
+                }
+                iframe.src = finalUrl;
+            } catch (e) {
+                window.open(url, '_blank');
+            }
+        }
+        window.directPrintUrl = directPrintUrl;
+
+        document.addEventListener('click', function (event) {
+            const printBtn = event.target.closest('.quick-print-leave');
+            if (printBtn) {
+                event.preventDefault();
+                const printUrl = printBtn.getAttribute('data-print-url');
+                if (printUrl) {
+                    directPrintUrl(printUrl);
+                }
+            }
         });
 
         document.addEventListener('click', function (event) {

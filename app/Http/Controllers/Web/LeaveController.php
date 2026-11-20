@@ -6,6 +6,7 @@ use App\Exports\LeaveRequestListExport;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Company;
 use App\Models\LeaveRequestMaster;
 
 use App\Repositories\CompanyRepository;
@@ -212,6 +213,33 @@ class LeaveController extends Controller
         }
     }
 
+    public function print($leaveId, Request $request)
+    {
+        if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave') || Gate::allows('employee.leave_form.print') || Gate::allows('employee.leave_form.view') || auth()->check()) {
+            $leave = LeaveRequestMaster::withoutGlobalScope('branch')
+                ->with([
+                    'leaveType',
+                    'leaveRequestedBy.branch.company',
+                    'leaveRequestedBy.department',
+                    'leaveRequestedBy.post',
+                    'leaveRequestedBy.supervisor',
+                    'leaveRequestUpdatedBy',
+                    'branch.company',
+                    'department',
+                    'requestApproval.approvedBy',
+                ])
+                ->findOrFail($leaveId);
+
+            $employee = $leave->leaveRequestedBy;
+            $company = $leave->branch?->company ?? $employee?->branch?->company ?? Company::first();
+            $branch = $leave->branch ?? $employee?->branch;
+
+            return view('admin.leaveRequest.print', compact('leave', 'employee', 'company', 'branch'));
+        }
+
+        abort(403);
+    }
+
     public function updateLeaveRequestStatus(Request $request, $leaveRequestId)
     {
         if (auth('admin')->user() || Gate::allows('update_leave_request') || Gate::allows('access_admin_leave')) {
@@ -228,17 +256,8 @@ class LeaveController extends Controller
                 DB::commit();
 
                 $employeeId = $leaveRequestDetail?->requested_by ?? null;
-                $printUrl = ($validatedData['status'] === 'approved' && $employeeId) ? route('admin.employees.profile.show', [
-                    'employee' => $employeeId,
-                    'tab' => 'leave-letter',
-                    'leave_request_id' => $leaveRequestId,
-                ]) : null;
-                $autoPrintUrl = ($validatedData['status'] === 'approved' && $employeeId) ? route('admin.employees.profile.show', [
-                    'employee' => $employeeId,
-                    'tab' => 'leave-letter',
-                    'leave_request_id' => $leaveRequestId,
-                    'auto_print' => 1,
-                ]) : null;
+                $printUrl = ($validatedData['status'] === 'approved') ? route('admin.leave-request.print', $leaveRequestId) : null;
+                $autoPrintUrl = ($validatedData['status'] === 'approved') ? route('admin.leave-request.print', ['leaveId' => $leaveRequestId, 'auto_print' => 1]) : null;
 
                 if ($validatedData['status'] === 'approved' && $employeeId) {
                     session()->flash('saved_request', [
@@ -387,7 +406,12 @@ class LeaveController extends Controller
                     : redirect()->route('admin.leave-request.index');
 
                 return $redirect->with('success', __('message.leave_submitted'))
-                    ->with('saved_request', ['type' => 'leave', 'id' => $leaveRequest['id'], 'employee_id' => $leaveRequest['requested_by']]);
+                    ->with('saved_request', [
+                        'type' => 'leave',
+                        'id' => $leaveRequest['id'],
+                        'employee_id' => $leaveRequest['requested_by'],
+                        'print_url' => route('admin.leave-request.print', $leaveRequest['id']),
+                    ]);
             } catch (Exception $exception) {
                 DB::rollBack();
                 return redirect()->back()
@@ -483,7 +507,12 @@ class LeaveController extends Controller
                     : redirect()->route('admin.leave-request.index');
 
                 return $redirect->with('success', __('message.leave_submitted'))
-                    ->with('saved_request', ['type' => 'leave', 'id' => $leaveRequest['id'], 'employee_id' => $leaveRequest['requested_by']]);
+                    ->with('saved_request', [
+                        'type' => 'leave',
+                        'id' => $leaveRequest['id'],
+                        'employee_id' => $leaveRequest['requested_by'],
+                        'print_url' => route('admin.leave-request.print', $leaveRequest['id']),
+                    ]);
             } catch (Exception $exception) {
                 DB::rollBack();
                 return redirect()->back()

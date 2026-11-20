@@ -122,7 +122,27 @@
                 $('#statusUpdate').modal('hide');
 
                 refreshLeaveRequestList().done(function () {
-                    Swal.fire('Success', response.message, 'success');
+                    if (response.print_url) {
+                        Swal.fire({
+                            title: @json(__('index.saved_successfully') ?? 'ជោគជ័យ'),
+                            text: response.message,
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonText: '🖨️ {{ __("index.print") ?? "Print Form" }}',
+                            cancelButtonText: '{{ __("index.close") ?? "Close" }}',
+                            confirmButtonColor: '#0f766e',
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                if (typeof directPrintUrl === 'function') {
+                                    directPrintUrl(response.print_url);
+                                } else {
+                                    window.open(response.print_url, '_blank');
+                                }
+                            }
+                        });
+                    } else {
+                        Swal.fire('Success', response.message, 'success');
+                    }
                 }).fail(function (error) {
                     Swal.fire(
                         'Refresh failed',
