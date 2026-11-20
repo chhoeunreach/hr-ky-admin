@@ -3,236 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ពាក្យស្នើសុំច្បាប់ឈប់សម្រាក - {{ $employee?->name ?: 'Employee' }}</title>
+    <title>{{ __('index.leave_request_form') }} - {{ $employee?->name ?: 'Employee' }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700;800&family=Noto+Sans+Khmer:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('assets/css/employee-leave-print.css') }}">
     <style>
+        @page {
+            size: A4 portrait;
+            margin: 6mm 10mm 6mm 10mm;
+        }
         * {
             box-sizing: border-box;
-            font-family: 'Kantumruy Pro', 'Khmer OS Battambang', 'Segoe UI', Arial, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
         body {
+            background: #eef1f5;
+            color: #111827;
+            font-family: "Kantumruy Pro", "Battambang", "Noto Sans Khmer", Arial, sans-serif;
+            font-size: 10px;
+            line-height: 1.45;
             margin: 0;
-            padding: 15px;
-            background: #fff;
-            color: #1e293b;
-            font-size: 13px;
-            line-height: 1.5;
+            padding: 15px 0;
         }
-        .page {
-            max-width: 780px;
-            margin: 0 auto;
-            padding: 25px 35px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #ffffff;
-            position: relative;
-        }
-        /* National Heading */
-        .national-heading {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .national-heading h3 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f172a;
-            letter-spacing: 0.5px;
-        }
-        .national-heading p {
-            margin: 3px 0 0 0;
-            font-size: 14px;
-            font-weight: 600;
-            color: #334155;
-            letter-spacing: 1px;
-        }
-        .national-rule {
-            width: 70px;
-            height: 2px;
-            background: #0f172a;
-            margin: 6px auto 0 auto;
-        }
-        /* Header / Letterhead */
-        .letterhead {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            border-bottom: 2px solid #0f766e;
-            padding-bottom: 12px;
-            margin-bottom: 18px;
-        }
-        .company-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .company-logo {
-            width: 58px;
-            height: 58px;
-            object-fit: contain;
-            border-radius: 6px;
-        }
-        .company-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #0f766e;
-        }
-        .company-sub {
-            font-size: 12px;
-            color: #64748b;
-        }
-        .doc-meta {
-            text-align: right;
-            font-size: 12px;
-            color: #475569;
-        }
-        .doc-meta strong {
-            color: #0f172a;
-        }
-        /* Document Title */
-        .doc-title-block {
-            text-align: center;
-            margin-bottom: 16px;
-        }
-        .doc-title {
-            font-size: 18px;
-            font-weight: 800;
-            color: #0f172a;
-            margin: 0;
-            text-transform: uppercase;
-        }
-        .doc-title-sub {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 600;
-            margin-top: 2px;
-        }
-        /* Routing Block */
-        .routing-block {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #0f766e;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-bottom: 16px;
-        }
-        .routing-block span {
-            color: #64748b;
-            margin-right: 6px;
-        }
-        /* Sections */
-        .section {
-            margin-bottom: 14px;
-        }
-        .section-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #0f766e;
-            border-bottom: 1px solid #cbd5e1;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        /* Grid Tables */
-        .grid-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12.5px;
-        }
-        .grid-table td {
-            padding: 5px 8px;
-            border-bottom: 1px dashed #e2e8f0;
-            vertical-align: top;
-        }
-        .grid-table td.label {
-            color: #64748b;
-            width: 25%;
-            font-weight: 500;
-        }
-        .grid-table td.value {
-            color: #0f172a;
-            font-weight: 600;
-            width: 25%;
-        }
-        /* Reason Box */
-        .content-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 12.5px;
-            color: #1e293b;
-            min-height: 40px;
-        }
-        /* Status Badge */
-        .status-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 12px;
-        }
-        .status-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-        .status-pending { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-        .status-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-        /* Signatures */
-        .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 25px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .sig-block {
-            width: 30%;
-        }
-        .sig-role {
-            font-size: 12px;
-            font-weight: 700;
-            color: #334155;
-            margin-bottom: 45px;
-        }
-        .sig-name {
-            font-size: 12px;
-            font-weight: 600;
-            border-top: 1px dotted #94a3b8;
-            padding-top: 4px;
-            color: #0f172a;
-        }
-        .sig-date {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 2px;
-        }
-        /* Notes */
-        .notice-block {
-            background: #f1f5f9;
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 11px;
-            color: #475569;
-            margin-top: 15px;
-        }
-        .notice-block strong { color: #0f172a; }
-        .notice-block ol { margin: 3px 0 0 16px; padding: 0; }
-        /* No-print toolbar */
         .print-toolbar {
-            max-width: 780px;
-            margin: 0 auto 12px auto;
+            max-width: 195mm;
+            margin: 0 auto 10px auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 4px;
         }
         .btn-print {
             background: #0f766e;
             color: #ffffff;
             border: none;
-            padding: 8px 18px;
-            border-radius: 6px;
-            font-weight: 600;
+            padding: 7px 18px;
+            border-radius: 4px;
+            font-weight: 700;
             cursor: pointer;
             font-size: 13px;
         }
@@ -240,15 +49,301 @@
             background: #64748b;
             color: #ffffff;
             border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
+            padding: 7px 14px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 13px;
         }
+        .employee-leave-letter-paper {
+            --certificate-ink: #111827;
+            --certificate-accent: #111827;
+            background: #ffffff;
+            border: 1px solid #64748b;
+            border-top: 4px solid #111827;
+            max-width: 195mm;
+            min-height: 275mm;
+            margin: 0 auto;
+            padding: 8mm 12mm;
+            box-shadow: 0 3px 18px rgba(15, 23, 42, 0.12);
+            position: relative;
+        }
+        .employee-resignation-national-heading {
+            text-align: center;
+            margin-bottom: 3mm;
+            line-height: 1.6;
+        }
+        .employee-resignation-national-heading strong {
+            display: block;
+            font-size: 12pt;
+            font-weight: 700;
+            color: #111827;
+        }
+        .employee-resignation-national-heading span {
+            display: block;
+            font-size: 10pt;
+            font-weight: 600;
+            color: #111827;
+        }
+        .employee-salary-certificate-letterhead {
+            align-items: flex-start;
+            border-bottom: 1px solid #475569;
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 6px;
+            margin-bottom: 4px;
+        }
+        .employee-salary-certificate-company {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            min-width: 0;
+        }
+        .employee-salary-certificate-logo {
+            height: 48px;
+            width: 48px;
+            object-fit: contain;
+        }
+        .employee-salary-certificate-company-name {
+            color: #111827;
+            font-size: 15px;
+            font-weight: 800;
+            line-height: 1.25;
+        }
+        .employee-salary-certificate-company-subtitle {
+            color: #64748b;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .employee-salary-certificate-document-meta {
+            background: #ffffff;
+            border: 1px solid #64748b;
+            display: grid;
+            font-size: 8.5pt;
+            gap: 2px 8px;
+            grid-template-columns: auto auto;
+            padding: 3px 8px;
+            text-align: right;
+        }
+        .employee-salary-certificate-document-meta span {
+            color: #475569;
+            font-weight: 700;
+        }
+        .employee-salary-certificate-document-meta input {
+            border: 0;
+            background: transparent;
+            font-weight: 700;
+            text-align: right;
+            color: #111827;
+            padding: 0;
+            width: auto;
+        }
+        .employee-print-form-heading {
+            margin: 6px 0 8px;
+            text-align: center;
+        }
+        .employee-print-form-heading h2 {
+            color: #111827;
+            font-family: "Khmer OS Muol Light", "Noto Serif Khmer", "Kantumruy Pro", serif;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0;
+            margin: 0;
+            text-transform: uppercase;
+        }
+        .employee-print-form-title-rule {
+            background: #111827;
+            height: 1px;
+            margin: 3px auto 0;
+            width: 66mm;
+        }
+        .employee-print-form input,
+        .employee-print-form textarea {
+            color: #111827;
+            font: inherit;
+        }
+        .employee-print-form-input {
+            background: transparent;
+            border: 0;
+            border-bottom: 1px dotted #475569;
+            border-radius: 0;
+            min-width: 0;
+            outline: 0;
+            padding: 1px 3px;
+            width: 100%;
+        }
+        .employee-print-form-routing {
+            border-bottom: 1px solid #64748b;
+            border-top: 1px solid #64748b;
+            margin: 6px 0 8px;
+            padding: 5px 8px;
+        }
+        .employee-print-form-routing > strong {
+            display: block;
+            font-size: 10.5px;
+            margin-bottom: 3px;
+            font-weight: 800;
+        }
+        .employee-print-form-routing > div {
+            align-items: end;
+            display: grid;
+            gap: 6px;
+            grid-template-columns: minmax(130px, auto) minmax(180px, 1fr);
+            margin: 2px 0;
+            font-size: 9.5pt;
+        }
+        .employee-print-form-section {
+            border: 1px solid #64748b;
+            margin-top: 6px;
+            padding: 6px 8px 7px;
+        }
+        .employee-print-form-section h3 {
+            background: #e5e7eb;
+            border-bottom: 1px solid #64748b;
+            color: #111827;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0;
+            margin: -6px -8px 6px;
+            padding: 4px 8px;
+        }
+        .employee-print-form-grid {
+            display: grid;
+            gap: 5px 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .employee-print-form-grid-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .employee-print-form-field {
+            align-items: baseline;
+            border-bottom: 1px dotted #64748b;
+            display: grid;
+            gap: 6px;
+            grid-template-columns: auto minmax(0, 1fr);
+            min-height: 22px;
+            padding: 2px 2px 1px;
+        }
+        .employee-print-form-field span {
+            color: #475569;
+            font-weight: 700;
+        }
+        .employee-print-form-field strong {
+            overflow-wrap: anywhere;
+            color: #111827;
+        }
+        .employee-print-form-field input {
+            background: transparent;
+            border: 0;
+            min-width: 0;
+            outline: 0;
+            padding: 0;
+            width: 100%;
+            font-weight: 700;
+        }
+        .employee-print-form-options {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px 14px;
+            margin: 3px 0 6px;
+        }
+        .employee-print-form-options > span {
+            font-weight: 800;
+        }
+        .employee-print-form-textarea {
+            background-color: transparent;
+            background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 20px, #64748b 21px);
+            border: 0;
+            border-radius: 0;
+            line-height: 21px;
+            min-height: 42px;
+            outline: 0;
+            padding: 0 3px;
+            resize: none;
+            width: 100%;
+            display: block;
+            font-size: 10px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .employee-print-form-textarea.compact {
+            min-height: 38px;
+        }
+        .employee-print-form-approval {
+            background: #f3f4f6;
+        }
+        .employee-print-form-signatures {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 14mm;
+            text-align: center;
+            break-inside: avoid;
+        }
+        .employee-print-form-signatures > div {
+            border-top: 1px solid #111827;
+            display: flex;
+            flex-direction: column;
+            padding-top: 4px;
+        }
+        .employee-print-form-signatures span {
+            font-weight: 800;
+            font-size: 10px;
+        }
+        .employee-print-form-signatures strong {
+            min-height: 4px;
+            font-size: 9.5px;
+        }
+        .employee-print-form-signatures small {
+            color: #475569;
+            font-size: 8.5px;
+        }
+        .employee-print-form-notes {
+            border-top: 1px solid #64748b;
+            font-size: 8px;
+            line-height: 1.4;
+            margin-top: 8px;
+            padding-top: 4px;
+            break-inside: avoid;
+        }
+        .employee-print-form-notes ol {
+            margin: 2px 0 0;
+            padding-left: 16px;
+        }
+        .employee-print-form-notes li {
+            margin-bottom: 1px;
+        }
+        .employee-request-print-record {
+            color: #475569;
+            font-size: 8px;
+            margin-top: 3mm;
+            text-align: right;
+        }
         @media print {
-            body { padding: 0; background: #fff; }
-            .page { border: none; padding: 0; max-width: 100%; width: 100%; }
-            .print-toolbar { display: none !important; }
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-toolbar {
+                display: none !important;
+            }
+            .employee-leave-letter-paper {
+                border: 0 !important;
+                box-shadow: none !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-height: 0 !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .employee-print-form-textarea {
+                overflow: visible !important;
+            }
         }
     </style>
 </head>
@@ -256,202 +351,121 @@
 
     <div class="print-toolbar">
         <div>
-            <strong>ពាក្យស្នើសុំច្បាប់ឈប់សម្រាក #{{ $leave->id }}</strong>
+            <strong>{{ __('index.leave_request_form') }} #{{ $leave->id }}</strong>
         </div>
         <div>
-            <button type="button" class="btn-print" onclick="window.print()">🖨️ បោះពុម្ព (Print)</button>
-            <button type="button" class="btn-close" onclick="window.close()">បិទ (Close)</button>
+            <button type="button" class="btn-print" onclick="window.print()">🖨️ {{ __('index.print') ?? 'Print' }}</button>
+            <button type="button" class="btn-close" onclick="window.close()">{{ __('index.close') ?? 'Close' }}</button>
         </div>
     </div>
 
-    <div class="page">
-        <!-- National Heading -->
-        <div class="national-heading">
-            <h3>ព្រះរាជាណាចក្រកម្ពុជា</h3>
-            <p>ជាតិ សាសនា ព្រះមហាក្សត្រ</p>
-            <div class="national-rule"></div>
+    @php
+        $notAvailable = __('index.not_available') ?? '—';
+        $certificateLogo = $branch?->logo
+            ? asset(\App\Models\Branch::UPLOAD_PATH . $branch->logo)
+            : ($employee?->branch?->logo ? asset(\App\Models\Branch::UPLOAD_PATH . $employee->branch->logo) : asset('assets/images/logo.png'));
+    @endphp
+
+    <div class="employee-complete-paper employee-leave-letter-paper employee-print-form" data-source-request-id="{{ $leave->id }}" data-request-tab="leave-letter">
+        <div class="employee-resignation-national-heading">
+            <strong>{{ __('index.kingdom_of_cambodia') }}</strong>
+            <span>{{ __('index.nation_religion_king') }}</span>
         </div>
 
-        <!-- Letterhead -->
-        <header class="letterhead">
-            <div class="company-info">
-                @php
-                    $logoUrl = $branch?->logo ? asset(\App\Models\Branch::UPLOAD_PATH . $branch->logo) : asset('assets/images/logo.png');
-                @endphp
-                <img src="{{ $logoUrl }}" alt="Logo" class="company-logo" onerror="this.style.display='none'">
+        <header class="employee-salary-certificate-letterhead">
+            <div class="employee-salary-certificate-company">
+                <img class="employee-salary-certificate-logo" src="{{ $certificateLogo }}" alt="Company Logo" onerror="this.style.display='none'">
                 <div>
-                    <div class="company-name">{{ $branch?->name ?: ($company?->name ?: config('app.name')) }}</div>
-                    <div class="company-sub">នាយកដ្ឋានធនធានមនុស្ស (HR Department)</div>
+                    <div class="employee-salary-certificate-company-name">{{ $branch?->name ?: ($employee?->branch?->name ?: ($company?->name ?: config('app.name'))) }}</div>
+                    <div class="employee-salary-certificate-company-subtitle">{{ __('index.hr_department') }}</div>
                 </div>
             </div>
-            <div class="doc-meta">
-                <div>លេខលិខិត: <strong>#LR-{{ str_pad($leave->id, 5, '0', STR_PAD_LEFT) }}</strong></div>
-                <div>កាលបរិច្ឆេទ: <strong>{{ $leave->leave_requested_date ? \Carbon\Carbon::parse($leave->leave_requested_date)->format('d-M-Y') : date('d-M-Y') }}</strong></div>
+            <div class="employee-salary-certificate-document-meta employee-print-form-meta">
+                <span>{{ __('index.form_number') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.form_number') }}" value="{{ $leave->id }}" readonly>
+                <span>{{ __('index.request_date') }}</span><input class="employee-print-form-input" type="text" aria-label="{{ __('index.request_date') }}" value="{{ $leave->leave_requested_date ? \Illuminate\Support\Carbon::parse($leave->leave_requested_date)->format('d M Y') : date('d M Y') }}" readonly>
             </div>
         </header>
 
-        <!-- Document Title -->
-        <div class="doc-title-block">
-            <h1 class="doc-title">ពាក្យស្នើសុំច្បាប់ឈប់សម្រាក</h1>
-            <div class="doc-title-sub">LEAVE REQUEST FORM</div>
+        <div class="employee-salary-certificate-heading employee-print-form-heading">
+            <h2>{{ __('index.leave_request_form') }}</h2>
+            <div class="employee-print-form-title-rule"></div>
         </div>
 
-        <!-- Routing -->
-        <div class="routing-block">
-            <div><span>សូមគោរពជូន:</span> <strong>លោក/លោកស្រី ប្រធានផ្នែក (Head of Department)</strong></div>
-            <div><span>ឆ្លងកាត់:</span> <strong>លោក/លោកស្រី ប្រធានសាខា (Branch Manager)</strong></div>
-            <div><span>ដាក់ជូន:</span> <strong>នាយកដ្ឋានធនធានមនុស្ស (Human Resources Department)</strong></div>
-        </div>
+        <section class="employee-print-form-routing">
+            <strong>{{ __('index.respectfully_submitted_to') }}</strong>
+            <div><span>{{ __('index.through_department_head') }}</span><input class="employee-print-form-input" type="text" value="{{ $employee?->supervisor?->name ?: '' }}"></div>
+            <div><span>{{ __('index.through_branch_manager') }}</span><input class="employee-print-form-input" type="text"></div>
+            <div><span>{{ __('index.submitted_to_hr') }}</span><input class="employee-print-form-input" type="text" value="{{ $leave->leaveRequestUpdatedBy?->name ?: '' }}"></div>
+        </section>
 
-        <!-- Section 1: Employee Information -->
-        <div class="section">
-            <div class="section-title">I. ព័ត៌មានបុគ្គលិក (Employee Information)</div>
-            <table class="grid-table">
-                <tr>
-                    <td class="label">ឈ្មោះបុគ្គលិក:</td>
-                    <td class="value">{{ $employee?->name ?: '—' }}</td>
-                    <td class="label">ឈ្មោះជាឡាតាំង:</td>
-                    <td class="value">{{ $employee?->english_name ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">អត្តលេខបុគ្គលិក:</td>
-                    <td class="value">{{ $employee?->employee_code ?: ($employee?->username ?: '—') }}</td>
-                    <td class="label">លេខទូរស័ព្ទ:</td>
-                    <td class="value">{{ $employee?->phone ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">ផ្នែក / ការិយាល័យ:</td>
-                    <td class="value">{{ $leave->department?->dept_name ?: ($employee?->department?->dept_name ?: '—') }}</td>
-                    <td class="label">មុខតំណែង:</td>
-                    <td class="value">{{ $employee?->post?->post_name ?: '—' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">សាខា / ទីតាំង:</td>
-                    <td class="value">{{ $branch?->name ?: '—' }}</td>
-                    <td class="label">អ្នកគ្រប់គ្រងផ្ទាល់:</td>
-                    <td class="value">{{ $employee?->supervisor?->name ?: '—' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Section 2: Leave Details -->
-        <div class="section">
-            <div class="section-title">II. ព័ត៌មានលម្អិតនៃការសុំច្បាប់ (Leave Details)</div>
-            <table class="grid-table">
-                <tr>
-                    <td class="label">ប្រភេទច្បាប់:</td>
-                    <td class="value">
-                        <strong>{{ $leave->leaveType?->name ?: '—' }}</strong>
-                        <span style="font-size: 11px; color: #64748b;">
-                            ({{ !is_null($leave->leaveType?->leave_allocated) ? 'Paid Leave' : 'Unpaid Leave' }})
-                        </span>
-                    </td>
-                    <td class="label">ចំនួនថ្ងៃសរុប:</td>
-                    <td class="value">
-                        <strong style="color: #0f766e; font-size: 14px;">{{ $leave->no_of_days }} ថ្ងៃ</strong> (Days)
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">ចាប់ពីថ្ងៃ:</td>
-                    <td class="value"><strong>{{ \Carbon\Carbon::parse($leave->leave_from)->format('d-M-Y') }}</strong></td>
-                    <td class="label">ដល់ថ្ងៃ:</td>
-                    <td class="value"><strong>{{ \Carbon\Carbon::parse($leave->leave_to)->format('d-M-Y') }}</strong></td>
-                </tr>
-                @if($leave->start_time || $leave->end_time)
-                <tr>
-                    <td class="label">ម៉ោងចេញ/ចូល:</td>
-                    <td class="value" colspan="3">{{ $leave->start_time ?: '—' }} ដល់ {{ $leave->end_time ?: '—' }}</td>
-                </tr>
-                @endif
-            </table>
-            
-            <div style="margin-top: 8px;">
-                <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">មូលហេតុនៃការសុំច្បាប់ (Reason for Leave):</div>
-                <div class="content-box">
-                    {{ $leave->reasons ?: 'មិនបានបញ្ជាក់មូលហេតុ' }}
-                </div>
+        <section class="employee-print-form-section">
+            <h3>{{ __('index.employee_information') }}</h3>
+            <div class="employee-print-form-grid">
+                <div class="employee-print-form-field"><span>{{ __('index.employee_name') }}</span><strong>{{ $employee?->name ?: ($employee?->english_name ?: $notAvailable) }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.employee_id') }}</span><strong>{{ $employee?->employee_code ?: ($employee?->username ?: $notAvailable) }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.department') }}</span><strong>{{ $leave->department?->dept_name ?: ($employee?->department?->dept_name ?: $notAvailable) }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.position') }}</span><strong>{{ $employee?->post?->post_name ?: $notAvailable }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.phone') }}</span><strong>{{ $employee?->phone ?: $notAvailable }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.direct_supervisor') }}</span><strong>{{ $employee?->supervisor?->name ?: $notAvailable }}</strong></div>
             </div>
-        </div>
+        </section>
 
-        <!-- Section 3: Work Handover -->
-        <div class="section">
-            <div class="section-title">III. ការផ្ទេរការងារ (Work Handover)</div>
-            <table class="grid-table">
-                <tr>
-                    <td class="label">អ្នកទទួលខុសត្រូវជំនួស:</td>
-                    <td class="value" style="color: #64748b;">___________________________</td>
-                    <td class="label">លេខទំនាក់ទំនងពេលឈប់:</td>
-                    <td class="value">{{ $employee?->phone ?: '___________________________' }}</td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Section 4: For Office Use -->
-        <div class="section">
-            <div class="section-title">IV. សម្រាប់រដ្ឋបាល និងធនធានមនុស្ស (For Office & HR Use)</div>
-            <table class="grid-table">
-                <tr>
-                    <td class="label">ស្ថានភាពសំណើ:</td>
-                    <td class="value">
-                        @if($leave->status === 'approved')
-                            <span class="status-badge status-approved">✔ បានអនុម័ត (Approved)</span>
-                        @elseif($leave->status === 'rejected')
-                            <span class="status-badge status-rejected">✖ បដិសេធ (Rejected)</span>
-                        @else
-                            <span class="status-badge status-pending">⏳ កំពុងរង់ចាំ (Pending)</span>
-                        @endif
-                    </td>
-                    <td class="label">អនុម័តដោយ:</td>
-                    <td class="value">{{ $leave->leaveRequestUpdatedBy?->name ?: 'Admin' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">មតិរដ្ឋបាល / មូលហេតុ:</td>
-                    <td class="value" colspan="3">
-                        {{ $leave->admin_remark ?: ($leave->status === 'approved' ? 'បានអនុម័តតាមការស្នើសុំ' : '—') }}
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- Section 5: Signatures -->
-        <div class="signatures">
-            <div class="sig-block">
-                <div class="sig-role">ហត្ថលេខាសាមីខ្លួន<br><small style="font-weight: normal; color: #64748b;">(Employee Signature)</small></div>
-                <div class="sig-name">{{ $employee?->name ?: '....................................' }}</div>
-                <div class="sig-date">កាលបរិច្ឆេទ: ...../...../202...</div>
+        <section class="employee-print-form-section">
+            <h3>{{ __('index.leave_details') }}</h3>
+            <div class="employee-print-form-field"><span>{{ __('index.leave_type') }}</span><strong>{{ $leave->leaveType?->name ?: $notAvailable }}</strong></div>
+            <div class="employee-print-form-grid employee-print-form-grid-3">
+                <div class="employee-print-form-field"><span>{{ __('index.leave_from') }}</span><strong>{{ $leave->leave_from ? \Illuminate\Support\Carbon::parse($leave->leave_from)->format('d M Y') : $notAvailable }}</strong></div>
+                <div class="employee-print-form-field"><span>{{ __('index.leave_to') }}</span><strong>{{ $leave->leave_to ? \Illuminate\Support\Carbon::parse($leave->leave_to)->format('d M Y') : $notAvailable }}</strong></div>
+                <div class="employee-print-form-field is-blank"><span>{{ __('index.number_of_days') }}</span><input type="number" min="0" step="0.5" value="{{ $leave->no_of_days }}" readonly></div>
             </div>
+        </section>
 
-            <div class="sig-block">
-                <div class="sig-role">ប្រធានផ្នែក / អ្នកគ្រប់គ្រង<br><small style="font-weight: normal; color: #64748b;">(Supervisor Signature)</small></div>
-                <div class="sig-name">{{ $employee?->supervisor?->name ?: '....................................' }}</div>
-                <div class="sig-date">កាលបរិច្ឆេទ: ...../...../202...</div>
-            </div>
+        <section class="employee-print-form-section">
+            <h3>{{ __('index.reason_for_leave') }}</h3>
+            <textarea class="employee-print-form-textarea" rows="3" aria-label="{{ __('index.reason_for_leave') }}" readonly>{{ $leave->reasons }}</textarea>
+        </section>
 
-            <div class="sig-block">
-                <div class="sig-role">នាយកដ្ឋានធនធានមនុស្ស<br><small style="font-weight: normal; color: #64748b;">(HR Department Approval)</small></div>
-                <div class="sig-name">{{ $leave->leaveRequestUpdatedBy?->name ?: '....................................' }}</div>
-                <div class="sig-date">កាលបរិច្ឆេទ: ...../...../202...</div>
+        <section class="employee-print-form-section">
+            <h3>{{ __('index.work_handover') }}</h3>
+            <div class="employee-print-form-grid">
+                <div class="employee-print-form-field is-blank"><span>{{ __('index.handover_to') }}</span><input type="text"></div>
+                <div class="employee-print-form-field is-blank"><span>{{ __('index.contact_during_leave') }}</span><input type="text" value="{{ $employee?->phone ?: '' }}"></div>
             </div>
+            <textarea class="employee-print-form-textarea compact" rows="2" aria-label="{{ __('index.work_handover') }}"></textarea>
+        </section>
+
+        <section class="employee-print-form-section employee-print-form-approval">
+            <h3>{{ __('index.for_office_use') }}</h3>
+            <div class="employee-print-form-options">
+                <span>{{ __('index.status') }}:</span>
+                <strong>{{ $leave ? __('index.' . $leave->status) : $notAvailable }}</strong>
+            </div>
+            <textarea class="employee-print-form-textarea compact" rows="2" placeholder="{{ __('index.remark') }}" aria-label="{{ __('index.remark') }}" readonly>{{ $leave->admin_remark }}</textarea>
+        </section>
+
+        <div class="employee-print-form-signatures">
+            <div><span>{{ __('index.employee_signature') }}</span><strong>{{ $employee?->name }}</strong><small>{{ __('index.date') }}: ____________</small></div>
+            <div><span>{{ __('index.supervisor_signature') }}</span><strong>{{ $employee?->supervisor?->name }}</strong><small>{{ __('index.date') }}: ____________</small></div>
+            <div><span>{{ __('index.hr_approval') }}</span><strong>{{ $leave->leaveRequestUpdatedBy?->name }}</strong><small>{{ __('index.date') }}: ____________</small></div>
         </div>
 
-        <!-- Notice -->
-        <div class="notice-block">
-            <strong>កំណត់សម្គាល់ (Notice):</strong>
+        <div class="employee-print-form-notes">
+            <strong>{{ __('index.note') }}:</strong>
             <ol>
-                <li>បុគ្គលិកត្រូវដាក់ពាក្យស្នើសុំច្បាប់យ៉ាងតិច ៣ ថ្ងៃមុនកាលបរិច្ឆេទឈប់សម្រាក (លើកលែងតែករណីជំងឺ ឬមានការបន្ទាន់)។</li>
-                <li>ករណីឈប់សម្រាកព្យាបាលជំងឺលើសពី ២ ថ្ងៃ ត្រូវភ្ជាប់មកជាមួយនូវលិខិតបញ្ជាក់សុខភាពពីវេជ្ជបណ្ឌិត ឬមន្ទីរពេទ្យទទួលស្គាល់ជាផ្លូវការ។</li>
+                <li>{{ __('index.leave_form_notice_advance') }}</li>
+                <li>{{ __('index.leave_form_notice_medical') }}</li>
             </ol>
         </div>
+        <div class="employee-request-print-record" data-print-record>{{ __('index.print_record_number') }}: #{{ $leave->id }}</div>
     </div>
 
     <script>
         window.addEventListener('load', function() {
-            // Auto trigger print if requested or opened standalone
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('auto_print') === '1' || window.parent === window) {
                 setTimeout(function() {
                     window.print();
-                }, 300);
+                }, 250);
             }
         });
     </script>
