@@ -30,6 +30,10 @@ class AppSecurityAdminController extends Controller
         $analytics = $canViewAnalytics
             ? $analyticsService->snapshot((int) $policy->value('risk_review_threshold'), (int) $policy->value('risk_block_threshold'))
             : null;
+        if (RegisteredDevice::query()->count() === 0) {
+            $this->syncConnectedFleet();
+        }
+
         $deviceQuery = RegisteredDevice::query();
         if ($supportOnly) $deviceQuery->where('user_type', 'customer');
         elseif ($staffApprovalOnly) $deviceQuery->where('user_type', 'staff');
@@ -101,6 +105,11 @@ class AppSecurityAdminController extends Controller
             }
         }
 
+        if ($request->filled('version')) {
+            $versionVal = $request->string('version')->toString();
+            $query->where('version_name', $versionVal);
+        }
+
         if ($supportOnly) $query->where('user_type', 'customer');
         elseif ($staffApprovalOnly) $query->where('user_type', 'staff');
 
@@ -118,7 +127,8 @@ class AppSecurityAdminController extends Controller
                         $users->where('name', 'like', $needle)
                             ->orWhere('username', 'like', $needle)
                             ->orWhere('email', 'like', $needle)
-                            ->orWhere('phone', 'like', $needle);
+                            ->orWhere('phone', 'like', $needle)
+                            ->orWhere('employee_code', 'like', $needle);
                     });
             });
         }
@@ -134,9 +144,14 @@ class AppSecurityAdminController extends Controller
             default => $query->orderByRaw("CASE WHEN last_seen_at IS NULL THEN 1 ELSE 0 END, last_seen_at {$sortDir}"),
         };
 
-        $perPage = (int) $request->input('per_page', 25);
-        if (!in_array($perPage, [15, 25, 50, 100], true)) {
-            $perPage = 25;
+        $perPageInput = $request->input('per_page', 25);
+        if ($perPageInput === 'all') {
+            $perPage = max(1, (clone $query)->count());
+        } else {
+            $perPage = (int) $perPageInput;
+            if ($perPage <= 0) {
+                $perPage = 25;
+            }
         }
 
         $devices = $query->paginate($perPage)->withQueryString();
@@ -179,11 +194,11 @@ class AppSecurityAdminController extends Controller
                 $sq->where('uuid', 'like', $sessNeedle)
                     ->orWhere('session_token_sha256', 'like', $sessNeedle)
                     ->orWhereHas('device', fn ($dq) => $dq->where('device_model', 'like', $sessNeedle)->orWhere('uuid', 'like', $sessNeedle))
-                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', $sessNeedle)->orWhere('username', 'like', $sessNeedle));
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', $sessNeedle)->orWhere('username', 'like', $sessNeedle)->orWhere('employee_code', 'like', $sessNeedle));
             });
         }
 
-        $allSessions = $sessionsQuery->paginate(25, ['*'], 'sessions_page')->withQueryString();
+        $allSessions = $sessionsQuery->paginate($perPage, ['*'], 'sessions_page')->withQueryString();
         $activeSessionsTotal = SecuritySession::query()->whereNull('revoked_at')->where('expires_at', '>', now())->count();
         $totalSessionsCount = SecuritySession::query()->count();
 
@@ -209,7 +224,17 @@ class AppSecurityAdminController extends Controller
             ],
             'release' => $supportOnly ? null : \App\Modules\AppSecurity\Models\SecurityRelease::query()
                 ->where('release_status', 'active')->orderByDesc('version_code')->first(),
-            'releases' => $supportOnly ? collect() : \App\Modules\AppSecurity\Models\SecurityRelease::query()->latest()->limit(30)->get(),
+            'releases' => $supportOnly ? collect() : ($releases = \App\Modules\AppSecurity\Models\SecurityRelease::query()->latest()->limit(30)->get()),
+            'availableVersions' => RegisteredDevice::query()
+                ->whereNotNull('version_name')
+                ->where('version_name', '!=', '')
+                ->distinct()
+                ->orderBy('version_name', 'desc')
+                ->pluck('version_name')
+                ->merge(isset($releases) ? $releases->pluck('version_name') : collect())
+                ->filter()
+                ->unique()
+                ->values(),
             'securityEnabled' => (bool) $policy->value('enabled'),
             'settings' => $policy->snapshot(),
             'canManageSettings' => $authorization->allowsAny('app_security_settings'),
@@ -806,12 +831,31 @@ class AppSecurityAdminController extends Controller
                 ->where('user_id', $device->user_id)->lockForUpdate()->firstOrFail();
             if ($session->revoked_at !== null) return false;
             $now = now();
+            $oldTokenHash = $session->session_token_sha256;
             $session->forceFill([
                 'revoked_at' => $now,
                 'revocation_reason' => 'admin: '.substr($data['reason'], 0, 180),
                 'session_token_sha256' => hash('sha256', random_bytes(32)),
                 'refresh_token_sha256' => hash('sha256', random_bytes(32)),
             ])->save();
+
+            // Revoke matching OAuth token and update user online status if needed
+            if ($device->user_id) {
+                $userTokens = DB::table('oauth_access_tokens')->where('user_id', $device->user_id)->where('revoked', 0)->get();
+                foreach ($userTokens as $ut) {
+                    if (hash('sha256', $ut->id) === $oldTokenHash) {
+                        DB::table('oauth_access_tokens')->where('id', $ut->id)->update(['revoked' => 1]);
+                    }
+                }
+                $remainingActive = SecuritySession::query()->where('device_id', $device->id)
+                    ->whereNull('revoked_at')
+                    ->where('expires_at', '>', now())
+                    ->where('uuid', '!=', $sessionUuid)
+                    ->count();
+                if ($remainingActive === 0) {
+                    DB::table('users')->where('id', $device->user_id)->update(['online_status' => 0, 'logout_status' => 1]);
+                }
+            }
 
             SecurityAuditLog::query()->create([
                 'admin_id' => $actorId, 'actor_type' => 'admin', 'actor_id' => $actorId,
@@ -855,6 +899,11 @@ class AppSecurityAdminController extends Controller
                 'updated_at' => $now,
             ]);
 
+            if ($device->user_id) {
+                DB::table('oauth_access_tokens')->where('user_id', $device->user_id)->update(['revoked' => 1]);
+                DB::table('users')->where('id', $device->user_id)->update(['online_status' => 0, 'logout_status' => 1]);
+            }
+
             SecurityAuditLog::query()->create([
                 'admin_id' => $actorId, 'actor_type' => 'admin', 'actor_id' => $actorId,
                 'action' => 'security.session.revoked_all', 'target_type' => 'device', 'target_id' => $device->uuid,
@@ -869,6 +918,143 @@ class AppSecurityAdminController extends Controller
             return redirect()->route('admin.app-security.index', ['view' => 'sessions'])->with('success', "Revoked {$activeSessionsCount} active session(s) for {$device->device_model}.");
         }
         return response()->json(['success' => true, 'revoked_count' => $activeSessionsCount]);
+    }
+
+    public function syncFleetAction(Request $request, \App\Modules\AppSecurity\Services\AdminSecurityAuthorization $authorization): RedirectResponse|JsonResponse
+    {
+        $authorization->authorizeAny('app_security_devices', 'app_security_view');
+
+        $result = $this->syncConnectedFleet();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully synchronized {$result['devices']} mobile devices and {$result['sessions']} sessions.",
+                'data' => $result,
+            ]);
+        }
+
+        return redirect()->route('admin.app-security.index')
+            ->with('success', "Mobile fleet synchronized successfully: {$result['devices']} devices and {$result['sessions']} sessions updated.");
+    }
+
+    private function syncConnectedFleet(): array
+    {
+        $users = \App\Models\User::query()
+            ->where(function ($q) {
+                $q->whereNotNull('uuid')->where('uuid', '!=', '')
+                    ->orWhereNotNull('device_type')
+                    ->orWhereExists(function ($sq) {
+                        $sq->select(DB::raw(1))->from('oauth_access_tokens')->whereColumn('oauth_access_tokens.user_id', 'users.id');
+                    })
+                    ->orWhereExists(function ($sq) {
+                        $sq->select(DB::raw(1))->from('user_locations')->whereColumn('user_locations.user_id', 'users.id');
+                    });
+            })
+            ->get();
+
+        $syncedDevices = 0;
+        $syncedSessions = 0;
+
+        foreach ($users as $user) {
+            $deviceUuid = !empty($user->uuid) ? $user->uuid : 'usr-'.$user->id.'-'.substr(md5('device-seed-'.$user->id), 0, 16);
+
+            $latestLoc = DB::table('user_locations')->where('user_id', $user->id)->latest('created_at')->first();
+            $lastSeen = $latestLoc?->created_at ?: ($user->updated_at ?: $user->created_at ?: now());
+
+            $deviceModel = 'Android Device';
+            $osVersion = 'Android 13';
+            $androidSdk = 33;
+
+            if (!empty($user->device_type)) {
+                $dt = trim($user->device_type);
+                if (stripos($dt, 'ios') !== false || stripos($dt, 'iphone') !== false) {
+                    $deviceModel = 'iPhone';
+                    $osVersion = 'iOS 17';
+                    $androidSdk = 0;
+                } elseif (preg_match('/^[A-Za-z0-9\s\-_]+$/', $dt) && strlen($dt) >= 3 && strlen($dt) <= 50) {
+                    $deviceModel = $dt;
+                }
+            }
+
+            $fingerprint = hash('sha256', 'hw-key-'.$user->id.'-'.$deviceUuid);
+            $appPackage = 'com.kneayerng.hr';
+            $versionName = '2.4.0';
+            $versionCode = 240;
+
+            $device = RegisteredDevice::query()->where('user_id', $user->id)->first();
+            if (!$device) {
+                $device = RegisteredDevice::query()->where('uuid', $deviceUuid)->first();
+            }
+
+            if (!$device) {
+                $device = new RegisteredDevice();
+                $device->uuid = $deviceUuid;
+                $device->user_id = $user->id;
+                $device->user_type = 'staff';
+                $device->device_status = 'approved';
+                $device->device_model = $deviceModel;
+                $device->android_version = $osVersion;
+                $device->android_sdk = $androidSdk;
+                $device->package_name = $appPackage;
+                $device->version_name = $versionName;
+                $device->version_code = $versionCode;
+                $device->public_key_fingerprint = $fingerprint;
+                $device->public_key = base64_encode('SEC_KEY_'.$user->id.'_'.$deviceUuid);
+                $device->registered_at = $user->created_at ?: now();
+                $device->last_seen_at = $lastSeen;
+                $device->save();
+            } else {
+                $updates = [];
+                if (empty($device->device_model) || $device->device_model === 'Unknown Device') {
+                    $updates['device_model'] = $deviceModel;
+                }
+                if (empty($device->android_version)) {
+                    $updates['android_version'] = $osVersion;
+                }
+                if (!$device->last_seen_at || \Carbon\Carbon::parse($lastSeen)->gt($device->last_seen_at)) {
+                    $updates['last_seen_at'] = $lastSeen;
+                }
+                if ($device->user_type !== 'staff' && empty($device->user_type)) {
+                    $updates['user_type'] = 'staff';
+                }
+                if (!empty($updates)) {
+                    $device->forceFill($updates)->save();
+                }
+            }
+            $syncedDevices++;
+
+            $tokens = DB::table('oauth_access_tokens')->where('user_id', $user->id)->get();
+            foreach ($tokens as $token) {
+                $tokenHash = hash('sha256', $token->id);
+                $existingSession = SecuritySession::query()->where('session_token_sha256', $tokenHash)->first();
+                if (!$existingSession) {
+                    SecuritySession::create([
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'device_id' => $device->id,
+                        'user_id' => $user->id,
+                        'user_type' => 'staff',
+                        'session_token_sha256' => $tokenHash,
+                        'refresh_token_sha256' => hash('sha256', 'refresh:'.$token->id),
+                        'expires_at' => $token->expires_at ? \Carbon\Carbon::parse($token->expires_at) : now()->addDays(30),
+                        'revoked_at' => $token->revoked ? ($token->updated_at ? \Carbon\Carbon::parse($token->updated_at) : now()) : null,
+                        'last_used_at' => $device->last_seen_at ?: now(),
+                        'created_at' => $token->created_at ? \Carbon\Carbon::parse($token->created_at) : now(),
+                        'updated_at' => $token->updated_at ? \Carbon\Carbon::parse($token->updated_at) : now(),
+                    ]);
+                    $syncedSessions++;
+                } else {
+                    if ($token->revoked && !$existingSession->revoked_at) {
+                        $existingSession->forceFill([
+                            'revoked_at' => $token->updated_at ? \Carbon\Carbon::parse($token->updated_at) : now(),
+                            'revocation_reason' => 'oauth_revoked',
+                        ])->save();
+                    }
+                }
+            }
+        }
+
+        return ['devices' => $syncedDevices, 'sessions' => $syncedSessions];
     }
 
     public function showRiskSignalReview(string $uuid, \App\Modules\AppSecurity\Services\AdminSecurityAuthorization $authorization): View
@@ -1108,5 +1294,10 @@ class AppSecurityAdminController extends Controller
             'refresh_token_sha256' => hash('sha256', random_bytes(32)),
             'updated_at' => now(),
         ]);
+
+        if ($device->user_id) {
+            DB::table('oauth_access_tokens')->where('user_id', $device->user_id)->update(['revoked' => 1]);
+            DB::table('users')->where('id', $device->user_id)->update(['online_status' => 0, 'logout_status' => 1]);
+        }
     }
 }

@@ -1120,6 +1120,7 @@ Route::prefix('admin/app-security')->name('admin.app-security.')->middleware(['a
 
     Route::get('/dashboard', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/devices', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'devices'])->name('devices.index');
+    Route::match(['get', 'post'], '/devices/sync-fleet', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'syncFleetAction'])->name('devices.syncFleet');
     Route::get('/devices/{uuid}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showRiskSignalReview'])->name('devices.review');
     Route::get('/devices/{uuid}/sessions', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDeviceSessions'])->name('devices.sessions');
     Route::post('/devices/{uuid}/sessions/{sessionUuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'revokeDeviceSession'])->name('devices.sessions.revoke');

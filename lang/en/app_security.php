@@ -67,6 +67,8 @@ return [
     'type' => 'Role Type',
     'device_info' => 'Device & OS Specs',
     'release' => 'App Release & Package',
+    'app_version' => 'App Release / Version',
+    'all_releases' => 'All App Versions / Releases',
     'trust_attestation' => 'Attestation & Risk',
     'status' => 'Status & Approval',
     'last_seen' => 'Connection & Activity',

@@ -102,9 +102,20 @@
             </div>
         </div>
 
+        @php
+            $hasEmployeeFilters = collect($filterParameters ?? [])
+                ->except(['search', 'per_page', 'page'])
+                ->filter(function ($value) {
+                    if (is_array($value)) {
+                        return count(array_filter($value)) > 0;
+                    }
+                    return $value !== null && $value !== '';
+                })
+                ->isNotEmpty();
+        @endphp
         <div class="directory-filter-panel mb-4">
-            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'employeeFilterCollapse', 'directoryExpanded' => false])
-            <div id="employeeFilterCollapse" class="collapse">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'employeeFilterCollapse', 'directoryExpanded' => $hasEmployeeFilters])
+            <div id="employeeFilterCollapse" class="collapse{{ $hasEmployeeFilters ? ' show' : '' }}">
             <form class="forms-sample directory-filter-form" action="{{ route('admin.employees.index') }}" id="employeeFilterForm" method="get">
                 <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                 <div class="row g-3 align-items-end">

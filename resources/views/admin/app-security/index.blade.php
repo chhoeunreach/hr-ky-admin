@@ -183,10 +183,16 @@
                         </li>
                     </ul>
 
-                    <div class="text-muted small">
+                    <div class="text-muted small d-flex align-items-center gap-2">
                         <span class="badge bg-white text-dark border rounded-pill px-3 py-2 shadow-xs">
                             <i class="fa-solid fa-shield-halved text-primary me-1"></i> Total Inventory: <strong>{{ $devices->total() }}</strong> devices · <strong>{{ $totalSessionsCount }}</strong> sessions
                         </span>
+                        <form method="post" action="{{ route('admin.app-security.devices.syncFleet') }}" id="fleetSyncFormTop" class="d-inline m-0">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1-5 shadow-xs fw-semibold" title="Synchronize all mobile hardware connected via mobile app API and login sessions">
+                                <i class="fa-solid fa-arrows-rotate me-1"></i> Sync All Connected Devices
+                            </button>
+                        </form>
                     </div>
                 </div>
 
@@ -237,173 +243,196 @@
                     </div>
                 </div>
 
-                {{-- Toolbar & Filter Section --}}
-                <div class="fleet-toolbar-wrapper">
-                    {{-- 1. Quick Filter Chips Bar --}}
-                    @php
-                        $isAllActive = !request()->anyFilled(['status', 'user_type', 'attestation_level', 'risk_level', 'activity']);
-                    @endphp
-                    <div class="fleet-quick-chips">
-                        <span class="text-muted small fw-bold text-uppercase me-2" style="font-size: 11px; letter-spacing: 0.5px;">
-                            <i class="fa-solid fa-bolt me-1 text-primary"></i> Quick Views:
-                        </span>
+                {{-- Quick Filter Chips Bar --}}
+                @php
+                    $isAllActive = !request()->anyFilled(['status', 'user_type', 'attestation_level', 'risk_level', 'activity', 'version']);
+                    $hasFleetFilters = request()->anyFilled(['q', 'status', 'user_type', 'attestation_level', 'risk_level', 'activity', 'sort_by', 'version']);
+                @endphp
+                <div class="fleet-quick-chips mb-3">
+                    <span class="text-muted small fw-bold text-uppercase me-2" style="font-size: 11px; letter-spacing: 0.5px;">
+                        <i class="fa-solid fa-bolt me-1 text-primary"></i> Quick Views:
+                    </span>
 
-                        <a href="{{ route('admin.app-security.index') }}" class="fleet-chip {{ $isAllActive ? 'active' : '' }}">
-                            <i class="fa-solid fa-layer-group"></i> {{ __('app_security.chip_all') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['total'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index') }}" class="fleet-chip {{ $isAllActive ? 'active' : '' }}">
+                        <i class="fa-solid fa-layer-group"></i> {{ __('app_security.chip_all') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['total'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['status' => 'pending']) }}" class="fleet-chip {{ request('status') === 'pending' ? 'active' : '' }}">
-                            <span class="chip-dot bg-warning"></span> {{ __('app_security.chip_pending') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['pending'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['status' => 'pending']) }}" class="fleet-chip {{ request('status') === 'pending' ? 'active' : '' }}">
+                        <span class="chip-dot bg-warning"></span> {{ __('app_security.chip_pending') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['pending'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['status' => 'approved']) }}" class="fleet-chip {{ request('status') === 'approved' ? 'active' : '' }}">
-                            <span class="chip-dot bg-success"></span> {{ __('app_security.chip_approved') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['approved'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['status' => 'approved']) }}" class="fleet-chip {{ request('status') === 'approved' ? 'active' : '' }}">
+                        <span class="chip-dot bg-success"></span> {{ __('app_security.chip_approved') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['approved'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['activity' => 'today']) }}" class="fleet-chip {{ request('activity') === 'today' ? 'active' : '' }}">
-                            <span class="conn-pulse-dot online me-1"></span> {{ __('app_security.chip_online') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['online'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['activity' => 'today']) }}" class="fleet-chip {{ request('activity') === 'today' ? 'active' : '' }}">
+                        <span class="conn-pulse-dot online me-1"></span> {{ __('app_security.chip_online') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['online'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['risk_level' => 'high']) }}" class="fleet-chip {{ request('risk_level') === 'high' ? 'active' : '' }}">
-                            <i class="fa-solid fa-fire text-danger"></i> {{ __('app_security.chip_high_risk') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['high_risk'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['risk_level' => 'high']) }}" class="fleet-chip {{ request('risk_level') === 'high' ? 'active' : '' }}">
+                        <i class="fa-solid fa-fire text-danger"></i> {{ __('app_security.chip_high_risk') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['high_risk'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['attestation_level' => 'strongbox']) }}" class="fleet-chip {{ request('attestation_level') === 'strongbox' ? 'active' : '' }}">
-                            <i class="fa-solid fa-shield-halved text-info"></i> {{ __('app_security.chip_attested') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['attested'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['attestation_level' => 'strongbox']) }}" class="fleet-chip {{ request('attestation_level') === 'strongbox' ? 'active' : '' }}">
+                        <i class="fa-solid fa-shield-halved text-info"></i> {{ __('app_security.chip_attested') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['attested'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['status' => 'blocked']) }}" class="fleet-chip {{ request('status') === 'blocked' ? 'active' : '' }}">
-                            <i class="fa-solid fa-ban text-danger"></i> {{ __('app_security.chip_blocked') }}
-                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['blocked'] }}</span>
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['status' => 'blocked']) }}" class="fleet-chip {{ request('status') === 'blocked' ? 'active' : '' }}">
+                        <i class="fa-solid fa-ban text-danger"></i> {{ __('app_security.chip_blocked') }}
+                        <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['blocked'] }}</span>
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['user_type' => 'staff']) }}" class="fleet-chip {{ request('user_type') === 'staff' ? 'active' : '' }}">
-                            <i class="fa-solid fa-user-tie text-primary"></i> Staff
-                        </a>
+                    <a href="{{ route('admin.app-security.index', ['user_type' => 'staff']) }}" class="fleet-chip {{ request('user_type') === 'staff' ? 'active' : '' }}">
+                        <i class="fa-solid fa-user-tie text-primary"></i> Staff
+                    </a>
 
-                        <a href="{{ route('admin.app-security.index', ['user_type' => 'customer']) }}" class="fleet-chip {{ request('user_type') === 'customer' ? 'active' : '' }}">
-                            <i class="fa-solid fa-users text-purple"></i> Customer
-                        </a>
-                    </div>
-
-                    {{-- 2. Advanced Multi-Field Filter Form --}}
-                    <form method="get" action="{{ route('admin.app-security.index') }}" id="deviceFilterForm">
-                        <div class="fleet-filter-grid">
-                            {{-- Multi-Attribute Search Input --}}
-                            <div class="input-group input-group-sm">
-                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <input type="text" name="q" id="fleetSearchInput" value="{{ request('q') }}" class="form-control border-start-0 border-end-0 ps-0" placeholder="{{ __('app_security.search_placeholder') }}">
-                                @if(request()->filled('q'))
-                                    <button type="button" class="btn btn-sm btn-outline-secondary border-start-0" onclick="document.getElementById('fleetSearchInput').value=''; document.getElementById('deviceFilterForm').submit();" title="Clear search text">
-                                        <i class="fa-solid fa-xmark"></i>
-                                    </button>
-                                @endif
-                            </div>
-
-                            {{-- Status Filter --}}
-                            <select name="status" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                <option value="">{{ __('app_security.all_statuses') }}</option>
-                                @foreach(['pending' => __('app_security.status_pending'), 'approved' => __('app_security.status_approved'), 'blocked' => __('app_security.status_blocked'), 'rejected' => __('app_security.status_rejected'), 'revoked' => __('app_security.status_revoked'), 're_registration_required' => __('app_security.status_re_registration')] as $statusKey => $statusLabel)
-                                    <option value="{{ $statusKey }}" @selected(request('status') === $statusKey)>{{ $statusLabel }}</option>
-                                @endforeach
-                            </select>
-
-                            {{-- User Type Filter --}}
-                            <select name="user_type" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                <option value="">{{ __('app_security.all_user_types') }}</option>
-                                <option value="staff" @selected(request('user_type') === 'staff')>{{ __('app_security.type_staff') }}</option>
-                                <option value="customer" @selected(request('user_type') === 'customer')>{{ __('app_security.type_customer') }}</option>
-                                <option value="admin" @selected(request('user_type') === 'admin')>{{ __('app_security.type_admin') }}</option>
-                            </select>
-
-                            {{-- Hardware Attestation Level Filter --}}
-                            @unless($supportOnly)
-                                <select name="attestation_level" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                    <option value="">{{ __('app_security.all_attestation') }}</option>
-                                    <option value="strongbox" @selected(request('attestation_level') === 'strongbox')>{{ __('app_security.attestation_strongbox') }}</option>
-                                    <option value="tee" @selected(request('attestation_level') === 'tee')>{{ __('app_security.attestation_tee') }}</option>
-                                    <option value="basic" @selected(request('attestation_level') === 'basic')>{{ __('app_security.attestation_basic') }}</option>
-                                    <option value="none" @selected(request('attestation_level') === 'none')>{{ __('app_security.attestation_none') }}</option>
-                                </select>
-                            @endunless
-
-                            {{-- Risk Severity Level Filter --}}
-                            @unless($supportOnly)
-                                <select name="risk_level" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                    <option value="">{{ __('app_security.all_risk_levels') }}</option>
-                                    <option value="low" @selected(request('risk_level') === 'low')>{{ __('app_security.risk_low') }}</option>
-                                    <option value="medium" @selected(request('risk_level') === 'medium')>{{ __('app_security.risk_medium') }}</option>
-                                    <option value="high" @selected(request('risk_level') === 'high')>{{ __('app_security.risk_high') }}</option>
-                                </select>
-                            @endunless
-
-                            {{-- Connection Activity Filter --}}
-                            <select name="activity" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                <option value="">{{ __('app_security.all_activity') }}</option>
-                                <option value="online" @selected(request('activity') === 'online')>{{ __('app_security.activity_online') }}</option>
-                                <option value="today" @selected(request('activity') === 'today')>{{ __('app_security.activity_today') }}</option>
-                                <option value="week" @selected(request('activity') === 'week')>{{ __('app_security.activity_week') }}</option>
-                                <option value="inactive" @selected(request('activity') === 'inactive')>{{ __('app_security.activity_inactive') }}</option>
-                            </select>
-
-                            {{-- Sorting Dropdown --}}
-                            <select name="sort_by" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
-                                <option value="last_seen" @selected(request('sort_by', 'last_seen') === 'last_seen')>{{ __('app_security.sort_last_seen_desc') }}</option>
-                                <option value="registered" @selected(request('sort_by') === 'registered')>{{ __('app_security.sort_registered_desc') }}</option>
-                                <option value="risk_score" @selected(request('sort_by') === 'risk_score')>{{ __('app_security.sort_risk_desc') }}</option>
-                                <option value="model" @selected(request('sort_by') === 'model')>{{ __('app_security.sort_model_asc') }}</option>
-                            </select>
-
-                            {{-- Items Per Page --}}
-                            <select name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('deviceFilterForm').submit()">
-                                @foreach([15, 25, 50, 100] as $limit)
-                                    <option value="{{ $limit }}" @selected((int)request('per_page', 25) === $limit)>{{ $limit }} / page</option>
-                                @endforeach
-                            </select>
-
-                            {{-- Action Buttons --}}
-                            <div class="d-flex align-items-center gap-2">
-                                <button class="btn btn-primary btn-sm px-3 rounded-pill" type="submit">
-                                    <i class="fa-solid fa-filter me-1"></i> {{ __('app_security.filter_button') }}
-                                </button>
-                                @if(request()->anyFilled(['q', 'status', 'user_type', 'attestation_level', 'risk_level', 'activity', 'sort_by', 'per_page']))
-                                    <a href="{{ route('admin.app-security.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear all active filters">
-                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('app_security.reset_filter') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
+                    <a href="{{ route('admin.app-security.index', ['user_type' => 'customer']) }}" class="fleet-chip {{ request('user_type') === 'customer' ? 'active' : '' }}">
+                        <i class="fa-solid fa-users text-purple"></i> Customer
+                    </a>
                 </div>
 
-                {{-- Full-Information Device Fleet Table --}}
-                <div class="table-responsive">
-                    <table class="table security-table align-middle">
-                        <thead>
-                            <tr>
-                                <th>{{ __('app_security.user') }}</th>
-                                <th>{{ __('app_security.device_info') }}</th>
-                                <th>{{ __('app_security.last_seen') }}</th>
+                {{-- Collapsible Directory Filter Panel --}}
+                <div class="directory-filter-panel mb-4">
+                    @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'deviceFleetDirectoryFilters', 'directoryExpanded' => $hasFleetFilters])
+                    <div id="deviceFleetDirectoryFilters" class="collapse {{ $hasFleetFilters ? 'show' : '' }}">
+                        <form id="deviceFleetFilterForm" class="directory-filter-form" action="{{ route('admin.app-security.index') }}" method="get">
+                            <input type="hidden" name="view" value="devices">
+                            <div class="row g-3">
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="filterStatus" class="form-label">{{ __('app_security.status') }}</label>
+                                    <select id="filterStatus" name="status" class="form-select">
+                                        <option value="">{{ __('app_security.all_statuses') }}</option>
+                                        @foreach(['pending' => __('app_security.status_pending'), 'approved' => __('app_security.status_approved'), 'blocked' => __('app_security.status_blocked'), 'rejected' => __('app_security.status_rejected'), 'revoked' => __('app_security.status_revoked'), 're_registration_required' => __('app_security.status_re_registration')] as $statusKey => $statusLabel)
+                                            <option value="{{ $statusKey }}" @selected(request('status') === $statusKey)>{{ $statusLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="filterUserType" class="form-label">{{ __('app_security.user_type') }}</label>
+                                    <select id="filterUserType" name="user_type" class="form-select">
+                                        <option value="">{{ __('app_security.all_user_types') }}</option>
+                                        <option value="staff" @selected(request('user_type') === 'staff')>{{ __('app_security.type_staff') }}</option>
+                                        <option value="customer" @selected(request('user_type') === 'customer')>{{ __('app_security.type_customer') }}</option>
+                                        <option value="admin" @selected(request('user_type') === 'admin')>{{ __('app_security.type_admin') }}</option>
+                                    </select>
+                                </div>
+
                                 @unless($supportOnly)
-                                    <th>{{ __('app_security.release') }}</th>
-                                    <th>{{ __('app_security.trust_attestation') }}</th>
+                                    <div class="col-xl-3 col-md-6">
+                                        <label for="filterAttestation" class="form-label">{{ __('app_security.attestation_level') }}</label>
+                                        <select id="filterAttestation" name="attestation_level" class="form-select">
+                                            <option value="">{{ __('app_security.all_attestation') }}</option>
+                                            <option value="strongbox" @selected(request('attestation_level') === 'strongbox')>{{ __('app_security.attestation_strongbox') }}</option>
+                                            <option value="tee" @selected(request('attestation_level') === 'tee')>{{ __('app_security.attestation_tee') }}</option>
+                                            <option value="basic" @selected(request('attestation_level') === 'basic')>{{ __('app_security.attestation_basic') }}</option>
+                                            <option value="none" @selected(request('attestation_level') === 'none')>{{ __('app_security.attestation_none') }}</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-xl-3 col-md-6">
+                                        <label for="filterRisk" class="form-label">{{ __('app_security.risk_level') }}</label>
+                                        <select id="filterRisk" name="risk_level" class="form-select">
+                                            <option value="">{{ __('app_security.all_risk_levels') }}</option>
+                                            <option value="low" @selected(request('risk_level') === 'low')>{{ __('app_security.risk_low') }}</option>
+                                            <option value="medium" @selected(request('risk_level') === 'medium')>{{ __('app_security.risk_medium') }}</option>
+                                            <option value="high" @selected(request('risk_level') === 'high')>{{ __('app_security.risk_high') }}</option>
+                                        </select>
+                                    </div>
                                 @endunless
-                                <th>{{ __('app_security.status') }}</th>
-                                <th class="text-end">{{ __('app_security.actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @forelse($devices as $device)
-                            @php
-                                // Connection status calculation
-                                $lastSeenMinutes = $device->last_seen_at ? $device->last_seen_at->diffInMinutes(now()) : null;
-                                if ($lastSeenMinutes === null) {
+
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="filterActivity" class="form-label">{{ __('app_security.activity') }}</label>
+                                    <select id="filterActivity" name="activity" class="form-select">
+                                        <option value="">{{ __('app_security.all_activity') }}</option>
+                                        <option value="online" @selected(request('activity') === 'online')>{{ __('app_security.activity_online') }}</option>
+                                        <option value="today" @selected(request('activity') === 'today')>{{ __('app_security.activity_today') }}</option>
+                                        <option value="week" @selected(request('activity') === 'week')>{{ __('app_security.activity_week') }}</option>
+                                        <option value="inactive" @selected(request('activity') === 'inactive')>{{ __('app_security.activity_inactive') }}</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="filterSortBy" class="form-label">{{ __('app_security.sort') ?? 'Sort By' }}</label>
+                                    <select id="filterSortBy" name="sort_by" class="form-select">
+                                        <option value="last_seen" @selected(request('sort_by', 'last_seen') === 'last_seen')>{{ __('app_security.sort_last_seen_desc') }}</option>
+                                        <option value="registered" @selected(request('sort_by') === 'registered')>{{ __('app_security.sort_registered_desc') }}</option>
+                                        <option value="risk_score" @selected(request('sort_by') === 'risk_score')>{{ __('app_security.sort_risk_desc') }}</option>
+                                        <option value="model" @selected(request('sort_by') === 'model')>{{ __('app_security.sort_model_asc') }}</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="filterAppVersion" class="form-label">{{ __('app_security.app_version') }}</label>
+                                    <select id="filterAppVersion" name="version" class="form-select">
+                                        <option value="">{{ __('app_security.all_releases') }}</option>
+                                        @if(isset($availableVersions) && count($availableVersions))
+                                            @foreach($availableVersions as $v)
+                                                <option value="{{ $v }}" @selected(request('version') === (string)$v)>v{{ $v }}</option>
+                                            @endforeach
+                                        @elseif(isset($releases) && $releases->count())
+                                            @foreach($releases as $rel)
+                                                <option value="{{ $rel->version_name }}" @selected(request('version') === $rel->version_name)>v{{ $rel->version_name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                </div>
+
+                                <div class="col-xl-3 col-md-6">
+                                    <label for="fleetSearchQuery" class="form-label">{{ __('app_security.search') }}</label>
+                                    <input type="text" id="fleetSearchQuery" name="q" value="{{ request('q') }}" class="form-control" placeholder="{{ __('app_security.search_placeholder') }}">
+                                </div>
+                            </div>
+                            @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.app-security.index', ['view' => 'devices'])])
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Standard Directory Toolbar & Card Table --}}
+                <div class="card border-0 shadow-sm mb-4">
+                    @include('admin.section.directory-toolbar', [
+                        'directoryTable' => 'deviceFleetDirectoryTable',
+                        'directoryForm' => 'deviceFleetFilterForm',
+                        'directorySearch' => 'deviceFleetSearch',
+                        'directoryRecords' => $devices,
+                        'directoryTitle' => __('app_security.registered_devices'),
+                        'directoryIcon' => 'smartphone',
+                        'directoryCanAdd' => true,
+                        'directoryAddUrl' => route('admin.app-security.devices.syncFleet'),
+                        'directoryAddLabel' => 'Sync Fleet',
+                        'directoryDefaultSize' => '25',
+                        'directorySearchKey' => 'q',
+                        'directoryLive' => false
+                    ])
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table id="deviceFleetDirectoryTable" class="table security-table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="text-center" style="width: 50px;">#</th>
+                                        <th>{{ __('app_security.user') }}</th>
+                                        <th>{{ __('app_security.device_info') }}</th>
+                                        <th>{{ __('app_security.last_seen') }}</th>
+                                        @unless($supportOnly)
+                                            <th>{{ __('app_security.release') }}</th>
+                                            <th>{{ __('app_security.trust_attestation') }}</th>
+                                        @endunless
+                                        <th>{{ __('app_security.status') }}</th>
+                                        <th class="text-center" data-directory-actions style="width: 130px;">{{ __('app_security.actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @forelse($devices as $device)
+                                    @php
+                                        // Connection status calculation
+                                        $lastSeenMinutes = $device->last_seen_at ? $device->last_seen_at->diffInMinutes(now()) : null;
+                                        if ($lastSeenMinutes === null) {
                                     $connStatus = 'offline';
                                     $connLabel = 'Never Connected';
                                 } elseif ($lastSeenMinutes <= 60) {
@@ -556,6 +585,7 @@
                                 ];
                             @endphp
                             <tr>
+                                <td class="text-center text-muted small">{{ $devices->firstItem() + $loop->index }}</td>
                                 {{-- 1. User Profile & Role --}}
                                 <td>
                                     <div class="device-user-box">
@@ -839,7 +869,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $supportOnly ? 5 : 7 }}" class="text-center py-5">
+                                <td colspan="{{ $supportOnly ? 6 : 8 }}" class="text-center py-5">
                                     <div class="py-4">
                                         <i class="fa-solid fa-mobile-screen fs-1 text-muted mb-3 d-block opacity-50"></i>
                                         <h5 class="text-muted fw-bold">{{ __('app_security.no_devices_found') }}</h5>
@@ -854,18 +884,20 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                @if($devices->hasPages())
-                    <div class="panel-header border-top border-bottom-0 bg-white">
-                        <div class="small text-muted">
-                            Showing {{ $devices->firstItem() ?? 0 }} to {{ $devices->lastItem() ?? 0 }} of {{ $devices->total() }} devices
-                        </div>
-                        <div>
-                            {{ $devices->links() }}
-                        </div>
+            @if($devices->hasPages())
+                <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="small text-muted">
+                        Showing {{ $devices->firstItem() ?? 0 }} to {{ $devices->lastItem() ?? 0 }} of {{ number_format($devices->total()) }} devices
                     </div>
-                @endif
+                    <div>
+                        {{ $devices->links() }}
                     </div>
+                </div>
+            @endif
+        </div>
+    </div>
 
                     {{-- ========================================================
                          SUB-TAB 2: LIVE CONNECTED SESSIONS
@@ -902,76 +934,93 @@
                             </div>
                         </div>
 
-                        {{-- Sessions Toolbar & Filter --}}
-                        <div class="fleet-toolbar-wrapper">
-                            <form method="get" action="{{ route('admin.app-security.index') }}" id="sessionsFilterForm" class="d-flex flex-wrap gap-2 align-items-center">
-                                <input type="hidden" name="view" value="sessions">
+                        {{-- Collapsible Directory Filter Panel for Sessions --}}
+                        @php
+                            $hasSessionFilters = request()->anyFilled(['session_q', 'session_status', 'session_device']);
+                        @endphp
+                        <div class="directory-filter-panel mb-4">
+                            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'sessionsDirectoryFilters', 'directoryExpanded' => $hasSessionFilters])
+                            <div id="sessionsDirectoryFilters" class="collapse {{ $hasSessionFilters ? 'show' : '' }}">
+                                <form id="sessionsFilterForm" class="directory-filter-form" action="{{ route('admin.app-security.index') }}" method="get">
+                                    <input type="hidden" name="view" value="sessions">
+                                    <div class="row g-3">
+                                        <div class="col-xl-4 col-md-6">
+                                            <label for="filterSessionStatus" class="form-label">{{ __('app_security.status') }}</label>
+                                            <select id="filterSessionStatus" name="session_status" class="form-select">
+                                                <option value="">{{ __('app_security.all_sessions') }}</option>
+                                                <option value="active" @selected(request('session_status') === 'active')>{{ __('app_security.active_sessions_only') }}</option>
+                                                <option value="revoked" @selected(request('session_status') === 'revoked')>{{ __('app_security.revoked_sessions_only') }}</option>
+                                                <option value="expired" @selected(request('session_status') === 'expired')>{{ __('app_security.expired_sessions_only') }}</option>
+                                            </select>
+                                        </div>
 
-                                <div class="input-group input-group-sm" style="max-width: 320px;">
-                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                    <input type="text" name="session_q" id="sessionSearchInput" value="{{ request('session_q') }}" class="form-control border-start-0 border-end-0 ps-0" placeholder="{{ __('app_security.search_sessions') }}">
-                                    @if(request()->filled('session_q'))
-                                        <button type="button" class="btn btn-sm btn-outline-secondary border-start-0" onclick="document.getElementById('sessionSearchInput').value=''; document.getElementById('sessionsFilterForm').submit();" title="Clear search">
-                                            <i class="fa-solid fa-xmark"></i>
-                                        </button>
-                                    @endif
-                                </div>
+                                        <div class="col-xl-4 col-md-6">
+                                            <label for="filterSessionQ" class="form-label">{{ __('app_security.search') }}</label>
+                                            <input type="text" id="filterSessionQ" name="session_q" value="{{ request('session_q') }}" class="form-control" placeholder="{{ __('app_security.search_sessions') }}">
+                                        </div>
 
-                                <select name="session_status" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('sessionsFilterForm').submit()">
-                                    <option value="">{{ __('app_security.all_sessions') }}</option>
-                                    <option value="active" @selected(request('session_status') === 'active')>{{ __('app_security.active_sessions_only') }}</option>
-                                    <option value="revoked" @selected(request('session_status') === 'revoked')>{{ __('app_security.revoked_sessions_only') }}</option>
-                                    <option value="expired" @selected(request('session_status') === 'expired')>{{ __('app_security.expired_sessions_only') }}</option>
-                                </select>
-
-                                @if(request()->filled('session_device'))
-                                    <input type="hidden" name="session_device" value="{{ request('session_device') }}">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
-                                        <i class="fa-solid fa-mobile-screen me-1"></i> Device: {{ substr(request('session_device'), 0, 8) }}…
-                                    </span>
-                                @endif
-
-                                <button class="btn btn-primary btn-sm px-3 rounded-pill" type="submit">
-                                    <i class="fa-solid fa-filter me-1"></i> {{ __('app_security.filter_button') }}
-                                </button>
-
-                                @if(request()->anyFilled(['session_q', 'session_status', 'session_device']))
-                                    <a href="{{ route('admin.app-security.index', ['view' => 'sessions']) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('app_security.reset_filter') }}
-                                    </a>
-                                @endif
-                            </form>
+                                        @if(request()->filled('session_device'))
+                                            <div class="col-xl-4 col-md-6">
+                                                <label class="form-label">Filtered Device UUID</label>
+                                                <div class="input-group">
+                                                    <input type="text" name="session_device" value="{{ request('session_device') }}" class="form-control" readonly>
+                                                    <a href="{{ route('admin.app-security.index', ['view' => 'sessions']) }}" class="btn btn-outline-secondary" title="Clear device filter"><i class="fa-solid fa-xmark"></i></a>
+                                                </div>
+                                            </div>
+                                        @endif
+                                    </div>
+                                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.app-security.index', ['view' => 'sessions'])])
+                                </form>
+                            </div>
                         </div>
 
-                        {{-- Live Sessions Table --}}
-                        <div class="table-responsive">
-                            <table class="table security-table align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{{ __('app_security.device_info') }}</th>
-                                        <th>{{ __('app_security.user') }}</th>
-                                        <th>{{ __('app_security.last_location') }}</th>
-                                        <th>{{ __('app_security.session_token') }}</th>
-                                        <th>{{ __('app_security.session_created') }}</th>
-                                        <th>{{ __('app_security.session_last_used') }}</th>
-                                        <th>{{ __('app_security.session_expires') }}</th>
-                                        <th>{{ __('app_security.session_status') }}</th>
-                                        <th class="text-end">{{ __('app_security.actions') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                @forelse($allSessions as $session)
-                                    @php
-                                        $isRevoked = $session->revoked_at !== null;
-                                        $isExpired = !$isRevoked && $session->expires_at <= now();
-                                        $isActive = !$isRevoked && !$isExpired;
-                                        $sessLoc = $session->user?->latestDeviceLocation;
-                                        $sessLat = $sessLoc?->latitude;
-                                        $sessLng = $sessLoc?->longitude;
-                                        $sessBattery = $sessLoc?->battery_level;
-                                        $sessMapUrl = ($sessLat && $sessLng) ? "https://www.google.com/maps?q={$sessLat},{$sessLng}" : null;
-                                    @endphp
-                                    <tr>
+                        {{-- Standard Directory Toolbar & Card Table for Sessions --}}
+                        <div class="card border-0 shadow-sm mb-4">
+                            @include('admin.section.directory-toolbar', [
+                                'directoryTable' => 'sessionsDirectoryTable',
+                                'directoryForm' => 'sessionsFilterForm',
+                                'directorySearch' => 'sessionsSearch',
+                                'directoryRecords' => $allSessions,
+                                'directoryTitle' => __('app_security.subtab_sessions'),
+                                'directoryIcon' => 'cpu',
+                                'directoryCanAdd' => true,
+                                'directoryAddUrl' => route('admin.app-security.devices.syncFleet'),
+                                'directoryAddLabel' => 'Sync Fleet',
+                                'directoryDefaultSize' => '25',
+                                'directorySearchKey' => 'session_q',
+                                'directoryLive' => false
+                            ])
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table id="sessionsDirectoryTable" class="table security-table align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center" style="width: 50px;">#</th>
+                                                <th>{{ __('app_security.device_info') }}</th>
+                                                <th>{{ __('app_security.user') }}</th>
+                                                <th>{{ __('app_security.last_location') }}</th>
+                                                <th>{{ __('app_security.session_token') }}</th>
+                                                <th>{{ __('app_security.session_created') }}</th>
+                                                <th>{{ __('app_security.session_last_used') }}</th>
+                                                <th>{{ __('app_security.session_expires') }}</th>
+                                                <th>{{ __('app_security.session_status') }}</th>
+                                                <th class="text-center" data-directory-actions style="width: 120px;">{{ __('app_security.actions') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        @forelse($allSessions as $session)
+                                            @php
+                                                $isRevoked = $session->revoked_at !== null;
+                                                $isExpired = !$isRevoked && $session->expires_at <= now();
+                                                $isActive = !$isRevoked && !$isExpired;
+                                                $sessLoc = $session->user?->latestDeviceLocation;
+                                                $sessLat = $sessLoc?->latitude;
+                                                $sessLng = $sessLoc?->longitude;
+                                                $sessBattery = $sessLoc?->battery_level;
+                                                $sessMapUrl = ($sessLat && $sessLng) ? "https://www.google.com/maps?q={$sessLat},{$sessLng}" : null;
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center text-muted small">{{ $allSessions->firstItem() + $loop->index }}</td>
                                         {{-- 1. Device Info --}}
                                         <td>
                                             <div class="d-flex align-items-center gap-2">
@@ -1124,7 +1173,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center py-5">
+                                        <td colspan="10" class="text-center py-5">
                                             <div class="py-4">
                                                 <i class="fa-solid fa-network-wired fs-1 text-muted mb-3 d-block opacity-50"></i>
                                                 <h5 class="text-muted fw-bold">{{ __('app_security.no_sessions_found') }}</h5>
@@ -1136,18 +1185,20 @@
                                 </tbody>
                             </table>
                         </div>
-
-                        @if($allSessions->hasPages())
-                            <div class="panel-header border-top border-bottom-0 bg-white">
-                                <div class="small text-muted">
-                                    Showing {{ $allSessions->firstItem() ?? 0 }} to {{ $allSessions->lastItem() ?? 0 }} of {{ $allSessions->total() }} sessions
-                                </div>
-                                <div>
-                                    {{ $allSessions->links() }}
-                                </div>
-                            </div>
-                        @endif
                     </div>
+
+                    @if($allSessions->hasPages())
+                        <div class="card-footer bg-white border-top py-2 px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="small text-muted">
+                                Showing {{ $allSessions->firstItem() ?? 0 }} to {{ $allSessions->lastItem() ?? 0 }} of {{ number_format($allSessions->total()) }} sessions
+                            </div>
+                            <div>
+                                {{ $allSessions->links() }}
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
                 </div>
             </div>
         </div>

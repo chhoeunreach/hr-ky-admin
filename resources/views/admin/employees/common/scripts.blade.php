@@ -49,6 +49,12 @@
             }
         });
 
+        $('#employeeFilterCollapse').on('show.bs.collapse', function () {
+            $('.directory-filter-toggle[data-bs-target="#employeeFilterCollapse"]').attr('aria-expanded', 'true');
+        }).on('hide.bs.collapse', function () {
+            $('.directory-filter-toggle[data-bs-target="#employeeFilterCollapse"]').attr('aria-expanded', 'false');
+        });
+
         window.filterByStatus = function(status) {
             $('#is_active').val(status).trigger('change');
             refreshEmployeeList();
