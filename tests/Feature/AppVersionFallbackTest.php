@@ -215,9 +215,12 @@ class AppVersionFallbackTest extends TestCase
         });
 
         $html = view('admin.section.partial.mobileTool')->render();
-        $this->assertStringContainsString(route('admin.showQR'), $html);
-        $this->assertStringContainsString(route('admin.app-settings.index'), $html);
-        $this->assertStringContainsString(route('admin.roles.index'), $html);
+        $this->assertStringContainsString('href="#mobileAppControls" data-href="#"', $html);
+        foreach (['admin.showQR', 'admin.app-settings.index', 'admin.roles.index'] as $route) {
+            $url = route($route);
+            $this->assertStringContainsString('href="'.$url.'"', $html);
+            $this->assertStringContainsString('data-href="'.$url.'"', $html);
+        }
         $this->assertStringNotContainsString(route('admin.app-security.index'), $html);
         $this->assertStringNotContainsString(route('admin.feature.index'), $html);
     }

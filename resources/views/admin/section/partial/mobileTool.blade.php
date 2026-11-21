@@ -12,7 +12,7 @@
     $mobileControlsOpen = $visibleMobileControls->contains(fn ($item) => request()->routeIs($item['active']));
 @endphp
 <li class="nav-item {{ $mobileControlsOpen ? 'active' : '' }}">
-    <a class="nav-link" href="#mobileAppControls" data-bs-toggle="collapse" role="button"
+    <a class="nav-link" href="#mobileAppControls" data-href="#" data-bs-toggle="collapse" role="button"
        aria-controls="mobileAppControls" aria-expanded="{{ $mobileControlsOpen ? 'true' : 'false' }}">
         <i class="link-icon" data-feather="smartphone"></i>
         <span class="link-title">{{ __('app_settings.mobile_app_controls') }}</span>
@@ -24,6 +24,7 @@
                 <li class="nav-item">
                     <a class="nav-link {{ request()->routeIs($control['active']) ? 'active' : '' }}"
                        href="{{ route($control['route']) }}"
+                       data-href="{{ route($control['route']) }}"
                        @if($control['route'] === 'admin.showQR') target="_blank" rel="noopener" @endif>
                         {{ $control['label'] }}
                     </a>

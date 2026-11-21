@@ -14,13 +14,14 @@
             e.preventDefault();
             let keycode = e.keyCode;
 
-            if(keycode !== keydown && keycode !== keyup){
+            if(keycode !== keydown && keycode !== keyup && keycode !== keyEnter){
+                currentLI = 0;
                 let linksArr = {};
                 $('.sidebar-menu li a').each(function (i) {
                     let href = $(this).data('href');
-                    if(href !=='#'){
-                        let name = $(this).text().toLowerCase();
-                        linksArr[name] = $(this).data('href');
+                    if (typeof href === 'string' && href.trim() && !href.startsWith('#')) {
+                        let name = $(this).text().trim().toLowerCase();
+                        linksArr[name] = href;
                     }
                 });
 
@@ -46,6 +47,7 @@
             //for up down with arrow key highlight/select
 
             let listItems = document.querySelectorAll("#nav-search-listing li");
+            if (!listItems.length) return;
             listItems[currentLI].classList.add("highlight");
             if(keycode == keydown) {
                 listItems[currentLI].classList.remove("highlight");
