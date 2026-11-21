@@ -17,6 +17,7 @@
             <ul class="nav sidebar-menu">
                 @include('admin.section.partial.dashboard')
                 @include('admin.section.partial.company')
+                @include('admin.section.partial.companyDocuments')
                 @include('admin.section.partial.userManagement')
                 @include('admin.section.partial.user')
                 @include('admin.section.partial.attendance')

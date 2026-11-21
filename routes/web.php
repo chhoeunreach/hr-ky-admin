@@ -23,6 +23,7 @@ use App\Http\Controllers\Web\BonusController;
 use App\Http\Controllers\Web\BranchController;
 use App\Http\Controllers\Web\ClientController;
 use App\Http\Controllers\Web\CompanyController;
+use App\Http\Controllers\Web\CompanyDocumentController;
 use App\Http\Controllers\Web\ComplaintController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DCardPrintController;
@@ -314,6 +315,18 @@ Route::group([
             Route::put('roles/assign-permissions/{roleId}', [RoleController::class, 'assignPermissionToRole'])->name('role.assign-permissions');
 
 
+        });
+
+        /** Company Enterprise Documents & Compliance */
+        Route::prefix('company-documents')->name('company-documents.')->group(function () {
+            Route::get('/', [CompanyDocumentController::class, 'index'])->name('index');
+            Route::post('/', [CompanyDocumentController::class, 'store'])->name('store');
+            Route::get('alerts', [CompanyDocumentController::class, 'expiringAlerts'])->name('alerts');
+            Route::get('{id}', [CompanyDocumentController::class, 'show'])->name('show');
+            Route::put('{id}', [CompanyDocumentController::class, 'update'])->name('update');
+            Route::delete('{id}', [CompanyDocumentController::class, 'destroy'])->name('destroy');
+            Route::get('{id}/download', [CompanyDocumentController::class, 'download'])->name('download');
+            Route::get('{id}/preview', [CompanyDocumentController::class, 'preview'])->name('preview');
         });
 
         /** Employee Location Logs */
