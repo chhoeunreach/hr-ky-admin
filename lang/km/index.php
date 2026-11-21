@@ -3667,4 +3667,5 @@ return [
     'failed_to_load_preview' => 'មិនអាចបើកមើលឯកសារនេះបានឡើយ',
     'failed_to_fetch_document' => 'មិនអាចទាញទិន្នន័យឯកសារបានឡើយ',
     'failed_to_delete_document' => 'មានបញ្ហាក្នុងការលុបឯកសារ',
+    'task_and_report_center' => 'មជ្ឈមណ្ឌលកិច្ចការ និងរបាយការណ៍',
 ];

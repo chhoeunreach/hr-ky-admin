@@ -3597,4 +3597,5 @@ return [
     'failed_to_load_preview' => 'Failed to load document preview',
     'failed_to_fetch_document' => 'Failed to fetch document details',
     'failed_to_delete_document' => 'Failed to delete document',
+    'task_and_report_center' => 'Task & Report Center',
 ];
