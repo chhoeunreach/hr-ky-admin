@@ -1,0 +1,580 @@
+/* ==========================================================================
+   KNEAYERNG App Security Command Center - Executive Stylesheet
+   ========================================================================== */
+
+:root {
+    --sec-navy-deep: #081325;
+    --sec-navy-surface: #0f2347;
+    --sec-navy-card: #152d59;
+    --sec-primary: #1d4ed8;
+    --sec-primary-hover: #1e40af;
+    --sec-cyan: #06b6d4;
+    --sec-emerald: #10b981;
+    --sec-amber: #f59e0b;
+    --sec-rose: #f43f5e;
+    --sec-purple: #8b5cf6;
+    --sec-border: #e2e8f0;
+    --sec-border-subtle: #edf2f7;
+    --sec-text-main: #0f172a;
+    --sec-text-muted: #64748b;
+    --sec-card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+    --sec-card-hover: 0 12px 28px -4px rgba(15, 23, 42, 0.1), 0 4px 8px -2px rgba(15, 23, 42, 0.06);
+}
+
+.security-wrap {
+    color: var(--sec-text-main);
+    font-family: inherit;
+}
+
+/* Hero Command Banner */
+.security-hero-banner {
+    position: relative;
+    background: linear-gradient(135deg, #091a36 0%, #102a5c 50%, #154080 100%);
+    border-radius: 20px;
+    padding: 28px 32px;
+    color: #ffffff;
+    box-shadow: 0 10px 30px -5px rgba(9, 26, 54, 0.4);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.security-hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, rgba(99, 102, 241, 0.05) 50%, transparent 70%);
+    pointer-events: none;
+    border-radius: 50%;
+}
+
+.security-hero-banner .hero-brand-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 14px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #93c5fd;
+    backdrop-filter: blur(8px);
+}
+
+.security-hero-banner .hero-title {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin: 8px 0 6px 0;
+}
+
+.security-hero-banner .hero-subtitle {
+    font-size: 13.5px;
+    color: #cbd5e1;
+    max-width: 680px;
+    line-height: 1.5;
+}
+
+.security-hero-banner .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 12.5px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.security-hero-banner .status-pill.status-active {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.security-hero-banner .status-pill.status-inactive {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.security-hero-banner .pulse-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    animation: secPulse 2s infinite;
+}
+
+@keyframes secPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+/* Metric KPI Cards */
+.security-kpi-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid var(--sec-border);
+    box-shadow: var(--sec-card-shadow);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    cursor: pointer;
+}
+
+.security-kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sec-card-hover);
+    border-color: #cbd5e1;
+}
+
+.security-kpi-card .kpi-icon-wrap {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.security-kpi-card.kpi-pending .kpi-icon-wrap { background: #fef3c7; color: #d97706; }
+.security-kpi-card.kpi-approved .kpi-icon-wrap { background: #d1fae5; color: #059669; }
+.security-kpi-card.kpi-blocked .kpi-icon-wrap { background: #fee2e2; color: #dc2626; }
+.security-kpi-card.kpi-revoked .kpi-icon-wrap { background: #f1f5f9; color: #475569; }
+.security-kpi-card.kpi-highrisk .kpi-icon-wrap { background: #ffe4e6; color: #e11d48; }
+
+.security-kpi-card .kpi-count {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--sec-text-main);
+}
+
+.security-kpi-card .kpi-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--sec-text-muted);
+    margin-top: 4px;
+}
+
+.security-kpi-card .kpi-badge {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+
+/* Full-Step Segment Navigation */
+.security-step-nav {
+    display: flex;
+    gap: 8px;
+    background: #ffffff;
+    padding: 8px;
+    border-radius: 16px;
+    border: 1px solid var(--sec-border);
+    box-shadow: var(--sec-card-shadow);
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.security-step-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--sec-text-muted);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.security-step-nav .nav-link:hover {
+    color: var(--sec-primary);
+    background: #f8fafc;
+}
+
+.security-step-nav .nav-link.active {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #ffffff;
+    border-color: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+}
+
+.security-step-nav .nav-link.active .badge {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.security-step-nav .step-icon {
+    font-size: 15px;
+}
+
+/* Security Panels */
+.security-panel-card {
+    background: #ffffff;
+    border-radius: 18px;
+    border: 1px solid var(--sec-border);
+    box-shadow: var(--sec-card-shadow);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.security-panel-card .panel-header {
+    padding: 20px 24px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--sec-border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.security-panel-card .panel-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--sec-text-main);
+}
+
+.security-panel-card .panel-body {
+    padding: 24px;
+}
+
+/* Modern Device Table */
+.security-table {
+    margin: 0;
+}
+
+.security-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 12px 18px;
+    border-top: none;
+    border-bottom: 1px solid var(--sec-border);
+    white-space: nowrap;
+}
+
+.security-table td {
+    padding: 14px 18px;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--sec-border-subtle);
+    font-size: 13px;
+}
+
+.security-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* User & Device Identity cell */
+.device-user-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.device-user-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #3730a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.device-user-name {
+    font-weight: 700;
+    color: var(--sec-text-main);
+    line-height: 1.25;
+}
+
+.device-user-meta {
+    font-size: 11.5px;
+    color: var(--sec-text-muted);
+}
+
+/* Trust & Attestation Chips */
+.attestation-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.attestation-chip.chip-strongbox {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.attestation-chip.chip-tee {
+    background: #e0f2fe;
+    color: #075985;
+    border: 1px solid #bae6fd;
+}
+
+.attestation-chip.chip-basic {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.attestation-chip.chip-failed {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Risk Progress Meter */
+.risk-meter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.risk-meter-bar {
+    width: 70px;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.risk-meter-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.3s ease;
+}
+
+.risk-meter-fill.risk-low { background: #10b981; }
+.risk-meter-fill.risk-medium { background: #f59e0b; }
+.risk-meter-fill.risk-high { background: #ef4444; }
+
+.risk-score-text {
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Device Status Badges */
+.device-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.device-status-badge.status-approved { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.device-status-badge.status-pending { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }
+.device-status-badge.status-blocked { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.device-status-badge.status-rejected { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.device-status-badge.status-revoked { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+.device-status-badge.status-re_registration_required { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
+/* Control Action Buttons */
+.security-action-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-sec-action {
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+
+/* Step-Up Security Confirmation Modal */
+.modal-security-stepup .modal-content {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.3);
+    overflow: hidden;
+}
+
+.modal-security-stepup .modal-header {
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--sec-border-subtle);
+    background: #f8fafc;
+}
+
+.modal-security-stepup .modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-security-stepup .action-icon-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.modal-security-stepup.type-approve .action-icon-pill { background: #d1fae5; color: #059669; }
+.modal-security-stepup.type-block .action-icon-pill { background: #fee2e2; color: #dc2626; }
+.modal-security-stepup.type-revoke .action-icon-pill { background: #fef2f2; color: #991b1b; }
+.modal-security-stepup.type-reject .action-icon-pill { background: #fee2e2; color: #dc2626; }
+.modal-security-stepup.type-unblock .action-icon-pill { background: #fef3c7; color: #d97706; }
+.modal-security-stepup.type-reregister .action-icon-pill { background: #ffedd5; color: #ea580c; }
+.modal-security-stepup.type-activate .action-icon-pill { background: #dbeafe; color: #2563eb; }
+
+.modal-security-stepup .modal-body {
+    padding: 28px;
+}
+
+.modal-security-stepup .target-details-box {
+    background: #f8fafc;
+    border: 1px solid var(--sec-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.modal-security-stepup .preset-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    margin-bottom: 14px;
+}
+
+.modal-security-stepup .preset-chip {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.modal-security-stepup .preset-chip:hover {
+    background: #e2e8f0;
+    color: var(--sec-primary);
+}
+
+.modal-security-stepup .modal-footer {
+    padding: 18px 28px;
+    border-top: 1px solid var(--sec-border-subtle);
+    background: #f8fafc;
+}
+
+/* Policy Settings Form styling */
+.policy-section-card {
+    background: #f8fafc;
+    border-radius: 14px;
+    border: 1px solid var(--sec-border);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.policy-section-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.policy-switch-card {
+    background: #ffffff;
+    border: 1px solid var(--sec-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 100%;
+}
+
+.policy-switch-card.highlight {
+    background: linear-gradient(135deg, #f0fdf4, #ffffff);
+    border-color: #86efac;
+}
+
+/* Dropzone & APK upload */
+.sec-dropzone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 14px;
+    padding: 28px;
+    text-align: center;
+    background: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sec-dropzone:hover {
+    border-color: var(--sec-primary);
+    background: #eff6ff;
+}
+
+.sec-dropzone .dz-icon {
+    font-size: 36px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+
+/* Responsive adjust */
+@media (max-width: 991.98px) {
+    .security-hero-banner {
+        padding: 20px;
+    }
+    .security-hero-banner .hero-title {
+        font-size: 22px;
+    }
+}
