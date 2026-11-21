@@ -20,4 +20,14 @@ class SecuritySession extends Model
         'last_used_at' => 'datetime',
         'revoked_at' => 'datetime',
     ];
+
+    public function device(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(RegisteredDevice::class, 'device_id');
+    }
+
+    public function user(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
 }

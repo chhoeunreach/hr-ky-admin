@@ -143,8 +143,47 @@ class AppSecurityAdminController extends Controller
             }
         });
 
+        // Query all connected API sessions for the Device & Sessions tab
+        $sessionsQuery = SecuritySession::query()->with([
+            'device:id,uuid,device_model,android_version,android_sdk,device_status,last_seen_at',
+            'user:id,name,username,email,phone,avatar,role_id',
+        ])->latest('last_used_at');
+
+        if ($request->filled('session_status')) {
+            $sessStatus = $request->string('session_status')->toString();
+            if ($sessStatus === 'active') {
+                $sessionsQuery->whereNull('revoked_at')->where('expires_at', '>', now());
+            } elseif ($sessStatus === 'revoked') {
+                $sessionsQuery->whereNotNull('revoked_at');
+            } elseif ($sessStatus === 'expired') {
+                $sessionsQuery->whereNull('revoked_at')->where('expires_at', '<=', now());
+            }
+        }
+
+        if ($request->filled('session_device')) {
+            $sessDeviceUuid = $request->string('session_device')->toString();
+            $sessionsQuery->whereHas('device', fn ($dq) => $dq->where('uuid', $sessDeviceUuid));
+        }
+
+        if ($request->filled('session_q')) {
+            $sessNeedle = '%' . addcslashes($request->string('session_q')->toString(), '%_') . '%';
+            $sessionsQuery->where(function ($sq) use ($sessNeedle): void {
+                $sq->where('uuid', 'like', $sessNeedle)
+                    ->orWhere('session_token_sha256', 'like', $sessNeedle)
+                    ->orWhereHas('device', fn ($dq) => $dq->where('device_model', 'like', $sessNeedle)->orWhere('uuid', 'like', $sessNeedle))
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', $sessNeedle)->orWhere('username', 'like', $sessNeedle));
+            });
+        }
+
+        $allSessions = $sessionsQuery->paginate(25, ['*'], 'sessions_page')->withQueryString();
+        $activeSessionsTotal = SecuritySession::query()->whereNull('revoked_at')->where('expires_at', '>', now())->count();
+        $totalSessionsCount = SecuritySession::query()->count();
+
         return view('admin.app-security.index', [
             'devices' => $devices,
+            'allSessions' => $allSessions,
+            'activeSessionsTotal' => $activeSessionsTotal,
+            'totalSessionsCount' => $totalSessionsCount,
             'supportOnly' => $supportOnly,
             'analytics' => $analytics,
             'canViewAnalytics' => $canViewAnalytics,
@@ -157,6 +196,8 @@ class AppSecurityAdminController extends Controller
                 'high_risk' => (clone $deviceQuery)->where('risk_score', '>=', (int) $policy->value('risk_block_threshold'))->count(),
                 'online' => (clone $deviceQuery)->where('last_seen_at', '>=', now()->subHours(24))->count(),
                 'attested' => (clone $deviceQuery)->whereIn('attestation_level', ['strongbox', 'tee'])->count(),
+                'active_sessions' => $activeSessionsTotal,
+                'total_sessions' => $totalSessionsCount,
             ],
             'release' => $supportOnly ? null : \App\Modules\AppSecurity\Models\SecurityRelease::query()
                 ->where('release_status', 'active')->orderByDesc('version_code')->first(),
@@ -679,7 +720,12 @@ class AppSecurityAdminController extends Controller
             return true;
         }, 3);
 
-        if (!$request->expectsJson()) return redirect()->route('admin.app-security.devices.sessions', $device->uuid)->with('success', $changed ? 'Session revoked and audited.' : 'This session was already revoked.');
+        if (!$request->expectsJson()) {
+            if ($request->filled('from_index') || !str_contains(url()->previous(), '/sessions')) {
+                return redirect()->route('admin.app-security.index', ['view' => 'sessions'])->with('success', $changed ? 'Session revoked and audited.' : 'This session was already revoked.');
+            }
+            return redirect()->route('admin.app-security.devices.sessions', $device->uuid)->with('success', $changed ? 'Session revoked and audited.' : 'This session was already revoked.');
+        }
         return response()->json(['session_id' => $sessionUuid, 'revoked' => true, 'changed' => $changed]);
     }
 

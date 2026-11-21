@@ -582,6 +582,31 @@
 /* ==========================================================================
    Fleet Toolbar & Quick Filters
    ========================================================================== */
+#fleetSubTabs .nav-link {
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    transition: all 0.2s ease;
+}
+
+#fleetSubTabs .nav-link:hover {
+    color: var(--sec-primary);
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+#fleetSubTabs .nav-link.active {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: #ffffff;
+    border-color: #1d4ed8;
+    box-shadow: 0 3px 10px rgba(29, 78, 216, 0.25);
+}
+
+#fleetSubTabs .nav-link.active .badge {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
 .fleet-toolbar-wrapper {
     background: #ffffff;
     border-bottom: 1px solid var(--sec-border-subtle);

@@ -160,10 +160,41 @@
     <div class="tab-content" id="securityTabsContent">
 
         {{-- ==========================================
-             TAB 1: REGISTERED DEVICES FLEET
+             TAB 1: DEVICE & SESSIONS
              ========================================== --}}
         <div class="tab-pane fade show active" id="tab-pane-devices" role="tabpanel" aria-labelledby="tab-btn-devices">
             <div class="security-panel-card">
+                {{-- Sub-View Switch: Connected Devices vs Live Connected Sessions --}}
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom px-4 pt-3 pb-2 bg-light bg-opacity-50">
+                    <ul class="nav nav-pills gap-2" id="fleetSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {{ request('view', 'devices') === 'devices' ? 'active' : '' }} rounded-pill px-3 py-2 fw-semibold" id="subtab-devices-btn" data-bs-toggle="pill" data-bs-target="#subtab-devices-pane" type="button" role="tab" aria-selected="{{ request('view', 'devices') === 'devices' ? 'true' : 'false' }}">
+                                <i class="fa-solid fa-mobile-screen-button me-1"></i> {{ __('app_security.subtab_devices') }}
+                                <span class="badge bg-light text-dark border rounded-pill ms-1">{{ $devices->total() }}</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {{ request('view') === 'sessions' ? 'active' : '' }} rounded-pill px-3 py-2 fw-semibold" id="subtab-sessions-btn" data-bs-toggle="pill" data-bs-target="#subtab-sessions-pane" type="button" role="tab" aria-selected="{{ request('view') === 'sessions' ? 'true' : 'false' }}">
+                                <i class="fa-solid fa-network-wired me-1"></i> {{ __('app_security.subtab_sessions') }}
+                                <span class="badge {{ $activeSessionsTotal > 0 ? 'bg-success' : 'bg-secondary' }} text-white rounded-pill ms-1">
+                                    <span class="conn-pulse-dot online me-1" style="width: 6px; height: 6px;"></span>{{ $activeSessionsTotal }} Active
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="text-muted small">
+                        <span class="badge bg-white text-dark border rounded-pill px-3 py-2 shadow-xs">
+                            <i class="fa-solid fa-shield-halved text-primary me-1"></i> Total Inventory: <strong>{{ $devices->total() }}</strong> devices · <strong>{{ $totalSessionsCount }}</strong> sessions
+                        </span>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="fleetSubTabsContent">
+                    {{-- ========================================================
+                         SUB-TAB 1: CONNECTED DEVICES FLEET
+                         ======================================================== --}}
+                    <div class="tab-pane fade {{ request('view', 'devices') === 'devices' ? 'show active' : '' }}" id="subtab-devices-pane" role="tabpanel" aria-labelledby="subtab-devices-btn">
                 {{-- Panel Header with Fleet Summary Telemetry --}}
                 <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
                     <div class="d-flex align-items-center gap-3">
@@ -536,9 +567,9 @@
                                     </div>
                                     <div class="d-flex align-items-center gap-1 mt-1">
                                         @if(($device->active_sessions_count ?? 0) > 0)
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill" style="font-size: 10px;">
+                                            <a href="{{ route('admin.app-security.index', ['view' => 'sessions', 'session_device' => $device->uuid]) }}" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none" style="font-size: 10px;" title="Click to view live sessions for this device">
                                                 <i class="fa-solid fa-network-wired me-1"></i>{{ $device->active_sessions_count }} Active
-                                            </span>
+                                            </a>
                                         @else
                                             <span class="badge bg-light text-muted border rounded-pill" style="font-size: 10px;">
                                                 0 Active Sessions
@@ -637,8 +668,9 @@
                                         @endif
 
                                         @if(!$supportOnly && ($canManageDevices || ($canApproveStaffDevices && $device->user_type === 'staff')))
-                                            <a class="btn btn-sec-action btn-outline-secondary" href="{{ route('admin.app-security.devices.sessions', $device->uuid) }}" title="{{ __('app_security.sessions') }}">
+                                            <a class="btn btn-sec-action btn-outline-secondary" href="{{ route('admin.app-security.index', ['view' => 'sessions', 'session_device' => $device->uuid]) }}" title="{{ __('app_security.sessions') }}">
                                                 <i class="fa-solid fa-network-wired"></i>
+                                                <span class="d-none d-xxl-inline">{{ __('app_security.sessions') }}</span>
                                             </a>
                                         @endif
 
@@ -725,6 +757,241 @@
                         </div>
                     </div>
                 @endif
+                    </div>
+
+                    {{-- ========================================================
+                         SUB-TAB 2: LIVE CONNECTED SESSIONS
+                         ======================================================== --}}
+                    <div class="tab-pane fade {{ request('view') === 'sessions' ? 'show active' : '' }}" id="subtab-sessions-pane" role="tabpanel" aria-labelledby="subtab-sessions-btn">
+                        {{-- Sessions Header with Telemetry Summary --}}
+                        <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="kpi-icon-wrap" style="width: 44px; height: 44px; font-size: 20px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                    <i class="fa-solid fa-network-wired"></i>
+                                </div>
+                                <div>
+                                    <h5 class="panel-title mb-0">
+                                        <span>{{ __('app_security.subtab_sessions') }}</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill fs-6 px-3 ms-2">
+                                            {{ number_format($activeSessionsTotal) }} {{ __('app_security.session_active') }}
+                                        </span>
+                                    </h5>
+                                    <div class="text-muted small mt-1">
+                                        Live cryptographic API sessions with challenge-response token validation and real-time heartbeat monitoring
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
+                                    <span class="conn-pulse-dot online me-1"></span>
+                                    <strong>{{ number_format($activeSessionsTotal) }}</strong> Active
+                                </span>
+                                <span class="badge bg-light text-muted border px-3 py-2 rounded-pill">
+                                    <i class="fa-solid fa-database me-1"></i>
+                                    <strong>{{ number_format($totalSessionsCount) }}</strong> Total Recorded
+                                </span>
+                            </div>
+                        </div>
+
+                        {{-- Sessions Toolbar & Filter --}}
+                        <div class="fleet-toolbar-wrapper">
+                            <form method="get" action="{{ route('admin.app-security.index') }}" id="sessionsFilterForm" class="d-flex flex-wrap gap-2 align-items-center">
+                                <input type="hidden" name="view" value="sessions">
+
+                                <div class="input-group input-group-sm" style="max-width: 320px;">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                    <input type="text" name="session_q" id="sessionSearchInput" value="{{ request('session_q') }}" class="form-control border-start-0 border-end-0 ps-0" placeholder="{{ __('app_security.search_sessions') }}">
+                                    @if(request()->filled('session_q'))
+                                        <button type="button" class="btn btn-sm btn-outline-secondary border-start-0" onclick="document.getElementById('sessionSearchInput').value=''; document.getElementById('sessionsFilterForm').submit();" title="Clear search">
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    @endif
+                                </div>
+
+                                <select name="session_status" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('sessionsFilterForm').submit()">
+                                    <option value="">{{ __('app_security.all_sessions') }}</option>
+                                    <option value="active" @selected(request('session_status') === 'active')>{{ __('app_security.active_sessions_only') }}</option>
+                                    <option value="revoked" @selected(request('session_status') === 'revoked')>{{ __('app_security.revoked_sessions_only') }}</option>
+                                    <option value="expired" @selected(request('session_status') === 'expired')>{{ __('app_security.expired_sessions_only') }}</option>
+                                </select>
+
+                                @if(request()->filled('session_device'))
+                                    <input type="hidden" name="session_device" value="{{ request('session_device') }}">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">
+                                        <i class="fa-solid fa-mobile-screen me-1"></i> Device: {{ substr(request('session_device'), 0, 8) }}…
+                                    </span>
+                                @endif
+
+                                <button class="btn btn-primary btn-sm px-3 rounded-pill" type="submit">
+                                    <i class="fa-solid fa-filter me-1"></i> {{ __('app_security.filter_button') }}
+                                </button>
+
+                                @if(request()->anyFilled(['session_q', 'session_status', 'session_device']))
+                                    <a href="{{ route('admin.app-security.index', ['view' => 'sessions']) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('app_security.reset_filter') }}
+                                    </a>
+                                @endif
+                            </form>
+                        </div>
+
+                        {{-- Live Sessions Table --}}
+                        <div class="table-responsive">
+                            <table class="table security-table align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>{{ __('app_security.device_info') }}</th>
+                                        <th>{{ __('app_security.user') }}</th>
+                                        <th>{{ __('app_security.session_token') }}</th>
+                                        <th>{{ __('app_security.session_created') }}</th>
+                                        <th>{{ __('app_security.session_last_used') }}</th>
+                                        <th>{{ __('app_security.session_expires') }}</th>
+                                        <th>{{ __('app_security.session_status') }}</th>
+                                        <th class="text-end">{{ __('app_security.actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @forelse($allSessions as $session)
+                                    @php
+                                        $isRevoked = $session->revoked_at !== null;
+                                        $isExpired = !$isRevoked && $session->expires_at <= now();
+                                        $isActive = !$isRevoked && !$isExpired;
+                                    @endphp
+                                    <tr>
+                                        {{-- 1. Device Info --}}
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-mobile-screen text-muted fs-5"></i>
+                                                <div>
+                                                    <div class="fw-bold text-dark">{{ $session->device?->device_model ?: 'Android Device' }}</div>
+                                                    <div class="device-user-meta">
+                                                        <span class="badge bg-light text-dark border py-0 px-2">Android {{ $session->device?->android_version ?: 'OS' }}</span>
+                                                    </div>
+                                                    @if($session->device?->uuid)
+                                                        <div class="copy-badge mt-1" onclick="copyToClipboard('{{ $session->device->uuid }}', this)" title="Click to copy Device UUID: {{ $session->device->uuid }}">
+                                                            <i class="fa-solid fa-fingerprint text-primary"></i>
+                                                            <span>{{ substr($session->device->uuid, 0, 8) }}…</span>
+                                                            <i class="fa-regular fa-copy"></i>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {{-- 2. User Account --}}
+                                        <td>
+                                            <div class="device-user-box">
+                                                <div class="device-user-avatar">
+                                                    {{ strtoupper(substr($session->user?->name ?? 'U', 0, 1)) }}
+                                                </div>
+                                                <div>
+                                                    <div class="device-user-name">{{ $session->user?->name ?? 'User' }}</div>
+                                                    <div class="device-user-meta">{{ $session->user?->username ?? '—' }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        {{-- 3. Token Identity --}}
+                                        <td>
+                                            <div class="copy-badge mb-1" onclick="copyToClipboard('{{ $session->session_token_sha256 }}', this)" title="Click to copy full Session Token SHA-256: {{ $session->session_token_sha256 }}">
+                                                <i class="fa-solid fa-key text-primary"></i>
+                                                <span class="fw-bold">Token: {{ substr($session->session_token_sha256, 0, 12) }}…</span>
+                                                <i class="fa-regular fa-copy"></i>
+                                            </div>
+                                            @if($session->refresh_token_sha256)
+                                                <div class="copy-badge" onclick="copyToClipboard('{{ $session->refresh_token_sha256 }}', this)" title="Click to copy Refresh Token SHA-256: {{ $session->refresh_token_sha256 }}">
+                                                    <i class="fa-solid fa-arrows-rotate text-info"></i>
+                                                    <span>Refresh: {{ substr($session->refresh_token_sha256, 0, 10) }}…</span>
+                                                    <i class="fa-regular fa-copy"></i>
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        {{-- 4. Created At --}}
+                                        <td>
+                                            <div class="fw-semibold text-dark">{{ $session->created_at?->format('M d, Y') }}</div>
+                                            <div class="text-muted small">{{ $session->created_at?->format('H:i:s') }}</div>
+                                        </td>
+
+                                        {{-- 5. Last Heartbeat / Used --}}
+                                        <td>
+                                            @if($session->last_used_at)
+                                                <div class="fw-semibold text-dark" title="{{ $session->last_used_at->format('Y-m-d H:i:s') }}">
+                                                    {{ $session->last_used_at->diffForHumans() }}
+                                                </div>
+                                                <div class="text-muted small">{{ $session->last_used_at->format('M d, H:i') }}</div>
+                                            @else
+                                                <span class="text-muted fst-italic">Never</span>
+                                            @endif
+                                        </td>
+
+                                        {{-- 6. Expires At --}}
+                                        <td>
+                                            <div class="fw-semibold {{ $isExpired ? 'text-danger' : 'text-dark' }}">
+                                                {{ $session->expires_at->diffForHumans() }}
+                                            </div>
+                                            <div class="text-muted small">{{ $session->expires_at->format('M d, H:i') }}</div>
+                                        </td>
+
+                                        {{-- 7. Status --}}
+                                        <td>
+                                            @if($isRevoked)
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1">
+                                                    <i class="fa-solid fa-ban me-1"></i> Revoked
+                                                </span>
+                                                <div class="text-muted small mt-1" style="font-size: 11px;" title="{{ $session->revocation_reason }}">
+                                                    {{ \Illuminate\Support\Str::limit($session->revocation_reason ?: 'By admin', 24) }}
+                                                </div>
+                                            @elseif($isExpired)
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border rounded-pill px-3 py-1">
+                                                    <i class="fa-solid fa-hourglass-end me-1"></i> Expired
+                                                </span>
+                                            @else
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-1">
+                                                    <span class="conn-pulse-dot online me-1"></span> Active Token
+                                                </span>
+                                            @endif
+                                        </td>
+
+                                        {{-- 8. Actions --}}
+                                        <td class="text-end">
+                                            @if($isActive && ($canManageDevices || ($canApproveStaffDevices && $session->device?->user_type === 'staff')))
+                                                <button type="button" class="btn btn-sec-action btn-outline-danger"
+                                                    onclick="openStepUpModal('revoke-session', '{{ route('admin.app-security.devices.sessions.revoke', [$session->device->uuid, $session->uuid]) }}', 'Revoke Connected API Session', 'Revoking will immediately invalidate this session token and refresh token on the cryptographic server. The mobile client will be forced to re-authenticate.', '{{ $session->device?->device_model ?: 'Android Device' }}', '{{ $session->user?->name ?? 'User' }}', '{{ $session->uuid }}')">
+                                                    <i class="fa-solid fa-ban"></i> Revoke
+                                                </button>
+                                            @else
+                                                <span class="text-muted small fst-italic">—</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="py-4">
+                                                <i class="fa-solid fa-network-wired fs-1 text-muted mb-3 d-block opacity-50"></i>
+                                                <h5 class="text-muted fw-bold">{{ __('app_security.no_sessions_found') }}</h5>
+                                                <p class="text-muted small mb-0">No API token sessions match your filter criteria.</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        @if($allSessions->hasPages())
+                            <div class="panel-header border-top border-bottom-0 bg-white">
+                                <div class="small text-muted">
+                                    Showing {{ $allSessions->firstItem() ?? 0 }} to {{ $allSessions->lastItem() ?? 0 }} of {{ $allSessions->total() }} sessions
+                                </div>
+                                <div>
+                                    {{ $allSessions->links() }}
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1257,6 +1524,7 @@
         <div class="modal-content">
             <form id="stepUpModalForm" method="post" action="">
                 @csrf
+                <input type="hidden" name="from_index" value="1">
                 <div class="modal-header">
                     <div class="d-flex align-items-center gap-3">
                         <div class="action-icon-pill" id="stepUpActionIcon">
@@ -1882,6 +2150,10 @@
             iconBox.innerHTML = '<i class="fa-solid fa-play"></i>';
             submitBtn.className = 'btn btn-success rounded-pill px-4 shadow-sm';
             submitBtn.innerHTML = '<i class="fa-solid fa-play me-1"></i> Activate Release';
+        } else if (type === 'revoke-session') {
+            iconBox.innerHTML = '<i class="fa-solid fa-ban"></i>';
+            submitBtn.className = 'btn btn-danger rounded-pill px-4 shadow-sm';
+            submitBtn.innerHTML = '<i class="fa-solid fa-ban me-1"></i> Revoke Token Session';
         }
 
         const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
