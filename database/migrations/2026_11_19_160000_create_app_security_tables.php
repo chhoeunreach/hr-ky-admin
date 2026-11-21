@@ -167,7 +167,7 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('admins')->nullOnDelete();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
-            $table->index(['target_type', 'target_value', 'is_active']);
+            $table->index(['target_type', 'target_value', 'is_active'], 'appsec_block_rules_target_idx');
         });
 
         $this->createTracked('app_security_settings', function (Blueprint $table) {

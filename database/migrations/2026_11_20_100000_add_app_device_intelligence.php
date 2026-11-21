@@ -27,7 +27,7 @@ return new class extends Migration
             $table->json('observations')->nullable();
             $table->timestamps();
             $table->unique(['device_id', 'observed_date'], 'appsec_intel_device_date_unique');
-            $table->index(['observed_date', 'authorized_request_count']);
+            $table->index(['observed_date', 'authorized_request_count'], 'appsec_intel_date_requests_idx');
         });
         if (Schema::hasTable('app_security_schema_migration_objects')) {
             DB::table('app_security_schema_migration_objects')->insert([

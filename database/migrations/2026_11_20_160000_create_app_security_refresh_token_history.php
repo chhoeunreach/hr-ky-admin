@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('expires_at');
             $table->timestamp('reuse_detected_at')->nullable();
             $table->timestamps();
-            $table->index(['expires_at', 'reuse_detected_at']);
+            $table->index(['expires_at', 'reuse_detected_at'], 'appsec_refresh_token_expiry_idx');
         });
 
         if (Schema::hasTable('app_security_schema_migration_objects')) {
