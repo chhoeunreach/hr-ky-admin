@@ -557,4 +557,55 @@ class CommunityFeatureTest extends TestCase
         $this->assertStringContainsString('large payload', $decoded);
     }
 
+    public function test_profile_feed_lists_only_the_requested_authors_posts(): void
+    {
+        $this->grantFeed();
+        $this->makePost(['body' => 'Mine']);
+        $this->makePost(['body' => 'Theirs', 'user_id' => 11]);
+        $this->makePost(['body' => 'Other company', 'user_id' => 12, 'company_id' => 2]);
+
+        $this->getJson('/api/social-feed?user_id=11&page=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.body', 'Theirs');
+
+        $this->getJson('/api/social-feed?user_id=10&page=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.body', 'Mine');
+
+        // Company isolation still applies to profile feeds.
+        $this->getJson('/api/social-feed?user_id=12&page=1')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        // The unfiltered feed still shows every visible post of this company.
+        $this->getJson('/api/social-feed?page=1')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
+    public function test_profile_feed_cursor_pagination_keeps_the_author_filter(): void
+    {
+        config(['social_feed.cache_ttl' => 0]);
+        $this->grantFeed();
+        for ($i = 1; $i <= 6; $i++) {
+            $this->makePost(['body' => "Mine $i"]);
+        }
+        $this->makePost(['body' => 'Theirs', 'user_id' => 11]);
+
+        $first = $this->getJson('/api/social-feed?user_id=10&per_page=5')
+            ->assertOk()
+            ->assertJsonCount(5, 'data')
+            ->assertJsonPath('data.0.body', 'Mine 6')
+            ->json();
+        $this->assertNotNull($first['next_cursor']);
+        $this->assertStringContainsString('user_id=10', (string) $first['next_page_url']);
+
+        $this->getJson('/api/social-feed?user_id=10&per_page=5&cursor='.urlencode($first['next_cursor']))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.body', 'Mine 1');
+    }
+
 }

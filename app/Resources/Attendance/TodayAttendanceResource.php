@@ -5,21 +5,24 @@ namespace App\Resources\Attendance;
 
 use App\Helpers\AttendanceHelper;
 use App\Models\Attendance;
+use Carbon\Carbon;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TodayAttendanceResource extends JsonResource
 {
-    public function toArray($request)
+    public function toArray($request, ?Carbon $receivedAt = null)
     {
-        $time =  $this->check_out_at ?  $this->check_out_at :\Carbon\Carbon::now() ;
+        $now = $receivedAt ?? now();
+        $end = $this->check_out_at ? $now->copy()->setTimeFromTimeString($this->check_out_at) : $now;
+        $start = $end->copy()->setTimeFromTimeString($this->check_in_at);
         $latestLatitude = $this->check_out_at ? $this->check_out_latitude : $this->check_in_latitude;
         $latestLongitude = $this->check_out_at ? $this->check_out_longitude : $this->check_in_longitude;
 
         return [
             'check_in_at' => isset($this->check_in_at) ? AttendanceHelper::changeTimeFormatForAttendanceView($this->check_in_at) : '-',
             'check_out_at' => isset($this->check_out_at) ? AttendanceHelper::changeTimeFormatForAttendanceView($this->check_out_at) : '-',
-            'productive_time_in_min' => \Carbon\Carbon::createFromFormat('H:i:s', $this->check_in_at)->diffInMinutes($time),
+            'productive_time_in_min' => $start->diffInMinutes($end),
             'check_in_location' => [
                 'latitude' => $this->check_in_latitude,
                 'longitude' => $this->check_in_longitude,

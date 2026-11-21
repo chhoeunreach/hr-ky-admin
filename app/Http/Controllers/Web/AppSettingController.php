@@ -163,8 +163,8 @@ class AppSettingController extends Controller
                 'alert_message_en' => ['nullable', 'string', 'max:1000'],
                 'alert_title' => ['nullable', 'string', 'max:150'],
                 'alert_message' => ['nullable', 'string', 'max:1000'],
-                'android_url' => ['nullable', 'string', 'max:255'],
-                'ios_url' => ['nullable', 'string', 'max:255'],
+                'android_url' => ['nullable', 'url:http,https', 'max:255'],
+                'ios_url' => ['nullable', 'url:http,https', 'max:255'],
             ], [], [
                 'target_version' => __('index.target_app_version'),
                 'min_version' => __('index.min_required_version'),
@@ -265,25 +265,26 @@ class AppSettingController extends Controller
             ]);
 
             $versionSettings = AppHelper::getAppVersionSettings();
-            $targetVersion = $versionSettings['target_version'] ?? '13.00';
-            $androidUrl = $versionSettings['android_url'] ?: config('app.url');
-            $iosUrl = $versionSettings['ios_url'] ?: 'https://testflight.apple.com/join/hPG4ZA38';
-            $downloadUrl = $androidUrl ?: $iosUrl;
-            $forceUpdate = !empty($versionSettings['force_update']);
+            $update = [
+                'target_version' => $versionSettings['target_version'],
+                'min_required_version' => $versionSettings['min_version'],
+                'android_url' => $versionSettings['android_url'],
+                'ios_url' => $versionSettings['ios_url'],
+                'force_update' => $versionSettings['force_update'],
+            ];
+            $targetVersion = $update['target_version'];
 
             $title = trim($validated['alert_title']);
             $message = str_replace(
                 [':target_version', ':min_version'],
-                [$targetVersion, $versionSettings['min_version'] ?? $targetVersion],
+                [$targetVersion, $update['min_required_version']],
                 trim($validated['alert_message'])
             );
 
             // Determine recipient user IDs
             $usersQuery = User::query()
                 ->where('status', 'verified')
-                ->where('is_active', 1)
-                ->whereNotNull('fcm_token')
-                ->where('fcm_token', '!=', '');
+                ->where('is_active', 1);
 
             if ($validated['target_audience'] === 'employees') {
                 $usersQuery->whereIn('id', $validated['employee_ids']);
@@ -315,29 +316,21 @@ class AppSettingController extends Controller
             $recipientUserIds = $recipientUsers->pluck('id')->toArray();
             $fcmTokens = $recipientUsers->pluck('fcm_token', 'id')->filter()->toArray();
 
-            // 1. Create in-app Notification record
-            try {
+            $notification = DB::transaction(function () use ($title, $message, $update, $recipientUserIds) {
                 $notification = Notification::create([
                     'title' => $title,
                     'description' => $message,
-                    'type' => 'general',
+                    'type' => Notification::APP_UPDATE,
+                    'app_update' => $update,
                     'company_id' => AppHelper::getAuthUserCompanyId(),
                     'is_active' => 1,
                 ]);
-
-                if ($notification) {
-                    $userNotifications = [];
-                    foreach ($recipientUserIds as $uId) {
-                        $userNotifications[] = [
-                            'user_id' => $uId,
-                            'is_seen' => 0,
-                        ];
-                    }
-                    $notification->notifiedUsers()->createMany($userNotifications);
-                }
-            } catch (\Throwable $ne) {
-                Log::warning('Failed to store in-app notification for app update: ' . $ne->getMessage());
-            }
+                $notification->notifiedUsers()->createMany(array_map(
+                    fn ($id) => ['user_id' => $id, 'is_seen' => 0],
+                    $recipientUserIds
+                ));
+                return $notification;
+            });
 
             // 2. Send FCM push notification
             if (!empty($fcmTokens)) {
@@ -345,19 +338,18 @@ class AppSettingController extends Controller
                     SMPushNotification::smSend(
                         title: $title,
                         message: $message,
-                        data: [
-                            'type' => 'app_update',
-                            'target_version' => $targetVersion,
-                            'download_url' => (string)$downloadUrl,
-                            'android_url' => (string)$androidUrl,
-                            'android_download_url' => (string)$androidUrl,
-                            'play_store_url' => (string)$androidUrl,
-                            'ios_url' => (string)$iosUrl,
-                            'ios_download_url' => (string)$iosUrl,
-                            'app_store_url' => (string)$iosUrl,
-                            'apple_store_url' => (string)$iosUrl,
-                            'force_update' => $forceUpdate ? '1' : '0',
-                        ],
+                        data: array_merge($update, [
+                            'type' => Notification::APP_UPDATE,
+                            'notification_id' => (string) $notification->id,
+                            'notification_event_id' => 'app-update:'.$notification->id,
+                            'download_url' => $update['android_url'] ?: $update['ios_url'],
+                            'android_download_url' => $update['android_url'],
+                            'play_store_url' => $update['android_url'],
+                            'ios_download_url' => $update['ios_url'],
+                            'app_store_url' => $update['ios_url'],
+                            'apple_store_url' => $update['ios_url'],
+                            'force_update' => $update['force_update'] ? '1' : '0',
+                        ]),
                         recipients: $fcmTokens
                     );
                 } catch (\Throwable $fe) {

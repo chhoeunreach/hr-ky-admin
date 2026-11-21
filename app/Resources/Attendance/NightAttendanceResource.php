@@ -11,9 +11,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class NightAttendanceResource extends JsonResource
 {
-    public function toArray($request)
+    public function toArray($request, ?Carbon $receivedAt = null)
     {
-        $time = $this->night_checkout ?? \Carbon\Carbon::now();
+        $time = $this->night_checkout ?? $receivedAt ?? now();
 
         $checkInTime = Carbon::parse($this->night_checkin);
         $checkOutTime = Carbon::parse($time);

@@ -17,6 +17,8 @@ class PayrollQueueSession extends Model
         'session_code',
         'company_id',
         'branch_id',
+        'department_id',
+        'target_employee_id',
         'month',
         'title',
         'qr_token',
@@ -38,6 +40,16 @@ class PayrollQueueSession extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function targetEmployee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'target_employee_id');
     }
 
     public function company(): BelongsTo

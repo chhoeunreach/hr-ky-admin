@@ -40,18 +40,31 @@ class NotificationRepository
 
     public function getAllCompanyRecentActiveNotification($perPage,$select=['*'])
     {
-        return Notification::with(['notifiedUsers' => function($query){
-                    $query->where('user_id',getAuthUserCode());
-                }
-            ])
-            ->select($select)
-            ->where('is_active',self::ACTIVE)
-            ->where('type','general')
-            ->whereNotNull('notification_publish_date')
-            ->orWhereHas('notifiedUsers',function($query){
-                $query->where('user_id',getAuthUserCode());
+        $recipient = fn ($query) => $query->where('user_id', getAuthUserCode());
+        $since = Carbon::now()->subDays(30);
+        $regularNotifications = Notification::query()->select('id')
+            ->where('type', '!=', Notification::APP_UPDATE)
+            ->where(function ($query) use ($recipient, $since) {
+                $query->where(function ($general) {
+                    $general->where('is_active', self::ACTIVE)->where('type', 'general')
+                        ->whereNotNull('notification_publish_date');
+                })->orWhere(function ($targeted) use ($recipient, $since) {
+                    $targeted->whereHas('notifiedUsers', $recipient)
+                        ->where('notification_publish_date', '>=', $since);
+                });
+            });
+
+        return Notification::withoutGlobalScope('branch')
+            ->with(['notifiedUsers' => $recipient])->select($select)
+            ->where(function ($query) use ($regularNotifications, $recipient, $since) {
+                $query->whereIn('id', $regularNotifications)
+                    ->orWhere(function ($updates) use ($recipient, $since) {
+                        $updates->where('type', Notification::APP_UPDATE)
+                            ->where('is_active', self::ACTIVE)
+                            ->where('notification_publish_date', '>=', $since)
+                            ->whereHas('notifiedUsers', $recipient);
+                    });
             })
-            ->where('notification_publish_date','>=',Carbon::now()->subDays(30))
             ->orderBy('notification_publish_date','Desc')
             ->paginate($perPage);
     }

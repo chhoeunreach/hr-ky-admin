@@ -17,9 +17,11 @@ class Notification extends Model
     use HasFactory;
 
     const RECORDS_PER_PAGE = 20;
+    const APP_UPDATE = 'app_update';
 
     const TYPES = [
         'general',
+        self::APP_UPDATE,
         'comment',
         'project',
         'task',
@@ -38,6 +40,7 @@ class Notification extends Model
     protected $fillable = [
         'title',
         'description',
+        'app_update',
         'type',
         'notification_for_id',
         'notification_publish_date',
@@ -46,6 +49,8 @@ class Notification extends Model
         'created_by',
         'updated_by',
     ];
+
+    protected $casts = ['app_update' => 'array'];
 
     public static function boot()
     {

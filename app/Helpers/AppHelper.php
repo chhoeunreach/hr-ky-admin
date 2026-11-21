@@ -353,6 +353,10 @@ class AppHelper
             'ios_url' => env('IOS_DOWNLOAD_URL', 'https://testflight.apple.com/join/hPG4ZA38'),
         ];
 
+        $apkSetting = AppSetting::where('slug', 'android-apk')->where('status', 1)->first();
+        if (!empty($apkSetting?->value)) {
+            $defaults['android_url'] = asset($apkSetting->value);
+        }
         if (!$setting) {
             return $defaults;
         }
@@ -361,9 +365,6 @@ class AppHelper
         if (!is_array($decoded)) {
             $decoded = [];
         }
-
-        $apkSetting = AppSetting::where('slug', 'android-apk')->where('status', 1)->first();
-        $fallbackApkUrl = ($apkSetting && !empty($apkSetting->value)) ? asset($apkSetting->value) : $defaults['android_url'];
 
         $isEnabled = isset($setting->status) ? ((int)$setting->status === 1) : (isset($decoded['enabled']) ? (bool)$decoded['enabled'] : true);
 
@@ -414,7 +415,7 @@ class AppHelper
             'alert_message_en' => $messageEn,
             'alert_title' => $activeTitle,
             'alert_message' => $activeMessage,
-            'android_url' => !empty($decoded['android_url']) ? trim($decoded['android_url']) : $fallbackApkUrl,
+            'android_url' => trim((string) ($decoded['android_url'] ?? '')) ?: $defaults['android_url'],
             'ios_url' => $decodedIosUrl ?: $defaults['ios_url'],
         ];
     }

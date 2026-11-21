@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Attendance Logs table
-        if (!Schema::hasTable('attendance_logs')) {
-            Schema::create('attendance_logs', function (Blueprint $table) {
+        // Keep this module's QR check-ins separate from the legacy attendance_logs
+        // table, whose schema is already used by the biometric attendance workflow.
+        if (!Schema::hasTable('hr_queue_attendance_logs')) {
+            Schema::create('hr_queue_attendance_logs', function (Blueprint $table) {
                 $table->id();
                 $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
                 $table->unsignedBigInteger('company_id')->nullable();
@@ -21,13 +22,12 @@ return new class extends Migration
                 $table->date('date');
                 $table->timestamp('check_in_at')->nullable();
                 $table->timestamp('check_out_at')->nullable();
-                $table->string('method', 50)->default('qr_pass'); // qr_pass, biometric, manual
+                $table->string('method', 50)->default('qr_pass');
                 $table->string('location_token', 150)->nullable();
-                $table->string('status', 50)->default('present'); // present, late, excused
+                $table->string('status', 50)->default('present');
                 $table->text('notes')->nullable();
                 $table->timestamps();
-
-                $table->index(['user_id', 'date']);
+                $table->unique(['user_id', 'date']);
                 $table->index(['branch_id', 'date']);
             });
         }
@@ -107,6 +107,6 @@ return new class extends Migration
     {
         Schema::dropIfExists('payroll_disbursements');
         Schema::dropIfExists('hr_queues');
-        Schema::dropIfExists('attendance_logs');
+        Schema::dropIfExists('hr_queue_attendance_logs');
     }
 };

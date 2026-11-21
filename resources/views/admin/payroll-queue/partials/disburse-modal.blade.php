@@ -159,6 +159,17 @@
                             </div>
                         </div>
 
+                        <div class="card border-primary border-opacity-25 mb-4" id="payrollQuickUpdateCard" style="display:none">
+                            <div class="card-body d-flex flex-wrap align-items-end gap-2">
+                                <div class="flex-grow-1">
+                                    <label for="modalQuickBonus" class="form-label fw-bold mb-1">Quick update: approved bonus</label>
+                                    <input type="number" min="0" step="0.01" class="form-control" id="modalQuickBonus">
+                                    <div class="form-text">Available while the payslip is still a draft and before the monthly payroll snapshot is saved.</div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" id="btnQuickUpdateBonus">Save update</button>
+                            </div>
+                        </div>
+
                         {{-- Payment Method & Date --}}
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -181,7 +192,7 @@
 
                 <div class="modal-footer bg-light py-2">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">បោះបង់</button>
-                    <button type="submit" class="btn btn-success fw-bold px-4" id="btnConfirmDisburse" disabled>
+                    <button type="submit" class="btn btn-success fw-bold px-4" id="btnConfirmDisburse" data-payment-allowed="{{ auth('admin')->check() || Gate::allows('payroll_payment') ? '1' : '0' }}" disabled>
                         <i class="link-icon me-1" data-feather="check"></i> បញ្ជាក់បើកប្រាក់ខែ
                     </button>
                 </div>

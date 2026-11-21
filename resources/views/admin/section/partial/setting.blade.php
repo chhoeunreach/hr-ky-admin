@@ -115,7 +115,8 @@
 	    'attendance_setting'
 	]))
     <li class="nav-item  {{
-                   request()->routeIs('admin.roles.*') ||
+                   request()->routeIs('admin.maintenance.*') ||
+                      request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
@@ -136,7 +137,8 @@
             <span class="link-title"> {{ __('index.settings') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.roles.*') ||
+        <div class="{{ request()->routeIs('admin.maintenance.*') ||
+                      request()->routeIs('admin.roles.*') ||
                       request()->routeIs('admin.general-settings.*') ||
                       request()->routeIs('admin.app-settings.*') ||
                       request()->routeIs('admin.telegram-groups.*') ||
@@ -151,6 +153,14 @@
                        ? '' : 'collapse'  }} " id="setting">
 
             <ul class="nav sub-menu">
+                @if(AppHelper::checkSuperAdmin())
+                    <li class="nav-item">
+                        <a href="{{ route('admin.maintenance.diagnostics') }}"
+                           class="nav-link {{ request()->routeIs('admin.maintenance.diagnostics') ? 'active' : '' }}">
+                            {{ __('diagnostics.navigation') }}
+                        </a>
+                    </li>
+                @endif
                 @if(AppHelper::checkSuperAdmin())
                     <li class="nav-item">
                         <a

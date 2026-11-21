@@ -3,17 +3,23 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enum\PayslipStatusEnum;
+use App\Enum\EmployeeAttendanceTypeEnum;
 use App\Events\QueueUpdated;
+use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
-use App\Models\AttendanceLog;
+use App\Models\Attendance;
+use App\Models\HrQueueAttendanceLog;
 use App\Models\EmployeePayslip;
 use App\Models\HrQueue;
 use App\Models\PayrollDisbursement;
 use App\Models\SellOutReport;
 use App\Models\User;
+use App\Services\Authorization\MobilePermissions;
 use App\Services\Payroll\AdvanceSalaryService;
+use App\Services\Payroll\PayrollQueueService;
 use App\Services\Tada\TadaService;
 use Carbon\Carbon;
+use DomainException;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,7 +32,8 @@ class HrQueueApiController extends Controller
 {
     public function __construct(
         protected AdvanceSalaryService $advanceSalaryService,
-        protected TadaService $tadaService
+        protected TadaService $tadaService,
+        protected PayrollQueueService $payrollQueueService
     ) {}
 
     /**
@@ -35,16 +42,12 @@ class HrQueueApiController extends Controller
     public function generateQrPass(Request $request): JsonResponse
     {
         $user = Auth::guard('api')->user() ?: Auth::user();
-        if (!$user && $request->filled('user_id')) {
-            $user = User::find($request->user_id);
-        }
-
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated or user not found'], 401);
         }
 
         $timestamp = time();
-        $locationToken = $request->input('location_token', 'LOC_KYTECH_HQ');
+        $locationToken = config('services.hr_queue.location_token', 'LOC_KYTECH_HQ');
         $validitySeconds = 300; // 5 minutes validity
         
         $signaturePayload = "{$user->id}|{$timestamp}|{$locationToken}";
@@ -86,6 +89,10 @@ class HrQueueApiController extends Controller
         $validator = Validator::make($request->all(), [
             'qr_payload' => 'required|string',
             'branch_id' => 'nullable|integer',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+            'action' => 'nullable|in:check_in,check_out',
+            'selfie' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -94,14 +101,35 @@ class HrQueueApiController extends Controller
 
         try {
             $payload = json_decode($request->qr_payload, true);
-            if (!is_array($payload) || !isset($payload['user_id'], $payload['timestamp'], $payload['signature'])) {
-                // If simple numeric string passed as user ID / badge
-                if (is_numeric($request->qr_payload)) {
-                    $userId = (int) $request->qr_payload;
-                    $locationToken = 'KIOSK_ENTRY';
-                } else {
-                    return response()->json(['success' => false, 'message' => 'ទម្រង់ QR Code មិនត្រឹមត្រូវ (Invalid QR format)'], 400);
+            if (!is_array($payload) || ($payload['type'] ?? null) !== 'attendance_queue_pass') {
+                $queueToken = $this->payrollSessionToken($request->qr_payload);
+                $employee = Auth::guard('api')->user() ?: Auth::user();
+                if (!$queueToken || !$employee) {
+                    return response()->json(['success' => false, 'message' => 'Unsupported QR code.'], 400);
                 }
+                if (!app(MobilePermissions::class)->allowsFunction(config('mobile_permissions.functions')['PayrollQueueApiController@join'])) {
+                    return response()->json(['success' => false, 'message' => 'You do not have permission to join the payroll queue.'], 403);
+                }
+
+                try {
+                    $joined = $this->payrollQueueService->joinQueue($queueToken, (int) $employee->id);
+                } catch (DomainException $e) {
+                    return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+                }
+                $ticket = $joined['ticket'];
+                $ahead = $ticket?->peopleAhead() ?? 0;
+
+                return response()->json([
+                    'success' => true,
+                    'qr_kind' => 'payroll_session',
+                    'action' => 'join_queue',
+                    'message' => $joined['message'],
+                    'data' => ['ticket' => $ticket, 'people_ahead' => $ahead, 'status' => $joined['status']],
+                ], $joined['status'] === 'success' ? 201 : 200);
+            }
+
+            if (!is_array($payload) || ($payload['type'] ?? null) !== 'attendance_queue_pass' || !isset($payload['user_id'], $payload['timestamp'], $payload['signature'])) {
+                return response()->json(['success' => false, 'message' => 'ទម្រង់ QR Code មិនត្រឹមត្រូវ (Invalid QR format)'], 400);
             } else {
                 $userId = $payload['user_id'];
                 $timestamp = $payload['timestamp'];
@@ -114,26 +142,90 @@ class HrQueueApiController extends Controller
                     return response()->json(['success' => false, 'message' => 'ហត្ថលេខា QR Code មិនត្រឹមត្រូវ (Invalid QR Signature)'], 403);
                 }
 
-                // Check 10-minute expiry window
-                if (abs(time() - $timestamp) > 600) {
+                // Passes are valid only for five minutes and cannot be future-dated.
+                if (!is_numeric($timestamp) || (int) $timestamp > time() || time() - (int) $timestamp > 300) {
                     return response()->json(['success' => false, 'message' => 'QR Code បានផុតកំណត់ហើយ សូមបង្កើតថ្មី (QR Code Expired)'], 400);
                 }
             }
 
+            if ((int) $request->user('api')?->id !== (int) $userId) {
+                return response()->json(['success' => false, 'message' => 'This QR pass belongs to another employee.'], 403);
+            }
+
             $user = User::with(['branch', 'department'])->findOrFail($userId);
             $today = today()->toDateString();
-            $branchId = $request->branch_id ?: ($user->branch_id ?: 1);
-            $companyId = $user->company_id ?: 1;
+            // Branch and company come from the signed employee identity, never client input.
+            $branchId = $user->branch_id;
+            $companyId = $user->company_id;
+            if (\App\Helpers\AppHelper::isOnNightShift($user->id)) {
+                $nightStatus = AttendanceHelper::checkNightShiftCheckOut($user->id);
+                $expectedAction = $nightStatus === 'checkin' ? 'check_in' : 'check_out';
+            } else {
+                $latestAttendance = Attendance::withoutGlobalScope('branch')->where('user_id', $user->id)
+                    ->whereDate('attendance_date', $today)
+                    ->latest('updated_at')
+                    ->first();
+                $expectedAction = $latestAttendance && !$latestAttendance->check_out_at
+                    ? 'check_out'
+                    : 'check_in';
+            }
+            $requestedAction = $request->input('action', $expectedAction);
+            if ($requestedAction !== $expectedAction) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $expectedAction === 'check_in'
+                        ? 'No active check-in exists. Scan in first.'
+                        : 'Already checked in. Scan out to close today’s attendance.',
+                ], 409);
+            }
+            $attendanceAction = $expectedAction;
 
             DB::beginTransaction();
 
-            // 1. Record daily attendance log if not recorded today
-            $attendance = AttendanceLog::firstOrCreate(
+            // Record this against the application's canonical attendance tables and rules.
+            // The attendance service determines whether the valid QR scan is a check-in or
+            // check-out based on the employee's current attendance state.
+            $previousGuard = Auth::getDefaultDriver();
+            $previousUser = Auth::user();
+            Auth::shouldUse('web');
+            Auth::setUser($user);
+            try {
+                $attendanceRequest = Request::create('/api/employees/attendance', 'POST', [
+                    'attendance_type' => EmployeeAttendanceTypeEnum::qr_pass->value,
+                    'identifier' => $request->qr_payload,
+                    'latitude' => (float) $request->latitude,
+                    'longitude' => (float) $request->longitude,
+                    'attendance_status_type' => $attendanceAction === 'check_in' ? 'checkIn' : 'checkOut',
+                    'note' => 'Signed QR attendance scan',
+                ]);
+                if ($request->hasFile('selfie')) $attendanceRequest->files->set('selfie', $request->file('selfie'));
+                $attendanceResponse = app(AttendanceApiController::class)->employeeAttendance($attendanceRequest);
+                $attendanceResult = $attendanceResponse->getData(true);
+            } finally {
+                Auth::forgetUser();
+                Auth::shouldUse($previousGuard);
+                if ($previousUser) Auth::setUser($previousUser);
+            }
+
+            if (!($attendanceResult['status'] ?? false)) {
+                DB::rollBack();
+                return response()->json(['success' => false, 'message' => $attendanceResult['message'] ?? 'Attendance scan failed.'], 422);
+            }
+
+            $attendanceRecord = Attendance::withoutGlobalScope('branch')->where('user_id', $user->id)
+                ->whereDate('attendance_date', $today)
+                ->latest('updated_at')
+                ->first();
+            $attendanceAction = $expectedAction;
+
+            // Keep a queue-module attendance mirror while the canonical attendance record
+            // remains the source of truth for reports and payroll.
+            $attendance = HrQueueAttendanceLog::firstOrCreate(
                 ['user_id' => $user->id, 'date' => $today],
                 [
                     'company_id' => $companyId,
                     'branch_id' => $branchId,
-                    'check_in_at' => now(),
+                    'check_in_at' => $attendanceRecord?->check_in_at ?: now(),
                     'method' => 'qr_pass',
                     'location_token' => $locationToken,
                     'status' => 'present',
@@ -141,50 +233,58 @@ class HrQueueApiController extends Controller
                 ]
             );
 
-            // 2. Check if employee already has an active or waiting ticket today
-            $activeTicket = HrQueue::where('user_id', $user->id)
-                ->where('date', $today)
-                ->whereIn('status', ['waiting', 'calling', 'serving'])
-                ->first();
+            $activeTicket = null;
+            if ($attendanceAction === 'check_out') {
+                $attendance->update(['check_out_at' => $attendanceRecord?->check_out_at ?: $attendanceRecord?->night_checkout ?: now()]);
+            } else {
+                // Check-in also joins the daily HR queue; checkout never creates a ticket.
+                $activeTicket = HrQueue::where('user_id', $user->id)
+                    ->where('date', $today)
+                    ->whereIn('status', ['waiting', 'calling', 'serving'])
+                    ->first();
 
-            if (!$activeTicket) {
-                // Generate Ticket Number (FIFO prefix A-001, A-002, ...)
-                $ticketCount = HrQueue::where('date', $today)->count();
-                $ticketNumber = 'A-' . str_pad($ticketCount + 1, 3, '0', STR_PAD_LEFT);
-
-                $activeTicket = HrQueue::create([
-                    'company_id' => $companyId,
-                    'branch_id' => $branchId,
-                    'user_id' => $user->id,
-                    'date' => $today,
-                    'ticket_number' => $ticketNumber,
-                    'counter_number' => null,
-                    'status' => 'waiting',
-                    'qr_payload' => $request->qr_payload,
-                    'remarks' => 'Joined via QR Scanner',
-                ]);
+                if (!$activeTicket) {
+                    $ticketCount = HrQueue::where('date', $today)->count();
+                    $ticketNumber = 'A-' . str_pad($ticketCount + 1, 3, '0', STR_PAD_LEFT);
+                    $activeTicket = HrQueue::create([
+                        'company_id' => $companyId,
+                        'branch_id' => $branchId,
+                        'user_id' => $user->id,
+                        'date' => $today,
+                        'ticket_number' => $ticketNumber,
+                        'counter_number' => null,
+                        'status' => 'waiting',
+                        'qr_payload' => $request->qr_payload,
+                        'remarks' => 'Joined via QR check-in',
+                    ]);
+                }
             }
 
             DB::commit();
 
-            // 3. Count people ahead
-            $peopleAhead = HrQueue::where('date', $today)
-                ->where('status', 'waiting')
-                ->where('id', '<', $activeTicket->id)
-                ->count();
+            $checkInAt = $attendanceRecord?->check_in_at ? Carbon::parse($attendanceRecord->check_in_at)->format('h:i A') : null;
+            $checkOutValue = $attendanceRecord?->check_out_at ?: $attendanceRecord?->night_checkout;
+            $checkOutAt = $checkOutValue ? Carbon::parse($checkOutValue)->format('h:i A') : null;
+            $peopleAhead = $activeTicket
+                ? HrQueue::where('date', $today)->where('status', 'waiting')->where('id', '<', $activeTicket->id)->count()
+                : 0;
 
-            // 4. Broadcast real-time QueueUpdated WebSocket event
-            $liveState = $this->compileLiveQueueState($branchId, $today, $activeTicket);
-            broadcast(new QueueUpdated($liveState))->toOthers();
+            if ($activeTicket) {
+                $liveState = $this->compileLiveQueueState($branchId, $today, $activeTicket);
+                broadcast(new QueueUpdated($liveState))->toOthers();
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => 'បានកត់ត្រាវត្តមាន និងចូលជួរជោគជ័យ (Attendance & Queue Joined)!',
+                'message' => $attendanceAction === 'check_in'
+                    ? 'បានស្កេនចូលវត្តមាន និងចូលជួរជោគជ័យ (Checked in and joined queue).'
+                    : 'បានស្កេនចេញវត្តមានជោគជ័យ (Checked out successfully).',
                 'data' => [
-                    'ticket_id' => $activeTicket->id,
-                    'ticket_number' => $activeTicket->ticket_number,
-                    'status' => $activeTicket->status,
-                    'counter_number' => $activeTicket->counter_number,
+                    'action' => $attendanceAction,
+                    'ticket_id' => $activeTicket?->id,
+                    'ticket_number' => $activeTicket?->ticket_number,
+                    'status' => $activeTicket?->status,
+                    'counter_number' => $activeTicket?->counter_number,
                     'people_ahead' => $peopleAhead,
                     'employee' => [
                         'id' => $user->id,
@@ -194,7 +294,8 @@ class HrQueueApiController extends Controller
                         'avatar_url' => $user->avatar_url ?: asset('assets/images/img.png'),
                     ],
                     'attendance' => [
-                        'check_in_at' => $attendance->check_in_at ? $attendance->check_in_at->format('h:i A') : now()->format('h:i A'),
+                        'check_in_at' => $checkInAt,
+                        'check_out_at' => $checkOutAt,
                         'status' => $attendance->status,
                     ],
                 ],
@@ -203,6 +304,21 @@ class HrQueueApiController extends Controller
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    private function payrollSessionToken(string $rawValue): ?string
+    {
+        $value = trim($rawValue);
+        $path = parse_url($value, PHP_URL_PATH);
+        if (is_string($path) && preg_match('~/payroll-queue/join/([A-Za-z0-9]+)$~', $path, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('/^[A-Za-z0-9]{32}$/', $value)) {
+            return $value;
+        }
+
+        return null;
     }
 
     /**
@@ -282,15 +398,15 @@ class HrQueueApiController extends Controller
     public function getSalaryBreakdown(Request $request): JsonResponse
     {
         $user = Auth::guard('api')->user() ?: Auth::user();
-        if ($request->filled('user_id')) {
-            $user = User::find($request->user_id);
-        }
 
         if (!$user) {
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
 
         $month = $request->input('month', date('Y-m'));
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
+            return response()->json(['success' => false, 'message' => 'Invalid payroll month.'], 422);
+        }
         $monthDate = Carbon::createFromFormat('!Y-m', $month);
         $start = $monthDate->copy()->startOfMonth()->toDateString();
         $end = $monthDate->copy()->endOfMonth()->toDateString();
@@ -301,33 +417,28 @@ class HrQueueApiController extends Controller
             ->where('employee_id', $user->id)
             ->where('salary_cycle', 'monthly')
             ->whereBetween('salary_from', [$start, $end])
+            ->orderByDesc('id')
             ->first();
 
-        // Fallback to latest pending payslip
-        if (!$payslip) {
-            $payslip = EmployeePayslip::withoutGlobalScope('branch')
-                ->with(['payslipDetail.salaryComponent', 'additionalData.salaryComponent'])
-                ->where('employee_id', $user->id)
-                ->where('salary_cycle', 'monthly')
-                ->where('status', '!=', PayslipStatusEnum::paid->value)
-                ->latest('id')
-                ->first();
+        if (!$payslip || !in_array($payslip->status, [PayslipStatusEnum::locked->value, PayslipStatusEnum::paid->value], true)) {
+            return response()->json(['success' => false, 'message' => 'No approved payroll is available for this month.'], 404);
         }
 
-        // Calculations
-        $basicSalary = $payslip ? (float) $payslip->gross_salary : 450.00;
-        $leavePenalty = $payslip ? (float) $payslip->absent_deduction : 15.00;
-        $latePenalty = $payslip ? (float) $payslip->undertime : 0.00;
-        $loanDeduction = $payslip ? (float) $payslip->advance_salary : 50.00;
+        // Use persisted payslip values only. Never substitute sample or guessed amounts.
+        $componentDetails = $payslip->payslipDetail->concat($payslip->additionalData);
+        $componentTotal = static function (callable $matches) use ($componentDetails): float {
+            return round((float) $componentDetails->filter(fn ($detail) => $detail->salaryComponent && $matches(mb_strtolower(trim($detail->salaryComponent->name))))->sum('amount'), 2);
+        };
+        $basicSalary = $componentTotal(fn ($name) => in_array($name, ['basic salary', 'base salary', 'ប្រាក់ខែគោល'], true));
+        $leavePenalty = round((float) $payslip->absent_deduction, 2);
+        $latePenalty = round((float) $payslip->undertime, 2);
+        $loanDeduction = round((float) $payslip->advance_salary, 2);
         $installmentDeduction = 0.00;
 
         // Custom details from payslip components
         if ($payslip) {
-            $details = $payslip->payslipDetail->concat($payslip->additionalData);
-            foreach ($details as $d) {
-                $comp = $d->salaryComponent;
-                if (!$comp) continue;
-                $name = mb_strtolower(trim($comp->name));
+            foreach ($componentDetails as $d) {
+                $name = mb_strtolower(trim((string) $d->salaryComponent?->name));
                 if (preg_match('/installment|instalment|បង់រំលស់/u', $name)) {
                     $installmentDeduction += (float) $d->amount;
                 }
@@ -354,15 +465,15 @@ class HrQueueApiController extends Controller
             elseif (in_array($type, ['សម្ភារ', 'material'])) $materialComm += $amt;
         }
 
-        // Fallback realistic defaults if 0
-        if ($salesComm == 0 && $ironComm == 0) $salesComm = 35.00;
-        if ($materialComm == 0) $materialComm = 10.00;
-        $attendanceBonus = 25.00;
-        $punctualityBonus = 0.00;
+        $salesComm = round($salesComm, 2);
+        $ironComm = round($ironComm, 2);
+        $materialComm = round($materialComm, 2);
+        $attendanceBonus = $componentTotal(fn ($name) => str_contains($name, 'attendance bonus') || str_contains($name, 'មិនឈប់'));
+        $punctualityBonus = $componentTotal(fn ($name) => str_contains($name, 'punctual') || str_contains($name, 'ទៀងទាត់'));
 
         $totalDeductions = round($leavePenalty + $latePenalty + $loanDeduction + $installmentDeduction, 2);
         $totalBonuses = round($salesComm + $ironComm + $materialComm + $attendanceBonus + $punctualityBonus, 2);
-        $netSalary = round($basicSalary + $totalBonuses - $totalDeductions, 2);
+        $netSalary = round((float) $payslip->net_salary, 2);
 
         // Check if ticket is currently completed/paid
         $isAlreadyPaid = false;
@@ -415,13 +526,14 @@ class HrQueueApiController extends Controller
     public function disbursePayroll(Request $request): JsonResponse
     {
         $request->validate([
-            'user_id' => 'required|integer',
-            'ticket_id' => 'nullable|integer',
-            'payment_method' => 'nullable|string',
+            'ticket_id' => 'required|integer|exists:hr_queues,id',
+            'payment_method' => 'required|string|max:50',
             'transaction_ref' => 'nullable|string',
         ]);
 
-        $userId = $request->user_id;
+        $actor = Auth::guard('api')->user() ?: Auth::user();
+        if (!$actor) return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        $userId = $actor->id;
         $user = User::findOrFail($userId);
         $today = today()->toDateString();
         $month = date('Y-m');
@@ -429,23 +541,32 @@ class HrQueueApiController extends Controller
         DB::beginTransaction();
         try {
             // Find queue ticket
-            $ticket = null;
-            if ($request->ticket_id) {
-                $ticket = HrQueue::find($request->ticket_id);
-            }
-            if (!$ticket) {
-                $ticket = HrQueue::where('user_id', $userId)
-                    ->where('date', $today)
-                    ->latest('id')
-                    ->first();
+            $ticket = HrQueue::whereKey($request->ticket_id)->lockForUpdate()->firstOrFail();
+            if ((int) $ticket->user_id !== (int) $userId || !in_array($ticket->status, ['calling', 'serving'], true) || (string) $ticket->date->toDateString() !== $today) {
+                throw new Exception('The active serving ticket does not belong to this employee.');
             }
 
             // Find payslip
             $payslip = EmployeePayslip::withoutGlobalScope('branch')
                 ->where('employee_id', $userId)
                 ->where('salary_cycle', 'monthly')
+                ->where('salary_from', 'like', $month . '%')
+                ->lockForUpdate()
                 ->latest('id')
                 ->first();
+
+            if (!$payslip || $payslip->status !== PayslipStatusEnum::locked->value) {
+                throw new Exception('No approved payroll is available for disbursement.');
+            }
+
+            $existingDisbursement = PayrollDisbursement::where('payslip_id', $payslip->id)->lockForUpdate()->first();
+            if ($existingDisbursement) {
+                throw new Exception('This payroll has already been disbursed.');
+            }
+
+            $breakdownResponse = $this->getSalaryBreakdown(Request::create('/payroll/breakdown', 'GET', ['month' => $month]));
+            $breakdown = $breakdownResponse->getData(true)['data']['breakdown'] ?? null;
+            if (!$breakdown) throw new Exception('Could not load the approved payroll breakdown.');
 
             // Settle Advance salary if present
             if ($payslip && $payslip->advance_salary > 0) {
@@ -479,22 +600,22 @@ class HrQueueApiController extends Controller
                 'queue_ticket_id' => $ticket?->id,
                 'month' => $month,
                 'disbursed_at' => now(),
-                'disbursed_by' => Auth::id() ?: 1,
-                'basic_salary' => $payslip ? (float)$payslip->gross_salary : 450.00,
-                'leave_penalty' => $payslip ? (float)$payslip->absent_deduction : 15.00,
-                'late_penalty' => 0.00,
-                'loan_deduction' => $payslip ? (float)$payslip->advance_salary : 50.00,
-                'installment_deduction' => 0.00,
-                'total_deductions' => 65.00,
-                'sales_commission' => 35.00,
-                'iron_commission' => 0.00,
-                'material_commission' => 10.00,
-                'attendance_bonus' => 25.00,
-                'punctuality_bonus' => 0.00,
-                'total_bonuses' => 70.00,
-                'net_received_salary' => 455.00,
-                'payment_method' => $request->input('payment_method', 'Cash / ABA Bank'),
-                'transaction_ref' => $request->input('transaction_ref', 'KY-' . strtoupper(Str::random(8))),
+                'disbursed_by' => $actor->id,
+                'basic_salary' => $breakdown['basic_salary'],
+                'leave_penalty' => $breakdown['deductions']['leave_penalty'],
+                'late_penalty' => $breakdown['deductions']['late_penalty'],
+                'loan_deduction' => $breakdown['deductions']['loan_deduction'],
+                'installment_deduction' => $breakdown['deductions']['installment_deduction'],
+                'total_deductions' => $breakdown['deductions']['total_deductions'],
+                'sales_commission' => $breakdown['bonuses']['sales_commission'],
+                'iron_commission' => $breakdown['bonuses']['iron_commission'],
+                'material_commission' => $breakdown['bonuses']['material_commission'],
+                'attendance_bonus' => $breakdown['bonuses']['attendance_bonus'],
+                'punctuality_bonus' => $breakdown['bonuses']['punctuality_bonus'],
+                'total_bonuses' => $breakdown['bonuses']['total_bonuses'],
+                'net_received_salary' => $breakdown['net_received_salary'],
+                'payment_method' => $request->payment_method,
+                'transaction_ref' => $request->input('transaction_ref'),
                 'status' => 'paid',
                 'notes' => 'Disbursed at reception desk',
             ]);

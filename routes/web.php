@@ -226,6 +226,8 @@ Route::group([
 
         Route::post('logout', [AdminAuthController::class, 'logout'])->name('logout');
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('maintenance/diagnostics', \App\Http\Controllers\Web\SystemDiagnosticsController::class)
+            ->middleware('superAdmin')->name('maintenance.diagnostics');
         Route::post('dashboard/summary-detail', [DashboardController::class, 'summaryDetail'])->name('dashboard.summary-detail');
         Route::get('showQR', [DashboardController::class, 'showQR'])->name('showQR');
         Route::prefix('staff-evaluations')->name('staff-evaluations.')->group(function () {
@@ -304,7 +306,7 @@ Route::group([
 
             /** app settings */
             Route::get('feature/index', [FeatureController::class, 'index'])->name('feature.index');
-            Route::get('feature/toggle-status/{id}', [FeatureController::class, 'toggleStatus'])->name('feature.toggle-status');
+            Route::put('feature/status', [FeatureController::class, 'updateStatus'])->name('feature.status.update');
 
             /** roles & permissions route */
             Route::resource('roles', RoleController::class);
@@ -511,11 +513,23 @@ Route::group([
 
         /** Payday Queue & Waiting Management System */
         Route::get('payroll-queue', [PayrollQueueController::class, 'index'])->name('payroll-queue.index');
+        Route::get('payroll-queue/dashboard', [PayrollQueueController::class, 'index'])->name('payroll-queue.dashboard');
+        Route::get('payroll-queue/lists', [PayrollQueueController::class, 'sessions'])->name('payroll-queue.sessions.index');
+        Route::post('payroll-queue/sessions', [PayrollQueueController::class, 'storeSession'])->name('payroll-queue.sessions.store');
+        Route::get('payroll-queue/sessions/{sessionId}', [PayrollQueueController::class, 'showSession'])->whereNumber('sessionId')->name('payroll-queue.sessions.show');
+        Route::post('payroll-queue/sessions/{sessionId}/update-counters', [PayrollQueueController::class, 'updateCounters'])->whereNumber('sessionId')->name('payroll-queue.sessions.update-counters');
+        Route::get('payroll-queue/sessions/delete/{sessionId}', [PayrollQueueController::class, 'destroySession'])->whereNumber('sessionId')->name('payroll-queue.sessions.delete');
+        Route::delete('payroll-queue/sessions/{sessionId}', [PayrollQueueController::class, 'destroySession'])->whereNumber('sessionId')->name('payroll-queue.sessions.destroy');
+        Route::post('payroll-queue/{sessionId}/send-invites', [PayrollQueueController::class, 'sendInvites'])->whereNumber('sessionId')->name('payroll-queue.send-invites');
+        Route::post('payroll-queue/{sessionId}/employees', [PayrollQueueController::class, 'addSessionEmployee'])->whereNumber('sessionId')->name('payroll-queue.employees.store');
+        Route::put('payroll-queue/{sessionId}/employees/{employeeId}', [PayrollQueueController::class, 'updateSessionEmployee'])->whereNumber('sessionId')->whereNumber('employeeId')->name('payroll-queue.employees.update');
+        Route::delete('payroll-queue/{sessionId}/employees/{employeeId}', [PayrollQueueController::class, 'removeSessionEmployee'])->whereNumber('sessionId')->whereNumber('employeeId')->name('payroll-queue.employees.destroy');
         Route::get('payroll-queue/{sessionId}/live-status', [PayrollQueueController::class, 'liveStatus'])->name('payroll-queue.live-status');
         Route::post('payroll-queue/{sessionId}/call-next', [PayrollQueueController::class, 'callNext'])->name('payroll-queue.call-next');
         Route::post('payroll-queue/ticket/{ticketId}/recall', [PayrollQueueController::class, 'recallTicket'])->name('payroll-queue.recall');
         Route::post('payroll-queue/ticket/{ticketId}/skip', [PayrollQueueController::class, 'skipTicket'])->name('payroll-queue.skip');
         Route::get('payroll-queue/ticket/{ticketId}/breakdown', [PayrollQueueController::class, 'getPayslipBreakdown'])->name('payroll-queue.breakdown');
+        Route::post('payroll-queue/ticket/{ticketId}/quick-update', [PayrollQueueController::class, 'quickUpdatePayroll'])->name('payroll-queue.quick-update');
         Route::post('payroll-queue/ticket/{ticketId}/disburse', [PayrollQueueController::class, 'disburseSalary'])->name('payroll-queue.disburse');
         Route::get('payroll-queue/ticket/{ticketId}/print-slip', [PayrollQueueController::class, 'printSlip'])->name('payroll-queue.print-slip');
         Route::get('payroll-queue/{sessionId}/display', [PayrollQueueController::class, 'display'])->name('payroll-queue.display');
@@ -1071,6 +1085,65 @@ Route::prefix('certificates')->group(function () {
     Route::get('/{id}/download-pdf', [\App\Http\Controllers\CertificateController::class, 'downloadPdf'])->name('certificates.downloadPdf');
     Route::get('/{id}', [\App\Http\Controllers\CertificateController::class, 'show'])->name('certificates.show');
 });
+
+Route::get('/app', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'publicPage'])->name('app.download-page');
+Route::get('/app/download/android', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'download'])->name('app.download-android');
+Route::get('/app/releases/latest', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'latest'])->name('app.latest-release');
+Route::get('/app/releases/{version}/checksum', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'checksum'])->where('version', '[A-Za-z0-9._+-]+')->name('app.release-checksum');
+Route::get('/app/releases/{version}/download', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'downloadVersion'])->where('version', '[A-Za-z0-9._+-]+')->name('app.release-download');
+Route::get('/app/releases/{version}', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'releaseVersion'])->where('version', '[A-Za-z0-9._+-]+')->name('app.release-version');
+
+Route::prefix('admin/app-security')->name('admin.app-security.')->middleware(['admin.auth', 'permission'])->group(function () {
+    Route::get('/', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'index'])->name('index');
+    Route::get('/settings', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showSettings'])->name('settings');
+    Route::get('/logs/export', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'exportAuditLogs'])->name('logs.export');
+    Route::post('/settings', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/alerts/{alertId}/acknowledge', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'acknowledgeAlert'])->whereNumber('alertId')->name('alerts.acknowledge');
+    Route::post('/admins/{adminId}/role', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'updateAdminRole'])->whereNumber('adminId')->name('admins.role.update');
+    Route::post('/releases', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'store'])->name('releases.store');
+    Route::post('/releases/{uuid}/activate', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'activate'])->name('releases.activate');
+    Route::post('/releases/{uuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'revoke'])->name('releases.revoke');
+
+    Route::get('/dashboard', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/devices', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'devices'])->name('devices.index');
+    Route::get('/devices/{uuid}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showRiskSignalReview'])->name('devices.review');
+    Route::get('/devices/{uuid}/sessions', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDeviceSessions'])->name('devices.sessions');
+    Route::post('/devices/{uuid}/sessions/{sessionUuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'revokeDeviceSession'])->name('devices.sessions.revoke');
+    Route::get('/devices/{uuid}', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDevice'])->name('devices.show');
+    Route::post('/risk-signals/{signalId}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'reviewRiskSignal'])->whereNumber('signalId')->name('risk-signals.review');
+    foreach (['approve', 'reject', 'block', 'unblock', 'revoke', 'requireReregistration'] as $action) {
+        Route::post('/devices/{uuid}/'.$action, [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, $action])->name('devices.'.$action);
+    }
+});
+
+// JSON endpoints use the existing administrator session and permission gate.
+// Kept in the web stack so the application's session-backed admin guard and
+// CSRF protections remain in force instead of introducing a parallel guard.
+Route::prefix('api/admin/app-security')->name('admin.app-security.api.')
+    ->middleware(['admin.auth', 'permission'])
+    ->group(function () {
+        Route::get('dashboard', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('alerts', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'alerts'])->name('alerts');
+        Route::post('alerts/{alertId}/acknowledge', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'acknowledgeAlert'])->whereNumber('alertId')->name('alerts.acknowledge');
+        Route::get('settings', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'settings'])->name('settings');
+        Route::put('settings', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'updateSettings'])->name('settings.update');
+        Route::get('devices', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'devices'])->name('devices');
+        Route::get('devices/{uuid}', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDevice'])->name('devices.show');
+        Route::post('devices/{uuid}/sessions/{sessionUuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'revokeDeviceSession'])->name('devices.sessions.revoke');
+        foreach (['approve', 'reject', 'block', 'unblock', 'revoke', 'requireReregistration'] as $action) {
+            Route::post('devices/{uuid}/'.$action, [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, $action])->name('devices.'.$action);
+        }
+        Route::get('releases', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'releases'])->name('releases');
+        Route::post('releases', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'store'])->name('releases.store');
+        Route::post('releases/{uuid}/activate', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'activate'])->name('releases.activate');
+        Route::post('releases/{uuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityReleaseController::class, 'revoke'])->name('releases.revoke');
+        Route::get('logs', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'logs'])->name('logs');
+        Route::get('risk-reports', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'riskReports'])->name('risk-reports');
+        Route::post('risk-signals/{signalId}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'reviewRiskSignal'])->whereNumber('signalId')->name('risk-signals.review');
+        Route::get('intelligence', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'intelligence'])->name('intelligence');
+    });
+
+require app_path('Modules/DailyRecords/web.php');
 
 Route::fallback(function() {
     return view('errors.404');
