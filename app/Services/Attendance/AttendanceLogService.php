@@ -86,9 +86,14 @@ class AttendanceLogService
 
     public function logActivity(array $data)
     {
+        $employeeId = $data['employee_id'] ?? $data['user_id'] ?? null;
+        if ($employeeId === null) {
+            return null;
+        }
+
         $identifier = $data['identifier'] ?? null;
         $logEntry = [
-            'employee_id' => $data['employee_id'] ?? $data['user_id'] ?? null,
+            'employee_id' => $employeeId,
             'attendance_type' => $data['attendance_type'] ?? 'manual',
             'identifier' => $identifier === null ? null : hash('sha256', (string) $identifier),
             'action' => $data['action'] ?? null,

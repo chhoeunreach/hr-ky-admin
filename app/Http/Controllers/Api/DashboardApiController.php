@@ -82,10 +82,21 @@ class DashboardApiController extends Controller
 
             $holiday = $this->holidayService->getCurrentActiveHoliday();
 
-            $overview = $this->userRepo->getEmployeeOverviewDetail($userId,$date);
+            $overview = $this->userRepo->getEmployeeOverviewDetail($userId, $date) ?? (object) [
+                'total_present_day' => 0,
+                'total_leave_taken' => 0,
+                'total_holidays' => 0,
+                'total_paid_leaves' => 0,
+                'total_pending_leaves' => 0,
+                'total_projects' => 0,
+                'total_pending_tasks' => 0,
+                'total_awards' => 0,
+                'upcoming_events' => 0,
+                'upcoming_training' => 0,
+            ];
 
             $trainingOverView = $this->trainingService->getSummary($userId);
-            $overview->upcoming_training = $trainingOverView->upcoming_training;
+            $overview->upcoming_training = $trainingOverView->upcoming_training ?? 0;
             $shiftDates = $this->getAllDatesForShiftNotification($userDetail);
             $features = $this->featureRepository->getAllFeatures();
             $isAttendanceMapFeatured = $features->where('key', 'attendance-map')->where('status', 1)->first() !== null;
