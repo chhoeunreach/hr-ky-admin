@@ -30,6 +30,7 @@ class SecurityPolicyService
     ];
 
     private const SETTINGS = [
+        'enabled' => ['type' => 'bool', 'config' => 'enabled'],
         'device_approval_required' => ['type' => 'bool', 'config' => 'device_approval'],
         'customer_auto_approval' => ['type' => 'bool', 'config' => 'customer_auto_approval'],
         'max_devices_staff' => ['type' => 'int', 'min' => 0, 'max' => 50, 'config' => 'max_devices_staff'],
@@ -111,8 +112,6 @@ class SecurityPolicyService
     {
         $values = [];
         foreach (self::SETTINGS as $key => $_definition) $values[$key] = $this->value($key, $useCache);
-        // This deployment gate intentionally cannot be changed from the dashboard.
-        $values['enabled'] = (bool) config('app_security.enabled', false);
         return $values;
     }
 

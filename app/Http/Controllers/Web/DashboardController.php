@@ -150,7 +150,7 @@ class DashboardController extends Controller
     public function showQR(Request $request)
     {
         $serverUrl = \App\Helpers\MobileServerConfiguration::primaryUrlFromRequest($request);
-        $securityEnabled = (bool) config('app_security.enabled');
+        $securityEnabled = (bool) app(\App\Modules\AppSecurity\Services\SecurityPolicyService::class)->value('enabled');
         if ($securityEnabled && parse_url($serverUrl, PHP_URL_SCHEME) !== 'https') {
             $configuredUrl = \App\Helpers\MobileServerConfiguration::primaryUrl();
             if (parse_url($configuredUrl, PHP_URL_SCHEME) === 'https') {

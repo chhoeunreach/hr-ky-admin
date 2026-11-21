@@ -7,6 +7,7 @@ use App\Modules\AppSecurity\Models\SecuritySession;
 use App\Modules\AppSecurity\Services\AppSecurityException;
 use App\Modules\AppSecurity\Services\DeviceRiskEngine;
 use App\Modules\AppSecurity\Services\ReleaseVerificationService;
+use App\Modules\AppSecurity\Services\SecurityPolicyService;
 use App\Modules\AppSecurity\Services\SecuritySignatureService;
 use Closure;
 use Illuminate\Database\QueryException;
@@ -19,9 +20,18 @@ use Throwable;
 
 class VerifyAppSecurityAccess
 {
+    public function __construct(private SecurityPolicyService $policy)
+    {
+    }
+
     public function handle(Request $request, Closure $next): mixed
     {
-        if (!(bool) config('app_security.enabled', false)) {
+        try {
+            $enabled = (bool) $this->policy->value('enabled');
+        } catch (Throwable) {
+            $enabled = (bool) config('app_security.enabled', false);
+        }
+        if (!$enabled) {
             return $next($request);
         }
 

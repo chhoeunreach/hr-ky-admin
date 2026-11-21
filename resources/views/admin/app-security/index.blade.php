@@ -63,11 +63,11 @@
     <div class="card border-0 shadow-sm mb-4" id="security-policy-settings">
         <div class="card-header bg-white"><h5 class="mb-0">Security policy settings</h5></div>
         <div class="card-body">
-            <p class="small text-muted">Changes apply to new challenges, sessions, registrations, and subsequent risk calculations. The deployment enforcement switch stays controlled by server environment configuration.</p>
+            <p class="small text-muted">Changes apply to new challenges, sessions, registrations, and subsequent risk calculations. The master switch below turns App Security enforcement on or off immediately; when off, existing API traffic is not checked.</p>
             <form method="post" action="{{ route('admin.app-security.settings.update') }}">
                 @csrf
                 <div class="row g-3">
-                    @foreach(['device_approval_required' => 'Require staff device approval', 'customer_auto_approval' => 'Auto-approve low-risk customer devices', 'risk_enabled' => 'Enable risk scoring'] as $key => $label)
+                    @foreach(['enabled' => 'Enable App Security enforcement (master switch)', 'device_approval_required' => 'Require staff device approval', 'customer_auto_approval' => 'Auto-approve low-risk customer devices', 'risk_enabled' => 'Enable risk scoring'] as $key => $label)
                         <div class="col-md-4">
                             <input type="hidden" name="{{ $key }}" value="0">
                             <label class="form-check"><input class="form-check-input" type="checkbox" name="{{ $key }}" value="1" @checked($settings[$key])><span class="form-check-label">{{ $label }}</span></label>

@@ -77,7 +77,7 @@ class AppSecurityAdminController extends Controller
             'release' => $supportOnly ? null : \App\Modules\AppSecurity\Models\SecurityRelease::query()
                 ->where('release_status', 'active')->orderByDesc('version_code')->first(),
             'releases' => $supportOnly ? collect() : \App\Modules\AppSecurity\Models\SecurityRelease::query()->latest()->limit(30)->get(),
-            'securityEnabled' => (bool) config('app_security.enabled'),
+            'securityEnabled' => (bool) $policy->value('enabled'),
             'settings' => $policy->snapshot(),
             'canManageSettings' => $authorization->allowsAny('app_security_settings'),
             'canManageReleases' => $authorization->allowsAny('app_security_releases'),
@@ -151,6 +151,7 @@ class AppSecurityAdminController extends Controller
         app(\App\Modules\AppSecurity\Services\AdminSecurityAuthorization::class)->authorizeAny('app_security_settings');
         app(\App\Modules\AppSecurity\Services\AdminStepUpService::class)->verify($request, 'settings.update');
         $data = $request->validate([
+            'enabled' => ['sometimes', 'boolean'],
             'device_approval_required' => ['sometimes', 'boolean'],
             'customer_auto_approval' => ['sometimes', 'boolean'],
             'max_devices_staff' => ['sometimes', 'integer', 'between:0,50'],
