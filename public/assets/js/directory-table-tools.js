@@ -42,7 +42,88 @@
         table.classList.add('directory-managed-table');
         // Retain free space for existing action dropdowns; sticky headings follow the page.
         tools.querySelector('[data-directory-restore]').addEventListener('click', () => {hidden.clear(); save(); applyColumns();});
-        document.addEventListener('directory:updated', applyColumns); applyColumns();
+        document.addEventListener('directory:updated', () => {
+            applyColumns();
+            if (currentSort.index !== null && currentSort.direction !== 'none') {
+                sortRows(currentSort.index, currentSort.direction);
+            }
+        });
+        applyColumns();
+
+        // Sortable Column Headers
+        let currentSort = { index: null, direction: 'none' };
+        const parseValue = raw => {
+            if (raw === null || raw === undefined) return { type: 'empty', val: '' };
+            const str = String(raw).trim();
+            if (!str || str === '—' || str === '-' || str === 'N/A' || str === 'n/a') return { type: 'empty', val: '' };
+            const clean = str.replace(/,/g, '');
+            if (/^[-+]?\$?\d+(\.\d+)?%?$/.test(clean)) {
+                const num = parseFloat(clean.replace(/[$%]/g, ''));
+                if (!isNaN(num)) return { type: 'number', val: num };
+            }
+            if (!isNaN(Number(clean))) return { type: 'number', val: Number(clean) };
+            if (/^\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(str)) {
+                const t = Date.parse(str);
+                if (!isNaN(t)) return { type: 'date', val: t };
+            }
+            return { type: 'string', val: str };
+        };
+        const compare = (valA, valB, dir) => {
+            const a = parseValue(valA);
+            const b = parseValue(valB);
+            if (a.type === 'empty' && b.type === 'empty') return 0;
+            if (a.type === 'empty') return 1;
+            if (b.type === 'empty') return -1;
+            let diff = 0;
+            if (a.type === 'number' && b.type === 'number') diff = a.val - b.val;
+            else if (a.type === 'date' && b.type === 'date') diff = a.val - b.val;
+            else diff = String(valA).trim().localeCompare(String(valB).trim(), undefined, { numeric: true, sensitivity: 'base' });
+            return dir === 'desc' ? -diff : diff;
+        };
+        const sortRows = (colIndex, dir) => {
+            table = document.getElementById(tools.dataset.directoryTable);
+            const tbody = table ? table.tBodies[0] : null;
+            if (!tbody) return;
+            const rows = [...tbody.rows].filter(r => r.cells.length >= headingCells.length && !r.querySelector('td[colspan]'));
+            if (rows.length <= 1) return;
+            rows.sort((rowA, rowB) => {
+                const cellA = rowA.cells[colIndex];
+                const cellB = rowB.cells[colIndex];
+                const vA = cellA ? (cellA.dataset.sortValue ?? cellA.dataset.directoryValue ?? textOf(cellA)) : '';
+                const vB = cellB ? (cellB.dataset.sortValue ?? cellB.dataset.directoryValue ?? textOf(cellB)) : '';
+                return compare(vA, vB, dir);
+            });
+            rows.forEach(r => tbody.appendChild(r));
+        };
+
+        columns.forEach(col => {
+            const th = headingCells[col.index];
+            if (!th || th.hasAttribute('data-directory-actions') || th.classList.contains('no-sort') || th.dataset.noSort !== undefined) return;
+            th.classList.add('directory-sortable');
+            th.setAttribute('role', 'columnheader');
+            th.setAttribute('tabindex', '0');
+            th.setAttribute('aria-sort', 'none');
+            th.setAttribute('title', 'Click to sort');
+            const onSortClick = () => {
+                const nextDir = (currentSort.index === col.index && currentSort.direction === 'asc') ? 'desc' : 'asc';
+                currentSort = { index: col.index, direction: nextDir };
+                headingCells.forEach(cell => {
+                    if (cell.classList.contains('directory-sortable')) {
+                        cell.setAttribute('aria-sort', 'none');
+                    }
+                });
+                th.setAttribute('aria-sort', nextDir === 'asc' ? 'ascending' : 'descending');
+                sortRows(col.index, nextDir);
+                table.dispatchEvent(new CustomEvent('directory:sorted', { detail: { column: col.index, direction: nextDir } }));
+            };
+            th.addEventListener('click', onSortClick);
+            th.addEventListener('keydown', e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSortClick();
+                }
+            });
+        });
         const syncSearch = () => {
             const input = [...form.elements].find(input => input.name === tools.dataset.directorySearchKey);
             if (input) input.value = search.value;
@@ -86,7 +167,14 @@
             const results = doc.getElementById(table.id);
             if (!results) throw new Error('Missing results');
             const visible = columns.filter(column => !hidden.has(column.index));
-            return {headers:visible.map(column => column.label), rows:[...results.tBodies[0].rows].filter(row => row.cells.length === headingCells.length).map(row => visible.map(column => table.id === 'postTable' && column.index === 2 ? (row.dataset.departments ?? textOf(row.cells[column.index])) : table.id === 'postTable' && column.index === 3 ? (row.dataset.branches ?? textOf(row.cells[column.index])) : textOf(row.cells[column.index])))};
+            let finalRows = [...results.tBodies[0].rows].filter(row => row.cells.length === headingCells.length).map(row => visible.map(column => table.id === 'postTable' && column.index === 2 ? (row.dataset.departments ?? textOf(row.cells[column.index])) : table.id === 'postTable' && column.index === 3 ? (row.dataset.branches ?? textOf(row.cells[column.index])) : textOf(row.cells[column.index])));
+            if (currentSort.index !== null && currentSort.direction !== 'none') {
+                const visIdx = visible.findIndex(c => c.index === currentSort.index);
+                if (visIdx !== -1) {
+                    finalRows.sort((a, b) => compare(a[visIdx], b[visIdx], currentSort.direction));
+                }
+            }
+            return {headers:visible.map(column => column.label), rows: finalRows};
         };
         const saveFile = (blob, extension) => {
             const url = URL.createObjectURL(blob), link = document.createElement('a');
@@ -131,5 +219,58 @@
             finally {buttons.forEach(button => {button.disabled = false;});}
         }));
     });
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize); else initialize();
+
+    const initGenericSortables = () => {
+        document.querySelectorAll('table.table-sortable, table[data-sortable="true"]').forEach(table => {
+            if (table.classList.contains('directory-managed-table') || table.classList.contains('dataTable')) return;
+            table.classList.add('directory-managed-table');
+            const thead = table.tHead;
+            if (!thead || !thead.rows.length) return;
+            const headingCells = [...thead.rows[0].cells];
+            let curSort = { index: null, dir: 'none' };
+            headingCells.forEach((th, idx) => {
+                if (th.hasAttribute('data-directory-actions') || th.classList.contains('no-sort') || th.dataset.noSort !== undefined) return;
+                th.classList.add('directory-sortable');
+                th.setAttribute('role', 'columnheader');
+                th.setAttribute('tabindex', '0');
+                th.setAttribute('aria-sort', 'none');
+                th.setAttribute('title', 'Click to sort');
+                const runSort = () => {
+                    const nextDir = (curSort.index === idx && curSort.dir === 'asc') ? 'desc' : 'asc';
+                    curSort = { index: idx, dir: nextDir };
+                    headingCells.forEach(c => { if (c.classList.contains('directory-sortable')) c.setAttribute('aria-sort', 'none'); });
+                    th.setAttribute('aria-sort', nextDir === 'asc' ? 'ascending' : 'descending');
+                    const tbody = table.tBodies[0];
+                    if (!tbody) return;
+                    const rows = [...tbody.rows].filter(r => r.cells.length >= headingCells.length && !r.querySelector('td[colspan]'));
+                    if (rows.length <= 1) return;
+                    rows.sort((rA, rB) => {
+                        const cA = rA.cells[idx], cB = rB.cells[idx];
+                        const vA = cA ? (cA.dataset.sortValue ?? cA.textContent.trim()) : '';
+                        const vB = cB ? (cB.dataset.sortValue ?? cB.textContent.trim()) : '';
+                        const cleanA = vA.replace(/,/g, '');
+                        const cleanB = vB.replace(/,/g, '');
+                        const nA = Number(cleanA);
+                        const nB = Number(cleanB);
+                        let diff = 0;
+                        if (!isNaN(nA) && !isNaN(nB) && cleanA !== '' && cleanB !== '') {
+                            diff = nA - nB;
+                        } else {
+                            diff = vA.localeCompare(vB, undefined, { numeric: true, sensitivity: 'base' });
+                        }
+                        return nextDir === 'desc' ? -diff : diff;
+                    });
+                    rows.forEach(r => tbody.appendChild(r));
+                };
+                th.addEventListener('click', runSort);
+                th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); runSort(); } });
+            });
+        });
+    };
+
+    const start = () => {
+        initialize();
+        initGenericSortables();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();

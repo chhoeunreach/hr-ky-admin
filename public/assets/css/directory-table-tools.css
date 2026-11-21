@@ -31,3 +31,71 @@
 @media(max-width:575px){.directory-filter-panel .directory-filter-form{padding:16px 10px}.directory-filter-actions .btn{flex:1}}
 
 .directory-list-heading{min-height:76px;padding:18px 20px}.directory-title h6{font-size:16px}.directory-tools{padding:12px 20px}.directory-title{gap:10px}.directory-search{max-width:230px}.directory-filter-actions .btn{font-size:12px}
+
+/* Sortable column headers for directory & data tables */
+.directory-managed-table thead th.directory-sortable {
+    cursor: pointer !important;
+    user-select: none;
+    position: relative;
+    padding-right: 28px !important;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+.directory-managed-table thead th.directory-sortable:hover {
+    color: var(--directory-accent, #0f766e) !important;
+    background-color: color-mix(in srgb, var(--directory-accent, #0f766e) 6%, transparent) !important;
+}
+.directory-managed-table thead th.directory-sortable:focus-visible {
+    outline: 2px solid var(--directory-accent, #0f766e);
+    outline-offset: -2px;
+}
+.directory-managed-table thead th.directory-sortable::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    opacity: 0.35;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E");
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.directory-managed-table thead th.directory-sortable:hover::after {
+    opacity: 0.75;
+}
+.directory-managed-table thead th.directory-sortable[aria-sort="ascending"] {
+    color: var(--directory-accent, #0f766e) !important;
+}
+.directory-managed-table thead th.directory-sortable[aria-sort="ascending"]::after {
+    opacity: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
+}
+.directory-managed-table thead th.directory-sortable[aria-sort="descending"] {
+    color: var(--directory-accent, #0f766e) !important;
+}
+.directory-managed-table thead th.directory-sortable[aria-sort="descending"]::after {
+    opacity: 1;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+:root:has(#themeColor[href*="style_dark.css"]) .directory-managed-table thead th.directory-sortable::after,
+body[data-theme=dark] .directory-managed-table thead th.directory-sortable::after,
+html[data-bs-theme=dark] .directory-managed-table thead th.directory-sortable::after,
+body.dark .directory-managed-table thead th.directory-sortable::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E");
+}
+:root:has(#themeColor[href*="style_dark.css"]) .directory-managed-table thead th.directory-sortable[aria-sort="ascending"]::after,
+body[data-theme=dark] .directory-managed-table thead th.directory-sortable[aria-sort="ascending"]::after,
+html[data-bs-theme=dark] .directory-managed-table thead th.directory-sortable[aria-sort="ascending"]::after,
+body.dark .directory-managed-table thead th.directory-sortable[aria-sort="ascending"]::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2314b8a6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 15-6-6-6 6'/%3E%3C/svg%3E");
+}
+:root:has(#themeColor[href*="style_dark.css"]) .directory-managed-table thead th.directory-sortable[aria-sort="descending"]::after,
+body[data-theme=dark] .directory-managed-table thead th.directory-sortable[aria-sort="descending"]::after,
+html[data-bs-theme=dark] .directory-managed-table thead th.directory-sortable[aria-sort="descending"]::after,
+body.dark .directory-managed-table thead th.directory-sortable[aria-sort="descending"]::after {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2314b8a6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
