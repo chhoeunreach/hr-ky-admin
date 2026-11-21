@@ -86,10 +86,11 @@ class AttendanceLogService
 
     public function logActivity(array $data)
     {
+        $identifier = $data['identifier'] ?? null;
         $logEntry = [
             'employee_id' => $data['employee_id'] ?? $data['user_id'] ?? null,
             'attendance_type' => $data['attendance_type'] ?? 'manual',
-            'identifier' => $data['identifier'] ?? null,
+            'identifier' => $identifier === null ? null : hash('sha256', (string) $identifier),
             'action' => $data['action'] ?? null,
             'latitude' => isset($data['latitude']) && is_numeric($data['latitude']) ? (float) $data['latitude'] : null,
             'longitude' => isset($data['longitude']) && is_numeric($data['longitude']) ? (float) $data['longitude'] : null,
@@ -97,6 +98,7 @@ class AttendanceLogService
             'source' => $data['source'] ?? 'app',
             'created_by' => $data['created_by'] ?? (auth()->check() ? auth()->id() : null),
             'attendance_id' => $data['attendance_id'] ?? null,
+            'created_at' => $data['server_received_at'] ?? null,
         ];
 
         return $this->attendanceLogRepository->store(array_filter($logEntry, fn($v) => !is_null($v)));

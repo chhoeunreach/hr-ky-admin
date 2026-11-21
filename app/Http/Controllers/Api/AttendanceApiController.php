@@ -7,8 +7,11 @@ use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\AttendanceSetting;
+use App\Models\KioskDevice;
 use App\Models\LeaveRequestMaster;
 use App\Models\TimeLeave;
+use App\Models\User;
 use App\Requests\Attendance\AttendanceCheckInRequest;
 use App\Requests\Attendance\AttendanceCheckOutRequest;
 use App\Resources\Attendance\NightAttendanceResource;
@@ -21,7 +24,9 @@ use App\Services\Nfc\NfcService;
 use App\Services\Qr\QrCodeService;
 use App\Traits\CustomAuthorizesRequests;
 use App\Traits\ImageService;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +34,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 use function PHPUnit\Framework\isEmpty;
 use function PHPUnit\Framework\isNull;
 
@@ -263,16 +269,18 @@ class AttendanceApiController extends Controller
     {
         $leaveRequests = LeaveRequestMaster::with('leaveType:id,name')
             ->where('requested_by', $userId)
-            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('status', ['approved', 'pending', 'review'])
             ->whereDate('leave_from', '<=', $endDate)
             ->whereDate('leave_to', '>=', $startDate)
-            ->orderByRaw("FIELD(status, 'approved', 'pending')")
+            ->orderByRaw("FIELD(status, 'approved', 'pending', 'review')")
             ->get();
 
         $byDate = [];
         foreach ($leaveRequests as $leaveRequest) {
-            $from = max(strtotime($startDate), strtotime($leaveRequest->leave_from));
-            $to = min(strtotime($endDate), strtotime($leaveRequest->leave_to));
+            $leaveStartDate = date('Y-m-d', strtotime($leaveRequest->leave_from));
+            $leaveEndDate = date('Y-m-d', strtotime($leaveRequest->leave_to));
+            $from = max(strtotime($startDate), strtotime($leaveStartDate));
+            $to = min(strtotime($endDate), strtotime($leaveEndDate));
 
             for ($date = $from; $date <= $to; $date = strtotime('+1 day', $date)) {
                 $key = date('Y-m-d', $date);
@@ -287,9 +295,9 @@ class AttendanceApiController extends Controller
     {
         return TimeLeave::query()
             ->where('requested_by', $userId)
-            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('status', ['approved', 'pending', 'review'])
             ->whereBetween('issue_date', [$startDate, $endDate])
-            ->orderByRaw("FIELD(status, 'approved', 'pending')")
+            ->orderByRaw("FIELD(status, 'approved', 'pending', 'review')")
             ->get()
             ->keyBy('issue_date')
             ->all();
@@ -305,140 +313,226 @@ class AttendanceApiController extends Controller
      */
     public function employeeAttendance(Request $request): JsonResponse
     {
+        $receivedAt = now();
+        $userDetail = auth()->user();
+        $offlineRequestId = null;
+
         try {
-
-            $validator = Validator::make($request->all(), [
-                'attendance_type' => ['required', new Enum(EmployeeAttendanceTypeEnum::class)],
-                'latitude' => ['required', 'numeric'],
-                'longitude' => ['required', 'numeric'],
-                'router_bssid' => ['nullable'],
-                'identifier' => ['nullable', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::qr->value, 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::nfc->value,],
-                'attendance_status_type' => ['nullable', 'in:checkIn,checkOut', 'required_if:attendance_type,' . EmployeeAttendanceTypeEnum::wifi->value],
-                'note'=>['nullable'],
-                'selfie' => [
-                    AppHelper::ifAttendanceSelfieEnabled() && $request->input('attendance_type') !== EmployeeAttendanceTypeEnum::face->value
-                        ? 'required'
-                        : 'nullable',
-                    'image',
-                    'mimes:jpg,jpeg,png,webp',
-                    'max:5120'
-                ],
+            $key = Validator::make([
+                'offline_request_id' => $request->input('offline_request_id', $request->header('Idempotency-Key')),
+            ], [
                 'offline_request_id' => ['nullable', 'string', 'max:100'],
-                'recorded_at' => ['nullable', 'date'],
-            ]);
+            ])->validate();
+            $offlineRequestId = $key['offline_request_id'] === '' ? null : $key['offline_request_id'];
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('index.validation_failed'),
-                    'errors' => $validator->errors()->toArray()
-                ],422);
-            }
-
-            $validatedData = $validator->validated();
-
-
-            $validatedData['attendance_status_type'] = $validatedData['attendance_status_type'] ?? '';
-            $userDetail = auth()->user();
-
-            $validatedData['user_id'] = $userDetail['id'];
-            $validatedData['company_id'] = $userDetail['company_id'];
-            $validatedData['office_time_id'] = $userDetail['office_time_id'];
-            $validatedData['allow_holiday_check_in'] = $userDetail['allow_holiday_check_in'];
-
-            if (
-                AppHelper::isEmployeeLocationRequired() &&
-                $validatedData['attendance_type'] !== EmployeeAttendanceTypeEnum::face->value
+            [$replay, $validatedData, $locationValidation] = DB::transaction(function () use (
+                $request, $userDetail, $receivedAt, $offlineRequestId
             ) {
-                $this->attendanceService->resolveBranchLocationValidation(
-                    $validatedData['user_id'],
-                    $validatedData['latitude'],
-                    $validatedData['longitude']
-                );
-            }
-
-            if (!empty($validatedData['offline_request_id'])) {
-                $duplicateResponse = $this->duplicateOfflineAttendanceResponse(
-                    $validatedData['offline_request_id'],
-                    $validatedData['user_id']
-                );
-                if ($duplicateResponse) {
-                    return $duplicateResponse;
-                }
-            }
-
-            DB::beginTransaction();
-
-            if ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::nfc->value)
-            {
-                $nfcData = $this->nfcService->verifyNfc($validatedData['identifier']);
-
-                if (!$nfcData) {
-                    throw new Exception(__('index.invalid_nfc'), 400);
-                }
-            } elseif ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::qr->value)
-            {
-                $attendanceQr = $this->qrCodeService->verifyQr($validatedData['identifier']);
-
-                if (!$attendanceQr) {
-
-                    throw new Exception(__('index.invalid_qr'), 400);
+                // A user row exists even before the first punch. Lock it before reading
+                // attendance so both single and multiple punch modes serialize per employee.
+                User::withoutGlobalScope('branch')->lockForUpdate()->findOrFail($userDetail->id, ['id']);
+                $replay = $this->duplicateOfflineAttendanceResponse($offlineRequestId, $userDetail->id, $receivedAt);
+                if ($replay) {
+                    return [$replay, [], []];
                 }
 
-            } elseif ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value)
-            {
-                $isCheckIn = $validatedData['attendance_status_type'] === 'checkIn';
-                $latitudeKey = $isCheckIn ? 'check_in_latitude' : 'check_out_latitude';
-                $longitudeKey = $isCheckIn ? 'check_in_longitude' : 'check_out_longitude';
+                $attendanceType = $request->input('attendance_type');
+                $kioskFace = $attendanceType === EmployeeAttendanceTypeEnum::face->value
+                    && request()->attributes->get('kioskDevice') instanceof KioskDevice;
+                $locationRequired = !$kioskFace && AppHelper::isEmployeeLocationRequired();
+                $validatedData = Validator::make($request->all(), [
+                    'attendance_type' => ['required', new Enum(EmployeeAttendanceTypeEnum::class)],
+                    'latitude' => [$locationRequired ? 'required' : 'nullable', 'numeric', 'between:-90,90'],
+                    'longitude' => [$locationRequired ? 'required' : 'nullable', 'numeric', 'between:-180,180'],
+                    'accuracy' => ['nullable', 'numeric', 'min:0'],
+                    'router_bssid' => ['nullable', 'string'],
+                    'identifier' => ['nullable', 'string', 'required_if:attendance_type,qr,qr_pass,nfc'],
+                    'attendance_status_type' => ['nullable', 'in:checkIn,checkOut', 'required_if:attendance_type,wifi'],
+                    'note' => ['nullable', 'string'],
+                    'selfie' => [
+                        AppHelper::ifAttendanceSelfieEnabled() && !$kioskFace ? 'required' : 'nullable',
+                        'image', 'mimes:jpg,jpeg,png,webp', 'max:5120',
+                    ],
+                    'recorded_at' => ['nullable', 'date'],
+                ])->validate();
 
-                $validatedData[$latitudeKey] = (float) $validatedData['latitude'];
-                $validatedData[$longitudeKey] = (float) $validatedData['longitude'];
+                $validatedData['attendance_status_type'] = $validatedData['attendance_status_type'] ?? '';
+                $validatedData['user_id'] = $userDetail->id;
+                $validatedData['company_id'] = $userDetail->company_id;
+                $validatedData['office_time_id'] = $userDetail->office_time_id;
+                $validatedData['allow_holiday_check_in'] = $userDetail->allow_holiday_check_in;
+                $validatedData['offline_request_id'] = $offlineRequestId;
+                $validatedData['received_at'] = $receivedAt;
 
-            } elseif ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::face->value) {
-                // The kiosk middleware has already authenticated the device and
-                // scoped the recognized employee to its company and branch.
-            } else {
-                return response()->json(['success' => false, 'message' => __('index.invalid_attendance_type')]);
-            }
+                $this->enforceAttendanceMethod($attendanceType, $kioskFace);
+                $qrNeedsLocation = $attendanceType === EmployeeAttendanceTypeEnum::qr->value
+                    && AttendanceSetting::where('slug', 'require_nfc_or_gps_before_qr')->where('status', 1)->exists();
+                $locationValidation = [];
+                if ($locationRequired || $qrNeedsLocation) {
+                    $maxAccuracy = (float) (AttendanceSetting::where('slug', 'attendance_location_accuracy')
+                        ->where('status', 1)->value('value') ?? 1000);
+                    if (($validatedData['accuracy'] ?? 0) > $maxAccuracy) {
+                        throw new Exception(__('attendance.location_accuracy', ['meters' => $maxAccuracy]), 403);
+                    }
 
-            $multipleAttendance = AppHelper::getAttendanceLimit();
-            $nightShift = AppHelper::isOnNightShift($validatedData['user_id']);
-            $validatedData['night_shift'] = $nightShift;
+                    $locationValidation = $this->attendanceService->resolveBranchLocationValidation(
+                        $userDetail->id,
+                        $validatedData['latitude'] ?? null,
+                        $validatedData['longitude'] ?? null,
+                        $qrNeedsLocation,
+                        $locationRequired,
+                    );
+                    if ($qrNeedsLocation && $locationValidation['within_branch_radius'] !== true) {
+                        throw new Exception(__('attendance.qr_location_required'), 403);
+                    }
+                }
 
-            if ($nightShift) {
+                if (isset($validatedData['recorded_at'])) {
+                    $skew = abs($receivedAt->timestamp - Carbon::parse($validatedData['recorded_at'])->timestamp);
+                    if ($skew > (int) config('attendance.client_clock_skew_seconds')) {
+                        Log::notice('Attendance client clock differs from server receipt.', [
+                            'user_id' => $userDetail->id,
+                            'skew_seconds' => $skew,
+                        ]);
+                    }
+                }
+
+                $this->verifyAttendanceEvidence($validatedData);
+                $validatedData['night_shift'] = AppHelper::isOnNightShift($userDetail->id);
+                $multipleAttendance = $this->attendanceService->attendanceLimit();
+
+                if ($validatedData['night_shift']) {
                     $this->handleSingleNightAttendance($validatedData);
-            } else {
-                if ($multipleAttendance > 1) {
-
+                } elseif ($multipleAttendance > 1) {
                     $this->handleMultipleAttendance($validatedData, $multipleAttendance);
                 } else {
                     $this->handleSingleAttendance($validatedData);
                 }
+
+                return [null, $validatedData, $locationValidation];
+            });
+        } catch (ValidationException $exception) {
+            $errors = $exception->errors();
+
+            return response()->json([
+                'status' => false,
+                'message' => __('index.validation_failed'),
+                'status_code' => 422,
+                'data' => $errors,
+                'success' => false,
+                'errors' => $errors,
+            ], 422);
+        } catch (UniqueConstraintViolationException $exception) {
+            if ($offlineRequestId !== null && preg_match(
+                '/attendances[._]check_(?:in|out)_offline_request_(?:id|unique)/i',
+                $exception->errorInfo[2] ?? ''
+            )) {
+                return $this->duplicateOfflineAttendanceResponse($offlineRequestId, $userDetail->id, $receivedAt)
+                    ?? AppHelper::sendErrorResponse(__('attendance.idempotency_conflict'), 409);
             }
 
-            DB::commit();
-
-            $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
-            $this->storeAttendanceLog($validatedData, $userDetail, $type, $this->attendanceForTelegram?->id);
-
-            $this->sendNotification($this->notificationData['title'],$this->notificationData['permissionKey'],$this->notificationData['time'],$this->notificationData['workedTime'] ?? null  );
-
-            if ($this->attendanceForTelegram) {
-                $user = auth()->user();
-                $user->loadMissing([
-                    'branch:id,name',
-                    'department:id,dept_name',
-                    'officeTime:id,opening_time,closing_time',
-                ]);
-                $this->attendanceTelegramNotificationService->notify($type, $user, $this->attendanceForTelegram);
+            report($exception);
+            return AppHelper::sendErrorResponse(__('attendance.unable_to_record'), 500);
+        } catch (Throwable $exception) {
+            $status = (int) $exception->getCode();
+            if (in_array($status, [400, 403, 409], true)) {
+                return AppHelper::sendErrorResponse($exception->getMessage(), $status);
             }
 
-            return AppHelper::sendSuccessResponse($this->displayMessage, $this->data);
+            report($exception);
+            return AppHelper::sendErrorResponse(__('attendance.unable_to_record'), 500);
+        }
 
+        if ($replay) {
+            return $replay;
+        }
 
-        } catch (Exception $exception) {
-            DB::rollBack();
-            return AppHelper::sendErrorResponse($exception->getMessage(), $exception->getCode());
+        $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
+        $this->storeAttendanceLog($validatedData, $userDetail, $type, $this->attendanceForTelegram->id);
+        try {
+            $this->sendNotification(
+                $this->notificationData['title'],
+                $this->notificationData['permissionKey'],
+                $this->notificationData['time'],
+                $this->notificationData['workedTime'] ?? null,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        try {
+            $userDetail->loadMissing([
+                'branch:id,name',
+                'department:id,dept_name',
+                'officeTime:id,opening_time,closing_time',
+            ]);
+            $this->attendanceTelegramNotificationService->notify($type, $userDetail, $this->attendanceForTelegram);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+
+        return AppHelper::sendSuccessResponse($this->displayMessage, array_replace(
+            $this->data,
+            $locationValidation,
+            $this->attendanceResponseFields($this->attendanceForTelegram, $receivedAt, false),
+        ));
+    }
+
+    private function enforceAttendanceMethod(string $attendanceType, bool $kioskFace): void
+    {
+        if ($kioskFace) {
+            return;
+        }
+
+        $setting = AttendanceSetting::where('slug', 'attendance_method')->first();
+        $methods = (array) ($setting?->values ?? []);
+        $legacyMethod = match ($attendanceType) {
+            'wifi' => 'default',
+            'qr_pass' => 'qr',
+            default => $attendanceType,
+        };
+
+        if ($attendanceType === EmployeeAttendanceTypeEnum::face->value
+            || ($setting && ((int) $setting->status !== 1
+                || (!in_array($attendanceType, $methods, true) && !in_array($legacyMethod, $methods, true))))) {
+            throw new Exception(__('attendance.method_disabled'), 403);
+        }
+    }
+
+    private function verifyAttendanceEvidence(array $data): void
+    {
+        switch ($data['attendance_type']) {
+            case 'nfc':
+                if (!$this->nfcService->verifyNfc($data['identifier'])) {
+                    throw new Exception(__('index.invalid_nfc'), 400);
+                }
+                break;
+            case 'qr':
+                if (!$this->qrCodeService->verifyQr($data['identifier'])) {
+                    throw new Exception(__('index.invalid_qr'), 400);
+                }
+                break;
+            case 'qr_pass':
+                $pass = json_decode($data['identifier'], true);
+                $passUserId = $pass['user_id'] ?? null;
+                $timestamp = $pass['timestamp'] ?? null;
+                $locationToken = $pass['location_token'] ?? '';
+                $signature = $pass['signature'] ?? null;
+                $age = is_numeric($timestamp) ? $data['received_at']->timestamp - (int) $timestamp : null;
+
+                if (($pass['type'] ?? null) !== 'attendance_queue_pass'
+                    || !is_numeric($passUserId) || (int) $passUserId !== (int) $data['user_id']
+                    || $age === null || $age < 0 || $age > 300
+                    || !is_string($locationToken) || !is_string($signature)
+                    || !hash_equals(hash_hmac('sha256', "{$passUserId}|{$timestamp}|{$locationToken}", config('app.key')), $signature)) {
+                    throw new Exception('Invalid or expired employee QR pass.', 403);
+                }
+                break;
+            case 'wifi':
+            case 'face':
+                break;
+            default:
+                throw new Exception(__('index.invalid_attendance_type'), 400);
         }
     }
 
@@ -534,12 +628,16 @@ class AttendanceApiController extends Controller
      */
     private function handleMultipleAttendance($validatedData, $multipleAttendance)
     {
-        $select = ['id', 'user_id', 'check_out_at', 'check_in_at'];
-        $userTodayCheckInDetail = $this->attendanceService->findEmployeeTodayAttendanceDetail($validatedData['user_id'], $select);
-        $attendanceDataCount = $this->attendanceService->findEmployeeTodayAttendanceNumbers($validatedData['user_id']);
-
-        if (isset($userTodayCheckInDetail->check_out_at) && ($multipleAttendance == $attendanceDataCount)) {
-            throw new Exception(__('index.multi_checkout_warning'), 400);
+        $userTodayCheckInDetail = $this->attendanceService->findEmployeeTodayAttendanceDetail(
+            $validatedData['user_id'], ['*'], $validatedData['received_at']
+        );
+        if ($userTodayCheckInDetail?->check_out_at) {
+            $attendanceDataCount = $this->attendanceService->findEmployeeTodayAttendanceNumbers(
+                $validatedData['user_id'], $validatedData['received_at']
+            );
+            if ($attendanceDataCount >= $multipleAttendance) {
+                throw new Exception(__('index.multi_checkout_warning'), 409);
+            }
         }
 
         if ($userTodayCheckInDetail) {
@@ -551,8 +649,9 @@ class AttendanceApiController extends Controller
 
     private function handleSingleAttendance($validatedData)
     {
-        $select = ['id', 'user_id', 'check_out_at', 'check_in_at'];
-        $userTodayCheckInDetail = $this->attendanceService->findEmployeeTodayAttendanceDetail($validatedData['user_id'], $select);
+        $userTodayCheckInDetail = $this->attendanceService->findEmployeeTodayAttendanceDetail(
+            $validatedData['user_id'], ['*'], $validatedData['received_at']
+        );
 
         if ($userTodayCheckInDetail) {
             $this->processSingleExistingAttendance($userTodayCheckInDetail, $validatedData);
@@ -566,30 +665,21 @@ class AttendanceApiController extends Controller
      */
     private function processExistingAttendance($userTodayCheckInDetail, $validatedData)
     {
-        $attendanceTypes = [
-            EmployeeAttendanceTypeEnum::qr->value,
-            EmployeeAttendanceTypeEnum::nfc->value,
-            EmployeeAttendanceTypeEnum::face->value,
-        ];
+        $requestedAction = $validatedData['attendance_status_type'];
         if ($userTodayCheckInDetail->check_out_at) {
-            if ( (in_array($validatedData['attendance_type'], $attendanceTypes)) || (($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) && ($validatedData['attendance_status_type'] == 'checkIn'))) {
-                $this->processNewCheckIn($validatedData);
-            } elseif ( ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) && ($validatedData['attendance_status_type'] == 'checkOut')) {
-                throw new Exception('already checked out', 400);
-            }else{
-                throw new Exception('already checked in', 400);
+            if ($requestedAction === 'checkOut') {
+                throw new Exception('already checked out', 409);
             }
 
-        } else {
-            if ( (in_array($validatedData['attendance_type'], $attendanceTypes)) || (($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) && ($validatedData['attendance_status_type'] == 'checkOut'))) {
-                $this->processCheckOut($userTodayCheckInDetail, $validatedData);
-            }elseif ( (($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value) && ($validatedData['attendance_status_type'] == 'checkIn'))) {
-                throw new Exception('already checked in', 400);
-            }else{
-                throw new Exception('already checked out', 400);
-            }
-
+            $this->processNewCheckIn($validatedData);
+            return;
         }
+
+        if ($requestedAction === 'checkIn') {
+            throw new Exception('already checked in', 409);
+        }
+
+        $this->processCheckOut($userTodayCheckInDetail, $validatedData);
     }
 
     /**
@@ -598,11 +688,11 @@ class AttendanceApiController extends Controller
     private function processSingleExistingAttendance($userTodayCheckInDetail, $validatedData)
     {
         if ($userTodayCheckInDetail->check_in_at && $validatedData['attendance_status_type'] == 'checkIn') {
-            throw new Exception(__('index.alert_checkin'), 400);
+            throw new Exception(__('index.alert_checkin'), 409);
         }
 
         if ($userTodayCheckInDetail->check_out_at) {
-            throw new Exception(__('index.checkout_alert'), 400);
+            throw new Exception(__('index.checkout_alert'), 409);
         }
 
         $this->processCheckOut($userTodayCheckInDetail, $validatedData);
@@ -613,7 +703,7 @@ class AttendanceApiController extends Controller
      */
     private function processNewAttendance($validatedData)
     {
-        if ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value && $validatedData['attendance_status_type'] == 'checkOut') {
+        if ($validatedData['attendance_status_type'] === 'checkOut') {
             throw new Exception(__('index.not_checked_in_yet'), 400);
         }
 
@@ -627,8 +717,8 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
-        $validatedData['check_in_latitude'] = (float) $validatedData['latitude'];
-        $validatedData['check_in_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_in_latitude'] = isset($validatedData['latitude']) ? (float) $validatedData['latitude'] : null;
+        $validatedData['check_in_longitude'] = isset($validatedData['longitude']) ? (float) $validatedData['longitude'] : null;
         $validatedData['check_in_selfie'] = $this->storeAttendanceSelfie($validatedData);
         $validatedData['check_in_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
@@ -638,7 +728,7 @@ class AttendanceApiController extends Controller
         $this->notificationData['permissionKey'] = 'employee_check_in';
         $this->notificationData['time'] = $attendanceData->check_in_at;
 
-        $this->data = (new TodayAttendanceResource($attendanceData))->toArray(request());
+        $this->data = (new TodayAttendanceResource($attendanceData))->toArray(request(), $validatedData['received_at']);
         $this->displayMessage = __('index.check_in_successful');
     }
 
@@ -649,8 +739,8 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_out_type'] = $validatedData['attendance_type'];
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
-        $validatedData['check_out_latitude'] = (float) $validatedData['latitude'];
-        $validatedData['check_out_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_out_latitude'] = isset($validatedData['latitude']) ? (float) $validatedData['latitude'] : null;
+        $validatedData['check_out_longitude'] = isset($validatedData['longitude']) ? (float) $validatedData['longitude'] : null;
         $validatedData['check_out_selfie'] = $this->storeAttendanceSelfie($validatedData);
         $validatedData['check_out_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
 
@@ -664,7 +754,7 @@ class AttendanceApiController extends Controller
         $this->notificationData['time'] = $attendanceData->check_out_at;
         $this->notificationData['workedTime'] = $workedTime;
 
-        $this->data =(new TodayAttendanceResource($attendanceData))->toArray(request());
+        $this->data =(new TodayAttendanceResource($attendanceData))->toArray(request(), $validatedData['received_at']);
         $this->displayMessage = __('index.check_out_successful');
     }
 
@@ -707,13 +797,14 @@ class AttendanceApiController extends Controller
                 'note' => $validatedData['note'] ?? null,
                 'source' => 'app',
                 'attendance_id' => $attendanceId,
+                'server_received_at' => $validatedData['received_at'] ?? null,
             ]);
 
-            $lat = !empty($validatedData['latitude']) ? (float)$validatedData['latitude'] : null;
-            $lng = !empty($validatedData['longitude']) ? (float)$validatedData['longitude'] : null;
+            $lat = isset($validatedData['latitude']) ? (float) $validatedData['latitude'] : null;
+            $lng = isset($validatedData['longitude']) ? (float) $validatedData['longitude'] : null;
             $userId = $userDetail['id'] ?? $userDetail->id ?? null;
 
-            if ($userId && $lat && $lng) {
+            if ($userId && $lat !== null && $lng !== null) {
                 if (\Illuminate\Support\Facades\Schema::hasTable('user_locations')) {
                     $rawUuid = (string) ($userDetail->uuid ?? ($userDetail['uuid'] ?? ''));
                     $deviceKey = hash('sha256', $rawUuid);
@@ -726,7 +817,7 @@ class AttendanceApiController extends Controller
                         'device_type' => $userDetail->device_type ?? ($userDetail['device_type'] ?? 'mobile'),
                         'latitude' => $lat,
                         'longitude' => $lng,
-                        'accuracy' => request()->input('accuracy', 0),
+                        'accuracy' => $validatedData['accuracy'] ?? 0,
                         'device_name' => $deviceName,
                     ];
 
@@ -758,48 +849,40 @@ class AttendanceApiController extends Controller
      */
     private function handleSingleNightAttendance($validatedData)
     {
-        $attendanceStatus = AttendanceHelper::checkNightShiftCheckOut($validatedData['user_id']);
+        $receivedAt = $validatedData['received_at'];
+        $attendanceStatus = AttendanceHelper::checkNightShiftCheckOut($validatedData['user_id'], $receivedAt);
+        $requestedAction = $validatedData['attendance_status_type'];
 
-        // Handle WiFi attendance (attendance_status_type is present)
-        if ($validatedData['attendance_status_type'] != '') {
-            if ($validatedData['attendance_status_type'] === 'checkIn' && $attendanceStatus === 'checkin') {
-                $this->processNewNightAttendance($validatedData);
-            } elseif ($validatedData['attendance_status_type'] === 'checkOut' && $attendanceStatus === 'checkout') {
-                $select = ['id', 'user_id', 'night_checkin', 'night_checkout'];
-                $userTodayCheckInDetail = $this->attendanceService->findEmployeeAttendanceDetailForNightShift($validatedData['user_id'], $select);
-                $this->processSingleExistingNightAttendance($userTodayCheckInDetail, $validatedData);
-            } elseif ($attendanceStatus === 'checkout_error') {
-                throw new Exception(__('message.early_checkout'), 400);
-            } else {
-                throw new Exception(__('index.attendance_alert_status', ['status' => ucfirst($validatedData['attendance_status_type'])]), 400);
+        if ($attendanceStatus === 'checkin' && $requestedAction !== 'checkOut') {
+            $this->processNewNightAttendance($validatedData);
+        } elseif ($attendanceStatus === 'checkout' && $requestedAction !== 'checkIn') {
+            $attendance = $this->attendanceService->findEmployeeAttendanceDetailForNightShift(
+                $validatedData['user_id'], ['*'], $receivedAt, $validatedData['office_time_id']
+            );
+            if (!$attendance) {
+                throw new Exception(__('index.not_checked_in_yet'), 409);
             }
-        }
-        // Handle QR and NFC attendance (attendance_status_type is not present)
-        else {
-            if ($attendanceStatus === 'checkin') {
-                $this->processNewNightAttendance($validatedData);
-            } elseif ($attendanceStatus === 'checkout') {
-                $select = ['id', 'user_id', 'night_checkin', 'night_checkout'];
-                $userTodayCheckInDetail = $this->attendanceService->findEmployeeAttendanceDetailForNightShift($validatedData['user_id'], $select);
-                $this->processSingleExistingNightAttendance($userTodayCheckInDetail, $validatedData);
-            } elseif ($attendanceStatus === 'checkout_error') {
-                throw new Exception(__('message.early_checkout'), 400);
-            } else {
-                throw new Exception(__('index.invalid_attendance_action'), 400);
-            }
+            $this->processSingleExistingNightAttendance($attendance, $validatedData);
+        } elseif ($attendanceStatus === 'checkout_error') {
+            throw new Exception(__('message.early_checkout'), 400);
+        } elseif ($requestedAction !== '') {
+            throw new Exception(__('index.attendance_alert_status', ['status' => ucfirst($requestedAction)]), 409);
+        } else {
+            throw new Exception(__('index.invalid_attendance_action'), 409);
         }
     }
+
     /**
      * @throws Exception
      */
     private function processSingleExistingNightAttendance($userTodayCheckInDetail, $validatedData)
     {
         if ($userTodayCheckInDetail->night_checkin && $validatedData['attendance_status_type'] == 'checkIn') {
-            throw new Exception(__('index.alert_multi_checkin_shift'), 400);
+            throw new Exception(__('index.alert_multi_checkin_shift'), 409);
         }
 
         if ($userTodayCheckInDetail->night_checkout) {
-            throw new Exception(__('index.checkout_alert_for_shift'), 400);
+            throw new Exception(__('index.checkout_alert_for_shift'), 409);
         }
 
 
@@ -811,7 +894,7 @@ class AttendanceApiController extends Controller
      */
     private function processNewNightAttendance($validatedData)
     {
-        if ($validatedData['attendance_type'] == EmployeeAttendanceTypeEnum::wifi->value && $validatedData['attendance_status_type'] == 'checkOut') {
+        if ($validatedData['attendance_status_type'] === 'checkOut') {
             throw new Exception(__('index.not_checked_in_yet'), 400);
         }
 
@@ -825,8 +908,8 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_in_type'] = $validatedData['attendance_type'];
         $validatedData['check_in_note'] = $validatedData['note'] ?? '';
-        $validatedData['check_in_latitude'] = (float) $validatedData['latitude'];
-        $validatedData['check_in_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_in_latitude'] = isset($validatedData['latitude']) ? (float) $validatedData['latitude'] : null;
+        $validatedData['check_in_longitude'] = isset($validatedData['longitude']) ? (float) $validatedData['longitude'] : null;
         $validatedData['check_in_selfie'] = $this->storeAttendanceSelfie($validatedData);
         $validatedData['check_in_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
         $attendanceData = $this->attendanceService->newCheckIn($validatedData);
@@ -836,7 +919,7 @@ class AttendanceApiController extends Controller
         $this->notificationData['permissionKey'] = 'employee_check_in';
         $this->notificationData['time'] = $attendanceData->night_checkin;
 
-        $this->data = (new NightAttendanceResource($attendanceData))->toArray(request());
+        $this->data = (new NightAttendanceResource($attendanceData))->toArray(request(), $validatedData['received_at']);
         $this->displayMessage = __('index.check_in_successful');
     }
 
@@ -847,8 +930,8 @@ class AttendanceApiController extends Controller
     {
         $validatedData['check_out_type'] = $validatedData['attendance_type'];
         $validatedData['check_out_note'] = $validatedData['note'] ?? '';
-        $validatedData['check_out_latitude'] = (float) $validatedData['latitude'];
-        $validatedData['check_out_longitude'] = (float) $validatedData['longitude'];
+        $validatedData['check_out_latitude'] = isset($validatedData['latitude']) ? (float) $validatedData['latitude'] : null;
+        $validatedData['check_out_longitude'] = isset($validatedData['longitude']) ? (float) $validatedData['longitude'] : null;
         $validatedData['check_out_selfie'] = $this->storeAttendanceSelfie($validatedData);
         $validatedData['check_out_offline_request_id'] = $validatedData['offline_request_id'] ?? null;
 
@@ -861,7 +944,7 @@ class AttendanceApiController extends Controller
         $this->notificationData['permissionKey'] = 'employee_check_out';
         $this->notificationData['time'] = $attendanceData->night_checkout;
         $this->notificationData['workedTime'] = $workedTime;
-        $this->data = (new NightAttendanceResource($attendanceData))->toArray(request());
+        $this->data = (new NightAttendanceResource($attendanceData))->toArray(request(), $validatedData['received_at']);
         $this->displayMessage = __('index.check_out_successful');
     }
 
@@ -885,9 +968,13 @@ class AttendanceApiController extends Controller
         return $this->storeImage($validatedData['selfie'], Attendance::SELFIE_UPLOAD_PATH, 800, 800);
     }
 
-    private function duplicateOfflineAttendanceResponse(string $offlineRequestId, int $userId): ?JsonResponse
+    private function duplicateOfflineAttendanceResponse(?string $offlineRequestId, int $userId, Carbon $receivedAt): ?JsonResponse
     {
-        $attendance = Attendance::query()
+        if ($offlineRequestId === null) {
+            return null;
+        }
+
+        $attendance = Attendance::withoutGlobalScope('branch')
             ->where('user_id', $userId)
             ->where(function ($query) use ($offlineRequestId) {
                 $query
@@ -901,10 +988,27 @@ class AttendanceApiController extends Controller
         }
 
         $resource = ($attendance->night_checkin || $attendance->night_checkout)
-            ? (new NightAttendanceResource($attendance))->toArray(request())
-            : (new TodayAttendanceResource($attendance))->toArray(request());
+            ? (new NightAttendanceResource($attendance))->toArray(request(), $receivedAt)
+            : (new TodayAttendanceResource($attendance))->toArray(request(), $receivedAt);
 
-        return AppHelper::sendSuccessResponse(__('index.data_found'), $resource);
+        return AppHelper::sendSuccessResponse(
+            __('index.data_found'),
+            $resource + $this->attendanceResponseFields($attendance, $receivedAt, true),
+        );
     }
 
+    private function attendanceResponseFields(Attendance $attendance, Carbon $receivedAt, bool $replay): array
+    {
+        return [
+            'server_time_utc' => $receivedAt->copy()->utc()->format('Y-m-d\TH:i:s.v\Z'),
+            'attendance_id' => $attendance->id,
+            'idempotent_replay' => $replay,
+            'attendance_status' => match (true) {
+                (bool) $attendance->night_checkout => 'checked_out_night',
+                (bool) $attendance->night_checkin => 'checked_in_night',
+                (bool) $attendance->check_out_at => 'checked_out',
+                default => 'checked_in',
+            },
+        ];
+    }
 }

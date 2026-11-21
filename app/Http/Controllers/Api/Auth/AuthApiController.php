@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Models\User;
 use App\Models\UserLocation;
+use App\Modules\AppSecurity\Services\DeviceSessionService;
 use Illuminate\Support\Facades\Schema;
 use App\Repositories\UserRepository;
 use App\Requests\User\UserLoginRequest;
@@ -152,7 +153,7 @@ class AuthApiController
         ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    public function logout()
+    public function logout(Request $request, DeviceSessionService $securitySessions)
     {
         try {
             $userDetail = $this->userRepo->findUserDetailById(getAuthUserCode());
@@ -165,6 +166,10 @@ class AuthApiController
 
 
             DB::beginTransaction();
+                $securitySessionUuid = (string) $request->header('X-KY-Session', '');
+                if (Str::isUuid($securitySessionUuid)) {
+                    $securitySessions->revoke(Auth::user(), $securitySessionUuid);
+                }
                 $userToken = $this->getToken();
                 $update['logout_status'] = User::LOGOUT_STATUS[ $isAuthorizeLogin ? 'pending' : 'approve'];
                 $update['uuid'] = null;

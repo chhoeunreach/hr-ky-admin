@@ -5,8 +5,10 @@ namespace App\Services\Payroll;
 use App\Enum\PayslipStatusEnum;
 use App\Helpers\AppHelper;
 use App\Helpers\SMPush\SMPushHelper;
+use App\Helpers\SMPush\SMPushNotification;
 use App\Models\Branch;
 use App\Models\EmployeePayslip;
+use App\Models\MonthlyPayrollRecord;
 use App\Models\PaymentMethod;
 use App\Models\PayrollQueueSession;
 use App\Models\PayrollQueueTicket;
@@ -14,9 +16,11 @@ use App\Models\SellOutReport;
 use App\Models\User;
 use App\Services\Tada\TadaService;
 use Carbon\Carbon;
+use DomainException;
 use Exception;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -32,7 +36,7 @@ class PayrollQueueService
     /**
      * Get or create active payroll queue session for branch & month.
      */
-    public function getOrCreateSession(?int $branchId, string $month, ?string $title = null): PayrollQueueSession
+    public function getOrCreateSession(?int $branchId, string $month, ?string $title = null, ?int $departmentId = null, ?int $employeeId = null, int $maxActiveServing = 5): PayrollQueueSession
     {
         $query = PayrollQueueSession::where('month', $month)
             ->where('status', 'open');
@@ -42,6 +46,8 @@ class PayrollQueueService
         } else {
             $query->whereNull('branch_id');
         }
+        $departmentId ? $query->where('department_id', $departmentId) : $query->whereNull('department_id');
+        $employeeId ? $query->where('target_employee_id', $employeeId) : $query->whereNull('target_employee_id');
 
         $session = $query->first();
 
@@ -57,11 +63,13 @@ class PayrollQueueService
                 'session_code' => 'PQS-' . $monthClean . '-' . $branchCode . '-' . strtoupper(Str::random(4)),
                 'company_id' => $companyId,
                 'branch_id' => $branchId,
+                'department_id' => $departmentId,
+                'target_employee_id' => $employeeId,
                 'month' => $month,
                 'title' => $title ?: $defaultTitle,
                 'qr_token' => Str::random(32),
                 'status' => 'open',
-                'max_active_serving' => 5,
+                'max_active_serving' => $maxActiveServing > 0 ? $maxActiveServing : 5,
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),
             ]);
@@ -84,22 +92,40 @@ class PayrollQueueService
      */
     public function joinQueue(string $qrToken, int $employeeId): array
     {
-        $session = PayrollQueueSession::where('qr_token', $qrToken)->first();
+        return DB::transaction(function () use ($qrToken, $employeeId) {
+        $session = PayrollQueueSession::where('qr_token', $qrToken)->lockForUpdate()->first();
         if (!$session) {
-            throw new Exception(__('index.payroll_queue_session_not_found') ?: 'មិនមានវគ្គបើកប្រាក់ខែនេះទេ!');
+            throw new DomainException(__('index.payroll_queue_session_not_found') ?: 'មិនមានវគ្គបើកប្រាក់ខែនេះទេ!');
         }
 
         if ($session->status !== 'open') {
-            throw new Exception(__('index.payroll_queue_session_closed') ?: 'វគ្គបើកប្រាក់ខែនេះត្រូវបានបិទ ឬផ្អាកហើយ!');
+            throw new DomainException(__('index.payroll_queue_session_closed') ?: 'វគ្គបើកប្រាក់ខែនេះត្រូវបានបិទ ឬផ្អាកហើយ!');
         }
 
-        $employee = User::with(['branch', 'department'])->find($employeeId);
+        $employee = User::with(['branch', 'department'])
+            ->where('is_active', 1)->where('status', 'verified')->find($employeeId);
         if (!$employee) {
-            throw new Exception(__('index.employee_not_found') ?: 'រកមិនឃើញទិន្នន័យបុគ្គលិកនេះទេ!');
+            throw new DomainException(__('index.employee_not_found') ?: 'រកមិនឃើញទិន្នន័យបុគ្គលិកនេះទេ!');
         }
 
-        if ($session->branch_id && (int) $employee->branch_id !== (int) $session->branch_id) {
-            throw new Exception(__('index.payroll_queue_wrong_branch') ?: 'អ្នកមិនស្ថិតនៅក្នុងសាខាដែលត្រូវបើកប្រាក់ខែនៃវគ្គនេះទេ!');
+        $hasRoster = Schema::hasTable('payroll_queue_invites')
+            && DB::table('payroll_queue_invites')->where('session_id', $session->id)->exists();
+        if ($hasRoster) {
+            $onRoster = DB::table('payroll_queue_invites')->where('session_id', $session->id)
+                ->where('employee_id', $employee->id)->where('status', '!=', 'removed')->exists();
+            if (!$onRoster) {
+                throw new DomainException('This employee is not on the payroll session list.');
+            }
+        } else {
+            if ($session->branch_id && (int) $employee->branch_id !== (int) $session->branch_id) {
+                throw new DomainException(__('index.payroll_queue_wrong_branch') ?: 'អ្នកមិនស្ថិតនៅក្នុងសាខាដែលត្រូវបើកប្រាក់ខែនៃវគ្គនេះទេ!');
+            }
+            if ($session->department_id && (int) $employee->department_id !== (int) $session->department_id) {
+                throw new DomainException('This QR pass is only available to the selected department.');
+            }
+            if ($session->target_employee_id && (int) $employee->id !== (int) $session->target_employee_id) {
+                throw new DomainException('This QR pass is assigned to another employee.');
+            }
         }
 
         // Check if ticket already exists for this session
@@ -107,7 +133,7 @@ class PayrollQueueService
             ->where('employee_id', $employee->id)
             ->first();
 
-        if ($existingTicket) {
+        if ($existingTicket && $existingTicket->status !== 'skipped') {
             if ($existingTicket->status === 'paid') {
                 return [
                     'status' => 'already_paid',
@@ -133,11 +159,34 @@ class PayrollQueueService
             ->whereBetween('salary_from', [$start, $end])
             ->first();
 
-        if ($payslip && $payslip->status === PayslipStatusEnum::paid->value) {
+        if (!$payslip) {
+            throw new DomainException(__('index.payslip_not_found') ?: 'Payslip is not available for this payroll session.');
+        }
+        if ($payslip->status === PayslipStatusEnum::paid->value) {
             return [
                 'status' => 'already_paid',
                 'message' => 'ប្រាក់ខែរបស់អ្នកត្រូវបានបើករួចរាល់ហើយ!',
                 'ticket' => null,
+            ];
+        }
+        if (!in_array($payslip->status, [PayslipStatusEnum::generated->value, PayslipStatusEnum::review->value, PayslipStatusEnum::locked->value], true)) {
+            throw new DomainException('This payslip is not ready to join the payroll queue.');
+        }
+
+        if ($existingTicket) {
+            $existingTicket->update([
+                'payslip_id' => $payslip->id,
+                'status' => 'waiting',
+                'counter_number' => null,
+                'joined_at' => now(),
+                'called_at' => null,
+                'served_at' => null,
+            ]);
+
+            return [
+                'status' => 'already_queued',
+                'message' => 'អ្នកបានចូលជួរដោយជោគជ័យ!',
+                'ticket' => $existingTicket->load('session'),
             ];
         }
 
@@ -160,6 +209,7 @@ class PayrollQueueService
             'message' => 'អ្នកបានចូលជួរដោយជោគជ័យ!',
             'ticket' => $ticket->load(['session', 'employee']),
         ];
+        });
     }
 
     /**
@@ -232,40 +282,70 @@ class PayrollQueueService
         ];
     }
 
-    /**
-     * Call next waiting employee to a counter (1..5).
-     */
-    public function callNext(PayrollQueueSession $session, int $counterNumber): ?PayrollQueueTicket
+    /** Call the selected waiting ticket, or the first ticket in line. */
+    public function callNext(PayrollQueueSession $session, int $counterNumber, ?int $ticketId = null): ?PayrollQueueTicket
     {
-        $existing = PayrollQueueTicket::where('session_id', $session->id)
-            ->where('counter_number', $counterNumber)
-            ->whereIn('status', ['calling', 'serving'])
-            ->first();
+        $ticket = DB::transaction(function () use ($session, $counterNumber, $ticketId) {
+            $session = PayrollQueueSession::whereKey($session->id)->lockForUpdate()->firstOrFail();
+            if ($session->status !== 'open') {
+                throw new DomainException('This payroll queue session is paused or closed.');
+            }
+            if ($counterNumber < 1 || $counterNumber > ($session->max_active_serving ?: 5)) {
+                throw new DomainException('Select a counter configured for this payroll session.');
+            }
+            if ($session->tickets()->where('counter_number', $counterNumber)->whereIn('status', ['calling', 'serving'])->exists()) {
+                throw new DomainException('This counter is already serving an employee.');
+            }
 
-        // If existing ticket is still there, we skip it
-        if ($existing) {
-            $existing->update([
-                'status' => 'skipped',
-                'counter_number' => null,
-            ]);
-        }
+            $ticket = PayrollQueueTicket::where('session_id', $session->id)
+                ->where('status', 'waiting')
+                ->when($ticketId !== null, fn ($query) => $query->whereKey($ticketId))
+                ->orderBy('joined_at')
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->first();
 
-        $nextTicket = PayrollQueueTicket::where('session_id', $session->id)
-            ->where('status', 'waiting')
-            ->orderBy('joined_at', 'asc')
-            ->orderBy('id', 'asc')
-            ->first();
+            if ($ticketId !== null && !$ticket) {
+                throw new DomainException('This ticket is no longer waiting in this payroll session.');
+            }
 
-        if ($nextTicket) {
-            $nextTicket->update([
+            $ticket?->update([
                 'counter_number' => $counterNumber,
                 'status' => 'calling',
                 'called_at' => now(),
             ]);
-            return $nextTicket->load(['employee.branch', 'employee.department']);
+
+            return $ticket;
+        }, 3);
+
+        if ($ticket) {
+            $this->notifyEmployeeCalled($ticket);
         }
 
-        return null;
+        return $ticket;
+    }
+
+    private function notifyEmployeeCalled(PayrollQueueTicket $ticket): void
+    {
+        $employee = $ticket->employee;
+        if (!$employee?->fcm_token) return;
+        try {
+            SMPushNotification::smSend(
+                title: 'Payroll queue: your turn',
+                message: "Ticket {$ticket->ticket_number}, please go to counter {$ticket->counter_number}.",
+                data: [
+                    'type' => 'payroll_queue_call',
+                    'ticket_id' => (string) $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'counter_number' => (string) $ticket->counter_number,
+                    'session_id' => (string) $ticket->session_id,
+                ],
+                recipients: [$employee->id => $employee->fcm_token],
+                highPriority: true,
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -273,22 +353,77 @@ class PayrollQueueService
      */
     public function recallTicket(PayrollQueueTicket $ticket): PayrollQueueTicket
     {
-        $ticket->update([
-            'status' => 'calling',
-            'called_at' => now(),
-        ]);
-        return $ticket->load(['employee.branch', 'employee.department']);
+        $updated = PayrollQueueTicket::whereKey($ticket->id)
+            ->whereNotNull('counter_number')
+            ->whereIn('status', ['calling', 'serving'])
+            ->update(['called_at' => now()]);
+
+        if (!$updated) {
+            // A second recall in the same second may have the same stored timestamp.
+            $ticket->refresh();
+            if (!$ticket->counter_number || !in_array($ticket->status, ['calling', 'serving'], true)) {
+                throw new DomainException('This ticket is no longer active at a payroll counter.');
+            }
+        }
+
+        $ticket->refresh();
+        $this->notifyEmployeeCalled($ticket);
+
+        return $ticket;
     }
 
-    /**
-     * Skip ticket from counter back to waiting list or skipped status.
-     */
+    /** Release the counter and mark the ticket as skipped. */
     public function skipTicket(PayrollQueueTicket $ticket): bool
     {
-        return $ticket->update([
-            'status' => 'skipped',
-            'counter_number' => null,
-        ]);
+        return PayrollQueueTicket::whereKey($ticket->id)
+            ->whereIn('status', ['calling', 'serving'])
+            ->update(['status' => 'skipped', 'counter_number' => null]) > 0;
+    }
+
+    /** Mark a called employee as in-process when payroll review begins. */
+    public function startPayrollReview(PayrollQueueTicket $ticket): PayrollQueueTicket
+    {
+        return DB::transaction(function () use ($ticket) {
+            $ticket = PayrollQueueTicket::whereKey($ticket->id)->lockForUpdate()->firstOrFail();
+            if ($ticket->status === 'calling') {
+                $ticket->update(['status' => 'serving', 'served_at' => now()]);
+            } elseif ($ticket->status !== 'serving') {
+                throw new Exception('This ticket is no longer active at a payroll counter.');
+            }
+            return $ticket->fresh(['employee.branch', 'employee.department', 'session']);
+        });
+    }
+
+    /** Update only the draft incentive, with stale-value protection. */
+    public function quickUpdateBonus(PayrollQueueTicket $ticket, float $bonus, float $expectedBonus, float $expectedNet): EmployeePayslip
+    {
+        return DB::transaction(function () use ($ticket, $bonus, $expectedBonus, $expectedNet) {
+            $ticket = PayrollQueueTicket::whereKey($ticket->id)->lockForUpdate()->firstOrFail();
+            if ($ticket->status !== 'serving') throw new Exception('Start payroll review before editing this payslip.');
+            $branchId = $ticket->employee?->branch_id;
+            abort_unless(AppHelper::canAccessBranch($branchId), 403);
+            abort_unless($branchId, 422);
+            Branch::whereKey($branchId)->lockForUpdate()->firstOrFail();
+            $payslip = $this->resolveSessionPayslip($ticket, lock: true);
+            $month = substr((string) $payslip->salary_from, 0, 7);
+            if (!in_array($payslip->status, ['generated', 'review'], true)
+                || MonthlyPayrollRecord::where('month', $month)->where('branch_id', $branchId)->exists()) {
+                throw new Exception('This payroll is locked or has already been saved; the quick update is unavailable.');
+            }
+            if (round((float) $payslip->bonus, 2) !== round($expectedBonus, 2)
+                || round((float) $payslip->net_salary, 2) !== round($expectedNet, 2)) {
+                throw new Exception('Payroll changed since it was loaded. Refresh and review it again.');
+            }
+            $bonus = round($bonus, 2);
+            $bonusDelta = round($bonus - (float) $payslip->bonus, 2);
+            $payslip->update([
+                'bonus' => $bonus,
+                'gross_salary' => round((float) $payslip->gross_salary + $bonusDelta, 2),
+                'net_salary' => round((float) $payslip->net_salary + $bonusDelta, 2),
+                'updated_by' => Auth::id(),
+            ]);
+            return $payslip->fresh();
+        });
     }
 
     /**
@@ -298,51 +433,11 @@ class PayrollQueueService
      */
     public function getPayslipBreakdown(PayrollQueueTicket $ticket): array
     {
-        $ticket->load(['session', 'employee.branch', 'employee.department']);
+        $ticket->load(['session', 'employee' => fn ($query) => $query->withTrashed()->with(['branch', 'department'])]);
         $employee = $ticket->employee;
         $session = $ticket->session;
-
-        // Locate payslip
-        $payslip = null;
-        if ($ticket->payslip_id) {
-            $payslip = EmployeePayslip::withoutGlobalScope('branch')
-                ->with(['payslipDetail.salaryComponent', 'additionalData.salaryComponent'])
-                ->find($ticket->payslip_id);
-        }
-
-        if (!$payslip) {
-            $monthDate = Carbon::createFromFormat('!Y-m', $session->month);
-            $start = $monthDate->copy()->startOfMonth()->toDateString();
-            $end = $monthDate->copy()->endOfMonth()->toDateString();
-
-            $payslip = EmployeePayslip::withoutGlobalScope('branch')
-                ->with(['payslipDetail.salaryComponent', 'additionalData.salaryComponent'])
-                ->where('employee_id', $employee->id)
-                ->where('salary_cycle', 'monthly')
-                ->whereBetween('salary_from', [$start, $end])
-                ->first();
-
-            if ($payslip) {
-                $ticket->update(['payslip_id' => $payslip->id]);
-            } else {
-                // Fallback: check if employee has any active generated/review payslip
-                $payslip = EmployeePayslip::withoutGlobalScope('branch')
-                    ->with(['payslipDetail.salaryComponent', 'additionalData.salaryComponent'])
-                    ->where('employee_id', $employee->id)
-                    ->where('salary_cycle', 'monthly')
-                    ->where('status', '!=', PayslipStatusEnum::paid->value)
-                    ->latest('id')
-                    ->first();
-
-                if ($payslip) {
-                    $ticket->update(['payslip_id' => $payslip->id]);
-                }
-            }
-        }
-
-        if (!$payslip) {
-            throw new Exception(__('index.payslip_not_found') ?: 'មិនទាន់មានតារាងប្រាក់ខែ (Payslip) សម្រាប់បុគ្គលិកនេះនៅឡើយទេ!');
-        }
+        $payslip = $this->resolveSessionPayslip($ticket);
+        $payslip->load(['payslipDetail.salaryComponent', 'additionalData.salaryComponent']);
 
         // 1. Deductions Breakdown (កាត់ប្រាក់ខែ)
         $unpaidAbsence = (float) $payslip->absent_deduction;
@@ -430,6 +525,9 @@ class PayrollQueueService
         $generalBonus = (float) $payslip->bonus;
         $grossTotal = (float) $payslip->gross_salary;
         $netSalary = (float) $payslip->net_salary;
+        $payslipMonth = substr((string) $payslip->salary_from, 0, 7);
+        $canQuickUpdate = in_array($payslip->status, ['generated', 'review'], true)
+            && !MonthlyPayrollRecord::where('month', $payslipMonth)->where('branch_id', $employee->branch_id)->exists();
 
         $paymentMethods = PaymentMethod::where('status', 1)->get();
 
@@ -459,8 +557,32 @@ class PayrollQueueService
                 'gross_total' => round($grossTotal, 2),
             ],
             'net_salary' => round($netSalary, 2),
+            'can_quick_update' => $canQuickUpdate,
             'payment_methods' => $paymentMethods,
         ];
+    }
+
+    private function resolveSessionPayslip(PayrollQueueTicket $ticket, bool $lock = false): EmployeePayslip
+    {
+        $month = Carbon::createFromFormat('!Y-m', $ticket->session->month);
+        $query = EmployeePayslip::withoutGlobalScope('branch')
+            ->where('employee_id', $ticket->employee_id)
+            ->where('salary_cycle', 'monthly')
+            ->whereBetween('salary_from', [$month->toDateString(), $month->endOfMonth()->toDateString()]);
+
+        if ($lock) {
+            $query->lockForUpdate();
+        }
+
+        if ($ticket->payslip_id) {
+            $payslip = (clone $query)->whereKey($ticket->payslip_id)->first();
+            if ($payslip) {
+                return $payslip;
+            }
+        }
+
+        return $query->orderBy('id')->first()
+            ?? throw new DomainException(__('index.payslip_not_found'));
     }
 
     /**
@@ -468,24 +590,27 @@ class PayrollQueueService
      */
     public function disburseSalary(PayrollQueueTicket $ticket, array $paymentData): array
     {
-        $session = $ticket->session;
-        $payslip = $ticket->payslip;
-
-        if (!$payslip && $ticket->payslip_id) {
-            $payslip = EmployeePayslip::withoutGlobalScope('branch')->find($ticket->payslip_id);
-        }
-
-        if (!$payslip) {
-            $breakdown = $this->getPayslipBreakdown($ticket);
-            $payslip = $breakdown['payslip'];
-        }
-
         $paidOn = $paymentData['paid_on'] ?? now()->toDateString();
         $paymentMethodId = $paymentData['payment_method_id'] ?? null;
-        $counterNumber = $ticket->counter_number;
 
-        DB::beginTransaction();
-        try {
+        $ticket = DB::transaction(function () use ($ticket, $paidOn, $paymentMethodId, $paymentData) {
+            $ticket = PayrollQueueTicket::whereKey($ticket->id)->lockForUpdate()->firstOrFail();
+            if ($ticket->paid_at || $ticket->status === 'paid') {
+                throw new DomainException('This ticket has already been paid.');
+            }
+            if ($ticket->status !== 'serving') {
+                throw new DomainException('Move this employee into payroll review before committing payment.');
+            }
+
+            $payslip = $this->resolveSessionPayslip($ticket, lock: true);
+            if (!in_array($payslip->status, [PayslipStatusEnum::generated->value, PayslipStatusEnum::review->value, PayslipStatusEnum::locked->value], true)) {
+                throw new Exception('This payslip is not ready for payment.');
+            }
+            if (isset($paymentData['expected_net'])
+                && round((float) $paymentData['expected_net'], 2) !== round((float) $payslip->net_salary, 2)) {
+                throw new DomainException('Payroll changed since it was loaded. Refresh and review it again.');
+            }
+
             // Settle Tada if present
             if ($payslip->tada > 0) {
                 $this->tadaService->makeSettlement([
@@ -513,6 +638,7 @@ class PayrollQueueService
             // Update Ticket to PAID
             $ticket->update([
                 'status' => 'paid',
+                'payslip_id' => $payslip->id,
                 'paid_at' => now(),
                 'net_amount_paid' => $payslip->net_salary,
                 'payment_method_id' => $paymentMethodId,
@@ -520,31 +646,32 @@ class PayrollQueueService
                 'remarks' => $paymentData['remarks'] ?? null,
             ]);
 
-            DB::commit();
+            return $ticket;
+        }, 3);
 
-            // Try sending notification
-            try {
-                $msg = "ប្រាក់ខែរបស់អ្នកត្រូវបានបើកជោគជ័យនៅថ្ងៃទី " . $paidOn . " ចំនួន $" . number_format($payslip->net_salary, 2);
-                SMPushHelper::sendSalaryNotification('បើកប្រាក់ខែជោគជ័យ', $msg, $ticket->employee_id);
-            } catch (Exception $e) {
-                // Ignore push notification errors
-            }
-
-            // Automatically call the next person into this freed counter if available
-            $nextCalled = null;
-            if ($counterNumber) {
-                $nextCalled = $this->callNext($session, $counterNumber);
-            }
-
-            return [
-                'success' => true,
-                'ticket' => $ticket->fresh(['employee', 'paymentMethod']),
-                'next_ticket' => $nextCalled,
-                'message' => 'បានបើកប្រាក់ខែជោគជ័យ!',
-            ];
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
+        try {
+            $msg = "ប្រាក់ខែរបស់អ្នកត្រូវបានបើកជោគជ័យនៅថ្ងៃទី " . $paidOn . " ចំនួន $" . number_format($ticket->net_amount_paid, 2);
+            SMPushHelper::sendSalaryNotification('បើកប្រាក់ខែជោគជ័យ', $msg, $ticket->employee_id);
+        } catch (\Throwable $e) {
+            report($e);
         }
+
+        $nextCalled = null;
+        if ($ticket->counter_number) {
+            try {
+                $nextCalled = $this->callNext($ticket->session, $ticket->counter_number);
+            } catch (DomainException) {
+                // The session may have closed or another operator may have filled this counter.
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return [
+            'success' => true,
+            'ticket' => $ticket->fresh(['employee', 'paymentMethod']),
+            'next_ticket' => $nextCalled,
+            'message' => 'បានបើកប្រាក់ខែជោគជ័យ!',
+        ];
     }
 }

@@ -52,6 +52,7 @@ return new class extends Migration
                 $table->index(['session_id', 'status']);
                 $table->index(['session_id', 'counter_number']);
                 $table->index(['employee_id', 'session_id']);
+                $table->unique(['session_id', 'ticket_number']);
             });
         }
     }

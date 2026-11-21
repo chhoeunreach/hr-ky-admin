@@ -547,14 +547,13 @@
                                         <div class="login-download-card">
                                             <div class="login-download-copy">
                                                 <strong>Mobile attendance app</strong>
-                                                <span>Download the employee app for Android or iOS.</span>
+                                                <span>Get the official KNEAYERNG app for Android or iOS.</span>
                                             </div>
                                             <div class="login-downloads d-flex align-items-center gap-2 flex-wrap justify-content-end">
-                                                <a href="{{ $androidApkUrl }}"
-                                                   class="btn btn-outline-primary btn-sm"
-                                                   download>
+                                                <a href="{{ route('app.download-page') }}"
+                                                   class="btn btn-outline-primary btn-sm">
                                                     <i class="link-icon" data-feather="download"></i>
-                                                    Download Android
+                                                    Android app details & download
                                                 </a>
                                                 <a href="https://testflight.apple.com/join/hPG4ZA38"
                                                    class="btn btn-outline-secondary btn-sm"

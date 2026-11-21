@@ -11,6 +11,7 @@ use App\Models\Training;
 use App\Models\User;
 use App\Traits\ImageService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -504,7 +505,7 @@ class UserRepository
     {
 
 
-       $query = User::query()
+       $query = $this->salaryDirectoryEmployees()
             ->select(
                 'users.id as employee_id',
                 'users.name as employee_name',
@@ -522,14 +523,10 @@ class UserRepository
                 'salary_group_employees.salary_group_id  as salary_group_id',
                 'salary_groups.name  as salary_group_name',
             )
-            ->join('roles','users.role_id','roles.id')
             ->leftJoin('employee_accounts','users.id','employee_accounts.user_id')
             ->leftJoin('salary_group_employees','users.id','salary_group_employees.employee_id')
             ->leftJoin('salary_groups','salary_group_employees.salary_group_id','salary_groups.id')
             ->leftJoin('employee_salaries', 'users.id', 'employee_salaries.employee_id')
-            ->where('users.is_active',self::IS_ACTIVE)
-            ->where('users.status',self::STATUS_VERIFIED)
-            ->where('roles.name','!=',self::ADMIN)
             ->when(isset($filterParameters['employee_id']), fn ($query) => $query->where('users.id', $filterParameters['employee_id']))
             ->when(isset($filterParameters['employee_name']), function($query) use ($filterParameters){
                 $query->where(function ($search) use ($filterParameters) {
@@ -557,6 +554,24 @@ class UserRepository
 
        if (($filterParameters['per_page'] ?? 'all') === 'all' || !empty($filterParameters['exporting'])) return $query->get();
        return $query->paginate((int) $filterParameters['per_page'])->withQueryString();
+    }
+
+    private function salaryDirectoryEmployees(): Builder
+    {
+        return User::query()
+            ->join('roles', 'users.role_id', 'roles.id')
+            ->where('users.is_active', self::IS_ACTIVE)
+            ->where('users.status', self::STATUS_VERIFIED)
+            ->where('roles.name', '!=', self::ADMIN);
+    }
+
+    public function countActiveEmployeesExcludedFromSalaryDirectory(): int
+    {
+        return User::query()
+            ->where('users.is_active', self::IS_ACTIVE)
+            ->where('users.status', self::STATUS_VERIFIED)
+            ->whereNotIn('users.id', $this->salaryDirectoryEmployees()->select('users.id'))
+            ->count();
     }
 
     public function getEmployeeAccountDetailsToGeneratePayslip($employeeId, $filterData=[]): Collection|array

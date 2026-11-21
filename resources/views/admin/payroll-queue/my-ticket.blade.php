@@ -65,6 +65,11 @@
             @elseif($ticket->status === 'paid')
                 <div class="fs-4 fw-bold mb-1">✅ បានបើកប្រាក់ខែជោគជ័យ!</div>
                 <div class="small">ទឹកប្រាក់បានបើក: <strong>${{ number_format($ticket->net_amount_paid, 2) }}</strong></div>
+            @elseif($ticket->status === 'skipped')
+                <div class="fw-bold">{{ __('index.skip') }}</div>
+                <a href="{{ route('payroll-queue.join', ['token' => $ticket->session->qr_token]) }}">Scan or open the session link to rejoin.</a>
+            @elseif($ticket->status === 'cancelled')
+                <div class="fw-bold">This ticket has been cancelled.</div>
             @else
                 <div class="fs-6 fw-bold text-warning text-dark mb-1">⏳ កំពុងរង់ចាំក្នុងជួរ (Waiting)</div>
                 <div class="text-muted small">មនុស្សនៅពីមុខអ្នក: <strong id="aheadCountDisplay" class="text-primary fs-6">{{ $aheadCount }}</strong> នាក់</div>
@@ -99,30 +104,20 @@
 </div>
 
 <script>
-    const ticketId = {{ $ticket->id }};
+    const initialStatus = @js($ticket->status);
     const statusUrl = "{{ route('payroll-queue.ticket-status', ['ticketId' => $ticket->id]) }}";
 
     function pollTicket() {
         fetch(statusUrl)
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    if (data.status === 'calling') {
-                        document.getElementById('statusAlertBox').className = 'p-3 rounded-3 mb-3 calling-box';
-                        document.getElementById('statusAlertBox').innerHTML = `
-                            <div class="fs-4 fw-bold text-danger mb-1">🎉 ដល់វេនអ្នកហើយ!</div>
-                            <div class="fs-5 fw-bold text-dark">សូមអញ្ជើញទៅកាន់ <span class="badge bg-danger fs-5">តុទី ${data.counter_number}</span></div>
-                        `;
-                    } else if (data.status === 'paid') {
-                        document.getElementById('statusAlertBox').className = 'p-3 rounded-3 mb-3 bg-success text-white';
-                        document.getElementById('statusAlertBox').innerHTML = `
-                            <div class="fs-4 fw-bold mb-1">✅ បានបើកប្រាក់ខែជោគជ័យ!</div>
-                        `;
-                    } else if (data.status === 'waiting') {
-                        const aheadEl = document.getElementById('aheadCountDisplay');
-                        if (aheadEl) aheadEl.textContent = data.ahead_count;
-                    }
+                if (!data.success) return;
+                if (data.status !== initialStatus) {
+                    window.location.reload();
+                    return;
                 }
+                const ahead = document.getElementById('aheadCountDisplay');
+                if (ahead) ahead.textContent = data.ahead_count;
             })
             .catch(() => {});
     }

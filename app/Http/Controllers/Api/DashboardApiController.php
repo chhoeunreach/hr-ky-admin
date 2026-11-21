@@ -89,16 +89,6 @@ class DashboardApiController extends Controller
             $shiftDates = $this->getAllDatesForShiftNotification($userDetail);
             $features = $this->featureRepository->getAllFeatures();
             $isAttendanceMapFeatured = $features->where('key', 'attendance-map')->where('status', 1)->first() !== null;
-            $advanceSalaryApproveKey = 'advance-salary-approve';
-            $canApproveAdvanceSalary = AppHelper::checkRoleIdWithGivenPermission(
-                $userDetail->role_id,
-                $advanceSalaryApproveKey
-            );
-            $features->push((object) [
-                'name' => 'Advance Salary Approval Permission',
-                'key' => $advanceSalaryApproveKey,
-                'status' => $canApproveAdvanceSalary ? '1' : '0',
-            ]);
             $features = app(\App\Services\Authorization\MobilePermissions::class)->features($features);
             $homeCards = $this->getHomeCards($features);
             $features = $this->appendHomeCardFeatureAliases($features);
@@ -218,6 +208,16 @@ class DashboardApiController extends Controller
             ]);
             return AppHelper::sendErrorResponse($exception->getMessage(), 400);
         }
+    }
+
+    public function mobileFeatures(): JsonResponse
+    {
+        $features = app(\App\Services\Authorization\MobilePermissions::class)
+            ->features($this->featureRepository->getAllFeatures());
+
+        return response()->json(['data' => FeatureResource::collection(
+            $this->appendHomeCardFeatureAliases($features)
+        )->resolve()])->header('Cache-Control', 'private, no-store');
     }
 
     private function getAllDatesForShiftNotification($userDetail)

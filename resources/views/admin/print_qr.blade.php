@@ -41,6 +41,7 @@
 <body>
 <div class="center">
     <h4 class="scan-text-url">{{ __('index.app_qr') }}</h4>
+    @if($url)
     @php
         $qrImage = \SimpleSoftwareIO\QrCode\Facades\QrCode::size(400)
             ->format('svg')
@@ -49,12 +50,23 @@
     @endphp
     <div class="qr">{!! $qrImage !!}</div>
     <h6 class="scan-text">Scan Me</h6>
+    @endif
+    @isset($serverUrl)
+        <p>{{ $serverUrl }}</p>
+        @if($requiresHttps)
+            <p>{{ __('app_settings.pairing_requires_https') }}</p>
+        @elseif($isLocalDebugServer)
+            <p>{{ __('app_settings.pairing_debug_usb') }}</p>
+        @endif
+    @endisset
 </div>
 </body>
+@if($url)
 <script>
     window.print();
     window.onfocus = function () {
         window.close();
     }
 </script>
+@endif
 </html>

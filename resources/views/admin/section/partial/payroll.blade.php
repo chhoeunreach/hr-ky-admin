@@ -62,7 +62,7 @@
                 @endcan
                 @canany(['view_monthly_payroll', 'view_payroll_list'])
                     <li class="nav-item">
-                        <a href="{{ route('admin.payroll-queue.index') }}" data-href="{{ route('admin.payroll-queue.index') }}"
+                        <a href="{{ route('admin.payroll-queue.dashboard') }}" data-href="{{ route('admin.payroll-queue.dashboard') }}"
                            class="nav-link {{ request()->routeIs('admin.payroll-queue.*') ? 'active' : '' }}">{{ __('index.payroll_queue_system') }}</a>
                     </li>
                 @endcanany

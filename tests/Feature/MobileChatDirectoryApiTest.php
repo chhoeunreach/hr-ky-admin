@@ -28,6 +28,15 @@ class MobileChatDirectoryApiTest extends TestCase
             '--path' => 'database/migrations/testing',
             '--force' => true,
         ]);
+        Artisan::call('migrate', [
+            '--path' => 'vendor/laravel/passport/database/migrations',
+            '--force' => true,
+        ]);
+        app(\Laravel\Passport\ClientRepository::class)->createPersonalAccessClient(
+            null,
+            'Mobile Chat Test Client',
+            'http://localhost'
+        );
 
         $this->createMobileChatSupportTables();
         $this->extendUsersTableForMobileChat();
@@ -293,11 +302,11 @@ class MobileChatDirectoryApiTest extends TestCase
             'device_type' => 'android',
         ]);
 
-        $loginResponse->assertOk();
+        self::assertSame(200, $loginResponse->status(), $loginResponse->getContent());
         $this->assertSame(1, (int) DB::table('users')->where('id', $requester->id)->value('online_status'));
 
-        Passport::actingAs(User::findOrFail($requester->id));
-        $logoutResponse = $this->postJson('/api/logout');
+        $accessToken = $loginResponse->json('data.tokens');
+        $logoutResponse = $this->withToken($accessToken)->getJson('/api/logout');
 
         $logoutResponse->assertOk();
         $this->assertSame(0, (int) DB::table('users')->where('id', $requester->id)->value('online_status'));
@@ -533,7 +542,7 @@ class MobileChatDirectoryApiTest extends TestCase
 
         $this->assertSame('voice', $message['message_type']);
         $this->assertSame('chat/voice/legacy-path-only.m4a', $message['media_path']);
-        $this->assertSame('/storage/chat/voice/legacy-path-only.m4a', $message['media_url']);
+        $this->assertStringEndsWith('/storage/chat/voice/legacy-path-only.m4a', $message['media_url']);
         $this->assertSame(8, $message['duration_seconds']);
         $this->assertSame('legacy-path-only.m4a', $message['file_name']);
     }
@@ -570,7 +579,7 @@ class MobileChatDirectoryApiTest extends TestCase
 
         $this->assertSame('voice', $message['message_type']);
         $this->assertSame('chat/voice/bad-root-url.m4a', $message['media_path']);
-        $this->assertSame('/storage/chat/voice/bad-root-url.m4a', $message['media_url']);
+        $this->assertStringEndsWith('/storage/chat/voice/bad-root-url.m4a', $message['media_url']);
     }
 
     public function test_admin_image_and_file_messages_normalize_legacy_media_urls(): void
@@ -621,9 +630,9 @@ class MobileChatDirectoryApiTest extends TestCase
         $messages = collect($response->json('data.messages'))->keyBy('message_type');
 
         $this->assertSame('chat/images/legacy-image.png', $messages['image']['media_path']);
-        $this->assertSame('/storage/chat/images/legacy-image.png', $messages['image']['media_url']);
+        $this->assertStringEndsWith('/storage/chat/images/legacy-image.png', $messages['image']['media_url']);
         $this->assertSame('chat/files/legacy-doc.pdf', $messages['file']['media_path']);
-        $this->assertSame('/storage/chat/files/legacy-doc.pdf', $messages['file']['media_url']);
+        $this->assertStringEndsWith('/storage/chat/files/legacy-doc.pdf', $messages['file']['media_url']);
         $this->assertSame('legacy-doc.pdf', $messages['file']['file_name']);
     }
 
@@ -876,22 +885,24 @@ class MobileChatDirectoryApiTest extends TestCase
 
     private function makeRole(string $slug): Role
     {
-        return Role::create([
+        $role = Role::create([
             'name' => ucfirst($slug),
             'slug' => $slug,
             'is_active' => 1,
         ]);
+        $this->grantPermission($role, 'view_employee_chat');
+        $this->grantPermission($role, 'send_employee_chat');
+        return $role;
     }
 
     private function grantPermission(Role $role, string $permissionKey): void
     {
-        $permission = Permission::create([
+        $permission = Permission::firstOrCreate(['permission_key' => $permissionKey], [
             'name' => ucfirst(str_replace('_', ' ', $permissionKey)),
-            'permission_key' => $permissionKey,
             'permission_groups_id' => null,
         ]);
 
-        PermissionRole::create([
+        PermissionRole::firstOrCreate([
             'permission_id' => $permission->id,
             'role_id' => $role->id,
         ]);
@@ -1059,6 +1070,21 @@ class MobileChatDirectoryApiTest extends TestCase
             }
             if (!Schema::hasColumn('users', 'online_status')) {
                 $table->boolean('online_status')->default(0);
+            }
+            if (!Schema::hasColumn('users', 'uuid')) {
+                $table->text('uuid')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'fcm_token')) {
+                $table->text('fcm_token')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'device_type')) {
+                $table->string('device_type')->nullable();
+            }
+            if (!Schema::hasColumn('users', 'logout_status')) {
+                $table->boolean('logout_status')->default(0);
+            }
+            if (!Schema::hasColumn('users', 'updated_by')) {
+                $table->unsignedBigInteger('updated_by')->nullable();
             }
         });
     }

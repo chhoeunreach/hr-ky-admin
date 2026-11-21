@@ -16,6 +16,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('daily-records:process')->everyMinute()->withoutOverlapping(10);
+
+        $schedule->command('app-security:refresh-attestation-status')->everySixHours()->withoutOverlapping();
+        $schedule->command('app-security:cleanup')->dailyAt('02:20')->withoutOverlapping();
+
         $schedule->command('community:optimize-videos')->everyMinute()->withoutOverlapping(35)->runInBackground();
 
         $schedule->call(function () {

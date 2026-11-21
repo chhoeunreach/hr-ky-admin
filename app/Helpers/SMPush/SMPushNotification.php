@@ -117,6 +117,7 @@ class SMPushNotification
         }
 
         $sent = 0;
+        $acceptedRecipientIds = [];
         $failed = 0;
         foreach (array_chunk($outbound, 500, true) as $batch) {
             try {
@@ -125,6 +126,7 @@ class SMPushNotification
                     $userId = array_keys($batch)[$index] ?? null;
                     if ($report->isSuccess()) {
                         $sent++;
+                        $acceptedRecipientIds[] = $userId;
                         continue;
                     }
 
@@ -149,6 +151,7 @@ class SMPushNotification
         Log::info('Firebase push delivery completed.', ['accepted' => $sent, 'failed' => $failed]);
         return [
             'sent' => $sent,
+            'accepted_recipient_ids' => $acceptedRecipientIds,
             'failed' => $failed,
             'error' => $failed ? 'Firebase rejected some push messages. Check the server log for delivery errors.' : null,
         ];

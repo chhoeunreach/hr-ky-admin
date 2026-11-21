@@ -140,6 +140,7 @@ class SocialFeedApiController extends Controller
     private function feedPayload(Request $request, int $perPage): array
     {
         $query = $this->feedOrder(SocialPost::query()->visibleTo($request->user())
+            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->integer('user_id')))
             ->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($q) => $q->withCount('votes'), 'original' => fn ($q) => $q->with(['author:id,name,avatar,department_id', 'author.department:id,dept_name', 'media', 'poll.options' => fn ($inner) => $inner->withCount('votes')])->withCount(['comments', 'reactions', 'shares'])])
             ->withCount(['comments', 'reactions', 'shares']));
 
@@ -159,7 +160,11 @@ class SocialFeedApiController extends Controller
                 'per_page' => $perPage,
                 'next_cursor' => $next,
                 'has_more' => $hasMore,
-                'next_page_url' => $next === null ? null : url()->current().'?'.http_build_query(['cursor' => $next, 'per_page' => $perPage]),
+                'next_page_url' => $next === null ? null : url()->current().'?'.http_build_query(array_filter([
+                    'cursor' => $next,
+                    'per_page' => $perPage,
+                    'user_id' => $request->query('user_id'),
+                ], fn ($value) => $value !== null && $value !== '')),
             ];
         }
 
@@ -172,6 +177,12 @@ class SocialFeedApiController extends Controller
         $payload = $posts->toArray();
         $payload['next_cursor'] = $nextCursor;
         $payload['has_more'] = $hasMore;
+        if ($hasMore && $request->filled('user_id')) {
+            $payload['next_page_url'] = url()->current().'?'.http_build_query([
+                'page' => $posts->currentPage() + 1,
+                'user_id' => $request->query('user_id'),
+            ]);
+        }
 
         return $payload;
     }

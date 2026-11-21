@@ -3,10 +3,18 @@
 namespace Tests\Feature;
 
 use App\Http\Middleware\MobileFunctionPermission;
+use App\Http\Middleware\Admin;
+use App\Http\Middleware\SPAuthGateMW;
+use App\Http\Middleware\SuperAdmin;
 use App\Models\User;
 use App\Services\Authorization\MobilePermissions;
+use App\Services\Payroll\PayrollQueueService;
+use DomainException;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MobileFunctionPermissionTest extends TestCase
@@ -44,12 +52,65 @@ class MobileFunctionPermissionTest extends TestCase
         $this->postJson('/_test/mobile/write')->assertForbidden();
     }
 
+    public function test_legacy_action_permission_implies_its_menu_when_no_explicit_menu_grant_exists(): void
+    {
+        $this->abilities = ['read_groups'];
+
+        $this->getJson('/_test/mobile/read')->assertOk();
+        $this->postJson('/_test/mobile/write')->assertForbidden();
+    }
+
     public function test_revoked_menu_denies_direct_function_request(): void
     {
+        config([
+            'database.default' => 'sqlite',
+            'database.connections.sqlite.database' => ':memory:',
+            'database.connections.sqlite.prefix' => '',
+        ]);
+        DB::purge('sqlite');
+        Schema::connection('sqlite')->create('mobile_feature_controls', function (Blueprint $table): void {
+            $table->string('key')->primary();
+            $table->boolean('enabled');
+        });
+        DB::table('mobile_feature_controls')->insert(['key' => 'groups', 'enabled' => false]);
         $this->abilities = ['write_groups'];
         $this->postJson('/_test/mobile/write')->assertForbidden();
-        $this->abilities[] = 'mobile.menu.groups';
+        DB::table('mobile_feature_controls')->where('key', 'groups')->update(['enabled' => true]);
         $this->postJson('/_test/mobile/write')->assertOk();
+    }
+
+    public function test_admin_global_switches_control_mobile_api_and_feature_snapshot(): void
+    {
+        config(['database.default' => 'sqlite', 'database.connections.sqlite.database' => ':memory:', 'app_security.enabled' => false]);
+        DB::purge('sqlite');
+        (require database_path('migrations/2024_05_02_162309_create_features_table.php'))->up();
+        (require database_path('migrations/2026_11_20_110000_create_mobile_feature_controls.php'))->up();
+        DB::table('features')->insert(['key' => 'groups', 'name' => 'Groups', 'group' => 'Mobile', 'status' => true]);
+        $this->withoutMiddleware([Admin::class, SPAuthGateMW::class, SuperAdmin::class]);
+        $this->actingAs((new User)->forceFill(['id' => 10]), 'api');
+        $this->abilities = ['mobile.menu.groups', 'read_groups', 'write_groups'];
+
+        $this->putJson('/admin/feature/status', ['key' => 'read_groups', 'enabled' => false])->assertForbidden();
+        $this->getJson('/_test/mobile/read')->assertOk();
+
+        $this->abilities[] = 'feature_control';
+        $this->putJson('/admin/feature/status', ['key' => 'missing', 'enabled' => false])->assertNotFound();
+        $this->put('/admin/feature/status', ['key' => 'read_groups', 'enabled' => 0])->assertRedirect();
+        $this->getJson('/_test/mobile/read')->assertForbidden();
+        $this->postJson('/_test/mobile/write')->assertOk();
+
+        $snapshot = collect($this->getJson('/api/mobile-features')->assertOk()->json('data'))->keyBy('key');
+        $this->assertSame('0', $snapshot['read_groups']['status']);
+        $this->assertSame('1', $snapshot['write_groups']['status']);
+
+        $this->put('/admin/feature/status', ['key' => 'groups', 'enabled' => 0])->assertRedirect();
+        $this->assertDatabaseHas('features', ['key' => 'groups', 'status' => false]);
+        $this->postJson('/_test/mobile/write')->assertForbidden();
+        $this->getJson('/_test/mobile/bootstrap')->assertOk();
+
+        $this->put('/admin/feature/status', ['key' => 'groups', 'enabled' => 1])->assertRedirect();
+        $this->postJson('/_test/mobile/write')->assertOk();
+        $this->getJson('/_test/mobile/read')->assertForbidden();
     }
 
     public function test_unconfigured_functions_deny_and_bootstrap_remains_available(): void
@@ -89,6 +150,49 @@ class MobileFunctionPermissionTest extends TestCase
                 $this->assertArrayHasKey($rules[$action][0], config('mobile_permissions.menus'), $action);
             }
         }
+    }
+
+    public function test_payroll_qr_join_reaches_the_service_only_with_the_employee_payroll_permission(): void
+    {
+        config(['app_security.enabled' => false]);
+        $this->withoutMiddleware(SPAuthGateMW::class);
+        $this->actingAs((new User)->forceFill(['id' => 10]), 'api');
+        $this->mock(PayrollQueueService::class, function ($service): void {
+            $service->shouldReceive('joinQueue')->once()->with('test-token', 10)
+                ->andReturn(['status' => 'already_paid', 'message' => 'Already paid.', 'ticket' => null]);
+        });
+
+        $this->abilities = ['mobile.menu.payroll-management'];
+        $this->postJson('/api/v1/payroll-queue/join', ['qr_token' => 'test-token'])
+            ->assertForbidden()
+            ->assertJsonPath('message', 'You do not have permission to use this function.');
+
+        $this->abilities[] = 'view_payslip_detail';
+        $this->postJson('/api/v1/payroll-queue/join', ['qr_token' => 'test-token', 'employee_id' => 99])
+            ->assertOk()
+            ->assertJsonPath('status', 'already_paid');
+        $this->postJson('/api/v1/hr-queue/queue/call-next', ['counter_number' => 1])->assertForbidden();
+        $this->postJson('/api/v1/hr-queue/payroll/disburse', ['ticket_id' => 1])->assertForbidden();
+    }
+
+    public function test_web_and_mobile_return_a_readable_error_for_an_ineligible_payroll_scan(): void
+    {
+        config(['app_security.enabled' => false]);
+        $this->withoutMiddleware(SPAuthGateMW::class);
+        $employee = (new User)->forceFill(['id' => 10]);
+        $this->mock(PayrollQueueService::class, function ($service): void {
+            $service->shouldReceive('joinQueue')->twice()->with('closed-token', 10)
+                ->andThrow(new DomainException('This session is closed.'));
+        });
+
+        $this->actingAs($employee, 'web');
+        $this->postJson('/payroll-queue/join/closed-token')->assertUnprocessable()
+            ->assertJsonPath('message', 'This session is closed.');
+
+        $this->actingAs($employee, 'api');
+        $this->abilities = ['mobile.menu.payroll-management', 'view_payslip_detail'];
+        $this->postJson('/api/v1/payroll-queue/join', ['qr_token' => 'closed-token'])->assertUnprocessable()
+            ->assertJsonPath('message', 'This session is closed.');
     }
 }
 

@@ -172,9 +172,9 @@ class AttendanceHelper
 
     }
 
-    public static function isHolidayOrWeekendOnCurrentDate(): bool
+    public static function isHolidayOrWeekendOnCurrentDate(?string $date = null): bool
     {
-        $date = Carbon::today()->format('Y-m-d');
+        $date ??= Carbon::today()->toDateString();
         $holiday = Holiday::whereDate('event_date', $date)->where('is_active',1)->count();
 
         if ($holiday == 0) {
@@ -912,32 +912,22 @@ class AttendanceHelper
     /**
      * @throws Exception
      */
-    public static function checkNightShiftCheckOut($userId): string
+    public static function checkNightShiftCheckOut($userId, ?Carbon $receivedAt = null): string
     {
         $shift = AppHelper::getUserShift($userId);
-        $yesterday = Carbon::now()->subDay();
-        $userYesterdayCheckInDetail = Attendance::select('id', 'user_id', 'night_checkin', 'night_checkout')
+        $now = $receivedAt ?? now();
+        $today = $now->toDateString();
+        $yesterday = $now->copy()->subDay()->toDateString();
+        $attendance = Attendance::select('id', 'user_id', 'night_checkin', 'night_checkout')
+            ->when($receivedAt !== null, fn ($query) => $query->withoutGlobalScope('branch')->lockForUpdate())
             ->where('user_id', $userId)
-            ->where('attendance_date', $yesterday->format('Y-m-d'))
             ->where('office_time_id', $shift->id)
-            ->orderBy('created_at', 'desc')
-            ->first();
+            ->latest('created_at')->latest('id');
+        $userYesterdayCheckInDetail = (clone $attendance)->where('attendance_date', $yesterday)->first();
+        $userTodayCheckInDetail = $attendance->where('attendance_date', $today)->first();
 
-        $userTodayCheckInDetail = Attendance::select('id', 'user_id', 'night_checkin', 'night_checkout')
-            ->where('user_id', $userId)
-            ->where('attendance_date', date('Y-m-d'))
-            ->where('office_time_id', $shift->id)
-            ->orderBy('created_at', 'desc')
-            ->first();
-
-        if (isset($userYesterdayCheckInDetail->night_checkout)) {
-            $currentDate = date('Y-m-d');
-
-        } else {
-            $currentDate = Carbon::now()->subDay()->format('Y-m-d');
-        }
-        // Current date
-        $currentTime = strtotime(now());
+        $currentDate = isset($userYesterdayCheckInDetail->night_checkout) ? $today : $yesterday;
+        $currentTime = $now->timestamp;
 
         $startTime = strtotime("$currentDate {$shift->opening_time}");
         $endTime = strtotime("$currentDate {$shift->closing_time}");

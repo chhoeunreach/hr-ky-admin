@@ -38,6 +38,24 @@ class PayrollQueueTicket extends Model
         'paid_at' => 'datetime',
     ];
 
+    public function peopleAhead(): int
+    {
+        if ($this->status !== 'waiting') {
+            return 0;
+        }
+
+        $waiting = self::query()->where('session_id', $this->session_id)->where('status', 'waiting');
+        if ($this->joined_at === null) {
+            return $waiting->whereNull('joined_at')->where('id', '<', $this->id)->count();
+        }
+
+        return $waiting->where(function ($query) {
+            $query->whereNull('joined_at')
+                ->orWhere('joined_at', '<', $this->joined_at)
+                ->orWhere(fn ($tied) => $tied->where('joined_at', $this->joined_at)->where('id', '<', $this->id));
+        })->count();
+    }
+
     public function session(): BelongsTo
     {
         return $this->belongsTo(PayrollQueueSession::class, 'session_id');

@@ -7,6 +7,8 @@ use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Helpers\DateConverter;
 use App\Models\Attendance;
+use App\Models\AttendanceSetting;
+use App\Models\LeaveRequestMaster;
 use App\Models\User;
 use App\Repositories\AppSettingRepository;
 use App\Repositories\AttendanceRepository;
@@ -193,35 +195,70 @@ class AttendanceService
 
     }
 
-    public function findEmployeeTodayAttendanceDetail($userId, $select = ['*'])
+    public function findEmployeeTodayAttendanceDetail($userId, $select = ['*'], ?Carbon $receivedAt = null)
     {
-        return $this->attendanceRepo->findEmployeeTodayCheckInDetail($userId, $select);
+        if (!$receivedAt) {
+            return $this->attendanceRepo->findEmployeeTodayCheckInDetail($userId, $select);
+        }
+
+        return $this->attendanceOnDate($userId, $receivedAt->toDateString())
+            ->latest('created_at')->latest('id')->lockForUpdate()->first($select);
     }
 
-    public function findEmployeeAttendanceDetailForNightShift($userId, $select = ['*'])
-    {
-        return $this->attendanceRepo->findEmployeeCheckInDetailForNightShift($userId, $select);
+    public function findEmployeeAttendanceDetailForNightShift(
+        $userId, $select = ['*'], ?Carbon $receivedAt = null, ?int $officeTimeId = null
+    ) {
+        if (!$receivedAt) {
+            return $this->attendanceRepo->findEmployeeCheckInDetailForNightShift($userId, $select);
+        }
+
+        return $this->attendanceOnDate($userId, $receivedAt->copy()->subDay()->toDateString())
+            ->where('office_time_id', $officeTimeId)
+            ->latest('created_at')->latest('id')->lockForUpdate()->first($select);
     }
 
-    public function findEmployeeTodayAttendanceNumbers($userId)
+    public function findEmployeeTodayAttendanceNumbers($userId, ?Carbon $receivedAt = null): int
     {
-        return $this->attendanceRepo->todayAttendanceDetail($userId);
+        if (!$receivedAt) {
+            return $this->attendanceRepo->todayAttendanceDetail($userId);
+        }
+
+        return $this->attendanceOnDate($userId, $receivedAt->toDateString())
+            ->whereNotNull('check_in_at')->count();
     }
 
+    private function attendanceOnDate($userId, string $date): Builder
+    {
+        return Attendance::withoutGlobalScope('branch')->where('user_id', $userId)->where('attendance_date', $date);
+    }
+
+    public function attendanceLimit(): int
+    {
+        return (int) (AttendanceSetting::where('slug', 'attendance_limit')->value('value') ?? 1);
+    }
 
     /**
      * @throws Exception
      */
     public function newCheckIn($validatedData)
     {
+        $recordedAt = $this->attendanceRecordedAt($validatedData);
+        $attendanceDate = $recordedAt->toDateString();
+        $checkInAt = $recordedAt->toTimeString();
 
         if($validatedData['allow_holiday_check_in'] == 0){
-            $employeeLeaveDetail = $this->leaveRepo->findEmployeeApprovedLeaveForCurrentDate($validatedData, ['id']);
+            $employeeLeaveDetail = LeaveRequestMaster::query()
+                ->whereDate('leave_from', '<=', $attendanceDate)
+                ->whereDate('leave_to', '>=', $attendanceDate)
+                ->whereIn('status', ['approved', 'pending'])
+                ->where('company_id', $validatedData['company_id'])
+                ->where('requested_by', $validatedData['user_id'])
+                ->exists();
             if ($employeeLeaveDetail) {
                 throw new Exception(__('message.leave_attendance'), 400);
             }
 
-            $checkHolidayAndWeekend = AttendanceHelper::isHolidayOrWeekendOnCurrentDate();
+            $checkHolidayAndWeekend = AttendanceHelper::isHolidayOrWeekendOnCurrentDate($attendanceDate);
 
             if ($checkHolidayAndWeekend) {
                 throw new Exception(__('message.holiday_attendance'), 403);
@@ -231,19 +268,15 @@ class AttendanceService
 
         $shift = AppHelper::getUserShift($validatedData['user_id']);
 
-        $recordedAt = $this->attendanceRecordedAt($validatedData);
-        $attendanceDate = $recordedAt->format('Y-m-d');
-        $checkInAt = $recordedAt->toTimeString();
-
         if ($shift && isset($shift->opening_time)) {
-            $checkInAt = Carbon::createFromTimeString($recordedAt->toTimeString());
-            $openingTime = Carbon::createFromFormat('H:i:s', $shift->opening_time);
+            $checkInTime = $recordedAt->copy()->setTimeFromTimeString($checkInAt);
+            $openingTime = $recordedAt->copy()->setTimeFromTimeString($shift->opening_time);
             $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave($attendanceDate, $validatedData['user_id']);
 
             if (!($timeLeave) && ($shift->is_early_check_in == 1 && $shift->checkin_before)) {
                 $checkInTimeAllowed = $openingTime->copy()->subMinutes($shift->checkin_before);
 
-                if ($checkInAt->lt($checkInTimeAllowed)) {
+                if ($checkInTime->lt($checkInTimeAllowed)) {
                     throw new Exception(__('message.earlier_checkin'), 400);
                 }
             }
@@ -253,7 +286,7 @@ class AttendanceService
 
                 $checkInTimeAllowed = $openingTime->copy()->addMinutes(((int) $shift->checkin_after) + 1);
 
-                if ($checkInAt->greaterThanOrEqualTo($checkInTimeAllowed)) {
+                if ($checkInTime->greaterThanOrEqualTo($checkInTimeAllowed)) {
 
                     throw new Exception(__('message.late_checkin'), 400);
                 }
@@ -269,15 +302,14 @@ class AttendanceService
         $validatedData['attendance_date'] = $attendanceDate;
 
         if ($validatedData['night_shift']) {
-            $validatedData['night_checkin'] = $checkInAt;
+            $validatedData['night_checkin'] = $attendanceDate . ' ' . $checkInAt;
         } else {
             $validatedData['check_in_at'] = $checkInAt;
         }
 
-        $coordinate = $this->getCoordinates($validatedData['user_id']);
-
-        $validatedData['check_in_latitude'] = $validatedData['check_in_latitude'] ?? $coordinate['latitude'];
-        $validatedData['check_in_longitude'] = $validatedData['check_in_longitude'] ?? $coordinate['longitude'];
+        $coordinate = isset($validatedData['received_at']) ? [] : $this->getCoordinates($validatedData['user_id']);
+        $validatedData['check_in_latitude'] ??= $coordinate['latitude'] ?? null;
+        $validatedData['check_in_longitude'] ??= $coordinate['longitude'] ?? null;
 
         $locationData = [
             'latitude'=> $validatedData['check_in_latitude'],
@@ -318,8 +350,8 @@ class AttendanceService
         $shift = AppHelper::getUserShift($validatedData['user_id']);
 
         if ($shift && isset($shift->closing_time)) {
-            $openingTime = Carbon::createFromFormat('H:i:s', $shift->closing_time);
-            $checkOutAt = Carbon::createFromTimeString($recordedAt->toTimeString());
+            $openingTime = $recordedAt->copy()->setTimeFromTimeString($shift->closing_time);
+            $checkOutAt = $recordedAt->copy()->setTimeFromTimeString($checkOut);
 
             $timeLeave = $this->timeLeaveRepository->getEmployeeApprovedTimeLeave($attendanceDate, $validatedData['user_id']);
 
@@ -350,7 +382,7 @@ class AttendanceService
             }
 
 
-            if (isset($timeLeave) && (strtotime($timeLeave->end_time) < strtotime($checkOut) && strtotime($timeLeave->start_time) >= strtotime($attendanceData->check_in_at))) {
+            if (isset($timeLeave) && (strtotime($timeLeave->end_time) < strtotime($checkOut) && strtotime($timeLeave->start_time) >= strtotime($attendanceData->check_in_at ?? ''))) {
                 $timeLeaveInMinutes = Carbon::parse($timeLeave->end_time)->diffInMinutes(Carbon::parse($timeLeave->start_time));
             }
 
@@ -370,10 +402,9 @@ class AttendanceService
         $validatedData['overtime'] = $workedData['overtime'];
         $validatedData['undertime'] = $workedData['undertime'];
 
-        $coordinate = $this->getCoordinates($validatedData['user_id']);
-
-        $validatedData['check_out_latitude'] = $validatedData['check_out_latitude'] ?? $coordinate['latitude'];
-        $validatedData['check_out_longitude'] = $validatedData['check_out_longitude'] ?? $coordinate['longitude'];
+        $coordinate = isset($validatedData['received_at']) ? [] : $this->getCoordinates($validatedData['user_id']);
+        $validatedData['check_out_latitude'] ??= $coordinate['latitude'] ?? null;
+        $validatedData['check_out_longitude'] ??= $coordinate['longitude'] ?? null;
 
         $locationData = [
             'latitude'=> $validatedData['check_out_latitude'],
@@ -486,11 +517,7 @@ class AttendanceService
 
     private function attendanceRecordedAt(array $validatedData): Carbon
     {
-        if (!empty($validatedData['recorded_at'])) {
-            return Carbon::parse($validatedData['recorded_at']);
-        }
-
-        return Carbon::now();
+        return $validatedData['received_at'] ?? now();
     }
 
     /**
@@ -577,15 +604,16 @@ class AttendanceService
     /**
      * @throws Exception
      */
-    public function resolveBranchLocationValidation($userId, $latitude = null, $longitude = null): array
-    {
+    public function resolveBranchLocationValidation(
+        $userId, $latitude = null, $longitude = null, bool $forceRadius = false, bool $locationRequired = false
+    ): array {
         $user = $this->userRepo->findUserDetailById($userId, ['id', 'branch_id', 'workspace_type']);
         $branch = $this->branchRepository->findBranchDetailById($user->branch_id);
 
         $branchLatitude = $branch?->branch_location_latitude;
         $branchLongitude = $branch?->branch_location_longitude;
         $radius = AppHelper::getAttendanceLocationRadius();
-        $radiusEnabled = AppHelper::isAttendanceLocationRadiusEnabled();
+        $radiusEnabled = $forceRadius || AppHelper::isAttendanceLocationRadiusEnabled();
 
         $validation = [
             'employee_location' => [
@@ -610,6 +638,10 @@ class AttendanceService
             $latitude === null || $longitude === null ||
             $branchLatitude === null || $branchLongitude === null
         ) {
+            if ($locationRequired && $user->workspace_type == User::OFFICE && !$forceRadius) {
+                throw new Exception(__('message.attendance_outside'), 403);
+            }
+
             return $validation;
         }
 

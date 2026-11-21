@@ -24,6 +24,14 @@ class AdminLoginTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_login_page_links_android_users_to_the_controlled_release_page(): void
+    {
+        $this->get(route('admin.login'))
+            ->assertOk()
+            ->assertSee(route('app.download-page'), false)
+            ->assertSee('Android app details & download', false);
+    }
+
     public function test_wrong_admin_password_shows_invalid_credentials_message(): void
     {
         Admin::create([

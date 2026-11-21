@@ -163,6 +163,7 @@ class DCardProfileApiTest extends TestCase
             'slug' => 'employee',
             'is_active' => 1,
         ]);
+        $this->grantPermission($role, 'view_profile');
 
         $loggedInUser = User::factory()->create([
             'name' => 'Wrong Source Name',

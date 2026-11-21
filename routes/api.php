@@ -38,20 +38,23 @@ use App\Http\Controllers\Api\TaskApiController;
 use App\Http\Controllers\Api\TaskChecklistApiController;
 use App\Http\Controllers\Api\TaskCommentApiController;
 use App\Http\Controllers\Api\TeamMeetingApiController;
+use App\Http\Controllers\Api\TimeApiController;
 use App\Http\Controllers\Api\TelegramNotificationApiController;
 use App\Http\Controllers\Api\TrainingApiController;
 use App\Http\Controllers\Api\UserThemeController;
 use App\Http\Controllers\Api\UserProfileApiController;
 use App\Http\Controllers\Api\WarningApiController;
 use App\Http\Controllers\Api\HrQueueApiController;
+use App\Http\Controllers\Api\PayrollQueueApiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthApiController;
 
 /**   user login **/
 Route::post('login', [AuthApiController::class,'login']);
 Route::get('app-version', [DashboardApiController::class, 'appVersion']);
+Route::get('time', TimeApiController::class)->middleware('throttle:60,1,time:');
 Route::get('hr-ky-admin/d-card/me', [UserProfileApiController::class, 'dCardProfile'])
-    ->middleware(['auth:api', 'permission', \App\Http\Middleware\MobileFunctionPermission::class]);
+    ->middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class]);
 
 Route::prefix('kiosk/v1')
     ->middleware(['kiosk.device', 'throttle:120,1'])
@@ -71,7 +74,7 @@ Route::prefix('kiosk/v1')
     });
 
 Route::prefix('repair-price')
-    ->middleware(['auth:api', 'permission'])
+    ->middleware(['auth:api', 'app.security', 'permission'])
     ->group(function () {
         Route::get('permissions', [RepairPriceController::class, 'permissions']);
         Route::get('brands', [RepairPriceController::class, 'brands']);
@@ -96,7 +99,7 @@ Route::prefix('repair-price')
     });
 
 Route::group([
-    'middleware' => ['auth:api','permission', \App\Http\Middleware\MobileFunctionPermission::class]
+    'middleware' => ['auth:api', 'app.security','permission', \App\Http\Middleware\MobileFunctionPermission::class]
 ], function () {
 
     Route::controller(\App\Http\Controllers\Api\FlashViewApiController::class)->group(function () {
@@ -155,7 +158,9 @@ Route::group([
     });
 
     /**   user logout **/
-    Route::get('logout', [AuthApiController::class, 'logout']);
+    Route::get('logout', [AuthApiController::class, 'logout'])
+        ->middleware('throttle:10,1')
+        ->withoutMiddleware(['app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class]);
 
     /** Users Routes **/
     Route::get('users/profile', [UserProfileApiController::class, 'userProfileDetail']);
@@ -185,6 +190,7 @@ Route::group([
 
     /** Dashboard Routes **/
     Route::get('dashboard', [DashboardApiController::class, 'userDashboardDetail']);
+    Route::get('mobile-features', [DashboardApiController::class, 'mobileFeatures']);
     Route::get('dashboard/attendance-summary', [DashboardApiController::class, 'attendanceSummary']);
 
     /** Attendance Routes **/
@@ -406,7 +412,7 @@ Route::group([
 
 /** HR Certificate API (authenticated + permission checked) */
 Route::prefix('hr/certificates')
-    ->middleware(['auth:api', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])
+    ->middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])
     ->group(function () {
     Route::get('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'index']);
     Route::post('/', [\App\Http\Controllers\Api\CertificateApiController::class, 'store']);
@@ -416,10 +422,49 @@ Route::prefix('hr/certificates')
 
 /** HR Queue, QR Attendance & Payroll Disbursement Module */
 Route::prefix('v1/hr-queue')->group(function () {
-    Route::post('qr/generate', [HrQueueApiController::class, 'generateQrPass']);
-    Route::post('queue/scan', [HrQueueApiController::class, 'scanToQueue']);
-    Route::post('queue/call-next', [HrQueueApiController::class, 'callNext']);
-    Route::get('payroll/breakdown', [HrQueueApiController::class, 'getSalaryBreakdown']);
-    Route::post('payroll/disburse', [HrQueueApiController::class, 'disbursePayroll']);
     Route::get('live', [HrQueueApiController::class, 'getLiveState']);
+    Route::middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])->group(function () {
+        Route::post('qr/generate', [HrQueueApiController::class, 'generateQrPass']);
+        Route::post('queue/scan', [HrQueueApiController::class, 'scanToQueue']);
+        Route::post('queue/call-next', [HrQueueApiController::class, 'callNext']);
+        Route::get('payroll/breakdown', [HrQueueApiController::class, 'getSalaryBreakdown']);
+        Route::post('payroll/disburse', [HrQueueApiController::class, 'disbursePayroll']);
+    });
 });
+
+Route::prefix('v1/payroll-queue')->middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])->group(function () {
+    Route::post('join', [PayrollQueueApiController::class, 'join'])->middleware('throttle:15,1');
+    Route::get('ticket/{ticketId}', [PayrollQueueApiController::class, 'ticket'])->whereNumber('ticketId');
+});
+
+
+// Mobile application security endpoints. Registration is authenticated with the
+// existing Passport user token, while protected business API routes additionally
+// require an approved device session and per-request signature when enabled.
+Route::prefix('app-security/v1')->name('app-security.')->group(function () {
+    Route::post('releases/check', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'releaseCheck'])
+        ->middleware('throttle:20,1');
+    Route::get('config', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'config'])
+        ->middleware('throttle:60,1');
+
+    Route::middleware('auth:api')->group(function () {
+        Route::post('challenge', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'challenge'])
+            ->middleware('throttle:20,1');
+        Route::post('devices/register', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'register'])
+            ->middleware('throttle:10,1');
+        Route::post('devices/status', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'status'])
+            ->middleware('throttle:60,1');
+        Route::post('integrity/report', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'reportIntegrity'])
+            ->middleware(['app.security', 'throttle:6,1']);
+        Route::post('heartbeat', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'heartbeat'])
+            ->middleware(['app.security', 'throttle:30,1']);
+        Route::post('sessions', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'openSession'])
+            ->middleware('throttle:20,1');
+        Route::post('sessions/refresh', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'refreshSession'])
+            ->middleware('throttle:20,1');
+        Route::post('sessions/logout', [\App\Modules\AppSecurity\Controllers\AppSecurityController::class, 'logout'])
+            ->middleware('throttle:20,1');
+    });
+});
+
+require app_path('Modules/DailyRecords/api.php');
