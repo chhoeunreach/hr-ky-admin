@@ -1,21 +1,19 @@
 
 @canany(['list_leave_type','list_leave_request','access_admin_leave','list_leave_approval','time_leave_list'])
-    <li class="nav-item {{ request()->routeIs('admin.leaves.*') ||
-                            request()->routeIs('admin.time-leave-request.*') ||
-                            request()->routeIs('admin.leave-approval.*') ||
-                        request()->routeIs('admin.leave-request.*')
-                        ? 'active' : '' }} ">
-        <a class="nav-link" data-bs-toggle="collapse" href="#leaveMenu" data-href="#" role="button" aria-expanded="false"
+    @php
+        $isLeaveSection = request()->routeIs('admin.leaves.*') ||
+            request()->routeIs('admin.time-leave-request.*') ||
+            request()->routeIs('admin.leave-approval.*') ||
+            request()->routeIs('admin.leave-request.*');
+    @endphp
+    <li class="nav-item {{ $isLeaveSection ? 'active' : '' }} ">
+        <a class="nav-link {{ $isLeaveSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#leaveMenu" data-href="#" role="button" aria-expanded="{{ $isLeaveSection ? 'true' : 'false' }}"
            aria-controls="leaveMenu">
             <i class="link-icon" data-feather="pause-circle"></i>
             <span class="link-title">{{ __('index.leave') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{  request()->routeIs('admin.leaves.*') ||
-                            request()->routeIs('admin.time-leave-request.*') ||
-                            request()->routeIs('admin.leave-approval.*') ||
-                        request()->routeIs('admin.leave-request.*')
-                   ?'' : 'collapse'  }}" id="leaveMenu">
+        <div class="collapse {{ $isLeaveSection ? 'show' : '' }}" id="leaveMenu">
             <ul class="nav sub-menu">
 
                 @canany(['list_leave_type','access_admin_leave'])

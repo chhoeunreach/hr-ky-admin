@@ -1,12 +1,15 @@
 
 @canany(['training_type_list', 'list_trainer', 'list_training'])
-    <li class="nav-item  {{ request()->routeIs('admin.training-types.*') || request()->routeIs('admin.trainers.*') || request()->routeIs('admin.training.*')  ? 'active' : '' }}    ">
-        <a class="nav-link"   data-href="#" data-bs-toggle="collapse" href="#trainingManagement" role="button" aria-expanded="false" aria-controls="shiftManagment">
+    @php
+        $isTrainingSection = request()->routeIs('admin.training-types.*') || request()->routeIs('admin.trainers.*') || request()->routeIs('admin.training.*');
+    @endphp
+    <li class="nav-item {{ $isTrainingSection ? 'active' : '' }}">
+        <a class="nav-link {{ $isTrainingSection ? '' : 'collapsed' }}" data-href="#" data-bs-toggle="collapse" href="#trainingManagement" role="button" aria-expanded="{{ $isTrainingSection ? 'true' : 'false' }}" aria-controls="trainingManagement">
             <i class="link-icon" data-feather="book"></i>
             <span class="link-title"> {{ __('index.training_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.training-types.*') || request()->routeIs('admin.trainers.*') || request()->routeIs('admin.training.*') ?'' : 'collapse'  }} " id="trainingManagement">
+        <div class="collapse {{ $isTrainingSection ? 'show' : '' }}" id="trainingManagement">
              <ul class="nav sub-menu">
 
                  @can('training_type_list')

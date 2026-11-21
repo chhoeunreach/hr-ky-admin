@@ -1,12 +1,15 @@
 
 @canany(['list_office_time'])
-    <li class="nav-item  {{ request()->routeIs('admin.office-times.*')  ? 'active' : '' }}    ">
-        <a class="nav-link"   data-href="#" data-bs-toggle="collapse" href="#shiftManagement" role="button" aria-expanded="false" aria-controls="shiftManagment">
+    @php
+        $isShiftSection = request()->routeIs('admin.office-times.*');
+    @endphp
+    <li class="nav-item {{ $isShiftSection ? 'active' : '' }}">
+        <a class="nav-link {{ $isShiftSection ? '' : 'collapsed' }}" data-href="#" data-bs-toggle="collapse" href="#shiftManagement" role="button" aria-expanded="{{ $isShiftSection ? 'true' : 'false' }}" aria-controls="shiftManagement">
             <i class="link-icon" data-feather="watch"></i>
             <span class="link-title"> {{ __('index.shift_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.office-times.*') ?'' : 'collapse'  }} " id="shiftManagement">
+        <div class="collapse {{ $isShiftSection ? 'show' : '' }}" id="shiftManagement">
              <ul class="nav sub-menu">
 
                  @can('list_office_time')

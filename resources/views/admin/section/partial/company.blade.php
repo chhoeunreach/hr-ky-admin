@@ -1,25 +1,21 @@
 @php use App\Helpers\AppHelper; @endphp
 @if(AppHelper::checkSuperAdmin() || auth()->user()?->canAny(['view_company','list_branch','list_department','list_post']))
-    <li class="nav-item  {{
-                           request()->routeIs('admin.company.*') ||
-                           request()->routeIs('admin.branch.*') ||
-                           request()->routeIs('admin.departments.*') ||
-                           request()->routeIs('admin.posts.*')
-                        ? 'active' : ''
-                        }}   ">
-        <a class="nav-link" data-bs-toggle="collapse"
+    @php
+        $isCompanySection = request()->routeIs('admin.company.*') ||
+            request()->routeIs('admin.branch.*') ||
+            request()->routeIs('admin.departments.*') ||
+            request()->routeIs('admin.posts.*');
+    @endphp
+    <li class="nav-item {{ $isCompanySection ? 'active' : '' }}">
+        <a class="nav-link {{ $isCompanySection ? '' : 'collapsed' }}" data-bs-toggle="collapse"
            href="#company_management"
            data-href="#"
-           role="button" aria-expanded="false" aria-controls="company">
+           role="button" aria-expanded="{{ $isCompanySection ? 'true' : 'false' }}" aria-controls="company_management">
             <i class="link-icon" data-feather="align-justify"></i>
             <span class="link-title">{{ __('index.company_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{
-                           request()->routeIs('admin.company.*') ||
-                           request()->routeIs('admin.branch.*') ||
-                           request()->routeIs('admin.departments.*') ||
-                           request()->routeIs('admin.posts.*')   ?'' : 'collapse'  }} " id="company_management">
+        <div class="collapse {{ $isCompanySection ? 'show' : '' }}" id="company_management">
             <ul class="nav sub-menu">
                 @if(AppHelper::checkSuperAdmin())
                     <li class="nav-item">

@@ -7,34 +7,24 @@
     'attendance_setting',
     'list_employee'
 ])
-    <li class="nav-item  {{
-                   request()->routeIs('admin.routers.*') ||
-                   request()->routeIs('admin.qr.*')||
-                   request()->routeIs('admin.face-kiosks.*')||
-                   request()->routeIs('admin.biometric-devices.*')||
-                   request()->routeIs('admin.attendance-settings.*')||
-                   request()->routeIs('admin.nfc.*')
-
-                ? 'active' : ''
-            }}"
-    >
-        <a class="nav-link" data-bs-toggle="collapse"
+    @php
+        $isSettingSection = request()->routeIs('admin.routers.*') ||
+            request()->routeIs('admin.qr.*') ||
+            request()->routeIs('admin.face-kiosks.*') ||
+            request()->routeIs('admin.biometric-devices.*') ||
+            request()->routeIs('admin.attendance-settings.*') ||
+            request()->routeIs('admin.nfc.*');
+    @endphp
+    <li class="nav-item {{ $isSettingSection ? 'active' : '' }}">
+        <a class="nav-link {{ $isSettingSection ? '' : 'collapsed' }}" data-bs-toggle="collapse"
            href="#attendance_method"
            data-href="#"
-           role="button" aria-expanded="false" aria-controls="settings">
+           role="button" aria-expanded="{{ $isSettingSection ? 'true' : 'false' }}" aria-controls="attendance_method">
             <i class="link-icon" data-feather="tool"></i>
             <span class="link-title"> {{ __('index.attendance_methods') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{
-                      request()->routeIs('admin.routers.*') ||
-                      request()->routeIs('admin.qr.*') ||
-                      request()->routeIs('admin.face-kiosks.*') ||
-                      request()->routeIs('admin.biometric-devices.*') ||
-                      request()->routeIs('admin.attendance-settings.*') ||
-                      request()->routeIs('admin.nfc.*')
-
-                       ? '' : 'collapse'  }} " id="attendance_method">
+        <div class="collapse {{ $isSettingSection ? 'show' : '' }}" id="attendance_method">
 
             <ul class="nav sub-menu">
 

@@ -1,57 +1,35 @@
 @canany(['manage_commission_settings','view_monthly_payroll','view_payroll_list','view_tada_list','view_salary_list','view_advance_salary_list','view_tax_report','view_sell_staff_report','salary_component','salary_group','ssf','pf','bonus','salary_tds','advance_salary_limit','overtime_setting','undertime_setting','payment_method'])
-    <li class="nav-item  {{
-                    request()->routeIs('admin.bonus.*') ||
-                request()->routeIs('admin.advance-salaries.*') ||
-                request()->routeIs('admin.employee-salaries.*')||
-                request()->routeIs('admin.payroll.tax-report.*')||
-                request()->routeIs('admin.commission-settings.*')||
-                request()->routeIs('admin.sell-staff-report.*')||
-                request()->routeIs('admin.employee-salary.payroll*')||
-                request()->routeIs('admin.monthly-payroll.*')||
-                request()->routeIs('admin.payroll-queue.*')||
-                 request()->routeIs('admin.salary-components.*') ||
-                      request()->routeIs('admin.payment-methods.*') ||
-                      request()->routeIs('admin.salary-groups.*') ||
-                      request()->routeIs('admin.bonus.*') ||
-                      request()->routeIs('admin.overtime.*')||
-                      request()->routeIs('admin.ssf.*')||
-                      request()->routeIs('admin.pf.*')||
-                      request()->routeIs('admin.under-time.*')||
-                      request()->routeIs('admin.salary-tds.*') ||
-                      request()->routeIs('admin.tadas.*')
-
-                ? 'active' : ''
-            }}"
-    >
-        <a class="nav-link" data-bs-toggle="collapse"
+    @php
+        $isPayrollSection = request()->routeIs('admin.bonus.*') ||
+            request()->routeIs('admin.advance-salaries.*') ||
+            request()->routeIs('admin.employee-salaries.*')||
+            request()->routeIs('admin.payroll.tax-report.*')||
+            request()->routeIs('admin.commission-settings.*')||
+            request()->routeIs('admin.sell-staff-report.*')||
+            request()->routeIs('admin.employee-salary.payroll*')||
+            request()->routeIs('admin.monthly-payroll.*')||
+            request()->routeIs('admin.payroll-queue.*')||
+            request()->routeIs('admin.salary-components.*') ||
+            request()->routeIs('admin.payment-methods.*') ||
+            request()->routeIs('admin.salary-groups.*') ||
+            request()->routeIs('admin.bonus.*') ||
+            request()->routeIs('admin.overtime.*')||
+            request()->routeIs('admin.ssf.*')||
+            request()->routeIs('admin.pf.*')||
+            request()->routeIs('admin.under-time.*')||
+            request()->routeIs('admin.salary-tds.*') ||
+            request()->routeIs('admin.tadas.*');
+    @endphp
+    <li class="nav-item {{ $isPayrollSection ? 'active' : '' }}">
+        <a class="nav-link {{ $isPayrollSection ? '' : 'collapsed' }}" data-bs-toggle="collapse"
            href="#payroll"
            data-href="#"
-           role="button" aria-expanded="false" aria-controls="settings">
+           role="button" aria-expanded="{{ $isPayrollSection ? 'true' : 'false' }}" aria-controls="payroll">
             <i class="link-icon" data-feather="gift"></i>
             <span class="link-title"> {{ __('index.payroll_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{
-                request()->routeIs('admin.bonus.*') ||
-                request()->routeIs('admin.advance-salaries.*') ||
-                request()->routeIs('admin.employee-salaries.*')||
-                request()->routeIs('admin.payroll.tax-report.*')||
-                request()->routeIs('admin.commission-settings.*')||
-                request()->routeIs('admin.sell-staff-report.*')||
-                request()->routeIs('admin.employee-salary.payroll*')||
-                request()->routeIs('admin.monthly-payroll.*')||
-                request()->routeIs('admin.payroll-queue.*')||
-                 request()->routeIs('admin.salary-components.*') ||
-                      request()->routeIs('admin.payment-methods.*') ||
-                      request()->routeIs('admin.salary-groups.*') ||
-                      request()->routeIs('admin.bonus.*') ||
-                      request()->routeIs('admin.overtime.*')||
-                      request()->routeIs('admin.ssf.*')||
-                      request()->routeIs('admin.pf.*')||
-                      request()->routeIs('admin.under-time.*')||
-                      request()->routeIs('admin.salary-tds.*') ||
-                      request()->routeIs('admin.tadas.*')
-               ? '' : 'collapse'  }} " id="payroll">
+        <div class="collapse {{ $isPayrollSection ? 'show' : '' }}" id="payroll">
 
             <ul class="nav sub-menu">
                 @can('view_monthly_payroll')

@@ -1,36 +1,28 @@
 @canany(['list_employee','d_card_print','employee.profile.view','employee.performance.create','view_employee_chat','list_logout_request'])
-    <li class="nav-item  {{
-                           (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
-                           request()->routeIs('admin.employee.log') ||
-                           request()->routeIs('admin.staff-evaluations.*') ||
-                           request()->routeIs('admin.live-map*') ||
-                           request()->routeIs('admin.d-card-print*') ||
-                           request()->routeIs('admin.employee-chat*') ||
-                           request()->routeIs('admin.telegram-employees.*') ||
-                           request()->routeIs('admin.logout-requests.*')
-                        ? 'active' : ''
-                        }}   ">
+    @php
+        $isEmployeeSection = (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
+            request()->routeIs('admin.employee.log') ||
+            request()->routeIs('admin.staff-evaluations.*') ||
+            request()->routeIs('admin.live-map*') ||
+            request()->routeIs('admin.d-card-print*') ||
+            request()->routeIs('admin.employee-chat*') ||
+            request()->routeIs('admin.telegram-employees.*') ||
+            request()->routeIs('admin.logout-requests.*');
+    @endphp
+    <li class="nav-item {{ $isEmployeeSection ? 'active' : '' }}">
         <a data-href="#"
-           class="nav-link"
+           class="nav-link {{ $isEmployeeSection ? '' : 'collapsed' }}"
            data-bs-toggle="collapse"
            href="#employee_management"
            role="button"
-           aria-expanded="false"
-           aria-controls="company">
+           aria-expanded="{{ $isEmployeeSection ? 'true' : 'false' }}"
+           aria-controls="employee_management">
             <i class="link-icon" data-feather="users"></i>
             <span class="link-title">{{ __('index.employee_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
 
-        <div class="{{
-                         (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
-                         request()->routeIs('admin.employee.log') ||
-                         request()->routeIs('admin.staff-evaluations.*') ||
-                         request()->routeIs('admin.live-map*') ||
-                         request()->routeIs('admin.d-card-print*') ||
-                         request()->routeIs('admin.employee-chat*') ||
-                         request()->routeIs('admin.telegram-employees.*') ||
-                         request()->routeIs('admin.logout-requests.*') ? '' : 'collapse'  }}"  id="employee_management">
+        <div class="collapse {{ $isEmployeeSection ? 'show' : '' }}" id="employee_management">
             <ul class="nav sub-menu">
                 @can('list_employee')
                     <li class="nav-item">

@@ -4,7 +4,7 @@
         $isEmployeeJoin = request()->routeIs('admin.team-meetings.employee-join');
     @endphp
     <li class="nav-item {{ $isTeamMeetingSection ? 'active' : '' }}">
-        <a class="nav-link"
+        <a class="nav-link {{ $isTeamMeetingSection ? '' : 'collapsed' }}"
            data-bs-toggle="collapse"
            href="#teamMeetingMenu"
            data-href="#"
@@ -15,7 +15,7 @@
             <span class="link-title">{{ __('index.team_meeting') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ $isTeamMeetingSection ? '' : 'collapse' }}" id="teamMeetingMenu">
+        <div class="collapse {{ $isTeamMeetingSection ? 'show' : '' }}" id="teamMeetingMenu">
             <ul class="nav sub-menu">
                 @can('list_team_meeting')
                     <li class="nav-item">

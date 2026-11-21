@@ -1,16 +1,17 @@
 @php use App\Helpers\AppHelper; @endphp
 @if(AppHelper::checkSuperAdmin() || auth('admin')->check() || auth()->check())
-    <li class="nav-item {{ request()->routeIs('admin.company-documents.*') ? 'active' : '' }}">
-        <a class="nav-link" data-bs-toggle="collapse"
+    @php $isDocSection = request()->routeIs('admin.company-documents.*'); @endphp
+    <li class="nav-item {{ $isDocSection ? 'active' : '' }}">
+        <a class="nav-link {{ $isDocSection ? '' : 'collapsed' }}" data-bs-toggle="collapse"
            href="#company_documents_menu"
            role="button"
-           aria-expanded="{{ request()->routeIs('admin.company-documents.*') ? 'true' : 'false' }}"
+           aria-expanded="{{ $isDocSection ? 'true' : 'false' }}"
            aria-controls="company_documents_menu">
             <i class="link-icon" data-feather="folder"></i>
             <span class="link-title">{{ __('index.company_documents') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.company-documents.*') ? '' : 'collapse' }}" id="company_documents_menu">
+        <div class="collapse {{ $isDocSection ? 'show' : '' }}" id="company_documents_menu">
             <ul class="nav sub-menu">
                 <li class="nav-item">
                     <a href="{{ route('admin.company-documents.index') }}"

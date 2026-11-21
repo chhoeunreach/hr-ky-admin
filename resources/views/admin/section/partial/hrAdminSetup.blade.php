@@ -1,16 +1,17 @@
 @canany(['award_type_list','award_list','termination_type_list','list_termination','list_resignation','list_warning','list_complaint','list_promotion','list_transfer','list_holiday'])
-    <li class="nav-item {{ request()->routeIs('admin.award-types.*') || request()->routeIs('admin.awards.*') || request()->routeIs('admin.holidays.*') || request()->routeIs('admin.termination-types.*')
- || request()->routeIs('admin.termination.*') || request()->routeIs('admin.resignation.*') || request()->routeIs('admin.warning.*') || request()->routeIs('admin.complaint.*')|| request()->routeIs('admin.promotion.*')
-                      || request()->routeIs('admin.transfer.*')  ? 'active' : '' }} ">
-        <a class="nav-link" data-bs-toggle="collapse" href="#awards" data-href="#" role="button" aria-expanded="false"
+    @php
+        $isHrAdminSection = request()->routeIs('admin.award-types.*') || request()->routeIs('admin.awards.*') || request()->routeIs('admin.holidays.*') || request()->routeIs('admin.termination-types.*')
+            || request()->routeIs('admin.termination.*') || request()->routeIs('admin.resignation.*') || request()->routeIs('admin.warning.*') || request()->routeIs('admin.complaint.*')|| request()->routeIs('admin.promotion.*')
+            || request()->routeIs('admin.transfer.*');
+    @endphp
+    <li class="nav-item {{ $isHrAdminSection ? 'active' : '' }} ">
+        <a class="nav-link {{ $isHrAdminSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#awards" data-href="#" role="button" aria-expanded="{{ $isHrAdminSection ? 'true' : 'false' }}"
            aria-controls="awards">
             <i class="link-icon" data-feather="user-plus"></i>
             <span class="link-title">{{ __('index.hr_admin_setup') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.award-types.*') || request()->routeIs('admin.awards.*') || request()->routeIs('admin.holidays.*') || request()->routeIs('admin.termination-types.*')
- || request()->routeIs('admin.termination.*') || request()->routeIs('admin.resignation.*') || request()->routeIs('admin.warning.*') || request()->routeIs('admin.complaint.*')|| request()->routeIs('admin.promotion.*')
-                || request()->routeIs('admin.transfer.*')   ?'' : 'collapse'  }}" id="awards">
+        <div class="collapse {{ $isHrAdminSection ? 'show' : '' }}" id="awards">
             <ul class="nav sub-menu">
                 @can('award_list')
                     <li class="nav-item {{ request()->routeIs('admin.awards.*') || request()->routeIs('admin.award-types.*')

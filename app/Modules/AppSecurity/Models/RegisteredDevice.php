@@ -34,6 +34,11 @@ class RegisteredDevice extends Model
         return $this->belongsTo(\App\Models\User::class);
     }
 
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Admin::class, 'approved_by');
+    }
+
     public function attestations()
     {
         return $this->hasMany(DeviceAttestation::class, 'device_id');
@@ -47,5 +52,22 @@ class RegisteredDevice extends Model
     public function riskScores()
     {
         return $this->hasMany(DeviceRiskScore::class, 'device_id');
+    }
+
+    public function sessions()
+    {
+        return $this->hasMany(SecuritySession::class, 'device_id');
+    }
+
+    public function activeSessions()
+    {
+        return $this->hasMany(SecuritySession::class, 'device_id')
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now());
+    }
+
+    public function securityLogs()
+    {
+        return $this->hasMany(SecurityLog::class, 'device_id');
     }
 }

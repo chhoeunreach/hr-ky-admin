@@ -34,26 +34,107 @@ class AppSecurityAdminController extends Controller
         if ($supportOnly) $deviceQuery->where('user_type', 'customer');
         elseif ($staffApprovalOnly) $deviceQuery->where('user_type', 'staff');
         $query = RegisteredDevice::query()->with([
-            'user:id,name,username,role_id',
+            'user:id,name,username,email,phone,avatar,role_id',
             'user.role:id,name,slug',
+            'approver:id,name,username,email',
             'attestations:id,device_id,verification_status,security_level,verification_summary,verified_at,created_at',
             'latestRiskScore',
+        ])->withCount([
+            'sessions',
+            'sessions as active_sessions_count' => fn ($q) => $q->whereNull('revoked_at')->where('expires_at', '>', now()),
         ]);
+
         if ($request->filled('status')) {
-            $query->where('device_status', $request->string('status')->toString());
+            $statusVal = $request->string('status')->toString();
+            if ($statusVal === 'blocked') {
+                $query->where(fn ($q) => $q->where('device_status', 'blocked')->orWhereNotNull('blocked_at'));
+            } elseif ($statusVal === 'revoked') {
+                $query->where(fn ($q) => $q->where('device_status', 'revoked')->orWhereNotNull('revoked_at'));
+            } elseif ($statusVal === 'approved') {
+                $query->where('device_status', 'approved')->whereNull('blocked_at')->whereNull('revoked_at');
+            } else {
+                $query->where('device_status', $statusVal);
+            }
         }
+
+        if ($request->filled('user_type')) {
+            $query->where('user_type', $request->string('user_type')->toString());
+        }
+
+        if ($request->filled('attestation_level')) {
+            $attVal = strtolower($request->string('attestation_level')->toString());
+            if (in_array($attVal, ['none', 'unverified'], true)) {
+                $query->where(fn ($q) => $q->whereNull('attestation_level')->orWhereIn('attestation_level', ['none', 'unverified', '']));
+            } else {
+                $query->where('attestation_level', $attVal);
+            }
+        }
+
+        if ($request->filled('risk_level')) {
+            $riskVal = $request->string('risk_level')->toString();
+            $reviewThreshold = (int) $policy->value('risk_review_threshold');
+            $blockThreshold = (int) $policy->value('risk_block_threshold');
+            if ($riskVal === 'high') {
+                $query->where('risk_score', '>=', $blockThreshold ?: 60);
+            } elseif ($riskVal === 'medium') {
+                $query->whereBetween('risk_score', [$reviewThreshold ?: 25, ($blockThreshold ?: 60) - 1]);
+            } elseif ($riskVal === 'low') {
+                $query->where('risk_score', '<', $reviewThreshold ?: 25);
+            }
+        }
+
+        if ($request->filled('activity')) {
+            $actVal = $request->string('activity')->toString();
+            if ($actVal === 'online') {
+                $query->where('last_seen_at', '>=', now()->subHour());
+            } elseif ($actVal === 'today') {
+                $query->where('last_seen_at', '>=', now()->subHours(24));
+            } elseif ($actVal === 'week') {
+                $query->where('last_seen_at', '>=', now()->subDays(7));
+            } elseif ($actVal === 'inactive') {
+                $query->where(fn ($q) => $q->whereNull('last_seen_at')->orWhere('last_seen_at', '<', now()->subDays(7)));
+            }
+        }
+
         if ($supportOnly) $query->where('user_type', 'customer');
         elseif ($staffApprovalOnly) $query->where('user_type', 'staff');
+
         if ($request->filled('q')) {
             $needle = '%' . addcslashes($request->string('q')->toString(), '%_') . '%';
             $query->where(function ($devices) use ($needle): void {
                 $devices->where('uuid', 'like', $needle)
                     ->orWhere('installation_uuid', 'like', $needle)
                     ->orWhere('device_model', 'like', $needle)
-                    ->orWhereHas('user', fn ($users) => $users->where('name', 'like', $needle)->orWhere('username', 'like', $needle));
+                    ->orWhere('package_name', 'like', $needle)
+                    ->orWhere('public_key_fingerprint', 'like', $needle)
+                    ->orWhere('signing_sha256', 'like', $needle)
+                    ->orWhere('version_name', 'like', $needle)
+                    ->orWhereHas('user', function ($users) use ($needle): void {
+                        $users->where('name', 'like', $needle)
+                            ->orWhere('username', 'like', $needle)
+                            ->orWhere('email', 'like', $needle)
+                            ->orWhere('phone', 'like', $needle);
+                    });
             });
         }
-        $devices = $query->latest('registered_at')->paginate(25)->withQueryString();
+
+        $sortBy = $request->string('sort_by', 'last_seen')->toString();
+        $sortDir = strtolower($request->string('sort_dir', 'desc')->toString()) === 'asc' ? 'asc' : 'desc';
+
+        match ($sortBy) {
+            'registered' => $query->orderBy('registered_at', $sortDir),
+            'risk_score' => $query->orderBy('risk_score', $sortDir),
+            'model' => $query->orderBy('device_model', $sortDir),
+            'status' => $query->orderBy('device_status', $sortDir),
+            default => $query->orderByRaw("CASE WHEN last_seen_at IS NULL THEN 1 ELSE 0 END, last_seen_at {$sortDir}"),
+        };
+
+        $perPage = (int) $request->input('per_page', 25);
+        if (!in_array($perPage, [15, 25, 50, 100], true)) {
+            $perPage = 25;
+        }
+
+        $devices = $query->paginate($perPage)->withQueryString();
         $devices->getCollection()->each(function (RegisteredDevice $device) use ($supportOnly): void {
             $device->makeHidden(['public_key']);
             if ($supportOnly) {
@@ -68,11 +149,14 @@ class AppSecurityAdminController extends Controller
             'analytics' => $analytics,
             'canViewAnalytics' => $canViewAnalytics,
             'counts' => [
+                'total' => (clone $deviceQuery)->count(),
                 'pending' => (clone $deviceQuery)->where('device_status', 'pending')->count(),
-                'approved' => (clone $deviceQuery)->where('device_status', 'approved')->whereNull('revoked_at')->count(),
-                'blocked' => (clone $deviceQuery)->where('device_status', 'blocked')->count(),
-                'revoked' => (clone $deviceQuery)->where('device_status', 'revoked')->count(),
-                'high_risk' => (clone $deviceQuery)->where('risk_score', '>=', $policy->value('risk_block_threshold'))->count(),
+                'approved' => (clone $deviceQuery)->where('device_status', 'approved')->whereNull('revoked_at')->whereNull('blocked_at')->count(),
+                'blocked' => (clone $deviceQuery)->where(fn ($q) => $q->where('device_status', 'blocked')->orWhereNotNull('blocked_at'))->count(),
+                'revoked' => (clone $deviceQuery)->where(fn ($q) => $q->where('device_status', 'revoked')->orWhereNotNull('revoked_at'))->count(),
+                'high_risk' => (clone $deviceQuery)->where('risk_score', '>=', (int) $policy->value('risk_block_threshold'))->count(),
+                'online' => (clone $deviceQuery)->where('last_seen_at', '>=', now()->subHours(24))->count(),
+                'attested' => (clone $deviceQuery)->whereIn('attestation_level', ['strongbox', 'tee'])->count(),
             ],
             'release' => $supportOnly ? null : \App\Modules\AppSecurity\Models\SecurityRelease::query()
                 ->where('release_status', 'active')->orderByDesc('version_code')->first(),

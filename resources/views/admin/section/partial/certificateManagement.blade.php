@@ -1,11 +1,14 @@
 @canany(['certificate_list', 'certificate_create', 'certificate_edit', 'certificate_delete', 'certificate_studio'])
-<li class="nav-item {{ request()->routeIs('admin.certificates.*') || request()->routeIs('certificates.*') ? 'active' : '' }}">
-    <a class="nav-link" data-bs-toggle="collapse" href="#certificateManagement" role="button" aria-expanded="{{ request()->routeIs('admin.certificates.*') || request()->routeIs('certificates.*') ? 'true' : 'false' }}" aria-controls="certificateManagement">
+@php
+    $isCertSection = request()->routeIs('admin.certificates.*') || request()->routeIs('certificates.*');
+@endphp
+<li class="nav-item {{ $isCertSection ? 'active' : '' }}">
+    <a class="nav-link {{ $isCertSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#certificateManagement" role="button" aria-expanded="{{ $isCertSection ? 'true' : 'false' }}" aria-controls="certificateManagement">
         <i class="link-icon" data-feather="award"></i>
         <span class="link-title"> {{ __('index.certificate_management') }} </span>
         <i class="link-arrow" data-feather="chevron-down"></i>
     </a>
-    <div class="{{ request()->routeIs('admin.certificates.*') || request()->routeIs('certificates.*') ? '' : 'collapse' }}" id="certificateManagement">
+    <div class="collapse {{ $isCertSection ? 'show' : '' }}" id="certificateManagement">
         <ul class="nav sub-menu">
             @can('certificate_list')
             <li class="nav-item">

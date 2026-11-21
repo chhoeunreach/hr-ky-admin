@@ -5,7 +5,7 @@
     @endphp
     <li class="nav-item {{ $isAttendanceSection ? 'active' : '' }}">
         <a data-href="#"
-           class="nav-link"
+           class="nav-link {{ $isAttendanceSection ? '' : 'collapsed' }}"
            data-bs-toggle="collapse"
            href="#attendance_management"
            role="button"
@@ -16,7 +16,7 @@
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
 
-        <div class="{{ $isAttendanceSection ? '' : 'collapse' }}" id="attendance_management">
+        <div class="collapse {{ $isAttendanceSection ? 'show' : '' }}" id="attendance_management">
             <ul class="nav sub-menu">
 
                 <li class="nav-item">

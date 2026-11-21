@@ -79,19 +79,19 @@
     <div class="row g-3 mb-4">
         @php
             $kpiCards = [
-                ['key' => 'pending', 'label' => __('app_security.pending_devices'), 'val' => $counts['pending'], 'cls' => 'kpi-pending', 'icon' => 'fa-solid fa-clock-rotate-left', 'badge' => 'Attention', 'badgeCls' => 'bg-warning text-dark', 'status' => 'pending'],
-                ['key' => 'approved', 'label' => __('app_security.approved_devices'), 'val' => $counts['approved'], 'cls' => 'kpi-approved', 'icon' => 'fa-solid fa-shield-check', 'badge' => 'Active', 'badgeCls' => 'bg-success text-white', 'status' => 'approved'],
-                ['key' => 'blocked', 'label' => __('app_security.blocked_devices'), 'val' => $counts['blocked'], 'cls' => 'kpi-blocked', 'icon' => 'fa-solid fa-ban', 'badge' => 'Restricted', 'badgeCls' => 'bg-danger text-white', 'status' => 'blocked'],
-                ['key' => 'revoked', 'label' => __('app_security.revoked_devices'), 'val' => $counts['revoked'], 'cls' => 'kpi-revoked', 'icon' => 'fa-solid fa-trash-can', 'badge' => 'Retired', 'badgeCls' => 'bg-secondary text-white', 'status' => 'revoked'],
+                ['key' => 'pending', 'label' => __('app_security.pending_devices'), 'val' => $counts['pending'], 'cls' => 'kpi-pending', 'icon' => 'fa-solid fa-clock-rotate-left', 'badge' => 'Attention', 'badgeCls' => 'bg-warning text-dark', 'status' => 'pending', 'paramKey' => 'status', 'paramVal' => 'pending'],
+                ['key' => 'approved', 'label' => __('app_security.approved_devices'), 'val' => $counts['approved'], 'cls' => 'kpi-approved', 'icon' => 'fa-solid fa-shield-check', 'badge' => 'Active', 'badgeCls' => 'bg-success text-white', 'status' => 'approved', 'paramKey' => 'status', 'paramVal' => 'approved'],
+                ['key' => 'blocked', 'label' => __('app_security.blocked_devices'), 'val' => $counts['blocked'], 'cls' => 'kpi-blocked', 'icon' => 'fa-solid fa-ban', 'badge' => 'Restricted', 'badgeCls' => 'bg-danger text-white', 'status' => 'blocked', 'paramKey' => 'status', 'paramVal' => 'blocked'],
+                ['key' => 'revoked', 'label' => __('app_security.revoked_devices'), 'val' => $counts['revoked'], 'cls' => 'kpi-revoked', 'icon' => 'fa-solid fa-trash-can', 'badge' => 'Retired', 'badgeCls' => 'bg-secondary text-white', 'status' => 'revoked', 'paramKey' => 'status', 'paramVal' => 'revoked'],
             ];
             if (!$supportOnly) {
-                $kpiCards[] = ['key' => 'high_risk', 'label' => __('app_security.high_risk_devices'), 'val' => $counts['high_risk'], 'cls' => 'kpi-highrisk', 'icon' => 'fa-solid fa-fire-flame-curved', 'badge' => 'Critical', 'badgeCls' => 'bg-danger text-white', 'status' => ''];
+                $kpiCards[] = ['key' => 'high_risk', 'label' => __('app_security.high_risk_devices'), 'val' => $counts['high_risk'], 'cls' => 'kpi-highrisk', 'icon' => 'fa-solid fa-fire-flame-curved', 'badge' => 'Critical', 'badgeCls' => 'bg-danger text-white', 'status' => '', 'paramKey' => 'risk_level', 'paramVal' => 'high'];
             }
         @endphp
 
         @foreach($kpiCards as $kpi)
             <div class="col-6 col-md-4 col-xl">
-                <div class="security-kpi-card {{ $kpi['cls'] }}" onclick="filterByStatus('{{ $kpi['status'] }}')">
+                <div class="security-kpi-card {{ $kpi['cls'] }}" onclick="filterByStatus('{{ $kpi['status'] }}', '{{ $kpi['paramKey'] ?? '' }}', '{{ $kpi['paramVal'] ?? '' }}')">
                     <span class="badge {{ $kpi['badgeCls'] }} kpi-badge">{{ $kpi['badge'] }}</span>
                     <div class="kpi-icon-wrap">
                         <i class="{{ $kpi['icon'] }}"></i>
@@ -164,117 +164,418 @@
              ========================================== --}}
         <div class="tab-pane fade show active" id="tab-pane-devices" role="tabpanel" aria-labelledby="tab-btn-devices">
             <div class="security-panel-card">
-                <div class="panel-header">
-                    <h5 class="panel-title">
-                        <i class="fa-solid fa-mobile-screen-button text-primary"></i>
-                        <span>{{ __('app_security.registered_devices') }}</span>
-                    </h5>
-                    {{-- Filter Form --}}
-                    <form method="get" action="{{ route('admin.app-security.index') }}" id="deviceFilterForm" class="d-flex flex-wrap gap-2 align-items-center">
-                        <div class="input-group input-group-sm" style="max-width: 280px;">
-                            <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            <input name="q" value="{{ request('q') }}" class="form-control border-start-0 ps-0" placeholder="{{ __('app_security.search_placeholder') }}">
+                {{-- Panel Header with Fleet Summary Telemetry --}}
+                <div class="panel-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon-wrap" style="width: 44px; height: 44px; font-size: 20px; border-radius: 12px; background: rgba(29, 78, 216, 0.1); color: var(--sec-primary);">
+                            <i class="fa-solid fa-mobile-screen-button"></i>
                         </div>
+                        <div>
+                            <h5 class="panel-title mb-0">
+                                <span>{{ __('app_security.registered_devices') }}</span>
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill fs-6 px-3 ms-2">
+                                    {{ number_format($devices->total()) }} {{ __('app_security.installations') }}
+                                </span>
+                            </h5>
+                            <div class="text-muted small mt-1">
+                                Zero-trust inventory of all mobile devices connected via cryptographic API verification
+                            </div>
+                        </div>
+                    </div>
 
-                        <select name="status" id="filterStatusSelect" class="form-select form-select-sm" style="width: auto;">
-                            <option value="">{{ __('app_security.all_statuses') }}</option>
-                            @foreach(['pending' => __('app_security.status_pending'), 'approved' => __('app_security.status_approved'), 'blocked' => __('app_security.status_blocked'), 'rejected' => __('app_security.status_rejected'), 'revoked' => __('app_security.status_revoked'), 're_registration_required' => __('app_security.status_re_registration')] as $statusKey => $statusLabel)
-                                <option value="{{ $statusKey }}" @selected(request('status') === $statusKey)>{{ $statusLabel }}</option>
-                            @endforeach
-                        </select>
-
-                        <button class="btn btn-primary btn-sm px-3 rounded-pill" type="submit">
-                            <i class="fa-solid fa-filter me-1"></i> {{ __('app_security.filter_button') }}
-                        </button>
-                        @if(request()->filled('q') || request()->filled('status'))
-                            <a href="{{ route('admin.app-security.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
-                                <i class="fa-solid fa-rotate-left me-1"></i> {{ __('app_security.reset_filter') }}
-                            </a>
+                    {{-- Fleet Telemetry Status Summary --}}
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill" title="Devices with active heartbeat in the last 24 hours">
+                            <span class="conn-pulse-dot online me-1"></span>
+                            <strong>{{ number_format($counts['online']) }}</strong> {{ __('app_security.chip_online') }}
+                        </span>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-2 rounded-pill" title="Hardware backed keys verified with StrongBox or TEE Keystore">
+                            <i class="fa-solid fa-shield-halved me-1"></i>
+                            <strong>{{ number_format($counts['attested']) }}</strong> {{ __('app_security.chip_attested') }}
+                        </span>
+                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill" title="Devices awaiting administrator approval">
+                            <i class="fa-solid fa-clock-rotate-left me-1"></i>
+                            <strong>{{ number_format($counts['pending']) }}</strong> {{ __('app_security.status_pending') }}
+                        </span>
+                        @if(($counts['blocked'] + $counts['high_risk']) > 0)
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill" title="Blocked access or high risk security score flagged">
+                                <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                <strong>{{ number_format($counts['blocked'] + $counts['high_risk']) }}</strong> {{ __('app_security.chip_high_risk') }}
+                            </span>
                         @endif
+                    </div>
+                </div>
+
+                {{-- Toolbar & Filter Section --}}
+                <div class="fleet-toolbar-wrapper">
+                    {{-- 1. Quick Filter Chips Bar --}}
+                    @php
+                        $isAllActive = !request()->anyFilled(['status', 'user_type', 'attestation_level', 'risk_level', 'activity']);
+                    @endphp
+                    <div class="fleet-quick-chips">
+                        <span class="text-muted small fw-bold text-uppercase me-2" style="font-size: 11px; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-bolt me-1 text-primary"></i> Quick Views:
+                        </span>
+
+                        <a href="{{ route('admin.app-security.index') }}" class="fleet-chip {{ $isAllActive ? 'active' : '' }}">
+                            <i class="fa-solid fa-layer-group"></i> {{ __('app_security.chip_all') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['total'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['status' => 'pending']) }}" class="fleet-chip {{ request('status') === 'pending' ? 'active' : '' }}">
+                            <span class="chip-dot bg-warning"></span> {{ __('app_security.chip_pending') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['pending'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['status' => 'approved']) }}" class="fleet-chip {{ request('status') === 'approved' ? 'active' : '' }}">
+                            <span class="chip-dot bg-success"></span> {{ __('app_security.chip_approved') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['approved'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['activity' => 'today']) }}" class="fleet-chip {{ request('activity') === 'today' ? 'active' : '' }}">
+                            <span class="conn-pulse-dot online me-1"></span> {{ __('app_security.chip_online') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['online'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['risk_level' => 'high']) }}" class="fleet-chip {{ request('risk_level') === 'high' ? 'active' : '' }}">
+                            <i class="fa-solid fa-fire text-danger"></i> {{ __('app_security.chip_high_risk') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['high_risk'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['attestation_level' => 'strongbox']) }}" class="fleet-chip {{ request('attestation_level') === 'strongbox' ? 'active' : '' }}">
+                            <i class="fa-solid fa-shield-halved text-info"></i> {{ __('app_security.chip_attested') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['attested'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['status' => 'blocked']) }}" class="fleet-chip {{ request('status') === 'blocked' ? 'active' : '' }}">
+                            <i class="fa-solid fa-ban text-danger"></i> {{ __('app_security.chip_blocked') }}
+                            <span class="badge bg-light text-dark rounded-pill ms-1">{{ $counts['blocked'] }}</span>
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['user_type' => 'staff']) }}" class="fleet-chip {{ request('user_type') === 'staff' ? 'active' : '' }}">
+                            <i class="fa-solid fa-user-tie text-primary"></i> Staff
+                        </a>
+
+                        <a href="{{ route('admin.app-security.index', ['user_type' => 'customer']) }}" class="fleet-chip {{ request('user_type') === 'customer' ? 'active' : '' }}">
+                            <i class="fa-solid fa-users text-purple"></i> Customer
+                        </a>
+                    </div>
+
+                    {{-- 2. Advanced Multi-Field Filter Form --}}
+                    <form method="get" action="{{ route('admin.app-security.index') }}" id="deviceFilterForm">
+                        <div class="fleet-filter-grid">
+                            {{-- Multi-Attribute Search Input --}}
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" name="q" id="fleetSearchInput" value="{{ request('q') }}" class="form-control border-start-0 border-end-0 ps-0" placeholder="{{ __('app_security.search_placeholder') }}">
+                                @if(request()->filled('q'))
+                                    <button type="button" class="btn btn-sm btn-outline-secondary border-start-0" onclick="document.getElementById('fleetSearchInput').value=''; document.getElementById('deviceFilterForm').submit();" title="Clear search text">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                @endif
+                            </div>
+
+                            {{-- Status Filter --}}
+                            <select name="status" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                <option value="">{{ __('app_security.all_statuses') }}</option>
+                                @foreach(['pending' => __('app_security.status_pending'), 'approved' => __('app_security.status_approved'), 'blocked' => __('app_security.status_blocked'), 'rejected' => __('app_security.status_rejected'), 'revoked' => __('app_security.status_revoked'), 're_registration_required' => __('app_security.status_re_registration')] as $statusKey => $statusLabel)
+                                    <option value="{{ $statusKey }}" @selected(request('status') === $statusKey)>{{ $statusLabel }}</option>
+                                @endforeach
+                            </select>
+
+                            {{-- User Type Filter --}}
+                            <select name="user_type" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                <option value="">{{ __('app_security.all_user_types') }}</option>
+                                <option value="staff" @selected(request('user_type') === 'staff')>{{ __('app_security.type_staff') }}</option>
+                                <option value="customer" @selected(request('user_type') === 'customer')>{{ __('app_security.type_customer') }}</option>
+                                <option value="admin" @selected(request('user_type') === 'admin')>{{ __('app_security.type_admin') }}</option>
+                            </select>
+
+                            {{-- Hardware Attestation Level Filter --}}
+                            @unless($supportOnly)
+                                <select name="attestation_level" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                    <option value="">{{ __('app_security.all_attestation') }}</option>
+                                    <option value="strongbox" @selected(request('attestation_level') === 'strongbox')>{{ __('app_security.attestation_strongbox') }}</option>
+                                    <option value="tee" @selected(request('attestation_level') === 'tee')>{{ __('app_security.attestation_tee') }}</option>
+                                    <option value="basic" @selected(request('attestation_level') === 'basic')>{{ __('app_security.attestation_basic') }}</option>
+                                    <option value="none" @selected(request('attestation_level') === 'none')>{{ __('app_security.attestation_none') }}</option>
+                                </select>
+                            @endunless
+
+                            {{-- Risk Severity Level Filter --}}
+                            @unless($supportOnly)
+                                <select name="risk_level" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                    <option value="">{{ __('app_security.all_risk_levels') }}</option>
+                                    <option value="low" @selected(request('risk_level') === 'low')>{{ __('app_security.risk_low') }}</option>
+                                    <option value="medium" @selected(request('risk_level') === 'medium')>{{ __('app_security.risk_medium') }}</option>
+                                    <option value="high" @selected(request('risk_level') === 'high')>{{ __('app_security.risk_high') }}</option>
+                                </select>
+                            @endunless
+
+                            {{-- Connection Activity Filter --}}
+                            <select name="activity" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                <option value="">{{ __('app_security.all_activity') }}</option>
+                                <option value="online" @selected(request('activity') === 'online')>{{ __('app_security.activity_online') }}</option>
+                                <option value="today" @selected(request('activity') === 'today')>{{ __('app_security.activity_today') }}</option>
+                                <option value="week" @selected(request('activity') === 'week')>{{ __('app_security.activity_week') }}</option>
+                                <option value="inactive" @selected(request('activity') === 'inactive')>{{ __('app_security.activity_inactive') }}</option>
+                            </select>
+
+                            {{-- Sorting Dropdown --}}
+                            <select name="sort_by" class="form-select form-select-sm" onchange="document.getElementById('deviceFilterForm').submit()">
+                                <option value="last_seen" @selected(request('sort_by', 'last_seen') === 'last_seen')>{{ __('app_security.sort_last_seen_desc') }}</option>
+                                <option value="registered" @selected(request('sort_by') === 'registered')>{{ __('app_security.sort_registered_desc') }}</option>
+                                <option value="risk_score" @selected(request('sort_by') === 'risk_score')>{{ __('app_security.sort_risk_desc') }}</option>
+                                <option value="model" @selected(request('sort_by') === 'model')>{{ __('app_security.sort_model_asc') }}</option>
+                            </select>
+
+                            {{-- Items Per Page --}}
+                            <select name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="document.getElementById('deviceFilterForm').submit()">
+                                @foreach([15, 25, 50, 100] as $limit)
+                                    <option value="{{ $limit }}" @selected((int)request('per_page', 25) === $limit)>{{ $limit }} / page</option>
+                                @endforeach
+                            </select>
+
+                            {{-- Action Buttons --}}
+                            <div class="d-flex align-items-center gap-2">
+                                <button class="btn btn-primary btn-sm px-3 rounded-pill" type="submit">
+                                    <i class="fa-solid fa-filter me-1"></i> {{ __('app_security.filter_button') }}
+                                </button>
+                                @if(request()->anyFilled(['q', 'status', 'user_type', 'attestation_level', 'risk_level', 'activity', 'sort_by', 'per_page']))
+                                    <a href="{{ route('admin.app-security.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3" title="Clear all active filters">
+                                        <i class="fa-solid fa-rotate-left me-1"></i> {{ __('app_security.reset_filter') }}
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
                     </form>
                 </div>
 
+                {{-- Full-Information Device Fleet Table --}}
                 <div class="table-responsive">
                     <table class="table security-table align-middle">
                         <thead>
                             <tr>
                                 <th>{{ __('app_security.user') }}</th>
-                                <th>{{ __('app_security.type') }}</th>
+                                <th>{{ __('app_security.device_info') }}</th>
+                                <th>{{ __('app_security.last_seen') }}</th>
                                 @unless($supportOnly)
-                                    <th>{{ __('app_security.device_info') }}</th>
                                     <th>{{ __('app_security.release') }}</th>
                                     <th>{{ __('app_security.trust_attestation') }}</th>
                                 @endunless
                                 <th>{{ __('app_security.status') }}</th>
-                                <th>{{ __('app_security.last_seen') }}</th>
                                 <th class="text-end">{{ __('app_security.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
                         @forelse($devices as $device)
+                            @php
+                                // Connection status calculation
+                                $lastSeenMinutes = $device->last_seen_at ? $device->last_seen_at->diffInMinutes(now()) : null;
+                                if ($lastSeenMinutes === null) {
+                                    $connStatus = 'offline';
+                                    $connLabel = 'Never Connected';
+                                } elseif ($lastSeenMinutes <= 60) {
+                                    $connStatus = 'online';
+                                    $connLabel = 'Online Now';
+                                } elseif ($lastSeenMinutes <= 1440) {
+                                    $connStatus = 'today';
+                                    $connLabel = 'Active Today';
+                                } elseif ($lastSeenMinutes <= 10080) {
+                                    $connStatus = 'week';
+                                    $connLabel = 'Active This Week';
+                                } else {
+                                    $connStatus = 'offline';
+                                    $connLabel = 'Offline';
+                                }
+
+                                // User type badge
+                                $typeBadge = match($device->user_type) {
+                                    'staff' => 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
+                                    'admin' => 'bg-purple bg-opacity-10 text-purple border border-purple border-opacity-25',
+                                    default => 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'
+                                };
+
+                                // Attestation badge
+                                $attChip = match(strtolower($device->attestation_level ?? 'none')) {
+                                    'strongbox' => ['class' => 'chip-strongbox', 'icon' => 'fa-solid fa-shield-halved', 'label' => 'StrongBox'],
+                                    'tee' => ['class' => 'chip-tee', 'icon' => 'fa-solid fa-microchip', 'label' => 'TEE Hardware'],
+                                    'basic' => ['class' => 'chip-basic', 'icon' => 'fa-solid fa-certificate', 'label' => 'Basic Keystore'],
+                                    default => ['class' => 'chip-failed', 'icon' => 'fa-solid fa-triangle-exclamation', 'label' => ucfirst($device->attestation_level ?: 'Unverified')]
+                                };
+
+                                // Risk meter
+                                $score = (int) $device->risk_score;
+                                $riskLevel = $score >= 60 ? 'risk-high' : ($score >= 25 ? 'risk-medium' : 'risk-low');
+                                $riskColor = $score >= 60 ? 'text-danger' : ($score >= 25 ? 'text-warning' : 'text-success');
+
+                                // Status badge
+                                $statusClass = 'status-pending';
+                                if ($device->device_status === 'approved' && !$device->blocked_at && !$device->revoked_at) {
+                                    $statusClass = 'status-approved';
+                                } elseif ($device->device_status === 'blocked' || $device->blocked_at) {
+                                    $statusClass = 'status-blocked';
+                                } elseif ($device->device_status === 'revoked' || $device->revoked_at) {
+                                    $statusClass = 'status-revoked';
+                                } elseif ($device->device_status === 're_registration_required') {
+                                    $statusClass = 'status-re_registration_required';
+                                } elseif ($device->device_status === 'rejected') {
+                                    $statusClass = 'status-rejected';
+                                }
+                                $displayStatus = ($device->device_status === 'blocked' || $device->blocked_at) ? 'blocked' : $device->device_status;
+
+                                // Telemetry payload for inspect modal
+                                $inspectPayload = [
+                                    'uuid' => $device->uuid,
+                                    'installation_uuid' => $device->installation_uuid,
+                                    'device_model' => $device->device_model ?: 'Android Device',
+                                    'android_version' => $device->android_version ?: 'Unknown',
+                                    'android_sdk' => $device->android_sdk ?: 0,
+                                    'package_name' => $device->package_name,
+                                    'version_name' => $device->version_name,
+                                    'version_code' => $device->version_code,
+                                    'signing_sha256' => $device->signing_sha256,
+                                    'public_key_fingerprint' => $device->public_key_fingerprint,
+                                    'attestation_level' => $device->attestation_level ?: 'none',
+                                    'device_status' => $displayStatus,
+                                    'risk_score' => $score,
+                                    'user_name' => $device->user?->name ?? 'Unknown User',
+                                    'user_username' => $device->user?->username ?? '—',
+                                    'user_email' => $device->user?->email ?? '—',
+                                    'user_phone' => $device->user?->phone ?? '—',
+                                    'user_type' => $device->user_type,
+                                    'approved_by' => $device->approver?->name ?? '—',
+                                    'approved_at' => $device->approved_at?->format('Y-m-d H:i:s') ?? '—',
+                                    'registered_at' => $device->registered_at?->format('Y-m-d H:i:s') ?? '—',
+                                    'last_seen_at' => $device->last_seen_at?->format('Y-m-d H:i:s') ?? 'Never',
+                                    'last_seen_diff' => $device->last_seen_at ? $device->last_seen_at->diffForHumans() : 'Never',
+                                    'conn_status' => $connStatus,
+                                    'conn_label' => $connLabel,
+                                    'active_sessions_count' => $device->active_sessions_count ?? 0,
+                                    'sessions_count' => $device->sessions_count ?? 0,
+                                    'risk_signals' => data_get($device->latestRiskScore?->reasons, 'signals', []),
+                                    'sessions_url' => route('admin.app-security.devices.sessions', $device->uuid),
+                                    'review_url' => route('admin.app-security.devices.review', $device->uuid),
+                                ];
+                            @endphp
                             <tr>
-                                {{-- User Account --}}
+                                {{-- 1. User Profile & Role --}}
                                 <td>
                                     <div class="device-user-box">
                                         <div class="device-user-avatar">
-                                            {{ strtoupper(substr($device->user?->name ?? 'D', 0, 1)) }}
+                                            @if($device->user?->avatar)
+                                                <img src="{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH . $device->user->avatar) }}" alt="{{ $device->user->name }}" class="w-100 h-100 rounded-3 object-fit-cover">
+                                            @else
+                                                {{ strtoupper(substr($device->user?->name ?? 'D', 0, 1)) }}
+                                            @endif
                                         </div>
                                         <div>
                                             <div class="device-user-name">{{ $device->user?->name ?? 'Deleted account' }}</div>
                                             <div class="device-user-meta">{{ $device->user?->username ?? '—' }}</div>
+                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                                <span class="badge {{ $typeBadge }} px-2 py-0 rounded-pill" style="font-size: 10px;">
+                                                    {{ ucfirst($device->user_type) }}
+                                                </span>
+                                                @if($device->user?->role)
+                                                    <span class="badge bg-light text-muted border px-2 py-0 rounded-pill" style="font-size: 10px;">
+                                                        {{ $device->user->role->name }}
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
 
-                                {{-- User Role Type --}}
+                                {{-- 2. Device Hardware & OS Specs --}}
                                 <td>
-                                    @php
-                                        $typeBadge = match($device->user_type) {
-                                            'staff' => 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25',
-                                            'admin' => 'bg-purple bg-opacity-10 text-purple border border-purple border-opacity-25',
-                                            default => 'bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25'
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $typeBadge }} px-2 py-1 rounded-pill">
-                                        {{ ucfirst($device->user_type) }}
-                                    </span>
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div class="position-relative mt-1">
+                                            <i class="fa-solid fa-mobile-screen text-muted fs-5"></i>
+                                            <span class="conn-pulse-dot {{ $connStatus }} position-absolute bottom-0 end-0" style="width: 7px; height: 7px;"></span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold text-dark">{{ $device->device_model ?: 'Android Device' }}</div>
+                                            <div class="device-user-meta mb-1">
+                                                <span class="badge bg-light text-dark border py-0 px-2">Android {{ $device->android_version ?: 'OS' }}</span>
+                                                <span class="badge bg-light text-muted border py-0 px-2">SDK {{ $device->android_sdk ?: '?' }}</span>
+                                            </div>
+
+                                            {{-- Click-to-copy UUIDs with tooltip --}}
+                                            <div class="d-flex flex-wrap align-items-center gap-1">
+                                                <div class="copy-badge" onclick="copyToClipboard('{{ $device->uuid }}', this)" title="Click to copy full hardware UUID: {{ $device->uuid }}">
+                                                    <i class="fa-solid fa-fingerprint text-primary"></i>
+                                                    <span>{{ substr($device->uuid, 0, 8) }}…</span>
+                                                    <i class="fa-regular fa-copy"></i>
+                                                </div>
+                                                @unless($supportOnly)
+                                                    <div class="copy-badge" onclick="copyToClipboard('{{ $device->installation_uuid }}', this)" title="Click to copy installation UUID: {{ $device->installation_uuid }}">
+                                                        <i class="fa-solid fa-cube text-info"></i>
+                                                        <span>{{ substr($device->installation_uuid, 0, 8) }}…</span>
+                                                        <i class="fa-regular fa-copy"></i>
+                                                    </div>
+                                                @endunless
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                {{-- 3. Live Connection & Session Activity --}}
+                                <td>
+                                    <div class="conn-indicator mb-1">
+                                        <span class="conn-pulse-dot {{ $connStatus }}"></span>
+                                        <span class="{{ $connStatus === 'online' ? 'text-success fw-bold' : ($connStatus === 'today' ? 'text-cyan fw-bold' : 'text-muted') }}">
+                                            {{ $connLabel }}
+                                        </span>
+                                    </div>
+                                    <div class="small fw-semibold text-dark">
+                                        @if($device->last_seen_at)
+                                            <span title="{{ $device->last_seen_at->format('Y-m-d H:i:s') }}">{{ $device->last_seen_at->diffForHumans() }}</span>
+                                        @else
+                                            <span class="text-muted fst-italic">Never</span>
+                                        @endif
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                        @if(($device->active_sessions_count ?? 0) > 0)
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill" style="font-size: 10px;">
+                                                <i class="fa-solid fa-network-wired me-1"></i>{{ $device->active_sessions_count }} Active
+                                            </span>
+                                        @else
+                                            <span class="badge bg-light text-muted border rounded-pill" style="font-size: 10px;">
+                                                0 Active Sessions
+                                            </span>
+                                        @endif
+                                        <span class="text-muted small" style="font-size: 10px;" title="Total lifetime sessions">
+                                            ({{ $device->sessions_count ?? 0 }} total)
+                                        </span>
+                                    </div>
                                 </td>
 
                                 @unless($supportOnly)
-                                    {{-- Device Model & OS --}}
+                                    {{-- 4. App Release & Package Cryptography --}}
                                     <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="fa-solid fa-mobile-screen text-muted fs-6"></i>
-                                            <div>
-                                                <div class="fw-bold text-dark">{{ $device->device_model ?: 'Android Device' }}</div>
-                                                <div class="device-user-meta">
-                                                    Android {{ $device->android_version ?: 'OS' }} · SDK {{ $device->android_sdk ?: '?' }}
-                                                </div>
+                                        <div class="fw-semibold text-dark">
+                                            {{ $device->version_name }}
+                                            <span class="badge bg-light text-dark border ms-1">v{{ $device->version_code }}</span>
+                                        </div>
+                                        <div class="device-user-meta font-monospace small text-truncate" style="max-width: 170px;" title="{{ $device->package_name }}">
+                                            {{ $device->package_name }}
+                                        </div>
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                            <div class="copy-badge" onclick="copyToClipboard('{{ $device->signing_sha256 }}', this)" title="Click to copy Signing SHA-256: {{ $device->signing_sha256 }}">
+                                                <i class="fa-solid fa-key text-secondary"></i>
+                                                <span>Sign: {{ substr($device->signing_sha256, 0, 8) }}…</span>
+                                                <i class="fa-regular fa-copy"></i>
+                                            </div>
+                                            <div class="copy-badge" onclick="copyToClipboard('{{ $device->public_key_fingerprint }}', this)" title="Click to copy Public Key Fingerprint: {{ $device->public_key_fingerprint }}">
+                                                <i class="fa-solid fa-shield text-purple"></i>
+                                                <span>Key: {{ substr($device->public_key_fingerprint, 0, 8) }}…</span>
+                                                <i class="fa-regular fa-copy"></i>
                                             </div>
                                         </div>
                                     </td>
 
-                                    {{-- APK Release & Signing Fingerprint --}}
+                                    {{-- 5. Hardware Attestation & Threat Telemetry --}}
                                     <td>
-                                        <div class="fw-semibold">{{ $device->version_name }} <span class="badge bg-light text-dark border">v{{ $device->version_code }}</span></div>
-                                        <div class="device-user-meta font-monospace small" title="{{ $device->signing_sha256 }}">
-                                            {{ substr($device->signing_sha256, 0, 14) }}…
-                                        </div>
-                                    </td>
-
-                                    {{-- Trust & Hardware Attestation --}}
-                                    <td>
-                                        @php
-                                            $attChip = match(strtolower($device->attestation_level ?? 'none')) {
-                                                'strongbox' => ['class' => 'chip-strongbox', 'icon' => 'fa-solid fa-shield-halved', 'label' => 'StrongBox'],
-                                                'tee' => ['class' => 'chip-tee', 'icon' => 'fa-solid fa-microchip', 'label' => 'TEE Hardware'],
-                                                'basic' => ['class' => 'chip-basic', 'icon' => 'fa-solid fa-certificate', 'label' => 'Basic Keystore'],
-                                                default => ['class' => 'chip-failed', 'icon' => 'fa-solid fa-triangle-exclamation', 'label' => ucfirst($device->attestation_level ?: 'None')]
-                                            };
-                                            $score = (int) $device->risk_score;
-                                            $riskLevel = $score >= 60 ? 'risk-high' : ($score >= 25 ? 'risk-medium' : 'risk-low');
-                                            $riskColor = $score >= 60 ? 'text-danger' : ($score >= 25 ? 'text-warning' : 'text-success');
-                                        @endphp
                                         <div class="attestation-chip {{ $attChip['class'] }}">
                                             <i class="{{ $attChip['icon'] }}"></i>
                                             <span>{{ $attChip['label'] }}</span>
@@ -283,7 +584,7 @@
                                         {{-- Risk progress meter --}}
                                         <div class="risk-meter" title="Risk Score: {{ $score }}/100">
                                             <div class="risk-meter-bar">
-                                                <div class="risk-meter-fill {{ $riskLevel }}" style="width: {{ max(5, $score) }}%"></div>
+                                                <div class="risk-meter-fill {{ $riskLevel }}" style="width: {{ max(6, $score) }}%"></div>
                                             </div>
                                             <span class="risk-score-text {{ $riskColor }}">{{ $score }}/100</span>
                                         </div>
@@ -298,53 +599,46 @@
                                     </td>
                                 @endunless
 
-                                {{-- Device Status --}}
+                                {{-- 6. Device Status & Lifecycle --}}
                                 <td>
-                                    @php
-                                        $statusClass = 'status-pending';
-                                        if ($device->device_status === 'approved' && !$device->blocked_at && !$device->revoked_at) {
-                                            $statusClass = 'status-approved';
-                                        } elseif ($device->device_status === 'blocked' || $device->blocked_at) {
-                                            $statusClass = 'status-blocked';
-                                        } elseif ($device->device_status === 'revoked' || $device->revoked_at) {
-                                            $statusClass = 'status-revoked';
-                                        } elseif ($device->device_status === 're_registration_required') {
-                                            $statusClass = 'status-re_registration_required';
-                                        } elseif ($device->device_status === 'rejected') {
-                                            $statusClass = 'status-rejected';
-                                        }
-                                        $displayStatus = ($device->device_status === 'blocked' || $device->blocked_at) ? 'blocked' : $device->device_status;
-                                    @endphp
                                     <span class="device-status-badge {{ $statusClass }}">
                                         {{ str_replace('_', ' ', $displayStatus) }}
                                     </span>
-                                </td>
-
-                                {{-- Last Seen --}}
-                                <td>
-                                    @if($device->last_seen_at)
-                                        <span class="fw-semibold text-dark">{{ $device->last_seen_at->diffForHumans() }}</span>
-                                        <div class="text-muted small" style="font-size: 11px;">{{ $device->last_seen_at->format('M d, H:i') }}</div>
-                                    @else
-                                        <span class="text-muted fst-italic">Never</span>
+                                    @if($device->approved_at)
+                                        <div class="device-user-meta mt-1" title="Approved at {{ $device->approved_at->format('Y-m-d H:i') }}">
+                                            <i class="fa-solid fa-circle-check text-success me-1"></i>
+                                            Approved: {{ $device->approved_at->format('M d') }}
+                                        </div>
+                                    @elseif($device->registered_at)
+                                        <div class="device-user-meta mt-1" title="Registered at {{ $device->registered_at->format('Y-m-d H:i') }}">
+                                            <i class="fa-solid fa-clock me-1"></i>
+                                            Reg: {{ $device->registered_at->format('M d') }}
+                                        </div>
                                     @endif
                                 </td>
 
-                                {{-- Actions Group --}}
+                                {{-- 7. Control Actions Toolbar --}}
                                 <td class="text-end">
                                     <div class="security-action-group justify-content-end">
+                                        {{-- Primary Inspect Telemetry Modal Button --}}
+                                        <button type="button" class="btn btn-sec-action btn-outline-primary"
+                                            onclick="openDeviceInspectModal(this)"
+                                            data-device="{{ htmlspecialchars(json_encode($inspectPayload), ENT_QUOTES, 'UTF-8') }}"
+                                            title="{{ __('app_security.inspect_device') }}">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                            <span class="d-none d-xl-inline">{{ __('app_security.inspect_device') }}</span>
+                                        </button>
+
                                         {{-- Secondary Links: Review & Sessions --}}
                                         @if(!$supportOnly && ($canViewSecurityAlerts || $canReviewRiskSignals))
                                             <a class="btn btn-sec-action btn-outline-secondary" href="{{ route('admin.app-security.devices.review', $device->uuid) }}" title="{{ __('app_security.risk_review') }}">
                                                 <i class="fa-solid fa-magnifying-glass-chart"></i>
-                                                <span class="d-none d-xxl-inline">{{ __('app_security.risk_review') }}</span>
                                             </a>
                                         @endif
 
                                         @if(!$supportOnly && ($canManageDevices || ($canApproveStaffDevices && $device->user_type === 'staff')))
                                             <a class="btn btn-sec-action btn-outline-secondary" href="{{ route('admin.app-security.devices.sessions', $device->uuid) }}" title="{{ __('app_security.sessions') }}">
                                                 <i class="fa-solid fa-network-wired"></i>
-                                                <span class="d-none d-xxl-inline">{{ __('app_security.sessions') }}</span>
                                             </a>
                                         @endif
 
@@ -405,11 +699,14 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $supportOnly ? 5 : 8 }}" class="text-center py-5">
+                                <td colspan="{{ $supportOnly ? 5 : 7 }}" class="text-center py-5">
                                     <div class="py-4">
                                         <i class="fa-solid fa-mobile-screen fs-1 text-muted mb-3 d-block opacity-50"></i>
                                         <h5 class="text-muted fw-bold">{{ __('app_security.no_devices_found') }}</h5>
-                                        <p class="text-muted small mb-0">Try adjusting your keyword filter or status selector above.</p>
+                                        <p class="text-muted small mb-3">No mobile hardware matches your current keyword, status, or connection filter.</p>
+                                        <a href="{{ route('admin.app-security.index') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fa-solid fa-rotate-left me-1"></i> Clear All Filters
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
@@ -1077,6 +1374,233 @@
 </div>
 @endif
 
+{{-- ==============================================================
+     MODAL: INSPECT FULL DEVICE TELEMETRY & CRYPTOGRAPHY
+     ============================================================== --}}
+<div class="modal fade modal-device-inspect" id="deviceInspectModal" tabindex="-1" aria-labelledby="deviceInspectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="kpi-icon-wrap" style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255, 255, 255, 0.15); color: #93c5fd; font-size: 18px;">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title text-white mb-0" id="deviceInspectModalLabel">
+                            <span id="inspectModalDeviceModel">Android Device</span>
+                        </h5>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span id="inspectModalStatusBadge" class="device-status-badge status-approved py-0 px-2" style="font-size: 11px;">Approved</span>
+                            <span id="inspectModalUserBadge" class="badge bg-white bg-opacity-20 text-white rounded-pill" style="font-size: 11px;">User</span>
+                            <span id="inspectModalConnBadge" class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill" style="font-size: 11px;">
+                                <span class="conn-pulse-dot online me-1"></span> <span id="inspectModalConnText">Online</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body p-0">
+                {{-- Inspector Tabs --}}
+                <ul class="nav nav-tabs" id="deviceInspectTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="inspect-tab-specs-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-specs" type="button" role="tab">
+                            <i class="fa-solid fa-mobile-screen me-1"></i> {{ __('app_security.tab_specs') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inspect-tab-crypto-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-crypto" type="button" role="tab">
+                            <i class="fa-solid fa-key me-1"></i> {{ __('app_security.tab_crypto') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inspect-tab-sessions-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-sessions" type="button" role="tab">
+                            <i class="fa-solid fa-network-wired me-1"></i> {{ __('app_security.tab_sessions') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inspect-tab-risk-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-risk" type="button" role="tab">
+                            <i class="fa-solid fa-shield-halved me-1"></i> {{ __('app_security.tab_risk') }}
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="inspect-tab-raw-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-raw" type="button" role="tab">
+                            <i class="fa-solid fa-code me-1"></i> {{ __('app_security.tab_raw_json') }}
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="deviceInspectTabsContent">
+                    {{-- TAB 1: HARDWARE & OS SPECS --}}
+                    <div class="tab-pane fade show active inspect-tab-pane" id="inspect-tab-specs" role="tabpanel">
+                        <div class="inspect-info-grid">
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-mobile-screen"></i> {{ __('app_security.device_info') }}</div>
+                                <div class="inspect-info-val" id="inspectSpecModel">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-brands fa-android"></i> {{ __('app_security.android_os_level') }}</div>
+                                <div class="inspect-info-val" id="inspectSpecAndroid">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-box"></i> {{ __('app_security.package_name') }}</div>
+                                <div class="inspect-info-val font-monospace small" id="inspectSpecPackage">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-code-branch"></i> {{ __('app_security.version_info') }}</div>
+                                <div class="inspect-info-val" id="inspectSpecVersion">—</div>
+                            </div>
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-fingerprint"></i> {{ __('app_security.device_uuid') }}</div>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectSpecUuid', this)">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="inspect-info-val font-monospace text-primary small" id="inspectSpecUuid">—</div>
+                            </div>
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-cube"></i> {{ __('app_security.installation_uuid') }}</div>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectSpecInstallUuid', this)">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="inspect-info-val font-monospace text-info small" id="inspectSpecInstallUuid">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- TAB 2: CRYPTOGRAPHIC KEYS & ATTESTATION --}}
+                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-crypto" role="tabpanel">
+                        <div class="inspect-info-grid">
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-shield-halved"></i> {{ __('app_security.trust_attestation') }}</div>
+                                    <span id="inspectCryptoAttChip" class="attestation-chip chip-strongbox">StrongBox</span>
+                                </div>
+                                <div class="small text-muted mt-1" id="inspectCryptoAttDesc">
+                                    Cryptographic hardware isolated security module verified via Google Play Attestation API.
+                                </div>
+                            </div>
+
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-key"></i> {{ __('app_security.public_key_fingerprint') }}</div>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectCryptoKeyFingerprint', this)">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="inspect-info-val font-monospace text-purple small" id="inspectCryptoKeyFingerprint">—</div>
+                            </div>
+
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-certificate"></i> {{ __('app_security.signing_sha256') }}</div>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectCryptoSigningSha', this)">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                                    </button>
+                                </div>
+                                <div class="inspect-info-val font-monospace text-secondary small" id="inspectCryptoSigningSha">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- TAB 3: API SESSIONS & ACTIVITY --}}
+                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-sessions" role="tabpanel">
+                        <div class="inspect-info-grid">
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-wifi"></i> {{ __('app_security.connection_status') }}</div>
+                                <div class="inspect-info-val d-flex align-items-center gap-2" id="inspectSessionConnVal">
+                                    <span class="conn-pulse-dot online"></span>
+                                    <span>Active</span>
+                                </div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-clock-rotate-left"></i> {{ __('app_security.last_seen') }}</div>
+                                <div class="inspect-info-val" id="inspectSessionLastSeen">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-calendar-plus"></i> {{ __('app_security.registered_at') }}</div>
+                                <div class="inspect-info-val" id="inspectSessionRegistered">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-user-check"></i> {{ __('app_security.approved_at') }}</div>
+                                <div class="inspect-info-val" id="inspectSessionApproved">—</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-network-wired"></i> {{ __('app_security.active_sessions') }}</div>
+                                <div class="inspect-info-val" id="inspectSessionActiveCount">0 Active</div>
+                            </div>
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-database"></i> {{ __('app_security.total_sessions') }}</div>
+                                <div class="inspect-info-val" id="inspectSessionTotalCount">0 Total</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-end">
+                            <a href="#" id="inspectSessionViewLink" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> {{ __('app_security.view_sessions') }}
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- TAB 4: RISK & THREAT ANALYSIS --}}
+                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-risk" role="tabpanel">
+                        <div class="inspect-info-card mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="inspect-info-label mb-1"><i class="fa-solid fa-gauge-high"></i> Risk Telemetry Score</div>
+                                    <h4 class="mb-0 fw-bold" id="inspectRiskScoreText">0/100</h4>
+                                </div>
+                                <div id="inspectRiskBadge" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fs-6">
+                                    Low Risk
+                                </div>
+                            </div>
+                            <div class="risk-meter-bar w-100 my-2" style="height: 10px;">
+                                <div id="inspectRiskMeterFill" class="risk-meter-fill risk-low" style="width: 10%"></div>
+                            </div>
+                            <div class="small text-muted" id="inspectRiskThresholdText">
+                                Automated real-time zero-trust device posture evaluation.
+                            </div>
+                        </div>
+
+                        <div class="inspect-info-card">
+                            <div class="inspect-info-label mb-2"><i class="fa-solid fa-radiation"></i> Detected Integrity Signals & Penalties</div>
+                            <div id="inspectRiskSignalsList">
+                                <div class="text-muted small fst-italic">No active threat signals or penalties recorded for this hardware profile.</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-end">
+                            <a href="#" id="inspectRiskReviewLink" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                                <i class="fa-solid fa-magnifying-glass-chart me-1"></i> {{ __('app_security.view_risk_review') }}
+                            </a>
+                        </div>
+                    </div>
+
+                    {{-- TAB 5: RAW TELEMETRY JSON --}}
+                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-raw" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="small text-muted fw-bold text-uppercase">
+                                <i class="fa-solid fa-terminal me-1 text-primary"></i> Complete Hardware & API Payload
+                            </div>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnCopyInspectJson" onclick="copyJsonTelemetry(this)">
+                                <i class="fa-regular fa-copy me-1"></i> {{ __('app_security.copy_json') }}
+                            </button>
+                        </div>
+                        <pre class="inspect-code-block mb-0" id="inspectRawJsonBlock"><code>{}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer border-top bg-white">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close Inspector</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -1095,14 +1619,180 @@
         }
     });
 
-    // Quick filter from KPI cards
-    function filterByStatus(status) {
-        const select = document.getElementById('filterStatusSelect');
-        const form = document.getElementById('deviceFilterForm');
-        if (select && form) {
-            select.value = status;
-            form.submit();
+    // Copy to clipboard helper
+    function copyToClipboard(text, element) {
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(showFeedback).catch(fallbackCopy);
+        } else {
+            fallbackCopy();
         }
+
+        function fallbackCopy() {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showFeedback();
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function showFeedback() {
+            if (!element) return;
+            const originalHtml = element.innerHTML;
+            element.innerHTML = '<i class="fa-solid fa-check text-success"></i> <span class="text-success fw-bold">Copied!</span>';
+            setTimeout(() => {
+                element.innerHTML = originalHtml;
+            }, 1500);
+        }
+    }
+
+    // Copy field from inside inspect modal
+    function copyModalField(elemId, btn) {
+        const elem = document.getElementById(elemId);
+        if (elem) {
+            copyToClipboard(elem.textContent.trim(), btn);
+        }
+    }
+
+    // Copy raw JSON telemetry
+    let activeInspectDeviceJson = '';
+    function copyJsonTelemetry(btn) {
+        if (!activeInspectDeviceJson) return;
+        copyToClipboard(activeInspectDeviceJson, btn);
+    }
+
+    // Open Device Inspect Modal
+    function openDeviceInspectModal(button) {
+        const rawData = button.getAttribute('data-device');
+        if (!rawData) return;
+        let d = {};
+        try {
+            d = JSON.parse(rawData);
+        } catch (e) {
+            console.error('Error parsing device JSON', e);
+            return;
+        }
+
+        activeInspectDeviceJson = JSON.stringify(d, null, 2);
+
+        // Header
+        document.getElementById('inspectModalDeviceModel').textContent = d.device_model || 'Android Device';
+        document.getElementById('inspectModalUserBadge').textContent = d.user_name || 'User';
+
+        const statusBadge = document.getElementById('inspectModalStatusBadge');
+        statusBadge.className = 'device-status-badge status-' + (d.device_status || 'pending') + ' py-0 px-2';
+        statusBadge.textContent = (d.device_status || 'pending').replace('_', ' ');
+
+        const connBadge = document.getElementById('inspectModalConnBadge');
+        const connText = document.getElementById('inspectModalConnText');
+        connBadge.innerHTML = `<span class="conn-pulse-dot ${d.conn_status || 'offline'} me-1"></span> <span id="inspectModalConnText">${d.conn_label || 'Offline'}</span>`;
+
+        // Tab 1: Specs
+        document.getElementById('inspectSpecModel').textContent = d.device_model || 'Android Device';
+        document.getElementById('inspectSpecAndroid').textContent = `Android ${d.android_version || 'OS'} (API SDK ${d.android_sdk || '?'})`;
+        document.getElementById('inspectSpecPackage').textContent = d.package_name || '—';
+        document.getElementById('inspectSpecVersion').textContent = `${d.version_name || '1.0.0'} (Build ${d.version_code || 1})`;
+        document.getElementById('inspectSpecUuid').textContent = d.uuid || '—';
+        document.getElementById('inspectSpecInstallUuid').textContent = d.installation_uuid || '—';
+
+        // Tab 2: Crypto
+        const attLevel = (d.attestation_level || 'none').toLowerCase();
+        const attChip = document.getElementById('inspectCryptoAttChip');
+        const attDesc = document.getElementById('inspectCryptoAttDesc');
+        if (attLevel === 'strongbox') {
+            attChip.className = 'attestation-chip chip-strongbox';
+            attChip.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> StrongBox KeyStore';
+            attDesc.textContent = 'Hardware isolated tamper-resistant security chip (dedicated secure processor).';
+        } else if (attLevel === 'tee') {
+            attChip.className = 'attestation-chip chip-tee';
+            attChip.innerHTML = '<i class="fa-solid fa-microchip me-1"></i> TEE Hardware';
+            attDesc.textContent = 'Trusted Execution Environment (ARM TrustZone) isolated keystore.';
+        } else if (attLevel === 'basic') {
+            attChip.className = 'attestation-chip chip-basic';
+            attChip.innerHTML = '<i class="fa-solid fa-certificate me-1"></i> Basic Keystore';
+            attDesc.textContent = 'Standard Android software keystore.';
+        } else {
+            attChip.className = 'attestation-chip chip-failed';
+            attChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Unverified';
+            attDesc.textContent = 'Hardware key attestation not completed or failed verification challenge.';
+        }
+        document.getElementById('inspectCryptoKeyFingerprint').textContent = d.public_key_fingerprint || '—';
+        document.getElementById('inspectCryptoSigningSha').textContent = d.signing_sha256 || '—';
+
+        // Tab 3: Sessions
+        const connVal = document.getElementById('inspectSessionConnVal');
+        connVal.innerHTML = `<span class="conn-pulse-dot ${d.conn_status || 'offline'}"></span> <span>${d.conn_label || 'Offline'}</span>`;
+        document.getElementById('inspectSessionLastSeen').textContent = d.last_seen_at ? `${d.last_seen_at} (${d.last_seen_diff})` : 'Never';
+        document.getElementById('inspectSessionRegistered').textContent = d.registered_at || '—';
+        document.getElementById('inspectSessionApproved').textContent = d.approved_at ? `${d.approved_at} (by ${d.approved_by || 'Admin'})` : 'Not Approved';
+        document.getElementById('inspectSessionActiveCount').textContent = `${d.active_sessions_count || 0} Active Session(s)`;
+        document.getElementById('inspectSessionTotalCount').textContent = `${d.sessions_count || 0} Total Lifetime Session(s)`;
+        document.getElementById('inspectSessionViewLink').href = d.sessions_url || '#';
+
+        // Tab 4: Risk
+        const score = parseInt(d.risk_score || 0);
+        document.getElementById('inspectRiskScoreText').textContent = score + '/100';
+        const riskFill = document.getElementById('inspectRiskMeterFill');
+        const riskBadge = document.getElementById('inspectRiskBadge');
+        if (score >= 60) {
+            riskFill.className = 'risk-meter-fill risk-high';
+            riskBadge.className = 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fs-6';
+            riskBadge.textContent = 'High Risk';
+        } else if (score >= 25) {
+            riskFill.className = 'risk-meter-fill risk-medium';
+            riskBadge.className = 'badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill fs-6';
+            riskBadge.textContent = 'Medium Risk';
+        } else {
+            riskFill.className = 'risk-meter-fill risk-low';
+            riskBadge.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fs-6';
+            riskBadge.textContent = 'Low Risk';
+        }
+        riskFill.style.width = Math.max(6, score) + '%';
+
+        const signalsList = document.getElementById('inspectRiskSignalsList');
+        if (d.risk_signals && d.risk_signals.length > 0) {
+            signalsList.innerHTML = d.risk_signals.map(s => `
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <div class="fw-semibold text-danger">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i> ${s.signal || 'Signal'}
+                    </div>
+                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill">+${s.points || 0} pts</span>
+                </div>
+            `).join('');
+        } else {
+            signalsList.innerHTML = '<div class="text-muted small fst-italic py-2"><i class="fa-solid fa-circle-check text-success me-1"></i> No active threat signals or penalties recorded for this hardware profile.</div>';
+        }
+        document.getElementById('inspectRiskReviewLink').href = d.review_url || '#';
+
+        // Tab 5: Raw JSON
+        document.getElementById('inspectRawJsonBlock').textContent = activeInspectDeviceJson;
+
+        // Reset to first tab
+        const firstTab = document.getElementById('inspect-tab-specs-btn');
+        if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
+
+        // Show modal
+        const modalEl = document.getElementById('deviceInspectModal');
+        bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    }
+
+    // Quick filter from KPI cards or pills
+    function filterByStatus(status, paramKey, paramVal) {
+        const url = new URL(window.location.origin + window.location.pathname);
+        if (paramKey && paramVal) {
+            url.searchParams.set(paramKey, paramVal);
+        } else if (status) {
+            url.searchParams.set('status', status);
+        }
+        window.location.href = url.toString();
     }
 
     // Toggle password visibility

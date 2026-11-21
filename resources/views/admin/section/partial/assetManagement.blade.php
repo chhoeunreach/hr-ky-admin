@@ -1,14 +1,15 @@
 @canany(['list_type','list_assets','asset_return_list'])
-    <li class="nav-item {{ request()->routeIs('admin.asset-types.*') || request()->routeIs('admin.assets.*') || request()->routeIs('admin.asset-return.*') || request()->routeIs('admin.asset-assignment.*')
-                        ? 'active' : '' }} ">
-        <a class="nav-link" data-bs-toggle="collapse" href="#assets" data-href="#" role="button" aria-expanded="false"
+    @php
+        $isAssetSection = request()->routeIs('admin.asset-types.*') || request()->routeIs('admin.assets.*') || request()->routeIs('admin.asset-return.*') || request()->routeIs('admin.asset-assignment.*');
+    @endphp
+    <li class="nav-item {{ $isAssetSection ? 'active' : '' }} ">
+        <a class="nav-link {{ $isAssetSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#assets" data-href="#" role="button" aria-expanded="{{ $isAssetSection ? 'true' : 'false' }}"
            aria-controls="assets">
             <i class="link-icon" data-feather="loader"></i>
             <span class="link-title">{{ __('index.asset_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.asset-types.*') || request()->routeIs('admin.assets.*') || request()->routeIs('admin.asset-return.*') || request()->routeIs('admin.asset-assignment.*')
-                   ?'' : 'collapse'  }}" id="assets">
+        <div class="collapse {{ $isAssetSection ? 'show' : '' }}" id="assets">
             <ul class="nav sub-menu">
 
                 @can('list_type')

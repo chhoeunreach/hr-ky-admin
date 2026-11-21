@@ -12,16 +12,17 @@
 
 
 @canany(['view_project_list','view_task_list','view_client_list'])
-    <li class="nav-item {{ request()->routeIs('admin.projects.*') || request()->routeIs('admin.clients.*') || request()->routeIs('admin.tasks.*')
-                        ? 'active' : '' }} ">
-        <a class="nav-link" data-bs-toggle="collapse" href="#projectMenu" data-href="#" role="button" aria-expanded="false"
+    @php
+        $isProjectSection = request()->routeIs('admin.projects.*') || request()->routeIs('admin.clients.*') || request()->routeIs('admin.tasks.*');
+    @endphp
+    <li class="nav-item {{ $isProjectSection ? 'active' : '' }} ">
+        <a class="nav-link {{ $isProjectSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#projectMenu" data-href="#" role="button" aria-expanded="{{ $isProjectSection ? 'true' : 'false' }}"
            aria-controls="projectMenu">
             <i class="link-icon" data-feather="layout"></i>
             <span class="link-title">{{ __('index.project_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
-        <div class="{{ request()->routeIs('admin.projects.*') || request()->routeIs('admin.clients.*') || request()->routeIs('admin.tasks.*')
-                   ?'' : 'collapse'  }}" id="projectMenu">
+        <div class="collapse {{ $isProjectSection ? 'show' : '' }}" id="projectMenu">
             <ul class="nav sub-menu">
 
                 @can('view_project_list')
