@@ -1123,6 +1123,7 @@ Route::prefix('admin/app-security')->name('admin.app-security.')->middleware(['a
     Route::get('/devices/{uuid}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showRiskSignalReview'])->name('devices.review');
     Route::get('/devices/{uuid}/sessions', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDeviceSessions'])->name('devices.sessions');
     Route::post('/devices/{uuid}/sessions/{sessionUuid}/revoke', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'revokeDeviceSession'])->name('devices.sessions.revoke');
+    Route::post('/devices/{uuid}/sessions/revoke-all', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'revokeAllDeviceSessions'])->name('devices.sessions.revokeAll');
     Route::get('/devices/{uuid}', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'showDevice'])->name('devices.show');
     Route::post('/risk-signals/{signalId}/review', [\App\Modules\AppSecurity\Controllers\AppSecurityAdminController::class, 'reviewRiskSignal'])->whereNumber('signalId')->name('risk-signals.review');
     foreach (['approve', 'reject', 'block', 'unblock', 'revoke', 'requireReregistration'] as $action) {

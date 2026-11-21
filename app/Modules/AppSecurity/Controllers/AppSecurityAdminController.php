@@ -34,11 +34,16 @@ class AppSecurityAdminController extends Controller
         if ($supportOnly) $deviceQuery->where('user_type', 'customer');
         elseif ($staffApprovalOnly) $deviceQuery->where('user_type', 'staff');
         $query = RegisteredDevice::query()->with([
-            'user:id,name,username,email,phone,avatar,role_id',
-            'user.role:id,name,slug',
+            'user:id,name,username,email,phone,avatar,role_id,branch_id,department_id,post_id,employee_code,workspace_type,fcm_token,online_status,uuid,device_type',
+            'user.role:id,name',
+            'user.branch:id,name',
+            'user.department:id,dept_name',
+            'user.post:id,post_name',
+            'user.latestDeviceLocation',
             'approver:id,name,username,email',
             'attestations:id,device_id,verification_status,security_level,verification_summary,verified_at,created_at',
             'latestRiskScore',
+            'sessions' => fn ($sq) => $sq->latest('last_used_at')->take(20),
         ])->withCount([
             'sessions',
             'sessions as active_sessions_count' => fn ($q) => $q->whereNull('revoked_at')->where('expires_at', '>', now()),
@@ -146,7 +151,10 @@ class AppSecurityAdminController extends Controller
         // Query all connected API sessions for the Device & Sessions tab
         $sessionsQuery = SecuritySession::query()->with([
             'device:id,uuid,device_model,android_version,android_sdk,device_status,last_seen_at',
-            'user:id,name,username,email,phone,avatar,role_id',
+            'user:id,name,username,email,phone,avatar,role_id,branch_id,department_id,employee_code,online_status,fcm_token',
+            'user.branch:id,name',
+            'user.department:id,dept_name',
+            'user.latestDeviceLocation',
         ])->latest('last_used_at');
 
         if ($request->filled('session_status')) {
@@ -653,8 +661,17 @@ class AppSecurityAdminController extends Controller
     public function showDevice(string $uuid, \App\Modules\AppSecurity\Services\AdminSecurityAuthorization $authorization): JsonResponse
     {
         $authorization->authorizeAny('app_security_view', 'app_security_customer_support');
-        $device = RegisteredDevice::query()->with('user:id,name,username,role_id')
-            ->where('uuid', $uuid)->firstOrFail();
+        $device = RegisteredDevice::query()->with([
+            'user:id,name,username,email,phone,avatar,role_id,branch_id,department_id,post_id,employee_code,workspace_type,fcm_token,online_status,uuid,device_type',
+            'user.role:id,name',
+            'user.branch:id,name',
+            'user.department:id,dept_name',
+            'user.post:id,post_name',
+            'user.latestDeviceLocation',
+            'approver:id,name,username,email',
+            'attestations',
+            'latestRiskScore',
+        ])->where('uuid', $uuid)->firstOrFail();
         $supportOnly = $authorization->hasPermission('app_security_customer_support')
             && !$authorization->allowsAny('app_security_view', 'app_security_devices');
         $staffApprovalOnly = $authorization->hasPermission('app_security_device_approval')
@@ -667,10 +684,96 @@ class AppSecurityAdminController extends Controller
                 'uuid', 'user_type', 'device_status', 'device_model', 'version_name', 'registered_at', 'last_seen_at',
             ]) + ['user' => $device->user ? ['name' => $device->user->name, 'username' => $device->user->username] : null]]);
         }
+
+        $user = $device->user;
+        $latestLoc = $user?->latestDeviceLocation;
+        $lat = $latestLoc?->latitude;
+        $lng = $latestLoc?->longitude;
+        $mapUrl = ($lat && $lng) ? "https://www.google.com/maps?q={$lat},{$lng}" : null;
+
+        $sessions = SecuritySession::query()->where('device_id', $device->id)
+            ->latest('last_used_at')
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'uuid' => $s->uuid,
+                'session_token_sha256' => $s->session_token_sha256,
+                'created_at' => $s->created_at?->format('Y-m-d H:i:s'),
+                'created_at_human' => $s->created_at?->diffForHumans() ?? '—',
+                'last_used_at' => $s->last_used_at?->format('Y-m-d H:i:s'),
+                'last_used_human' => $s->last_used_at?->diffForHumans() ?? 'Never',
+                'expires_at' => $s->expires_at?->format('Y-m-d H:i:s'),
+                'expires_at_human' => $s->expires_at?->diffForHumans() ?? '—',
+                'is_revoked' => $s->revoked_at !== null,
+                'is_expired' => $s->revoked_at === null && $s->expires_at <= now(),
+                'is_active' => $s->revoked_at === null && $s->expires_at > now(),
+                'status_text' => $s->revoked_at !== null ? 'Revoked' : ($s->expires_at <= now() ? 'Expired' : 'Active Token'),
+                'revocation_reason' => $s->revocation_reason,
+            ]);
+
+        $activities = collect();
+        if ($user && \Illuminate\Support\Facades\Schema::hasTable('attendance_logs')) {
+            $hasLat = \Illuminate\Support\Facades\Schema::hasColumn('attendance_logs', 'latitude');
+            $hasLng = \Illuminate\Support\Facades\Schema::hasColumn('attendance_logs', 'longitude');
+            $hasAction = \Illuminate\Support\Facades\Schema::hasColumn('attendance_logs', 'action');
+            $activities = DB::table('attendance_logs')
+                ->where('employee_id', $user->id)
+                ->orderByDesc('created_at')
+                ->take(30)
+                ->get()
+                ->map(function ($log) use ($hasLat, $hasLng, $hasAction) {
+                    $action = ($hasAction && !empty($log->action)) ? $log->action : (!empty($log->attendance_type) ? ucfirst($log->attendance_type) : 'Attendance');
+                    $logLat = ($hasLat && !empty($log->latitude)) ? (float) $log->latitude : null;
+                    $logLng = ($hasLng && !empty($log->longitude)) ? (float) $log->longitude : null;
+                    return [
+                        'id' => 'att_' . $log->id,
+                        'type' => 'attendance',
+                        'title' => ucwords(str_replace('_', ' ', $action)),
+                        'source' => $log->attendance_type ?? 'Mobile App',
+                        'latitude' => $logLat,
+                        'longitude' => $logLng,
+                        'map_url' => ($logLat && $logLng) ? "https://www.google.com/maps?q={$logLat},{$logLng}" : null,
+                        'created_at' => $log->created_at ? \Carbon\Carbon::parse($log->created_at)->format('Y-m-d H:i:s') : null,
+                        'created_at_human' => $log->created_at ? \Carbon\Carbon::parse($log->created_at)->diffForHumans() : '',
+                    ];
+                });
+        }
+
         return response()->json([
             'device' => $device,
-            'sessions' => SecuritySession::query()->where('device_id', $device->id)
-                ->latest()->get(['uuid', 'expires_at', 'last_used_at', 'revoked_at', 'revocation_reason']),
+            'employee' => $user ? [
+                'id' => $user->id,
+                'name' => $user->name,
+                'employee_code' => $user->employee_code ?: 'N/A',
+                'avatar' => $user->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $user->avatar) : asset('assets/images/img.png'),
+                'role' => $user->role?->name ?: 'Staff',
+                'department' => $user->department?->dept_name ?: 'N/A',
+                'branch' => $user->branch?->name ?: 'N/A',
+                'workspace_type' => $user->workspace_type == 1 ? 'Field' : 'Office',
+                'is_online' => (int) ($user->online_status ?? 0) === 1,
+                'email' => $user->email,
+                'phone' => $user->phone,
+            ] : null,
+            'hardware' => [
+                'battery_level' => $latestLoc?->battery_level,
+                'has_fcm' => !empty($user?->fcm_token),
+                'device_model' => $device->device_model ?: 'Android Device',
+                'android_version' => $device->android_version ?: 'OS',
+                'android_sdk' => $device->android_sdk ?: '—',
+                'uuid' => $device->uuid,
+                'installation_uuid' => $device->installation_uuid,
+            ],
+            'location' => [
+                'has_location' => !empty($lat) && !empty($lng),
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'accuracy' => $latestLoc?->accuracy,
+                'map_url' => $mapUrl,
+                'updated_at' => $latestLoc?->updated_at?->format('Y-m-d H:i:s'),
+                'updated_at_human' => $latestLoc?->updated_at?->diffForHumans(),
+            ],
+            'sessions' => $sessions,
+            'activities' => $activities,
             'risk_history' => DB::table('app_device_risk_scores')->where('device_id', $device->id)->latest('calculated_at')->limit(20)->get(),
             'risk_signals' => DB::table('app_device_integrity_checks')->where('device_id', $device->id)->latest('occurred_at')->limit(100)->get(),
             'can_review_risk_signals' => $authorization->allowsAny('app_security_risk_review'),
@@ -727,6 +830,45 @@ class AppSecurityAdminController extends Controller
             return redirect()->route('admin.app-security.devices.sessions', $device->uuid)->with('success', $changed ? 'Session revoked and audited.' : 'This session was already revoked.');
         }
         return response()->json(['session_id' => $sessionUuid, 'revoked' => true, 'changed' => $changed]);
+    }
+
+    public function revokeAllDeviceSessions(Request $request, string $deviceUuid, \App\Modules\AppSecurity\Services\AdminSecurityAuthorization $authorization): RedirectResponse|JsonResponse
+    {
+        $authorization->authorizeAny('app_security_devices', 'app_security_device_approval');
+        app(\App\Modules\AppSecurity\Services\AdminStepUpService::class)->verify($request, 'device_session.revoke');
+        $data = $request->validate(['reason' => ['required', 'string', 'min:3', 'max:512']]);
+        $device = RegisteredDevice::query()->where('uuid', $deviceUuid)->firstOrFail();
+        if (!$authorization->allowsAny('app_security_devices') && $device->user_type !== 'staff') abort(404);
+        $actorId = Auth::guard('admin')->id();
+
+        $activeSessionsCount = SecuritySession::query()->where('device_id', $device->id)
+            ->whereNull('revoked_at')
+            ->count();
+
+        if ($activeSessionsCount > 0) {
+            $now = now();
+            SecuritySession::query()->where('device_id', $device->id)->whereNull('revoked_at')->update([
+                'revoked_at' => $now,
+                'revocation_reason' => 'admin: '.substr($data['reason'], 0, 180),
+                'session_token_sha256' => hash('sha256', random_bytes(32)),
+                'refresh_token_sha256' => hash('sha256', random_bytes(32)),
+                'updated_at' => $now,
+            ]);
+
+            SecurityAuditLog::query()->create([
+                'admin_id' => $actorId, 'actor_type' => 'admin', 'actor_id' => $actorId,
+                'action' => 'security.session.revoked_all', 'target_type' => 'device', 'target_id' => $device->uuid,
+                'previous_state' => ['active_sessions' => $activeSessionsCount],
+                'new_state' => ['active_sessions' => 0, 'revoked_at' => $now->toIso8601String()],
+                'reason' => $data['reason'], 'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 512), 'occurred_at' => $now,
+            ]);
+        }
+
+        if (!$request->expectsJson()) {
+            return redirect()->route('admin.app-security.index', ['view' => 'sessions'])->with('success', "Revoked {$activeSessionsCount} active session(s) for {$device->device_model}.");
+        }
+        return response()->json(['success' => true, 'revoked_count' => $activeSessionsCount]);
     }
 
     public function showRiskSignalReview(string $uuid, \App\Modules\AppSecurity\Services\AdminSecurityAuthorization $authorization): View

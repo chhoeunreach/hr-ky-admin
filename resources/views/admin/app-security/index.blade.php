@@ -455,6 +455,42 @@
                                 }
                                 $displayStatus = ($device->device_status === 'blocked' || $device->blocked_at) ? 'blocked' : $device->device_status;
 
+                                // User location & battery telemetry
+                                $devUser = $device->user;
+                                $devLoc = $devUser?->latestDeviceLocation;
+                                $devLat = $devLoc?->latitude;
+                                $devLng = $devLoc?->longitude;
+                                $devAcc = $devLoc?->accuracy;
+                                $devBattery = $devLoc?->battery_level;
+                                $devHasFcm = !empty($devUser?->fcm_token);
+                                $devMapUrl = ($devLat && $devLng) ? "https://www.google.com/maps?q={$devLat},{$devLng}" : null;
+
+                                $sessionsList = $device->sessions->map(function ($s) use ($device, $devLat, $devLng, $devMapUrl) {
+                                    $isRev = $s->revoked_at !== null;
+                                    $isExp = !$isRev && $s->expires_at <= now();
+                                    $isAct = !$isRev && !$isExp;
+                                    return [
+                                        'id' => $s->id,
+                                        'uuid' => $s->uuid,
+                                        'platform' => 'Android',
+                                        'token_preview' => substr($s->session_token_sha256, 0, 12) . '…',
+                                        'token_full' => $s->session_token_sha256,
+                                        'created_at' => $s->created_at?->format('Y-m-d H:i:s'),
+                                        'created_at_human' => $s->created_at?->diffForHumans() ?? '—',
+                                        'last_used_at' => $s->last_used_at?->format('Y-m-d H:i:s'),
+                                        'last_used_human' => $s->last_used_at?->diffForHumans() ?? 'Never',
+                                        'expires_at' => $s->expires_at?->format('Y-m-d H:i:s'),
+                                        'expires_at_human' => $s->expires_at?->diffForHumans() ?? '—',
+                                        'is_active' => $isAct,
+                                        'is_online' => $isAct && (int) ($device->user?->online_status ?? 0) === 1,
+                                        'status_text' => $isRev ? 'Revoked' : ($isExp ? 'Expired' : 'Online Now'),
+                                        'latitude' => $devLat,
+                                        'longitude' => $devLng,
+                                        'map_url' => $devMapUrl,
+                                        'revoke_url' => route('admin.app-security.devices.sessions.revoke', [$device->uuid, $s->uuid]),
+                                    ];
+                                })->values()->all();
+
                                 // Telemetry payload for inspect modal
                                 $inspectPayload = [
                                     'uuid' => $device->uuid,
@@ -470,10 +506,39 @@
                                     'attestation_level' => $device->attestation_level ?: 'none',
                                     'device_status' => $displayStatus,
                                     'risk_score' => $score,
-                                    'user_name' => $device->user?->name ?? 'Unknown User',
-                                    'user_username' => $device->user?->username ?? '—',
-                                    'user_email' => $device->user?->email ?? '—',
-                                    'user_phone' => $device->user?->phone ?? '—',
+                                    'battery_level' => $devBattery,
+                                    'has_fcm' => $devHasFcm,
+                                    'employee' => [
+                                        'id' => $device->user_id,
+                                        'name' => $devUser?->name ?? 'Unknown User',
+                                        'employee_code' => $devUser?->employee_code ?: 'N/A',
+                                        'avatar' => $devUser?->avatar ? asset(\App\Models\User::AVATAR_UPLOAD_PATH . $devUser->avatar) : asset('assets/images/img.png'),
+                                        'role' => $devUser?->role?->name ?? 'Staff',
+                                        'department' => $devUser?->department?->dept_name ?? '—',
+                                        'branch' => $devUser?->branch?->name ?? '—',
+                                        'workspace_type' => $devUser?->workspace_type == 1 ? 'Field' : 'Office',
+                                        'is_online' => (int) ($devUser?->online_status ?? 0) === 1,
+                                        'username' => $devUser?->username ?? '—',
+                                        'email' => $devUser?->email ?? '—',
+                                        'phone' => $devUser?->phone ?? '—',
+                                        'last_login_at' => $devUser?->updated_at?->format('Y-m-d H:i:s'),
+                                        'last_login_human' => $devUser?->updated_at?->diffForHumans() ?? '—',
+                                    ],
+                                    'location' => [
+                                        'has_location' => !empty($devLat) && !empty($devLng),
+                                        'latitude' => $devLat,
+                                        'longitude' => $devLng,
+                                        'accuracy' => $devAcc,
+                                        'map_url' => $devMapUrl,
+                                        'status_text' => (int) ($devUser?->online_status ?? 0) === 1 ? 'Live Location' : 'Last Offline Location',
+                                        'updated_at' => $devLoc?->updated_at?->format('Y-m-d H:i:s'),
+                                        'updated_at_human' => $devLoc?->updated_at?->diffForHumans() ?? 'N/A',
+                                    ],
+                                    'sessions' => $sessionsList,
+                                    'user_name' => $devUser?->name ?? 'Unknown User',
+                                    'user_username' => $devUser?->username ?? '—',
+                                    'user_email' => $devUser?->email ?? '—',
+                                    'user_phone' => $devUser?->phone ?? '—',
                                     'user_type' => $device->user_type,
                                     'approved_by' => $device->approver?->name ?? '—',
                                     'approved_at' => $device->approved_at?->format('Y-m-d H:i:s') ?? '—',
@@ -487,23 +552,32 @@
                                     'risk_signals' => data_get($device->latestRiskScore?->reasons, 'signals', []),
                                     'sessions_url' => route('admin.app-security.devices.sessions', $device->uuid),
                                     'review_url' => route('admin.app-security.devices.review', $device->uuid),
+                                    'revoke_all_url' => route('admin.app-security.devices.sessions.revokeAll', $device->uuid),
                                 ];
                             @endphp
                             <tr>
                                 {{-- 1. User Profile & Role --}}
                                 <td>
                                     <div class="device-user-box">
-                                        <div class="device-user-avatar">
+                                        <div class="device-user-avatar position-relative">
                                             @if($device->user?->avatar)
                                                 <img src="{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH . $device->user->avatar) }}" alt="{{ $device->user->name }}" class="w-100 h-100 rounded-3 object-fit-cover">
                                             @else
                                                 {{ strtoupper(substr($device->user?->name ?? 'D', 0, 1)) }}
                                             @endif
+                                            @if((int)($device->user?->online_status ?? 0) === 1)
+                                                <span class="position-absolute bottom-0 end-0 rounded-circle bg-success border border-white" style="width: 9px; height: 9px;" title="Online Now"></span>
+                                            @endif
                                         </div>
                                         <div>
-                                            <div class="device-user-name">{{ $device->user?->name ?? 'Deleted account' }}</div>
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                <span class="device-user-name mb-0">{{ $device->user?->name ?? 'Deleted account' }}</span>
+                                                @if(!empty($device->user?->employee_code))
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0 fw-medium" style="font-size: 10px;">{{ $device->user->employee_code }}</span>
+                                                @endif
+                                            </div>
                                             <div class="device-user-meta">{{ $device->user?->username ?? '—' }}</div>
-                                            <div class="d-flex align-items-center gap-1 mt-1">
+                                            <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
                                                 <span class="badge {{ $typeBadge }} px-2 py-0 rounded-pill" style="font-size: 10px;">
                                                     {{ ucfirst($device->user_type) }}
                                                 </span>
@@ -513,6 +587,11 @@
                                                     </span>
                                                 @endif
                                             </div>
+                                            @if($device->user?->department || $device->user?->branch)
+                                                <div class="text-muted small mt-1 text-truncate" style="font-size: 10px; max-width: 175px;">
+                                                    <i class="fa-solid fa-building me-1 opacity-75"></i>{{ $device->user?->department?->dept_name ?? '—' }} &bull; {{ $device->user?->branch?->name ?? '—' }}
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -529,6 +608,24 @@
                                             <div class="device-user-meta mb-1">
                                                 <span class="badge bg-light text-dark border py-0 px-2">Android {{ $device->android_version ?: 'OS' }}</span>
                                                 <span class="badge bg-light text-muted border py-0 px-2">SDK {{ $device->android_sdk ?: '?' }}</span>
+                                            </div>
+
+                                            {{-- Battery and FCM badges --}}
+                                            <div class="d-flex align-items-center gap-1.5 flex-wrap my-1">
+                                                @if($devBattery !== null)
+                                                    @php
+                                                        $bIcon = $devBattery >= 80 ? 'fa-battery-full' : ($devBattery >= 50 ? 'fa-battery-three-quarters' : ($devBattery >= 20 ? 'fa-battery-quarter' : 'fa-battery-empty'));
+                                                        $bClass = $devBattery >= 40 ? 'battery-good' : ($devBattery >= 20 ? 'battery-warn' : 'battery-danger');
+                                                    @endphp
+                                                    <span class="battery-pill {{ $bClass }}" title="Battery level: {{ $devBattery }}%">
+                                                        <i class="fa-solid {{ $bIcon }}"></i> {{ $devBattery }}%
+                                                    </span>
+                                                @endif
+                                                @if($devHasFcm)
+                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 10px;" title="{{ __('app_security.fcm_active') }}">
+                                                        <i class="fa-solid fa-bell me-1"></i>FCM
+                                                    </span>
+                                                @endif
                                             </div>
 
                                             {{-- Click-to-copy UUIDs with tooltip --}}
@@ -565,6 +662,17 @@
                                             <span class="text-muted fst-italic">Never</span>
                                         @endif
                                     </div>
+
+                                    {{-- GPS Location Coordinates & Map Link --}}
+                                    @if($devMapUrl)
+                                        <div class="mt-1">
+                                            <a href="{{ $devMapUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 10px;" title="View GPS coordinates on Google Maps: {{ $devLat }}, {{ $devLng }}">
+                                                <i class="fa-solid fa-location-dot"></i> {{ number_format($devLat, 4) }}, {{ number_format($devLng, 4) }}
+                                                <i class="fa-solid fa-arrow-up-right-from-square ms-0.5" style="font-size: 8px;"></i>
+                                            </a>
+                                        </div>
+                                    @endif
+
                                     <div class="d-flex align-items-center gap-1 mt-1">
                                         @if(($device->active_sessions_count ?? 0) > 0)
                                             <a href="{{ route('admin.app-security.index', ['view' => 'sessions', 'session_device' => $device->uuid]) }}" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none" style="font-size: 10px;" title="Click to view live sessions for this device">
@@ -842,6 +950,7 @@
                                     <tr>
                                         <th>{{ __('app_security.device_info') }}</th>
                                         <th>{{ __('app_security.user') }}</th>
+                                        <th>{{ __('app_security.last_location') }}</th>
                                         <th>{{ __('app_security.session_token') }}</th>
                                         <th>{{ __('app_security.session_created') }}</th>
                                         <th>{{ __('app_security.session_last_used') }}</th>
@@ -856,6 +965,11 @@
                                         $isRevoked = $session->revoked_at !== null;
                                         $isExpired = !$isRevoked && $session->expires_at <= now();
                                         $isActive = !$isRevoked && !$isExpired;
+                                        $sessLoc = $session->user?->latestDeviceLocation;
+                                        $sessLat = $sessLoc?->latitude;
+                                        $sessLng = $sessLoc?->longitude;
+                                        $sessBattery = $sessLoc?->battery_level;
+                                        $sessMapUrl = ($sessLat && $sessLng) ? "https://www.google.com/maps?q={$sessLat},{$sessLng}" : null;
                                     @endphp
                                     <tr>
                                         {{-- 1. Device Info --}}
@@ -864,9 +978,18 @@
                                                 <i class="fa-solid fa-mobile-screen text-muted fs-5"></i>
                                                 <div>
                                                     <div class="fw-bold text-dark">{{ $session->device?->device_model ?: 'Android Device' }}</div>
-                                                    <div class="device-user-meta">
+                                                    <div class="device-user-meta mb-1">
                                                         <span class="badge bg-light text-dark border py-0 px-2">Android {{ $session->device?->android_version ?: 'OS' }}</span>
                                                     </div>
+                                                    @if($sessBattery !== null)
+                                                        @php
+                                                            $sbIcon = $sessBattery >= 80 ? 'fa-battery-full' : ($sessBattery >= 50 ? 'fa-battery-three-quarters' : ($sessBattery >= 20 ? 'fa-battery-quarter' : 'fa-battery-empty'));
+                                                            $sbClass = $sessBattery >= 40 ? 'battery-good' : ($sessBattery >= 20 ? 'battery-warn' : 'battery-danger');
+                                                        @endphp
+                                                        <span class="battery-pill {{ $sbClass }} mb-1" title="Battery level: {{ $sessBattery }}%">
+                                                            <i class="fa-solid {{ $sbIcon }}"></i> {{ $sessBattery }}%
+                                                        </span>
+                                                    @endif
                                                     @if($session->device?->uuid)
                                                         <div class="copy-badge mt-1" onclick="copyToClipboard('{{ $session->device->uuid }}', this)" title="Click to copy Device UUID: {{ $session->device->uuid }}">
                                                             <i class="fa-solid fa-fingerprint text-primary"></i>
@@ -881,17 +1004,51 @@
                                         {{-- 2. User Account --}}
                                         <td>
                                             <div class="device-user-box">
-                                                <div class="device-user-avatar">
-                                                    {{ strtoupper(substr($session->user?->name ?? 'U', 0, 1)) }}
+                                                <div class="device-user-avatar position-relative">
+                                                    @if($session->user?->avatar)
+                                                        <img src="{{ asset(\App\Models\User::AVATAR_UPLOAD_PATH . $session->user->avatar) }}" alt="{{ $session->user->name }}" class="w-100 h-100 rounded-3 object-fit-cover">
+                                                    @else
+                                                        {{ strtoupper(substr($session->user?->name ?? 'U', 0, 1)) }}
+                                                    @endif
+                                                    @if((int)($session->user?->online_status ?? 0) === 1)
+                                                        <span class="position-absolute bottom-0 end-0 rounded-circle bg-success border border-white" style="width: 8px; height: 8px;" title="Online Now"></span>
+                                                    @endif
                                                 </div>
                                                 <div>
-                                                    <div class="device-user-name">{{ $session->user?->name ?? 'User' }}</div>
+                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                        <span class="device-user-name mb-0">{{ $session->user?->name ?? 'User' }}</span>
+                                                        @if(!empty($session->user?->employee_code))
+                                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-2 py-0 fw-medium" style="font-size: 10px;">{{ $session->user->employee_code }}</span>
+                                                        @endif
+                                                    </div>
                                                     <div class="device-user-meta">{{ $session->user?->username ?? '—' }}</div>
+                                                    @if($session->user?->department || $session->user?->branch)
+                                                        <div class="text-muted small mt-0.5 text-truncate" style="font-size: 10px; max-width: 160px;">
+                                                            {{ $session->user?->department?->dept_name ?? '—' }} &bull; {{ $session->user?->branch?->name ?? '—' }}
+                                                        </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </td>
 
-                                        {{-- 3. Token Identity --}}
+                                        {{-- 3. GPS Location --}}
+                                        <td>
+                                            @if($sessMapUrl)
+                                                <a href="{{ $sessMapUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none d-inline-flex align-items-center gap-1" style="font-size: 10.5px;" title="View GPS coordinates on Google Maps: {{ $sessLat }}, {{ $sessLng }}">
+                                                    <i class="fa-solid fa-location-dot"></i> {{ number_format($sessLat, 4) }}, {{ number_format($sessLng, 4) }}
+                                                    <i class="fa-solid fa-arrow-up-right-from-square ms-0.5" style="font-size: 8px;"></i>
+                                                </a>
+                                                <div class="text-muted small mt-1" style="font-size: 10px;">
+                                                    {{ $sessLoc?->updated_at?->diffForHumans() ?? '—' }}
+                                                </div>
+                                            @else
+                                                <span class="badge bg-light text-muted border rounded-pill px-2 py-0.5" style="font-size: 10px;">
+                                                    <i class="fa-solid fa-location-slash me-1"></i> No GPS
+                                                </span>
+                                            @endif
+                                        </td>
+
+                                        {{-- 4. Token Identity --}}
                                         <td>
                                             <div class="copy-badge mb-1" onclick="copyToClipboard('{{ $session->session_token_sha256 }}', this)" title="Click to copy full Session Token SHA-256: {{ $session->session_token_sha256 }}">
                                                 <i class="fa-solid fa-key text-primary"></i>
@@ -907,13 +1064,13 @@
                                             @endif
                                         </td>
 
-                                        {{-- 4. Created At --}}
+                                        {{-- 5. Created At --}}
                                         <td>
                                             <div class="fw-semibold text-dark">{{ $session->created_at?->format('M d, Y') }}</div>
                                             <div class="text-muted small">{{ $session->created_at?->format('H:i:s') }}</div>
                                         </td>
 
-                                        {{-- 5. Last Heartbeat / Used --}}
+                                        {{-- 6. Last Heartbeat / Used --}}
                                         <td>
                                             @if($session->last_used_at)
                                                 <div class="fw-semibold text-dark" title="{{ $session->last_used_at->format('Y-m-d H:i:s') }}">
@@ -925,7 +1082,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- 6. Expires At --}}
+                                        {{-- 7. Expires At --}}
                                         <td>
                                             <div class="fw-semibold {{ $isExpired ? 'text-danger' : 'text-dark' }}">
                                                 {{ $session->expires_at->diffForHumans() }}
@@ -933,7 +1090,7 @@
                                             <div class="text-muted small">{{ $session->expires_at->format('M d, H:i') }}</div>
                                         </td>
 
-                                        {{-- 7. Status --}}
+                                        {{-- 8. Status --}}
                                         <td>
                                             @if($isRevoked)
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-1">
@@ -953,7 +1110,7 @@
                                             @endif
                                         </td>
 
-                                        {{-- 8. Actions --}}
+                                        {{-- 9. Actions --}}
                                         <td class="text-end">
                                             @if($isActive && ($canManageDevices || ($canApproveStaffDevices && $session->device?->user_type === 'staff')))
                                                 <button type="button" class="btn btn-sec-action btn-outline-danger"
@@ -967,7 +1124,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center py-5">
+                                        <td colspan="9" class="text-center py-5">
                                             <div class="py-4">
                                                 <i class="fa-solid fa-network-wired fs-1 text-muted mb-3 d-block opacity-50"></i>
                                                 <h5 class="text-muted fw-bold">{{ __('app_security.no_sessions_found') }}</h5>
@@ -1643,105 +1800,236 @@
 @endif
 
 {{-- ==============================================================
-     MODAL: INSPECT FULL DEVICE TELEMETRY & CRYPTOGRAPHY
+     MODAL: INSPECT FULL DEVICE TELEMETRY, SESSIONS & ACTIVITY LOGS
      ============================================================== --}}
-<div class="modal fade modal-device-inspect" id="deviceInspectModal" tabindex="-1" aria-labelledby="deviceInspectModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="kpi-icon-wrap" style="width: 42px; height: 42px; border-radius: 12px; background: rgba(255, 255, 255, 0.15); color: #93c5fd; font-size: 18px;">
-                        <i class="fa-solid fa-microchip"></i>
-                    </div>
-                    <div>
-                        <h5 class="modal-title text-white mb-0" id="deviceInspectModalLabel">
-                            <span id="inspectModalDeviceModel">Android Device</span>
-                        </h5>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <span id="inspectModalStatusBadge" class="device-status-badge status-approved py-0 px-2" style="font-size: 11px;">Approved</span>
-                            <span id="inspectModalUserBadge" class="badge bg-white bg-opacity-20 text-white rounded-pill" style="font-size: 11px;">User</span>
-                            <span id="inspectModalConnBadge" class="badge bg-white bg-opacity-10 text-white border border-white border-opacity-25 rounded-pill" style="font-size: 11px;">
-                                <span class="conn-pulse-dot online me-1"></span> <span id="inspectModalConnText">Online</span>
-                            </span>
+<div class="modal fade modal-device-inspect text-start" id="deviceInspectModal" tabindex="-1" aria-labelledby="deviceInspectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg">
+            {{-- Modal Header --}}
+            <div class="modal-header-hero text-white">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 w-100">
+                    <div class="d-flex align-items-center gap-3">
+                        <img id="inspectModalAvatar" src="{{ asset('assets/images/img.png') }}" alt="Avatar" class="rounded-circle shadow-sm" style="width: 48px; height: 48px; object-fit: cover; border: 2px solid rgba(255,255,255,0.4);">
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h5 class="modal-title fw-bold text-white mb-0" id="inspectModalEmployeeName">
+                                    {{ __('index.loading') }}
+                                </h5>
+                                <span class="badge bg-white bg-opacity-20 text-white rounded-pill px-2.5 py-0.5 fw-medium" id="inspectModalEmployeeCode" style="font-size: 11px;">
+                                    ---
+                                </span>
+                                <span class="badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 eda-status-offline" id="inspectModalOnlineBadge" style="font-size: 11px;">
+                                    <span class="eda-pulse-dot"></span>
+                                    <span id="inspectModalOnlineText">{{ __('index.loading') }}</span>
+                                </span>
+                                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-light rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1.5 fw-semibold" id="inspectModalViewMapBtn" title="{{ __('app_security.view_on_map') }}">
+                                    <i class="fa-solid fa-location-dot text-info"></i>
+                                    <span>{{ __('app_security.view_live_location') }}</span>
+                                </a>
+                            </div>
+                            <div class="text-white-50 small mt-1 text-truncate" id="inspectModalRoleDeptBranch" style="font-size: 0.8rem;">
+                                ---
+                            </div>
                         </div>
                     </div>
+                    <button type="button" class="btn-close btn-close-white shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <div class="modal-body p-0">
-                {{-- Inspector Tabs --}}
-                <ul class="nav nav-tabs" id="deviceInspectTabs" role="tablist">
+            {{-- Modal Subnav / Tabs --}}
+            <div class="modal-tabs-bar">
+                <ul class="nav nav-tabs border-0 gap-2" id="deviceInspectTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="inspect-tab-specs-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-specs" type="button" role="tab">
-                            <i class="fa-solid fa-mobile-screen me-1"></i> {{ __('app_security.tab_specs') }}
+                        <button class="nav-link active d-inline-flex align-items-center gap-1.5" id="inspect-tab-devsess-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-devsess" type="button" role="tab">
+                            <i class="fa-solid fa-mobile-screen"></i>
+                            <span>{{ __('app_security.device_sessions') }}</span>
+                            <span class="badge bg-primary rounded-pill ms-1" id="inspectTabSessionCount">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inspect-tab-crypto-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-crypto" type="button" role="tab">
-                            <i class="fa-solid fa-key me-1"></i> {{ __('app_security.tab_crypto') }}
+                        <button class="nav-link d-inline-flex align-items-center gap-1.5" id="inspect-tab-crypto-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-crypto" type="button" role="tab">
+                            <i class="fa-solid fa-key"></i>
+                            <span>{{ __('app_security.tab_crypto') }}</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inspect-tab-sessions-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-sessions" type="button" role="tab">
-                            <i class="fa-solid fa-network-wired me-1"></i> {{ __('app_security.tab_sessions') }}
+                        <button class="nav-link d-inline-flex align-items-center gap-1.5" id="inspect-tab-risk-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-risk" type="button" role="tab">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>{{ __('app_security.tab_risk') }}</span>
+                            <span class="badge bg-danger rounded-pill ms-1" id="inspectTabRiskBadge">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inspect-tab-risk-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-risk" type="button" role="tab">
-                            <i class="fa-solid fa-shield-halved me-1"></i> {{ __('app_security.tab_risk') }}
+                        <button class="nav-link d-inline-flex align-items-center gap-1.5" id="inspect-tab-activities-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-activities" type="button" role="tab">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>{{ __('app_security.activity_logs') }}</span>
+                            <span class="badge bg-secondary rounded-pill ms-1" id="inspectTabActivityCount">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="inspect-tab-raw-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-raw" type="button" role="tab">
-                            <i class="fa-solid fa-code me-1"></i> {{ __('app_security.tab_raw_json') }}
+                        <button class="nav-link d-inline-flex align-items-center gap-1.5" id="inspect-tab-raw-btn" data-bs-toggle="tab" data-bs-target="#inspect-tab-raw" type="button" role="tab">
+                            <i class="fa-solid fa-code"></i>
+                            <span>{{ __('app_security.tab_raw_json') }}</span>
                         </button>
                     </li>
                 </ul>
+            </div>
 
+            {{-- Modal Body --}}
+            <div class="modal-body p-4 position-relative" style="min-height: 400px; max-height: calc(85vh - 180px); overflow-y: auto;">
                 <div class="tab-content" id="deviceInspectTabsContent">
-                    {{-- TAB 1: HARDWARE & OS SPECS --}}
-                    <div class="tab-pane fade show active inspect-tab-pane" id="inspect-tab-specs" role="tabpanel">
-                        <div class="inspect-info-grid">
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-mobile-screen"></i> {{ __('app_security.device_info') }}</div>
-                                <div class="inspect-info-val" id="inspectSpecModel">—</div>
+                    {{-- TAB 1: DEVICE & ACTIVE SESSIONS --}}
+                    <div class="tab-pane fade show active" id="inspect-tab-devsess" role="tabpanel">
+                        {{-- 4-Column Primary Device Card (Mirrors Employees > Device & Sessions) --}}
+                        <div class="card border border-slate-200 shadow-none mb-4" style="border-radius: 12px; background: #ffffff;">
+                            <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <a href="#" target="_blank" rel="noopener noreferrer" class="d-flex align-items-center gap-2 text-decoration-none" id="inspectDevicePlatformLink" title="{{ __('app_security.view_on_map') }}">
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center bg-primary bg-opacity-10 text-primary" style="width: 28px; height: 28px;">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </div>
+                                    <span class="fw-bold text-dark small">{{ __('app_security.device_info') }} &amp; {{ __('app_security.connection_status') }}</span>
+                                    <i class="fa-solid fa-location-dot text-primary"></i>
+                                </a>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span id="inspectDeviceStatusBadge" class="device-status-badge status-approved py-0 px-2" style="font-size: 11px;">Approved</span>
+                                    <span id="inspectDevicePlatformBadge" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-2.5 py-0.5" style="font-size: 11px;">Android</span>
+                                </div>
                             </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-brands fa-android"></i> {{ __('app_security.android_os_level') }}</div>
-                                <div class="inspect-info-val" id="inspectSpecAndroid">—</div>
+                            <div class="card-body p-3">
+                                <div class="row g-3">
+                                    {{-- Col 1: Device & Hardware --}}
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100 d-flex flex-column justify-content-between">
+                                            <div>
+                                                <span class="text-muted d-block small" style="font-size: 11px;">{{ __('app_security.device_info') }}</span>
+                                                <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                                    <span class="fw-bold text-dark text-truncate" id="inspectCardDeviceName" style="font-size: 0.9rem;">---</span>
+                                                    <span id="inspectCardBatteryBadge"></span>
+                                                </div>
+                                                <small class="text-muted d-block mt-1 text-truncate" id="inspectCardDeviceModel" style="font-size: 10.5px;">---</small>
+                                            </div>
+                                            <div class="mt-2 pt-2 border-top border-1 border-opacity-50 d-flex align-items-center justify-content-between">
+                                                <small class="text-muted text-truncate font-monospace" id="inspectCardDeviceUuid" style="font-size: 10px; max-width: 150px;">---</small>
+                                                <button type="button" class="btn btn-link btn-xs p-0 text-muted" id="inspectCardCopyUuidBtn" title="Copy UUID">
+                                                    <i class="fa-regular fa-copy" style="font-size: 11px;"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Col 2: Connection & Activity --}}
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100">
+                                            <span class="text-muted d-block small" style="font-size: 11px;">{{ __('app_security.connection_status') }}</span>
+                                            <div class="mt-1 mb-2" id="inspectCardConnectionBadge">
+                                                <span class="badge bg-secondary bg-opacity-10 text-muted rounded-pill px-2 py-0.5" style="font-size: 10.5px;">---</span>
+                                            </div>
+                                            <div class="mb-1.5">
+                                                <span class="text-muted d-block" style="font-size: 10px;">{{ __('app_security.login_time') }}</span>
+                                                <span class="fw-bold text-dark d-block" id="inspectCardLoginTime" style="font-size: 0.82rem;">---</span>
+                                                <small class="text-muted d-block" id="inspectCardLoginTimeHuman" style="font-size: 10px;">---</small>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted d-block" style="font-size: 10px;">{{ __('app_security.last_seen') }}</span>
+                                                <span class="fw-semibold text-dark d-block" id="inspectCardLastSeenTime" style="font-size: 0.82rem;">---</span>
+                                                <small class="text-muted d-block" id="inspectCardLastSeenHuman" style="font-size: 10px;">---</small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Col 3: App Information --}}
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100">
+                                            <span class="text-muted d-block small" style="font-size: 11px;">App &amp; Notifications</span>
+                                            <span class="fw-bold text-dark d-block text-truncate mt-0.5" id="inspectCardAppName" style="font-size: 0.88rem;">---</span>
+                                            <small class="text-muted d-block mt-0.5 text-truncate" id="inspectCardAppVersion" style="font-size: 10.5px;">---</small>
+                                            <div class="mt-2 pt-2 border-top border-1 border-opacity-50">
+                                                <span class="badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="inspectCardFcmBadge" style="font-size: 10px;">
+                                                    <i class="fa-solid fa-bell"></i>
+                                                    <span id="inspectCardFcmText">---</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Col 4: Device Location --}}
+                                    <div class="col-lg-3 col-md-6">
+                                        <div class="p-2.5 rounded-3 bg-light border border-1 border-opacity-50 h-100 d-flex flex-column justify-content-between">
+                                            <div>
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <span class="text-muted small" style="font-size: 11px;">{{ __('app_security.last_location') }}</span>
+                                                    <span class="badge rounded-pill px-1.5 py-0.5" id="inspectCardLocationStatusBadge" style="font-size: 9.5px;">---</span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <span class="fw-semibold text-dark text-truncate" id="inspectCardLocationCoords" style="font-size: 0.85rem;">---</span>
+                                                    <button type="button" class="btn btn-link btn-xs p-0 text-muted" id="inspectCardCopyCoordsBtn" title="{{ __('app_security.copy_coordinates') }}">
+                                                        <i class="fa-regular fa-copy" style="font-size: 11px;"></i>
+                                                    </button>
+                                                </div>
+                                                <small class="text-muted d-block mt-0.5" id="inspectCardLocationTime" style="font-size: 10.5px;">---</small>
+                                                <small class="text-muted d-block" id="inspectCardLocationAccuracy" style="font-size: 10px;">---</small>
+                                            </div>
+                                            <div class="mt-2 pt-1" id="inspectCardMapLinkWrapper">
+                                                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-primary py-1 px-2.5 rounded-2 d-inline-flex align-items-center gap-1 shadow-sm w-100 justify-content-center" id="inspectCardMapBtn" style="font-size: 11px; font-weight: 600;">
+                                                    <i class="fa-solid fa-location-dot"></i>
+                                                    <span>{{ __('app_security.view_on_map') }}</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-box"></i> {{ __('app_security.package_name') }}</div>
-                                <div class="inspect-info-val font-monospace small" id="inspectSpecPackage">—</div>
-                            </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-code-branch"></i> {{ __('app_security.version_info') }}</div>
-                                <div class="inspect-info-val" id="inspectSpecVersion">—</div>
-                            </div>
-                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-fingerprint"></i> {{ __('app_security.device_uuid') }}</div>
-                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectSpecUuid', this)">
-                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                        </div>
+
+                        {{-- Active Sessions List Table Card --}}
+                        <div class="card border border-slate-200 shadow-none" style="border-radius: 12px; background: #ffffff;">
+                            <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success" style="width: 28px; height: 28px;">
+                                        <i class="fa-solid fa-key"></i>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="fw-bold text-dark small">{{ __('app_security.device_sessions') }}</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-20 rounded-pill px-2 py-0.5" id="inspectSessionsTotalBadge" style="font-size: 10.5px;">0</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-20 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="inspectSessionsOnlineBadge" style="font-size: 10.5px;">
+                                            <span class="eda-pulse-dot"></span> <span id="inspectSessionsOnlineCount">0</span> {{ __('app_security.online_now') }}
+                                        </span>
+                                        <span class="badge bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-20 rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1" id="inspectSessionsOfflineBadge" style="font-size: 10.5px;">
+                                            <span class="eda-pulse-dot"></span> <span id="inspectSessionsOfflineCount">0</span> {{ __('app_security.offline') }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2.5 rounded-2 d-inline-flex align-items-center gap-1 shadow-none" id="inspectForceLogoutAllBtn" style="font-size: 0.78rem;">
+                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                        <span>{{ __('app_security.revoke_all_sessions') }}</span>
                                     </button>
                                 </div>
-                                <div class="inspect-info-val font-monospace text-primary small" id="inspectSpecUuid">—</div>
                             </div>
-                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-cube"></i> {{ __('app_security.installation_uuid') }}</div>
-                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectSpecInstallUuid', this)">
-                                        <i class="fa-regular fa-copy me-1"></i> Copy
-                                    </button>
-                                </div>
-                                <div class="inspect-info-val font-monospace text-info small" id="inspectSpecInstallUuid">—</div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem;">
+                                    <thead class="bg-light text-muted text-uppercase" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em;">
+                                        <tr>
+                                            <th class="ps-3" style="width: 40px;">#</th>
+                                            <th>{{ __('app_security.device_info') }} / Platform</th>
+                                            <th class="text-center">{{ __('app_security.connection_status') }}</th>
+                                            <th>{{ __('app_security.session_token') }}</th>
+                                            <th>{{ __('app_security.last_location') }}</th>
+                                            <th>{{ __('app_security.login_time') }} &amp; {{ __('app_security.last_seen') }}</th>
+                                            <th class="text-center">{{ __('app_security.session_status') }}</th>
+                                            <th class="text-end pe-3">{{ __('app_security.actions') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inspectSessionsTableBody">
+                                        {{-- Rendered via JS --}}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    {{-- TAB 2: CRYPTOGRAPHIC KEYS & ATTESTATION --}}
-                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-crypto" role="tabpanel">
+                    {{-- TAB 2: HARDWARE ATTESTATION & CRYPTOGRAPHIC KEYSTORE --}}
+                    <div class="tab-pane fade" id="inspect-tab-crypto" role="tabpanel">
                         <div class="inspect-info-grid">
                             <div class="inspect-info-card" style="grid-column: 1 / -1;">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -1772,50 +2060,31 @@
                                 </div>
                                 <div class="inspect-info-val font-monospace text-secondary small" id="inspectCryptoSigningSha">—</div>
                             </div>
-                        </div>
-                    </div>
 
-                    {{-- TAB 3: API SESSIONS & ACTIVITY --}}
-                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-sessions" role="tabpanel">
-                        <div class="inspect-info-grid">
                             <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-wifi"></i> {{ __('app_security.connection_status') }}</div>
-                                <div class="inspect-info-val d-flex align-items-center gap-2" id="inspectSessionConnVal">
-                                    <span class="conn-pulse-dot online"></span>
-                                    <span>Active</span>
+                                <div class="inspect-info-label"><i class="fa-solid fa-box"></i> {{ __('app_security.package_name') }}</div>
+                                <div class="inspect-info-val font-monospace small" id="inspectCryptoPackage">—</div>
+                            </div>
+
+                            <div class="inspect-info-card">
+                                <div class="inspect-info-label"><i class="fa-solid fa-code-branch"></i> {{ __('app_security.version_info') }}</div>
+                                <div class="inspect-info-val" id="inspectCryptoVersion">—</div>
+                            </div>
+
+                            <div class="inspect-info-card" style="grid-column: 1 / -1;">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <div class="inspect-info-label mb-0"><i class="fa-solid fa-cube"></i> {{ __('app_security.installation_uuid') }}</div>
+                                    <button type="button" class="btn btn-sm btn-light border py-0 px-2" onclick="copyModalField('inspectCryptoInstallUuid', this)">
+                                        <i class="fa-regular fa-copy me-1"></i> Copy
+                                    </button>
                                 </div>
+                                <div class="inspect-info-val font-monospace text-info small" id="inspectCryptoInstallUuid">—</div>
                             </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-clock-rotate-left"></i> {{ __('app_security.last_seen') }}</div>
-                                <div class="inspect-info-val" id="inspectSessionLastSeen">—</div>
-                            </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-calendar-plus"></i> {{ __('app_security.registered_at') }}</div>
-                                <div class="inspect-info-val" id="inspectSessionRegistered">—</div>
-                            </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-user-check"></i> {{ __('app_security.approved_at') }}</div>
-                                <div class="inspect-info-val" id="inspectSessionApproved">—</div>
-                            </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-network-wired"></i> {{ __('app_security.active_sessions') }}</div>
-                                <div class="inspect-info-val" id="inspectSessionActiveCount">0 Active</div>
-                            </div>
-                            <div class="inspect-info-card">
-                                <div class="inspect-info-label"><i class="fa-solid fa-database"></i> {{ __('app_security.total_sessions') }}</div>
-                                <div class="inspect-info-val" id="inspectSessionTotalCount">0 Total</div>
-                            </div>
-                        </div>
-
-                        <div class="mt-3 text-end">
-                            <a href="#" id="inspectSessionViewLink" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                                <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> {{ __('app_security.view_sessions') }}
-                            </a>
                         </div>
                     </div>
 
-                    {{-- TAB 4: RISK & THREAT ANALYSIS --}}
-                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-risk" role="tabpanel">
+                    {{-- TAB 3: RISK & THREAT TELEMETRY --}}
+                    <div class="tab-pane fade" id="inspect-tab-risk" role="tabpanel">
                         <div class="inspect-info-card mb-3">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -1837,7 +2106,7 @@
                         <div class="inspect-info-card">
                             <div class="inspect-info-label mb-2"><i class="fa-solid fa-radiation"></i> Detected Integrity Signals & Penalties</div>
                             <div id="inspectRiskSignalsList">
-                                <div class="text-muted small fst-italic">No active threat signals or penalties recorded for this hardware profile.</div>
+                                <div class="text-muted small fst-italic py-2"><i class="fa-solid fa-circle-check text-success me-1"></i> No active threat signals or penalties recorded for this hardware profile.</div>
                             </div>
                         </div>
 
@@ -1848,11 +2117,46 @@
                         </div>
                     </div>
 
+                    {{-- TAB 4: ACTIVITY LOGS (ATTENDANCE & GPS) --}}
+                    <div class="tab-pane fade" id="inspect-tab-activities" role="tabpanel">
+                        <div class="card border border-slate-200 shadow-none" style="border-radius: 12px; background: #ffffff;">
+                            <div class="card-header bg-transparent border-bottom py-2.5 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center bg-info bg-opacity-10 text-info" style="width: 28px; height: 28px;">
+                                        <i class="fa-solid fa-clock-rotate-left"></i>
+                                    </div>
+                                    <span class="fw-bold text-dark small">{{ __('app_security.activity_logs') }} (Attendance &amp; GPS Telemetry)</span>
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" id="inspectActivityFilterGroup">
+                                    <button type="button" class="btn btn-outline-secondary active py-1 px-2.5" data-filter="all" style="font-size: 11px;">All</button>
+                                    <button type="button" class="btn btn-outline-secondary py-1 px-2.5" data-filter="attendance" style="font-size: 11px;">Attendance</button>
+                                    <button type="button" class="btn btn-outline-secondary py-1 px-2.5" data-filter="location" style="font-size: 11px;">GPS Location</button>
+                                </div>
+                            </div>
+                            <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                                <table class="table table-hover align-middle mb-0" style="font-size: 0.8rem;">
+                                    <thead class="bg-light text-muted text-uppercase sticky-top" style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em;">
+                                        <tr>
+                                            <th class="ps-3" style="width: 40px;">#</th>
+                                            <th>Activity Type</th>
+                                            <th>Source / Method</th>
+                                            <th>Location / Coordinates</th>
+                                            <th>Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="inspectActivitiesTableBody">
+                                        {{-- Rendered via JS --}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                     {{-- TAB 5: RAW TELEMETRY JSON --}}
-                    <div class="tab-pane fade inspect-tab-pane" id="inspect-tab-raw" role="tabpanel">
+                    <div class="tab-pane fade" id="inspect-tab-raw" role="tabpanel">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div class="small text-muted fw-bold text-uppercase">
-                                <i class="fa-solid fa-terminal me-1 text-primary"></i> Complete Hardware & API Payload
+                                <i class="fa-solid fa-terminal me-1 text-primary"></i> Complete Hardware &amp; API Payload
                             </div>
                             <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnCopyInspectJson" onclick="copyJsonTelemetry(this)">
                                 <i class="fa-regular fa-copy me-1"></i> {{ __('app_security.copy_json') }}
@@ -1863,8 +2167,15 @@
                 </div>
             </div>
 
-            <div class="modal-footer border-top bg-white">
-                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close Inspector</button>
+            {{-- Modal Footer --}}
+            <div class="modal-footer bg-light border-top py-2.5 px-4 d-flex align-items-center justify-content-between">
+                <small class="text-muted" style="font-size: 11px;">
+                    <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                    Sessions, hardware attestation, and device telemetry synchronize directly with KNEAYERNG security core and attendance services.
+                </small>
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    {{ __('app_security.close') }}
+                </button>
             </div>
         </div>
     </div>
@@ -1937,6 +2248,59 @@
         copyToClipboard(activeInspectDeviceJson, btn);
     }
 
+    // Activity Logs state for inspect modal
+    let activeInspectActivities = [];
+
+    // Filter inspect activity logs
+    function filterInspectActivities(filterType, btn) {
+        if (btn) {
+            document.querySelectorAll('#inspectActivityFilterGroup button').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        const tbody = document.getElementById('inspectActivitiesTableBody');
+        if (!tbody) return;
+
+        let filtered = activeInspectActivities;
+        if (filterType === 'attendance') {
+            filtered = activeInspectActivities.filter(a => a.type === 'attendance');
+        } else if (filterType === 'location') {
+            filtered = activeInspectActivities.filter(a => a.type === 'location' || a.latitude);
+        }
+
+        if (!filtered || filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted small fst-italic">No activities found matching this filter.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((act, index) => {
+            const locText = (act.latitude && act.longitude)
+                ? `<a href="https://www.google.com/maps?q=${act.latitude},${act.longitude}" target="_blank" rel="noopener noreferrer" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none"><i class="fa-solid fa-location-dot me-1"></i>${Number(act.latitude).toFixed(4)}, ${Number(act.longitude).toFixed(4)}</a>`
+                : `<span class="text-muted small fst-italic">—</span>`;
+
+            return `
+                <tr>
+                    <td class="ps-3 text-muted">${index + 1}</td>
+                    <td>
+                        <span class="fw-semibold text-dark">${escapeHtml(act.title || act.type || 'Activity')}</span>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">${escapeHtml(act.source || 'App')}</span></td>
+                    <td>${locText}</td>
+                    <td>
+                        <div class="fw-semibold text-dark">${escapeHtml(act.created_at || '—')}</div>
+                        <small class="text-muted">${escapeHtml(act.created_at_human || '')}</small>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
     // Open Device Inspect Modal
     function openDeviceInspectModal(button) {
         const rawData = button.getAttribute('data-device');
@@ -1951,100 +2315,398 @@
 
         activeInspectDeviceJson = JSON.stringify(d, null, 2);
 
-        // Header
-        document.getElementById('inspectModalDeviceModel').textContent = d.device_model || 'Android Device';
-        document.getElementById('inspectModalUserBadge').textContent = d.user_name || 'User';
+        // Header: Employee Avatar, Name, Code, Online status, Role/Dept/Branch, View Live Location Map Btn
+        const emp = d.employee || {};
+        const avatarEl = document.getElementById('inspectModalAvatar');
+        if (avatarEl) avatarEl.src = emp.avatar || '/assets/images/img.png';
 
-        const statusBadge = document.getElementById('inspectModalStatusBadge');
-        statusBadge.className = 'device-status-badge status-' + (d.device_status || 'pending') + ' py-0 px-2';
-        statusBadge.textContent = (d.device_status || 'pending').replace('_', ' ');
+        const empNameEl = document.getElementById('inspectModalEmployeeName');
+        if (empNameEl) empNameEl.textContent = emp.name || d.user_name || 'User';
 
-        const connBadge = document.getElementById('inspectModalConnBadge');
-        const connText = document.getElementById('inspectModalConnText');
-        connBadge.innerHTML = `<span class="conn-pulse-dot ${d.conn_status || 'offline'} me-1"></span> <span id="inspectModalConnText">${d.conn_label || 'Offline'}</span>`;
+        const empCodeEl = document.getElementById('inspectModalEmployeeCode');
+        if (empCodeEl) empCodeEl.textContent = emp.employee_code || 'N/A';
 
-        // Tab 1: Specs
-        document.getElementById('inspectSpecModel').textContent = d.device_model || 'Android Device';
-        document.getElementById('inspectSpecAndroid').textContent = `Android ${d.android_version || 'OS'} (API SDK ${d.android_sdk || '?'})`;
-        document.getElementById('inspectSpecPackage').textContent = d.package_name || '—';
-        document.getElementById('inspectSpecVersion').textContent = `${d.version_name || '1.0.0'} (Build ${d.version_code || 1})`;
-        document.getElementById('inspectSpecUuid').textContent = d.uuid || '—';
-        document.getElementById('inspectSpecInstallUuid').textContent = d.installation_uuid || '—';
+        const isOnline = emp.is_online || d.conn_status === 'online';
+        const onlineBadge = document.getElementById('inspectModalOnlineBadge');
+        const onlineText = document.getElementById('inspectModalOnlineText');
+        if (onlineBadge) {
+            if (isOnline) {
+                onlineBadge.className = 'badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 eda-status-online';
+                if (onlineText) onlineText.textContent = 'Online Now';
+            } else {
+                onlineBadge.className = 'badge rounded-pill px-2.5 py-1 d-inline-flex align-items-center gap-1.5 eda-status-offline';
+                if (onlineText) onlineText.textContent = 'Offline';
+            }
+        }
 
-        // Tab 2: Crypto
+        const viewMapBtn = document.getElementById('inspectModalViewMapBtn');
+        const loc = d.location || {};
+        if (viewMapBtn) {
+            if (loc.has_location && loc.map_url) {
+                viewMapBtn.href = loc.map_url;
+                viewMapBtn.classList.remove('disabled', 'opacity-50');
+            } else {
+                viewMapBtn.href = 'javascript:void(0)';
+                viewMapBtn.classList.add('disabled', 'opacity-50');
+            }
+        }
+
+        const roleDeptBranchEl = document.getElementById('inspectModalRoleDeptBranch');
+        if (roleDeptBranchEl) {
+            const parts = [emp.role || 'Staff', emp.department || '—', emp.branch || '—', emp.workspace_type || 'Office'].filter(Boolean);
+            roleDeptBranchEl.textContent = parts.join(' • ');
+        }
+
+        // Subnav badges
+        const sessionsList = d.sessions || [];
+        const sessCountBadge = document.getElementById('inspectTabSessionCount');
+        if (sessCountBadge) sessCountBadge.textContent = sessionsList.length;
+
+        const score = parseInt(d.risk_score || 0);
+        const riskTabBadge = document.getElementById('inspectTabRiskBadge');
+        if (riskTabBadge) {
+            riskTabBadge.textContent = score + '/100';
+            riskTabBadge.className = 'badge rounded-pill ms-1 ' + (score >= 60 ? 'bg-danger' : (score >= 25 ? 'bg-warning text-dark' : 'bg-success'));
+        }
+
+        // Primary Device Card Header
+        const devStatusBadge = document.getElementById('inspectDeviceStatusBadge');
+        if (devStatusBadge) {
+            devStatusBadge.className = 'device-status-badge status-' + (d.device_status || 'pending') + ' py-0 px-2';
+            devStatusBadge.textContent = (d.device_status || 'pending').replace('_', ' ');
+        }
+
+        const devPlatformLink = document.getElementById('inspectDevicePlatformLink');
+        if (devPlatformLink) {
+            devPlatformLink.href = loc.map_url || '#';
+        }
+
+        // Primary Device Card - Col 1: Hardware & Battery
+        const cardDevName = document.getElementById('inspectCardDeviceName');
+        if (cardDevName) cardDevName.textContent = d.device_model || 'Android Device';
+
+        const cardBatteryBadge = document.getElementById('inspectCardBatteryBadge');
+        if (cardBatteryBadge) {
+            if (d.battery_level !== null && d.battery_level !== undefined && d.battery_level !== '') {
+                const bat = parseInt(d.battery_level);
+                const bIcon = bat >= 80 ? 'fa-battery-full' : (bat >= 50 ? 'fa-battery-three-quarters' : (bat >= 20 ? 'fa-battery-quarter' : 'fa-battery-empty'));
+                const bClass = bat >= 40 ? 'battery-good' : (bat >= 20 ? 'battery-warn' : 'battery-danger');
+                cardBatteryBadge.innerHTML = `<span class="battery-pill ${bClass}" title="Battery level: ${bat}%"><i class="fa-solid ${bIcon}"></i> ${bat}%</span>`;
+            } else {
+                cardBatteryBadge.innerHTML = '';
+            }
+        }
+
+        const cardDevModel = document.getElementById('inspectCardDeviceModel');
+        if (cardDevModel) cardDevModel.textContent = `Android ${d.android_version || 'OS'} (SDK ${d.android_sdk || '?'})`;
+
+        const cardDevUuid = document.getElementById('inspectCardDeviceUuid');
+        if (cardDevUuid) cardDevUuid.textContent = d.uuid || '—';
+
+        const copyUuidBtn = document.getElementById('inspectCardCopyUuidBtn');
+        if (copyUuidBtn) {
+            copyUuidBtn.onclick = function() { copyToClipboard(d.uuid, copyUuidBtn); };
+        }
+
+        // Primary Device Card - Col 2: Connection & Activity
+        const cardConnBadge = document.getElementById('inspectCardConnectionBadge');
+        if (cardConnBadge) {
+            cardConnBadge.innerHTML = `<span class="badge rounded-pill px-2.5 py-1 ${isOnline ? 'eda-status-online' : 'eda-status-offline'}" style="font-size: 11px;"><span class="eda-pulse-dot me-1"></span>${d.conn_label || (isOnline ? 'Online Now' : 'Offline')}</span>`;
+        }
+
+        const cardLoginTime = document.getElementById('inspectCardLoginTime');
+        const cardLoginTimeHuman = document.getElementById('inspectCardLoginTimeHuman');
+        if (cardLoginTime) cardLoginTime.textContent = emp.last_login_at || '—';
+        if (cardLoginTimeHuman) cardLoginTimeHuman.textContent = emp.last_login_human ? '(' + emp.last_login_human + ')' : '';
+
+        const cardLastSeenTime = document.getElementById('inspectCardLastSeenTime');
+        const cardLastSeenHuman = document.getElementById('inspectCardLastSeenHuman');
+        if (cardLastSeenTime) cardLastSeenTime.textContent = d.last_seen_at || 'Never';
+        if (cardLastSeenHuman) cardLastSeenHuman.textContent = d.last_seen_diff ? '(' + d.last_seen_diff + ')' : '';
+
+        // Primary Device Card - Col 3: App Information
+        const cardAppName = document.getElementById('inspectCardAppName');
+        if (cardAppName) cardAppName.textContent = d.package_name || 'KneayErng Mobile';
+
+        const cardAppVersion = document.getElementById('inspectCardAppVersion');
+        if (cardAppVersion) cardAppVersion.textContent = `v${d.version_name || '1.0.0'} (Build ${d.version_code || 1})`;
+
+        const cardFcmBadge = document.getElementById('inspectCardFcmBadge');
+        const cardFcmText = document.getElementById('inspectCardFcmText');
+        if (cardFcmBadge && cardFcmText) {
+            if (d.has_fcm) {
+                cardFcmBadge.className = 'badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1 bg-success bg-opacity-10 text-success border border-success border-opacity-25';
+                cardFcmText.textContent = 'Push Notification (FCM Active)';
+            } else {
+                cardFcmBadge.className = 'badge rounded-pill px-2 py-0.5 d-inline-flex align-items-center gap-1 bg-secondary bg-opacity-10 text-muted border border-secondary border-opacity-25';
+                cardFcmText.textContent = 'No Push Token';
+            }
+        }
+
+        // Primary Device Card - Col 4: Device Location
+        const locStatusBadge = document.getElementById('inspectCardLocationStatusBadge');
+        if (locStatusBadge) {
+            if (loc.has_location) {
+                locStatusBadge.className = 'badge rounded-pill px-2 py-0.5 ' + (isOnline ? 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' : 'bg-secondary bg-opacity-10 text-muted border');
+                locStatusBadge.textContent = loc.status_text || (isOnline ? 'Live Location' : 'Last Offline Location');
+            } else {
+                locStatusBadge.className = 'badge bg-light text-muted border rounded-pill px-2 py-0.5';
+                locStatusBadge.textContent = 'No GPS';
+            }
+        }
+
+        const locCoords = document.getElementById('inspectCardLocationCoords');
+        if (locCoords) {
+            if (loc.has_location) {
+                locCoords.textContent = `${Number(loc.latitude).toFixed(4)}, ${Number(loc.longitude).toFixed(4)}`;
+            } else {
+                locCoords.textContent = 'No GPS Coordinates';
+            }
+        }
+
+        const copyCoordsBtn = document.getElementById('inspectCardCopyCoordsBtn');
+        if (copyCoordsBtn) {
+            if (loc.has_location) {
+                copyCoordsBtn.classList.remove('d-none');
+                copyCoordsBtn.onclick = function() { copyToClipboard(`${loc.latitude}, ${loc.longitude}`, copyCoordsBtn); };
+            } else {
+                copyCoordsBtn.classList.add('d-none');
+            }
+        }
+
+        const locTime = document.getElementById('inspectCardLocationTime');
+        if (locTime) locTime.textContent = loc.updated_at ? `${loc.updated_at} (${loc.updated_at_human})` : '—';
+
+        const locAccuracy = document.getElementById('inspectCardLocationAccuracy');
+        if (locAccuracy) locAccuracy.textContent = loc.accuracy ? `Accuracy: ±${loc.accuracy}m` : '';
+
+        const mapBtn = document.getElementById('inspectCardMapBtn');
+        if (mapBtn) {
+            if (loc.has_location && loc.map_url) {
+                mapBtn.href = loc.map_url;
+                mapBtn.classList.remove('disabled', 'opacity-50');
+            } else {
+                mapBtn.href = 'javascript:void(0)';
+                mapBtn.classList.add('disabled', 'opacity-50');
+            }
+        }
+
+        // Active Sessions List Card
+        const sessTotalBadge = document.getElementById('inspectSessionsTotalBadge');
+        const sessOnlineCount = document.getElementById('inspectSessionsOnlineCount');
+        const sessOfflineCount = document.getElementById('inspectSessionsOfflineCount');
+        const sessTableBody = document.getElementById('inspectSessionsTableBody');
+
+        let onlineSessCount = 0;
+        let offlineSessCount = 0;
+
+        sessionsList.forEach(s => {
+            if (s.is_online) onlineSessCount++;
+            else offlineSessCount++;
+        });
+
+        if (sessTotalBadge) sessTotalBadge.textContent = sessionsList.length;
+        if (sessOnlineCount) sessOnlineCount.textContent = onlineSessCount;
+        if (sessOfflineCount) sessOfflineCount.textContent = offlineSessCount;
+
+        // Force Logout All Button
+        const forceLogoutAllBtn = document.getElementById('inspectForceLogoutAllBtn');
+        if (forceLogoutAllBtn) {
+            if (sessionsList.length > 0 && d.revoke_all_url) {
+                forceLogoutAllBtn.disabled = false;
+                forceLogoutAllBtn.onclick = function() {
+                    openStepUpModal('revoke-all-sessions', d.revoke_all_url, 'Revoke All Device Sessions', 'Immediately terminates ALL active connected sessions for ' + (d.device_model || 'this device') + '. The user will be required to re-authenticate.', d.device_model, emp.name || d.user_name, d.uuid);
+                };
+            } else {
+                forceLogoutAllBtn.disabled = true;
+                forceLogoutAllBtn.onclick = null;
+            }
+        }
+
+        // Render Sessions Table Rows
+        if (sessTableBody) {
+            if (sessionsList.length === 0) {
+                sessTableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted small fst-italic">No active or recorded sessions for this device.</td></tr>`;
+            } else {
+                sessTableBody.innerHTML = sessionsList.map((s, idx) => {
+                    const sOnlineHtml = s.is_online
+                        ? `<span class="badge rounded-pill px-2 py-0.5 eda-status-online" style="font-size: 10px;"><span class="eda-pulse-dot me-1"></span>Online</span>`
+                        : `<span class="badge rounded-pill px-2 py-0.5 eda-status-offline" style="font-size: 10px;"><span class="eda-pulse-dot me-1"></span>Offline</span>`;
+
+                    const sLocHtml = (s.latitude && s.longitude)
+                        ? `<a href="${s.map_url || ('https://www.google.com/maps?q=' + s.latitude + ',' + s.longitude)}" target="_blank" rel="noopener noreferrer" class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill text-decoration-none"><i class="fa-solid fa-location-dot me-1"></i>${Number(s.latitude).toFixed(3)}, ${Number(s.longitude).toFixed(3)}</a>`
+                        : `<span class="text-muted small fst-italic">No GPS</span>`;
+
+                    const sStatusBadge = s.is_active
+                        ? `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 10.5px;">Active</span>`
+                        : (s.status_text === 'Revoked'
+                            ? `<span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-0.5" style="font-size: 10.5px;">Revoked</span>`
+                            : `<span class="badge bg-secondary bg-opacity-10 text-muted border rounded-pill px-2 py-0.5" style="font-size: 10.5px;">Expired</span>`);
+
+                    const revokeActionBtn = (s.is_active && s.revoke_url)
+                        ? `<button type="button" class="btn btn-outline-danger btn-xs py-0.5 px-2 rounded-2" onclick="openStepUpModal('revoke-session', '${s.revoke_url}', 'Revoke API Session Token', 'Revoke this specific active session token and force client token refresh.', '${d.device_model || 'Android Device'}', '${emp.name || d.user_name}', '${s.uuid || s.token_preview}')" title="Revoke Session"><i class="fa-solid fa-ban me-1"></i>Revoke</button>`
+                        : `<span class="text-muted small fst-italic">—</span>`;
+
+                    return `
+                        <tr>
+                            <td class="ps-3 text-muted">${idx + 1}</td>
+                            <td>
+                                <div class="fw-semibold text-dark">${escapeHtml(d.device_model || 'Android Device')}</div>
+                                <small class="text-muted">Android ${escapeHtml(d.android_version || 'OS')}</small>
+                            </td>
+                            <td class="text-center">${sOnlineHtml}</td>
+                            <td>
+                                <span class="session-token-code" title="${escapeHtml(s.token_full || '')}">${escapeHtml(s.token_preview || 'Token')}</span>
+                            </td>
+                            <td>${sLocHtml}</td>
+                            <td>
+                                <div class="fw-semibold text-dark">${escapeHtml(s.created_at || '—')}</div>
+                                <small class="text-muted">${escapeHtml(s.last_used_human ? 'Used: ' + s.last_used_human : '')}</small>
+                            </td>
+                            <td class="text-center">${sStatusBadge}</td>
+                            <td class="text-end pe-3">${revokeActionBtn}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Tab 2: Crypto & Attestation
         const attLevel = (d.attestation_level || 'none').toLowerCase();
         const attChip = document.getElementById('inspectCryptoAttChip');
         const attDesc = document.getElementById('inspectCryptoAttDesc');
-        if (attLevel === 'strongbox') {
-            attChip.className = 'attestation-chip chip-strongbox';
-            attChip.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> StrongBox KeyStore';
-            attDesc.textContent = 'Hardware isolated tamper-resistant security chip (dedicated secure processor).';
-        } else if (attLevel === 'tee') {
-            attChip.className = 'attestation-chip chip-tee';
-            attChip.innerHTML = '<i class="fa-solid fa-microchip me-1"></i> TEE Hardware';
-            attDesc.textContent = 'Trusted Execution Environment (ARM TrustZone) isolated keystore.';
-        } else if (attLevel === 'basic') {
-            attChip.className = 'attestation-chip chip-basic';
-            attChip.innerHTML = '<i class="fa-solid fa-certificate me-1"></i> Basic Keystore';
-            attDesc.textContent = 'Standard Android software keystore.';
-        } else {
-            attChip.className = 'attestation-chip chip-failed';
-            attChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Unverified';
-            attDesc.textContent = 'Hardware key attestation not completed or failed verification challenge.';
+        if (attChip && attDesc) {
+            if (attLevel === 'strongbox') {
+                attChip.className = 'attestation-chip chip-strongbox';
+                attChip.innerHTML = '<i class="fa-solid fa-shield-halved me-1"></i> StrongBox KeyStore';
+                attDesc.textContent = 'Hardware isolated tamper-resistant security chip (dedicated secure processor).';
+            } else if (attLevel === 'tee') {
+                attChip.className = 'attestation-chip chip-tee';
+                attChip.innerHTML = '<i class="fa-solid fa-microchip me-1"></i> TEE Hardware';
+                attDesc.textContent = 'Trusted Execution Environment (ARM TrustZone) isolated keystore.';
+            } else if (attLevel === 'basic') {
+                attChip.className = 'attestation-chip chip-basic';
+                attChip.innerHTML = '<i class="fa-solid fa-certificate me-1"></i> Basic Keystore';
+                attDesc.textContent = 'Standard Android software keystore.';
+            } else {
+                attChip.className = 'attestation-chip chip-failed';
+                attChip.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Unverified';
+                attDesc.textContent = 'Hardware key attestation not completed or failed verification challenge.';
+            }
         }
-        document.getElementById('inspectCryptoKeyFingerprint').textContent = d.public_key_fingerprint || '—';
-        document.getElementById('inspectCryptoSigningSha').textContent = d.signing_sha256 || '—';
 
-        // Tab 3: Sessions
-        const connVal = document.getElementById('inspectSessionConnVal');
-        connVal.innerHTML = `<span class="conn-pulse-dot ${d.conn_status || 'offline'}"></span> <span>${d.conn_label || 'Offline'}</span>`;
-        document.getElementById('inspectSessionLastSeen').textContent = d.last_seen_at ? `${d.last_seen_at} (${d.last_seen_diff})` : 'Never';
-        document.getElementById('inspectSessionRegistered').textContent = d.registered_at || '—';
-        document.getElementById('inspectSessionApproved').textContent = d.approved_at ? `${d.approved_at} (by ${d.approved_by || 'Admin'})` : 'Not Approved';
-        document.getElementById('inspectSessionActiveCount').textContent = `${d.active_sessions_count || 0} Active Session(s)`;
-        document.getElementById('inspectSessionTotalCount').textContent = `${d.sessions_count || 0} Total Lifetime Session(s)`;
-        document.getElementById('inspectSessionViewLink').href = d.sessions_url || '#';
+        const cryptoFingerprint = document.getElementById('inspectCryptoKeyFingerprint');
+        if (cryptoFingerprint) cryptoFingerprint.textContent = d.public_key_fingerprint || '—';
 
-        // Tab 4: Risk
-        const score = parseInt(d.risk_score || 0);
-        document.getElementById('inspectRiskScoreText').textContent = score + '/100';
+        const cryptoSigningSha = document.getElementById('inspectCryptoSigningSha');
+        if (cryptoSigningSha) cryptoSigningSha.textContent = d.signing_sha256 || '—';
+
+        const cryptoPackage = document.getElementById('inspectCryptoPackage');
+        if (cryptoPackage) cryptoPackage.textContent = d.package_name || '—';
+
+        const cryptoVersion = document.getElementById('inspectCryptoVersion');
+        if (cryptoVersion) cryptoVersion.textContent = `${d.version_name || '1.0.0'} (Build ${d.version_code || 1})`;
+
+        const cryptoInstallUuid = document.getElementById('inspectCryptoInstallUuid');
+        if (cryptoInstallUuid) cryptoInstallUuid.textContent = d.installation_uuid || '—';
+
+        // Tab 3: Risk & Threat
+        const riskScoreText = document.getElementById('inspectRiskScoreText');
+        if (riskScoreText) riskScoreText.textContent = score + '/100';
+
         const riskFill = document.getElementById('inspectRiskMeterFill');
         const riskBadge = document.getElementById('inspectRiskBadge');
-        if (score >= 60) {
-            riskFill.className = 'risk-meter-fill risk-high';
-            riskBadge.className = 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fs-6';
-            riskBadge.textContent = 'High Risk';
-        } else if (score >= 25) {
-            riskFill.className = 'risk-meter-fill risk-medium';
-            riskBadge.className = 'badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill fs-6';
-            riskBadge.textContent = 'Medium Risk';
-        } else {
-            riskFill.className = 'risk-meter-fill risk-low';
-            riskBadge.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fs-6';
-            riskBadge.textContent = 'Low Risk';
+        if (riskFill && riskBadge) {
+            if (score >= 60) {
+                riskFill.className = 'risk-meter-fill risk-high';
+                riskBadge.className = 'badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill fs-6';
+                riskBadge.textContent = 'High Risk';
+            } else if (score >= 25) {
+                riskFill.className = 'risk-meter-fill risk-medium';
+                riskBadge.className = 'badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-2 rounded-pill fs-6';
+                riskBadge.textContent = 'Medium Risk';
+            } else {
+                riskFill.className = 'risk-meter-fill risk-low';
+                riskBadge.className = 'badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fs-6';
+                riskBadge.textContent = 'Low Risk';
+            }
+            riskFill.style.width = Math.max(6, score) + '%';
         }
-        riskFill.style.width = Math.max(6, score) + '%';
 
         const signalsList = document.getElementById('inspectRiskSignalsList');
-        if (d.risk_signals && d.risk_signals.length > 0) {
-            signalsList.innerHTML = d.risk_signals.map(s => `
-                <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <div class="fw-semibold text-danger">
-                        <i class="fa-solid fa-triangle-exclamation me-1"></i> ${s.signal || 'Signal'}
+        if (signalsList) {
+            if (d.risk_signals && d.risk_signals.length > 0) {
+                signalsList.innerHTML = d.risk_signals.map(s => `
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div class="fw-semibold text-danger">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> ${escapeHtml(s.signal || 'Signal')}
+                        </div>
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill">+${s.points || 0} pts</span>
                     </div>
-                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill">+${s.points || 0} pts</span>
-                </div>
-            `).join('');
-        } else {
-            signalsList.innerHTML = '<div class="text-muted small fst-italic py-2"><i class="fa-solid fa-circle-check text-success me-1"></i> No active threat signals or penalties recorded for this hardware profile.</div>';
+                `).join('');
+            } else {
+                signalsList.innerHTML = '<div class="text-muted small fst-italic py-2"><i class="fa-solid fa-circle-check text-success me-1"></i> No active threat signals or penalties recorded for this hardware profile.</div>';
+            }
         }
-        document.getElementById('inspectRiskReviewLink').href = d.review_url || '#';
+
+        const riskReviewLink = document.getElementById('inspectRiskReviewLink');
+        if (riskReviewLink) riskReviewLink.href = d.review_url || '#';
+
+        // Tab 4: Activity Logs (Attendance & GPS Location Updates)
+        activeInspectActivities = [];
+        const activityCountBadge = document.getElementById('inspectTabActivityCount');
+        const activitiesTbody = document.getElementById('inspectActivitiesTableBody');
+        if (activitiesTbody) {
+            activitiesTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div> Loading employee activity telemetry...</td></tr>`;
+        }
+
+        if (emp.id) {
+            fetch(`/admin/employees/device-activities/${emp.id}`)
+                .then(r => r.json())
+                .then(res => {
+                    const acts = [];
+                    if (res.attendanceActivities && Array.isArray(res.attendanceActivities)) {
+                        res.attendanceActivities.forEach(a => acts.push({ ...a, type: 'attendance' }));
+                    }
+                    if (res.locationActivities && Array.isArray(res.locationActivities)) {
+                        res.locationActivities.forEach(l => acts.push({ ...l, type: 'location' }));
+                    }
+                    if (res.attendances && Array.isArray(res.attendances)) {
+                        res.attendances.forEach(at => acts.push({ ...at, type: 'attendance' }));
+                    }
+                    activeInspectActivities = acts;
+                    if (activityCountBadge) activityCountBadge.textContent = acts.length;
+                    filterInspectActivities('all');
+                })
+                .catch(err => {
+                    console.warn('Failed loading activity telemetry', err);
+                    if (activitiesTbody) {
+                        activitiesTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted small fst-italic">Activity logs synchronized via attendance service. (0 recorded)</td></tr>`;
+                    }
+                });
+        } else {
+            if (activityCountBadge) activityCountBadge.textContent = 0;
+            if (activitiesTbody) {
+                activitiesTbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted small fst-italic">No employee activity records available.</td></tr>`;
+            }
+        }
+
+        // Setup activity filter buttons
+        const filterGroup = document.getElementById('inspectActivityFilterGroup');
+        if (filterGroup) {
+            filterGroup.querySelectorAll('button').forEach(b => {
+                b.onclick = function() {
+                    filterInspectActivities(b.getAttribute('data-filter'), b);
+                };
+            });
+        }
 
         // Tab 5: Raw JSON
-        document.getElementById('inspectRawJsonBlock').textContent = activeInspectDeviceJson;
+        const rawJsonBlock = document.getElementById('inspectRawJsonBlock');
+        if (rawJsonBlock) rawJsonBlock.textContent = activeInspectDeviceJson;
 
         // Reset to first tab
-        const firstTab = document.getElementById('inspect-tab-specs-btn');
+        const firstTab = document.getElementById('inspect-tab-devsess-btn');
         if (firstTab) bootstrap.Tab.getOrCreateInstance(firstTab).show();
 
         // Show modal
@@ -2154,6 +2816,10 @@
             iconBox.innerHTML = '<i class="fa-solid fa-ban"></i>';
             submitBtn.className = 'btn btn-danger rounded-pill px-4 shadow-sm';
             submitBtn.innerHTML = '<i class="fa-solid fa-ban me-1"></i> Revoke Token Session';
+        } else if (type === 'revoke-all-sessions') {
+            iconBox.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i>';
+            submitBtn.className = 'btn btn-danger rounded-pill px-4 shadow-sm';
+            submitBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket me-1"></i> Revoke All Sessions';
         }
 
         const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
