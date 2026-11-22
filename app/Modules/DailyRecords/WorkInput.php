@@ -14,11 +14,13 @@ final class WorkInput
         if ($kind) {
             $request->merge(['kind' => $kind]);
         }
-        return $request->validate([
+        $branchRoute = $request->input('kind') === 'activity' &&
+            ($request->input('fields.mission_type') === 'branch_route');
+        $rules = [
             'kind' => 'required|in:activity,incident,note', 'request_id' => 'nullable|uuid', 'revision' => 'nullable|integer|min:0',
             'note_document' => 'prohibited_unless:kind,note|nullable|string|max:32000',
             'title' => 'required|string|max:180', 'body' => 'required_unless:kind,note|nullable|string|max:10000',
-            'category_id' => 'required_unless:kind,note|nullable|integer|min:1',
+            'category_id' => $branchRoute ? 'nullable|integer|min:1' : 'required_unless:kind,note|nullable|integer|min:1',
             'subcategory_id' => 'required_if:kind,incident|nullable|integer|min:1',
             'occurred_at' => 'required_if:kind,incident|nullable|date_format:Y-m-d\TH:i',
             'activity_date' => 'required_if:kind,activity|nullable|date_format:Y-m-d',
@@ -32,7 +34,11 @@ final class WorkInput
             'immediate_action' => 'nullable|string|max:3000', 'proposed_solution' => 'nullable|string|max:3000',
             'assignment_id' => 'nullable|integer|min:1',
             'fields' => 'nullable|array|max:30',
-        ] + self::tags() + self::attachments());
+        ] + self::tags() + self::attachments();
+        if ($branchRoute) {
+            $rules['files'] = 'nullable|array|max:50';
+        }
+        return $request->validate($rules);
     }
 
     public static function incidentAction(Request $request): array

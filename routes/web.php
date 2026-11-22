@@ -17,6 +17,7 @@ use App\Http\Controllers\Web\AwardController;
 use App\Http\Controllers\Web\BannerSlideshowController;
 use App\Http\Controllers\Web\MobileQuoteController;
 use App\Http\Controllers\Web\AppAppearanceController;
+use App\Http\Controllers\Web\ThemeModeController;
 use App\Http\Controllers\Web\CertificateController;
 use App\Http\Controllers\Web\AwardTypeController;
 use App\Http\Controllers\Web\BioAttendanceController;
@@ -216,6 +217,13 @@ Route::group([
             Route::get('app-appearance', [AppAppearanceController::class, 'edit'])->name('app-appearance');
             Route::post('app-appearance', [AppAppearanceController::class, 'update'])->name('app-appearance.update');
             Route::post('app-appearance/reset', [AppAppearanceController::class, 'reset'])->name('app-appearance.reset');
+            Route::get('theme-modes', [ThemeModeController::class, 'index'])->name('theme-modes');
+            Route::post('theme-modes', [ThemeModeController::class, 'store'])->name('theme-modes.store');
+            Route::post('theme-modes/reset', [ThemeModeController::class, 'reset'])->name('theme-modes.reset');
+            Route::post('theme-modes/{key}/update', [ThemeModeController::class, 'update'])->name('theme-modes.update');
+            Route::post('theme-modes/{key}/reset-one', [ThemeModeController::class, 'resetTheme'])->name('theme-modes.reset-theme');
+            Route::post('theme-modes/{key}/toggle', [ThemeModeController::class, 'toggle'])->name('theme-modes.toggle');
+            Route::delete('theme-modes/{key}', [ThemeModeController::class, 'destroy'])->name('theme-modes.destroy');
         });
 
 

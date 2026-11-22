@@ -39,6 +39,11 @@ class AppAppearanceController extends Controller
             'sparkle_effects' => ['sometimes', 'boolean'],
             'emoji_effect' => ['sometimes', 'boolean'],
             'emoji_char' => ['nullable', 'string', 'max:8'],
+            'custom_effects' => ['sometimes', 'array', 'max:20'],
+            'custom_effects.*.id' => ['required', 'string', 'regex:/^[a-zA-Z0-9_-]{1,40}$/'],
+            'custom_effects.*.name' => ['required', 'string', 'max:60'],
+            'custom_effects.*.emoji' => ['required', 'string', 'max:16'],
+            'custom_effects.*.enabled' => ['sometimes', 'boolean'],
         ]);
 
         $config = $this->config();
@@ -66,6 +71,13 @@ class AppAppearanceController extends Controller
         $config['emoji_char'] = $request->filled('emoji_char')
             ? mb_substr(trim((string) $request->input('emoji_char')), 0, 8)
             : ((string) ($config['emoji_char'] ?? '✨') ?: '✨');
+        $config['custom_effects'] = collect($validated['custom_effects'] ?? [])
+            ->map(fn (array $effect, int|string $index) => [
+                'id' => $effect['id'],
+                'name' => trim($effect['name']),
+                'emoji' => trim($effect['emoji']),
+                'enabled' => $request->boolean("custom_effects.{$index}.enabled"),
+            ])->values()->all();
 
         if ($config['background_type'] !== 'none' && empty($config['background_url'])) {
             return redirect()->route('admin.mobile-tools.app-appearance')
@@ -121,6 +133,7 @@ class AppAppearanceController extends Controller
             'sparkle_effects' => true,
             'emoji_effect' => false,
             'emoji_char' => '✨',
+            'custom_effects' => [],
         ];
     }
 

@@ -231,6 +231,31 @@ class DashboardApiController extends Controller
         )->resolve()])->header('Cache-Control', 'private, no-store');
     }
 
+    public function mobileLayout(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $roleId = (int) ($user?->role_id ?? 0);
+        $layoutService = app(\App\Services\Authorization\MobileRoleLayout::class);
+        $configured = $layoutService->isConfigured($roleId);
+        $layout = $configured ? $layoutService->forRole($roleId) : [];
+        $features = app(\App\Services\Authorization\MobilePermissions::class)
+            ->features($this->featureRepository->getAllFeatures())
+            ->keyBy('key');
+        $allowedMenus = array_keys(config('mobile_permissions.menus', []));
+
+        $visibleLayout = collect($layout)
+                ->filter(fn ($placement, $menu) => in_array($menu, $allowedMenus, true)
+                    && (string) ($features->get($menu)->status ?? '0') === '1');
+        $data = $visibleLayout->map(fn ($placement) => $placement['zones'])->all();
+        $positions = $visibleLayout->map(fn ($placement) => $placement['positions'] ?? [])->all();
+
+        return response()->json([
+            'configured' => $configured,
+            'data' => (object) $data,
+            'positions' => (object) $positions,
+        ])->header('Cache-Control', 'private, no-store');
+    }
+
     private function getAllDatesForShiftNotification($userDetail)
     {
         try{

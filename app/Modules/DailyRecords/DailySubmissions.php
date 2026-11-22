@@ -204,7 +204,7 @@ final class DailySubmissions
             'selected_version' => $version?->version, 'records' => $items,
             'tasks' => $this->dayTasks($actor, $manager, $report->employee_id, $report->report_date),
             'versions' => DB::table('daily_report_versions')->where('submission_id', $id)->orderByDesc('version')
-                ->simplePaginate(20, ['version', 'submitted_at'], 'versions'),
+                ->paginate(20, ['version', 'submitted_at'], 'versions'),
         ];
     }
 
@@ -213,8 +213,11 @@ final class DailySubmissions
         [$start, $end] = $this->dayBounds($date);
         $records = $this->entries->query($actor, true)
             ->join('users as employee', 'employee.id', '=', 'e.employee_id')
-            ->whereIn('e.kind', ['activity', 'incident'])->where('e.sensitive', false)
-            ->where('e.occurred_at', '>=', $start)->where('e.occurred_at', '<', $end)
+            ->whereIn('e.kind', ['activity', 'incident'])->where('e.private', false)
+            ->where('e.sensitive', false)->whereNull('e.archived_at')
+            ->where(fn (Builder $q) => $q
+                ->where(fn (Builder $occurred) => $occurred->where('e.occurred_at', '>=', $start)->where('e.occurred_at', '<', $end))
+                ->orWhere(fn (Builder $legacy) => $legacy->whereNull('e.occurred_at')->where('e.created_at', '>=', $start)->where('e.created_at', '<', $end)))
             ->whereNotExists(fn (Builder $q) => $q->selectRaw('1')->from('daily_report_submissions as s')
                 ->whereColumn('s.employee_id', 'e.employee_id')->whereColumn('s.company_id', 'e.company_id')
                 ->where('s.report_date', $date)->whereNotNull('s.submitted_at'));

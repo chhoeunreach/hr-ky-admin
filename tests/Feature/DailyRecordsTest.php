@@ -314,6 +314,12 @@ final class DailyRecordsTest extends TestCase
         $this->asMobile(2)->postJson(self::API.'/summaries', $data)->assertOk()->assertJsonPath('data.id', $id);
         $this->postJson(self::API.'/summaries', $data)->assertOk()->assertJsonPath('data.id', $id);
         $this->assertDatabaseCount('daily_report_versions', 1);
+        $this->asManager(1)->get(self::WEB.'/submissions?status=submitted')
+            ->assertOk()->assertSee(__('daily_records.total_count', ['count' => 1]))
+            ->assertSee('Operations One')->assertSee('value="submitted"', false)
+            ->assertSee(__('daily_records.submission_overview'))
+            ->assertSee('aria-label="'.__('daily_records.pending_review').': 1"', false)
+            ->assertSee('aria-label="'.__('index.submitted').': 1"', false);
         $this->postJson(self::API."/summary-inbox/$id/actions", ['action' => 'approve','version' => 1])->assertForbidden();
         $this->asManager(1)->get(self::WEB."/submissions/$id")->assertOk()->assertSee('Sales work')->assertSee('Submitted work');
         $this->postJson(self::WEB."/records/$id/review", ['action' => 'approve'])->assertConflict();
@@ -329,6 +335,41 @@ final class DailyRecordsTest extends TestCase
             ->assertOk()->assertJsonPath('data.report.status', 'approved');
         $this->getJson(self::API."/summary-inbox/$id?version=1")->assertOk()->assertJsonPath('data.content.summary', 'Submitted work');
         $this->asManager(1)->get(self::WEB.'/export/xlsx?view=monthly&month=2026-11&kind=report')->assertDownload('daily-records-monthly.xlsx');
+    }
+
+    public function test_branch_routes_sync_from_mobile_and_are_managed_in_scoped_admin_dashboard(): void
+    {
+        $routeId = '6da18bb8-bb27-4aa6-8ace-1a6f6dc64d33';
+        $requestId = '1e70c00e-360c-448a-bd3d-fca8fc20a461';
+        $this->asMobile(2)->postJson(self::API.'/work-records', [
+            'kind' => 'activity', 'request_id' => $requestId, 'title' => 'Field route: Operations to Finance',
+            'activity_date' => '2026-11-21', 'start_time' => '08:00', 'end_time' => '10:00',
+            'body' => 'Visited Finance branch', 'tags' => ['#branch-route', '#mission'],
+            'fields' => [
+                'mission_type' => 'branch_route', 'route_id' => $routeId, 'purpose' => 'Deliver payroll documents',
+                'origin_branch' => 'Operations', 'target_branches' => ['Finance'], 'mission_mode' => 'multi_branch',
+                'departure_time' => '08:00', 'arrival_time' => '10:00', 'status' => 'completed',
+                'total_minutes' => 120, 'formatted_duration' => '2h 0m', 'final_summary' => 'Documents delivered',
+                'start_latitude' => 11.56, 'start_longitude' => 104.92, 'end_latitude' => 11.57, 'end_longitude' => 104.93,
+                'checkpoints_count' => 1,
+                'checkpoints_data' => json_encode([[
+                    'id' => 'stop-1', 'branch_name' => 'Finance', 'action_type' => 'arrival',
+                    'arrived_at' => '2026-11-21T09:15:00+07:00', 'latitude' => 11.57, 'longitude' => 104.93,
+                    'notes' => 'Documents received', 'photo_paths' => ['/private/mobile/photo.jpg'],
+                ]], JSON_THROW_ON_ERROR),
+                'supporting_links' => ['https://example.test/route-proof'],
+            ],
+        ])->assertCreated();
+
+        $entryId = DB::table('daily_entries')->value('id');
+        $saved = json_decode(DB::table('daily_entries')->where('id', $entryId)->value('details'), true);
+        $this->assertSame('branch_route', $saved['fields']['mission_type']);
+        $this->assertSame(1, $saved['fields']['checkpoints_data'][0]['photo_count']);
+        $this->assertArrayNotHasKey('photo_paths', $saved['fields']['checkpoints_data'][0]);
+        $this->asManager(1)->get(self::WEB.'/branch-routes')
+            ->assertOk()->assertSee('Deliver payroll documents')->assertSee('Finance')
+            ->assertSee('Documents delivered')->assertSee(__('daily_records.branch_routes_total'));
+        $this->get(self::WEB.'/branch-routes?employee_id=3')->assertOk()->assertDontSee('Deliver payroll documents');
     }
 
     public function test_daily_report_permission_and_current_day_submission_policy(): void

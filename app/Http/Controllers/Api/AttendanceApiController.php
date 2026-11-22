@@ -192,6 +192,7 @@ class AttendanceApiController extends Controller
         $workingMinutes = (double)($attendance['working_hour'] ?? 0);
         $overTime = (double)($attendance['overtime'] ?? 0);
         $underTime = (double)($attendance['undertime'] ?? 0);
+        $earlyCheckOutMinutes = $this->earlyCheckOutMinutes($attendanceDate, $attendance, $timeLeave);
 
         return [
             'id' => $attendance['id'] ?? 0,
@@ -217,6 +218,8 @@ class AttendanceApiController extends Controller
             'is_overtime' => $overTime > 0,
             'undertime' => $underTime > 0 ? $this->minutesLabel($underTime) : '',
             'is_undertime' => $underTime > 0,
+            'is_early_check_out' => $earlyCheckOutMinutes > 0,
+            'early_check_out_minutes' => $earlyCheckOutMinutes,
             'day_status' => $extraData['day_status'],
             'status_label' => $extraData['status_label'],
             'leave_status' => $leaveRequest?->status,
@@ -229,6 +232,41 @@ class AttendanceApiController extends Controller
                 ? AttendanceHelper::changeTimeFormatForAttendanceView($timeLeave->end_time)
                 : null,
         ];
+    }
+
+    private function earlyCheckOutMinutes(string $attendanceDate, ?array $attendance, ?TimeLeave $timeLeave): int
+    {
+        if (!$attendance
+            || (int)($attendance['is_early_check_out'] ?? 0) !== 1
+            || $timeLeave?->status === 'approved'
+            || empty($attendance['closing_time'])
+            || empty($attendance['checkout_before'])
+        ) {
+            return 0;
+        }
+
+        $checkOut = $attendance['check_out_at'] ?? $attendance['night_checkout'] ?? null;
+        if (!$checkOut) {
+            return 0;
+        }
+
+        $opening = !empty($attendance['opening_time'])
+            ? Carbon::parse($attendanceDate . ' ' . $attendance['opening_time'])
+            : Carbon::parse($attendanceDate . ' 00:00:00');
+        $closing = Carbon::parse($attendanceDate . ' ' . $attendance['closing_time']);
+        if ($closing->lessThanOrEqualTo($opening)) {
+            $closing->addDay();
+        }
+
+        $actual = Carbon::parse($attendanceDate . ' ' . $checkOut);
+        if ($actual->lessThan($opening)) {
+            $actual->addDay();
+        }
+        $allowed = $closing->copy()->subMinutes((int)$attendance['checkout_before']);
+
+        return $actual->lessThan($allowed)
+            ? max(1, (int)ceil($actual->diffInSeconds($allowed) / 60))
+            : 0;
     }
 
     private function attendanceDisplayStatus(

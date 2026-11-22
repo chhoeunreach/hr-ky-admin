@@ -121,6 +121,9 @@ Route::group([
     Route::controller(AppAppearanceApiController::class)->prefix('app-appearance')->group(function () {
         Route::get('/', 'show');
     });
+    Route::controller(\App\Http\Controllers\Api\ThemeModeApiController::class)->prefix('theme-modes')->group(function () {
+        Route::get('/', 'index');
+    });
     Route::controller(\App\Http\Controllers\Api\MobileQuoteApiController::class)->prefix('quotes')->group(function () {
         Route::get('/', 'index');
     });
@@ -195,6 +198,7 @@ Route::group([
     /** Dashboard Routes **/
     Route::get('dashboard', [DashboardApiController::class, 'userDashboardDetail']);
     Route::get('mobile-features', [DashboardApiController::class, 'mobileFeatures']);
+    Route::get('mobile-layout', [DashboardApiController::class, 'mobileLayout']);
     Route::get('dashboard/attendance-summary', [DashboardApiController::class, 'attendanceSummary']);
 
     /** Attendance Routes **/

@@ -3419,6 +3419,7 @@ return [
     'app_effect_emoji_char' => 'Emoji',
     'social_feed' => 'Social Feed',
     'social_reports' => 'Social Reports',
+    'theme_modes' => 'Theme Modes & Colors',
 
     // Certificate Management Module
     'certificate_management' => 'Certificates',

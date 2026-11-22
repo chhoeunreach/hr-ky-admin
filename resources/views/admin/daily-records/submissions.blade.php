@@ -4,6 +4,14 @@
 
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/css/daily-records.css') }}?v={{ filemtime(public_path('assets/css/daily-records.css')) }}">
+    <style>
+        .dr-submission-kpi { display:block; height:100%; color:inherit; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease; }
+        .dr-submission-kpi:hover { color:inherit; transform:translateY(-2px); box-shadow:0 10px 24px rgba(15,23,42,.09); }
+        .dr-submission-kpi .dr-card-body { padding:16px; }
+        .dr-submission-kpi-label { color:#64748b; font-size:.82rem; font-weight:600; }
+        .dr-submission-kpi-value { color:#172033; font-size:1.65rem; font-weight:750; line-height:1.1; }
+        .dr-submission-kpi-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:10px; background:#eff6ff; color:#2563eb; }
+    </style>
 @endsection
 
 @section('main-content')
@@ -47,6 +55,36 @@
         </div>
     </div>
 
+    @php
+        $submissionCards = [
+            ['status' => 'pending', 'label' => __('daily_records.pending_review'), 'count' => (int) ($statusCounts->submitted ?? 0) + (int) ($statusCounts->under_review ?? 0), 'icon' => 'fa-hourglass-half', 'tone' => 'text-warning'],
+            ['status' => 'submitted', 'label' => __('index.submitted'), 'count' => (int) ($statusCounts->submitted ?? 0), 'icon' => 'fa-paper-plane', 'tone' => 'text-primary'],
+            ['status' => 'under_review', 'label' => __('daily_records.under_review'), 'count' => (int) ($statusCounts->under_review ?? 0), 'icon' => 'fa-magnifying-glass', 'tone' => 'text-info'],
+            ['status' => 'approved', 'label' => __('daily_records.kpi_approved'), 'count' => (int) ($statusCounts->approved ?? 0), 'icon' => 'fa-circle-check', 'tone' => 'text-success'],
+            ['status' => 'returned', 'label' => __('daily_records.returned_for_correction'), 'count' => (int) ($statusCounts->returned ?? 0), 'icon' => 'fa-rotate-left', 'tone' => 'text-danger'],
+            ['status' => 'unsubmitted', 'label' => __('daily_records.unsubmitted_summaries'), 'count' => (int) $missingCount, 'icon' => 'fa-triangle-exclamation', 'tone' => 'text-warning'],
+        ];
+    @endphp
+    <div class="row g-3 mb-3" aria-label="{{ __('daily_records.submission_overview') }}">
+        @foreach ($submissionCards as $card)
+            @php
+                $cardFilters = array_merge($filters, ['status' => $card['status']]);
+                if ($card['status'] === 'unsubmitted') $cardFilters['date'] = $filters['date'] ?? $day;
+            @endphp
+            <div class="col-6 col-md-4 col-xl-2">
+                <a class="dr-card dr-submission-kpi" href="{{ route('admin.daily-records.submissions', $cardFilters) }}" aria-label="{{ $card['label'] }}: {{ $card['count'] }}">
+                    <div class="dr-card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-2 mb-3">
+                            <span class="dr-submission-kpi-label">{{ $card['label'] }}</span>
+                            <span class="dr-submission-kpi-icon {{ $card['tone'] }}"><i class="fa-solid {{ $card['icon'] }}"></i></span>
+                        </div>
+                        <div class="dr-submission-kpi-value">{{ number_format($card['count']) }}</div>
+                    </div>
+                </a>
+            </div>
+        @endforeach
+    </div>
+
     {{-- Filter Card --}}
     <div class="dr-card">
         <div class="dr-card-header">
@@ -61,6 +99,7 @@
                     <select class="dr-form-select" name="status">
                         @foreach ([
                             'pending' => __('daily_records.pending_review'),
+                            'submitted' => __('index.submitted'),
                             'under_review' => __('daily_records.under_review'),
                             'returned' => __('daily_records.returned_for_correction'),
                             'approved' => __('daily_records.kpi_approved'),

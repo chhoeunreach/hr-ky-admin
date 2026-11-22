@@ -94,7 +94,9 @@ class AppAppearanceTest extends TestCase
             ->assertSee('app-appearance')
             ->assertSee('heat')
             ->assertSee('snow')
-            ->assertSee('emoji_effect');
+            ->assertSee('emoji_effect')
+            ->assertSee('refreshEffectsPreview', false)
+            ->assertSee('Floating effects preview');
     }
 
     public function test_admin_saves_background_upload_and_effect_toggles(): void
@@ -150,6 +152,55 @@ class AppAppearanceTest extends TestCase
         foreach (['heat', 'snow', 'floating_hearts', 'rose_petals', 'heart_glow', 'sparkle_effects', 'emoji_effect'] as $flag) {
             $this->assertFalse($stored[$flag], "Expected {$flag} to be false");
         }
+    }
+
+    public function test_custom_floating_effects_can_be_created_updated_deleted_and_read_by_mobile(): void
+    {
+        $payload = [
+            'background_type' => 'none',
+            'custom_effects' => [
+                ['id' => 'welcome-stars', 'name' => 'Welcome stars', 'emoji' => '🌟', 'enabled' => '1'],
+            ],
+        ];
+
+        $this->post('/_test/mobile-tool/app-appearance', $payload)
+            ->assertRedirect(route('admin.mobile-tools.app-appearance'));
+
+        $this->assertSame(
+            [['id' => 'welcome-stars', 'name' => 'Welcome stars', 'emoji' => '🌟', 'enabled' => true]],
+            json_decode(AppSetting::where('slug', 'app-appearance')->value('value'), true)['custom_effects']
+        );
+
+        $this->get('/_test/mobile-tool/app-appearance')
+            ->assertOk()
+            ->assertSee('name="custom_effects[0][name]" value="Welcome stars"', false)
+            ->assertSee('name="custom_effects[0][emoji]" value="🌟"', false)
+            ->assertSee('data-remove-effect', false)
+            ->assertSee('Delete');
+
+        $this->post('/_test/mobile-tool/app-appearance', [
+            'background_type' => 'none',
+            'custom_effects' => [
+                ['id' => 'welcome-stars', 'name' => 'Company celebration', 'emoji' => '🎉'],
+            ],
+        ])->assertRedirect(route('admin.mobile-tools.app-appearance'));
+
+        $stored = json_decode(AppSetting::where('slug', 'app-appearance')->value('value'), true);
+        $this->assertSame('Company celebration', $stored['custom_effects'][0]['name']);
+        $this->assertSame('🎉', $stored['custom_effects'][0]['emoji']);
+        $this->assertFalse($stored['custom_effects'][0]['enabled']);
+
+        $this->getJson('/_test/mobile-tool/api-app-appearance')
+            ->assertOk()
+            ->assertJsonPath('data.custom_effects.0.name', 'Company celebration')
+            ->assertJsonPath('data.custom_effects.0.emoji', '🎉')
+            ->assertJsonPath('data.custom_effects.0.enabled', false);
+
+        $this->post('/_test/mobile-tool/app-appearance', ['background_type' => 'none'])
+            ->assertRedirect(route('admin.mobile-tools.app-appearance'));
+        $this->assertSame([], json_decode(
+            AppSetting::where('slug', 'app-appearance')->value('value'), true
+        )['custom_effects']);
     }
 
     public function test_app_appearance_reset_removes_setting_and_uploaded_file(): void
@@ -226,7 +277,8 @@ class AppAppearanceTest extends TestCase
             ->assertJsonPath('data.floating_hearts', true)
             ->assertJsonPath('data.heart_glow', true)
             ->assertJsonPath('data.sparkle_effects', true)
-            ->assertJsonPath('data.emoji_effect', false);
+            ->assertJsonPath('data.emoji_effect', false)
+            ->assertJsonPath('data.custom_effects', []);
     }
 
     public function test_saving_type_without_file_is_rejected(): void

@@ -229,6 +229,9 @@ final class WorkRecords
 
     private function workFields(string $kind, User $actor, array $data, ?object $row): array
     {
+        if ($kind === 'activity' && ($data['fields']['mission_type'] ?? null) === 'branch_route') {
+            return $this->branchRouteFields($data);
+        }
         [$classification, $fields, $sensitive, $followUpDays] = $this->catalog->selection($kind, $row ? $row->department_id : $actor->department_id, $data, $row);
         $when = $kind === 'activity' ? $data['activity_date'].'T'.($data['start_time'] ?? '00:00') : $data['occurred_at'];
         $occurred = RecordTime::utc($when);
@@ -249,6 +252,30 @@ final class WorkRecords
             'ended_at' => $end, 'follow_up_at' => $followUp ?? $row?->follow_up_at,
             'priority' => $data['priority'] ?? $row?->priority ?? 'normal', 'solution' => $data['solution'] ?? $row?->solution,
             'critical' => ($data['priority'] ?? $row?->priority) === 'urgent',
+        ];
+    }
+
+    private function branchRouteFields(array $data): array
+    {
+        $fields = BranchRouteInput::validate($data['fields'] ?? []);
+        $occurred = RecordTime::utc($data['activity_date'].'T'.$fields['departure_time']);
+        $ended = !empty($fields['arrival_time'])
+            ? RecordTime::utc($data['activity_date'].'T'.$fields['arrival_time']) : null;
+        if ($ended && $ended < $occurred) {
+            $ended = CarbonImmutable::parse($ended, 'UTC')->addDay()->toDateTimeString();
+        }
+        $fields['end_time'] = $data['end_time'] ?? null;
+        $details = [
+            'result' => $fields['final_summary'] ?? null,
+            'start_time' => $fields['departure_time'],
+            'fields' => $fields,
+        ];
+        return [
+            'category_id' => null, 'subcategory_id' => null,
+            'classification' => json_encode(['category' => ['en' => 'Branch Route', 'km' => 'ការងារចេញក្រៅ'], 'fields' => []], JSON_THROW_ON_ERROR),
+            'details' => json_encode($details, JSON_THROW_ON_ERROR), 'sensitive' => false,
+            'occurred_at' => $occurred, 'ended_at' => $ended, 'follow_up_at' => null,
+            'priority' => 'normal', 'solution' => null, 'critical' => false,
         ];
     }
 }

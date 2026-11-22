@@ -92,6 +92,7 @@ return [
         'BannerSlideshowApiController@update' => ['banner-admin', 'banner.manage'],
         'BannerSlideshowApiController@reset' => ['banner-admin', 'banner.manage'],
         'AppAppearanceApiController@show' => null,
+        'ThemeModeApiController@index' => null,
         'MobileQuoteApiController@index' => ['attendance', 'quote.view'],
         'HomeHighlightApiController@history' => ['home-highlights', 'home_highlight.view'],
         'HomeHighlightApiController@show' => ['home-highlights', 'home_highlight.view'],
@@ -153,6 +154,7 @@ return [
         'NoticeApiController@getReceivedNoticeDetail' => ['notice', 'mobile.function.Notice.getReceivedNoticeDetail'],
         'DashboardApiController@userDashboardDetail' => null,
         'DashboardApiController@mobileFeatures' => null,
+        'DashboardApiController@mobileLayout' => null,
         // Authenticated dashboard data is always scoped to the current user.
         'DashboardApiController@attendanceSummary' => null,
         'AttendanceApiController@employeeCheckIn' => ['attendance', 'check_in'],

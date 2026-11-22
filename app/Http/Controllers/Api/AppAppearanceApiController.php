@@ -36,6 +36,7 @@ class AppAppearanceApiController extends Controller
             'sparkle_effects' => true,
             'emoji_effect' => false,
             'emoji_char' => '✨',
+            'custom_effects' => [],
         ];
     }
 }

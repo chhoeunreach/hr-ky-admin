@@ -54,11 +54,6 @@ final class WorkRecordsAdminController
         ]);
         $status = $filters['status'] ?? 'pending';
         $q = $this->submissions->query($actor, true)->join('users as employee', 'employee.id', '=', 'e.employee_id');
-        if ($status === 'pending') {
-            $q->whereIn('e.status', ['submitted', 'under_review']);
-        } elseif ($status !== 'unsubmitted') {
-            $q->where('e.status', $status);
-        }
         foreach (['employee_id', 'department_id', 'branch_id'] as $field) {
             $q->when($filters[$field] ?? null, fn ($q, $id) => $q->where("e.$field", $id));
         }
@@ -68,12 +63,77 @@ final class WorkRecordsAdminController
         $q->when($filters['from'] ?? null, fn ($q, $date) => $q->where('submission.report_date', '>=', $date));
         $q->when($filters['to'] ?? null, fn ($q, $date) => $q->where('submission.report_date', '<=', $date));
         $day = $filters['date'] ?? \Carbon\CarbonImmutable::now(RecordTime::ZONE)->subDay()->toDateString();
+        $statusCounts = (clone $q)->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN e.status = 'submitted' THEN 1 ELSE 0 END) as submitted")
+            ->selectRaw("SUM(CASE WHEN e.status = 'under_review' THEN 1 ELSE 0 END) as under_review")
+            ->selectRaw("SUM(CASE WHEN e.status = 'approved' THEN 1 ELSE 0 END) as approved")
+            ->selectRaw("SUM(CASE WHEN e.status = 'returned' THEN 1 ELSE 0 END) as returned")
+            ->first();
+        $missingFilters = $filters;
+        unset($missingFilters['reviewer_id']);
+        $missingCount = DB::query()->fromSub($this->submissions->missing($actor, $day, $missingFilters), 'daily_missing')->count();
+        if ($status === 'pending') {
+            $q->whereIn('e.status', ['submitted', 'under_review']);
+        } elseif ($status !== 'unsubmitted') {
+            $q->where('e.status', $status);
+        }
         return response()->view('admin.daily-records.submissions', $this->directory->groups($actor, false) + [
-            'rows' => $status === 'unsubmitted' ? $this->submissions->missing($actor, $day, $filters)->simplePaginate(25)->withQueryString()
-                : $q->orderByDesc('submission.report_date')->orderByDesc('e.id')->simplePaginate(25, [
+            // The submissions view displays the matching total, so use a length-aware
+            // paginator here instead of SimplePaginator (which has no total()).
+            'rows' => $status === 'unsubmitted' ? $this->submissions->missing($actor, $day, $filters)->paginate(25)->withQueryString()
+                : $q->orderByDesc('submission.report_date')->orderByDesc('e.id')->paginate(25, [
                     'e.id', 'e.status', 'employee.name as employee', 'submission.report_date', 'submission.version',
                 ])->withQueryString(),
             'filters' => $filters, 'status' => $status, 'day' => $day,
+            'statusCounts' => $statusCounts, 'missingCount' => $missingCount,
+        ])->header('Cache-Control', 'private, no-store');
+    }
+
+    public function branchRoutes(Request $request)
+    {
+        $actor = $this->actor();
+        $filters = $request->validate([
+            'status' => 'nullable|in:completed,cancelled',
+            'date' => 'nullable|date_format:Y-m-d',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
+            'employee_id' => 'nullable|integer|min:1',
+            'department_id' => 'nullable|integer|min:1',
+            'branch_id' => 'nullable|integer|min:1',
+            'search' => 'nullable|string|max:100',
+        ]);
+        $query = $this->entries->query($actor, true)
+            ->join('users as employee', 'employee.id', '=', 'e.employee_id')
+            ->where('e.kind', 'activity')->whereJsonContains('e.details->fields->mission_type', 'branch_route')
+            ->when($filters['employee_id'] ?? null, fn ($q, $id) => $q->where('e.employee_id', $id))
+            ->when($filters['department_id'] ?? null, fn ($q, $id) => $q->where('e.department_id', $id))
+            ->when($filters['branch_id'] ?? null, fn ($q, $id) => $q->where('e.branch_id', $id))
+            ->when($filters['search'] ?? null, fn ($q, $term) => $q->where(fn ($search) => $search
+                ->where('employee.name', 'like', '%'.$term.'%')->orWhere('e.title', 'like', '%'.$term.'%')
+                ->orWhere('e.details', 'like', '%'.$term.'%')))
+            ->when($filters['date'] ?? null, fn ($q, $date) => $q->whereDate('e.occurred_at', $date))
+            ->when($filters['from'] ?? null, fn ($q, $date) => $q->whereDate('e.occurred_at', '>=', $date))
+            ->when($filters['to'] ?? null, fn ($q, $date) => $q->whereDate('e.occurred_at', '<=', $date));
+        $total = (clone $query)->count();
+        $completed = (clone $query)->where('e.details->fields->status', 'completed')->count();
+        $cancelled = (clone $query)->where('e.details->fields->status', 'cancelled')->count();
+        $employees = (clone $query)->distinct()->count('e.employee_id');
+        if (isset($filters['status'])) {
+            $query->where('e.details->fields->status', $filters['status']);
+        }
+        $rows = $query->orderByDesc('e.occurred_at')->orderByDesc('e.id')->paginate(25, [
+            'e.id', 'e.title', 'e.body', 'e.details', 'e.occurred_at', 'e.ended_at', 'e.employee_id',
+            'e.department_id', 'e.branch_id', 'employee.name as employee',
+        ])->withQueryString();
+        $files = DB::table('daily_record_files')->whereIn('entry_id', $rows->getCollection()->pluck('id'))
+            ->where('restricted', false)->orderBy('id')->get(['id', 'entry_id', 'name', 'bytes'])->groupBy('entry_id');
+        foreach ($rows as $row) {
+            $row->route = json_decode($row->details ?? '{}', true)['fields'] ?? [];
+            $row->attachments = $files->get($row->id, collect());
+        }
+        return response()->view('admin.daily-records.branch-routes', $this->directory->groups($actor, false) + [
+            'rows' => $rows, 'filters' => $filters,
+            'summary' => compact('total', 'completed', 'cancelled', 'employees'),
         ])->header('Cache-Control', 'private, no-store');
     }
 

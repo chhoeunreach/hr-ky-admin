@@ -82,6 +82,7 @@
                                                    id="{{$permission->permission_key}}"
                                                    name="permission_value[]"
                                                    value="{{$permission->id}}"
+                                                   data-permission-key="{{$permission->permission_key}}"
                                                 {{$checked}}>
                                             <span class="text">{{$permission->name}}
                                     </span>
