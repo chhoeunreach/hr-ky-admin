@@ -91,6 +91,7 @@ return [
         'BannerSlideshowApiController@show' => ['attendance', 'mobile.menu.attendance'],
         'BannerSlideshowApiController@update' => ['banner-admin', 'banner.manage'],
         'BannerSlideshowApiController@reset' => ['banner-admin', 'banner.manage'],
+        'AppAppearanceApiController@show' => null,
         'MobileQuoteApiController@index' => ['attendance', 'quote.view'],
         'HomeHighlightApiController@history' => ['home-highlights', 'home_highlight.view'],
         'HomeHighlightApiController@show' => ['home-highlights', 'home_highlight.view'],

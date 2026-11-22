@@ -7,6 +7,7 @@
         ['route' => 'admin.roles.index', 'active' => 'admin.roles.*', 'label' => __('index.roles_permissions'), 'visible' => Gate::allows('role_permission')],
         ['route' => 'admin.mobile-tools.banner-slides', 'active' => 'admin.mobile-tools.banner-slides*', 'label' => __('index.banner_slides'), 'visible' => Gate::allows('banner.manage')],
         ['route' => 'admin.mobile-tools.quotes', 'active' => 'admin.mobile-tools.quotes*', 'label' => __('index.mobile_quotes'), 'visible' => Gate::allows('quote.manage')],
+        ['route' => 'admin.mobile-tools.app-appearance', 'active' => 'admin.mobile-tools.app-appearance*', 'label' => __('index.app_appearance'), 'visible' => Gate::allows('appearance.manage')],
     ];
     $visibleMobileControls = collect($mobileControls)->where('visible', true);
     $mobileControlsOpen = $visibleMobileControls->contains(fn ($item) => request()->routeIs($item['active']));
