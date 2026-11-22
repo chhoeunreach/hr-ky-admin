@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\GroupChatController;
 use App\Http\Controllers\Api\HolidayApiController;
 use App\Http\Controllers\Api\HomeHighlightApiController;
 use App\Http\Controllers\Api\BannerSlideshowApiController;
+use App\Http\Controllers\Api\AppAppearanceApiController;
 use App\Http\Controllers\Api\Kiosk\KioskApiController;
 use App\Http\Controllers\Api\LeaveApiController;
 use App\Http\Controllers\Api\LeaveTypeApiController;
@@ -116,6 +117,9 @@ Route::group([
         Route::get('/', 'show');
         Route::put('/', 'update');
         Route::post('reset', 'reset');
+    });
+    Route::controller(AppAppearanceApiController::class)->prefix('app-appearance')->group(function () {
+        Route::get('/', 'show');
     });
     Route::controller(\App\Http\Controllers\Api\MobileQuoteApiController::class)->prefix('quotes')->group(function () {
         Route::get('/', 'index');
@@ -399,6 +403,16 @@ Route::group([
     /** Asset */
     Route::get('assets', [AssetAssignmentApiController::class, 'index']);
     Route::post('asset-return/{id}', [AssetAssignmentApiController::class, 'store']);
+
+    /** Admin Asset Management */
+    Route::prefix('admin/assets')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'index']);
+        Route::get('/form-data', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'formData']);
+        Route::get('/{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'show']);
+        Route::post('/', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'store']);
+        Route::post('/{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'update']);
+        Route::delete('/{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'destroy']);
+    });
 
     /** SSF History */
     Route::get('payroll/ssf-history', [EmployeePayrollApiController::class, 'ssfHistory']);

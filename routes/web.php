@@ -16,6 +16,7 @@ use App\Http\Controllers\Web\AttendanceSettingController;
 use App\Http\Controllers\Web\AwardController;
 use App\Http\Controllers\Web\BannerSlideshowController;
 use App\Http\Controllers\Web\MobileQuoteController;
+use App\Http\Controllers\Web\AppAppearanceController;
 use App\Http\Controllers\Web\CertificateController;
 use App\Http\Controllers\Web\AwardTypeController;
 use App\Http\Controllers\Web\BioAttendanceController;
@@ -211,6 +212,9 @@ Route::group([
             Route::post('quotes/{quoteId}/update', [MobileQuoteController::class, 'update'])->name('quotes.update');
             Route::post('quotes/{quoteId}/toggle', [MobileQuoteController::class, 'toggle'])->name('quotes.toggle');
             Route::delete('quotes/{quoteId}', [MobileQuoteController::class, 'destroy'])->name('quotes.destroy');
+            Route::get('app-appearance', [AppAppearanceController::class, 'edit'])->name('app-appearance');
+            Route::post('app-appearance', [AppAppearanceController::class, 'update'])->name('app-appearance.update');
+            Route::post('app-appearance/reset', [AppAppearanceController::class, 'reset'])->name('app-appearance.reset');
         });
 
 

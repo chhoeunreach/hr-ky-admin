@@ -9,6 +9,7 @@ return [
         'advance-salary-admin' => 'mobile.menu.advance-salary-admin',
         'advance-salary-approve' => 'advance-salary-approve',
         'assets' => 'mobile.menu.assets',
+        'assets-admin' => 'list_assets',
         'attendance' => 'mobile.menu.attendance',
         'award' => 'mobile.menu.award',
         'change-password' => 'mobile.menu.change-password',
@@ -91,6 +92,7 @@ return [
         'BannerSlideshowApiController@show' => ['attendance', 'mobile.menu.attendance'],
         'BannerSlideshowApiController@update' => ['banner-admin', 'banner.manage'],
         'BannerSlideshowApiController@reset' => ['banner-admin', 'banner.manage'],
+        'AppAppearanceApiController@show' => null,
         'MobileQuoteApiController@index' => ['attendance', 'quote.view'],
         'HomeHighlightApiController@history' => ['home-highlights', 'home_highlight.view'],
         'HomeHighlightApiController@show' => ['home-highlights', 'home_highlight.view'],
@@ -294,6 +296,12 @@ return [
         'ComplaintApiController@getDepartmentEmployees' => ['complaint', 'mobile.function.Complaint.getDepartmentEmployees'],
         'AssetAssignmentApiController@index' => ['assets', 'mobile.function.AssetAssignment.index'],
         'AssetAssignmentApiController@store' => ['assets', 'mobile.function.AssetAssignment.store'],
+        'AdminAssetApiController@index' => ['assets-admin', 'list_assets'],
+        'AdminAssetApiController@show' => ['assets-admin', 'list_assets'],
+        'AdminAssetApiController@formData' => ['assets-admin', 'list_assets'],
+        'AdminAssetApiController@store' => ['assets-admin', 'create_assets'],
+        'AdminAssetApiController@update' => ['assets-admin', 'edit_assets'],
+        'AdminAssetApiController@destroy' => ['assets-admin', 'delete_assets'],
         'EmployeePayrollApiController@ssfHistory' => ['payroll-management', 'mobile.function.EmployeePayroll.ssfHistory'],
         // D-card is the authenticated employee's own profile view and uses
         // the established view_profile grant from the employee-profile area.
