@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'mobile_app_controls' => 'គ្រប់គ្រងកម្មវិធីទូរស័ព្ទ',
+    'mobile_app_controls' => 'មុខងារ Mobile App',
     'feature_control_description' => 'ការកំណត់រួមអនុវត្តចំពោះតួនាទីទាំងអស់។ សិទ្ធិតាមតួនាទីកំណត់អ្នកដែលអាចប្រើមុខងារដែលបានបើក។',
     'feature_control_setup_required' => 'សូមធ្វើបច្ចុប្បន្នភាពមូលដ្ឋានទិន្នន័យ ដើម្បីរក្សាទុកការកំណត់ទាំងនេះ។',
     'affected_functions' => 'មុខងារដែលរងផលប៉ះពាល់',

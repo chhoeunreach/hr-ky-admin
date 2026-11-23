@@ -16,7 +16,7 @@
                 <li class="nav-item">
                     <a href="{{ route('admin.company-documents.index') }}"
                        class="nav-link {{ request()->routeIs('admin.company-documents.index') && !request('category') ? 'active' : '' }}">
-                        {{ __('index.all_documents') }}
+                        📁 {{ __('index.all_documents') }}
                     </a>
                 </li>
                 <li class="nav-item">

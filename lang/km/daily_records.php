@@ -2,7 +2,8 @@
 
 return [
     // Header & Navigation
-    'task_and_report_center' => 'មជ្ឈមណ្ឌលកិច្ចការ និងរបាយការណ៍',
+    'work_and_operations' => 'ប្រតិបត្តិការការងារ',
+    'task_and_report_center' => 'កិច្ចការ',
     'task_and_report_center_subtitle' => 'ចាត់ចែង តាមដាន និងវាយតម្លៃកិច្ចការបុគ្គលិក របាយការណ៍ប្រតិបត្តិការប្រចាំថ្ងៃ និងដំណោះស្រាយឧប្បត្តិហេតុការងារ។',
     'live_console' => 'កុងសូលផ្ទាល់',
     'assign_task' => 'ចាត់ចែងកិច្ចការ',
@@ -223,7 +224,7 @@ return [
 
     // Submissions List
     'daily_summary_submissions' => 'ការបញ្ជូនរបាយការណ៍សង្ខេបប្រចាំថ្ងៃ',
-    'branch_route_management' => 'គ្រប់គ្រងផ្លូវការចេញបំពេញការងារតាមសាខា',
+    'branch_route_management' => 'គ្រប់គ្រងការចេញក្រៅ',
     'branch_routes_subtitle' => 'ពិនិត្យបេសកកម្មក្រៅសាខារបស់បុគ្គលិក ចំណុចតាមសាខា ទីតាំង GPS និងឯកសារភស្តុតាង។',
     'branch_routes_overview' => 'សង្ខេបផ្លូវតាមសាខា',
     'branch_routes_total' => 'ផ្លូវសរុប',

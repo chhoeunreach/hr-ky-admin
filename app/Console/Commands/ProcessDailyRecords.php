@@ -59,7 +59,7 @@ final class ProcessDailyRecords extends Command
             if ($type === 'reminder') {
                 $events->notify($row->employee_id, $key, 'Task deadline approaching', 'An assignment is due soon. Open My Tasks for details.');
             } else {
-                $events->notifyManagers($row, $key, 'Employee task overdue', 'An assignment has passed its deadline. Open the Task & Report Center for details.');
+                $events->notifyManagers($row, $key, 'Employee task overdue', 'An assignment has passed its deadline. Open the Task for details.');
             }
             DB::table('daily_task_assignments')->where('id', $id)->update([$flag => $now]);
         }, 3);

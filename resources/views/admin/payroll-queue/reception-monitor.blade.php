@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KY TECH HR - ប្រព័ន្ធគ្រប់គ្រងការរង់ចាំ (HR QUEUE MONITOR 16:9)</title>
+    <title>KY HR - ប្រព័ន្ធគ្រប់គ្រងការរង់ចាំ (HR QUEUE MONITOR 16:9)</title>
     
     <!-- Google Fonts: Kantumruy Pro & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

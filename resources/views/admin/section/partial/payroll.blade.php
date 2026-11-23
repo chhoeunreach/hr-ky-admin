@@ -8,7 +8,6 @@
             request()->routeIs('admin.sell-staff-report.*')||
             request()->routeIs('admin.employee-salary.payroll*')||
             request()->routeIs('admin.monthly-payroll.*')||
-            request()->routeIs('admin.payroll-queue.*')||
             request()->routeIs('admin.salary-components.*') ||
             request()->routeIs('admin.payment-methods.*') ||
             request()->routeIs('admin.salary-groups.*') ||
@@ -38,12 +37,6 @@
                            class="nav-link {{ request()->routeIs('admin.monthly-payroll.*') ? 'active' : '' }}">{{ __('index.monthly_payroll') }}</a>
                     </li>
                 @endcan
-                @canany(['view_monthly_payroll', 'view_payroll_list'])
-                    <li class="nav-item">
-                        <a href="{{ route('admin.payroll-queue.dashboard') }}" data-href="{{ route('admin.payroll-queue.dashboard') }}"
-                           class="nav-link {{ request()->routeIs('admin.payroll-queue.*') ? 'active' : '' }}">{{ __('index.payroll_queue_system') }}</a>
-                    </li>
-                @endcanany
                 @can('view_payroll_list')
                     <li class="nav-item">
                         <a href="{{ route('admin.employee-salary.payroll') }}"

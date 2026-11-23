@@ -27,6 +27,17 @@
             --navy-canvas: #071533;
         }
 
+        .sidebar .sidebar-body .nav .nav-item.nav-category {
+            height: auto;
+            min-height: 15px;
+            line-height: 1.35;
+            padding-top: 8px;
+            padding-bottom: 4px;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
         .sidebar .sidebar-body .nav .nav-item .nav-link {
             min-height: 42px;
             height: auto;

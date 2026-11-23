@@ -47,6 +47,7 @@ use App\Http\Controllers\Api\UserProfileApiController;
 use App\Http\Controllers\Api\WarningApiController;
 use App\Http\Controllers\Api\HrQueueApiController;
 use App\Http\Controllers\Api\PayrollQueueApiController;
+use App\Http\Controllers\Api\CompanyDocumentApiController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\Auth\AuthApiController;
 
@@ -408,6 +409,10 @@ Route::group([
     Route::get('assets', [AssetAssignmentApiController::class, 'index']);
     Route::post('asset-return/{id}', [AssetAssignmentApiController::class, 'store']);
 
+    /** Store Phone Directory & SIM Cards for Mobile App */
+    Route::get('store-phone-numbers', [\App\Http\Controllers\Api\StorePhoneNumberApiController::class, 'index']);
+    Route::get('my-sim-cards', [\App\Http\Controllers\Api\StorePhoneNumberApiController::class, 'mySimCards']);
+
     /** SSF History */
     Route::get('payroll/ssf-history', [EmployeePayrollApiController::class, 'ssfHistory']);
 
@@ -444,6 +449,20 @@ Route::prefix('v1/payroll-queue')->middleware(['auth:api', 'app.security', 'perm
     Route::post('join', [PayrollQueueApiController::class, 'join'])->middleware('throttle:15,1');
     Route::get('ticket/{ticketId}', [PayrollQueueApiController::class, 'ticket'])->whereNumber('ticketId');
 });
+
+/** Company Documents API for Mobile App (Flutter) */
+Route::prefix('v1/company-documents')
+    ->middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])
+    ->group(function () {
+        Route::get('/', [CompanyDocumentApiController::class, 'index']);
+        Route::get('meta', [CompanyDocumentApiController::class, 'meta']);
+        Route::get('alerts', [CompanyDocumentApiController::class, 'alerts']);
+        Route::post('/', [CompanyDocumentApiController::class, 'store']);
+        Route::get('{id}', [CompanyDocumentApiController::class, 'show']);
+        Route::post('{id}', [CompanyDocumentApiController::class, 'update']);
+        Route::put('{id}', [CompanyDocumentApiController::class, 'update']);
+        Route::delete('{id}', [CompanyDocumentApiController::class, 'destroy']);
+    });
 
 
 // Mobile application security endpoints. Registration is authenticated with the

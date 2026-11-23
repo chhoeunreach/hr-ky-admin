@@ -143,8 +143,8 @@ class Asset extends Model
             ->latestOfMany('assigned_date');
     }
 
-
-
-
-
+    public function simCards(): HasMany
+    {
+        return $this->hasMany(\App\Models\StorePhoneNumber::class, 'asset_id', 'id');
+    }
 }

@@ -46,9 +46,23 @@ return [
         'team-sheet' => 'mobile.menu.team-sheet',
         'training' => 'mobile.menu.training',
         'warning' => 'mobile.menu.warning',
+        'company-documents' => 'mobile.menu.company-documents',
+        'store-phone-numbers' => 'mobile.menu.store-phone-numbers',
+        'payroll-queue' => 'mobile.menu.payroll-queue',
     ],
     // null denotes authenticated session/bootstrap infrastructure.
     'functions' => [
+        // Store Phone & SIM Directory API
+        'StorePhoneNumberApiController@index' => null,
+        'StorePhoneNumberApiController@mySimCards' => null,
+        // Company Documents API
+        'CompanyDocumentApiController@index' => null,
+        'CompanyDocumentApiController@meta' => null,
+        'CompanyDocumentApiController@alerts' => null,
+        'CompanyDocumentApiController@show' => null,
+        'CompanyDocumentApiController@store' => null,
+        'CompanyDocumentApiController@update' => null,
+        'CompanyDocumentApiController@destroy' => null,
         // Daily Records applies its own employee ownership and scoped manager permissions.
         'WorkRecordsApiController@catalog' => null,
         'WorkRecordsApiController@records' => null,

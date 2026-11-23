@@ -14,15 +14,23 @@
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item">
                     <a href="{{ route('admin.daily-records.index') }}" class="text-decoration-none">
-                        <i class="fa-solid fa-list-check me-1"></i> {{ __('daily_records.task_and_report_center') }}
+                        <i class="fa-solid fa-list-check me-1"></i> {{ __('daily_records.work_and_operations') }}
                     </a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">{{ __('daily_records.category_settings_breadcrumb') }}</li>
             </ol>
         </nav>
-        <a class="dr-btn-outline py-1 px-3" href="{{ route('admin.daily-records.index') }}">
-            <i class="fa-solid fa-arrow-left"></i> {{ __('daily_records.back_to_center') }}
-        </a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a class="dr-btn-outline py-1 px-3" href="{{ route('admin.daily-records.index') }}">
+                <i class="fa-solid fa-list-check"></i> {{ __('daily_records.task_and_report_center') }}
+            </a>
+            <a class="dr-btn-outline py-1 px-3" href="{{ route('admin.daily-records.branch-routes') }}">
+                <i class="fa-solid fa-route"></i> {{ __('daily_records.branch_route_management') }}
+            </a>
+            <a class="dr-btn-outline py-1 px-3" href="{{ route('admin.daily-records.submissions') }}">
+                <i class="fa-regular fa-calendar-check"></i> {{ __('daily_records.daily_submissions') }}
+            </a>
+        </div>
     </div>
 
     @include('admin.daily-records.workflow-messages')

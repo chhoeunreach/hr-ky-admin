@@ -33,6 +33,10 @@
                     <i class="fa-solid fa-plus"></i>
                     <span>{{ __('daily_records.assign_task') }}</span>
                 </a>
+                <a class="dr-btn-outline" href="{{ route('admin.daily-records.branch-routes') }}">
+                    <i class="fa-solid fa-route"></i>
+                    <span>{{ __('daily_records.branch_route_management') }}</span>
+                </a>
                 <a class="dr-btn-outline" href="{{ route('admin.daily-records.submissions') }}">
                     <i class="fa-regular fa-calendar-check"></i>
                     <span>{{ __('daily_records.daily_submissions') }}</span>

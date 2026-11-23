@@ -21,11 +21,24 @@
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ route('admin.daily-records.index') }}">{{ __('daily_records.task_and_report_center') }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.daily-records.index') }}">{{ __('daily_records.work_and_operations') }}</a></li>
                 <li class="breadcrumb-item active" aria-current="page">{{ __('daily_records.branch_route_management') }}</li>
             </ol>
         </nav>
-        <a class="dr-btn-outline" href="{{ route('admin.daily-records.index') }}"><i class="fa-solid fa-arrow-left"></i> {{ __('daily_records.back_to_center') }}</a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a class="dr-btn-outline" href="{{ route('admin.daily-records.index') }}">
+                <i class="fa-solid fa-list-check"></i>
+                <span>{{ __('daily_records.task_and_report_center') }}</span>
+            </a>
+            <a class="dr-btn-outline" href="{{ route('admin.daily-records.submissions') }}">
+                <i class="fa-regular fa-calendar-check"></i>
+                <span>{{ __('daily_records.daily_submissions') }}</span>
+            </a>
+            <a class="dr-btn-outline" href="{{ route('admin.daily-records.categories') }}">
+                <i class="fa-solid fa-sliders"></i>
+                <span>{{ __('daily_records.categories') }}</span>
+            </a>
+        </div>
     </div>
 
     <div class="dr-hero-card">
@@ -37,7 +50,16 @@
                     <p class="dr-hero-subtitle mb-0">{{ __('daily_records.branch_routes_subtitle') }}</p>
                 </div>
             </div>
-            <a class="dr-btn-outline" href="{{ route('admin.daily-records.branch-routes', request()->query()) }}"><i class="fa-solid fa-rotate"></i> {{ __('index.refresh') }}</a>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a class="dr-btn-primary" href="{{ route('admin.daily-records.create') }}">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>{{ __('daily_records.assign_task') }}</span>
+                </a>
+                <a class="dr-btn-outline" href="{{ route('admin.daily-records.branch-routes', request()->query()) }}">
+                    <i class="fa-solid fa-rotate"></i>
+                    <span>{{ __('index.refresh') }}</span>
+                </a>
+            </div>
         </div>
     </div>
 

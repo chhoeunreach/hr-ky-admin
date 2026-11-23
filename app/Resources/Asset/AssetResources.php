@@ -20,6 +20,16 @@ class AssetResources extends JsonResource
             'status' => ucfirst($this->status),
             'return_condition' => isset($this->return_condition) ? ucfirst($this->return_condition) : null,
             'notes' => $this->notes ?? null,
+            'sim_cards' => $this->asset?->simCards?->map(function ($sim) {
+                return [
+                    'id' => $sim->id,
+                    'phone_number' => $sim->phone_number,
+                    'operator' => $sim->operator,
+                    'sim_slot' => $sim->sim_slot,
+                    'purpose' => $sim->purpose,
+                    'assigned_to' => $sim->employee?->name,
+                ];
+            }) ?? [],
         ];
     }
 }

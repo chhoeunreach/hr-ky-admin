@@ -68,6 +68,7 @@ use App\Http\Controllers\Web\PromotionController;
 use App\Http\Controllers\Web\QrCodeController;
 use App\Http\Controllers\Web\ResignationController;
 use App\Http\Controllers\Web\RoleController;
+use App\Http\Controllers\Web\StorePhoneNumberController;
 use App\Http\Controllers\Web\RouterController;
 use App\Http\Controllers\Web\AdvanceSalaryController;
 use App\Http\Controllers\Web\SalaryComponentController;
@@ -695,6 +696,9 @@ Route::group([
         ]);
         Route::get('assets/delete/{id}', [AssetController::class, 'delete'])->name('assets.delete');
         Route::get('assets/toggle-status/{id}', [AssetController::class, 'changeAvailabilityStatus'])->name('assets.change-Availability-status');
+
+        /** Store Phone Numbers & SIM Management route */
+        Route::resource('store-phone-numbers', StorePhoneNumberController::class);
 
         /** Salary Component route */
         Route::resource('salary-components', SalaryComponentController::class,[

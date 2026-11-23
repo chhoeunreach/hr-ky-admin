@@ -1,6 +1,6 @@
 @canany(['list_type','list_assets','asset_return_list'])
     @php
-        $isAssetSection = request()->routeIs('admin.asset-types.*') || request()->routeIs('admin.assets.*') || request()->routeIs('admin.asset-return.*') || request()->routeIs('admin.asset-assignment.*');
+        $isAssetSection = request()->routeIs('admin.asset-types.*') || request()->routeIs('admin.assets.*') || request()->routeIs('admin.store-phone-numbers.*') || request()->routeIs('admin.asset-return.*') || request()->routeIs('admin.asset-assignment.*');
     @endphp
     <li class="nav-item {{ $isAssetSection ? 'active' : '' }} ">
         <a class="nav-link {{ $isAssetSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#assets" data-href="#" role="button" aria-expanded="{{ $isAssetSection ? 'true' : 'false' }}"
@@ -26,6 +26,11 @@
                         <a href="{{route('admin.assets.index')}}"
                            data-href="{{route('admin.assets.index')}}"
                            class="nav-link {{ request()->routeIs('admin.assets.*') || request()->routeIs('admin.asset-assignment.*') ? 'active' : '' }}">{{ __('index.assets') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.store-phone-numbers.index') }}"
+                           data-href="{{ route('admin.store-phone-numbers.index') }}"
+                           class="nav-link {{ request()->routeIs('admin.store-phone-numbers.*') ? 'active' : '' }}">{{ __('index.store_phone_numbers') }}</a>
                     </li>
                 @endcan
 

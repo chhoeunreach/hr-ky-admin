@@ -485,4 +485,10 @@ return [
 'pf_update'=>'បានធ្វើបច្ចុប្បន្នភាពព័ត៌មាន EPF ដោយជោគជ័យ។',
 
 'invalid_leave_request'=>'អ្នកមានសំណើសុំឈប់សម្រាកមុនដែលកំពុងរង់ចាំការអនុម័ត។',
+
+/** Store Phone Numbers */
+'sim_card_saved_successfully' => 'បានចុះឈ្មោះលេខទូរសព្ទ/ស៊ីមកាតដោយជោគជ័យ។',
+'sim_card_updated_successfully' => 'បានធ្វើបច្ចុប្បន្នភាពលេខទូរសព្ទ/ស៊ីមកាតដោយជោគជ័យ។',
+'sim_card_deleted_successfully' => 'បានលុបលេខទូរសព្ទ/ស៊ីមកាតដោយជោគជ័យ។',
+'sim_card_not_found' => 'រកមិនឃើញព័ត៌មានលេខទូរសព្ទនេះទេ។',
 ];

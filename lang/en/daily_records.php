@@ -2,7 +2,8 @@
 
 return [
     // Header & Navigation
-    'task_and_report_center' => 'Task & Report Center',
+    'work_and_operations' => 'Work & Operations',
+    'task_and_report_center' => 'Task',
     'task_and_report_center_subtitle' => 'Assign, monitor, and evaluate team tasks, daily operational submissions, and field incident resolutions.',
     'live_console' => 'Live Console',
     'assign_task' => 'Assign Task',
@@ -223,7 +224,7 @@ return [
 
     // Submissions List
     'daily_summary_submissions' => 'Daily Summary Submissions',
-    'branch_route_management' => 'Branch Route Management',
+    'branch_route_management' => 'Go Out Management',
     'branch_routes_subtitle' => 'Review employee offsite missions, branch stops, GPS locations, and supporting evidence.',
     'branch_routes_overview' => 'Branch route overview',
     'branch_routes_total' => 'Total routes',

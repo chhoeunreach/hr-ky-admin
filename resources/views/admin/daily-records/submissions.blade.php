@@ -22,15 +22,23 @@
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item">
                     <a href="{{ route('admin.daily-records.index') }}" class="text-decoration-none">
-                        <i class="fa-solid fa-list-check me-1"></i> {{ __('daily_records.task_and_report_center') }}
+                        <i class="fa-solid fa-list-check me-1"></i> {{ __('daily_records.work_and_operations') }}
                     </a>
                 </li>
                 <li class="breadcrumb-item active" aria-current="page">{{ __('daily_records.daily_summary_submissions') }}</li>
             </ol>
         </nav>
-        <a href="{{ route('admin.daily-records.index') }}" class="dr-btn-outline py-1 px-3">
-            <i class="fa-solid fa-arrow-left"></i> {{ __('daily_records.back_to_center') }}
-        </a>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <a href="{{ route('admin.daily-records.index') }}" class="dr-btn-outline py-1 px-3">
+                <i class="fa-solid fa-list-check"></i> <span>{{ __('daily_records.task_and_report_center') }}</span>
+            </a>
+            <a href="{{ route('admin.daily-records.branch-routes') }}" class="dr-btn-outline py-1 px-3">
+                <i class="fa-solid fa-route"></i> <span>{{ __('daily_records.branch_route_management') }}</span>
+            </a>
+            <a href="{{ route('admin.daily-records.categories') }}" class="dr-btn-outline py-1 px-3">
+                <i class="fa-solid fa-sliders"></i> <span>{{ __('daily_records.categories') }}</span>
+            </a>
+        </div>
     </div>
 
     {{-- Hero Banner --}}

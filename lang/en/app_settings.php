@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'mobile_app_controls' => 'Mobile App Controls',
+    'mobile_app_controls' => 'Mobile App',
     'feature_control_description' => 'Global controls apply to every mobile role. Role permissions still determine who can use enabled functions.',
     'feature_control_setup_required' => 'Run the mobile feature controls migration to save these settings.',
     'affected_functions' => 'Affected functions',

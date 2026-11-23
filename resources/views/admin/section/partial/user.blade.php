@@ -1,8 +1,7 @@
-@canany(['list_employee','d_card_print','employee.profile.view','employee.performance.create','view_employee_chat','list_logout_request'])
+@canany(['list_employee','d_card_print','employee.profile.view','view_employee_chat','list_logout_request'])
     @php
         $isEmployeeSection = (request()->routeIs('admin.employees.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report'))) ||
             request()->routeIs('admin.employee.log') ||
-            request()->routeIs('admin.staff-evaluations.*') ||
             request()->routeIs('admin.live-map*') ||
             request()->routeIs('admin.d-card-print*') ||
             request()->routeIs('admin.employee-chat*') ||
@@ -41,43 +40,6 @@
                         <a href="{{ route('admin.employees.profile.index') }}"
                            data-href="{{ route('admin.employees.profile.index') }}"
                            class="nav-link {{ request()->routeIs('admin.employees.profile.*') && !(request()->routeIs('admin.employees.profile.index') && request()->boolean('attendance_report')) ? 'active' : ''}}">{{ __('index.employee_profile') }}</a>
-                    </li>
-                @endcan
-                @can('employee.performance.create')
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.dashboard') }}"
-                           data-href="{{ route('admin.staff-evaluations.dashboard') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.dashboard') ? 'active' : ''}}">{{ __('index.evaluation_dashboard') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.job-descriptions.index') }}"
-                           data-href="{{ route('admin.staff-evaluations.job-descriptions.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.job-descriptions.*') ? 'active' : ''}}">{{ __('index.job_descriptions') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.templates.index') }}"
-                           data-href="{{ route('admin.staff-evaluations.templates.index') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.templates.*') ? 'active' : ''}}">{{ __('index.evaluation_templates') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.ai-create') }}"
-                           data-href="{{ route('admin.staff-evaluations.ai-create') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.ai-create') ? 'active' : ''}}">{{ __('index.ai_evaluation_generator') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.history') }}"
-                           data-href="{{ route('admin.staff-evaluations.history') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.history') ? 'active' : ''}}">{{ __('index.evaluation_history') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.reports') }}"
-                           data-href="{{ route('admin.staff-evaluations.reports') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.reports') ? 'active' : ''}}">{{ __('index.performance_reports') }}</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.staff-evaluations.settings') }}"
-                           data-href="{{ route('admin.staff-evaluations.settings') }}"
-                           class="nav-link {{ request()->routeIs('admin.staff-evaluations.settings') ? 'active' : ''}}">{{ __('index.evaluation_settings') }}</a>
                     </li>
                 @endcan
                 @can('list_employee')

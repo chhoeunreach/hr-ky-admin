@@ -493,4 +493,10 @@ return [
 
 
     'invalid_leave_request' =>'You have previous leave request pending for approval.',
+
+    /** Store Phone Numbers */
+    'sim_card_saved_successfully' => 'Store phone number registered successfully.',
+    'sim_card_updated_successfully' => 'Store phone number updated successfully.',
+    'sim_card_deleted_successfully' => 'Store phone number deleted successfully.',
+    'sim_card_not_found' => 'Store phone number not found.',
 ];

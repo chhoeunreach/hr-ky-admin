@@ -454,6 +454,24 @@ class DashboardApiController extends Controller
                 'aliases' => ['asset'],
             ],
             [
+                'name' => 'Store Phones & SIMs',
+                'key' => 'store-phone-numbers',
+                'feature_key' => 'store-phone-numbers',
+                'aliases' => ['store-phone', 'store-phones', 'sim-cards', 'store-sims'],
+            ],
+            [
+                'name' => 'Company Documents',
+                'key' => 'company-documents',
+                'feature_key' => 'company-documents',
+                'aliases' => ['documents', 'company-doc', 'enterprise-documents'],
+            ],
+            [
+                'name' => 'Payday Queue',
+                'key' => 'payroll-queue',
+                'feature_key' => 'payroll-queue',
+                'aliases' => ['payday-queue', 'queue'],
+            ],
+            [
                 'name' => 'Social Media Marketing',
                 'key' => 'social-media-marketing',
                 'feature_key' => 'social-media-marketing',

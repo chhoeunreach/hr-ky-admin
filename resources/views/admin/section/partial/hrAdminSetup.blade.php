@@ -7,8 +7,8 @@
     <li class="nav-item {{ $isHrAdminSection ? 'active' : '' }} ">
         <a class="nav-link {{ $isHrAdminSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#awards" data-href="#" role="button" aria-expanded="{{ $isHrAdminSection ? 'true' : 'false' }}"
            aria-controls="awards">
-            <i class="link-icon" data-feather="user-plus"></i>
-            <span class="link-title">{{ __('index.hr_admin_setup') }}</span>
+            <i class="link-icon" data-feather="user-check"></i>
+            <span class="link-title">{{ __('index.employee_lifecycle_relations') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>
         <div class="collapse {{ $isHrAdminSection ? 'show' : '' }}" id="awards">
