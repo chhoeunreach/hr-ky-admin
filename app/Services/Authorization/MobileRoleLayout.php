@@ -11,8 +11,8 @@ class MobileRoleLayout
     public function defaults(): array
     {
         $layout = [];
-        $quickServices = ['attendance', 'holiday', 'leave-request', 'event', 'project-management', 'award', 'training', 'social-rewards'];
-        $bottomTabs = ['social-feed', 'leave-request', 'attendance'];
+        $quickServices = ['attendance', 'holiday', 'leave-request', 'event', 'project-management', 'award', 'training', 'social-rewards', 'repair'];
+        $bottomTabs = ['social-feed', 'leave-request', 'attendance', 'repair'];
         $positions = [];
         foreach (array_keys(config('mobile_permissions.menus', [])) as $menu) {
             $zones = ['sidebar'];

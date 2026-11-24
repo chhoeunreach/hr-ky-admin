@@ -11,7 +11,7 @@
            href="#company_management"
            data-href="#"
            role="button" aria-expanded="{{ $isCompanySection ? 'true' : 'false' }}" aria-controls="company_management">
-            <i class="link-icon" data-feather="align-justify"></i>
+            <i class="link-icon" data-feather="briefcase"></i>
             <span class="link-title">{{ __('index.company_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

@@ -5,7 +5,7 @@
     @endphp
     <li class="nav-item {{ $isTrainingSection ? 'active' : '' }}">
         <a class="nav-link {{ $isTrainingSection ? '' : 'collapsed' }}" data-href="#" data-bs-toggle="collapse" href="#trainingManagement" role="button" aria-expanded="{{ $isTrainingSection ? 'true' : 'false' }}" aria-controls="trainingManagement">
-            <i class="link-icon" data-feather="book"></i>
+            <i class="link-icon" data-feather="book-open"></i>
             <span class="link-title"> {{ __('index.training_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

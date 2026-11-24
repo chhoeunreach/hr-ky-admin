@@ -5,7 +5,7 @@
     <li class="nav-item {{ $isAssetSection ? 'active' : '' }} ">
         <a class="nav-link {{ $isAssetSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#assets" data-href="#" role="button" aria-expanded="{{ $isAssetSection ? 'true' : 'false' }}"
            aria-controls="assets">
-            <i class="link-icon" data-feather="loader"></i>
+            <i class="link-icon" data-feather="package"></i>
             <span class="link-title">{{ __('index.asset_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

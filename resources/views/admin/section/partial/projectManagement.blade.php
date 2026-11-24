@@ -18,7 +18,7 @@
     <li class="nav-item {{ $isProjectSection ? 'active' : '' }} ">
         <a class="nav-link {{ $isProjectSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#projectMenu" data-href="#" role="button" aria-expanded="{{ $isProjectSection ? 'true' : 'false' }}"
            aria-controls="projectMenu">
-            <i class="link-icon" data-feather="layout"></i>
+            <i class="link-icon" data-feather="layers"></i>
             <span class="link-title">{{ __('index.project_management') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

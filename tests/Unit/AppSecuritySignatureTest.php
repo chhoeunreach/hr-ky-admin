@@ -40,7 +40,7 @@ class AppSecuritySignatureTest extends TestCase
     {
         config(['app_security.enabled' => false]);
         $nextWasCalled = false;
-        $response = (new VerifyAppSecurityAccess())->handle(
+        $response = app(VerifyAppSecurityAccess::class)->handle(
             Request::create('/api/dashboard'),
             function () use (&$nextWasCalled) {
                 $nextWasCalled = true;
@@ -56,7 +56,7 @@ class AppSecuritySignatureTest extends TestCase
     {
         config(['app_security.enabled' => true]);
         $nextWasCalled = false;
-        $response = (new VerifyAppSecurityAccess())->handle(
+        $response = app(VerifyAppSecurityAccess::class)->handle(
             Request::create('/api/dashboard'),
             function () use (&$nextWasCalled) {
                 $nextWasCalled = true;

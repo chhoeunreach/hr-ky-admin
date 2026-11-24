@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Modules\AppSecurity\Services\SecurityDashboardAnalyticsService;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -21,6 +22,7 @@ class SecurityDashboardAnalyticsServiceTest extends TestCase
             'database.connections.sqlite.foreign_key_constraints' => false,
         ]);
         DB::purge('sqlite');
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-11-20 10:00:00'));
         Carbon::setTestNow(Carbon::parse('2026-11-20 10:00:00'));
         Schema::connection('sqlite')->create('app_registered_devices', function (Blueprint $table): void {
             $table->id(); $table->timestamp('registered_at')->nullable(); $table->unsignedTinyInteger('risk_score')->default(0);
@@ -32,6 +34,7 @@ class SecurityDashboardAnalyticsServiceTest extends TestCase
 
     protected function tearDown(): void
     {
+        CarbonImmutable::setTestNow();
         Carbon::setTestNow();
         parent::tearDown();
     }
@@ -79,15 +82,15 @@ class SecurityDashboardAnalyticsServiceTest extends TestCase
             'canViewAnalytics' => true,
         ])->render();
 
-        $this->assertStringContainsString('Installation trend', $html);
-        $this->assertStringContainsString('Current risk distribution', $html);
+        $this->assertStringContainsString('Daily new device registrations for the last two weeks', $html);
+        $this->assertStringContainsString('Risk Distribution', $html);
         $this->assertStringContainsString('Invalid signatures', $html);
-        $this->assertStringContainsString('14 days', $html);
+        $this->assertStringContainsString('14 Days', $html);
 
         $hiddenHtml = view('admin.app-security.partials.analytics', [
             'analytics' => $analytics,
             'canViewAnalytics' => false,
         ])->render();
-        $this->assertStringNotContainsString('Installation trend', $hiddenHtml);
+        $this->assertStringNotContainsString('Daily new device registrations for the last two weeks', $hiddenHtml);
     }
 }

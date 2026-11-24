@@ -12,7 +12,7 @@
            role="button"
            aria-expanded="{{ $isPayrollQueueSection ? 'true' : 'false' }}"
            aria-controls="payrollQueueMenu">
-            <i class="link-icon" data-feather="users"></i>
+            <i class="link-icon" data-feather="credit-card"></i>
             <span class="link-title">{{ __('index.payroll_queue_system') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

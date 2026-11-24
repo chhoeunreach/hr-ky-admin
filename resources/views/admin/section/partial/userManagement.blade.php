@@ -5,7 +5,7 @@
            href="#user-management"
            data-href="#"
            role="button" aria-expanded="{{ $isUserMgmtSection ? 'true' : 'false' }}" aria-controls="user-management">
-            <i class="link-icon" data-feather="user"></i>
+            <i class="link-icon" data-feather="shield"></i>
             <span class="link-title"> {{ __('index.user_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

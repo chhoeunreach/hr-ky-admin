@@ -5,7 +5,7 @@
     @endphp
     <li class="nav-item {{ $isShiftSection ? 'active' : '' }}">
         <a class="nav-link {{ $isShiftSection ? '' : 'collapsed' }}" data-href="#" data-bs-toggle="collapse" href="#shiftManagement" role="button" aria-expanded="{{ $isShiftSection ? 'true' : 'false' }}" aria-controls="shiftManagement">
-            <i class="link-icon" data-feather="watch"></i>
+            <i class="link-icon" data-feather="clock"></i>
             <span class="link-title"> {{ __('index.shift_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

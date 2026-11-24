@@ -16,21 +16,21 @@
             <div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge rounded-pill {{ $isDark ? 'bg-dark' : 'bg-light text-dark border' }}">
-                        {{ $isDark ? 'Dark' : 'Light' }}
+                        {{ $isDark ? __('index.dark_mode') : __('index.light_mode') }}
                     </span>
                     @if($isSystem)
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" title="Core System Theme">
-                            <i data-feather="shield" style="width:10px;height:10px" class="me-1"></i>Core System
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle" title="{{ __('index.core_systems') }}">
+                            <i data-feather="shield" style="width:10px;height:10px" class="me-1"></i>{{ __('index.core_systems') }}
                         </span>
                     @else
-                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle" title="Custom Added Theme">
-                            <i data-feather="star" style="width:10px;height:10px" class="me-1"></i>Custom
+                        <span class="badge bg-warning-subtle text-warning border border-warning-subtle" title="{{ __('index.custom_themes') }}">
+                            <i data-feather="star" style="width:10px;height:10px" class="me-1"></i>{{ __('index.custom_themes') }}
                         </span>
                     @endif
                     @if($isActive)
-                        <span class="badge bg-success-subtle text-success border border-success-subtle">Shown</span>
+                        <span class="badge bg-success-subtle text-success border border-success-subtle">{{ __('index.shown_on_mobile') }}</span>
                     @else
-                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Hidden</span>
+                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">{{ __('index.hidden_on_mobile') }}</span>
                     @endif
                 </div>
                 <h5 class="mt-2 mb-0 fw-bold text-dark">{{ $theme['name'] }}</h5>
@@ -38,9 +38,9 @@
             </div>
             <form action="{{ route('admin.mobile-tools.theme-modes.toggle', $key) }}" method="POST">
                 @csrf
-                <button type="submit" class="btn btn-sm {{ $isActive ? 'btn-outline-danger' : 'btn-outline-success' }}" title="{{ $isActive ? 'Hide from mobile app' : 'Show in mobile app' }}">
+                <button type="submit" class="btn btn-sm {{ $isActive ? 'btn-outline-danger' : 'btn-outline-success' }}" title="{{ $isActive ? __('index.hidden_on_mobile') : __('index.shown_on_mobile') }}">
                     <i data-feather="{{ $isActive ? 'eye-off' : 'eye' }}" style="width:14px;height:14px"></i>
-                    {{ $isActive ? 'Hide' : 'Show' }}
+                    {{ $isActive ? __('index.hide') : __('index.show') }}
                 </button>
             </form>
         </div>
@@ -70,42 +70,42 @@
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $primary }};"></div>
                     <div>
-                        <div class="tm-color-label">Primary</div>
+                        <div class="tm-color-label">{{ __('index.color_primary') }}</div>
                         <div class="tm-color-val">{{ $primary }}</div>
                     </div>
                 </div>
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $secondary }};"></div>
                     <div>
-                        <div class="tm-color-label">Secondary</div>
+                        <div class="tm-color-label">{{ __('index.color_secondary') }}</div>
                         <div class="tm-color-val">{{ $secondary }}</div>
                     </div>
                 </div>
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $accent }};"></div>
                     <div>
-                        <div class="tm-color-label">Accent</div>
+                        <div class="tm-color-label">{{ __('index.color_accent') }}</div>
                         <div class="tm-color-val">{{ $accent }}</div>
                     </div>
                 </div>
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $bg }};"></div>
                     <div>
-                        <div class="tm-color-label">Background</div>
+                        <div class="tm-color-label">{{ __('index.color_background') }}</div>
                         <div class="tm-color-val">{{ $bg }}</div>
                     </div>
                 </div>
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $card }};"></div>
                     <div>
-                        <div class="tm-color-label">Card</div>
+                        <div class="tm-color-label">{{ __('index.color_card') }}</div>
                         <div class="tm-color-val">{{ $card }}</div>
                     </div>
                 </div>
                 <div class="tm-color-item">
                     <div class="tm-swatch" style="background-color: {{ $text }};"></div>
                     <div>
-                        <div class="tm-color-label">Text</div>
+                        <div class="tm-color-label">{{ __('index.color_text') }}</div>
                         <div class="tm-color-val">{{ $text }}</div>
                     </div>
                 </div>
@@ -113,10 +113,10 @@
 
             <!-- Role Permissions -->
             <div class="border-top pt-2">
-                <div class="small fw-semibold text-muted mb-1">Allowed Roles:</div>
+                <div class="small fw-semibold text-muted mb-1">{{ __('index.allowed_roles') }}:</div>
                 <div class="d-flex flex-wrap gap-1">
                     @if(empty($rolesList) || in_array('*', $rolesList))
-                        <span class="badge bg-light text-dark border">All Roles</span>
+                        <span class="badge bg-light text-dark border">{{ __('index.all_roles') }}</span>
                     @else
                         @foreach($rolesList as $roleItem)
                             @php
@@ -134,7 +134,7 @@
             <button type="button" class="btn btn-outline-primary btn-sm btn-edit-theme"
                     data-theme='@json($theme)'
                     data-update-url="{{ route('admin.mobile-tools.theme-modes.update', $key) }}">
-                <i data-feather="edit-2" style="width:14px;height:14px" class="me-1"></i> Edit Colors & Roles
+                <i data-feather="edit-2" style="width:14px;height:14px" class="me-1"></i> {{ __('index.edit_colors_roles') }}
             </button>
             <div class="d-flex gap-1">
                 @if($isSystem)

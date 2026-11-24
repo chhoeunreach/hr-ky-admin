@@ -4,7 +4,7 @@
             href="{{ route('admin.notices.index') }}"
             data-href="{{ route('admin.notices.index') }}"
             class="nav-link">
-            <i class="link-icon" data-feather="calendar"></i>
+            <i class="link-icon" data-feather="bell"></i>
             <span class="link-title">{{ __('index.notice') }}</span>
         </a>
     </li>

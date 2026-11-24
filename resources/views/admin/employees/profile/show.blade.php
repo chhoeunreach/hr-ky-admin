@@ -2943,34 +2943,31 @@
                         checked: field.matches('input[type="checkbox"], input[type="radio"]') ? field.checked : null,
                     };
                 });
-                try {
-                    const response = await fetch(@json(route('admin.employees.profile.print-records.store', $employee)), {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': @json(csrf_token()),
-                        },
-                        body: JSON.stringify({form_type: printType, document_text: linkedPrint ? printPaper.innerText : paper.innerText.trim(), fields,
-                            ...(linkedPrint ? {source_request_id: sourceRequestId} : {saved_form_id: savedFormId})}),
-                    });
-                    const result = response.ok ? await response.json() : null;
-                    if (result?.recorded === true && (!linkedPrint || (Number.isInteger(result.print_record_id) && result.print_record_id >= 1))) {
-                        if (linkedPrint) {
-                            const recordLabel = @json(__('index.print_record_number')) + ': #' + result.print_record_id;
-                            printPaper.querySelector('[data-print-record]').textContent = recordLabel;
-                            paper.querySelector('[data-print-record]').textContent = recordLabel;
-                            const notice = document.querySelector('[data-print-request-result="' + paper.dataset.requestTab + '"]');
-                            if (notice) notice.textContent = @json(__('index.linked_print_record_saved')) + ' #' + result.print_record_id;
-                        }
-                        const savedNotice = document.getElementById('employeePrintSavedNotice');
-                        savedNotice?.classList.remove('d-none');
-                        savedNotice?.classList.add('d-block');
-                    }
-                } catch (recErr) {
-                    console.warn('Print record warning:', recErr);
+                const response = await fetch(@json(route('admin.employees.profile.print-records.store', $employee)), {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': @json(csrf_token()),
+                    },
+                    body: JSON.stringify({form_type: printType, document_text: linkedPrint ? printPaper.innerText : paper.innerText.trim(), fields,
+                        ...(linkedPrint ? {source_request_id: sourceRequestId} : {saved_form_id: savedFormId})}),
+                });
+                const result = response.ok ? await response.json() : null;
+                if (result?.recorded !== true || !Number.isInteger(result.print_record_id) || result.print_record_id < 1) {
+                    throw new Error('Print record was not confirmed.');
                 }
+                if (linkedPrint) {
+                    const recordLabel = @json(__('index.print_record_number')) + ': #' + result.print_record_id;
+                    printPaper.querySelector('[data-print-record]').textContent = recordLabel;
+                    paper.querySelector('[data-print-record]').textContent = recordLabel;
+                    const notice = document.querySelector('[data-print-request-result="' + paper.dataset.requestTab + '"]');
+                    if (notice) notice.textContent = @json(__('index.linked_print_record_saved')) + ' #' + result.print_record_id;
+                }
+                const savedNotice = document.getElementById('employeePrintSavedNotice');
+                savedNotice?.classList.remove('d-none');
+                savedNotice?.classList.add('d-block');
                 if (document.fonts) await document.fonts.ready;
                 if (linkedPrint || printType === 'salaryCertificate' || printType === 'employmentCertificate' || printType === 'warning') {
                     await Promise.all(Array.from(printPaper.querySelectorAll('img')).map(function (img) {

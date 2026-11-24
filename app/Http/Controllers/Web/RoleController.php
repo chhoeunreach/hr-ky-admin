@@ -186,7 +186,7 @@ class  RoleController extends Controller
             $withRole = ['permission'];
             $permissionGroupTypeList = $this->roleRepo->getPermissionGroupTypeDetails($selectPermissionGroup, $withPermissionType);
             $role = $this->roleRepo->getRoleById($roleId, $selectRole, $withRole);
-            $allRoles = $this->roleRepo->getAllRolesExceptAdmin();
+            $allRoles = $this->roleRepo->getAllUserRoles();
             if (!$role) {
                 throw new Exception(__('message.role_not_found'), 404);
             }
@@ -229,7 +229,7 @@ class  RoleController extends Controller
                 }
                 $hasExplicitMenuPermission = $permissionCatalog->has($ability);
                 $allowedByMenu = $grantedKeys->has($ability);
-                if (!$hasExplicitMenuPermission) {
+                if (!$allowedByMenu) {
                     foreach ($uniqueFunctionAbilities as $functionAbility) {
                         if ($grantedKeys->has($functionAbility)) {
                             $allowedByMenu = true;
@@ -237,8 +237,15 @@ class  RoleController extends Controller
                         }
                     }
                 }
+                $friendlyMenuNames = [
+                    'assets' => 'Assets (គ្រប់គ្រងសម្ភារៈ)',
+                    'company-documents' => 'Company Documents (ឯកសារក្រុមហ៊ុន)',
+                    'team-sheet' => 'Team Sheet (បញ្ជីបុគ្គលិក)',
+                    'repair' => 'Repair (បញ្ជីជួសជុល)',
+                ];
                 $mobileMenuPermissionOptions[$menu] = [
-                    'name' => $permissionCatalog->get($ability)->name
+                    'name' => $friendlyMenuNames[$menu]
+                        ?? $permissionCatalog->get($ability)->name
                         ?? ucwords(str_replace('-', ' ', $menu)),
                     'ability' => $ability,
                     'explicit' => $hasExplicitMenuPermission,
@@ -249,10 +256,19 @@ class  RoleController extends Controller
                 }
             }
             $mobileLayout = app(\App\Services\Authorization\MobileRoleLayout::class)->forRole((int) $role->id);
+            $allRolesLayouts = [];
+            foreach ($allRoles as $r) {
+                if ((int) $r->id !== (int) $role->id) {
+                    $allRolesLayouts[$r->id] = [
+                        'name' => ucfirst($r->name),
+                        'layout' => app(\App\Services\Authorization\MobileRoleLayout::class)->forRole((int) $r->id),
+                    ];
+                }
+            }
             return view($this->view . 'permission', compact('permissionGroupTypeList',
                 'role',
                 'role_permission', 'isEdit','allRoles', 'mobileMenuOptions',
-                'mobileMenuPermissionOptions', 'mobileLayout'
+                'mobileMenuPermissionOptions', 'mobileLayout', 'allRolesLayouts'
             ));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());

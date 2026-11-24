@@ -99,7 +99,7 @@ final class DailyRecordsTest extends TestCase
         $pending = DB::table('daily_entries')->where('status', 'submitted')->value('id');
         $old = DB::table('daily_entries')->where('status', 'returned')->value('id');
         $this->asManager(1)->postJson(self::WEB.'/tasks/review', ['approvals' => [$id => $old]])->assertConflict();
-        $this->get(self::WEB."?assignment=$id")->assertOk()->assertSee('Current submission')->assertSee('Photo attached');
+        $this->get(self::WEB."?assignment=$id")->assertOk()->assertSee(__('daily_records.current_submitted_report'))->assertSee('Photo attached');
         $this->post(self::WEB.'/tasks/review', ['approvals' => [$id => $pending]])->assertRedirect();
         $this->assertDatabaseHas('daily_task_assignments', ['id' => $id, 'status' => 'approved', 'approved_at' => RecordTime::now()]);
         $this->post(self::WEB."/tasks/$id/actions", ['action' => 'close'])->assertRedirect();
@@ -275,7 +275,7 @@ final class DailyRecordsTest extends TestCase
         $this->get(self::WEB.'?kind=incident')->assertOk()->assertDontSee('Confidential evidence');
         $this->postJson(self::WEB."/incidents/$public", ['action' => 'state', 'state' => 'closed'])->assertConflict();
         $this->post(self::WEB."/incidents/$public", ['action' => 'state', 'state' => 'acknowledged'])->assertRedirect();
-        $this->get(self::WEB."/incidents/$public")->assertOk()->assertSee('Assign responsibility');
+        $this->get(self::WEB."/incidents/$public")->assertOk()->assertSee(__('daily_records.assign_case_responsibility'));
         $this->postJson(self::WEB."/incidents/$public", ['action' => 'assign', 'responsible_id' => 4])->assertNotFound();
         $this->post(self::WEB."/incidents/$public", ['action' => 'assign', 'responsible_id' => 3])->assertRedirect();
         $this->asMobile(3)->getJson(self::API."/assigned-incidents/$public")->assertOk();
@@ -283,7 +283,7 @@ final class DailyRecordsTest extends TestCase
         $this->postJson(self::API."/assigned-incidents/$public/actions", ['message' => 'Contacted customer'])->assertOk();
 
         $this->grant('daily_records.sensitive');
-        $this->asManager(1)->get(self::WEB."/incidents/$secret")->assertOk()->assertSee('Confidential verification');
+        $this->asManager(1)->get(self::WEB."/incidents/$secret")->assertOk()->assertSee(__('daily_records.confidential_investigation_finding'));
         $this->post(self::WEB."/incidents/$secret", ['action' => 'verify', 'verification' => 'under_investigation',
             'message' => 'Restricted finding text'])->assertRedirect();
         $this->assertDatabaseHas('daily_entries', ['id' => $secret, 'status' => 'reported', 'verification' => 'under_investigation']);

@@ -1,6 +1,6 @@
 @extends('layouts.master')
-@section('title', 'Banner Slides')
-@section('action', 'Manage the mobile home banner slideshow')
+@section('title', __('index.banner_slides'))
+@section('action', __('index.banner_slides_subtitle'))
 
 @section('styles')
 <style>
@@ -490,22 +490,22 @@
     <div class="card mt-hero mb-4">
         <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <div class="mt-eyebrow"><i data-feather="smartphone" style="width:14px;height:14px;" class="me-1"></i> Mobile Tool</div>
-                <h2>Banner Slides Management</h2>
-                <p>Manage the dynamic banner image carousel displayed on the mobile app home screen. Configure individual slides, direct link actions, and live playback timing.</p>
+                <div class="mt-eyebrow"><i data-feather="smartphone" style="width:14px;height:14px;" class="me-1"></i> {{ __('index.mobile_tool') }}</div>
+                <h2>{{ __('index.banner_slides_management') }}</h2>
+                <p>{{ __('index.banner_slides_subtitle') }}</p>
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <button type="button" class="btn btn-light text-primary fw-bold shadow-sm" onclick="openRealPreviewModal(0)">
-                    <i data-feather="smartphone" class="me-1" style="width:16px;height:16px"></i> Real Mobile Preview
+                    <i data-feather="smartphone" class="me-1" style="width:16px;height:16px"></i> {{ __('index.real_mobile_preview') }}
                 </button>
                 <button type="button" class="btn btn-light text-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addSlideModal">
-                    <i data-feather="plus-circle" class="me-1" style="width:16px;height:16px"></i> Add Slide
+                    <i data-feather="plus-circle" class="me-1" style="width:16px;height:16px"></i> {{ __('index.add_slide') }}
                 </button>
                 <button type="button" class="btn btn-outline-light fw-bold" data-bs-toggle="modal" data-bs-target="#playbackModal">
-                    <i data-feather="settings" class="me-1" style="width:16px;height:16px"></i> Playback Settings
+                    <i data-feather="settings" class="me-1" style="width:16px;height:16px"></i> {{ __('index.playback_settings') }}
                 </button>
                 <button type="button" class="btn btn-outline-light fw-bold" data-bs-toggle="modal" data-bs-target="#resetModal">
-                    <i data-feather="rotate-ccw" class="me-1" style="width:16px;height:16px"></i> Reset
+                    <i data-feather="rotate-ccw" class="me-1" style="width:16px;height:16px"></i> {{ __('index.reset') }}
                 </button>
             </div>
         </div>
@@ -523,21 +523,21 @@
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-2">
                 <i data-feather="eye" class="text-primary" style="width:18px;height:18px"></i>
-                <h6 class="mb-0 fw-bold">Live Mobile Carousel Preview</h6>
+                <h6 class="mb-0 fw-bold">{{ __('index.live_mobile_preview') }}</h6>
                 <span class="badge bg-light text-secondary border ms-1" id="previewSlideCounter">Slide 1 of {{ max(1, count($config['slides'])) }}</span>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <button type="button" class="btn btn-sm btn-outline-info fw-semibold" onclick="openRealPreviewModal(activeSlideIdx)">
-                    <i data-feather="maximize-2" style="width:13px;height:13px" class="me-1"></i> Open in Phone Screen
+                    <i data-feather="maximize-2" style="width:13px;height:13px" class="me-1"></i> {{ __('index.open_in_phone') }}
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-prev" title="Previous Slide">
-                    <i data-feather="chevron-left" style="width:14px;height:14px"></i> Prev
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-prev" title="{{ __('index.prev_slide') }}">
+                    <i data-feather="chevron-left" style="width:14px;height:14px"></i> {{ __('index.prev_slide') }}
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-primary" id="preview-play" title="Toggle Play / Pause">
-                    <i data-feather="pause" style="width:14px;height:14px" id="preview-play-icon"></i> <span id="preview-play-text">Pause</span>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="preview-play" title="{{ __('index.pause') }} / {{ __('index.play') }}">
+                    <i data-feather="pause" style="width:14px;height:14px" id="preview-play-icon"></i> <span id="preview-play-text">{{ __('index.pause') }}</span>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-next" title="Next Slide">
-                    Next <i data-feather="chevron-right" style="width:14px;height:14px"></i>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="preview-next" title="{{ __('index.next_slide') }}">
+                    {{ __('index.next_slide') }} <i data-feather="chevron-right" style="width:14px;height:14px"></i>
                 </button>
             </div>
         </div>

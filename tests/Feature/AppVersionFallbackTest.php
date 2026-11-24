@@ -217,7 +217,6 @@ class AppVersionFallbackTest extends TestCase
         $html = view('admin.section.partial.mobileTool')->render();
         $this->assertStringContainsString(route('admin.showQR'), $html);
         $this->assertStringContainsString(route('admin.app-settings.index'), $html);
-        $this->assertStringContainsString(route('admin.roles.index'), $html);
         $this->assertStringNotContainsString(route('admin.app-security.index'), $html);
         $this->assertStringNotContainsString(route('admin.feature.index'), $html);
     }

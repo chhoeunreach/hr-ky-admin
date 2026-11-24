@@ -168,7 +168,7 @@ class AppSecurityMiddlewareReplayTest extends TestCase
         $nonce = rtrim(strtr(base64_encode(random_bytes(24)), '+/', '-_'), '=');
         $timestamp = (string) now()->timestamp;
         $request = $this->signedRequest('{"value":1}', null, $nonce, $timestamp);
-        $response = (new VerifyAppSecurityAccess())->handle(
+        $response = app(VerifyAppSecurityAccess::class)->handle(
             $request,
             fn () => response()->json(['ok' => true]),
         );
@@ -176,7 +176,7 @@ class AppSecurityMiddlewareReplayTest extends TestCase
         $this->assertSame(1, DB::table('app_security_nonces')->count());
 
         $replay = $this->signedRequest('{"value":1}', null, $nonce, $timestamp);
-        $response = (new VerifyAppSecurityAccess())->handle(
+        $response = app(VerifyAppSecurityAccess::class)->handle(
             $replay,
             fn () => response()->json(['ok' => true]),
         );
@@ -233,7 +233,7 @@ class AppSecurityMiddlewareReplayTest extends TestCase
                         }
 
                         $request = $this->signedRequest('{}', null, $nonce, $timestamp);
-                        $response = (new VerifyAppSecurityAccess())->handle(
+                        $response = app(VerifyAppSecurityAccess::class)->handle(
                             $request,
                             fn () => response()->json(['ok' => true]),
                         );
@@ -281,7 +281,7 @@ class AppSecurityMiddlewareReplayTest extends TestCase
         $request = $this->signedRequest('{}');
         $continued = false;
 
-        $response = (new VerifyAppSecurityAccess())->handle($request, function () use (&$continued) {
+        $response = app(VerifyAppSecurityAccess::class)->handle($request, function () use (&$continued) {
             $continued = true;
             return response()->json(['ok' => true]);
         });
@@ -294,7 +294,7 @@ class AppSecurityMiddlewareReplayTest extends TestCase
     public function test_modified_body_fails_signature_verification_before_nonce_consumption(): void
     {
         $request = $this->signedRequest('{"value":2}', '{"value":1}');
-        $response = (new VerifyAppSecurityAccess())->handle(
+        $response = app(VerifyAppSecurityAccess::class)->handle(
             $request,
             fn () => response()->json(['ok' => true]),
         );

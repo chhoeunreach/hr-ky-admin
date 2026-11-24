@@ -4,7 +4,7 @@
             href="{{ route('admin.tasks.index') }}"
             data-href="{{ route('admin.tasks.index') }}"
             class="nav-link">
-            <i class="link-icon" data-feather="table"></i>
+            <i class="link-icon" data-feather="check-square"></i>
             <span class="link-title">{{__('index.task_management')}}</span>
         </a>
     </li>

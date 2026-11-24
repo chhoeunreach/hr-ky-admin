@@ -409,6 +409,17 @@ Route::group([
     Route::get('assets', [AssetAssignmentApiController::class, 'index']);
     Route::post('asset-return/{id}', [AssetAssignmentApiController::class, 'store']);
 
+    /** Admin Asset Management for Mobile App (Flutter) */
+    Route::prefix('admin/assets')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'index']);
+        Route::get('form-data', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'formData']);
+        Route::get('{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'show']);
+        Route::post('/', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'store']);
+        Route::post('{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'update']);
+        Route::put('{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'update']);
+        Route::delete('{id}', [\App\Http\Controllers\Api\AdminAssetApiController::class, 'destroy']);
+    });
+
     /** Store Phone Directory & SIM Cards for Mobile App */
     Route::get('store-phone-numbers', [\App\Http\Controllers\Api\StorePhoneNumberApiController::class, 'index']);
     Route::get('my-sim-cards', [\App\Http\Controllers\Api\StorePhoneNumberApiController::class, 'mySimCards']);

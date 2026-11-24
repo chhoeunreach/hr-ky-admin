@@ -24,7 +24,7 @@
            href="#payroll"
            data-href="#"
            role="button" aria-expanded="{{ $isPayrollSection ? 'true' : 'false' }}" aria-controls="payroll">
-            <i class="link-icon" data-feather="gift"></i>
+            <i class="link-icon" data-feather="dollar-sign"></i>
             <span class="link-title"> {{ __('index.payroll_management') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

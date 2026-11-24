@@ -192,7 +192,7 @@ class AppSecurityController extends Controller
 
     public function config(\App\Modules\AppSecurity\Services\SecurityPolicyService $policy): JsonResponse
     {
-        $enabled = (bool) $policy->value('enabled');
+        $enabled = (bool) config('app_security.enabled', false);
         $setting = fn (string $key, string $fallback) => $enabled
             ? $policy->value($key)
             : config('app_security.'.$fallback);

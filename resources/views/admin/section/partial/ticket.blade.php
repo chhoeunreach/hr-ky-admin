@@ -5,7 +5,7 @@
             href="{{ route('admin.supports.index') }}"
             data-href="{{ route('admin.supports.index') }}"
             class="nav-link">
-            <i class="link-icon" data-feather="help-circle"></i>
+            <i class="link-icon" data-feather="life-buoy"></i>
             <span class="link-title">{{ __('index.support') }}</span>
         </a>
     </li>

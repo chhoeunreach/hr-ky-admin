@@ -5,7 +5,7 @@
             href="{{ route('admin.event.index') }}"
             data-href="{{ route('admin.event.index') }}"
             class="nav-link">
-            <i class="link-icon" data-feather="tv"></i>
+            <i class="link-icon" data-feather="calendar"></i>
             <span class="link-title">{{ __('index.event') }}</span>
         </a>
     </li>

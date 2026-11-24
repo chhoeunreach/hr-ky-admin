@@ -7,52 +7,343 @@
 @section('button')
     <a href="{{route('admin.roles.index')}}" class="btn btn-primary btn-sm"> <i class="link-icon" data-feather="arrow-left"></i> @lang('index.back') </a>
 @endsection
-@section('styles')
 
+@section('styles')
     <style>
-        .mobile-role-preview{position:sticky;top:1rem;width:min(100%,390px);margin:0 auto;padding:9px;border:1px solid #cbd5e1;border-radius:34px;background:#0f172a;box-shadow:0 12px 35px #0f172a24}
-        .mobile-role-screen{height:690px;overflow:hidden;position:relative;border-radius:25px;background:#f5f7fb;scrollbar-width:thin}
-        .mobile-role-sidebar{display:none;position:absolute;inset:0 auto 0 0;z-index:5;width:78%;overflow:auto;padding:18px 12px;background:linear-gradient(160deg,#f3f7fd,#e2ebfa,#cdddf6);color:#0f172a;box-shadow:8px 0 28px #0f172a33}
+        /* Mobile Studio Preview Container */
+        .mobile-role-preview{position:sticky;top:1rem;width:min(100%,400px);margin:0 auto;padding:12px;border:1px solid #cbd5e1;border-radius:40px;background:#0f172a;box-shadow:0 20px 50px rgba(15,23,42,0.22)}
+        .mobile-role-screen{height:720px;overflow:hidden;position:relative;border-radius:30px;background:#f0f4f9;scrollbar-width:thin;transition:background 0.3s ease, color 0.3s ease}
+        .mobile-role-sidebar{display:none;position:absolute;inset:0 auto 0 0;z-index:5;width:80%;overflow:auto;padding:18px 12px;background:linear-gradient(160deg,#f3f7fd,#e2ebfa,#cdddf6);color:#0f172a;box-shadow:8px 0 28px #0f172a33}
         .mobile-role-screen.drawer-open .mobile-role-sidebar{display:block}
         .mobile-role-screen.drawer-open:after{content:"";position:absolute;inset:0;background:#0f172a66;z-index:4}
-        .mobile-role-brand{padding:4px 10px 14px;font-size:19px;font-weight:900;letter-spacing:.04em;color:#0b5fff}
+        .mobile-role-brand{padding:4px 10px 14px;font-size:18px;font-weight:900;letter-spacing:.04em;color:#0b5fff}
         .mobile-role-sidebar-label{padding:8px 10px;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+        
+        /* Day Mode & Night Mode Styles */
+        .mobile-role-screen.theme-day {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .mobile-role-screen.theme-night {
+            background: #090d16;
+            color: #f8fafc;
+        }
+        .mobile-role-screen.theme-night .mobile-app-header {
+            background: #090d16;
+            color: #f8fafc;
+        }
+        .mobile-role-screen.theme-night .day-card {
+            background: #131c2e !important;
+            border-color: #1e293b !important;
+            color: #f8fafc !important;
+        }
+        .mobile-role-screen.theme-night .text-muted {
+            color: #94a3b8 !important;
+        }
+        .mobile-role-screen.theme-night .mobile-role-bottom {
+            background: #0f172a;
+            border-top-color: #1e293b;
+            color: #cbd5e1;
+        }
+        .mobile-role-screen.theme-night .bottom-nav-pill-active {
+            background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
+            color: #fff !important;
+        }
+        .mobile-role-screen.theme-night .attendance-orb-pulse {
+            background: radial-gradient(circle, #2563eb 0%, #1d4ed8 70%, transparent 100%) !important;
+        }
+        
+        /* Mobile App Header (Matches Day Mode screenshot) */
+        .mobile-app-header {
+            padding: 10px 14px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f1f5f9;
+        }
+        .header-profile-box {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+        }
+        .header-avatar-wrap {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #3b82f6;
+            font-size: 20px;
+        }
+        .header-online-dot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background: #22c55e;
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+        .header-action-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1e293b;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+        }
+        
+        /* Welcome Angkor Banner */
+        .angkor-banner-card {
+            margin: 6px 12px 10px;
+            padding: 14px 16px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #0a1e42 0%, #15397d 60%, #1e40af 100%);
+            color: #ffffff;
+            box-shadow: 0 8px 20px rgba(10,30,66,0.25);
+            position: relative;
+            overflow: hidden;
+        }
+        .angkor-banner-card::after {
+            content: "";
+            position: absolute;
+            right: -10px;
+            bottom: -15px;
+            width: 130px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(251,191,36,0.2) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* Attendance Glowing Orb */
+        .attendance-orb-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 0 6px;
+            position: relative;
+        }
+        .attendance-orb-outer {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: rgba(37,99,235,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed rgba(37,99,235,0.25);
+            animation: pulse-ring 3s infinite;
+        }
+        .attendance-orb-inner {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #3b82f6, #1d4ed8 75%, #1e3a8a 100%);
+            box-shadow: 0 10px 25px rgba(37,99,235,0.45), inset 0 2px 6px rgba(255,255,255,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 38px;
+        }
+        
+        /* Floating Bottom Nav in Day Mode */
+        .mobile-role-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 8px 10px 10px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 -4px 20px rgba(15,23,42,0.06);
+            z-index: 10;
+        }
+        .bottom-nav-pill-active {
+            background: linear-gradient(135deg, #0f172a, #1e3a8a);
+            color: #ffffff !important;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(15,23,42,0.25);
+        }
+        
+        /* Mobile Preview Zones */
         .mobile-role-zone{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:32px;padding:4px 8px}
-        .mobile-role-zone[data-zone="home_quick"]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:0 12px 12px}
-        .mobile-role-zone[data-zone="bottom"]{justify-content:space-around;flex-wrap:nowrap;border-top:1px solid #e2e8f0}
-        .mobile-role-zone[data-zone="sidebar"]{display:grid;gap:4px;min-height:40px;padding:0}
-        .mobile-role-zone[data-zone="top"]{justify-content:flex-end;padding:0 12px}
-        .mobile-role-zone.manage-drop{outline:1px dashed #0b5fff88;border-radius:8px}
-        .mobile-role-zone-label{display:none;color:#64748b;font-size:9px}
+        .mobile-role-zone[data-zone="home_quick"]{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:0 12px 12px}
+        .mobile-role-zone[data-zone="bottom"]{justify-content:space-around;flex-wrap:nowrap;border:none}
+        .mobile-role-zone[data-zone="sidebar"]{display:grid;gap:6px;min-height:40px;padding:0}
+        .mobile-role-zone[data-zone="top"]{justify-content:flex-end;gap:5px;padding:0}
+        .mobile-role-zone.manage-drop{outline:2px dashed #0b5fff;border-radius:10px;background:#0b5fff08}
+        .mobile-role-zone-label{display:none;color:#64748b;font-size:9px;font-weight:600}
         .mobile-role-screen.manage-mode .mobile-role-zone-label{display:block}
-        .mobile-role-side-item{padding:9px;border-radius:10px;color:#0f172a;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        
+        .mobile-role-side-item{padding:8px 10px;border-radius:8px;color:#0f172a;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .mobile-role-side-item.active{background:#0b5fff1a;color:#0b5fff;font-weight:700}
-        .mobile-role-body{height:100%;overflow:auto;padding-bottom:52px;background:#f5f7fb}
-        .mobile-role-status{height:26px;padding:5px 16px;background:#fff;color:#0f172a;font-size:10px}
-        .mobile-role-head{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#0b5fff;color:white}
-        .mobile-role-head strong{display:block;font-size:17px;color:white;flex:1}
-        .mobile-role-head span{font-size:11px;color:#dbeafe}
-        .mobile-role-greeting{margin:12px;padding:14px;border:1px solid #e2e8f0;border-radius:15px;background:#fff;color:#334155;font-size:12px;box-shadow:0 3px 12px #0f172a0c}
-        .mobile-role-greeting strong{display:block;font-size:15px;color:#0f172a}
-        .mobile-role-section{padding:0 12px 10px;color:#0f172a;font-size:13px;font-weight:700}
-        .mobile-role-function{cursor:grab;position:relative;max-width:100%;padding:8px 24px 8px 10px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;color:#0f172a;font-size:10px;box-shadow:0 3px 10px #0f172a0c;user-select:none}
-        .mobile-role-remove{position:absolute;top:2px;right:3px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:#fee2e2;color:#b91c1c;font-size:15px;line-height:18px;cursor:pointer}
-        .mobile-role-remove:hover{background:#fecaca}
+        
+        .mobile-role-body{height:100%;overflow-y:auto;overflow-x:hidden;padding-bottom:70px}
+        .mobile-role-status{height:22px;padding:3px 16px;background:transparent;color:#0f172a;font-size:10px;display:flex;justify-content:space-between;align-items:center;font-weight:600}
+        .mobile-role-screen.theme-night .mobile-role-status{color:#cbd5e1}
+        .mobile-role-section{padding:0 12px 8px;color:#0f172a;font-size:12px;font-weight:700}
+        
+        .mobile-role-function{cursor:grab;position:relative;max-width:100%;padding:8px 24px 8px 10px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;color:#0f172a;font-size:11px;box-shadow:0 2px 6px #0f172a08;user-select:none;transition:all 0.15s ease}
+        .mobile-role-screen.theme-night .mobile-role-function{background:#131c2e;border-color:#1e293b;color:#f8fafc}
+        .mobile-role-remove{position:absolute;top:2px;right:3px;width:18px;height:18px;padding:0;border:0;border-radius:50%;background:#fee2e2;color:#b91c1c;font-size:13px;line-height:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+        .mobile-role-remove:hover{background:#fca5a5}
         .mobile-role-function:active{cursor:grabbing}
-        .mobile-role-zone[data-zone="home_quick"] .mobile-role-function{min-height:66px;display:flex;align-items:center;justify-content:center;text-align:center;padding:7px 4px}
-        .mobile-role-zone[data-zone="bottom"] .mobile-role-function{border:0;box-shadow:none;background:transparent;padding:6px 2px;text-align:center;color:#64748b}
-        .mobile-role-zone[data-zone="sidebar"] .mobile-role-function{display:block;width:100%;border:0;background:#ffffff80;box-shadow:none}
-        .mobile-role-zone[data-zone="top"] .mobile-role-function{border-radius:999px;padding:5px 8px}
+        .mobile-role-zone[data-zone="home_quick"] .mobile-role-function{min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8px 4px;font-size:10px}
+        .mobile-role-zone[data-zone="bottom"] .mobile-role-function{border:0;box-shadow:none;background:transparent;padding:4px 2px;text-align:center;color:#64748b;font-size:10px}
+        .mobile-role-zone[data-zone="sidebar"] .mobile-role-function{display:block;width:100%;border:1px solid #e2e8f0;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.03)}
+        .mobile-role-zone[data-zone="top"] .mobile-role-function{border-radius:50%;width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;background:#1e293b;color:#fff;border:none}
         .mobile-role-function.dragging{opacity:.45}
-        .mobile-role-empty{grid-column:1/-1;padding:12px 8px;text-align:center;color:#64748b;font-size:10px}
-        .mobile-role-bottom{position:absolute;bottom:0;left:0;right:0;padding:5px 2px;background:#fff;color:#64748b;font-size:10px}
-        .mobile-role-bottom .mobile-role-zone-label{padding:4px;text-align:center}
-        .mobile-role-available{max-width:600px;margin:12px auto;padding:12px;border:1px dashed #94a3b8;border-radius:12px;background:#f8fafc}
-        .mobile-role-available[hidden]{display:none}
-        .mobile-role-available h6{margin:0 0 8px;font-size:12px}
-        .mobile-role-available .mobile-role-zone{min-height:45px}
-        .mobile-role-menu{width:28px;height:28px;border:0;border-radius:50%;background:#ffffff26;color:white;font-size:18px;line-height:1}
-        .mobile-role-manage{display:block;margin:0 auto 10px}
+        .mobile-role-empty{grid-column:1/-1;padding:12px 8px;text-align:center;color:#94a3b8;font-size:11px}
+        
+        .preview-tab-btn{cursor:pointer;border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;border:none;transition:all .2s}
+        .preview-tab-btn.active{background:#ffffff;color:#0b5fff;box-shadow:0 2px 6px rgba(0,0,0,0.1)}
+        .preview-tab-btn:not(.active){background:transparent;color:#ffffffcc}
+        .preview-tab-btn:hover{color:#fff}
+        
+        /* Studio Zone Manager Cards (Left Column) */
+        .studio-zone-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(15,23,42,0.04);
+            transition: all 0.2s;
+        }
+        .studio-zone-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 14px rgba(15,23,42,0.07);
+        }
+        .studio-zone-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+        .studio-item-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+        }
+        .studio-item-badge:hover {
+            transform: translateY(-1px);
+            border-color: #94a3b8;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+        }
+        .studio-item-badge .btn-reorder-item {
+            background: #e2e8f0;
+            color: #475569;
+            border: none;
+            border-radius: 4px;
+            width: 19px;
+            height: 19px;
+            line-height: 17px;
+            font-size: 9px;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+        .studio-item-badge .btn-reorder-item:hover {
+            background: #cbd5e1;
+            color: #0f172a;
+            transform: scale(1.08);
+        }
+        .studio-item-badge .btn-remove-item {
+            background: #fee2e2;
+            color: #ef4444;
+            border: none;
+            border-radius: 50%;
+            width: 19px;
+            height: 19px;
+            line-height: 17px;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 2px;
+            transition: background 0.15s;
+        }
+        .studio-item-badge .btn-remove-item:hover {
+            background: #fca5a5;
+            color: #b91c1c;
+        }
+        .studio-empty-placeholder {
+            width: 100%;
+            padding: 18px;
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+        
+        /* Modal Add Menu Styling */
+        .modal-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 12px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .modal-menu-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 12px 14px;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        .modal-menu-card:hover {
+            border-color: #3b82f6;
+            background: #f8faff;
+            box-shadow: 0 3px 10px rgba(59,130,246,0.08);
+        }
+        .modal-menu-card.is-locked {
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            opacity: 0.85;
+        }
+        .modal-menu-card.is-locked:hover {
+            border-color: #f59e0b;
+            background: #fffbeb;
+            opacity: 1;
+        }
+        
         @media(max-width:991.98px){.mobile-role-preview{position:static;margin:0 auto 20px}}
         li.item{position: relative;}
         li.item label p.grant_leave {
@@ -69,71 +360,404 @@
             border-radius: 10px;
             line-height: 1.5;
         }
-
         li.item label:hover p.grant_leave {
             visibility: visible;
             transition: all ease-in-out 0.3s;
         }
     </style>
 @endsection
+
 @section('main-content')
     <section class="content">
         @include('admin.section.flash_message')
 
         @include('admin.role.common.breadcrumb')
 
-        <div class="card">
-            <div class="card-header card-nav">
-                <ul class="nav nav-tabs d-md-flex d-block text-center">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header card-nav bg-white border-bottom">
+                <ul class="nav nav-tabs d-md-flex d-block text-center border-0">
                     @foreach($allRoles as $key => $value)
-                        <a class="nav-link my-md-0 my-1 d-inline-block {{$value->id == $role->id ? 'active': ''}}" href="{{route('admin.roles.permission',$value->id)}}">
-                            <button class="btn btn-md btn-{{$value->id == $role->id ? 'primary':'secondary'}}">{{ucfirst($value->name)}} </button>
+                        <a class="nav-link my-md-0 my-1 d-inline-block border-0 {{$value->id == $role->id ? 'active': ''}}" href="{{route('admin.roles.permission',$value->id)}}">
+                            <button class="btn btn-md btn-{{$value->id == $role->id ? 'primary':'outline-secondary'}} fw-semibold shadow-sm">{{ucfirst($value->name)}} </button>
                         </a>
                     @endforeach
                 </ul>
             </div>
-            <div class="card-body card-nav-content">
-                <div class="row g-4 mb-4 align-items-start">
-                    <div class="col-12">
+            
+            <div class="card-body p-4">
+                <!-- Studio Header Banner -->
+                <div class="card mb-4 border-0 shadow-sm" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 16px; color: #fff;">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-primary px-3 py-1" style="font-size: 13px;">📱 Mobile Workplace & Layout Studio</span>
+                                    <span class="badge bg-light text-dark fw-bold px-2 py-1" style="font-size: 12px;">តួនាទី: {{ ucfirst($role->name) }}</span>
+                                </div>
+                                <h4 class="text-white fw-bold mb-1">ស្ទូឌីយោរៀបចំ Layout និងម៉ឺនុយទូរស័ព្ទ</h4>
+                                <p class="text-light mb-0" style="opacity: 0.85; font-size: 13px;">
+                                    កំណត់ទីតាំងម៉ឺនុយ (Bottom Bar, Home Grid, More Page) តាមសិទ្ធិអនុញ្ញាតរបស់ Role និងបន្ថែម (+) ឬដកចេញ (-) បានភ្លាមៗ
+                                </p>
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <div class="bg-dark bg-opacity-50 border border-secondary border-opacity-25 rounded-3 px-3 py-2 text-center me-2">
+                                    <small class="text-white-50 d-block" style="font-size: 11px;">សិទ្ធិអនុញ្ញាតប្រើប្រាស់</small>
+                                    <span class="fw-bold text-success fs-6" id="studio-allowed-count">0 ម៉ឺនុយ</span>
+                                </div>
+                                <!-- 1-Click Role Presets -->
+                                <div class="btn-group shadow-sm" role="group">
+                                    <button type="button" class="btn btn-outline-light btn-sm studio-preset-btn" data-preset="manager" title="កំណត់ប្លង់សម្រាប់ Manager">
+                                        👔 Manager Preset
+                                    </button>
+                                    <button type="button" class="btn btn-outline-light btn-sm studio-preset-btn" data-preset="technician" title="កំណត់ប្លង់សម្រាប់ Technician">
+                                        🔧 Technician
+                                    </button>
+                                    <button type="button" class="btn btn-outline-light btn-sm studio-preset-btn" data-preset="staff" title="កំណត់ប្លង់សម្រាប់បុគ្គលិកទូទៅ">
+                                        👤 Staff
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm studio-preset-btn" data-preset="default" title="ត្រឡប់ទៅលំនាំដើម">
+                                        ↺ Reset
+                                    </button>
+                                </div>
+                                <!-- Clone Layout from Another Role -->
+                                <div class="dropdown d-inline-block shadow-sm">
+                                    <button class="btn btn-outline-info btn-sm dropdown-toggle" type="button" id="dropdownCloneLayout" data-bs-toggle="dropdown" aria-expanded="false">
+                                        📋 ចម្លងប្លង់ពី Role ផ្សេង
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="dropdownCloneLayout">
+                                        @if(isset($allRolesLayouts) && count($allRolesLayouts) > 0)
+                                            @foreach($allRolesLayouts as $otherRoleId => $otherRoleData)
+                                                <li>
+                                                    <a class="dropdown-item btn-clone-role py-2" href="javascript:void(0)" data-role-id="{{ $otherRoleId }}" data-role-name="{{ $otherRoleData['name'] }}">
+                                                        ចម្លងពី: <strong class="text-primary">{{ $otherRoleData['name'] }}</strong>
+                                                    </a>
+                                                </li>
+                                            @endforeach
+                                        @else
+                                            <li><span class="dropdown-item text-muted">គ្មាន Role ផ្សេងសម្រាប់ចម្លងទេ</span></li>
+                                        @endif
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2-Column Studio: Left Section Manager & Right Phone Preview -->
+                <div class="row g-4 align-items-start">
+                    
+                    <!-- Left Column (col-lg-7): Visual Layout Section Manager -->
+                    <div class="col-lg-7">
+                        
+                        <!-- Zone 1: Bottom Navigation Bar -->
+                        <div class="studio-zone-card">
+                            <div class="studio-zone-header">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark d-flex align-items-center">
+                                        <span class="me-1">📱</span> របារម៉ឺនុយខាងក្រោម (Bottom Navigation Bar)
+                                        <span id="bottom-bar-count-badge" class="badge bg-light text-primary border ms-2" style="font-size:11px;">0 ម៉ឺនុយ</span>
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 11px;">បង្ហាញនៅបាតក្រោមនៃអេក្រង់ទូរស័ព្ទ (បានណែនាំពី ៣ ទៅ ៥ ម៉ឺនុយ)</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-primary btn-open-add-modal" data-zone="bottom">
+                                    <i class="link-icon" data-feather="plus"></i> + បន្ថែមម៉ឺនុយ (Add Tab)
+                                </button>
+                            </div>
+                            <div class="studio-zone-items d-flex flex-wrap align-items-center" id="studio-items-bottom" data-zone="bottom">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Zone 2: Home Quick Services Grid -->
+                        <div class="studio-zone-card">
+                            <div class="studio-zone-header">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">
+                                        <span class="me-1">⚡</span> ម៉ឺនុយរហ័សលើផ្ទាំងដើម (Home Quick Services Grid)
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 11px;">កាតសេវាកម្មរហ័សនៅលើទំព័រដើម (Quick Services)</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-success btn-open-add-modal" data-zone="home_quick">
+                                    <i class="link-icon" data-feather="plus"></i> + បន្ថែមសេវាកម្ម (Add Shortcut)
+                                </button>
+                            </div>
+                            <div class="studio-zone-items d-flex flex-wrap align-items-center" id="studio-items-home_quick" data-zone="home_quick">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Zone 3: More Page & Management -->
+                        <div class="studio-zone-card">
+                            <div class="studio-zone-header">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">
+                                        <span class="me-1">📄</span> ទំព័រផ្សេងៗ និងការគ្រប់គ្រង (More Page & Management)
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 11px;">ម៉ឺនុយបង្ហាញក្នុងទំព័រ More និងតំបន់គ្រប់គ្រង Office Desk</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-secondary btn-open-add-modal" data-zone="sidebar">
+                                    <i class="link-icon" data-feather="plus"></i> + បន្ថែមម៉ឺនុយ (Add Menu)
+                                </button>
+                            </div>
+                            <div class="studio-zone-items d-flex flex-wrap align-items-center" id="studio-items-sidebar" data-zone="sidebar">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Zone 4: Top Action Bar -->
+                        <div class="studio-zone-card">
+                            <div class="studio-zone-header">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">
+                                        <span class="me-1">🔔</span> របារមុខងារខាងលើ (Top Action Bar)
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 11px;">ប៊ូតុងរហ័សនៅផ្នែកក្បាលទំព័រខាងលើ (Top Header Actions)</small>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-open-add-modal" data-zone="top">
+                                    <i class="link-icon" data-feather="plus"></i> + បន្ថែមប៊ូតុង (Add Action)
+                                </button>
+                            </div>
+                            <div class="studio-zone-items d-flex flex-wrap align-items-center" id="studio-items-top" data-zone="top">
+                                <!-- Rendered dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Big Studio Save Button -->
+                        <div class="mt-4">
+                            <button type="button" class="btn btn-primary btn-lg w-100 shadow py-3 fw-bold fs-6" id="btn-save-studio">
+                                💾 រក្សាទុកប្លង់ទូរស័ព្ទ និងសិទ្ធិទាំងអស់ (Save Layout & Permissions)
+                            </button>
+                            <p class="text-muted small text-center mt-2">
+                                រាល់ការកែប្រែក្នុង Studio នឹងត្រូវបានរក្សាទុកទៅក្នុងប្រព័ន្ធ និងធ្វើសមកាលកម្មភ្លាមៗទៅកាន់ Mobile App។
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Right Column (col-lg-5): Interactive Live Phone Preview -->
+                    <div class="col-lg-5">
                         <div class="mobile-role-preview" aria-label="Live mobile permission preview">
-                            <div class="mobile-role-screen" id="mobile-role-screen">
+                            
+                            <!-- Phone Top Mode & View Switchers -->
+                            <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-dark rounded-3 border border-secondary border-opacity-25">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-sm btn-primary active preview-tab-btn py-1 px-2" id="preview-tab-home">🏠 ផ្ទាំងដើម</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light preview-tab-btn py-1 px-2" id="preview-tab-more">📄 More (ផ្សេងៗ)</button>
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-sm btn-light active theme-toggle-btn py-1 px-2 fw-semibold" id="btn-theme-day" data-theme="day" title="ម៉ូដពេលថ្ងៃ (Day Mode)">☀️ Day</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary theme-toggle-btn py-1 px-2" id="btn-theme-night" data-theme="night" title="ម៉ូដពេលយប់ (Night Mode)">🌙 Night</button>
+                                </div>
+                            </div>
+
+                            <div class="mobile-role-screen theme-day" id="mobile-role-screen">
                                 <aside class="mobile-role-sidebar">
                                     <div class="mobile-role-brand">Digital HR</div>
-                                    <div class="mobile-role-sidebar-label">{{ $role->name }} · Sidebar</div>
-                                    <div class="mobile-role-zone-label">Drop functions here for the side menu</div>
-                                    <div class="mobile-role-zone" data-zone="sidebar" id="mobile-role-sidebar-list"></div>
+                                    <div class="mobile-role-sidebar-label">{{ $role->name }} · Sidebar / More Page</div>
+                                    <div class="mobile-role-zone-label">Drop functions here for Sidebar or More page (ទំព័រផ្សេងៗ)</div>
+                                    <div class="mobile-role-zone" data-zone="sidebar" id="mobile-role-sidebar-list-drawer"></div>
                                 </aside>
                                 <main class="mobile-role-body">
-                                    <div class="mobile-role-status">9:41 <span class="float-end">●●● ◉</span></div>
-                                    <div class="mobile-role-head"><button type="button" class="mobile-role-menu" id="mobile-role-menu" aria-label="Open app menu">☰</button><strong>Home</strong><span>Original Mode</span></div>
-                                    <div class="mobile-role-zone-label px-2">Top actions</div>
-                                    <div class="mobile-role-zone" data-zone="top" id="mobile-role-top"></div>
-                                    <div class="mobile-role-greeting"><strong>Good morning</strong>Attendance and work overview</div>
-                                    <div class="mobile-role-card mx-3 mb-3" id="mobile-role-attendance-summary"><label><span>◷</span><span>Attendance</span></label><small>Check in · Check out · Today’s summary</small></div>
-                                    <div class="mobile-role-section">Quick services</div>
-                                    <div class="mobile-role-zone" data-zone="home_quick" id="mobile-role-preview-list" aria-live="polite"></div>
-                                    <div id="mobile-role-activity" class="mx-3 mb-3">
-                                        <div class="mobile-role-card mb-2"><label><span>▥</span><span>Weekly report</span></label><small>Attendance overview</small></div>
-                                        <div class="mobile-role-card"><label><span>♙</span><span>My team</span></label><small>Team attendance</small></div>
+                                    <!-- Status Bar -->
+                                    <div class="mobile-role-status">
+                                        <span>07:50 <small class="opacity-75 ms-1">💬 📍</small></span>
+                                        <div class="rounded-pill bg-dark bg-opacity-75" style="width: 50px; height: 10px;"></div>
+                                        <span>●●● 5G 100% 🔋</span>
                                     </div>
-                                    <div class="mobile-role-bottom"><div class="mobile-role-zone-label">Bottom navigation · Drop here</div><div class="mobile-role-zone" data-zone="bottom" id="mobile-role-bottom"></div></div>
+
+                                    <!-- Home View -->
+                                    <div id="preview-view-home">
+                                        <!-- Real Header (Avatar + Name + Top Actions) -->
+                                        <div class="mobile-app-header">
+                                            <div class="header-profile-box">
+                                                <div class="header-avatar-wrap">
+                                                    <span>👤</span>
+                                                    <span class="header-online-dot"></span>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted d-block" style="font-size: 10px; line-height: 1;">Hello There 👋</small>
+                                                    <strong class="d-block text-dark fw-bold" style="font-size: 13px; line-height: 1.2;">{{ auth()->user()->name ?? 'ឈឿន រាជ' }}</strong>
+                                                    <small class="text-muted" style="font-size: 9px;">{{ auth()->user()->employee_id ?? 'KY0021' }} · {{ ucfirst($role->name) }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <!-- Dynamic Top Actions Zone -->
+                                                <div class="mobile-role-zone" data-zone="top" id="mobile-role-top"></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Welcome Banner (Angkor Wat Theme) -->
+                                        <div class="angkor-banner-card">
+                                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                                <div>
+                                                    <strong class="d-block" style="font-size: 14px; letter-spacing: 0.02em;">សូមស្វាគមន៍!</strong>
+                                                    <small style="font-size: 11px; opacity: 0.85;">Good Morning!</small>
+                                                </div>
+                                                <span class="badge bg-white bg-opacity-20 text-white border-0" style="font-size: 9px;">☀️ ថ្ងៃនេះ</span>
+                                            </div>
+                                            <div class="d-flex align-items-baseline gap-1 my-1">
+                                                <span class="fs-4 fw-bold font-monospace">07:50</span>
+                                                <small class="opacity-75" style="font-size: 11px;">:48</small>
+                                            </div>
+                                            <small class="d-block opacity-75 mb-2" style="font-size: 10px;">📅 Tuesday, November 24, 2026</small>
+                                            <p class="mb-0" style="font-size: 9.5px; opacity: 0.9; line-height: 1.35; border-top: 1px dashed rgba(255,255,255,0.25); padding-top: 6px;">
+                                                "ការងារជាក្រុម នាំមកនូវលទ្ធផលល្អ សាមគ្គីភាពនាំឱ្យមានជ័យជំនះ"
+                                            </p>
+                                        </div>
+
+                                        <!-- Summary Statistics Row (Late & Highlights) -->
+                                        <div class="row g-2 px-3 mb-2">
+                                            <div class="col-6">
+                                                <div class="day-card p-2 bg-white rounded-3 border shadow-xs" style="font-size: 10px;">
+                                                    <div class="d-flex justify-content-between text-muted mb-1">
+                                                        <span>📈 <strong>Late</strong></span>
+                                                        <small class="text-primary">Details →</small>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-muted">Total: <strong class="text-dark">0</strong></span>
+                                                        <span class="text-muted">Reduc: <strong class="text-dark">$0.00</strong></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="day-card p-2 bg-white rounded-3 border shadow-xs" style="font-size: 10px;">
+                                                    <div class="d-flex justify-content-between text-muted mb-1">
+                                                        <span>✨ <strong>Highlights</strong></span>
+                                                        <small class="text-primary">View →</small>
+                                                    </div>
+                                                    <div class="d-flex justify-content-between">
+                                                        <span class="text-success fw-bold">Bonus: $20.00</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Quick Services Section -->
+                                        <div class="px-3 pt-1 pb-1 d-flex align-items-center justify-content-between">
+                                            <span class="fw-bold text-dark" style="font-size: 12px;">⚡ សេវាកម្មរហ័ស (Quick Services)</span>
+                                            <small class="text-muted" style="font-size: 10px;">រៀបចំតាម Role</small>
+                                        </div>
+                                        <div class="mobile-role-zone" data-zone="home_quick" id="mobile-role-preview-list" aria-live="polite"></div>
+
+                                        <!-- Real Attendance Orb with QR Code -->
+                                        <div class="attendance-orb-container" id="mobile-role-activity">
+                                            <div class="attendance-orb-outer">
+                                                <div class="attendance-orb-inner shadow">
+                                                    <span>📷</span>
+                                                </div>
+                                            </div>
+                                            <strong class="mt-2 text-dark d-block" style="font-size: 13px;">Check In | Check Out</strong>
+                                            <small class="text-muted" style="font-size: 10px;">Scan QR / NFC for Attendance</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- More Page View -->
+                                    <div id="preview-view-more" style="display:none; padding:12px 14px;">
+                                        <div class="day-card mb-3 p-3 bg-white rounded-3 border shadow-sm">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rounded-circle bg-primary bg-opacity-10 text-primary p-2" style="font-size: 18px;">👤</div>
+                                                <div>
+                                                    <strong class="d-block text-dark" style="font-size: 13px;">{{ auth()->user()->name ?? 'ឈឿន រាជ' }}</strong>
+                                                    <small class="text-muted" style="font-size: 10px;">{{ ucfirst($role->name) }} Account · Settings</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mobile-role-section text-primary px-0 mb-2 d-flex align-items-center justify-content-between" style="font-size: 12px;">
+                                            <span>⭐ ការគ្រប់គ្រង (Management / More Page)</span>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 9px;">Active Zone</span>
+                                        </div>
+                                        <div class="mobile-role-zone" data-zone="sidebar" id="mobile-role-sidebar-list" style="min-height:100px;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:8px;display:grid;gap:6px;"></div>
+                                        
+                                        <div class="mt-3 text-muted px-1" style="font-size: 10px;">
+                                            <span>📂 Office Desk, Company Documents & Finance</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Bottom Navigation Bar (Visible in both views) -->
+                                    <div class="mobile-role-bottom">
+                                        <div class="d-flex align-items-center justify-content-around">
+                                            <!-- Fixed Home Tab (Active Pill) -->
+                                            <div class="text-center">
+                                                <div class="bottom-nav-pill-active d-inline-flex align-items-center gap-1" style="font-size: 11px;">
+                                                    <span>🏠</span>
+                                                    <span>Home</span>
+                                                </div>
+                                            </div>
+                                            <!-- Dynamic Placed Tabs -->
+                                            <div class="mobile-role-zone d-flex align-items-center justify-content-around flex-grow-1 p-0" data-zone="bottom" id="mobile-role-bottom"></div>
+                                            <!-- Fixed More Tab -->
+                                            <div class="text-center px-1" style="color: #64748b; font-size: 10px;">
+                                                <span class="d-block" style="font-size: 14px;">⋯</span>
+                                                <span>More</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </main>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mobile-role-manage" id="mobile-role-manage">Manage visible functions</button>
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="mobile-role-manage">
+                                🔄 របៀបអូសទម្លាក់ (Toggle Drag & Drop)
+                            </button>
+                        </div>
                         <div class="mobile-role-available" id="mobile-role-available" hidden><h6>Available functions · drag into the phone</h6><div class="mobile-role-zone" data-zone="hidden" id="mobile-role-hidden"></div></div>
-                        <p class="small text-muted text-center mt-2">Drag functions into Top actions, Sidebar, Bottom navigation, or Home quick menu. A function can appear in more than one area. Drag it back to Available to remove that placement.</p>
                     </div>
-                    <div class="col-12">
-                <form class="forms-sample" id="role-permission-form" action="{{route('admin.role.assign-permissions',$role->id)}}" method="post">
-                    @method('PUT')
-                    @csrf
-                    @include('admin.role.common.permission')
-                </form>
+                </div>
+
+                <!-- Detailed Permissions Matrix (Collapsible Card) -->
+                <div class="card mt-4 border shadow-sm">
+                    <div class="card-header bg-light d-flex align-items-center justify-content-between" id="headingPermissions" data-bs-toggle="collapse" data-bs-target="#collapsePermissions" aria-expanded="false" style="cursor: pointer;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="link-icon text-primary" data-feather="shield"></i>
+                            <h5 class="mb-0 fw-bold">តារាងកំណត់សិទ្ធិលម្អិតតាមផ្នែក (Detailed Permissions Matrix)</h5>
+                            <span class="badge bg-secondary ms-2">ចុចដើម្បីពង្រីក / បង្រួម</span>
+                        </div>
+                        <span class="text-muted"><i class="link-icon" data-feather="chevron-down"></i></span>
+                    </div>
+                    <div id="collapsePermissions" class="collapse">
+                        <div class="card-body p-4">
+                            <form class="forms-sample" id="role-permission-form" action="{{route('admin.role.assign-permissions',$role->id)}}" method="post">
+                                @method('PUT')
+                                @csrf
+                                @include('admin.role.common.permission')
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Smart Add-Menu Picker Modal -->
+        <div class="modal fade" id="modalAddMenu" tabindex="-1" aria-labelledby="modalAddMenuLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-light border-bottom">
+                        <h5 class="modal-title fw-bold" id="modalAddMenuLabel">
+                            ➕ បន្ថែមម៉ឺនុយទៅកាន់: <span id="modal-target-zone-name" class="text-primary"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-3">
+                        <div class="mb-3">
+                            <input type="text" id="modal-menu-search" class="form-control" placeholder="🔍 វាយឈ្មោះម៉ឺនុយដើម្បីស្វែងរក (Search menu)...">
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-primary active modal-filter-btn" data-filter="all">ទាំងអស់ (All)</button>
+                            <button type="button" class="btn btn-sm btn-outline-success modal-filter-btn" data-filter="allowed">🟢 បានអនុញ្ញាត (Allowed)</button>
+                            <button type="button" class="btn btn-sm btn-outline-warning modal-filter-btn" data-filter="locked">🔒 ត្រូវការសិទ្ធិ (Needs Permission)</button>
+                        </div>
+                        <div class="modal-menu-grid" id="modal-menu-list">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">បិទ (Close)</button>
                     </div>
                 </div>
             </div>
         </div>
+
     </section>
 @endsection
 
@@ -168,56 +792,181 @@
 
             $(function() {
                 $('.js-check-all').on('click', function() {
-                    // Get the checked state of the "check all" checkbox itself
                     let isChecked = $(this).prop('checked');
-
-                    // Apply this state to all child checkboxes
                     const checkboxes = $(this).closest('.group-checkbox').find('.module_checkbox');
                     checkboxes.prop('checked', isChecked).trigger('change');
                 });
             });
 
+            // Metadata & State
             const mobileMenuOptions = @json($mobileMenuOptions);
             const mobileMenuPermissionOptions = @json($mobileMenuPermissionOptions);
-            const mobileLayout = @json($mobileLayout);
+            const initialMobileLayout = @json($mobileLayout);
+            const allRolesLayouts = @json($allRolesLayouts ?? []);
+            let mobileLayout = JSON.parse(JSON.stringify(initialMobileLayout));
             const zones = ['top', 'sidebar', 'bottom', 'home_quick', 'hidden'];
             const zoneIds = {top: 'mobile-role-top', sidebar: 'mobile-role-sidebar-list', bottom: 'mobile-role-bottom', home_quick: 'mobile-role-preview-list', hidden: 'mobile-role-hidden'};
+            const studioZoneIds = {top: 'studio-items-top', sidebar: 'studio-items-sidebar', bottom: 'studio-items-bottom', home_quick: 'studio-items-home_quick'};
+            const zoneDisplayNames = {
+                'bottom': 'របារម៉ឺនុយបាតក្រោម (Bottom Navigation Bar)',
+                'home_quick': 'ម៉ឺនុយរហ័សលើផ្ទាំងដើម (Home Quick Services Grid)',
+                'sidebar': 'ទំព័រផ្សេងៗ និងការគ្រប់គ្រង (More Page & Management)',
+                'top': 'របារមុខងារខាងលើ (Top Action Bar)'
+            };
+            const menuIcons = {
+                'dashboard': '📊',
+                'attendance': '🕒',
+                'leave': '🏖️',
+                'notice': '📢',
+                'holiday': '🗓️',
+                'support': '💬',
+                'assets': '💼',
+                'company-documents': '📁',
+                'team-sheet': '👥',
+                'repair': '🔧',
+                'nfc': '📱',
+                'qr': '📷',
+                'project': '🚀',
+                'task': '✅',
+                'morescreen': '⋯'
+            };
+
             const mobileScreen = document.getElementById('mobile-role-screen');
-            const menuButton = document.getElementById('mobile-role-menu');
             const manageButton = document.getElementById('mobile-role-manage');
             const availableBox = document.getElementById('mobile-role-available');
             const form = document.getElementById('role-permission-form');
             const placements = {};
+            const zoneOrders = { bottom: [], home_quick: [], sidebar: [], top: [] };
             let manageMode = false;
             let draggedMenu = null;
+            let activeModalZone = 'bottom';
 
             Object.keys(mobileMenuOptions).forEach((menu) => {
                 placements[menu] = mobileLayout[menu]?.zones || ['sidebar'];
             });
 
-            const cardMarkup = (menu, origin) => `<div class="mobile-role-function" draggable="${manageMode ? 'true' : 'false'}" data-menu="${$('<div>').text(menu).html()}" data-origin-zone="${origin}" title="${manageMode ? 'Drag to place this function' : ''}"><span>${$('<div>').text(mobileMenuOptions[menu]).html()}</span>${manageMode && origin !== 'available' ? `<button type="button" class="mobile-role-remove" data-remove-menu="${$('<div>').text(menu).html()}" data-remove-zone="${origin}" aria-label="Remove ${$('<div>').text(mobileMenuOptions[menu]).html()} from ${origin}">×</button>` : ''}</div>`;
+            // Initialize zoneOrders based on initial positions
+            ['bottom', 'home_quick', 'sidebar', 'top'].forEach((zone) => {
+                zoneOrders[zone] = Object.keys(mobileMenuOptions).filter((menu) => (placements[menu] || []).includes(zone));
+                zoneOrders[zone].sort((a, b) => (mobileLayout[a]?.positions?.[zone] ?? 0) - (mobileLayout[b]?.positions?.[zone] ?? 0));
+            });
+
+            const syncPositionsFromZoneOrders = function() {
+                ['bottom', 'home_quick', 'sidebar', 'top'].forEach((zone) => {
+                    (zoneOrders[zone] || []).forEach((menu, pos) => {
+                        mobileLayout[menu] = mobileLayout[menu] || { zones: [], positions: {} };
+                        mobileLayout[menu].positions = mobileLayout[menu].positions || {};
+                        mobileLayout[menu].positions[zone] = pos;
+                    });
+                });
+            };
+
+            const getMenuDisplayName = function(menu) {
+                if (mobileMenuOptions[menu]) return mobileMenuOptions[menu];
+                if (mobileMenuPermissionOptions[menu]) return mobileMenuPermissionOptions[menu].name;
+                return menu.charAt(0).toUpperCase() + menu.slice(1).replace('-', ' ');
+            };
+
+            const updateAllowedCount = function() {
+                const count = Object.keys(mobileMenuOptions).length;
+                $('#studio-allowed-count').text(`${count} ម៉ឺនុយបានអនុញ្ញាត`);
+            };
+
+            // Render Section Badges in Studio (Left Column)
+            const renderStudioZones = function() {
+                ['bottom', 'home_quick', 'sidebar', 'top'].forEach((zone) => {
+                    const container = document.getElementById(studioZoneIds[zone]);
+                    if (!container) return;
+                    container.innerHTML = '';
+                    
+                    // Filter zone items to only allowed and placed
+                    zoneOrders[zone] = (zoneOrders[zone] || []).filter((menu) => Object.hasOwn(mobileMenuOptions, menu) && (placements[menu] || []).includes(zone));
+                    // Check for any placed menu not yet in zoneOrders
+                    Object.keys(mobileMenuOptions).forEach((menu) => {
+                        if ((placements[menu] || []).includes(zone) && !zoneOrders[zone].includes(menu)) {
+                            zoneOrders[zone].push(menu);
+                        }
+                    });
+
+                    const items = zoneOrders[zone];
+
+                    if (items.length === 0) {
+                        container.innerHTML = `<div class="studio-empty-placeholder">មិនទាន់មានម៉ឺនុយក្នុងផ្នែកនេះនៅឡើយទេ សូមចុច [+ បន្ថែម]</div>`;
+                    } else {
+                        items.forEach((menu, index) => {
+                            const icon = menuIcons[menu] || '📌';
+                            const name = getMenuDisplayName(menu);
+                            const badge = `
+                                <div class="studio-item-badge" data-menu="${menu}" data-zone="${zone}">
+                                    <span>${icon}</span>
+                                    <span>${name}</span>
+                                    <div class="d-inline-flex align-items-center gap-1 ms-1">
+                                        <button type="button" class="btn-reorder-item btn-reorder-prev" data-menu="${menu}" data-zone="${zone}" title="រំកិលទៅមុខ/ឆ្វេង">◀</button>
+                                        <button type="button" class="btn-reorder-item btn-reorder-next" data-menu="${menu}" data-zone="${zone}" title="រំកិលទៅក្រោយ/ស្តាំ">▶</button>
+                                        <button type="button" class="btn-remove-item" data-remove-menu="${menu}" data-remove-zone="${zone}" title="ដកចេញ">×</button>
+                                    </div>
+                                </div>`;
+                            container.insertAdjacentHTML('beforeend', badge);
+                        });
+                    }
+                });
+
+                // Update Bottom Bar guidance count
+                const bottomCount = (zoneOrders['bottom'] || []).length;
+                const bottomBadge = $('#bottom-bar-count-badge');
+                if (bottomCount > 5) {
+                    bottomBadge.attr('class', 'badge bg-warning text-dark border ms-2').html(`⚠️ ${bottomCount} ម៉ឺនុយ (ណែនាំ ៣ ទៅ ៥)`);
+                } else {
+                    bottomBadge.attr('class', 'badge bg-light text-primary border ms-2').text(`${bottomCount} ម៉ឺនុយ`);
+                }
+            };
+
+            // Card Markup for Phone Mockup
+            const cardMarkup = (menu, origin) => {
+                const icon = menuIcons[menu] || '📌';
+                const name = getMenuDisplayName(menu);
+                return `<div class="mobile-role-function" draggable="${manageMode ? 'true' : 'false'}" data-menu="${$('<div>').text(menu).html()}" data-origin-zone="${origin}" title="${manageMode ? 'Drag to place this function' : ''}">
+                    <span class="d-block mb-1" style="font-size:13px;">${icon}</span>
+                    <span class="fw-semibold">${$('<div>').text(name).html()}</span>
+                    ${manageMode && origin !== 'available' ? `<button type="button" class="mobile-role-remove" data-remove-menu="${$('<div>').text(menu).html()}" data-remove-zone="${origin}" aria-label="Remove">×</button>` : ''}
+                </div>`;
+            };
+
+            // Render Phone Preview & Form Inputs
             const renderMobilePreview = function() {
+                syncPositionsFromZoneOrders();
+
                 zones.forEach((zone) => {
                     const container = document.getElementById(zoneIds[zone]);
+                    if (!container) return;
                     container.innerHTML = '';
                     const items = zone === 'hidden'
                         ? Object.keys(mobileMenuOptions)
-                        : Object.keys(mobileMenuOptions).filter((menu) => placements[menu].includes(zone));
-                    items.sort((a, b) => (mobileLayout[a]?.positions?.[zone] ?? 0) - (mobileLayout[b]?.positions?.[zone] ?? 0));
+                        : (zoneOrders[zone] || Object.keys(mobileMenuOptions).filter((menu) => (placements[menu] || []).includes(zone)));
                     items.forEach((menu) => container.insertAdjacentHTML('beforeend', cardMarkup(menu, zone === 'hidden' ? 'available' : zone)));
                     container.classList.toggle('manage-drop', manageMode);
                     if (manageMode && items.length === 0) {
                         container.insertAdjacentHTML('beforeend', `<span class="mobile-role-empty">Drop a function here</span>`);
                     }
+                    if (zone === 'sidebar') {
+                        const drawer = document.getElementById('mobile-role-sidebar-list-drawer');
+                        if (drawer) drawer.innerHTML = container.innerHTML;
+                    }
                 });
-                document.getElementById('mobile-role-activity').hidden = !Object.keys(mobileMenuOptions).some((menu) => menu === 'attendance' && placements[menu].includes('home_quick'));
-                document.getElementById('mobile-role-attendance-summary').hidden = !Object.keys(mobileMenuOptions).some((menu) => menu === 'attendance' && placements[menu].includes('home_quick'));
-                manageButton.textContent = manageMode ? 'Show live preview' : 'Manage visible functions';
+
+                document.getElementById('mobile-role-activity').hidden = !Object.keys(mobileMenuOptions).some((menu) => menu === 'attendance' && (placements[menu] || []).includes('home_quick'));
+                document.getElementById('mobile-role-attendance-summary').hidden = !Object.keys(mobileMenuOptions).some((menu) => menu === 'attendance' && (placements[menu] || []).includes('home_quick'));
+
+                manageButton.textContent = manageMode ? '✓ រួចរាល់ (Exit Drag Mode)' : '🔄 របៀបអូសទម្លាក់ (Toggle Drag & Drop)';
                 manageButton.classList.toggle('btn-primary', manageMode);
-                manageButton.classList.toggle('btn-outline-primary', !manageMode);
+                manageButton.classList.toggle('btn-outline-secondary', !manageMode);
                 mobileScreen.classList.toggle('manage-mode', manageMode);
                 availableBox.hidden = !manageMode;
+
+                // Sync hidden inputs in form
                 form.querySelectorAll('input[name^="mobile_layout["]').forEach((input) => input.remove());
+                form.querySelectorAll('input[name^="mobile_layout_order["]').forEach((input) => input.remove());
+
                 Object.entries(placements).forEach(([menu, menuZones]) => {
                     const inputZones = menuZones.length ? menuZones : ['hidden'];
                     inputZones.forEach((zone) => {
@@ -228,16 +977,21 @@
                         form.appendChild(input);
                     });
                 });
-                zones.filter((zone) => zone !== 'hidden').forEach((zone) => {
-                    document.getElementById(zoneIds[zone]).querySelectorAll('[data-menu]').forEach((card) => {
+
+                ['bottom', 'home_quick', 'sidebar', 'top'].forEach((zone) => {
+                    (zoneOrders[zone] || []).forEach((menu) => {
                         const input = document.createElement('input');
                         input.type = 'hidden';
                         input.name = `mobile_layout_order[${zone}][]`;
-                        input.value = card.dataset.menu;
+                        input.value = menu;
                         form.appendChild(input);
                     });
                 });
+
+                updateAllowedCount();
+                renderStudioZones();
             };
+
             const syncMobileMenuOptions = function() {
                 const selectedPermissions = new Set(
                     Array.from(form.querySelectorAll('.module_checkbox:checked'))
@@ -246,7 +1000,7 @@
                 );
                 Object.entries(mobileMenuPermissionOptions).forEach(([menu, rule]) => {
                     const granted = selectedPermissions.has(rule.ability) ||
-                        (!rule.explicit && rule.fallback_abilities.some((key) => selectedPermissions.has(key)));
+                        (rule.fallback_abilities || []).some((key) => selectedPermissions.has(key));
                     if (granted && !Object.hasOwn(mobileMenuOptions, menu)) {
                         mobileMenuOptions[menu] = rule.name;
                         placements[menu] = mobileLayout[menu]?.zones || ['sidebar'];
@@ -257,36 +1011,324 @@
                 });
                 renderMobilePreview();
             };
+
             form.addEventListener('change', (event) => {
                 if (event.target.matches('.module_checkbox')) syncMobileMenuOptions();
             });
+
             manageButton.addEventListener('click', function() {
                 manageMode = !manageMode;
                 renderMobilePreview();
             });
-            menuButton.addEventListener('click', function() {
-                mobileScreen.classList.toggle('drawer-open');
-            });
-            mobileScreen.addEventListener('click', function(event) {
-                if (mobileScreen.classList.contains('drawer-open') && event.target === mobileScreen) {
-                    mobileScreen.classList.remove('drawer-open');
+
+            // Reorder Item Click Handlers
+            $(document).on('click', '.btn-reorder-prev', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const menu = $(this).data('menu');
+                const zone = $(this).data('zone');
+                const list = zoneOrders[zone] || [];
+                const idx = list.indexOf(menu);
+                if (idx > 0) {
+                    const temp = list[idx - 1];
+                    list[idx - 1] = menu;
+                    list[idx] = temp;
+                    renderMobilePreview();
                 }
             });
-            $(document).on('click', '.mobile-role-side-item', function() {
-                $('.mobile-role-side-item').removeClass('active');
-                $(this).addClass('active');
-                mobileScreen.classList.remove('drawer-open');
+
+            $(document).on('click', '.btn-reorder-next', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const menu = $(this).data('menu');
+                const zone = $(this).data('zone');
+                const list = zoneOrders[zone] || [];
+                const idx = list.indexOf(menu);
+                if (idx >= 0 && idx < list.length - 1) {
+                    const temp = list[idx + 1];
+                    list[idx + 1] = menu;
+                    list[idx] = temp;
+                    renderMobilePreview();
+                }
             });
-            $(document).on('click', '.mobile-role-remove', function(event) {
+
+            // Remove Button Click Handlers
+            $(document).on('click', '.btn-remove-item, .mobile-role-remove', function(event) {
                 event.preventDefault();
                 event.stopPropagation();
                 const menu = $(this).data('remove-menu');
                 const zone = $(this).data('remove-zone');
-                placements[menu] = (placements[menu] || []).filter((item) => item !== zone);
+                if (menu && zone && placements[menu]) {
+                    placements[menu] = placements[menu].filter((item) => item !== zone);
+                    if (zoneOrders[zone]) {
+                        zoneOrders[zone] = zoneOrders[zone].filter((item) => item !== menu);
+                    }
+                    renderMobilePreview();
+                }
+            });
+
+            // Modal: Open & Populate
+            $('.btn-open-add-modal').on('click', function() {
+                activeModalZone = $(this).data('zone');
+                $('#modal-target-zone-name').text(zoneDisplayNames[activeModalZone] || activeModalZone);
+                $('#modal-menu-search').val('');
+                $('.modal-filter-btn').removeClass('active');
+                $('.modal-filter-btn[data-filter="all"]').addClass('active');
+                populateModalMenuList('all', '');
+                $('#modalAddMenu').modal('show');
+            });
+
+            const populateModalMenuList = function(filter, search) {
+                const container = $('#modal-menu-list');
+                container.empty();
+                search = (search || '').toLowerCase().trim();
+
+                Object.keys(mobileMenuPermissionOptions).forEach((menu) => {
+                    const info = mobileMenuPermissionOptions[menu];
+                    const name = info.name || menu;
+                    const icon = menuIcons[menu] || '📌';
+                    const isAllowed = Object.hasOwn(mobileMenuOptions, menu);
+                    const isPlacedInCurrentZone = (placements[menu] || []).includes(activeModalZone);
+
+                    // Filters
+                    if (filter === 'allowed' && !isAllowed) return;
+                    if (filter === 'locked' && isAllowed) return;
+                    if (search && !name.toLowerCase().includes(search) && !menu.toLowerCase().includes(search)) return;
+
+                    let actionHtml = '';
+                    if (isPlacedInCurrentZone) {
+                        actionHtml = `<span class="badge bg-secondary py-2 px-2" style="font-size:11px;">✓ បានដាក់រួចហើយ</span>`;
+                    } else if (isAllowed) {
+                        actionHtml = `<button type="button" class="btn btn-sm btn-primary btn-modal-add" data-menu="${menu}">+ ជ្រើសរើស (Add)</button>`;
+                    } else {
+                        actionHtml = `<button type="button" class="btn btn-sm btn-outline-warning btn-modal-grant-add" data-menu="${menu}" data-ability="${info.ability}">🔑 បើកសិទ្ធិ & បន្ថែម</button>`;
+                    }
+
+                    const card = `
+                        <div class="modal-menu-card ${isAllowed ? '' : 'is-locked'}" data-menu="${menu}">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="font-size: 20px;">${icon}</span>
+                                <div>
+                                    <strong class="d-block text-dark" style="font-size: 13px;">${name}</strong>
+                                    <small class="${isAllowed ? 'text-success' : 'text-warning'} fw-semibold" style="font-size: 11px;">
+                                        ${isAllowed ? '🟢 បានអនុញ្ញាត (Allowed)' : '🔒 ត្រូវការសិទ្ធិ (Needs Permission)'}
+                                    </small>
+                                </div>
+                            </div>
+                            <div>
+                                ${actionHtml}
+                            </div>
+                        </div>`;
+                    container.append(card);
+                });
+
+                if (container.children().length === 0) {
+                    container.html('<div class="col-12 text-center text-muted py-4">រកមិនឃើញម៉ឺនុយត្រូវនឹងការស្វែងរកនេះទេ</div>');
+                }
+            };
+
+            // Modal Search & Filter
+            $('#modal-menu-search').on('input', function() {
+                const search = $(this).val();
+                const filter = $('.modal-filter-btn.active').data('filter') || 'all';
+                populateModalMenuList(filter, search);
+            });
+
+            $('.modal-filter-btn').on('click', function() {
+                $('.modal-filter-btn').removeClass('active');
+                $(this).addClass('active');
+                const filter = $(this).data('filter');
+                const search = $('#modal-menu-search').val();
+                populateModalMenuList(filter, search);
+            });
+
+            // Modal: Add Menu Action
+            $(document).on('click', '.btn-modal-add', function() {
+                const menu = $(this).data('menu');
+                if (!menu || !Object.hasOwn(mobileMenuOptions, menu)) return;
+                placements[menu] = placements[menu] || [];
+                if (!placements[menu].includes(activeModalZone)) {
+                    placements[menu].push(activeModalZone);
+                }
+                if (!zoneOrders[activeModalZone].includes(menu)) {
+                    zoneOrders[activeModalZone].push(menu);
+                }
+                if (activeModalZone === 'sidebar') {
+                    $('#preview-tab-more').trigger('click');
+                } else if (activeModalZone === 'home_quick') {
+                    $('#preview-tab-home').trigger('click');
+                }
+                renderMobilePreview();
+                $('#modalAddMenu').modal('hide');
+            });
+
+            // Modal: Grant Permission & Add Action
+            $(document).on('click', '.btn-modal-grant-add', function() {
+                const menu = $(this).data('menu');
+                const ability = $(this).data('ability');
+                const info = mobileMenuPermissionOptions[menu];
+                if (!info) return;
+
+                let checkedAny = false;
+                const abilitiesToTry = [ability, ...(info.fallback_abilities || [])];
+                for (let key of abilitiesToTry) {
+                    const escapedKey = key.replace(/\./g, '\\.');
+                    const checkbox = $(`#role-permission-form #${escapedKey}, #role-permission-form [data-permission-key="${key}"]`);
+                    if (checkbox.length) {
+                        checkbox.prop('checked', true);
+                        checkedAny = true;
+                        break;
+                    }
+                }
+
+                if (checkedAny) {
+                    syncMobileMenuOptions();
+                    placements[menu] = placements[menu] || [];
+                    if (!placements[menu].includes(activeModalZone)) {
+                        placements[menu].push(activeModalZone);
+                    }
+                    if (!zoneOrders[activeModalZone].includes(menu)) {
+                        zoneOrders[activeModalZone].push(menu);
+                    }
+                    if (activeModalZone === 'sidebar') {
+                        $('#preview-tab-more').trigger('click');
+                    } else if (activeModalZone === 'home_quick') {
+                        $('#preview-tab-home').trigger('click');
+                    }
+                    renderMobilePreview();
+                    $('#modalAddMenu').modal('hide');
+                } else {
+                    alert('សូមបើកផ្ទាំងសិទ្ធិលម្អិត (Detailed Permissions Matrix) ដើម្បីផ្តល់សិទ្ធិដោយផ្ទាល់');
+                }
+            });
+
+            // Presets Implementation
+            $('.studio-preset-btn').on('click', function() {
+                const preset = $(this).data('preset');
+                if (preset === 'manager') {
+                    const managerTarget = {
+                        'dashboard': ['bottom'],
+                        'assets': ['bottom', 'sidebar'],
+                        'company-documents': ['bottom', 'sidebar'],
+                        'team-sheet': ['bottom', 'sidebar'],
+                        'morescreen': ['bottom'],
+                        'attendance': ['home_quick'],
+                        'leave': ['home_quick', 'sidebar'],
+                        'notice': ['home_quick', 'top'],
+                        'repair': ['sidebar'],
+                        'support': ['home_quick', 'sidebar'],
+                        'nfc': ['sidebar'],
+                        'qr': ['sidebar']
+                    };
+                    Object.keys(placements).forEach((k) => placements[k] = []);
+                    Object.entries(managerTarget).forEach(([k, z]) => {
+                        if (Object.hasOwn(mobileMenuOptions, k)) placements[k] = z;
+                    });
+                } else if (preset === 'technician') {
+                    const techTarget = {
+                        'dashboard': ['bottom'],
+                        'repair': ['bottom', 'home_quick', 'sidebar'],
+                        'morescreen': ['bottom'],
+                        'attendance': ['home_quick'],
+                        'support': ['home_quick'],
+                        'assets': ['sidebar'],
+                        'notice': ['sidebar'],
+                        'leave': ['sidebar'],
+                        'holiday': ['sidebar']
+                    };
+                    Object.keys(placements).forEach((k) => placements[k] = []);
+                    Object.entries(techTarget).forEach(([k, z]) => {
+                        if (Object.hasOwn(mobileMenuOptions, k)) placements[k] = z;
+                    });
+                } else if (preset === 'staff') {
+                    const staffTarget = {
+                        'dashboard': ['bottom'],
+                        'attendance': ['bottom', 'home_quick'],
+                        'leave': ['bottom', 'home_quick'],
+                        'morescreen': ['bottom'],
+                        'holiday': ['home_quick', 'sidebar'],
+                        'notice': ['home_quick', 'sidebar', 'top'],
+                        'company-documents': ['sidebar'],
+                        'support': ['sidebar']
+                    };
+                    Object.keys(placements).forEach((k) => placements[k] = []);
+                    Object.entries(staffTarget).forEach(([k, z]) => {
+                        if (Object.hasOwn(mobileMenuOptions, k)) placements[k] = z;
+                    });
+                } else if (preset === 'default') {
+                    mobileLayout = JSON.parse(JSON.stringify(initialMobileLayout));
+                    Object.keys(mobileMenuOptions).forEach((menu) => {
+                        placements[menu] = mobileLayout[menu]?.zones || ['sidebar'];
+                    });
+                }
+
+                // Rebuild zoneOrders based on the selected preset
+                ['bottom', 'home_quick', 'sidebar', 'top'].forEach((z) => {
+                    zoneOrders[z] = Object.keys(mobileMenuOptions).filter((m) => (placements[m] || []).includes(z));
+                });
                 renderMobilePreview();
             });
+
+            // Clone Layout from Another Role
+            $(document).on('click', '.btn-clone-role', function(e) {
+                e.preventDefault();
+                const roleId = $(this).data('role-id');
+                const roleName = $(this).data('role-name');
+                const roleData = allRolesLayouts[roleId];
+                if (!roleData || !roleData.layout) return;
+                if (!confirm(`តើអ្នកពិតជាចង់ចម្លងប្លង់ពី Role "${roleName}" មកជំនួសប្លង់បច្ចុប្បន្នមែនទេ?`)) return;
+
+                const targetLayout = roleData.layout;
+                Object.keys(placements).forEach((k) => placements[k] = []);
+                Object.entries(targetLayout).forEach(([menu, config]) => {
+                    if (Object.hasOwn(mobileMenuOptions, menu)) {
+                        placements[menu] = [...(config.zones || [])];
+                    }
+                });
+                ['bottom', 'home_quick', 'sidebar', 'top'].forEach((z) => {
+                    zoneOrders[z] = Object.keys(mobileMenuOptions).filter((m) => (placements[m] || []).includes(z));
+                    zoneOrders[z].sort((a, b) => (targetLayout[a]?.positions?.[z] ?? 0) - (targetLayout[b]?.positions?.[z] ?? 0));
+                });
+                syncPositionsFromZoneOrders();
+                renderMobilePreview();
+            });
+
+            // Save Studio Button submits form
+            $('#btn-save-studio').on('click', function(e) {
+                e.preventDefault();
+                $('#role-permission-form').submit();
+            });
+
+            // View Switcher Buttons
+            $('#preview-tab-home').on('click', function() {
+                $(this).addClass('active btn-primary').removeClass('btn-outline-light');
+                $('#preview-tab-more').removeClass('active btn-primary').addClass('btn-outline-light');
+                $('#preview-view-home').show();
+                $('#preview-view-more').hide();
+            });
+            $('#preview-tab-more').on('click', function() {
+                $(this).addClass('active btn-primary').removeClass('btn-outline-light');
+                $('#preview-tab-home').removeClass('active btn-primary').addClass('btn-outline-light');
+                $('#preview-view-home').hide();
+                $('#preview-view-more').show();
+            });
+
+            // Theme Mode Switcher Buttons (Day Mode vs Night Mode)
+            $('#btn-theme-day').on('click', function() {
+                $('.theme-toggle-btn').removeClass('active btn-light btn-dark').addClass('btn-outline-secondary');
+                $(this).addClass('active btn-light fw-bold').removeClass('btn-outline-secondary');
+                $('#mobile-role-screen').removeClass('theme-night').addClass('theme-day');
+            });
+            $('#btn-theme-night').on('click', function() {
+                $('.theme-toggle-btn').removeClass('active btn-light btn-dark fw-bold').addClass('btn-outline-secondary');
+                $(this).addClass('active btn-dark fw-bold').removeClass('btn-outline-secondary');
+                $('#mobile-role-screen').removeClass('theme-day').addClass('theme-night');
+            });
+
+            // Drag and drop events for phone mockup
             zones.forEach((zone) => {
                 const container = document.getElementById(zoneIds[zone]);
+                if (!container) return;
                 container.addEventListener('dragstart', function(event) {
                     const card = event.target.closest('[data-menu]');
                     if (!manageMode || !card) { event.preventDefault(); return; }
@@ -311,31 +1353,27 @@
                     if (zone === 'hidden') {
                         if (sourceZone && sourceZone !== 'available') {
                             placements[menu] = placements[menu].filter((item) => item !== sourceZone);
+                            if (zoneOrders[sourceZone]) {
+                                zoneOrders[sourceZone] = zoneOrders[sourceZone].filter((item) => item !== menu);
+                            }
                         }
                     } else {
                         if (sourceZone && sourceZone !== 'available' && sourceZone !== zone) {
                             placements[menu] = placements[menu].filter((item) => item !== sourceZone);
+                            if (zoneOrders[sourceZone]) {
+                                zoneOrders[sourceZone] = zoneOrders[sourceZone].filter((item) => item !== menu);
+                            }
                         }
                         if (!placements[menu].includes(zone)) placements[menu].push(zone);
-                    }
-                    const currentCards = document.getElementById(zoneIds[zone]).querySelectorAll('[data-menu]');
-                    if (zone !== 'hidden') {
-                        const nextPosition = Math.max(-1, ...Array.from(currentCards).map((card) => mobileLayout[card.dataset.menu]?.positions?.[zone] ?? -1)) + 1;
-                        mobileLayout[menu] ??= {zones: [], positions: {}};
-                        mobileLayout[menu].positions ??= {};
-                        mobileLayout[menu].positions[zone] = nextPosition;
+                        if (zoneOrders[zone] && !zoneOrders[zone].includes(menu)) zoneOrders[zone].push(menu);
                     }
                     renderMobilePreview();
                 });
             });
+
+            // Initial render
             syncMobileMenuOptions();
 
         });
-
     </script>
 @endsection
-
-
-
-
-

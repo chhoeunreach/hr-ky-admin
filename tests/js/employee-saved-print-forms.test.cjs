@@ -8,6 +8,7 @@ function node(values = {}) {
     return Object.assign({events: {}, children: [], style: {}, textContent: '',
         append(...children) {this.children.push(...children);}, appendChild(child) {this.children.push(child);},
         replaceChildren(...children) {this.children = children;}, setAttribute() {},
+        closest() {return null;},
         addEventListener(type, handler) {this.events[type] = handler;},
     }, values);
 }
@@ -21,7 +22,7 @@ function setup({fail = false, latest = null, autoNumber = false, reserveNumber =
     const editModal = node({querySelector: selector => ({'[data-save-print-paper]': editBody, '[data-save-print-error]': error, '[data-save-print-confirm]': confirm, '.modal-title': title}[selector])});
     const historyBody = node(), more = node();
     const historyModal = node({querySelector: selector => selector === '[data-saved-form-history]' ? historyBody : more});
-    const config = {saveUrl: '/forms', historyUrl: '/forms', csrf: 'token', create: 'Create', update: 'Update', saved: 'Saved', number: 'Form', error: 'Failed', history: 'History', newForm: 'New'};
+    const config = {saveUrl: '/forms', historyUrl: '/forms', csrf: 'token', create: 'Create', update: 'Update', saved: 'Saved', number: 'Form', error: 'Failed', history: 'History', newForm: 'New', warningCanManage: true};
     if (reserveNumber) {config.warningNumberUrl = '/warning-number'; config.generatingWarningNumber = 'Generating number...';}
     const printButton = node(), requests = [], reservations = [], calls = {show: 0, hide: 0};
     const window = {EmployeeFormPrintPermissions: {warning: true}, location: {href: 'https://hr.test/profile'}};

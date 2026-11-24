@@ -20,17 +20,11 @@ class MobilePermissions
             return false;
         }
 
-        // Once a menu permission is provisioned in the role catalog, it is an
-        // explicit gate and must be granted. Legacy fallback applies only to
-        // older menus that do not yet have a catalog permission.
-        if (Schema::hasTable('permissions')
-            && DB::table('permissions')->where('permission_key', $ability)->exists()) {
-            return Gate::allows($ability);
+        if (Gate::allows($ability)) {
+            return true;
         }
 
-        // Existing role setups often grant only the action permission. Treat
-        // any granted action under this menu as the legacy menu grant, while
-        // retaining an explicit feature-control switch as a hard deny.
+        // Action grant fallback: allow if any action/function permission mapped to this menu is granted
         $rules = collect(config('mobile_permissions.functions', []));
         $hasActionGrant = $rules->contains(function ($rule) use ($menu, $rules): bool {
             if (!is_array($rule) || ($rule[0] ?? null) !== $menu) return false;
@@ -44,7 +38,7 @@ class MobilePermissions
             return $menusForAbility === 1 && Gate::allows($ability);
         });
 
-        return Gate::allows($ability) || $hasActionGrant;
+        return $hasActionGrant;
     }
 
     public function allowsFunction(array $rule, ?Collection $states = null): bool

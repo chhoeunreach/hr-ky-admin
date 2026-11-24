@@ -59,6 +59,18 @@ class AppSecurityDeviceNotificationDispatchTest extends TestCase
             $table->timestamp('expires_at')->nullable(); $table->timestamps();
             $table->unique(['target_type', 'target_value']);
         });
+        // These controller actions revoke Passport tokens. This unit test builds
+        // its own in-memory schema, so provide the small table subset it uses.
+        Schema::connection('sqlite')->create('oauth_access_tokens', function (Blueprint $table): void {
+            $table->string('id')->primary();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->boolean('revoked')->default(false);
+        });
+        Schema::connection('sqlite')->create('users', function (Blueprint $table): void {
+            $table->id();
+            $table->boolean('online_status')->default(true);
+            $table->boolean('logout_status')->default(false);
+        });
         DB::table('app_security_admin_roles')->insert(['admin_id' => 90, 'security_role' => 'it_admin']);
         DB::table('app_registered_devices')->insert([
             'uuid' => 'device-uuid', 'user_id' => 12, 'user_type' => 'customer', 'device_status' => 'approved',

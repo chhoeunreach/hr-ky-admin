@@ -66,6 +66,21 @@
             padding-top: 0.45rem;
             padding-bottom: 0.45rem;
         }
+
+        .sidebar .sidebar-body .nav .nav-item .nav-link .link-icon {
+            width: 17px;
+            height: 17px;
+            stroke-width: 2.1px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+        }
+
+        .sidebar .sidebar-body .nav .nav-item:hover .nav-link .link-icon {
+            transform: scale(1.12);
+        }
+
+        .sidebar .sidebar-body .nav .nav-item.active .nav-link .link-icon {
+            stroke-width: 2.3px;
+        }
     </style>
     @include('admin.section.head_links')
     @include('admin.section.typography')

@@ -22,6 +22,10 @@ class MobileRoleLayoutTest extends TestCase
             'attendance' => 'mobile.menu.attendance',
             'holiday' => 'mobile.menu.holiday',
             'notice' => 'mobile.menu.notice',
+            'repair' => 'repair_price.view',
+            'assets' => 'mobile.menu.assets',
+            'company-documents' => 'mobile.menu.company-documents',
+            'team-sheet' => 'mobile.menu.team-sheet',
         ]]);
 
         Schema::dropIfExists('role_mobile_layouts');
@@ -105,5 +109,35 @@ class MobileRoleLayoutTest extends TestCase
         $this->assertEqualsCanonicalizing(['bottom' => 1, 'home_quick' => 0], $payload['positions']['attendance']);
         $this->assertSame(['bottom' => 0], $payload['positions']['holiday']);
         $this->assertSame([], $payload['data']['notice']);
+    }
+
+    public function test_management_menus_can_be_arranged_in_bottom_and_sidebar_zones(): void
+    {
+        $layout = app(MobileRoleLayout::class);
+        $saved = $layout->save(
+            4,
+            [
+                'repair' => ['bottom'],
+                'assets' => ['sidebar'],
+                'company-documents' => ['bottom', 'sidebar'],
+                'team-sheet' => ['sidebar'],
+            ],
+            [
+                'bottom' => ['repair', 'company-documents'],
+                'sidebar' => ['assets', 'team-sheet', 'company-documents'],
+            ],
+        );
+
+        $this->assertTrue($saved);
+        $roleLayout = $layout->forRole(4);
+
+        $this->assertSame(['bottom'], $roleLayout['repair']['zones']);
+        $this->assertSame(['sidebar'], $roleLayout['assets']['zones']);
+        $this->assertEqualsCanonicalizing(['bottom', 'sidebar'], $roleLayout['company-documents']['zones']);
+        $this->assertSame(['sidebar'], $roleLayout['team-sheet']['zones']);
+
+        $this->assertSame(0, $roleLayout['repair']['positions']['bottom']);
+        $this->assertSame(1, $roleLayout['company-documents']['positions']['bottom']);
+        $this->assertSame(0, $roleLayout['assets']['positions']['sidebar']);
     }
 }

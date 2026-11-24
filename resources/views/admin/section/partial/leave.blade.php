@@ -9,7 +9,7 @@
     <li class="nav-item {{ $isLeaveSection ? 'active' : '' }} ">
         <a class="nav-link {{ $isLeaveSection ? '' : 'collapsed' }}" data-bs-toggle="collapse" href="#leaveMenu" data-href="#" role="button" aria-expanded="{{ $isLeaveSection ? 'true' : 'false' }}"
            aria-controls="leaveMenu">
-            <i class="link-icon" data-feather="pause-circle"></i>
+            <i class="link-icon" data-feather="coffee"></i>
             <span class="link-title">{{ __('index.leave') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

@@ -20,7 +20,7 @@
            href="#attendance_method"
            data-href="#"
            role="button" aria-expanded="{{ $isAttendanceMethodSection ? 'true' : 'false' }}" aria-controls="attendance_method">
-            <i class="link-icon" data-feather="hard-drive"></i>
+            <i class="link-icon" data-feather="cpu"></i>
             <span class="link-title"> {{ __('index.attendance_methods') }} </span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

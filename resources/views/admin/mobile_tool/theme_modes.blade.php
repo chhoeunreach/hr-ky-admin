@@ -124,17 +124,17 @@
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
             <h4 class="mb-1 text-dark fw-bold">{{ __('index.theme_modes') }}</h4>
-            <p class="text-muted small mb-0">Manage core system themes and add, update, delete custom organization theme modes with full role permissions.</p>
+            <p class="text-muted small mb-0">{{ __('index.theme_modes_subtitle') }}</p>
         </div>
         <div class="d-flex gap-2">
-            <form action="{{ route('admin.mobile-tools.theme-modes.reset') }}" method="POST" onsubmit="return confirm('Reset all theme modes and colors to factory baseline defaults? All custom changes will be reset.');">
+            <form action="{{ route('admin.mobile-tools.theme-modes.reset') }}" method="POST" onsubmit="return confirm('{{ __('index.confirm_reset_all_themes') }}');">
                 @csrf
                 <button type="submit" class="btn btn-outline-secondary btn-sm">
-                    <i data-feather="rotate-ccw" class="me-1" style="width:14px;height:14px"></i> Reset All Defaults
+                    <i data-feather="rotate-ccw" class="me-1" style="width:14px;height:14px"></i> {{ __('index.reset_all_defaults') }}
                 </button>
             </form>
             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addThemeModal">
-                <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> Add Custom Theme
+                <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> {{ __('index.add_custom_theme') }}
             </button>
         </div>
     </div>
@@ -142,17 +142,17 @@
     <!-- Quick Stats -->
     <div class="d-flex flex-wrap gap-2 mb-4">
         <span class="stat-badge bg-primary-subtle text-primary border border-primary-subtle">
-            <i data-feather="shield" style="width:13px;height:13px" class="me-1"></i> Core Systems: <strong>{{ $coreThemes->count() }}</strong>
+            <i data-feather="shield" style="width:13px;height:13px" class="me-1"></i> {{ __('index.core_systems') }}: <strong>{{ $coreThemes->count() }}</strong>
         </span>
         <span class="stat-badge bg-warning-subtle text-warning border border-warning-subtle">
-            <i data-feather="plus-circle" style="width:13px;height:13px" class="me-1"></i> Custom Added: <strong>{{ $customThemes->count() }}</strong>
+            <i data-feather="plus-circle" style="width:13px;height:13px" class="me-1"></i> {{ __('index.custom_themes') }}: <strong>{{ $customThemes->count() }}</strong>
         </span>
         <span class="stat-badge bg-success-subtle text-success border border-success-subtle">
-            <i data-feather="eye" style="width:13px;height:13px" class="me-1"></i> Visible on Mobile: <strong>{{ $activeCount }}</strong>
+            <i data-feather="eye" style="width:13px;height:13px" class="me-1"></i> {{ __('index.shown_on_mobile') }}: <strong>{{ $activeCount }}</strong>
         </span>
         @if($hiddenCount > 0)
             <span class="stat-badge bg-secondary-subtle text-secondary border border-secondary-subtle">
-                <i data-feather="eye-off" style="width:13px;height:13px" class="me-1"></i> Hidden: <strong>{{ $hiddenCount }}</strong>
+                <i data-feather="eye-off" style="width:13px;height:13px" class="me-1"></i> {{ __('index.hidden_on_mobile') }}: <strong>{{ $hiddenCount }}</strong>
             </span>
         @endif
     </div>
@@ -161,17 +161,17 @@
     <ul class="nav nav-tabs mb-4" id="themeTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#tab-all" type="button" role="tab">
-                All Themes ({{ $themesCol->count() }})
+                {{ __('index.all_themes') }} ({{ $themesCol->count() }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="core-tab" data-bs-toggle="tab" data-bs-target="#tab-core" type="button" role="tab">
-                <i data-feather="shield" style="width:14px;height:14px" class="me-1"></i> Core Systems ({{ $coreThemes->count() }})
+                <i data-feather="shield" style="width:14px;height:14px" class="me-1"></i> {{ __('index.core_systems') }} ({{ $coreThemes->count() }})
             </button>
         </li>
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="custom-tab" data-bs-toggle="tab" data-bs-target="#tab-custom" type="button" role="tab">
-                <i data-feather="plus-circle" style="width:14px;height:14px" class="me-1"></i> Custom Themes ({{ $customThemes->count() }})
+                <i data-feather="plus-circle" style="width:14px;height:14px" class="me-1"></i> {{ __('index.custom_themes') }} ({{ $customThemes->count() }})
             </button>
         </li>
     </ul>

@@ -11,7 +11,7 @@
            role="button"
            aria-expanded="{{ $isTeamMeetingSection ? 'true' : 'false' }}"
            aria-controls="teamMeetingMenu">
-            <i class="link-icon" data-feather="globe"></i>
+            <i class="link-icon" data-feather="video"></i>
             <span class="link-title">{{ __('index.team_meeting') }}</span>
             <i class="link-arrow" data-feather="chevron-down"></i>
         </a>

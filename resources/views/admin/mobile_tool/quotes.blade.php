@@ -1,6 +1,6 @@
 @extends('layouts.master')
-@section('title', 'Quotes')
-@section('action', 'Manage the quotes shown in the mobile app')
+@section('title', __('index.mobile_quotes'))
+@section('action', __('index.quotes_subtitle'))
 @section('styles')
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -207,12 +207,12 @@
 <div class="card mt-hero mb-4">
     <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <div class="mt-eyebrow">Mobile Tool</div>
-            <h2>Quotes & Motivational Banners</h2>
-            <p>Design personalized inspirational quotes with live banner preview, Khmer & modern typography, full color & gradient fills, text-stroke, freehand angle rotation, and interactive drag-and-drop placement.</p>
+            <div class="mt-eyebrow">{{ __('index.mobile_tool') }}</div>
+            <h2>{{ __('index.quotes_motivational_banners') }}</h2>
+            <p>{{ __('index.quotes_subtitle') }}</p>
         </div>
         <a href="#quote-designer" class="btn btn-light text-primary fw-bold shadow-sm">
-            <i data-feather="plus-circle" class="me-1"></i> Add / Customize Quote
+            <i data-feather="plus-circle" class="me-1"></i> {{ __('index.add_customize_quote') }}
         </a>
     </div>
 </div>
@@ -228,12 +228,12 @@
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <div>
-                <h5 class="mb-0 fw-bold text-dark">Add a quote</h5>
-                <small class="text-muted">Drag the quote directly on the banner to position it. The preview shows how this quote is laid out on Home. Use the playback settings to rotate enabled quotes. Slideshow images take precedence over quote wallpaper.</small>
+                <h5 class="mb-0 fw-bold text-dark">{{ __('index.add_quote') }}</h5>
+                <small class="text-muted">{{ __('index.quotes_designer_hint') }}</small>
             </div>
             <div class="d-flex gap-2">
                 <button type="button" class="btn btn-sm btn-outline-secondary" onclick="resetQuoteStudio('add')">
-                    <i data-feather="rotate-ccw" style="width:14px;height:14px" class="me-1"></i> Reset Style
+                    <i data-feather="rotate-ccw" style="width:14px;height:14px" class="me-1"></i> {{ __('index.reset_style') }}
                 </button>
             </div>
         </div>
@@ -247,12 +247,12 @@
                 <div class="col-xl-7">
                     <div class="qb-preview-wrapper shadow">
                         <div class="qb-preview-header">
-                            <div><i data-feather="smartphone" style="width:14px;height:14px" class="me-1 text-info"></i> Live Banner Canvas (Mobile layout)</div>
+                            <div><i data-feather="smartphone" style="width:14px;height:14px" class="me-1 text-info"></i> {{ __('index.live_banner_canvas') }}</div>
                             <div class="d-flex align-items-center gap-2">
                                 <span class="badge bg-dark border border-secondary text-info" id="pos_indicator_add">X: 65% | Y: 30%</span>
                                 <div class="form-check form-switch mb-0">
                                     <input class="form-check-input" type="checkbox" id="toggle_mock_add" checked onchange="toggleMockWidgets('add')">
-                                    <label class="form-check-label text-light small" for="toggle_mock_add">Show Clock</label>
+                                    <label class="form-check-label text-light small" for="toggle_mock_add">{{ __('index.show_clock') }}</label>
                                 </div>
                             </div>
                         </div>

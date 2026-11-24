@@ -1,18 +1,57 @@
-# HR payroll queue Flutter screens
+# Digital HR Mobile Flutter Client Modules
 
-The main app is in the sibling `hrky-flutter` repository. Its home scanner supports payroll queue QR codes. This directory also contains sample screens in `lib/hr_queue_module.dart` for separate integrations using `qr_flutter` and `mobile_scanner`.
+The main app is in the sibling `hrky-flutter` repository. This directory contains drop-in modular screens, widgets, and API clients in `lib/` for direct integration.
 
-## Employee queue flow
+---
 
-1. Payroll staff create a session in **Admin → Payroll Queue**, selecting a branch, department, and optionally an employee. The QR modal can send an app invitation to that scope.
-2. The employee scans the session QR from the home scanner. The app extracts the token and calls `POST /api/v1/payroll-queue/join` with the employee's session.
-3. The ticket dialog polls `GET /api/v1/payroll-queue/ticket/{ticketId}` for position and counter assignment. The route only returns the signed-in employee's own ticket. Both endpoints require the Payroll Management mobile menu and View Payslip Detail permission.
-4. Payroll staff call the next ticket into a counter, review the saved payslip, optionally quick-update its draft bonus, and commit payment in the secured payroll room screen. Paid tickets move into the Finished/Paid panel.
+## 1. Store Phone & SIM Directory (`lib/store_phone_module.dart`)
 
-Do not send a client-supplied employee ID when joining; the API takes the employee identity from the authenticated token.
+Empowers employees and managers to look up branch phone numbers and view their assigned physical SIM cards and eSIMs:
 
-## QR attendance in and out
+- **Screen:** `StorePhoneDirectoryScreen(baseUrl: '...', authToken: '...')`
+- **Tab 1: My SIM Cards (`GET /api/my-sim-cards`)**
+  - Displays the active SIM cards assigned to the current authenticated employee.
+  - Shows slot name (`SIM 1`, `SIM 2`, `eSIM`), operator badge (Smart, Cellcard, Metfone), purpose, linked hardware device, and ICCID.
+- **Tab 2: Store Phone Directory (`GET /api/store-phone-numbers`)**
+  - Full company directory with live search query (`?search=...`) and operator filter chips (`?operator=smart`).
+  - One-tap dialer integration via `url_launcher` (`tel:`).
+  - One-tap copy to clipboard.
 
-For attendance, generate a fresh employee pass with `POST /api/v1/hr-queue/qr/generate` before each scan (passes expire after five minutes). Use `HrAttendanceScannerScreen` to choose **IN** or **OUT**. Post the pass, action, latitude, and longitude to `POST /api/v1/hr-queue/queue/scan`; include a selfie when attendance policy requires one. The server checks the signature, expiry, selected action, and location through the existing attendance rules. Check-in records canonical attendance and joins the daily HR queue; check-out records attendance and does not create a ticket.
+---
 
-The same scanner endpoint accepts the admin-created payroll session QR URL. It returns `qr_kind: payroll_session` and the new ticket, without treating that session QR as an attendance check-in or check-out. Obtain GPS with the host app's location implementation and send the signed-in API token for scans.
+## 2. Enterprise Company Documents (`lib/company_documents_module.dart`)
+
+Allows employees and management to access official company documents, rules, compliance licenses, and view expiration warnings:
+
+- **Screen:** `CompanyDocumentsScreen(baseUrl: '...', authToken: '...')`
+- **Endpoints:**
+  - `GET /api/v1/company-documents/alerts`: Fetches expired count and expiring-soon count (displayed in the top warning banner).
+  - `GET /api/v1/company-documents?category=...`: Filterable document list with validity dates, document numbers, and one-tap download/open file launcher.
+
+---
+
+## 3. Payday Queue & QR Attendance (`lib/hr_queue_module.dart`)
+
+Enables digital queue management during payroll disbursement and QR attendance:
+
+- **Employee queue flow:**
+  1. Employee scans the session QR from the home scanner.
+  2. The app calls `POST /api/v1/payroll-queue/join` with the session token.
+  3. The `PayrollQueueTicketDialog` polls `GET /api/v1/payroll-queue/ticket/{ticketId}` for real-time queue position and serving counter calling.
+- **QR attendance in and out:**
+  - Generate a fresh employee pass with `POST /api/v1/hr-queue/qr/generate`.
+  - Use `HrAttendanceScannerScreen` to scan IN or OUT with GPS attached to `POST /api/v1/hr-queue/queue/scan`.
+
+---
+
+## Dependencies (for `pubspec.yaml` in Flutter app)
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+  url_launcher: ^6.3.0
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.1.0
+```

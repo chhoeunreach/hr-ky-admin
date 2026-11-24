@@ -6,7 +6,7 @@
             href="{{ route('admin.holidays.index') }}"
             data-href="{{ route('admin.holidays.index') }}"
             class="nav-link">
-            <i class="link-icon" data-feather="credit-card"></i>
+            <i class="link-icon" data-feather="sun"></i>
             <span class="link-title">{{ __('index.holidays') }}</span>
         </a>
     </li>

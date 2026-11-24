@@ -30,7 +30,6 @@ class SecurityPolicyService
     ];
 
     private const SETTINGS = [
-        'enabled' => ['type' => 'bool', 'config' => 'enabled'],
         'device_approval_required' => ['type' => 'bool', 'config' => 'device_approval'],
         'customer_auto_approval' => ['type' => 'bool', 'config' => 'customer_auto_approval'],
         'max_devices_staff' => ['type' => 'int', 'min' => 0, 'max' => 50, 'config' => 'max_devices_staff'],

@@ -235,7 +235,7 @@ class AppSecurityAdminController extends Controller
                 ->filter()
                 ->unique()
                 ->values(),
-            'securityEnabled' => (bool) $policy->value('enabled'),
+            'securityEnabled' => (bool) config('app_security.enabled', false),
             'settings' => $policy->snapshot(),
             'canManageSettings' => $authorization->allowsAny('app_security_settings'),
             'canManageReleases' => $authorization->allowsAny('app_security_releases'),

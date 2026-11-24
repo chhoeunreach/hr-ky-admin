@@ -2,7 +2,7 @@
     <a href="{{route('admin.dashboard')}}"
        data-href="{{route('admin.dashboard')}}"
        class="nav-link">
-        <i class="link-icon" data-feather="box"></i>
+        <i class="link-icon" data-feather="home"></i>
         <span class="link-title">{{ __('index.dashboard') }}</span>
     </a>
 </li>
