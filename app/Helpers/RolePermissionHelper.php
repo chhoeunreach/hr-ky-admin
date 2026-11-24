@@ -232,6 +232,26 @@ class RolePermissionHelper
                 "name" => "Transfer",
                 'group_type_id' => 1
             ],
+            [//51
+                "name" => "Store Phone Number",
+                'group_type_id' => 1
+            ],
+            [//52
+                "name" => "App Links & Accounts",
+                'group_type_id' => 1
+            ],
+            [//53
+                "name" => "Company Documents",
+                'group_type_id' => 1
+            ],
+            [//54
+                "name" => "Payroll Queue",
+                'group_type_id' => 1
+            ],
+            [//55
+                "name" => "Admin Portal Access",
+                'group_type_id' => 1
+            ],
 
         ];
     }
@@ -2199,6 +2219,101 @@ class RolePermissionHelper
                 "name" => "PF",
                 "permission_key" => "pf",
                 "permission_groups_id" => 31
+            ],
+
+            /** Store Phone Number Permissions - 51 */
+            [
+                "name" => "List Store Phone Numbers",
+                "permission_key" => "list_store_phone",
+                "permission_groups_id" => 51
+            ],
+            [
+                "name" => "Create Store Phone Number",
+                "permission_key" => "create_store_phone",
+                "permission_groups_id" => 51
+            ],
+            [
+                "name" => "Edit Store Phone Number",
+                "permission_key" => "edit_store_phone",
+                "permission_groups_id" => 51
+            ],
+            [
+                "name" => "Delete Store Phone Number",
+                "permission_key" => "delete_store_phone",
+                "permission_groups_id" => 51
+            ],
+
+            /** App Links & Accounts Permissions - 52 */
+            [
+                "name" => "List App Links & Social Accounts",
+                "permission_key" => "list_app_link",
+                "permission_groups_id" => 52
+            ],
+            [
+                "name" => "Create App Link",
+                "permission_key" => "create_app_link",
+                "permission_groups_id" => 52
+            ],
+            [
+                "name" => "Edit App Link",
+                "permission_key" => "edit_app_link",
+                "permission_groups_id" => 52
+            ],
+            [
+                "name" => "Delete App Link",
+                "permission_key" => "delete_app_link",
+                "permission_groups_id" => 52
+            ],
+
+            /** Company Documents Permissions - 53 */
+            [
+                "name" => "List Company Enterprise Documents",
+                "permission_key" => "list_company_document",
+                "permission_groups_id" => 53
+            ],
+            [
+                "name" => "Create Company Document",
+                "permission_key" => "create_company_document",
+                "permission_groups_id" => 53
+            ],
+            [
+                "name" => "Edit Company Document",
+                "permission_key" => "edit_company_document",
+                "permission_groups_id" => 53
+            ],
+            [
+                "name" => "Delete Company Document",
+                "permission_key" => "delete_company_document",
+                "permission_groups_id" => 53
+            ],
+
+            /** Payroll Queue Permissions - 54 */
+            [
+                "name" => "View Payroll Queue & Sessions",
+                "permission_key" => "view_payroll_queue",
+                "permission_groups_id" => 54
+            ],
+            [
+                "name" => "Manage Payroll Queue Sessions & Counters",
+                "permission_key" => "manage_payroll_queue",
+                "permission_groups_id" => 54
+            ],
+            [
+                "name" => "Call Next Ticket & Serve at Counter",
+                "permission_key" => "call_payroll_queue",
+                "permission_groups_id" => 54
+            ],
+            [
+                "name" => "Disburse Payroll Payment",
+                "permission_key" => "disburse_payroll_queue",
+                "permission_groups_id" => 54
+            ],
+
+            /** Admin Portal Access Permissions - 55 */
+            [
+                "name" => "Access Web Admin Portal",
+                "permission_key" => "access_admin_panel",
+                "permission_groups_id" => 55
             ],
 
         ];

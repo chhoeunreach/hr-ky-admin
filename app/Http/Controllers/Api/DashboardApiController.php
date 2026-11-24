@@ -135,12 +135,43 @@ class DashboardApiController extends Controller
             $dashboard['attendance_location_radius_enabled'] = AppHelper::isAttendanceLocationRadiusEnabled();
             $dashboard['attendance_method'] = array_values(array_diff(AppHelper::attendanceMethod(),['biometric']));
             $dashboard['employee_location'] = AppHelper::isEmployeeLocationRequired();
-            $dashboard['workspace_location'] = [
+            $activeBranchRoute = app(\App\Services\Attendance\AttendanceService::class)->getActiveBranchRouteForEmployee($userDetail->id);
+            $workspaceLocation = [
                 'latitude' => $userDetail->branch?->branch_location_latitude,
                 'longitude' => $userDetail->branch?->branch_location_longitude,
                 'radius_in_meters' => AppHelper::getAttendanceLocationRadius(),
                 'radius_enabled' => AppHelper::isAttendanceLocationRadiusEnabled(),
+                'branch_id' => $userDetail->branch_id,
+                'branch_name' => $userDetail->branch?->name,
+                'is_branch_route' => false,
             ];
+
+            if ($activeBranchRoute && !empty($activeBranchRoute['target_branches'])) {
+                $targetWithCoords = null;
+                foreach ($activeBranchRoute['target_branches'] as $tb) {
+                    if (isset($tb['latitude'], $tb['longitude']) && $tb['latitude'] !== null && $tb['longitude'] !== null) {
+                        $targetWithCoords = $tb;
+                        break;
+                    }
+                }
+
+                if ($targetWithCoords) {
+                    $workspaceLocation['latitude'] = $targetWithCoords['latitude'];
+                    $workspaceLocation['longitude'] = $targetWithCoords['longitude'];
+                    $workspaceLocation['is_branch_route'] = true;
+                    $workspaceLocation['target_branch_id'] = $targetWithCoords['id'] ?? null;
+                    $workspaceLocation['target_branch_name'] = $targetWithCoords['name'] ?? null;
+                    $workspaceLocation['home_branch'] = [
+                        'latitude' => $userDetail->branch?->branch_location_latitude,
+                        'longitude' => $userDetail->branch?->branch_location_longitude,
+                        'branch_id' => $userDetail->branch_id,
+                        'name' => $userDetail->branch?->name,
+                    ];
+                }
+                $dashboard['active_branch_route'] = $activeBranchRoute;
+            }
+
+            $dashboard['workspace_location'] = $workspaceLocation;
             $dashboard['shift_dates'] = $shiftDates;
             $dashboard['features'] = new FeatureCollection($features);
             $dashboard['home_cards'] = $homeCards;
@@ -248,11 +279,13 @@ class DashboardApiController extends Controller
                     && (string) ($features->get($menu)->status ?? '0') === '1');
         $data = $visibleLayout->map(fn ($placement) => $placement['zones'])->all();
         $positions = $visibleLayout->map(fn ($placement) => $placement['positions'] ?? [])->all();
+        $initialTab = $layoutService->initialTab($roleId);
 
         return response()->json([
             'configured' => $configured,
             'data' => (object) $data,
             'positions' => (object) $positions,
+            'initial_tab' => $initialTab,
         ])->header('Cache-Control', 'private, no-store');
     }
 

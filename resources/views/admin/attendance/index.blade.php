@@ -2013,6 +2013,11 @@
                                                 >
                                                     {{  \App\Helpers\AttendanceHelper::changeTimeFormatForAttendanceAdminView($appTimeSetting, $firstAttendance->check_in_at) ?? '' }}
                                                 </span>
+                                                @if(!empty($firstAttendance->check_in_note) && str_contains($firstAttendance->check_in_note, 'Branch Route'))
+                                                    <span class="badge bg-info text-dark ms-1" style="font-size: 10px;" title="{{ $firstAttendance->check_in_note }}">
+                                                        <i data-feather="map-pin" style="width: 9px; height: 9px;"></i> Route
+                                                    </span>
+                                                @endif
                                                 @if($firstAttendanceBadgeMeta['late'])
                                                     <span class="attendance-overlay-badge">{!! $statusBadge('L', 'Late', 'is-late', $firstAttendanceBadgeMeta['late_title']) !!}</span>
                                                 @endif

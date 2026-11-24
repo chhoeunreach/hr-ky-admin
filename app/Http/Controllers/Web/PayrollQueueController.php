@@ -31,7 +31,7 @@ class PayrollQueueController extends Controller
     ) {
         $this->middleware(function (Request $request, \Closure $next) {
             if ($request->routeIs('admin.payroll-queue.*')) {
-                abort_unless(Gate::any(['view_monthly_payroll', 'view_payroll_list']), 403);
+                abort_unless(Gate::any(['view_payroll_queue', 'manage_payroll_queue', 'call_payroll_queue', 'view_monthly_payroll', 'view_payroll_list']), 403);
             }
 
             return $next($request);

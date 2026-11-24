@@ -1,4 +1,4 @@
-/* Shared screen styles for Asset and Repair Management; print templates keep their own layout. */
+/* Shared screen styles for Asset, Repair and Branch directory modals; print templates keep their own layout. */
 .management-page, .management-modal {
     --management-border: rgba(125, 139, 160, .22);
     --management-muted: var(--bs-secondary-color, #64748b);
@@ -64,9 +64,15 @@
 #assetActionModal .modal-content { height: 100%; }
 #assetActionModal .modal-body { display: flex; flex-direction: column; flex: 1; padding: 0; overflow: hidden; }
 #assetActionModal [data-asset-action-frame] { flex: 1; min-height: 0; height: 100%; }
+#branchActionModal .modal-dialog { width: calc(100% - 40px); max-width: 1320px; height: calc(100dvh - 40px); }
+#branchActionModal .modal-content { height: 100%; }
+#branchActionModal .modal-body { display: flex; flex-direction: column; flex: 1; padding: 0; overflow: hidden; }
+#branchActionModal [data-branch-action-frame] { flex: 1; min-height: 0; height: 100%; }
 @media (max-width: 991.98px) {
     #assetActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
     #assetActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
+    #branchActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
+    #branchActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
     .management-page .assets-toolkit-search { width: 100%; margin-left: 0; flex-wrap: wrap; }
     .management-page .assets-toolkit-search input[type="search"] { width: auto; flex: 1; min-width: 140px; }
 }

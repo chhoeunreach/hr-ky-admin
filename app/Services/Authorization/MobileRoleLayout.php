@@ -6,7 +6,19 @@ use Illuminate\Support\Facades\DB;
 
 class MobileRoleLayout
 {
-    public const ZONES = ['top', 'sidebar', 'bottom', 'home_quick', 'hidden'];
+    public const ZONES = ['top', 'sidebar', 'bottom', 'home_quick', 'hidden', 'landing'];
+
+    public function initialTab(int $roleId): string
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('role_mobile_layouts')) {
+            return 'home';
+        }
+        $row = DB::table('role_mobile_layouts')
+            ->where('role_id', $roleId)
+            ->where('zone', 'landing')
+            ->first();
+        return $row?->menu_key ?? 'home';
+    }
 
     public function defaults(): array
     {
@@ -41,7 +53,7 @@ class MobileRoleLayout
             if (!array_key_exists($menu, $layout)) continue;
             $layout[$menu] = ['zones' => [], 'positions' => []];
             foreach ($items as $item) {
-                if (!in_array($item->zone, self::ZONES, true) || $item->zone === 'hidden') continue;
+                if (!in_array($item->zone, self::ZONES, true) || $item->zone === 'hidden' || $item->zone === 'landing') continue;
                 $layout[$menu]['zones'][] = $item->zone;
                 $layout[$menu]['positions'][$item->zone] = (int) $item->position;
             }
@@ -56,7 +68,7 @@ class MobileRoleLayout
             && DB::table('role_mobile_layouts')->where('role_id', $roleId)->exists();
     }
 
-    public function save(int $roleId, array $placements, array $orders = []): bool
+    public function save(int $roleId, array $placements, array $orders = [], ?string $initialTab = null): bool
     {
         if (!\Illuminate\Support\Facades\Schema::hasTable('role_mobile_layouts')) {
             return false;
@@ -85,6 +97,17 @@ class MobileRoleLayout
                     'updated_at' => now(),
                 ];
             }
+        }
+
+        if ($initialTab && ($initialTab === 'home' || in_array($initialTab, $validMenus, true))) {
+            $rows[] = [
+                'role_id' => $roleId,
+                'menu_key' => $initialTab,
+                'zone' => 'landing',
+                'position' => 0,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
         }
 
         DB::transaction(function () use ($roleId, $rows): void {

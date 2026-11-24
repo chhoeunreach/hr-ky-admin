@@ -697,14 +697,41 @@ class TelegramService
         $eventKeys = is_array($group->event_keys) ? $group->event_keys : [];
         $actionKeys = is_array($group->action_keys) && $group->action_keys !== []
             ? $group->action_keys
-            : [$group->action_key];
+            : (isset($group->action_key) ? [$group->action_key] : []);
 
-        if ($eventKeys !== []) {
-            return in_array($actionKey, $eventKeys, true)
-                || ($this->isSellOutEvent($actionKey) && in_array(TelegramGroup::EVENT_SELL_OUT_REPORT, $eventKeys, true));
+        // 1. General matches everything
+        if (in_array(TelegramGroup::ACTION_GENERAL, $actionKeys, true) || in_array(TelegramGroup::ACTION_GENERAL, $eventKeys, true)) {
+            return true;
         }
 
-        return in_array(TelegramGroup::ACTION_GENERAL, $actionKeys, true) || in_array($actionKey, $actionKeys, true);
+        // 2. Exact match in event_keys
+        if (in_array($actionKey, $eventKeys, true)) {
+            return true;
+        }
+
+        // 3. Exact match in action_keys
+        if (in_array($actionKey, $actionKeys, true)) {
+            return true;
+        }
+
+        // 4. Parent action matches (e.g. group has action_key 'leave' or 'attendance')
+        $parentAction = TelegramGroup::parentActionForEvent($actionKey);
+        if ($parentAction !== null && (
+            in_array($parentAction, $actionKeys, true) || in_array($parentAction, $eventKeys, true)
+        )) {
+            return true;
+        }
+
+        // 5. Sell-Out specific fallback
+        if ($this->isSellOutEvent($actionKey) && (
+            in_array(TelegramGroup::EVENT_SELL_OUT_REPORT, $eventKeys, true)
+            || in_array(TelegramGroup::ACTION_SELL_OUT, $actionKeys, true)
+            || in_array(TelegramGroup::EVENT_SELL_OUT_REPORT, $actionKeys, true)
+        )) {
+            return true;
+        }
+
+        return false;
     }
 
     private function isSellOutEvent(string $actionKey): bool

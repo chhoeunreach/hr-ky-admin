@@ -486,6 +486,10 @@ class AttendanceApiController extends Controller
         }
 
         $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
+        if (!empty($locationValidation['is_branch_route_attendance'])) {
+            $branchName = $locationValidation['matched_branch_name'] ?? 'Target Branch';
+            $validatedData['note'] = trim(($validatedData['note'] ?? '') . " [Branch Route: {$branchName}]");
+        }
         $this->storeAttendanceLog($validatedData, $userDetail, $type, $this->attendanceForTelegram->id);
         try {
             $this->sendNotification(

@@ -47,6 +47,7 @@ class TaxReportController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('view_tax_report');
         if($request->all()){
             $validator = Validator::make($request->all(), [
                 'year' => ['required'],
@@ -89,6 +90,7 @@ class TaxReportController extends Controller
 
     public function taxReport($id)
     {
+        $this->authorize('view_tax_report');
         try {
             $currency = AppHelper::getCompanyPaymentCurrencySymbol();
             $months = AppHelper::getMonthsList();
@@ -107,6 +109,7 @@ class TaxReportController extends Controller
 
     public function printTaxReport($id)
     {
+        $this->authorize('view_tax_report');
         try {
             $currency = AppHelper::getCompanyPaymentCurrencySymbol();
             $months = AppHelper::getMonthsList();
@@ -144,6 +147,7 @@ class TaxReportController extends Controller
 
     public function deleteTaxReport($taxReportId)
     {
+        $this->authorize('edit_tax_report');
         try {
             DB::beginTransaction();
             $this->reportService->deleteTaxReportById($taxReportId);
@@ -159,6 +163,7 @@ class TaxReportController extends Controller
 
     public function editTaxReport($id)
     {
+        $this->authorize('edit_tax_report');
         try {
 
             $currency = AppHelper::getCompanyPaymentCurrencySymbol();
@@ -178,6 +183,7 @@ class TaxReportController extends Controller
 
     public function updateTaxReport($id, Request $request)
     {
+        $this->authorize('edit_tax_report');
         try {
 
             $validatedData = $request->all();

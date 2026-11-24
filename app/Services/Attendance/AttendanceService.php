@@ -615,19 +615,83 @@ class AttendanceService
         $radius = AppHelper::getAttendanceLocationRadius();
         $radiusEnabled = $forceRadius || AppHelper::isAttendanceLocationRadiusEnabled();
 
+        $activeRoute = $this->getActiveBranchRouteForEmployee($userId);
+
+        $eligibleLocations = [];
+        if ($branchLatitude !== null && $branchLongitude !== null) {
+            $eligibleLocations[] = [
+                'id' => $branch?->id,
+                'name' => $branch?->name ?? 'Home Branch',
+                'latitude' => (float) $branchLatitude,
+                'longitude' => (float) $branchLongitude,
+                'is_home' => true,
+                'is_branch_route' => false,
+            ];
+        }
+
+        if ($activeRoute && !empty($activeRoute['target_branches'])) {
+            foreach ($activeRoute['target_branches'] as $targetBranch) {
+                if (isset($targetBranch['latitude'], $targetBranch['longitude']) && $targetBranch['latitude'] !== null && $targetBranch['longitude'] !== null) {
+                    $eligibleLocations[] = [
+                        'id' => $targetBranch['id'] ?? null,
+                        'name' => $targetBranch['name'] ?? 'Target Branch',
+                        'latitude' => (float) $targetBranch['latitude'],
+                        'longitude' => (float) $targetBranch['longitude'],
+                        'is_home' => false,
+                        'is_branch_route' => true,
+                        'route_id' => $activeRoute['route_id'] ?? null,
+                    ];
+                }
+            }
+        }
+
+        $bestMatch = !empty($eligibleLocations) ? $eligibleLocations[0] : null;
+        $minDistance = null;
+        $withinRadius = false;
+
+        if ($latitude !== null && $longitude !== null && !empty($eligibleLocations)) {
+            foreach ($eligibleLocations as $loc) {
+                $dist = $this->calculateDistanceInMeters($latitude, $longitude, $loc['latitude'], $loc['longitude']);
+                if ($minDistance === null || $dist < $minDistance) {
+                    $minDistance = $dist;
+                    $bestMatch = $loc;
+                }
+            }
+            $withinRadius = $minDistance !== null && $minDistance <= $radius;
+        }
+
+        $matchedBranchName = $bestMatch['name'] ?? ($branch?->name ?? 'Branch');
+        $isBranchRouteAttendance = (bool) ($bestMatch['is_branch_route'] ?? false);
+
+        if ($withinRadius) {
+            $validationMessage = $isBranchRouteAttendance
+                ? __('message.attendance_within_branch_route_radius', ['branch' => $matchedBranchName, 'radius' => $radius])
+                : __('message.attendance_within_branch_radius', ['radius' => $radius]);
+        } else {
+            $validationMessage = __('message.attendance_outside_branch_radius', [
+                'distance' => $minDistance ?? 0,
+                'radius' => $radius,
+            ]);
+        }
+
         $validation = [
             'employee_location' => [
                 'latitude' => $latitude,
                 'longitude' => $longitude,
             ],
             'branch_location' => [
-                'latitude' => $branchLatitude,
-                'longitude' => $branchLongitude,
+                'latitude' => $bestMatch['latitude'] ?? $branchLatitude,
+                'longitude' => $bestMatch['longitude'] ?? $branchLongitude,
             ],
-            'distance_to_branch_in_meter' => null,
+            'distance_to_branch_in_meter' => $minDistance,
             'allowed_branch_radius_in_meter' => $radiusEnabled ? $radius : null,
-            'within_branch_radius' => null,
-            'location_validation_message' => null,
+            'within_branch_radius' => $withinRadius,
+            'location_validation_message' => $validationMessage,
+            'matched_branch_id' => $bestMatch['id'] ?? $branch?->id,
+            'matched_branch_name' => $matchedBranchName,
+            'is_branch_route_attendance' => $isBranchRouteAttendance,
+            'active_branch_route' => $activeRoute,
+            'allowed_locations' => $eligibleLocations,
         ];
 
         if (!$radiusEnabled) {
@@ -635,8 +699,7 @@ class AttendanceService
         }
 
         if (
-            $latitude === null || $longitude === null ||
-            $branchLatitude === null || $branchLongitude === null
+            $latitude === null || $longitude === null || empty($eligibleLocations)
         ) {
             if ($locationRequired && $user->workspace_type == User::OFFICE && !$forceRadius) {
                 throw new Exception(__('message.attendance_outside'), 403);
@@ -645,20 +708,138 @@ class AttendanceService
             return $validation;
         }
 
-        $distance = $this->calculateDistanceInMeters($latitude, $longitude, $branchLatitude, $branchLongitude);
-        $withinRadius = $distance <= $radius;
-
-        $validation['distance_to_branch_in_meter'] = $distance;
-        $validation['within_branch_radius'] = $withinRadius;
-        $validation['location_validation_message'] = $withinRadius
-            ? __('message.attendance_within_branch_radius', ['radius' => $radius])
-            : __('message.attendance_outside_branch_radius', ['distance' => $distance, 'radius' => $radius]);
-
         if ($user->workspace_type == User::OFFICE && !$withinRadius) {
             throw new Exception($validation['location_validation_message'], 403);
         }
 
         return $validation;
+    }
+
+    public function getActiveBranchRouteForEmployee($userId, ?Carbon $date = null): ?array
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('daily_entries')) {
+                return null;
+            }
+
+            $date = $date ? clone $date : Carbon::today();
+            $dateString = $date->toDateString();
+
+            $entries = DB::table('daily_entries')
+                ->where('employee_id', $userId)
+                ->where('kind', 'activity')
+                ->whereNull('archived_at')
+                ->where(function ($q) use ($dateString) {
+                    $q->whereDate('occurred_at', $dateString)
+                        ->orWhere(function ($sub) use ($dateString) {
+                            $sub->whereNull('occurred_at')
+                                ->whereDate('created_at', $dateString);
+                        });
+                })
+                ->orderByDesc('id')
+                ->get(['id', 'title', 'occurred_at', 'details']);
+
+            foreach ($entries as $entry) {
+                $details = is_string($entry->details) ? json_decode($entry->details, true) : (array) $entry->details;
+                $fields = $details['fields'] ?? [];
+
+                if (($fields['mission_type'] ?? null) !== 'branch_route') {
+                    continue;
+                }
+
+                if (($fields['status'] ?? null) === 'cancelled') {
+                    continue;
+                }
+
+                $rawTargets = (array) ($fields['target_branches'] ?? []);
+                $resolvedBranches = [];
+
+                if (!empty($rawTargets) && \Illuminate\Support\Facades\Schema::hasTable('branches')) {
+                    $candidateBranches = \App\Models\Branch::withoutGlobalScope('branch')->where(function ($q) use ($rawTargets) {
+                        foreach ($rawTargets as $target) {
+                            $targetStr = trim((string) $target);
+                            if ($targetStr === '') {
+                                continue;
+                            }
+                            if (is_numeric($targetStr)) {
+                                $q->orWhere('id', (int) $targetStr);
+                            }
+                            $q->orWhere('name', 'like', '%' . $targetStr . '%');
+                        }
+                    })->get();
+
+                    foreach ($candidateBranches as $b) {
+                        $resolvedBranches[] = [
+                            'id' => $b->id,
+                            'name' => $b->name,
+                            'latitude' => $b->branch_location_latitude !== null ? (float) $b->branch_location_latitude : null,
+                            'longitude' => $b->branch_location_longitude !== null ? (float) $b->branch_location_longitude : null,
+                        ];
+                    }
+                }
+
+                if (!empty($fields['end_latitude']) && !empty($fields['end_longitude'])) {
+                    $hasCoords = false;
+                    foreach ($resolvedBranches as $rb) {
+                        if ($rb['latitude'] !== null && $rb['longitude'] !== null) {
+                            $hasCoords = true;
+                            break;
+                        }
+                    }
+                    if (!$hasCoords) {
+                        $resolvedBranches[] = [
+                            'id' => null,
+                            'name' => $rawTargets[0] ?? 'Mission Target',
+                            'latitude' => (float) $fields['end_latitude'],
+                            'longitude' => (float) $fields['end_longitude'],
+                        ];
+                    }
+                }
+
+                $checkpoints = [];
+                if (!empty($fields['checkpoints_data'])) {
+                    $cpList = is_string($fields['checkpoints_data'])
+                        ? json_decode($fields['checkpoints_data'], true)
+                        : (array) $fields['checkpoints_data'];
+
+                    if (is_array($cpList)) {
+                        foreach ($cpList as $cp) {
+                            if (!empty($cp['latitude']) && !empty($cp['longitude'])) {
+                                $checkpoints[] = [
+                                    'branch_name' => $cp['branch_name'] ?? null,
+                                    'latitude' => (float) $cp['latitude'],
+                                    'longitude' => (float) $cp['longitude'],
+                                    'action_type' => $cp['action_type'] ?? null,
+                                ];
+                                $resolvedBranches[] = [
+                                    'id' => null,
+                                    'name' => $cp['branch_name'] ?? 'Route Checkpoint',
+                                    'latitude' => (float) $cp['latitude'],
+                                    'longitude' => (float) $cp['longitude'],
+                                ];
+                            }
+                        }
+                    }
+                }
+
+                return [
+                    'entry_id' => $entry->id,
+                    'route_id' => $fields['route_id'] ?? null,
+                    'title' => $entry->title,
+                    'purpose' => $fields['purpose'] ?? null,
+                    'status' => $fields['status'] ?? 'completed',
+                    'origin_branch' => $fields['origin_branch'] ?? null,
+                    'target_branches' => $resolvedBranches,
+                    'checkpoints' => $checkpoints,
+                    'departure_time' => $fields['departure_time'] ?? null,
+                    'arrival_time' => $fields['arrival_time'] ?? null,
+                ];
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed resolving active branch route for employee: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     private function calculateDistanceInMeters($lat1, $lon1, $lat2, $lon2): int

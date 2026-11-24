@@ -44,12 +44,29 @@ class SPAuthGateMW
                 ->where('permission_roles.role_id', $roleId)
                 ->get();
 
+            $hasAdminAccess = false;
             foreach ($allAllocatedPermissions as $permission) {
                 if ($permission->permission_key) {
                     Gate::define($permission->permission_key, function () {
                         return true;
                     });
+                    if ($permission->permission_key === 'access_admin_panel') {
+                        $hasAdminAccess = true;
+                    }
                 }
+            }
+
+            // Gating Web Admin Portal: If role lacks access_admin_panel and backend_login_authorize is 0
+            if (!$hasAdminAccess && !($user->role?->backend_login_authorize)) {
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => __('message.unauthorized_admin_access') ?? 'Your account only has Mobile App access.',
+                    ], 403);
+                }
+                Auth::logout();
+                $request->session()->invalidate();
+                return redirect()->route('admin.login')->with('danger', __('message.unauthorized_admin_access') ?? 'គណនីរបស់អ្នកមានសិទ្ធិប្រើប្រាស់តែលើ Mobile App ប៉ុណ្ណោះ មិនអាចចូលកាន់ Web Admin បានទេ។');
             }
         }
 

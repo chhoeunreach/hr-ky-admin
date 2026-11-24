@@ -147,6 +147,7 @@ class ResignationController extends Controller
                     $this->sendResignationStatusNotification($notification,$employee->supervisor_id);
                 }
 
+                \App\Services\Telegram\TelegramNotificationHub::notifyResignationRequest($resignationDetail);
             }
             $redirectUrl = $resignationDetail && $request->boolean('return_to_profile')
                 ? route('admin.employees.profile.show', [
@@ -318,6 +319,13 @@ class ResignationController extends Controller
                 if($notification){
                     $this->sendResignationStatusNotification($notification,$resignationDetail->employee_id);
                 }
+
+                \App\Services\Telegram\TelegramNotificationHub::notifyResignationStatus(
+                    $resignationDetail,
+                    $validatedData['status'],
+                    auth()->user()?->name,
+                    $validatedData['admin_remark'] ?? null
+                );
             }
 
 //            if(($validatedData['status'] == ResignationStatusEnum::approved->value) && strtotime(date('Y-m-d')) == strtotime($resignationDetail->last_working_day)){

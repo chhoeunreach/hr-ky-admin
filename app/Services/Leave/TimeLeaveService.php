@@ -172,6 +172,12 @@ class TimeLeaveService
         $this->sendChatAfterCommit(function () use ($leaveRequestDetail, $validatedData) {
             if (in_array($validatedData['status'] ?? null, ['approved', 'rejected'], true)) {
                 $this->sendTimeLeaveStatusChatMessage($leaveRequestDetail, $validatedData['status'], $validatedData['admin_remark'] ?? null);
+                \App\Services\Telegram\TelegramNotificationHub::notifyTimeLeaveStatus(
+                    $leaveRequestDetail,
+                    $validatedData['status'],
+                    auth()->user()?->name,
+                    $validatedData['admin_remark'] ?? null
+                );
             }
         });
 

@@ -70,6 +70,7 @@ class ResignationApiController extends Controller
 
                 SMPushHelper::sendResignationStatusNotification($notificationTitle, $notificationMessage,$employee->supervisor_id);
 
+                \App\Services\Telegram\TelegramNotificationHub::notifyResignationRequest($resignationDetail);
             }
             return AppHelper::sendSuccessResponse(__('index.resignation_submitted_successfully'));
         } catch (Exception $exception) {

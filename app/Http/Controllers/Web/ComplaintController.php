@@ -111,6 +111,10 @@ class ComplaintController extends Controller
 
             }
 
+            if ($complaintDetail) {
+                \App\Services\Telegram\TelegramNotificationHub::notifyComplaintCreated($complaintDetail);
+            }
+
             return redirect()->route('admin.complaint.index')->with('success',__('message.add_complaint') );
         }catch(Exception $exception){
             DB::rollBack();

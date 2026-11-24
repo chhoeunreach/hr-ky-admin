@@ -45,7 +45,23 @@ class MobilePermissions
     {
         [$menu, $ability] = $rule;
         $states ??= $this->controls->statuses(keys: [$menu, $ability]);
-        return $this->allowsMenu($menu, $states) && $states->get($ability, true) && Gate::allows($ability);
+        $menuAbility = (string) config("mobile_permissions.menus.{$menu}", '');
+
+        $hasGate = Gate::allows($ability);
+        if (!$hasGate && $menuAbility !== '' && Gate::allows($menuAbility)) {
+            // Read-only / list abilities mapped to a mobile menu are allowed when the user has explicit mobile menu grant
+            $readOnlyAbilities = [
+                'list_company_document',
+                'list_assets',
+                'show_asset',
+                'list_store_phone',
+            ];
+            if (in_array($ability, $readOnlyAbilities, true)) {
+                $hasGate = true;
+            }
+        }
+
+        return $this->allowsMenu($menu, $states) && $states->get($ability, true) && $hasGate;
     }
 
     public function features(Collection $features): Collection

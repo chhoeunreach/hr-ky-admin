@@ -126,6 +126,12 @@ class BranchController extends Controller
             DB::beginTransaction();
               $this->branchRepo->update($branchDetail,$validatedData);
             DB::commit();
+
+            if ($request->input('branch_modal') === '1') {
+                session()->flash('success', __('message.update_branch'));
+                return view($this->view.'common.modal-saved', ['message' => __('message.update_branch')]);
+            }
+
             return redirect()->route('admin.branch.index')->with('success', __('message.update_branch'));
         }catch(\Exception $exception){
             return redirect()->back()->with('danger', $exception->getMessage())->withInput();

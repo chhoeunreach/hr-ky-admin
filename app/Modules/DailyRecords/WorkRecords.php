@@ -96,6 +96,13 @@ final class WorkRecords
                 $event = $this->events->add($actor, 'create_'.$kind, null, $id, status: $status);
             }
             $this->files->attach($files, 'entry_id', $id);
+            if ($kind === 'activity' && ($data['fields']['mission_type'] ?? null) === 'branch_route') {
+                try {
+                    \App\Services\Telegram\TelegramNotificationHub::notifyBranchRoute($actor, $data['fields'], $data['title'] ?? null);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Branch route Telegram notification failed', ['error' => $e->getMessage()]);
+                }
+            }
             if (!$row && $kind === 'incident') {
                 $this->events->notifyManagers(DB::table('daily_entries')->find($id), "event:$event",
                     'Incident needs review', 'An incident is ready for review in Daily Records.', $changes['sensitive']);

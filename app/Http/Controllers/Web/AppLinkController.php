@@ -20,6 +20,7 @@ class AppLinkController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('list_app_link');
         try {
             $filterParameters = [
                 'link_type' => $request->link_type ?? null,
@@ -39,6 +40,7 @@ class AppLinkController extends Controller
 
     public function create()
     {
+        $this->authorize('create_app_link');
         try {
             $linkTypes = AppLink::LINK_TYPES;
             $managerOptions = AppLink::managerOptions();
@@ -50,6 +52,7 @@ class AppLinkController extends Controller
 
     public function store(AppLinkRequest $request)
     {
+        $this->authorize('create_app_link');
         try {
             $validatedData = $request->validated();
             $validatedData['status'] = $request->boolean('status') ? 1 : 0;
@@ -71,6 +74,7 @@ class AppLinkController extends Controller
 
     public function edit($id)
     {
+        $this->authorize('edit_app_link');
         try {
             $linkDetail = $this->appLinkRepo->findById($id);
             if (!$linkDetail) {
@@ -86,6 +90,7 @@ class AppLinkController extends Controller
 
     public function update(AppLinkRequest $request, $id)
     {
+        $this->authorize('edit_app_link');
         try {
             $link = $this->appLinkRepo->findById($id);
             if (!$link) {
@@ -105,6 +110,7 @@ class AppLinkController extends Controller
 
     public function delete($id)
     {
+        $this->authorize('delete_app_link');
         try {
             $link = $this->appLinkRepo->findById($id);
             if ($link) {
@@ -118,6 +124,7 @@ class AppLinkController extends Controller
 
     public function toggleStatus($id)
     {
+        $this->authorize('edit_app_link');
         try {
             $link = $this->appLinkRepo->findById($id);
             if ($link) {

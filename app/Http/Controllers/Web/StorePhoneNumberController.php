@@ -22,6 +22,7 @@ class StorePhoneNumberController extends Controller
 
     public function index(Request $request)
     {
+        $this->authorize('list_store_phone');
         try {
             $filterParameters = [
                 'search' => $request->search ?? null,
@@ -79,6 +80,7 @@ class StorePhoneNumberController extends Controller
 
     public function create()
     {
+        $this->authorize('create_store_phone');
         try {
             $branches = Branch::select('id', 'name')->orderBy('name')->get();
             $employees = User::select('id', 'name')->orderBy('name')->get();
@@ -106,6 +108,7 @@ class StorePhoneNumberController extends Controller
 
     public function store(StorePhoneNumberRequest $request)
     {
+        $this->authorize('create_store_phone');
         try {
             $validatedData = $request->validated();
             if (!empty($validatedData['assigned_to']) && empty($validatedData['assigned_date'])) {
@@ -123,6 +126,7 @@ class StorePhoneNumberController extends Controller
 
     public function edit($id)
     {
+        $this->authorize('edit_store_phone');
         try {
             $phoneNumber = $this->phoneRepo->findById($id);
             if (!$phoneNumber) {
@@ -156,6 +160,7 @@ class StorePhoneNumberController extends Controller
 
     public function update(StorePhoneNumberRequest $request, $id)
     {
+        $this->authorize('edit_store_phone');
         try {
             $phoneNumber = $this->phoneRepo->findById($id);
             if (!$phoneNumber) {
@@ -178,6 +183,7 @@ class StorePhoneNumberController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('delete_store_phone');
         try {
             $phoneNumber = $this->phoneRepo->findById($id);
             if (!$phoneNumber) {

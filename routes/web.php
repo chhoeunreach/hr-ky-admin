@@ -310,6 +310,7 @@ Route::group([
             Route::post('telegram-employees/{employee}/send', [TelegramEmployeeController::class, 'send'])->name('telegram-employees.send');
             Route::post('telegram-employees/broadcast', [TelegramEmployeeController::class, 'broadcast'])->name('telegram-employees.broadcast');
             Route::resource('telegram-groups', TelegramGroupController::class)->except(['show', 'destroy']);
+            Route::post('telegram-groups/send-test', [TelegramGroupController::class, 'sendTestMessage'])->name('telegram-groups.send-test');
             Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
             Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');
             Route::get('telegram-groups/delete/{id}', [TelegramGroupController::class, 'delete'])->name('telegram-groups.delete');

@@ -221,48 +221,16 @@ class AdvanceSalaryController extends Controller
 
     private function sendAdvanceSalaryApprovedTelegramNotification($advanceSalaryRequestDetail, array $validatedData): void
     {
-        if (($validatedData['status'] ?? null) !== 'approved') {
+        $status = $validatedData['status'] ?? null;
+        if (! in_array($status, ['approved', 'rejected'], true)) {
             return;
         }
 
-        $botToken = TelegramBotSettings::botToken();
-
-        if ($botToken === '') {
-            Log::warning('Advance salary Telegram notification skipped due to missing Telegram configuration.', [
-                'bot_token_saved' => false,
-                'advance_salary_id' => $advanceSalaryRequestDetail->id ?? null,
-            ]);
-            return;
-        }
-
-        $advanceSalaryRequestDetail->loadMissing('requestedBy:id,name,username,phone');
-
-        $employee = $advanceSalaryRequestDetail->requestedBy;
-        $employeeName = htmlspecialchars((string) ($employee->name ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $username = htmlspecialchars((string) ($employee->username ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $phone = htmlspecialchars((string) ($employee->phone ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $requestedAmount = number_format((float) ($advanceSalaryRequestDetail->requested_amount ?? 0), 2);
-        $releasedAmount = number_format((float) ($validatedData['released_amount'] ?? $advanceSalaryRequestDetail->released_amount ?? 0), 2);
-        $requestedDate = isset($advanceSalaryRequestDetail->advance_requested_date)
-            ? date('M d, Y', strtotime($advanceSalaryRequestDetail->advance_requested_date))
-            : 'N/A';
-        $approvedBy = htmlspecialchars((string) (auth('admin')->user()?->name ?? auth()->user()?->name ?? 'Admin'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-        $remark = htmlspecialchars((string) ($validatedData['remark'] ?? 'N/A'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-        $message = "<b>Advance Salary Approved</b>\n"
-            . "Employee: {$employeeName}\n"
-            . "Username: {$username}\n"
-            . "Phone: {$phone}\n"
-            . "Requested Amount: {$requestedAmount}\n"
-            . "Released Amount: {$releasedAmount}\n"
-            . "Requested Date: {$requestedDate}\n"
-            . "Approved By: {$approvedBy}\n"
-            . "Remark: {$remark}";
-
-        $this->telegramService->sendToAction(
-            \App\Models\TelegramGroup::EVENT_ADVANCE_SALARY_APPROVED,
-            $message,
-            'HTML'
+        \App\Services\Telegram\TelegramNotificationHub::notifyAdvanceSalaryStatus(
+            $advanceSalaryRequestDetail,
+            $status,
+            auth('admin')->user()?->name ?? auth()->user()?->name ?? 'Admin',
+            $validatedData['remark'] ?? null
         );
     }
 

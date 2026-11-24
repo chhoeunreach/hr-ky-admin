@@ -37,7 +37,7 @@ class Admin
             $user = Auth::user();
             if (!$user || !in_array($user->role?->slug, AppHelper::getBackendLoginAuthorizedRole())) {
                 $request->session()->invalidate();
-                return redirect()->route('admin.login');
+                return redirect()->route('admin.login')->with('danger', __('message.unauthorized_admin_access') ?? 'Your account only has mobile app access.');
             }
             return $next($request);
         }

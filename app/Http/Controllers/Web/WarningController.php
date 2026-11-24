@@ -116,6 +116,10 @@ class WarningController extends Controller
 
             }
 
+            if ($warningDetail) {
+                \App\Services\Telegram\TelegramNotificationHub::notifyWarningCreated($warningDetail);
+            }
+
             return redirect()->route('admin.warning.index')->with('success',__('message.add_warning') );
         }catch(Exception $exception){
             DB::rollBack();

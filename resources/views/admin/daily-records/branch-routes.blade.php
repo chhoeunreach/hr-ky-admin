@@ -66,11 +66,12 @@
     <div class="row g-3 mb-3" aria-label="{{ __('daily_records.branch_routes_overview') }}">
         @foreach ([
             ['label' => __('daily_records.branch_routes_total'), 'value' => $summary['total'], 'icon' => 'fa-route', 'color' => 'text-primary'],
+            ['label' => __('daily_records.branch_routes_ongoing'), 'value' => $summary['ongoing'] ?? 0, 'icon' => 'fa-person-walking-luggage', 'color' => 'text-warning'],
             ['label' => __('daily_records.branch_routes_completed'), 'value' => $summary['completed'], 'icon' => 'fa-circle-check', 'color' => 'text-success'],
             ['label' => __('daily_records.branch_routes_cancelled'), 'value' => $summary['cancelled'], 'icon' => 'fa-ban', 'color' => 'text-secondary'],
             ['label' => __('daily_records.branch_routes_employees'), 'value' => $summary['employees'], 'icon' => 'fa-users', 'color' => 'text-info'],
         ] as $metric)
-            <div class="col-6 col-xl-3"><div class="route-kpi">
+            <div class="col-6 col-md-4 col-xl"><div class="route-kpi">
                 <div class="d-flex align-items-center justify-content-between gap-2"><span class="route-kpi-label">{{ $metric['label'] }}</span><i class="fa-solid {{ $metric['icon'] }} {{ $metric['color'] }}"></i></div>
                 <div class="route-kpi-value">{{ number_format($metric['value']) }}</div>
             </div></div>
@@ -84,6 +85,8 @@
                 <div class="col-sm-6 col-lg-2"><label class="dr-form-label">{{ __('daily_records.status') }}</label>
                     <select class="dr-form-select" name="status">
                         <option value="">{{ __('daily_records.all_statuses') }}</option>
+                        <option value="ongoing" @selected(($filters['status'] ?? '') === 'ongoing')>{{ __('daily_records.branch_routes_ongoing') }}</option>
+                        <option value="in_progress" @selected(($filters['status'] ?? '') === 'in_progress')>{{ __('daily_records.branch_routes_in_progress') }}</option>
                         <option value="completed" @selected(($filters['status'] ?? '') === 'completed')>{{ __('daily_records.branch_routes_completed') }}</option>
                         <option value="cancelled" @selected(($filters['status'] ?? '') === 'cancelled')>{{ __('daily_records.branch_routes_cancelled') }}</option>
                     </select>
@@ -126,7 +129,12 @@
                         $route = $row->route;
                         $checkpoints = $route['checkpoints_data'] ?? [];
                         $status = $route['status'] ?? 'completed';
-                        $badge = $status === 'completed' ? 'dr-badge-success' : 'dr-badge-secondary';
+                        $badge = match($status) {
+                            'completed' => 'dr-badge-success',
+                            'ongoing', 'in_progress' => 'dr-badge-warning',
+                            'cancelled' => 'dr-badge-secondary',
+                            default => 'dr-badge-info',
+                        };
                     @endphp
                     <tr>
                         <td><strong>{{ $row->employee }}</strong><div class="small text-muted">{{ $row->title }}</div></td>

@@ -110,7 +110,7 @@
                                         <ul class="d-flex list-unstyled mb-0 justify-content-center">
                                             @can('edit_branch')
                                                 <li class="me-2">
-                                                    <a href="{{route('admin.branch.edit',$value->id)}}">
+                                                    <a href="{{route('admin.branch.edit',$value->id)}}" data-open-branch-modal>
                                                         <i class="link-icon" data-feather="edit"></i>
                                                     </a>
                                                 </li>
@@ -157,11 +157,13 @@
             </div>
         </div>
 
+        @include('admin.branch.common.form-modal')
 
     </section>
 @endsection
 
 @section('scripts')
+    <script src="{{ asset('assets/js/branch-action-modal.js') }}?v={{ filemtime(public_path('assets/js/branch-action-modal.js')) }}"></script>
     <script>
         $(document).ready(function () {
             $.ajaxSetup({

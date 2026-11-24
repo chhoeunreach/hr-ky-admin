@@ -52,7 +52,7 @@ class ThemeModeController extends Controller
 
         if (isset($themes[$key])) {
             return redirect()->route('admin.mobile-tools.theme-modes')
-                ->with('danger', "Theme mode with key '{$key}' already exists.")
+                ->with('danger', __('index.theme_modes_key_exists', ['key' => $key]))
                 ->withInput();
         }
 
@@ -81,7 +81,7 @@ class ThemeModeController extends Controller
         $this->saveConfig($themes);
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', "Theme mode '{$themes[$key]['name']}' created successfully.");
+            ->with('success', __('index.theme_modes_created', ['name' => $themes[$key]['name']]));
     }
 
     public function update(Request $request, string $key)
@@ -91,7 +91,7 @@ class ThemeModeController extends Controller
         $themes = $this->config();
         if (!isset($themes[$key])) {
             return redirect()->route('admin.mobile-tools.theme-modes')
-                ->with('danger', "Theme mode '{$key}' not found.");
+                ->with('danger', __('index.theme_modes_not_found', ['key' => $key]));
         }
 
         $validated = $request->validate([
@@ -134,7 +134,7 @@ class ThemeModeController extends Controller
         $this->saveConfig($themes);
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', "Theme mode '{$themes[$key]['name']}' updated successfully.");
+            ->with('success', __('index.theme_modes_updated', ['name' => $themes[$key]['name']]));
     }
 
     public function toggle(string $key)
@@ -143,24 +143,30 @@ class ThemeModeController extends Controller
 
         $themes = $this->config();
         if (!isset($themes[$key])) {
-            return response()->json(['success' => false, 'message' => "Theme '{$key}' not found."], 404);
+            return response()->json(['success' => false, 'message' => __('index.theme_modes_theme_not_found', ['key' => $key])], 404);
         }
 
         $themes[$key]['is_active'] = !($themes[$key]['is_active'] ?? true);
         $this->saveConfig($themes);
 
-        $statusText = $themes[$key]['is_active'] ? 'shown in mobile app' : 'hidden from mobile app';
+        $statusText = $themes[$key]['is_active']
+            ? __('index.theme_modes_status_shown')
+            : __('index.theme_modes_status_hidden');
+        $statusMessage = __('index.theme_modes_status_changed', [
+            'name' => $themes[$key]['name'],
+            'status' => $statusText,
+        ]);
 
         if (request()->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'is_active' => $themes[$key]['is_active'],
-                'message' => "Theme '{$themes[$key]['name']}' is now {$statusText}.",
+                'message' => $statusMessage,
             ]);
         }
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', "Theme '{$themes[$key]['name']}' is now {$statusText}.");
+            ->with('success', $statusMessage);
     }
 
     public function destroy(string $key)
@@ -170,7 +176,7 @@ class ThemeModeController extends Controller
         $themes = $this->config();
         if (!isset($themes[$key])) {
             return redirect()->route('admin.mobile-tools.theme-modes')
-                ->with('danger', "Theme mode '{$key}' not found.");
+                ->with('danger', __('index.theme_modes_not_found', ['key' => $key]));
         }
 
         if (!empty($themes[$key]['is_system'])) {
@@ -179,7 +185,7 @@ class ThemeModeController extends Controller
             $this->saveConfig($themes);
 
             return redirect()->route('admin.mobile-tools.theme-modes')
-                ->with('success', "Default theme '{$themes[$key]['name']}' cannot be deleted, but has been hidden.");
+                ->with('success', __('index.theme_modes_default_hidden', ['name' => $themes[$key]['name']]));
         }
 
         $name = $themes[$key]['name'];
@@ -187,7 +193,7 @@ class ThemeModeController extends Controller
         $this->saveConfig($themes);
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', "Custom theme mode '{$name}' deleted successfully.");
+            ->with('success', __('index.theme_modes_custom_deleted', ['name' => $name]));
     }
 
     public function reset()
@@ -197,7 +203,7 @@ class ThemeModeController extends Controller
         AppSetting::query()->where('slug', self::SETTING_SLUG)->delete();
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', 'All theme modes and colors reset to original defaults.');
+            ->with('success', __('index.theme_modes_reset_all'));
     }
 
     public function resetTheme(string $key)
@@ -207,7 +213,7 @@ class ThemeModeController extends Controller
         $defaults = self::defaults();
         if (!isset($defaults[$key])) {
             return redirect()->route('admin.mobile-tools.theme-modes')
-                ->with('danger', "Core system theme '{$key}' cannot be reset because it is not a default core theme.");
+                ->with('danger', __('index.theme_modes_reset_invalid', ['key' => $key]));
         }
 
         $themes = $this->config();
@@ -215,7 +221,7 @@ class ThemeModeController extends Controller
         $this->saveConfig($themes);
 
         return redirect()->route('admin.mobile-tools.theme-modes')
-            ->with('success', "Core theme '{$defaults[$key]['name']}' has been reset to factory baseline defaults.");
+            ->with('success', __('index.theme_modes_reset_done', ['name' => $defaults[$key]['name']]));
     }
 
     private function authorizePermission(): void

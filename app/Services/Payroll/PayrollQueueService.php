@@ -327,6 +327,12 @@ class PayrollQueueService
 
     private function notifyEmployeeCalled(PayrollQueueTicket $ticket): void
     {
+        try {
+            \App\Services\Telegram\TelegramNotificationHub::notifyPayrollQueueCalled($ticket);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Payroll queue call Telegram notification failed', ['error' => $e->getMessage()]);
+        }
+
         $employee = $ticket->employee;
         if (!$employee?->fcm_token) return;
         try {
@@ -652,6 +658,7 @@ class PayrollQueueService
         try {
             $msg = "ប្រាក់ខែរបស់អ្នកត្រូវបានបើកជោគជ័យនៅថ្ងៃទី " . $paidOn . " ចំនួន $" . number_format($ticket->net_amount_paid, 2);
             SMPushHelper::sendSalaryNotification('បើកប្រាក់ខែជោគជ័យ', $msg, $ticket->employee_id);
+            \App\Services\Telegram\TelegramNotificationHub::notifyPayrollQueueServed($ticket, $paymentData);
         } catch (\Throwable $e) {
             report($e);
         }

@@ -181,7 +181,7 @@ class  RoleController extends Controller
         $this->authorize('role_permission');
         try {
             $selectPermissionGroup = ['*'];
-            $selectRole = ['id', 'name', 'slug'];
+            $selectRole = ['id', 'name', 'slug', 'backend_login_authorize'];
             $withPermissionType = ['permissionGroups','permissionGroups.getPermission'];
             $withRole = ['permission'];
             $permissionGroupTypeList = $this->roleRepo->getPermissionGroupTypeDetails($selectPermissionGroup, $withPermissionType);
@@ -256,6 +256,7 @@ class  RoleController extends Controller
                 }
             }
             $mobileLayout = app(\App\Services\Authorization\MobileRoleLayout::class)->forRole((int) $role->id);
+            $initialTab = app(\App\Services\Authorization\MobileRoleLayout::class)->initialTab((int) $role->id);
             $allRolesLayouts = [];
             foreach ($allRoles as $r) {
                 if ((int) $r->id !== (int) $role->id) {
@@ -268,7 +269,7 @@ class  RoleController extends Controller
             return view($this->view . 'permission', compact('permissionGroupTypeList',
                 'role',
                 'role_permission', 'isEdit','allRoles', 'mobileMenuOptions',
-                'mobileMenuPermissionOptions', 'mobileLayout', 'allRolesLayouts'
+                'mobileMenuPermissionOptions', 'mobileLayout', 'allRolesLayouts', 'initialTab'
             ));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -284,9 +285,44 @@ class  RoleController extends Controller
         try {
             $data = $request->all();
             $role = $this->roleRepo->getRoleById($roleId);
-            $validatedPermissionData = $data['permission_value'] ?? [];
+            $validatedPermissionData = array_map('intval', (array) ($data['permission_value'] ?? []));
+
+            // Auto-sync underlying read permissions when dual-sync mobile menus are granted
+            $keyToIdMap = DB::table('permissions')
+                ->whereIn('permission_key', [
+                    'mobile.menu.company-documents', 'list_company_document',
+                    'mobile.menu.assets', 'list_assets', 'show_asset',
+                    'mobile.menu.store-phone-numbers', 'list_store_phone',
+                ])
+                ->pluck('id', 'permission_key');
+
+            $autoSyncMappings = [
+                'mobile.menu.company-documents' => ['list_company_document'],
+                'mobile.menu.assets' => ['list_assets', 'show_asset'],
+                'mobile.menu.store-phone-numbers' => ['list_store_phone'],
+            ];
+
+            foreach ($autoSyncMappings as $menuKey => $readKeys) {
+                $menuPermId = $keyToIdMap->get($menuKey);
+                if ($menuPermId && in_array((int) $menuPermId, $validatedPermissionData, true)) {
+                    foreach ($readKeys as $readKey) {
+                        $readPermId = $keyToIdMap->get($readKey);
+                        if ($readPermId && !in_array((int) $readPermId, $validatedPermissionData, true)) {
+                            $validatedPermissionData[] = (int) $readPermId;
+                        }
+                    }
+                }
+            }
+
             DB::beginTransaction();
             $this->roleRepo->syncPermissionToRole($role, $validatedPermissionData);
+
+            $adminPanelPermId = DB::table('permissions')->where('permission_key', 'access_admin_panel')->value('id');
+            $hasAdminAccess = $adminPanelPermId && in_array((string) $adminPanelPermId, array_map('strval', $validatedPermissionData), true);
+            if (!in_array($role->slug, ['admin', 'super-admin', 'supper-admin'], true)) {
+                $role->update(['backend_login_authorize' => $hasAdminAccess ? 1 : 0]);
+            }
+            Cache::forget('role');
             $permittedKeys = DB::table('permission_roles')
                 ->join('permissions', 'permissions.id', '=', 'permission_roles.permission_id')
                 ->where('permission_roles.role_id', $roleId)
@@ -318,8 +354,9 @@ class  RoleController extends Controller
                 fn ($menus) => array_values(array_intersect((array) $menus, $allowedMenus)),
                 (array) $request->input('mobile_layout_order', [])
             );
+            $initialTab = (string) $request->input('mobile_initial_tab', 'home');
             $mobileLayoutSaved = app(\App\Services\Authorization\MobileRoleLayout::class)
-                ->save((int) $roleId, $placements, $orders);
+                ->save((int) $roleId, $placements, $orders, $initialTab);
             DB::commit();
             $redirect = redirect()->back()->with('success', __('message.permission_update'));
             if (!$mobileLayoutSaved) {

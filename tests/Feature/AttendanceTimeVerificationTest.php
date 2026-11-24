@@ -323,6 +323,65 @@ class AttendanceTimeVerificationTest extends TestCase
         ]);
     }
 
+    public function test_branch_route_allows_attendance_at_target_branch_and_adapts_dashboard(): void
+    {
+        $this->actingAs($this->employee, 'api');
+        $this->freeze('2026-11-20 09:15:04');
+
+        DB::table('branches')->insert([
+            'id' => 2,
+            'name' => 'Branch B',
+            'branch_location_latitude' => 11.60,
+            'branch_location_longitude' => 104.95,
+        ]);
+
+        $this->setting('attendance_location_radius', 100, null, true);
+        DB::table('app_settings')->insert(['slug' => 'enable-employee-location', 'status' => 1]);
+
+        $branchBLocation = ['latitude' => 11.60, 'longitude' => 104.95];
+        $this->postJson(self::ENDPOINT, $this->wifi($branchBLocation))->assertForbidden();
+
+        DB::table('daily_entries')->insert([
+            'employee_id' => $this->employee->id,
+            'kind' => 'activity',
+            'title' => 'Route to Branch B',
+            'details' => json_encode([
+                'fields' => [
+                    'mission_type' => 'branch_route',
+                    'route_id' => '11111111-2222-3333-4444-555555555555',
+                    'origin_branch' => 'Head Office',
+                    'target_branches' => ['Branch B'],
+                    'departure_time' => '08:30',
+                    'arrival_time' => '10:30',
+                    'status' => 'in_progress',
+                ],
+            ]),
+            'occurred_at' => '2026-11-20 08:30:00',
+            'created_at' => '2026-11-20 08:30:00',
+        ]);
+
+        $response = $this->postJson(self::ENDPOINT, $this->wifi($branchBLocation))->assertOk();
+        $response->assertJsonPath('data.within_branch_radius', true);
+        $response->assertJsonPath('data.is_branch_route_attendance', true);
+        $response->assertJsonPath('data.matched_branch_id', 2);
+        $response->assertJsonPath('data.matched_branch_name', 'Branch B');
+
+        $this->postJson(self::ENDPOINT, $this->wifi(['latitude' => 0, 'longitude' => 0]))->assertForbidden();
+
+        $this->freeze('2026-11-20 17:05:00');
+        $homeLocation = ['latitude' => 11.55, 'longitude' => 104.92, 'attendance_status_type' => 'checkOut'];
+        $homeResponse = $this->postJson(self::ENDPOINT, $this->wifi($homeLocation))->assertOk();
+        $homeResponse->assertJsonPath('data.within_branch_radius', true);
+        $homeResponse->assertJsonPath('data.is_branch_route_attendance', false);
+        $homeResponse->assertJsonPath('data.matched_branch_id', 1);
+
+        $activeRoute = app(\App\Services\Attendance\AttendanceService::class)->getActiveBranchRouteForEmployee($this->employee->id);
+        $this->assertNotNull($activeRoute);
+        $this->assertSame('11111111-2222-3333-4444-555555555555', $activeRoute['route_id']);
+        $this->assertSame('Branch B', $activeRoute['target_branches'][0]['name']);
+        $this->assertEquals(11.60, $activeRoute['target_branches'][0]['latitude']);
+    }
+
     private function freeze(string $localTime): void
     {
         Carbon::setTestNow(Carbon::parse($localTime, 'Asia/Phnom_Penh'));
@@ -474,6 +533,16 @@ class AttendanceTimeVerificationTest extends TestCase
         Schema::create('permission_roles', function (Blueprint $table) {
             $table->foreignId('role_id');
             $table->foreignId('permission_id');
+        });
+        Schema::create('daily_entries', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('employee_id');
+            $table->string('kind', 16);
+            $table->string('title', 180)->nullable();
+            $table->text('details')->nullable();
+            $table->dateTime('occurred_at')->nullable();
+            $table->dateTime('archived_at')->nullable();
+            $table->timestamps();
         });
     }
 }

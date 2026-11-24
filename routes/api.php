@@ -447,6 +447,7 @@ Route::prefix('hr/certificates')
 /** HR Queue, QR Attendance & Payroll Disbursement Module */
 Route::prefix('v1/hr-queue')->group(function () {
     Route::get('live', [HrQueueApiController::class, 'getLiveState']);
+    Route::get('voice-stream', [HrQueueApiController::class, 'voiceStream']);
     Route::middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])->group(function () {
         Route::post('qr/generate', [HrQueueApiController::class, 'generateQrPass']);
         Route::post('queue/scan', [HrQueueApiController::class, 'scanToQueue']);

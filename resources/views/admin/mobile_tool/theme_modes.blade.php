@@ -1,6 +1,6 @@
 @extends('layouts.master')
 @section('title', __('index.theme_modes'))
-@section('action', 'Manage mobile theme modes, default colors, visibility, and role-based access.')
+@section('action', __('index.theme_modes_action'))
 
 @section('styles')
 <style>
@@ -107,7 +107,7 @@
     @endif
     @if(isset($errors) && $errors->any())
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong><i data-feather="alert-circle" class="me-1"></i> Notice:</strong> {{ $errors->first() }}
+            <strong><i data-feather="alert-circle" class="me-1"></i> {{ __('index.theme_modes_notice') }}:</strong> {{ $errors->first() }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
@@ -127,7 +127,7 @@
             <p class="text-muted small mb-0">{{ __('index.theme_modes_subtitle') }}</p>
         </div>
         <div class="d-flex gap-2">
-            <form action="{{ route('admin.mobile-tools.theme-modes.reset') }}" method="POST" onsubmit="return confirm('{{ __('index.confirm_reset_all_themes') }}');">
+            <form action="{{ route('admin.mobile-tools.theme-modes.reset') }}" method="POST" onsubmit='return confirm(@json(__('index.confirm_reset_all_themes')));'>
                 @csrf
                 <button type="submit" class="btn btn-outline-secondary btn-sm">
                     <i data-feather="rotate-ccw" class="me-1" style="width:14px;height:14px"></i> {{ __('index.reset_all_defaults') }}
@@ -190,7 +190,7 @@
         <div class="tab-pane fade" id="tab-core" role="tabpanel">
             <div class="alert alert-info py-2 px-3 small mb-3 border-0 bg-info-subtle text-info d-flex align-items-center">
                 <i data-feather="info" class="me-2" style="width:16px;height:16px"></i>
-                <span>These 16 themes are the immutable <strong>Core Systems</strong> (including Royal Blue & Gold baseline). You can update their default color palettes, show/hide them in the mobile app, assign role permissions, or reset individual themes back to factory defaults.</span>
+                <span>{{ __('index.theme_modes_core_info') }}</span>
             </div>
             <div class="row g-4">
                 @foreach($coreThemes as $key => $theme)
@@ -202,7 +202,7 @@
         <!-- CUSTOM THEMES TAB -->
         <div class="tab-pane fade" id="tab-custom" role="tabpanel">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <p class="text-muted small mb-0">Custom theme modes created for your organization. You have full CRUD control: add more, update colors, restrict by role, or delete them.</p>
+                <p class="text-muted small mb-0">{{ __('index.theme_modes_custom_intro') }}</p>
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addThemeModal">
                     <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> Add Custom Theme
                 </button>
@@ -212,11 +212,11 @@
                     <div class="mb-3">
                         <i data-feather="palette" style="width:48px;height:48px;color:#94a3b8"></i>
                     </div>
-                    <h5 class="fw-bold text-dark">No Custom Themes Added Yet</h5>
-                    <p class="text-muted small">You can create custom theme modes tailored to departments, brands, or seasonal campaigns.</p>
+                    <h5 class="fw-bold text-dark">{{ __('index.theme_modes_empty_title') }}</h5>
+                    <p class="text-muted small">{{ __('index.theme_modes_empty_text') }}</p>
                     <div>
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addThemeModal">
-                            <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> Create First Custom Theme
+                            <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> {{ __('index.theme_modes_create_first') }}
                         </button>
                     </div>
                 </div>
@@ -238,64 +238,64 @@
             <form action="{{ route('admin.mobile-tools.theme-modes.store') }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="addThemeModalLabel">Add Custom Theme Mode</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold" id="addThemeModalLabel">{{ __('index.theme_modes_add_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Key (identifier) <span class="text-danger">*</span></label>
-                            <input type="text" name="key" class="form-control" placeholder="e.g. sunset_orange" required pattern="^[a-z0-9_]+$">
-                            <div class="form-text">Lowercase alphanumeric and underscore only.</div>
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_key') }} <span class="text-danger">*</span></label>
+                            <input type="text" name="key" class="form-control" placeholder="{{ __('index.theme_modes_key_example') }}" required pattern="^[a-z0-9_]+$">
+                            <div class="form-text">{{ __('index.theme_modes_key_hint') }}</div>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Theme Name <span class="text-danger">*</span></label>
-                            <input type="text" name="name" class="form-control" placeholder="e.g. Sunset Orange" required>
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_name') }} <span class="text-danger">*</span></label>
+                            <input type="text" name="name" class="form-control" placeholder="{{ __('index.theme_modes_name_example') }}" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Description</label>
-                            <input type="text" name="description" class="form-control" placeholder="Short description of the theme">
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_description') }}</label>
+                            <input type="text" name="description" class="form-control" placeholder="{{ __('index.theme_modes_description_hint') }}">
                         </div>
 
                         <!-- 6 Colors -->
-                        <div class="col-12"><h6 class="fw-bold mt-2 mb-1">Color Palette Customization</h6></div>
+                        <div class="col-12"><h6 class="fw-bold mt-2 mb-1">{{ __('index.theme_modes_color_customization') }}</h6></div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Primary Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_primary') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#2563EB" id="add_primary_picker">
                                 <input type="text" name="primary_color" id="add_primary_text" class="form-control font-monospace" value="#2563EB" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Secondary Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_secondary') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#475569" id="add_secondary_picker">
                                 <input type="text" name="secondary_color" id="add_secondary_text" class="form-control font-monospace" value="#475569" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Accent Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_accent') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#F59E0B" id="add_accent_picker">
                                 <input type="text" name="accent_color" id="add_accent_text" class="form-control font-monospace" value="#F59E0B" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Background Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_background') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#FFFFFF" id="add_background_picker">
                                 <input type="text" name="background_color" id="add_background_text" class="form-control font-monospace" value="#FFFFFF" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Card Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_card') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#F8FAFC" id="add_card_picker">
                                 <input type="text" name="card_color" id="add_card_text" class="form-control font-monospace" value="#F8FAFC" required pattern="^#[0-9a-fA-F]{6,8}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Text Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_text') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" value="#0F172A" id="add_text_picker">
                                 <input type="text" name="text_color" id="add_text_text" class="form-control font-monospace" value="#0F172A" required pattern="^#[0-9a-fA-F]{6}$">
@@ -306,15 +306,15 @@
                         <div class="col-md-6 mt-3">
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" name="is_dark" value="1" id="add_is_dark">
-                                <label class="form-check-label fw-semibold" for="add_is_dark">Dark Mode Theme</label>
+                                <label class="form-check-label fw-semibold" for="add_is_dark">{{ __('index.theme_modes_dark_theme') }}</label>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="is_active" value="1" id="add_is_active" checked>
-                                <label class="form-check-label fw-semibold" for="add_is_active">Show in Mobile App</label>
+                                <label class="form-check-label fw-semibold" for="add_is_active">{{ __('index.theme_modes_show_mobile') }}</label>
                             </div>
                         </div>
                         <div class="col-md-6 mt-3">
-                            <label class="form-label fw-semibold">Allowed Roles</label>
+                            <label class="form-label fw-semibold">{{ __('index.allowed_roles') }}</label>
                             <div class="p-2 border rounded" style="max-height: 140px; overflow-y: auto;">
                                 @foreach($roles as $role)
                                     <div class="form-check">
@@ -323,13 +323,13 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="form-text">Leave unchecked to allow all roles.</div>
+                            <div class="form-text">{{ __('index.theme_modes_roles_hint') }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Theme</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('index.theme_modes_cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('index.theme_modes_create') }}</button>
                 </div>
             </form>
         </div>
@@ -343,63 +343,63 @@
             <form id="editThemeForm" action="" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold" id="editThemeModalLabel">Edit Theme Mode</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title fw-bold" id="editThemeModalLabel">{{ __('index.theme_modes_edit_title') }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ __('index.close') }}"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Key (identifier)</label>
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_key') }}</label>
                             <input type="text" id="edit_key" class="form-control bg-light font-monospace" readonly>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Theme Name <span class="text-danger">*</span></label>
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_name') }} <span class="text-danger">*</span></label>
                             <input type="text" name="name" id="edit_name" class="form-control" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-semibold">Description</label>
+                            <label class="form-label fw-semibold">{{ __('index.theme_modes_description') }}</label>
                             <input type="text" name="description" id="edit_description" class="form-control">
                         </div>
 
                         <!-- 6 Colors -->
-                        <div class="col-12"><h6 class="fw-bold mt-2 mb-1">Color Palette Customization</h6></div>
+                        <div class="col-12"><h6 class="fw-bold mt-2 mb-1">{{ __('index.theme_modes_color_customization') }}</h6></div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Primary Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_primary') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_primary_picker">
                                 <input type="text" name="primary_color" id="edit_primary_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Secondary Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_secondary') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_secondary_picker">
                                 <input type="text" name="secondary_color" id="edit_secondary_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Accent Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_accent') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_accent_picker">
                                 <input type="text" name="accent_color" id="edit_accent_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Background Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_background') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_background_picker">
                                 <input type="text" name="background_color" id="edit_background_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Card Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_card') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_card_picker">
                                 <input type="text" name="card_color" id="edit_card_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6,8}$">
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Text Color</label>
+                            <label class="form-label fw-semibold">{{ __('index.color_text') }}</label>
                             <div class="color-input-group">
                                 <input type="color" class="color-picker-thumb" id="edit_text_picker">
                                 <input type="text" name="text_color" id="edit_text_text" class="form-control font-monospace" required pattern="^#[0-9a-fA-F]{6}$">
@@ -410,15 +410,15 @@
                         <div class="col-md-6 mt-3">
                             <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" name="is_dark" value="1" id="edit_is_dark">
-                                <label class="form-check-label fw-semibold" for="edit_is_dark">Dark Mode Theme</label>
+                                <label class="form-check-label fw-semibold" for="edit_is_dark">{{ __('index.theme_modes_dark_theme') }}</label>
                             </div>
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" name="is_active" value="1" id="edit_is_active">
-                                <label class="form-check-label fw-semibold" for="edit_is_active">Show in Mobile App</label>
+                                <label class="form-check-label fw-semibold" for="edit_is_active">{{ __('index.theme_modes_show_mobile') }}</label>
                             </div>
                         </div>
                         <div class="col-md-6 mt-3">
-                            <label class="form-label fw-semibold">Allowed Roles</label>
+                            <label class="form-label fw-semibold">{{ __('index.allowed_roles') }}</label>
                             <div class="p-2 border rounded" style="max-height: 140px; overflow-y: auto;">
                                 @foreach($roles as $role)
                                     <div class="form-check">
@@ -427,13 +427,13 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="form-text">Leave unchecked to allow all roles.</div>
+                            <div class="form-text">{{ __('index.theme_modes_roles_hint') }}</div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('index.theme_modes_cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('index.theme_modes_save_changes') }}</button>
                 </div>
             </form>
         </div>

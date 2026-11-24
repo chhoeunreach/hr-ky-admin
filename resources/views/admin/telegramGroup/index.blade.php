@@ -96,16 +96,37 @@
                                     @endforeach
                                 </td>
                                 <td>
-                                    @php $actionKeys = $telegramGroup->action_keys ?: [$telegramGroup->action_key]; @endphp
-                                    @foreach(array_filter($actionKeys) as $actionKey)
-                                        <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
-                                    @endforeach
+                                    @php $actionKeys = array_values(array_filter($telegramGroup->action_keys ?: [$telegramGroup->action_key])); @endphp
+                                    @if(count($actionKeys) > 3)
+                                        @foreach(array_slice($actionKeys, 0, 2) as $actionKey)
+                                            <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
+                                        @endforeach
+                                        <span class="badge bg-primary mb-1" title="{{ implode(', ', array_map(fn($k) => $actionOptions[$k] ?? $k, $actionKeys)) }}">
+                                            +{{ count($actionKeys) - 2 }} more
+                                        </span>
+                                    @else
+                                        @foreach($actionKeys as $actionKey)
+                                            <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
+                                        @endforeach
+                                    @endif
                                 </td>
                                 <td>
-                                    @php $eventKeys = $telegramGroup->event_keys ?: [$telegramGroup->action_key]; @endphp
-                                    @foreach($eventKeys as $eventKey)
-                                        <span class="badge bg-secondary mb-1">{{ $actionOptions[$eventKey] ?? \App\Models\TelegramGroup::eventOptions()[$eventKey] ?? $eventKey }}</span>
-                                    @endforeach
+                                    @php 
+                                        $eventKeys = array_values(array_filter($telegramGroup->event_keys ?: (isset($telegramGroup->action_key) ? [$telegramGroup->action_key] : []))); 
+                                        $allEventOpts = \App\Models\TelegramGroup::eventOptions();
+                                    @endphp
+                                    @if(count($eventKeys) > 4)
+                                        @foreach(array_slice($eventKeys, 0, 3) as $eventKey)
+                                            <span class="badge bg-secondary mb-1">{{ $allEventOpts[$eventKey] ?? $eventKey }}</span>
+                                        @endforeach
+                                        <span class="badge bg-primary mb-1" title="{{ implode(', ', array_map(fn($k) => $allEventOpts[$k] ?? $k, $eventKeys)) }}">
+                                            +{{ count($eventKeys) - 3 }} more
+                                        </span>
+                                    @else
+                                        @foreach($eventKeys as $eventKey)
+                                            <span class="badge bg-secondary mb-1">{{ $allEventOpts[$eventKey] ?? $eventKey }}</span>
+                                        @endforeach
+                                    @endif
                                 </td>
                                 <td>{{ $telegramGroup->branch_name ?: ($telegramGroup->branch?->name ?? 'All') }}</td>
                                 <td>{{ $telegramGroup->department_name ?: ($telegramGroup->department?->dept_name ?? 'All') }}</td>

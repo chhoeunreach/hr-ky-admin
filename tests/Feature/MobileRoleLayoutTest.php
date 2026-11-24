@@ -64,9 +64,11 @@ class MobileRoleLayoutTest extends TestCase
             7,
             ['attendance' => ['bottom', 'top'], 'holiday' => ['bottom'], 'notice' => []],
             ['bottom' => ['holiday', 'attendance'], 'top' => ['attendance']],
+            'attendance'
         ));
 
         $this->assertTrue($layout->isConfigured(7));
+        $this->assertSame('attendance', $layout->initialTab(7));
         $roleLayout = $layout->forRole(7);
         $this->assertEqualsCanonicalizing(['bottom', 'top'], $roleLayout['attendance']['zones']);
         $this->assertEqualsCanonicalizing(['bottom' => 1, 'top' => 0], $roleLayout['attendance']['positions']);
@@ -90,6 +92,7 @@ class MobileRoleLayoutTest extends TestCase
             7,
             ['attendance' => ['bottom', 'home_quick'], 'holiday' => ['bottom'], 'notice' => []],
             ['bottom' => ['holiday', 'attendance'], 'home_quick' => ['attendance']],
+            'attendance'
         );
 
         $controller = (new \ReflectionClass(DashboardApiController::class))
@@ -105,6 +108,7 @@ class MobileRoleLayoutTest extends TestCase
         $payload = $response->getData(true);
 
         $this->assertTrue($payload['configured']);
+        $this->assertSame('attendance', $payload['initial_tab']);
         $this->assertEqualsCanonicalizing(['bottom', 'home_quick'], $payload['data']['attendance']);
         $this->assertEqualsCanonicalizing(['bottom' => 1, 'home_quick' => 0], $payload['positions']['attendance']);
         $this->assertSame(['bottom' => 0], $payload['positions']['holiday']);

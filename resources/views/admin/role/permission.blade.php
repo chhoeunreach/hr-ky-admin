@@ -13,11 +13,49 @@
         /* Mobile Studio Preview Container */
         .mobile-role-preview{position:sticky;top:1rem;width:min(100%,400px);margin:0 auto;padding:12px;border:1px solid #cbd5e1;border-radius:40px;background:#0f172a;box-shadow:0 20px 50px rgba(15,23,42,0.22)}
         .mobile-role-screen{height:720px;overflow:hidden;position:relative;border-radius:30px;background:#f0f4f9;scrollbar-width:thin;transition:background 0.3s ease, color 0.3s ease}
-        .mobile-role-sidebar{display:none;position:absolute;inset:0 auto 0 0;z-index:5;width:80%;overflow:auto;padding:18px 12px;background:linear-gradient(160deg,#f3f7fd,#e2ebfa,#cdddf6);color:#0f172a;box-shadow:8px 0 28px #0f172a33}
-        .mobile-role-screen.drawer-open .mobile-role-sidebar{display:block}
-        .mobile-role-screen.drawer-open:after{content:"";position:absolute;inset:0;background:#0f172a66;z-index:4}
-        .mobile-role-brand{padding:4px 10px 14px;font-size:18px;font-weight:900;letter-spacing:.04em;color:#0b5fff}
-        .mobile-role-sidebar-label{padding:8px 10px;color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+        
+        /* Realistic Sidebar Drawer */
+        .mobile-role-sidebar {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 80%;
+            z-index: 30;
+            background: #ffffff;
+            overflow-y: auto;
+            box-shadow: 10px 0 35px rgba(15,23,42,0.3);
+            transform: translateX(-100%);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .mobile-role-screen.drawer-open .mobile-role-sidebar {
+            transform: translateX(0);
+        }
+        .mobile-role-backdrop {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(15,23,42,0.55);
+            z-index: 25;
+            backdrop-filter: blur(2px);
+            transition: opacity 0.28s ease;
+        }
+        .mobile-role-screen.drawer-open .mobile-role-backdrop {
+            display: block;
+        }
+        .mobile-role-screen.theme-night .mobile-role-sidebar {
+            background: #0f172a;
+            color: #f8fafc;
+            border-right: 1px solid #1e293b;
+        }
+        .mobile-role-screen.theme-night .mobile-role-sidebar .bg-white {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+        .mobile-role-screen.theme-night .mobile-role-sidebar .text-dark {
+            color: #f8fafc !important;
+        }
         
         /* Day Mode & Night Mode Styles */
         .mobile-role-screen.theme-day {
@@ -438,6 +476,13 @@
                                         @endif
                                     </ul>
                                 </div>
+                                <!-- Initial Landing Tab Selector -->
+                                <div class="d-flex align-items-center gap-1 bg-dark bg-opacity-50 border border-secondary border-opacity-25 rounded-3 px-2 py-1 shadow-sm">
+                                    <small class="text-white-50" style="font-size: 11px;">📌 ទំព័រដើមពេលបើក:</small>
+                                    <select id="select-initial-tab" class="form-select form-select-sm py-0 border-0 bg-dark text-white fw-semibold" style="width: auto; font-size: 11px;">
+                                        <option value="home">🏠 Home (ផ្ទាំងដើម)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -537,10 +582,11 @@
                     <div class="col-lg-5">
                         <div class="mobile-role-preview" aria-label="Live mobile permission preview">
                             
-                            <!-- Phone Top Mode & View Switchers -->
+                            <!-- Phone Top Mode & View Switchers (3-Way: Home, Sidebar Drawer, More Page) -->
                             <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-dark rounded-3 border border-secondary border-opacity-25">
                                 <div class="btn-group btn-group-sm" role="group">
                                     <button type="button" class="btn btn-sm btn-primary active preview-tab-btn py-1 px-2" id="preview-tab-home">🏠 ផ្ទាំងដើម</button>
+                                    <button type="button" class="btn btn-sm btn-outline-light preview-tab-btn py-1 px-2" id="preview-tab-drawer">☰ Sidebar</button>
                                     <button type="button" class="btn btn-sm btn-outline-light preview-tab-btn py-1 px-2" id="preview-tab-more">📄 More (ផ្សេងៗ)</button>
                                 </div>
                                 <div class="btn-group btn-group-sm" role="group">
@@ -550,12 +596,39 @@
                             </div>
 
                             <div class="mobile-role-screen theme-day" id="mobile-role-screen">
-                                <aside class="mobile-role-sidebar">
-                                    <div class="mobile-role-brand">Digital HR</div>
-                                    <div class="mobile-role-sidebar-label">{{ $role->name }} · Sidebar / More Page</div>
-                                    <div class="mobile-role-zone-label">Drop functions here for Sidebar or More page (ទំព័រផ្សេងៗ)</div>
-                                    <div class="mobile-role-zone" data-zone="sidebar" id="mobile-role-sidebar-list-drawer"></div>
+                                <!-- Realistic Mobile Sidebar Drawer (DashboardDrawer) -->
+                                <aside class="mobile-role-sidebar" id="mobile-role-sidebar">
+                                    <div class="d-flex align-items-center justify-content-between p-3 pb-2 border-bottom">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="fs-5">🏢</span>
+                                            <div>
+                                                <strong class="d-block text-dark fw-bold" style="font-size: 12px; line-height: 1.2;">Phnom Penh Branch</strong>
+                                                <small class="text-muted" style="font-size: 9px;">Digital HR · Payment QR</small>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-light border p-0 rounded-circle d-flex align-items-center justify-content-center" id="btn-close-sidebar" style="width: 24px; height: 24px; font-size: 13px;">×</button>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <small class="text-uppercase fw-bold text-primary" style="font-size: 10px; letter-spacing: 0.05em;">⭐ Services & Role Menus</small>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary" style="font-size: 8px;">Sidebar Zone</span>
+                                        </div>
+                                        <div class="mobile-role-zone" data-zone="sidebar" id="mobile-role-sidebar-list-drawer" style="display:grid;gap:5px;min-height:50px;"></div>
+
+                                        <hr class="my-3 opacity-25">
+
+                                        <small class="text-uppercase fw-bold text-muted d-block mb-2" style="font-size: 10px; letter-spacing: 0.05em;">🛠️ Quick Tools</small>
+                                        <div class="d-grid gap-1" style="font-size: 11px;">
+                                            <div class="p-2 rounded-3 bg-white border d-flex align-items-center gap-2"><span class="text-primary">🌐</span> <span>Social Feed</span></div>
+                                            <div class="p-2 rounded-3 bg-white border d-flex align-items-center gap-2"><span class="text-success">🧮</span> <span>Loan Calculator</span></div>
+                                            <div class="p-2 rounded-3 bg-white border d-flex align-items-center gap-2"><span class="text-info">🪪</span> <span>ID Card Preview</span></div>
+                                            <div class="p-2 rounded-3 bg-white border d-flex align-items-center gap-2"><span class="text-secondary">🔗</span> <span>Company Links</span></div>
+                                        </div>
+                                    </div>
                                 </aside>
+                                <!-- Backdrop overlay for Drawer -->
+                                <div class="mobile-role-backdrop" id="mobile-role-backdrop"></div>
+
                                 <main class="mobile-role-body">
                                     <!-- Status Bar -->
                                     <div class="mobile-role-status">
@@ -566,9 +639,13 @@
 
                                     <!-- Home View -->
                                     <div id="preview-view-home">
-                                        <!-- Real Header (Avatar + Name + Top Actions) -->
+                                        <!-- Real Header (Hamburger + Avatar + Name + Top Actions) -->
                                         <div class="mobile-app-header">
                                             <div class="header-profile-box">
+                                                <!-- Hamburger Button to trigger Side Drawer -->
+                                                <button type="button" class="btn btn-sm p-0 me-1 d-flex align-items-center justify-content-center shadow-xs border header-hamburger-btn" id="btn-hamburger" title="បើក Sidebar Drawer" style="width: 34px; height: 34px; border-radius: 50%; background: #ffffff; color: #1e293b; font-size: 15px;">
+                                                    ☰
+                                                </button>
                                                 <div class="header-avatar-wrap">
                                                     <span>👤</span>
                                                     <span class="header-online-dot"></span>
@@ -585,7 +662,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Welcome Banner (Angkor Wat Theme) -->
+                                        <!-- Welcome Banner (Angkor Wat Theme with Carousel Dots) -->
                                         <div class="angkor-banner-card">
                                             <div class="d-flex justify-content-between align-items-start mb-1">
                                                 <div>
@@ -598,10 +675,18 @@
                                                 <span class="fs-4 fw-bold font-monospace">07:50</span>
                                                 <small class="opacity-75" style="font-size: 11px;">:48</small>
                                             </div>
-                                            <small class="d-block opacity-75 mb-2" style="font-size: 10px;">📅 Tuesday, November 24, 2026</small>
-                                            <p class="mb-0" style="font-size: 9.5px; opacity: 0.9; line-height: 1.35; border-top: 1px dashed rgba(255,255,255,0.25); padding-top: 6px;">
+                                            <small class="d-block opacity-75 mb-1" style="font-size: 10px;">📅 Tuesday, November 24, 2026</small>
+                                            <p class="mb-2" style="font-size: 9.5px; opacity: 0.9; line-height: 1.35; border-top: 1px dashed rgba(255,255,255,0.25); padding-top: 6px;">
                                                 "ការងារជាក្រុម នាំមកនូវលទ្ធផលល្អ សាមគ្គីភាពនាំឱ្យមានជ័យជំនះ"
                                             </p>
+                                            <!-- Carousel Slideshow Dots -->
+                                            <div class="d-flex align-items-center justify-content-center gap-1">
+                                                <span class="rounded-pill bg-white" style="width: 14px; height: 3.5px;"></span>
+                                                <span class="rounded-circle bg-white opacity-50" style="width: 4px; height: 4px;"></span>
+                                                <span class="rounded-circle bg-white opacity-50" style="width: 4px; height: 4px;"></span>
+                                                <span class="rounded-circle bg-white opacity-50" style="width: 4px; height: 4px;"></span>
+                                                <span class="rounded-circle bg-white opacity-50" style="width: 4px; height: 4px;"></span>
+                                            </div>
                                         </div>
 
                                         <!-- Summary Statistics Row (Late & Highlights) -->
@@ -638,8 +723,19 @@
                                         </div>
                                         <div class="mobile-role-zone" data-zone="home_quick" id="mobile-role-preview-list" aria-live="polite"></div>
 
-                                        <!-- Real Attendance Orb with QR Code -->
-                                        <div class="attendance-orb-container" id="mobile-role-activity">
+                                        <!-- Real Attendance Orb with QR Code and Floating Action Button & Pill -->
+                                        <div class="attendance-orb-container position-relative" id="mobile-role-activity">
+                                            <!-- Floating Out-of-Office Pill & Action Plus -->
+                                            <div class="position-absolute end-0 top-0 me-3 mt-1 d-flex flex-column align-items-end gap-2" style="z-index: 5;">
+                                                <div class="d-inline-flex align-items-center gap-1 px-2 py-1 bg-white border rounded-pill shadow-xs" style="font-size: 10px; color: #0284c7;">
+                                                    <span>📍</span>
+                                                    <span class="fw-bold">ចេញក្រៅ</span>
+                                                </div>
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center shadow-sm" style="width: 36px; height: 36px; font-size: 20px; cursor: pointer;">
+                                                    +
+                                                </div>
+                                            </div>
+
                                             <div class="attendance-orb-outer">
                                                 <div class="attendance-orb-inner shadow">
                                                     <span>📷</span>
@@ -677,7 +773,7 @@
                                     <div class="mobile-role-bottom">
                                         <div class="d-flex align-items-center justify-content-around">
                                             <!-- Fixed Home Tab (Active Pill) -->
-                                            <div class="text-center">
+                                            <div class="text-center" style="cursor: pointer;" id="preview-nav-home">
                                                 <div class="bottom-nav-pill-active d-inline-flex align-items-center gap-1" style="font-size: 11px;">
                                                     <span>🏠</span>
                                                     <span>Home</span>
@@ -686,7 +782,7 @@
                                             <!-- Dynamic Placed Tabs -->
                                             <div class="mobile-role-zone d-flex align-items-center justify-content-around flex-grow-1 p-0" data-zone="bottom" id="mobile-role-bottom"></div>
                                             <!-- Fixed More Tab -->
-                                            <div class="text-center px-1" style="color: #64748b; font-size: 10px;">
+                                            <div class="text-center px-1" style="color: #64748b; font-size: 10px; cursor: pointer;" id="preview-nav-more">
                                                 <span class="d-block" style="font-size: 14px;">⋯</span>
                                                 <span>More</span>
                                             </div>
@@ -791,10 +887,179 @@
             });
 
             $(function() {
-                $('.js-check-all').on('click', function() {
+                $('body').on('click', '.js-check-all', function() {
                     let isChecked = $(this).prop('checked');
-                    const checkboxes = $(this).closest('.group-checkbox').find('.module_checkbox');
+                    const card = $(this).closest('.group-checkbox, .group-checkbox-card');
+                    const checkboxes = card.find('.module_checkbox');
                     checkboxes.prop('checked', isChecked).trigger('change');
+                });
+
+                // Tab-level master check
+                $('body').on('change', '.tab-master-check', function() {
+                    const targetTabId = $(this).data('target-tab');
+                    const isChecked = $(this).is(':checked');
+                    const tabPane = $('#' + targetTabId);
+                    tabPane.find('.module_checkbox').prop('checked', isChecked);
+                    tabPane.find('.js-check-all').prop('checked', isChecked);
+                    tabPane.find('.module_checkbox').trigger('change');
+                });
+
+                // Quick Search Filter for permissions
+                $('#permissionSearchFilter').on('input', function() {
+                    const query = $(this).val().toLowerCase().trim();
+                    $('.permission-group-col').each(function() {
+                        const groupName = ($(this).data('group-name') || '').toLowerCase();
+                        const groupText = $(this).text().toLowerCase();
+                        if (!query || groupName.includes(query) || groupText.includes(query)) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                });
+
+                // 1-Click Role Presets Handler
+                const showPresetFeedback = function(message) {
+                    const fb = $('#presetFeedback');
+                    fb.text(message).css('opacity', 1);
+                    setTimeout(() => fb.css('opacity', 0), 3500);
+                };
+
+                const applyRolePreset = function(presetType) {
+                    const allCheckboxes = $(form).find('.module_checkbox');
+                    const allCheckAlls = $(form).find('.js-check-all');
+                    
+                    if (presetType === 'clear_all') {
+                        allCheckboxes.prop('checked', false);
+                        allCheckAlls.prop('checked', false);
+                        $('.tab-master-check').prop('checked', false);
+                        allCheckboxes.trigger('change');
+                        showPresetFeedback('🧹 បានដោះសិទ្ធិទាំងអស់ចេញរួចរាល់ (All Cleared)');
+                        return;
+                    }
+
+                    if (presetType === 'super_admin') {
+                        allCheckboxes.prop('checked', true);
+                        allCheckAlls.prop('checked', true);
+                        $('.tab-master-check').prop('checked', true);
+                        allCheckboxes.trigger('change');
+                        showPresetFeedback('👑 បានកំណត់សិទ្ធិពេញលេញ Super Admin រួចរាល់');
+                        return;
+                    }
+
+                    // Reset first
+                    allCheckboxes.prop('checked', false);
+                    allCheckAlls.prop('checked', false);
+                    $('.tab-master-check').prop('checked', false);
+
+                    if (presetType === 'hr_manager') {
+                        allCheckboxes.filter('[data-permission-key="access_admin_panel"]').prop('checked', true);
+                        const hrWebGroups = [
+                            'company', 'branch', 'department', 'post', 'employee', 'attendance', 'leave',
+                            'shift management', 'support', 'tada', 'dashboard', 'mobile notification',
+                            'attendance method', 'payroll management', 'payroll setting', 'advance salary',
+                            'employee salary', 'time leave', 'award management', 'tax report',
+                            'event management', 'training management', 'leave approval', 'resignation management',
+                            'termination management', 'warning', 'complaint', 'promotion', 'transfer',
+                            'holiday', 'notice', 'team meeting', 'content management', 'daily records',
+                            'store phone number', 'app links & accounts', 'company documents', 'payroll queue', 'repair price'
+                        ];
+
+                        allCheckboxes.each(function() {
+                            const platform = $(this).data('platform');
+                            const groupName = ($(this).data('group-name') || '').toLowerCase();
+                            const permKey = $(this).data('permission-key') || '';
+
+                            if (platform === 'web' && hrWebGroups.includes(groupName)) {
+                                $(this).prop('checked', true);
+                            }
+                            if (platform === 'mobile') {
+                                if (permKey.startsWith('mobile.menu.') || permKey.includes('list') || permKey.includes('view')) {
+                                    $(this).prop('checked', true);
+                                }
+                            }
+                        });
+                        showPresetFeedback('🏢 បានកំណត់សិទ្ធិ HR Manager រួចរាល់');
+                    } else if (presetType === 'branch_supervisor') {
+                        allCheckboxes.filter('[data-permission-key="access_admin_panel"]').prop('checked', true);
+                        const branchWebGroups = [
+                            'attendance', 'leave', 'leave approval', 'shift management', 'daily records',
+                            'team meeting', 'support', 'store phone number', 'dashboard', 'repair price'
+                        ];
+                        const branchMobileKeys = [
+                            'mobile.menu.attendance', 'mobile.menu.leave-request', 'mobile.menu.leave-calendar',
+                            'mobile.menu.time-leave', 'mobile.menu.team-sheet', 'mobile.menu.meeting',
+                            'mobile.menu.meeting-attendance', 'mobile.menu.store-phone-numbers',
+                            'mobile.menu.company-documents', 'repair_price.view', 'mobile.menu.support',
+                            'mobile.menu.chat', 'mobile.menu.social-feed', 'mobile.menu.notice',
+                            'mobile.menu.profile'
+                        ];
+                        allCheckboxes.each(function() {
+                            const platform = $(this).data('platform');
+                            const groupName = ($(this).data('group-name') || '').toLowerCase();
+                            const permKey = $(this).data('permission-key') || '';
+
+                            if (platform === 'web' && branchWebGroups.includes(groupName)) {
+                                $(this).prop('checked', true);
+                            }
+                            if (platform === 'mobile' && (branchMobileKeys.includes(permKey) || permKey.includes('team_sheet') || permKey.includes('meeting'))) {
+                                $(this).prop('checked', true);
+                            }
+                        });
+                        showPresetFeedback('📍 បានកំណត់សិទ្ធិ Branch Supervisor រួចរាល់');
+                    } else if (presetType === 'employee_mobile') {
+                        // General Employee: Mobile only, Web all unchecked
+                        const employeeMobileKeys = [
+                            'mobile.menu.attendance', 'mobile.menu.leave-request', 'mobile.menu.time-leave',
+                            'mobile.menu.advance-salary', 'mobile.menu.id-card', 'mobile.menu.profile',
+                            'mobile.menu.company-rules', 'mobile.menu.holiday', 'mobile.menu.notice',
+                            'mobile.menu.social-feed', 'mobile.menu.chat', 'mobile.menu.support',
+                            'mobile.menu.links', 'mobile.menu.quotes', 'mobile.menu.dark-mode',
+                            'mobile.menu.change-password', 'mobile.menu.store-phone-numbers',
+                            'employee_check_in', 'employee_check_out', 'attendance_check_in', 'attendance_check_out'
+                        ];
+                        allCheckboxes.each(function() {
+                            const platform = $(this).data('platform');
+                            const permKey = $(this).data('permission-key') || '';
+                            if (platform === 'mobile') {
+                                if (employeeMobileKeys.includes(permKey)) {
+                                    $(this).prop('checked', true);
+                                }
+                            }
+                        });
+                        showPresetFeedback('👤 បានកំណត់សិទ្ធិ General Employee (Mobile Only) រួចរាល់');
+                    } else if (presetType === 'payroll_counter') {
+                        allCheckboxes.filter('[data-permission-key="access_admin_panel"]').prop('checked', true);
+                        const queueKeys = [
+                            'view_payroll_queue', 'manage_payroll_queue', 'call_payroll_queue', 'disburse_payroll_queue',
+                            'mobile.menu.payroll-queue', 'mobile.menu.attendance', 'mobile.menu.profile'
+                        ];
+                        allCheckboxes.each(function() {
+                            const permKey = $(this).data('permission-key') || '';
+                            const groupName = ($(this).data('group-name') || '').toLowerCase();
+                            if (queueKeys.includes(permKey) || groupName === 'payroll queue') {
+                                $(this).prop('checked', true);
+                            }
+                        });
+                        showPresetFeedback('🎫 បានកំណត់សិទ្ធិ Payroll Queue Counter រួចរាល់');
+                    }
+
+                    // Update group checkAll states
+                    $('.group-checkbox-card').each(function() {
+                        const groupCheckboxes = $(this).find('.module_checkbox');
+                        const total = groupCheckboxes.length;
+                        const checked = groupCheckboxes.filter(':checked').length;
+                        $(this).find('.js-check-all').prop('checked', total > 0 && total === checked);
+                    });
+
+                    allCheckboxes.trigger('change');
+                };
+
+                $(document).on('click', '.preset-btn', function() {
+                    const preset = $(this).data('preset');
+                    if (preset) {
+                        applyRolePreset(preset);
+                    }
                 });
             });
 
@@ -803,6 +1068,7 @@
             const mobileMenuPermissionOptions = @json($mobileMenuPermissionOptions);
             const initialMobileLayout = @json($mobileLayout);
             const allRolesLayouts = @json($allRolesLayouts ?? []);
+            let currentInitialTab = @json($initialTab ?? 'home');
             let mobileLayout = JSON.parse(JSON.stringify(initialMobileLayout));
             const zones = ['top', 'sidebar', 'bottom', 'home_quick', 'hidden'];
             const zoneIds = {top: 'mobile-role-top', sidebar: 'mobile-role-sidebar-list', bottom: 'mobile-role-bottom', home_quick: 'mobile-role-preview-list', hidden: 'mobile-role-hidden'};
@@ -988,8 +1254,35 @@
                     });
                 });
 
+                // Sync Initial Landing Tab dropdown & hidden input
+                const initialSelect = $('#select-initial-tab');
+                if (initialSelect.length) {
+                    initialSelect.empty();
+                    initialSelect.append('<option value="home">🏠 Home (ផ្ទាំងដើម)</option>');
+                    (zoneOrders['bottom'] || []).forEach((m) => {
+                        const name = getMenuDisplayName(m);
+                        const icon = menuIcons[m] || '📌';
+                        initialSelect.append(`<option value="${m}">${icon} ${name}</option>`);
+                    });
+                    initialSelect.val(currentInitialTab);
+                    if (!initialSelect.val()) {
+                        initialSelect.val('home');
+                        currentInitialTab = 'home';
+                    }
+                }
+                form.querySelectorAll('input[name="mobile_initial_tab"]').forEach((input) => input.remove());
+                const initInput = document.createElement('input');
+                initInput.type = 'hidden';
+                initInput.name = 'mobile_initial_tab';
+                initInput.value = currentInitialTab;
+                form.appendChild(initInput);
+
                 updateAllowedCount();
                 renderStudioZones();
+                const countBadge = document.getElementById('selectedPermissionsCount');
+                if (countBadge) {
+                    countBadge.textContent = form.querySelectorAll('.module_checkbox:checked').length;
+                }
             };
 
             const syncMobileMenuOptions = function() {
@@ -1010,6 +1303,7 @@
                     }
                 });
                 renderMobilePreview();
+
             };
 
             form.addEventListener('change', (event) => {
@@ -1019,6 +1313,7 @@
             manageButton.addEventListener('click', function() {
                 manageMode = !manageMode;
                 renderMobilePreview();
+
             });
 
             // Reorder Item Click Handlers
@@ -1034,6 +1329,7 @@
                     list[idx - 1] = menu;
                     list[idx] = temp;
                     renderMobilePreview();
+
                 }
             });
 
@@ -1049,6 +1345,7 @@
                     list[idx + 1] = menu;
                     list[idx] = temp;
                     renderMobilePreview();
+
                 }
             });
 
@@ -1064,6 +1361,7 @@
                         zoneOrders[zone] = zoneOrders[zone].filter((item) => item !== menu);
                     }
                     renderMobilePreview();
+
                 }
             });
 
@@ -1159,6 +1457,7 @@
                     $('#preview-tab-home').trigger('click');
                 }
                 renderMobilePreview();
+
                 $('#modalAddMenu').modal('hide');
             });
 
@@ -1196,6 +1495,7 @@
                         $('#preview-tab-home').trigger('click');
                     }
                     renderMobilePreview();
+
                     $('#modalAddMenu').modal('hide');
                 } else {
                     alert('សូមបើកផ្ទាំងសិទ្ធិលម្អិត (Detailed Permissions Matrix) ដើម្បីផ្តល់សិទ្ធិដោយផ្ទាល់');
@@ -1267,6 +1567,7 @@
                     zoneOrders[z] = Object.keys(mobileMenuOptions).filter((m) => (placements[m] || []).includes(z));
                 });
                 renderMobilePreview();
+
             });
 
             // Clone Layout from Another Role
@@ -1291,6 +1592,7 @@
                 });
                 syncPositionsFromZoneOrders();
                 renderMobilePreview();
+
             });
 
             // Save Studio Button submits form
@@ -1299,18 +1601,52 @@
                 $('#role-permission-form').submit();
             });
 
-            // View Switcher Buttons
+            // View Switcher Buttons (Home, Sidebar Drawer, More Page)
             $('#preview-tab-home').on('click', function() {
+                $('.preview-tab-btn').removeClass('active btn-primary').addClass('btn-outline-light');
                 $(this).addClass('active btn-primary').removeClass('btn-outline-light');
-                $('#preview-tab-more').removeClass('active btn-primary').addClass('btn-outline-light');
+                $('#mobile-role-screen').removeClass('drawer-open');
                 $('#preview-view-home').show();
                 $('#preview-view-more').hide();
             });
-            $('#preview-tab-more').on('click', function() {
+            $('#preview-tab-drawer').on('click', function() {
+                $('.preview-tab-btn').removeClass('active btn-primary').addClass('btn-outline-light');
                 $(this).addClass('active btn-primary').removeClass('btn-outline-light');
-                $('#preview-tab-home').removeClass('active btn-primary').addClass('btn-outline-light');
+                $('#mobile-role-screen').addClass('drawer-open');
+            });
+            $('#preview-tab-more').on('click', function() {
+                $('.preview-tab-btn').removeClass('active btn-primary').addClass('btn-outline-light');
+                $(this).addClass('active btn-primary').removeClass('btn-outline-light');
+                $('#mobile-role-screen').removeClass('drawer-open');
                 $('#preview-view-home').hide();
                 $('#preview-view-more').show();
+            });
+
+            // Hamburger & Drawer Slide-in Controls
+            $('#btn-hamburger').on('click', function(e) {
+                e.preventDefault();
+                $('#mobile-role-screen').toggleClass('drawer-open');
+                if ($('#mobile-role-screen').hasClass('drawer-open')) {
+                    $('.preview-tab-btn').removeClass('active btn-primary').addClass('btn-outline-light');
+                    $('#preview-tab-drawer').addClass('active btn-primary').removeClass('btn-outline-light');
+                }
+            });
+            $('#btn-close-sidebar, #mobile-role-backdrop').on('click', function() {
+                $('#mobile-role-screen').removeClass('drawer-open');
+                $('.preview-tab-btn').removeClass('active btn-primary').addClass('btn-outline-light');
+                if ($('#preview-view-more').is(':visible')) {
+                    $('#preview-tab-more').addClass('active btn-primary').removeClass('btn-outline-light');
+                } else {
+                    $('#preview-tab-home').addClass('active btn-primary').removeClass('btn-outline-light');
+                }
+            });
+
+            // Bottom Nav Simulation Clicks
+            $('#preview-nav-home').on('click', function() {
+                $('#preview-tab-home').trigger('click');
+            });
+            $('#preview-nav-more').on('click', function() {
+                $('#preview-tab-more').trigger('click');
             });
 
             // Theme Mode Switcher Buttons (Day Mode vs Night Mode)
@@ -1323,6 +1659,17 @@
                 $('.theme-toggle-btn').removeClass('active btn-light btn-dark fw-bold').addClass('btn-outline-secondary');
                 $(this).addClass('active btn-dark fw-bold').removeClass('btn-outline-secondary');
                 $('#mobile-role-screen').removeClass('theme-day').addClass('theme-night');
+            });
+
+            // Initial Landing Tab Selector Change
+            $('#select-initial-tab').on('change', function() {
+                currentInitialTab = $(this).val();
+                form.querySelectorAll('input[name="mobile_initial_tab"]').forEach((input) => input.remove());
+                const initInput = document.createElement('input');
+                initInput.type = 'hidden';
+                initInput.name = 'mobile_initial_tab';
+                initInput.value = currentInitialTab;
+                form.appendChild(initInput);
             });
 
             // Drag and drop events for phone mockup
@@ -1368,6 +1715,7 @@
                         if (zoneOrders[zone] && !zoneOrders[zone].includes(menu)) zoneOrders[zone].push(menu);
                     }
                     renderMobilePreview();
+
                 });
             });
 

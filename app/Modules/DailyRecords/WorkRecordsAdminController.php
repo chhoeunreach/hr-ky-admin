@@ -117,6 +117,7 @@ final class WorkRecordsAdminController
         $total = (clone $query)->count();
         $completed = (clone $query)->where('e.details->fields->status', 'completed')->count();
         $cancelled = (clone $query)->where('e.details->fields->status', 'cancelled')->count();
+        $ongoing = (clone $query)->whereIn('e.details->fields->status', ['ongoing', 'in_progress'])->count();
         $employees = (clone $query)->distinct()->count('e.employee_id');
         if (isset($filters['status'])) {
             $query->where('e.details->fields->status', $filters['status']);
@@ -133,7 +134,7 @@ final class WorkRecordsAdminController
         }
         return response()->view('admin.daily-records.branch-routes', $this->directory->groups($actor, false) + [
             'rows' => $rows, 'filters' => $filters,
-            'summary' => compact('total', 'completed', 'cancelled', 'employees'),
+            'summary' => compact('total', 'completed', 'cancelled', 'ongoing', 'employees'),
         ])->header('Cache-Control', 'private, no-store');
     }
 

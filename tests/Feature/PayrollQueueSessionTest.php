@@ -578,4 +578,29 @@ class PayrollQueueSessionTest extends TestCase
             ->assertJsonPath('success', false);
         $this->assertEquals(3, $session->fresh()->max_active_serving);
     }
+
+    public function test_voice_stream_endpoint(): void
+    {
+        // 1. Without text returns 400
+        $resNoText = $this->get('/api/v1/hr-queue/voice-stream');
+        $resNoText->assertStatus(400);
+
+        // 2. Pre-create cache file to test serving
+        $text = 'សូមអញ្ជើញ';
+        $hash = md5($text);
+        $cacheDir = storage_path('app/queue_tts');
+        if (!file_exists($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        $cacheFile = $cacheDir . '/' . $hash . '.mp3';
+        file_put_contents($cacheFile, 'dummy-mp3-audio-content-more-than-500-bytes-' . str_repeat('A', 600));
+
+        $resWithText = $this->get('/api/v1/hr-queue/voice-stream?text=' . urlencode($text));
+        $resWithText->assertOk()
+            ->assertHeader('Content-Type', 'audio/mpeg');
+
+        if (file_exists($cacheFile)) {
+            unlink($cacheFile);
+        }
+    }
 }

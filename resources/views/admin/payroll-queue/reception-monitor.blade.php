@@ -132,6 +132,12 @@
                 <span id="audioText">សំឡេង: បិទ</span>
             </button>
 
+            <!-- Toggle Call Employee Name Button -->
+            <button id="btnToggleCallName" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold hover:bg-blue-600/40 transition">
+                <span id="callNameIcon">👤</span>
+                <span id="callNameText">ហៅឈ្មោះ: បើក</span>
+            </button>
+
             <!-- Digital Clock -->
             <div class="text-right">
                 <div id="liveClock" class="font-inter text-2xl font-black text-amber-400 tracking-wider">
@@ -229,6 +235,9 @@
         </div>
     </footer>
 
+    <!-- Dedicated HTML5 Audio Player (Primed & Unlocked on First Click) -->
+    <audio id="queueAudioPlayer" preload="auto" class="hidden"></audio>
+
     <!-- Audio & Real-time Integration Script -->
     <script>
         // State
@@ -285,19 +294,183 @@
             }
         }
 
+        const queueAudioBase = "{{ asset('assets/audio/queue') }}";
+        let isAudioPlaying = false;
+
+        // Play sequence of audio files in series (Bank-grade soundboard)
+        function playAudioSequence(urls, onDone) {
+            if (!audioEnabled || !urls || urls.length === 0) {
+                if (onDone) onDone();
+                return;
+            }
+            isAudioPlaying = true;
+            const player = document.getElementById('queueAudioPlayer');
+            let idx = 0;
+
+            const next = () => {
+                if (idx >= urls.length) {
+                    isAudioPlaying = false;
+                    if (player) {
+                        player.onended = null;
+                        player.onerror = null;
+                    }
+                    if (onDone) onDone();
+                    return;
+                }
+                const currentUrl = urls[idx++];
+                if (player) {
+                    player.onended = next;
+                    player.onerror = () => {
+                        console.warn('Audio clip failed to play, skipping:', currentUrl);
+                        next();
+                    };
+                    player.src = currentUrl;
+                    const p = player.play();
+                    if (p !== undefined) {
+                        p.catch((err) => {
+                            console.warn('Playback error:', err);
+                            next();
+                        });
+                    }
+                } else {
+                    const audio = new Audio(currentUrl);
+                    audio.onended = next;
+                    audio.onerror = next;
+                    audio.play().catch(next);
+                }
+            };
+
+            next();
+        }
+
+        let callNameEnabled = true;
+
+        // Bank-Grade Announcement Generator: builds sequence from ticketNumber, counter & employeeName
+        function announceTicket(ticketNumber, counterLabel, announcementText, employeeName) {
+            if (!audioEnabled) return;
+
+            // 1. Play the crisp 2-tone airport bell chime
+            playChime();
+
+            // Extract counter number from counterLabel (e.g. "តុ 1", "Counter 2", "1")
+            const counterMatch = String(counterLabel || '').match(/\d+/);
+            const counterNum = counterMatch ? parseInt(counterMatch[0], 10) : 1;
+
+            // Prepare local soundboard sequence (fallback or ticket-only mode)
+            const localSequence = [];
+            localSequence.push(`${queueAudioBase}/please_invite.mp3`); // "សូមអញ្ជើញលេខសំបុត្រ"
+
+            if (ticketNumber) {
+                const chars = String(ticketNumber).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                for (let i = 0; i < chars.length; i++) {
+                    const ch = chars[i];
+                    if (ch >= 'A' && ch <= 'Z') {
+                        localSequence.push(`${queueAudioBase}/letter_${ch}.mp3`);
+                    } else if (ch >= '0' && ch <= '9') {
+                        localSequence.push(`${queueAudioBase}/num_${ch}.mp3`);
+                    }
+                }
+            }
+
+            localSequence.push(`${queueAudioBase}/to_counter.mp3`); // "ទៅកាន់តុលេខ"
+            if (counterNum >= 1 && counterNum <= 10) {
+                localSequence.push(`${queueAudioBase}/counter_${counterNum}.mp3`);
+            } else {
+                localSequence.push(`${queueAudioBase}/counter_1.mp3`);
+            }
+            localSequence.push(`${queueAudioBase}/thank_you.mp3`); // "សូមអរគុណ"
+
+            const player = document.getElementById('queueAudioPlayer');
+
+            // Wait 650ms for chime to complete before speech starts
+            setTimeout(() => {
+                // If callNameEnabled is active and employeeName is present (e.g. "សុខ សាន", "Chhoeun Reach")
+                if (callNameEnabled && employeeName && employeeName !== '—' && employeeName !== 'Staff') {
+                    const phrase = `សូមអញ្ជើញ ${employeeName} លេខសំបុត្រ ${ticketNumber} ទៅកាន់តុលេខ ${counterNum}`;
+                    // Use server-side proxy stream to avoid CORS & Referer 404 blocks from Google TTS
+                    const ttsUrl = `/api/v1/hr-queue/voice-stream?text=${encodeURIComponent(phrase)}`;
+
+                    let fallbackTriggered = false;
+                    const triggerFallback = () => {
+                        if (fallbackTriggered) return;
+                        fallbackTriggered = true;
+                        console.warn('Voice stream unavailable, falling back to local soundboard MP3 clips.');
+                        playAudioSequence(localSequence);
+                    };
+
+                    if (player) {
+                        player.onended = () => {
+                            isAudioPlaying = false;
+                            console.log('Voice announcement complete for:', employeeName, ticketNumber);
+                        };
+                        player.onerror = triggerFallback;
+                        player.src = ttsUrl;
+                        const promise = player.play();
+                        if (promise !== undefined) {
+                            promise.catch(triggerFallback);
+                        }
+
+                        // Safety timeout: If stream fails to start playing within 4 seconds, trigger fallback
+                        setTimeout(() => {
+                            if (!fallbackTriggered && player.paused && player.currentTime === 0) {
+                                triggerFallback();
+                            }
+                        }, 4000);
+                    } else {
+                        triggerFallback();
+                    }
+                } else {
+                    // Play local bank-grade soundboard clips for ticket number and counter
+                    playAudioSequence(localSequence, () => {
+                        console.log('Announcement complete for ticket:', ticketNumber);
+                    });
+                }
+            }, 650);
+        }
+
         // Toggle Audio
         document.getElementById('btnToggleAudio').addEventListener('click', function() {
             audioEnabled = !audioEnabled;
             const textEl = document.getElementById('audioText');
             const iconEl = document.getElementById('audioIcon');
+            const player = document.getElementById('queueAudioPlayer');
+
             if (audioEnabled) {
                 textEl.textContent = 'សំឡេង: បើក';
                 iconEl.textContent = '🔊';
                 this.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 text-xs font-semibold';
                 playChime();
+                // Immediately prime & unlock HTML5 Audio element on direct user click gesture
+                if (player) {
+                    player.src = `${queueAudioBase}/welcome.mp3`;
+                    const primePromise = player.play();
+                    if (primePromise !== undefined) {
+                        primePromise.catch((e) => console.log('Audio prime notice:', e));
+                    }
+                }
             } else {
                 textEl.textContent = 'សំឡេង: បិទ';
                 iconEl.textContent = '🔔';
+                this.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-700 hover:bg-navy-600 text-xs text-slate-300 border border-slate-600 transition';
+                if (player) {
+                    player.pause();
+                    player.currentTime = 0;
+                }
+            }
+        });
+
+        // Toggle Call Employee Name
+        document.getElementById('btnToggleCallName').addEventListener('click', function() {
+            callNameEnabled = !callNameEnabled;
+            const textEl = document.getElementById('callNameText');
+            const iconEl = document.getElementById('callNameIcon');
+            if (callNameEnabled) {
+                textEl.textContent = 'ហៅឈ្មោះ: បើក';
+                iconEl.textContent = '👤';
+                this.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-semibold hover:bg-blue-600/40 transition';
+            } else {
+                textEl.textContent = 'ហៅឈ្មោះ: បិទ (ហៅតែលេខ)';
+                iconEl.textContent = '🔢';
                 this.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-700 hover:bg-navy-600 text-xs text-slate-300 border border-slate-600 transition';
             }
         });
@@ -447,7 +620,12 @@
                         // If a new ticket is called, update ticker & chime
                         if (d.latest_called && d.latest_called.ticket_number !== lastCalledTicketNumber) {
                             lastCalledTicketNumber = d.latest_called.ticket_number;
-                            playChime();
+                            announceTicket(
+                                d.latest_called.ticket_number,
+                                d.latest_called.counter_label,
+                                d.latest_called.announcement_khmer,
+                                d.latest_called.employee_name
+                            );
 
                             const ticker = document.getElementById('tickerText');
                             if (ticker && d.latest_called.announcement_khmer) {

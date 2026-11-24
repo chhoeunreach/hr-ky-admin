@@ -19,7 +19,7 @@ final class BranchRouteInput
             'mission_mode' => 'nullable|in:round_trip,multi_branch',
             'departure_time' => 'required|date_format:H:i',
             'arrival_time' => 'nullable|date_format:H:i',
-            'status' => 'required|in:completed,cancelled',
+            'status' => 'required|in:completed,cancelled,in_progress,pending,ongoing',
             'total_minutes' => 'required|integer|min:0|max:525600',
             'formatted_duration' => 'nullable|string|max:80',
             'start_latitude' => 'nullable|numeric|between:-90,90',

@@ -51,6 +51,17 @@ class AttendanceTelegramNotificationService
             $branchName = (string) optional($user->branch)->name;
             $departmentName = (string) optional($user->department)->dept_name;
 
+            try {
+                $activeRoute = app(\App\Services\Attendance\AttendanceService::class)->getActiveBranchRouteForEmployee($user->id);
+                if ($activeRoute && !empty($activeRoute['target_branches'])) {
+                    $targetNames = array_filter(array_column($activeRoute['target_branches'], 'name'));
+                    if (!empty($targetNames)) {
+                        $branchName .= ' ➔ ' . implode(', ', $targetNames) . ' (ការងារចេញក្រៅ)';
+                    }
+                }
+            } catch (\Throwable) {
+            }
+
             $checkTime = $checkTimeRaw ? AttendanceHelper::changeTimeFormatForAttendanceView($checkTimeRaw) : '';
             $officeStartRaw = optional($user->officeTime)->opening_time;
             $officeStartTime = $officeStartRaw ? AttendanceHelper::changeTimeFormatForAttendanceView($officeStartRaw) : '';

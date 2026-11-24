@@ -147,6 +147,13 @@
                                             @else
                                                 <span class="badge bg-secondary">{{ $log->action ? ucfirst($log->action) : 'Check-In' }}</span>
                                             @endif
+                                            @if(!empty($log->note) && str_contains($log->note, 'Branch Route'))
+                                                <div class="mt-1">
+                                                    <span class="badge bg-info text-dark" style="font-size: 10px;" title="{{ $log->note }}">
+                                                        <i data-feather="map-pin" style="width: 9px; height: 9px;" class="me-1"></i>Route
+                                                    </span>
+                                                </div>
+                                            @endif
                                         </td>
                                         <td class="text-center">
                                             @php

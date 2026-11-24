@@ -53,9 +53,10 @@ class TelegramGroupController extends Controller
         $departments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
         $actionOptions = TelegramGroup::actionOptions();
         $eventOptions = TelegramGroup::eventOptions();
+        $categorizedEvents = TelegramGroup::categorizedEventOptions();
         $chatOptions = $this->chatOptions();
 
-        return view($this->view . 'create', compact('branches', 'departments', 'actionOptions', 'eventOptions', 'chatOptions'));
+        return view($this->view . 'create', compact('branches', 'departments', 'actionOptions', 'eventOptions', 'categorizedEvents', 'chatOptions'));
     }
 
     public function store(TelegramGroupRequest $request): RedirectResponse
@@ -91,9 +92,10 @@ class TelegramGroupController extends Controller
             $departments = Department::select('id', 'dept_name', 'branch_id')->orderBy('dept_name')->get();
             $actionOptions = TelegramGroup::actionOptions();
             $eventOptions = TelegramGroup::eventOptions();
+            $categorizedEvents = TelegramGroup::categorizedEventOptions();
             $chatOptions = $this->chatOptions();
 
-            return view($this->view . 'edit', compact('telegramGroup', 'branches', 'departments', 'actionOptions', 'eventOptions', 'chatOptions'));
+            return view($this->view . 'edit', compact('telegramGroup', 'branches', 'departments', 'actionOptions', 'eventOptions', 'categorizedEvents', 'chatOptions'));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -186,6 +188,85 @@ class TelegramGroupController extends Controller
         }
     }
 
+    public function sendTestMessage(Request $request, TelegramService $telegramService)
+    {
+        $this->authorize('test_telegram_group');
+
+        $validated = $request->validate([
+            'chat_ids' => ['nullable', 'array'],
+            'chat_ids.*' => ['nullable', 'string', 'max:100'],
+            'chat_id' => ['nullable', 'string', 'max:100'],
+            'name' => ['nullable', 'string', 'max:180'],
+            'id' => ['nullable', 'integer'],
+        ]);
+
+        try {
+            $chatIds = [];
+            if (!empty($validated['id'])) {
+                $group = $this->telegramGroupRepo->find((int) $validated['id']);
+                if ($group) {
+                    $chatIds = $group->chat_ids ?: [$group->chat_id];
+                }
+            }
+
+            if (empty($chatIds)) {
+                $rawList = !empty($validated['chat_ids']) ? $validated['chat_ids'] : [];
+                if (!empty($validated['chat_id'])) {
+                    $rawList[] = $validated['chat_id'];
+                }
+                $chatIds = array_filter(array_map('trim', $rawList));
+            }
+
+            if (empty($chatIds)) {
+                throw new Exception('សូមបញ្ចូល Chat ID ជាមុនសិន មុននឹងធ្វើតេស្ត។ (Please specify at least one Chat ID).');
+            }
+
+            $groupName = $validated['name'] ?? 'HR KY Admin';
+            $ok = true;
+            $errors = [];
+
+            $testMessage = "🔔 <b>សារសាកល្បងពីប្រព័ន្ធ HR Admin (Telegram Test Message)</b>\n" .
+                "🏢 ឈ្មោះក្រុម: <b>{$groupName}</b>\n" .
+                "⏱️ ពេលវេលា: " . now()->format('d/m/Y H:i:s') . "\n" .
+                "✅ ប្រព័ន្ធតេឡេក្រាមបានតភ្ជាប់ជោគជ័យ ១០០% (Connected successfully)";
+
+            foreach (array_unique($chatIds) as $chatId) {
+                $sent = $telegramService->sendMessage($chatId, $testMessage);
+                if (!$sent) {
+                    $err = $telegramService->lastError() ?: "Failed to send to chat ID {$chatId}.";
+                    $errors[] = $err;
+                    $ok = false;
+                }
+            }
+
+            if (!$ok) {
+                $errorMessage = 'ការផ្ញើសារសាកល្បងមិនជោគជ័យ: ' . implode(' ', array_unique($errors));
+                if (str_contains($errorMessage, 'chat not found')) {
+                    $errorMessage .= ' សូមប្រាកដថាបានទាញ Bot ចូលក្នុង Group/Channel និងបានផ្តល់សិទ្ធិ Admin ឬផ្ញើ /start ទៅកាន់ Bot។';
+                }
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['status' => false, 'message' => $errorMessage], 422);
+                }
+
+                return redirect()->back()->with('danger', $errorMessage);
+            }
+
+            $successMessage = 'សារសាកល្បងត្រូវបានផ្ញើទៅកាន់ Telegram Group ដោយជោគជ័យ!';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['status' => true, 'message' => $successMessage]);
+            }
+
+            return redirect()->back()->with('success', $successMessage);
+        } catch (Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return redirect()->back()->with('danger', $e->getMessage());
+        }
+    }
+
     public function delete(int $id): RedirectResponse
     {
         $this->authorize('delete_telegram_group');
@@ -210,6 +291,25 @@ class TelegramGroupController extends Controller
 
     private function prepareTelegramGroupData(array $data): array
     {
+        if (empty($data['action_keys']) && ! empty($data['event_keys'])) {
+            $derivedActions = [];
+            foreach ($data['event_keys'] as $eventKey) {
+                $parent = TelegramGroup::parentActionForEvent($eventKey);
+                if ($parent) {
+                    $derivedActions[] = $parent;
+                }
+            }
+            $data['action_keys'] = array_values(array_unique($derivedActions));
+        }
+
+        if (empty($data['action_keys'])) {
+            $data['action_keys'] = [TelegramGroup::ACTION_GENERAL];
+        }
+
+        if (empty($data['action_key'])) {
+            $data['action_key'] = $data['action_keys'][0] ?? TelegramGroup::ACTION_GENERAL;
+        }
+
         if (! empty($data['branch_ids'])) {
             $branchNames = Branch::whereIn('id', $data['branch_ids'])
                 ->orderBy('name')

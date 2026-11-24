@@ -54,13 +54,13 @@
             <div class="tm-preview-box" style="background-color: {{ $bg }}; color: {{ $text }};">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="fw-bold small" style="color: {{ $text }};">{{ $theme['name'] }}</span>
-                    <span class="badge" style="background-color: {{ $accent }}; color: #fff;">Accent</span>
+                    <span class="badge" style="background-color: {{ $accent }}; color: #fff;">{{ __('index.theme_modes_preview_accent') }}</span>
                 </div>
                 <div class="p-2 rounded" style="background-color: {{ $card }}; border: 1px solid rgba(0,0,0,0.06);">
-                    <span class="d-block small fw-semibold" style="color: {{ $text }};">Card Element</span>
+                    <span class="d-block small fw-semibold" style="color: {{ $text }};">{{ __('index.theme_modes_preview_card') }}</span>
                     <div class="mt-2 d-flex gap-1">
-                        <button type="button" class="btn btn-xs text-white" style="background-color: {{ $primary }}; font-size: 0.7rem; padding: 2px 6px;">Primary</button>
-                        <button type="button" class="btn btn-xs text-white" style="background-color: {{ $secondary }}; font-size: 0.7rem; padding: 2px 6px;">Secondary</button>
+                        <button type="button" class="btn btn-xs text-white" style="background-color: {{ $primary }}; font-size: 0.7rem; padding: 2px 6px;">{{ __('index.theme_modes_preview_primary') }}</button>
+                        <button type="button" class="btn btn-xs text-white" style="background-color: {{ $secondary }}; font-size: 0.7rem; padding: 2px 6px;">{{ __('index.theme_modes_preview_secondary') }}</button>
                     </div>
                 </div>
             </div>
@@ -138,17 +138,17 @@
             </button>
             <div class="d-flex gap-1">
                 @if($isSystem)
-                    <form action="{{ route('admin.mobile-tools.theme-modes.reset-theme', $key) }}" method="POST" onsubmit="return confirm('Reset core theme \'{{ $theme['name'] }}\' back to original baseline factory colors?');">
+                    <form action="{{ route('admin.mobile-tools.theme-modes.reset-theme', $key) }}" method="POST" onsubmit='return confirm(@json(__('index.theme_modes_reset_core_confirm', ['name' => $theme['name']])));'>
                         @csrf
-                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="Reset this core theme to factory defaults">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm" title="{{ __('index.theme_modes_reset_core_title') }}">
                             <i data-feather="rotate-ccw" style="width:14px;height:14px"></i>
                         </button>
                     </form>
                 @else
-                    <form action="{{ route('admin.mobile-tools.theme-modes.destroy', $key) }}" method="POST" onsubmit="return confirm('Permanently delete custom theme \'{{ $theme['name'] }}\'?');">
+                    <form action="{{ route('admin.mobile-tools.theme-modes.destroy', $key) }}" method="POST" onsubmit='return confirm(@json(__('index.theme_modes_delete_custom_confirm', ['name' => $theme['name']])));'>
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete custom theme">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ __('index.theme_modes_delete_custom_title') }}">
                             <i data-feather="trash-2" style="width:14px;height:14px"></i>
                         </button>
                     </form>

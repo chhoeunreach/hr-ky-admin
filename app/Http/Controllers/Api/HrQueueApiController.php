@@ -719,10 +719,83 @@ class HrQueueApiController extends Controller
             'latest_called' => $latestCalled ? [
                 'ticket_number' => $latestCalled->ticket_number,
                 'counter_number' => $latestCalled->counter_number,
+                'counter_label' => "តុលេខ ០{$latestCalled->counter_number}",
                 'employee_name' => $latestCalled->user?->name ?? '—',
-                'announcement_khmer' => "📢 សូមអញ្ជើញលេខ {$latestCalled->ticket_number} ទៅកាន់បញ្ជរ ០{$latestCalled->counter_number}",
+                'announcement_khmer' => "📢 សូមអញ្ជើញ " . ($latestCalled->user?->name ? $latestCalled->user->name . " " : "") . "លេខ {$latestCalled->ticket_number} ទៅកាន់តុលេខ ០{$latestCalled->counter_number}",
             ] : null,
             'timestamp' => now()->toIso8601String(),
         ];
+    }
+
+    public function voiceStream(Request $request)
+    {
+        $text = trim((string) $request->input('text', ''));
+        if ($text === '') {
+            return response('No text provided', 400);
+        }
+
+        $text = mb_substr($text, 0, 150);
+        $hash = md5($text);
+        $cacheDir = storage_path('app/queue_tts');
+        if (!file_exists($cacheDir)) {
+            mkdir($cacheDir, 0755, true);
+        }
+        $cacheFile = $cacheDir . '/' . $hash . '.mp3';
+
+        if (!file_exists($cacheFile)) {
+            $audioData = null;
+            $url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=km&client=tw-ob&q=' . urlencode($text);
+            $userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+            if (function_exists('curl_init')) {
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_USERAGENT => $userAgent,
+                    CURLOPT_SSL_VERIFYPEER => false,
+                ]);
+                $audioData = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if ($httpCode !== 200 || !$audioData || strlen($audioData) < 500) {
+                    $audioData = null;
+                }
+            }
+
+            if (!$audioData && ini_get('allow_url_fopen')) {
+                try {
+                    $ctx = stream_context_create([
+                        'http' => [
+                            'method' => 'GET',
+                            'header' => "User-Agent: {$userAgent}\r\n",
+                            'timeout' => 4,
+                        ],
+                        'ssl' => [
+                            'verify_peer' => false,
+                            'verify_peer_name' => false,
+                        ],
+                    ]);
+                    $fetched = @file_get_contents($url, false, $ctx);
+                    if ($fetched && strlen($fetched) > 500) {
+                        $audioData = $fetched;
+                    }
+                } catch (\Throwable) {
+                    $audioData = null;
+                }
+            }
+
+            if ($audioData) {
+                file_put_contents($cacheFile, $audioData);
+            } else {
+                return response('TTS unavailable', 404);
+            }
+        }
+
+        return response()->file($cacheFile, [
+            'Content-Type' => 'audio/mpeg',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
     }
 }

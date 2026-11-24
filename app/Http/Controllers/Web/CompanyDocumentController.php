@@ -18,6 +18,7 @@ class CompanyDocumentController extends Controller
 {
     public function index(Request $request)
     {
+        $this->authorize('list_company_document');
         $categories = CompanyDocumentCategory::where('is_active', true)->orderBy('order')->get();
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
         $company = Company::first();
@@ -136,6 +137,7 @@ class CompanyDocumentController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorize('create_company_document');
         $validated = $request->validate([
             'category_code' => ['required', 'string', 'exists:company_document_categories,code'],
             'doc_sub_type' => ['nullable', 'string', 'max:50'],
@@ -231,6 +233,7 @@ class CompanyDocumentController extends Controller
 
     public function show($id)
     {
+        $this->authorize('list_company_document');
         $document = CompanyDocument::with(['category', 'branch', 'creator', 'updater'])->findOrFail($id);
 
         return response()->json([
@@ -248,6 +251,7 @@ class CompanyDocumentController extends Controller
 
     public function update(Request $request, $id)
     {
+        $this->authorize('edit_company_document');
         $document = CompanyDocument::findOrFail($id);
 
         $validated = $request->validate([
@@ -333,6 +337,7 @@ class CompanyDocumentController extends Controller
 
     public function destroy($id)
     {
+        $this->authorize('delete_company_document');
         try {
             $document = CompanyDocument::findOrFail($id);
 
@@ -356,6 +361,7 @@ class CompanyDocumentController extends Controller
 
     public function download($id)
     {
+        $this->authorize('list_company_document');
         $document = CompanyDocument::findOrFail($id);
         $fullPath = public_path($document->file_path);
 
@@ -368,6 +374,7 @@ class CompanyDocumentController extends Controller
 
     public function preview($id)
     {
+        $this->authorize('list_company_document');
         $document = CompanyDocument::findOrFail($id);
         $fullPath = public_path($document->file_path);
 
@@ -385,6 +392,7 @@ class CompanyDocumentController extends Controller
 
     public function expiringAlerts(Request $request)
     {
+        $this->authorize('list_company_document');
         $days = (int) $request->get('days', 30);
         $today = Carbon::today();
         $targetDate = $today->copy()->addDays($days);
