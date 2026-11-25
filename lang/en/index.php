@@ -3820,4 +3820,10 @@ return [
     /* Plans */
     'plan_prepaid' => 'Prepaid',
     'plan_postpaid' => 'Postpaid',
+
+    /* Top Navbar */
+    'sent_location' => 'Sent Location',
+    'server_status' => 'Server Status',
+    'server_ok' => 'Server OK',
+    'chat' => 'Chat',
 ];

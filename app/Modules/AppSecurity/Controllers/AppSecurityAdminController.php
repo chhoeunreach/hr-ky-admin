@@ -13,6 +13,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
@@ -940,16 +941,25 @@ class AppSecurityAdminController extends Controller
 
     private function syncConnectedFleet(): array
     {
+        $hasOauth = Schema::hasTable('oauth_access_tokens');
+        $hasLocations = Schema::hasTable('user_locations');
+
         $users = \App\Models\User::query()
-            ->where(function ($q) {
-                $q->whereNotNull('uuid')->where('uuid', '!=', '')
-                    ->orWhereNotNull('device_type')
-                    ->orWhereExists(function ($sq) {
+            ->where(function ($q) use ($hasOauth, $hasLocations) {
+                $q->where(function ($inner) {
+                    $inner->whereNotNull('uuid')->where('uuid', '!=', '')
+                        ->orWhereNotNull('device_type');
+                });
+                if ($hasOauth) {
+                    $q->orWhereExists(function ($sq) {
                         $sq->select(DB::raw(1))->from('oauth_access_tokens')->whereColumn('oauth_access_tokens.user_id', 'users.id');
-                    })
-                    ->orWhereExists(function ($sq) {
+                    });
+                }
+                if ($hasLocations) {
+                    $q->orWhereExists(function ($sq) {
                         $sq->select(DB::raw(1))->from('user_locations')->whereColumn('user_locations.user_id', 'users.id');
                     });
+                }
             })
             ->get();
 
@@ -959,7 +969,7 @@ class AppSecurityAdminController extends Controller
         foreach ($users as $user) {
             $deviceUuid = !empty($user->uuid) ? $user->uuid : 'usr-'.$user->id.'-'.substr(md5('device-seed-'.$user->id), 0, 16);
 
-            $latestLoc = DB::table('user_locations')->where('user_id', $user->id)->latest('created_at')->first();
+            $latestLoc = $hasLocations ? DB::table('user_locations')->where('user_id', $user->id)->latest('created_at')->first() : null;
             $lastSeen = $latestLoc?->created_at ?: ($user->updated_at ?: $user->created_at ?: now());
 
             $deviceModel = 'Android Device';

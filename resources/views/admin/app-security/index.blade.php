@@ -1242,7 +1242,7 @@
                                         </div>
                                         <div class="form-check form-switch fs-5 mb-0">
                                             <input type="hidden" name="enabled" value="0">
-                                            <input class="form-check-input" type="checkbox" name="enabled" value="1" @checked($settings['enabled'])>
+                                            <input class="form-check-input" type="checkbox" name="enabled" value="1" @checked($securityEnabled ?? false)>
                                         </div>
                                     </div>
                                 </div>

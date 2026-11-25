@@ -3890,4 +3890,10 @@ return [
     /* Plans */
     'plan_prepaid' => 'បង់ប្រាក់ជាមុន (Prepaid)',
     'plan_postpaid' => 'បង់ប្រាក់ប្រចាំខែ (Postpaid)',
+
+    /* Top Navbar */
+    'sent_location' => 'ផ្ញើទីតាំង',
+    'server_status' => 'ស្ថានភាព Server',
+    'server_ok' => 'Server ដំណើរការ',
+    'chat' => 'ជជែក',
 ];
