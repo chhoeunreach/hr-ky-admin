@@ -137,7 +137,8 @@ final class WorkRecordsAdminController
         $files = DB::table('daily_record_files')->whereIn('entry_id', $rows->getCollection()->pluck('id'))
             ->where('restricted', false)->orderBy('id')->get(['id', 'entry_id', 'name', 'bytes'])->groupBy('entry_id');
         foreach ($rows as $row) {
-            $row->route = json_decode($row->details ?? '{}', true)['fields'] ?? [];
+            $rawRoute = json_decode($row->details ?? '{}', true)['fields'] ?? [];
+            $row->route = BranchRouteCalculator::enrich($rawRoute);
             $row->attachments = $files->get($row->id, collect());
         }
         return response()->view('admin.daily-records.branch-routes', $this->directory->groups($actor, false) + [

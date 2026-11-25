@@ -1178,6 +1178,20 @@ Route::prefix('api/admin/app-security')->name('admin.app-security.api.')
 
 require app_path('Modules/DailyRecords/web.php');
 
+/** Admin Delivery Management */
+Route::prefix('admin/deliveries')->name('admin.deliveries.')->middleware(['web', 'admin.auth', 'permission'])
+    ->controller(\App\Http\Controllers\Web\DeliveryAdminController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/', 'store')->name('store');
+        Route::get('live-locations', 'liveLocations')->name('live-locations');
+        Route::get('{delivery}', 'show')->whereNumber('delivery')->name('show');
+        Route::post('{delivery}/status', 'updateStatus')->whereNumber('delivery')->name('status');
+        Route::delete('{delivery}', 'destroy')->whereNumber('delivery')->name('destroy');
+    });
+
+/** Public Live Delivery Tracking for Customers (Like Grab / Foodpanda) */
+Route::get('/track/live/{token}', [\App\Http\Controllers\Web\DeliveryTrackingWebController::class, 'show'])->name('delivery.track.live');
+
 Route::fallback(function() {
     return view('errors.404');
 });

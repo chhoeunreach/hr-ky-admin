@@ -1,0 +1,80 @@
+<?php
+
+return [
+    // Page & Navigation
+    'delivery_management' => 'Delivery Management',
+    'delivery_subtitle' => 'Track, dispatch, and monitor real-time staff delivery operations.',
+    'live_fleet_tracking' => 'Live Fleet Tracking Map',
+    'delivery_list' => 'Delivery Tracking List',
+    'quick_dispatch' => 'Quick Dispatch',
+    'dispatch_new_delivery' => 'Dispatch New Delivery',
+    'delivery_details' => 'Delivery Details',
+    'delivery_journey_map' => 'Delivery Route & Live Map',
+
+    // KPIs
+    'kpi_total_today' => 'Total Deliveries Today',
+    'kpi_in_transit' => 'In-Transit',
+    'kpi_delivered_today' => 'Delivered Today',
+    'kpi_pending' => 'Pending Dispatch',
+    'kpi_active_drivers' => 'Active Drivers Online',
+
+    // Statuses
+    'status' => 'Status',
+    'status_pending' => 'Pending',
+    'status_in_transit' => 'In Transit',
+    'status_arrived' => 'Arrived',
+    'status_delivered' => 'Delivered',
+    'status_cancelled' => 'Cancelled',
+    'all_statuses' => 'All Statuses',
+
+    // Table & Form Fields
+    'tracking_code' => 'Tracking Code',
+    'invoice_number' => 'Invoice #',
+    'driver' => 'Driver / Courier',
+    'all_drivers' => 'All Drivers',
+    'customer' => 'Customer',
+    'customer_name' => 'Customer Name',
+    'customer_phone' => 'Customer Phone',
+    'destination' => 'Destination',
+    'destination_address' => 'Destination Address',
+    'origin_address' => 'Origin Address',
+    'delivery_type' => 'Delivery Type',
+    'type_customer' => 'To Customer',
+    'type_branch' => 'Branch-to-Branch',
+    'destination_branch' => 'Destination Branch',
+    'branch' => 'Origin Branch',
+    'all_branches' => 'All Branches',
+    'notes' => 'Additional Notes',
+    'started_at' => 'Started At',
+    'completed_at' => 'Completed At',
+    'duration' => 'Duration',
+    'speed' => 'Speed',
+    'heading' => 'Heading',
+    'last_ping' => 'Last Ping',
+
+    // Proofs & Photos
+    'proof_of_delivery' => 'Proof of Delivery (POD)',
+    'driver_selfie' => 'Driver Selfie',
+    'product_photos' => 'Pre-dispatch Product Photos',
+    'photos_and_proofs' => 'Photos & Proofs',
+    'view_full_photo' => 'View Full Photo',
+    'no_proof_photo' => 'No proof photo uploaded yet',
+
+    // Actions & Tools
+    'view_details' => 'View Details & Map',
+    'copy_tracking_link' => 'Copy Tracking Link',
+    'tracking_link_copied' => 'Tracking link copied successfully!',
+    'call_customer' => 'Call Customer',
+    'open_in_google_maps' => 'Open in Google Maps',
+    'public_tracking_link' => 'Customer Public Tracking Link',
+    'update_status' => 'Update Status',
+    'mark_delivered' => 'Mark as Delivered',
+    'mark_cancelled' => 'Cancel Delivery',
+    'save_dispatch' => 'Dispatch Delivery',
+    'auto_refresh' => 'Auto-refresh (10s)',
+    'fit_all_drivers' => 'Fit All Drivers',
+    'no_active_drivers' => 'No active drivers in-transit currently',
+    'no_deliveries_found' => 'No delivery records found',
+    'no_deliveries_help' => 'When dispatches are assigned, records will appear here.',
+    'confirm_delete' => 'Are you sure you want to delete this delivery?',
+];

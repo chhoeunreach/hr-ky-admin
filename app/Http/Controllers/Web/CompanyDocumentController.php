@@ -152,37 +152,73 @@ class CompanyDocumentController extends Controller
             'cost_amount' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', 'in:USD,KHR'],
             'receipt_number' => ['nullable', 'string', 'max:100'],
-            'file' => ['required', 'file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+            'file' => ['nullable', 'file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
             'confidentiality_level' => ['required', 'in:public,internal,restricted,confidential'],
             'description' => ['nullable', 'string'],
         ]);
 
         try {
-            $file = $request->file('file');
-            $originalName = $file->getClientOriginalName();
-            $extension = strtolower($file->getClientOriginalExtension());
-            $fileSize = $file->getSize();
+            $uploadedFiles = [];
+            if ($request->hasFile('files')) {
+                $filesInput = $request->file('files');
+                $uploadedFiles = is_array($filesInput) ? $filesInput : [$filesInput];
+            } elseif ($request->hasFile('file')) {
+                $uploadedFiles = [$request->file('file')];
+            }
+
+            if (empty($uploadedFiles)) {
+                return redirect()->back()->withInput()->with('danger', 'សូមជ្រើសរើសឯកសារយ៉ាងតិចមួយ (Please select at least one file).');
+            }
 
             $uploadDir = public_path(CompanyDocument::UPLOAD_PATH . $validated['category_code']);
             if (!File::isDirectory($uploadDir)) {
                 File::makeDirectory($uploadDir, 0755, true, true);
             }
 
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
-            $file->move($uploadDir, $fileName);
+            $savedAttachments = [];
+            $primaryFilePath = '';
+            $primaryFileName = '';
+            $primaryFileType = 'other';
+            $primaryFileSize = 0;
 
-            $filePath = CompanyDocument::UPLOAD_PATH . $validated['category_code'] . '/' . $fileName;
+            foreach ($uploadedFiles as $index => $uploadedFile) {
+                if (!$uploadedFile || !$uploadedFile->isValid()) continue;
 
-            // Determine file type category
-            $fileType = 'other';
-            if ($extension === 'pdf') {
-                $fileType = 'pdf';
-            } elseif (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
-                $fileType = 'image';
-            } elseif (in_array($extension, ['doc', 'docx'])) {
-                $fileType = 'word';
-            } elseif (in_array($extension, ['xls', 'xlsx', 'csv'])) {
-                $fileType = 'excel';
+                $originalName = $uploadedFile->getClientOriginalName();
+                $extension = strtolower($uploadedFile->getClientOriginalExtension());
+                $fileSize = $uploadedFile->getSize();
+
+                $fileName = time() . '_' . $index . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+                $uploadedFile->move($uploadDir, $fileName);
+                $filePath = CompanyDocument::UPLOAD_PATH . $validated['category_code'] . '/' . $fileName;
+
+                $fileType = 'other';
+                if ($extension === 'pdf') {
+                    $fileType = 'pdf';
+                } elseif (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
+                    $fileType = 'image';
+                } elseif (in_array($extension, ['doc', 'docx'])) {
+                    $fileType = 'word';
+                } elseif (in_array($extension, ['xls', 'xlsx', 'csv'])) {
+                    $fileType = 'excel';
+                }
+
+                if ($index === 0) {
+                    $primaryFilePath = $filePath;
+                    $primaryFileName = $originalName;
+                    $primaryFileType = $fileType;
+                    $primaryFileSize = $fileSize;
+                }
+
+                $savedAttachments[] = [
+                    'file_path' => $filePath,
+                    'file_name' => $originalName,
+                    'file_type' => $fileType,
+                    'file_size' => $fileSize,
+                    'sort_order' => $index,
+                ];
             }
 
             $document = CompanyDocument::create([
@@ -200,14 +236,18 @@ class CompanyDocumentController extends Controller
                 'cost_amount' => $validated['cost_amount'] ?? null,
                 'currency' => $validated['currency'],
                 'receipt_number' => $validated['receipt_number'] ?? null,
-                'file_path' => $filePath,
-                'file_name' => $originalName,
-                'file_type' => $fileType,
-                'file_size' => $fileSize,
+                'file_path' => $primaryFilePath,
+                'file_name' => $primaryFileName,
+                'file_type' => $primaryFileType,
+                'file_size' => $primaryFileSize,
                 'confidentiality_level' => $validated['confidentiality_level'],
                 'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
             ]);
+
+            foreach ($savedAttachments as $attData) {
+                $document->attachments()->create($attData);
+            }
 
             if ($request->expectsJson()) {
                 return response()->json([
@@ -234,7 +274,7 @@ class CompanyDocumentController extends Controller
     public function show($id)
     {
         $this->authorize('list_company_document');
-        $document = CompanyDocument::with(['category', 'branch', 'creator', 'updater'])->findOrFail($id);
+        $document = CompanyDocument::with(['category', 'branch', 'creator', 'updater', 'attachments'])->findOrFail($id);
 
         return response()->json([
             'success' => true,
@@ -246,6 +286,7 @@ class CompanyDocumentController extends Controller
             'file_url' => asset($document->file_path),
             'is_pdf' => $document->is_pdf,
             'is_image' => $document->is_image,
+            'attachments' => $document->attachments,
         ]);
     }
 

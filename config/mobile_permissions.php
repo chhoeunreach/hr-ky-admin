@@ -50,6 +50,7 @@ return [
         'store-phone-numbers' => 'mobile.menu.store-phone-numbers',
         'payroll-queue' => 'mobile.menu.payroll-queue',
         'repair' => 'repair_price.view',
+        'delivery' => 'mobile.menu.delivery',
     ],
     // null denotes authenticated session/bootstrap infrastructure.
     'functions' => [
@@ -64,6 +65,14 @@ return [
         'CompanyDocumentApiController@store' => ['company-documents', 'create_company_document'],
         'CompanyDocumentApiController@update' => ['company-documents', 'edit_company_document'],
         'CompanyDocumentApiController@destroy' => ['company-documents', 'delete_company_document'],
+        // Delivery Tracking API (Governed by Roles & Permissions: mobile.menu.delivery)
+        'DeliveryApiController@index' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@branches' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@active' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@store' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@pingLocation' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@complete' => ['delivery', 'mobile.menu.delivery'],
+        'DeliveryApiController@cancel' => ['delivery', 'mobile.menu.delivery'],
         // Web Admin Permissions Mapping
         'WebStorePhone@list' => ['store-phone-numbers', 'list_store_phone'],
         'WebStorePhone@create' => ['store-phone-numbers', 'create_store_phone'],

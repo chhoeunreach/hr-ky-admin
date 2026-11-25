@@ -124,6 +124,11 @@ class CompanyDocument extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function attachments()
+    {
+        return $this->hasMany(CompanyDocumentAttachment::class, 'company_document_id')->orderBy('sort_order', 'asc')->orderBy('id', 'asc');
+    }
+
     /**
      * Compute dynamic real-time status based on expiry_date
      */

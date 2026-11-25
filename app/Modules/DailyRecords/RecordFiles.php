@@ -51,9 +51,14 @@ final class RecordFiles
         }
     }
 
-    public function download(object $file): StreamedResponse
+    public function download(object $file, bool $inline = false): \Symfony\Component\HttpFoundation\Response
     {
         abort_unless(Storage::disk('local')->exists($file->path), 404);
+        if ($inline || request()->boolean('inline') || request()->boolean('view')) {
+            return Storage::disk('local')->response($file->path, $file->name, [
+                'Cache-Control' => 'private, max-age=3600',
+            ], 'inline');
+        }
         return Storage::disk('local')->download($file->path, $file->name, [
             'Content-Type' => 'application/octet-stream',
             'X-Content-Type-Options' => 'nosniff',

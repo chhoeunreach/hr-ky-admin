@@ -478,6 +478,24 @@ Route::prefix('v1/company-documents')
         Route::delete('{id}', [CompanyDocumentApiController::class, 'destroy']);
     });
 
+/** Delivery Tracking API for Field Drivers & Live Customer Tracking */
+Route::prefix('v1/delivery')->group(function () {
+    // Public customer live tracking API (no login needed)
+    Route::get('public-track/{token}', [\App\Http\Controllers\Api\DeliveryApiController::class, 'publicTrack']);
+
+    // Authenticated driver endpoints
+    Route::middleware(['auth:api', 'app.security', 'permission', \App\Http\Middleware\MobileFunctionPermission::class])->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\DeliveryApiController::class, 'index']);
+        Route::get('branches', [\App\Http\Controllers\Api\DeliveryApiController::class, 'branches']);
+        Route::get('active', [\App\Http\Controllers\Api\DeliveryApiController::class, 'active']);
+        Route::post('start', [\App\Http\Controllers\Api\DeliveryApiController::class, 'store']);
+        Route::post('ping-location', [\App\Http\Controllers\Api\DeliveryApiController::class, 'pingLocation']);
+        Route::post('{id}/ping-location', [\App\Http\Controllers\Api\DeliveryApiController::class, 'pingLocation']);
+        Route::post('{id}/complete', [\App\Http\Controllers\Api\DeliveryApiController::class, 'complete']);
+        Route::post('{id}/cancel', [\App\Http\Controllers\Api\DeliveryApiController::class, 'cancel']);
+    });
+});
+
 
 // Mobile application security endpoints. Registration is authenticated with the
 // existing Passport user token, while protected business API routes additionally

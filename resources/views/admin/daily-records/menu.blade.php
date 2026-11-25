@@ -1,6 +1,6 @@
 @php
     $dailyRecordsActor = auth('admin')->user() ?: auth()->user();
-    $isDailyRecords = request()->routeIs('admin.daily-records.*');
+    $isDailyRecords = request()->routeIs('admin.daily-records.*') || request()->routeIs('admin.deliveries.*');
 @endphp
 @if ($dailyRecordsActor?->is_active)
     @can('daily_records.manage')
@@ -30,6 +30,13 @@
                            data-href="{{ route('admin.daily-records.branch-routes') }}"
                            class="nav-link {{ request()->routeIs('admin.daily-records.branch-routes') ? 'active' : '' }}">
                             {{ __('daily_records.branch_route_management') }}
+                        </a>
+                    </li>
+                    <li class="nav-item {{ request()->routeIs('admin.deliveries.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.deliveries.index') }}"
+                           data-href="{{ route('admin.deliveries.index') }}"
+                           class="nav-link {{ request()->routeIs('admin.deliveries.*') ? 'active' : '' }}">
+                            {{ __('deliveries.delivery_management') }}
                         </a>
                     </li>
                     <li class="nav-item {{ (request()->routeIs('admin.daily-records.submissions') || request()->routeIs('admin.daily-records.submission')) ? 'active' : '' }}">

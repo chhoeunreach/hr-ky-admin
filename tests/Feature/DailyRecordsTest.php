@@ -46,7 +46,7 @@ final class DailyRecordsTest extends TestCase
         DB::table('permission_roles')->insert([
             'role_id' => 1, 'permission_id' => DB::table('permissions')->where('permission_key', RecordAccess::MANAGE)->value('id'),
         ]);
-        DB::table('roles')->insert([['id' => 1, 'slug' => 'manager'], ['id' => 2, 'slug' => 'employee']]);
+        DB::table('roles')->insert([['id' => 1, 'slug' => 'manager', 'backend_login_authorize' => 1], ['id' => 2, 'slug' => 'employee', 'backend_login_authorize' => 0]]);
         DB::table('branches')->insert([
             ['id' => 1, 'name' => 'Phnom Penh', 'company_id' => 1],
             ['id' => 2, 'name' => 'Siem Reap', 'company_id' => 1],
@@ -315,7 +315,7 @@ final class DailyRecordsTest extends TestCase
         $this->postJson(self::API.'/summaries', $data)->assertOk()->assertJsonPath('data.id', $id);
         $this->assertDatabaseCount('daily_report_versions', 1);
         $this->asManager(1)->get(self::WEB.'/submissions?status=submitted')
-            ->assertOk()->assertSee(__('daily_records.total_count', ['count' => 1]))
+            ->assertOk()->assertSee('data-directory-count="submissionTable">1<', false)
             ->assertSee('Operations One')->assertSee('value="submitted"', false)
             ->assertSee(__('daily_records.submission_overview'))
             ->assertSee('aria-label="'.__('daily_records.pending_review').': 1"', false)

@@ -24,7 +24,7 @@ class CompanyDocumentApiController extends Controller
     {
         try {
             $user = $request->user();
-            $query = CompanyDocument::with(['category', 'branch', 'creator']);
+            $query = CompanyDocument::with(['category', 'branch', 'creator', 'attachments']);
 
             // Filter: Category
             if ($request->filled('category')) {
@@ -219,7 +219,7 @@ class CompanyDocumentApiController extends Controller
             $isSqlite = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite';
             $diffExpr = $isSqlite ? '(julianday(expiry_date) - julianday(?))' : 'DATEDIFF(expiry_date, ?)';
 
-            $expiringDocs = CompanyDocument::with(['category', 'branch'])
+            $expiringDocs = CompanyDocument::with(['category', 'branch', 'attachments'])
                 ->whereNotNull('expiry_date')
                 ->whereDate('expiry_date', '>=', $today)
                 ->whereRaw("{$diffExpr} <= alert_before_days", [$todayStr])
@@ -227,7 +227,7 @@ class CompanyDocumentApiController extends Controller
                 ->get()
                 ->map(fn($doc) => $this->transformDocument($doc));
 
-            $expiredDocs = CompanyDocument::with(['category', 'branch'])
+            $expiredDocs = CompanyDocument::with(['category', 'branch', 'attachments'])
                 ->whereNotNull('expiry_date')
                 ->whereDate('expiry_date', '<', $today)
                 ->orderBy('expiry_date', 'desc')
@@ -256,7 +256,7 @@ class CompanyDocumentApiController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $document = CompanyDocument::with(['category', 'branch', 'creator', 'updater'])->findOrFail($id);
+            $document = CompanyDocument::with(['category', 'branch', 'creator', 'updater', 'attachments'])->findOrFail($id);
 
             return response()->json([
                 'status' => true,
@@ -289,36 +289,71 @@ class CompanyDocumentApiController extends Controller
                 'cost_amount' => ['nullable', 'numeric', 'min:0'],
                 'currency' => ['nullable', 'in:USD,KHR'],
                 'receipt_number' => ['nullable', 'string', 'max:100'],
-                'file' => ['required', 'file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+                'file' => ['nullable', 'file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
+                'files' => ['nullable', 'array'],
+                'files.*' => ['file', 'max:25600', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'],
                 'confidentiality_level' => ['nullable', 'in:public,internal,restricted,confidential'],
                 'description' => ['nullable', 'string'],
             ]);
 
-            $file = $request->file('file');
-            $originalName = $file->getClientOriginalName();
-            $extension = strtolower($file->getClientOriginalExtension());
-            $fileSize = $file->getSize();
+            $uploadedFiles = [];
+            if ($request->hasFile('files')) {
+                $filesInput = $request->file('files');
+                $uploadedFiles = is_array($filesInput) ? $filesInput : [$filesInput];
+            } elseif ($request->hasFile('file')) {
+                $uploadedFiles = [$request->file('file')];
+            }
+
+            if (empty($uploadedFiles)) {
+                return AppHelper::sendErrorResponse('សូមជ្រើសរើសឯកសារយ៉ាងតិចមួយ (Please select at least one document file).', 422);
+            }
 
             $uploadDir = public_path(CompanyDocument::UPLOAD_PATH . $validated['category_code']);
             if (!File::isDirectory($uploadDir)) {
                 File::makeDirectory($uploadDir, 0755, true, true);
             }
 
-            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
-            $file->move($uploadDir, $fileName);
+            $savedAttachments = [];
+            $primaryFilePath = '';
+            $primaryFileName = '';
+            $primaryFileType = 'other';
+            $primaryFileSize = 0;
 
-            $filePath = CompanyDocument::UPLOAD_PATH . $validated['category_code'] . '/' . $fileName;
+            foreach ($uploadedFiles as $index => $uploadedFile) {
+                if (!$uploadedFile || !$uploadedFile->isValid()) continue;
 
-            // Determine file type category
-            $fileType = 'other';
-            if ($extension === 'pdf') {
-                $fileType = 'pdf';
-            } elseif (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
-                $fileType = 'image';
-            } elseif (in_array($extension, ['doc', 'docx'])) {
-                $fileType = 'word';
-            } elseif (in_array($extension, ['xls', 'xlsx', 'csv'])) {
-                $fileType = 'excel';
+                $originalName = $uploadedFile->getClientOriginalName();
+                $extension = strtolower($uploadedFile->getClientOriginalExtension());
+                $fileSize = $uploadedFile->getSize();
+                $fileName = time() . '_' . $index . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
+                $uploadedFile->move($uploadDir, $fileName);
+                $filePath = CompanyDocument::UPLOAD_PATH . $validated['category_code'] . '/' . $fileName;
+
+                $fileType = 'other';
+                if ($extension === 'pdf') {
+                    $fileType = 'pdf';
+                } elseif (in_array($extension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
+                    $fileType = 'image';
+                } elseif (in_array($extension, ['doc', 'docx'])) {
+                    $fileType = 'word';
+                } elseif (in_array($extension, ['xls', 'xlsx', 'csv'])) {
+                    $fileType = 'excel';
+                }
+
+                if ($index === 0) {
+                    $primaryFilePath = $filePath;
+                    $primaryFileName = $originalName;
+                    $primaryFileType = $fileType;
+                    $primaryFileSize = $fileSize;
+                }
+
+                $savedAttachments[] = [
+                    'file_path' => $filePath,
+                    'file_name' => $originalName,
+                    'file_type' => $fileType,
+                    'file_size' => $fileSize,
+                    'sort_order' => $index,
+                ];
             }
 
             $document = CompanyDocument::create([
@@ -336,16 +371,20 @@ class CompanyDocumentApiController extends Controller
                 'cost_amount' => $validated['cost_amount'] ?? null,
                 'currency' => $validated['currency'] ?? 'USD',
                 'receipt_number' => $validated['receipt_number'] ?? null,
-                'file_path' => $filePath,
-                'file_name' => $originalName,
-                'file_type' => $fileType,
-                'file_size' => $fileSize,
+                'file_path' => $primaryFilePath,
+                'file_name' => $primaryFileName,
+                'file_type' => $primaryFileType,
+                'file_size' => $primaryFileSize,
                 'confidentiality_level' => $validated['confidentiality_level'] ?? 'internal',
                 'description' => $validated['description'] ?? null,
                 'created_by' => auth()->id(),
             ]);
 
-            $document->load(['category', 'branch', 'creator']);
+            foreach ($savedAttachments as $attData) {
+                $document->attachments()->create($attData);
+            }
+
+            $document->load(['category', 'branch', 'creator', 'attachments']);
 
             return response()->json([
                 'status' => true,
@@ -484,6 +523,31 @@ class CompanyDocumentApiController extends Controller
      */
     protected function transformDocument(CompanyDocument $doc): array
     {
+        $attachments = [];
+        if ($doc->relationLoaded('attachments') && $doc->attachments->isNotEmpty()) {
+            $attachments = $doc->attachments->map(fn($att) => [
+                'id' => $att->id,
+                'file_url' => $att->file_url,
+                'file_name' => $att->file_name,
+                'file_type' => $att->file_type,
+                'file_size' => (int) ($att->file_size ?: 0),
+                'is_pdf' => (bool) $att->is_pdf,
+                'is_image' => (bool) $att->is_image,
+            ])->values()->toArray();
+        } elseif ($doc->file_path) {
+            $attachments = [
+                [
+                    'id' => 0,
+                    'file_url' => $doc->file_url,
+                    'file_name' => $doc->file_name,
+                    'file_type' => $doc->file_type,
+                    'file_size' => (int) ($doc->file_size ?: 0),
+                    'is_pdf' => (bool) $doc->is_pdf,
+                    'is_image' => (bool) $doc->is_image,
+                ]
+            ];
+        }
+
         return [
             'id' => $doc->id,
             'category_code' => $doc->category_code,
@@ -513,6 +577,8 @@ class CompanyDocumentApiController extends Controller
             'file_size' => $doc->file_size ? (int) $doc->file_size : 0,
             'is_pdf' => (bool) $doc->is_pdf,
             'is_image' => (bool) $doc->is_image,
+            'attachments' => $attachments,
+            'attachments_count' => count($attachments),
             'confidentiality_level' => $doc->confidentiality_level ?? 'internal',
             'description' => $doc->description,
             'created_at' => $doc->created_at ? $doc->created_at->toIso8601String() : null,

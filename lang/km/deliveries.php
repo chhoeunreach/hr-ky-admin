@@ -1,0 +1,80 @@
+<?php
+
+return [
+    // Page & Navigation
+    'delivery_management' => 'គ្រប់គ្រងការដឹកជញ្ជូន',
+    'delivery_subtitle' => 'តាមដាន ចាត់ចែង និងត្រួតពិនិត្យដំណើរការដឹកជញ្ជូនទំនិញជាក់ស្តែងរបស់បុគ្គលិក។',
+    'live_fleet_tracking' => 'ផែនទីតាមដានអ្នកដឹកផ្ទាល់ (Live Fleet Tracking)',
+    'delivery_list' => 'បញ្ជីតាមដានការដឹកជញ្ជូន',
+    'quick_dispatch' => 'ចាត់ចែងការដឹកជញ្ជូនថ្មី',
+    'dispatch_new_delivery' => 'បង្កើតការដឹកជញ្ជូនថ្មី',
+    'delivery_details' => 'ព័ត៌មានលម្អិតការដឹកជញ្ជូន',
+    'delivery_journey_map' => 'ផែនទី និងគន្លងផ្លូវដឹកជញ្ជូន',
+
+    // KPIs
+    'kpi_total_today' => 'ការដឹកសរុបថ្ងៃនេះ',
+    'kpi_in_transit' => 'កំពុងធ្វើដំណើរ',
+    'kpi_delivered_today' => 'បានប្រគល់ជោគជ័យ',
+    'kpi_pending' => 'រង់ចាំចេញដំណើរ',
+    'kpi_active_drivers' => 'អ្នកដឹកកំពុងសកម្ម',
+
+    // Statuses
+    'status' => 'ស្ថានភាព',
+    'status_pending' => 'រង់ចាំ (Pending)',
+    'status_in_transit' => 'កំពុងដឹក (In Transit)',
+    'status_arrived' => 'បានមកដល់ (Arrived)',
+    'status_delivered' => 'បានប្រគល់ (Delivered)',
+    'status_cancelled' => 'បានបោះបង់ (Cancelled)',
+    'all_statuses' => 'គ្រប់ស្ថានភាពទាំងអស់',
+
+    // Table & Form Fields
+    'tracking_code' => 'លេខកូដតាមដាន',
+    'invoice_number' => 'លេខវិក្កយបត្រ (Invoice)',
+    'driver' => 'អ្នកដឹកជញ្ជូន',
+    'all_drivers' => 'គ្រប់អ្នកដឹកទាំងអស់',
+    'customer' => 'អតិថិជន',
+    'customer_name' => 'ឈ្មោះអតិថិជន',
+    'customer_phone' => 'លេខទូរស័ព្ទអតិថិជន',
+    'destination' => 'គោលដៅទទួល',
+    'destination_address' => 'អាសយដ្ឋានគោលដៅ',
+    'origin_address' => 'អាសយដ្ឋានចេញដំណើរ',
+    'delivery_type' => 'ប្រភេទនៃការដឹក',
+    'type_customer' => 'ដឹកឱ្យអតិថិជន (Customer)',
+    'type_branch' => 'ដឹកទៅសាខា (Branch-to-Branch)',
+    'destination_branch' => 'សាខាគោលដៅ',
+    'branch' => 'សាខាដើមទី',
+    'all_branches' => 'គ្រប់សាខាទាំងអស់',
+    'notes' => 'កំណត់ចំណាំបន្ថែម',
+    'started_at' => 'ម៉ោងចាប់ផ្តើម',
+    'completed_at' => 'ម៉ោងបញ្ចប់',
+    'duration' => 'រយៈពេល',
+    'speed' => 'ល្បឿន',
+    'heading' => 'ទិសដៅ',
+    'last_ping' => 'ទីតាំងចុងក្រោយ',
+
+    // Proofs & Photos
+    'proof_of_delivery' => 'ភស្តុតាងប្រគល់ទំនិញ (Proof of Delivery)',
+    'driver_selfie' => 'រូបថត Selfie អ្នកដឹក',
+    'product_photos' => 'រូបថតទំនិញមុនចេញ',
+    'photos_and_proofs' => 'រូបថត និងភស្តុតាង',
+    'view_full_photo' => 'មើលរូបភាពពេញ',
+    'no_proof_photo' => 'មិនទាន់មានរូបថតភស្តុតាងនៅឡើយ',
+
+    // Actions & Tools
+    'view_details' => 'មើលលម្អិត & ផែនទី',
+    'copy_tracking_link' => 'ចម្លង Link តាមដាន',
+    'tracking_link_copied' => 'បានចម្លងតំណភ្ជាប់ជោគជ័យ!',
+    'call_customer' => 'ហៅទូរស័ព្ទទៅភ្ញៀវ',
+    'open_in_google_maps' => 'បើកលើ Google Maps',
+    'public_tracking_link' => 'តំណភ្ជាប់តាមដានសម្រាប់អតិថិជន (Public Link)',
+    'update_status' => 'កែប្រែស្ថានភាព',
+    'mark_delivered' => 'សម្គាល់ថាបានប្រគល់',
+    'mark_cancelled' => 'បោះបង់ការដឹក',
+    'save_dispatch' => 'ចាត់ចែង និងបញ្ជូនការងារ',
+    'auto_refresh' => 'អាប់ដេតស្វ័យប្រវត្ត (១០វិនាទី)',
+    'fit_all_drivers' => 'ពង្រីកមើលអ្នកដឹកទាំងអស់',
+    'no_active_drivers' => 'មិនមានអ្នកដឹកកំពុងធ្វើដំណើរឡើយ',
+    'no_deliveries_found' => 'មិនមានទិន្នន័យការដឹកជញ្ជូនទេ',
+    'no_deliveries_help' => 'នៅពេល Admin ឬប្រព័ន្ធចាត់ចែងការដឹកជញ្ជូន ទិន្នន័យនឹងបង្ហាញនៅទីនេះ។',
+    'confirm_delete' => 'តើអ្នកពិតជាចង់លុបការដឹកជញ្ជូននេះមែនទេ?',
+];

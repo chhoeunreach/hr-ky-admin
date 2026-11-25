@@ -646,6 +646,30 @@ class AttendanceService
             }
         }
 
+        // Also whitelist destination branch if employee is on an active delivery to that branch
+        if (\Illuminate\Support\Facades\Schema::hasTable('deliveries')) {
+            $activeDelivery = \App\Models\Delivery::where('user_id', $userId)
+                ->whereIn('status', [\App\Models\Delivery::STATUS_IN_TRANSIT, \App\Models\Delivery::STATUS_ARRIVED])
+                ->whereNotNull('destination_branch_id')
+                ->latest()
+                ->first();
+
+            if ($activeDelivery && $activeDelivery->destination_branch_id) {
+                $destBranch = \App\Models\Branch::withoutGlobalScope('branch')->find($activeDelivery->destination_branch_id);
+                if ($destBranch && $destBranch->branch_location_latitude !== null && $destBranch->branch_location_longitude !== null) {
+                    $eligibleLocations[] = [
+                        'id' => $destBranch->id,
+                        'name' => $destBranch->name ?? 'Delivery Destination Branch',
+                        'latitude' => (float) $destBranch->branch_location_latitude,
+                        'longitude' => (float) $destBranch->branch_location_longitude,
+                        'is_home' => false,
+                        'is_branch_route' => true,
+                        'delivery_id' => $activeDelivery->id,
+                    ];
+                }
+            }
+        }
+
         $bestMatch = !empty($eligibleLocations) ? $eligibleLocations[0] : null;
         $minDistance = null;
         $withinRadius = false;

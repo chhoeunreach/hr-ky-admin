@@ -366,4 +366,54 @@ class ThemeModeManagementTest extends TestCase
         $reupdated = $controller->config();
         $this->assertTrue($controller->isThemeAllowedForRole($reupdated['royal_blue_gold'], $roleStaff));
     }
+
+    public function test_end_to_end_role_theme_sync_affects_mobile_api(): void
+    {
+        $roleStaff = Role::create(['name' => 'Staff', 'slug' => 'staff']);
+        $roleDriver = Role::create(['name' => 'Driver', 'slug' => 'driver']);
+
+        $controller = new ThemeModeController();
+        // Restrict Staff to sunset and light
+        $controller->syncRoleThemes($roleStaff, ['sunset', 'light']);
+
+        // Staff employee
+        $staffUser = User::create([
+            'name' => 'Staff User',
+            'email' => 'staff_api@test.com',
+            'password' => bcrypt('secret'),
+            'role_id' => $roleStaff->id,
+            'is_admin' => false,
+        ]);
+        $staffUser->setRelation('role', $roleStaff);
+
+        // Driver employee
+        $driverUser = User::create([
+            'name' => 'Driver User',
+            'email' => 'driver_api@test.com',
+            'password' => bcrypt('secret'),
+            'role_id' => $roleDriver->id,
+            'is_admin' => false,
+        ]);
+        $driverUser->setRelation('role', $roleDriver);
+
+        // 1. Staff calls Mobile API
+        $staffResponse = $this->actingAs($staffUser)->getJson('/_test/mobile-tool/api-theme-modes');
+        $staffResponse->assertOk();
+        $staffKeys = collect($staffResponse->json('data'))->pluck('key')->all();
+
+        $this->assertContains('sunset', $staffKeys);
+        $this->assertContains('light', $staffKeys);
+        $this->assertNotContains('royal_blue_gold', $staffKeys);
+        $this->assertNotContains('ocean_blue', $staffKeys);
+
+        // 2. Driver calls Mobile API (unrestricted)
+        $driverResponse = $this->actingAs($driverUser)->getJson('/_test/mobile-tool/api-theme-modes');
+        $driverResponse->assertOk();
+        $driverKeys = collect($driverResponse->json('data'))->pluck('key')->all();
+
+        $this->assertContains('royal_blue_gold', $driverKeys);
+        $this->assertContains('ocean_blue', $driverKeys);
+        $this->assertContains('sunset', $driverKeys);
+        $this->assertContains('light', $driverKeys);
+    }
 }
