@@ -35,20 +35,22 @@ class LeaveRequestToolbarTest extends TestCase
             $table->softDeletes();
         });
         foreach (['branches' => 'name','departments' => 'dept_name','leave_types' => 'name'] as $name => $column) {
-            Schema::create($name, function (Blueprint $table) use ($column) {$table->id();$table->string($column);});
+            Schema::create($name, function (Blueprint $table) use ($column, $name) {$table->id();$table->string($column);if ($name === 'leave_types') $table->integer('leave_allocated')->nullable();});
         }
         Schema::create('leave_requests_master', function (Blueprint $table) {
             $table->id();foreach (['requested_by','branch_id','department_id','leave_type_id'] as $column) $table->integer($column);
             foreach (['leave_from','leave_to','leave_requested_date'] as $column) $table->date($column);
             $table->integer('no_of_days');$table->string('status');$table->text('reasons');$table->string('admin_remark')->nullable();
+            $table->integer('request_updated_by')->nullable();$table->timestamps();
         });
         DB::table('users')->insert(['id'=>1,'name'=>'Dara','email'=>'dara@example.test','username'=>'dara','employee_code'=>'KY001']);
         DB::table('branches')->insert(['id'=>1,'name'=>'Main']);
         DB::table('departments')->insert(['id'=>1,'dept_name'=>'Sales']);
-        DB::table('leave_types')->insert(['id'=>1,'name'=>'Annual']);
+        DB::table('leave_types')->insert(['id'=>1,'name'=>'Annual','leave_allocated'=>12]);
         foreach (range(1,31) as $id) DB::table('leave_requests_master')->insert([
             'requested_by'=>1,'branch_id'=>1,'department_id'=>1,'leave_type_id'=>1,'leave_from'=>'2026-11-09','leave_to'=>'2026-11-09',
             'leave_requested_date'=>'2026-11-08','no_of_days'=>1,'status'=>'pending','reasons'=>'Family appointment',
+            'request_updated_by'=>1,'created_at'=>now(),'updated_at'=>now(),
         ]);
         $this->actingAs((new Admin)->forceFill(['id'=>1]), 'admin');
         Gate::before(fn () => true);
@@ -83,10 +85,28 @@ class LeaveRequestToolbarTest extends TestCase
         $this->assertStringContainsString('data-directory-table="leaveRequestTable"',$html);
         $this->assertStringContainsString('data-open-leave-request-form',$html);
         $this->assertStringContainsString('data-directory-export="excel"',$html);
+        $this->assertStringContainsString('data-directory-export-url="'.route('admin.leave-request.export-data').'"',$html);
         $this->assertStringContainsString('data-directory-value="Family appointment"',$html);
         $this->assertStringContainsString('data-directory-total="31"',$html);
         $this->assertLessThan(strpos($html,'id="leave-request-list-block"'),strpos($html,'data-directory-table="leaveRequestTable"'));
         $this->assertStringNotContainsString('id="dataTableExample"',$html);
         $this->assertStringNotContainsString('id="copy-leave-request-export"',$html);
+    }
+
+    public function test_structured_export_returns_the_required_leave_request_columns(): void
+    {
+        $response = $this->get(route('admin.leave-request.export-data', $this->filters(['per_page'=>'all'])));
+
+        $response->assertOk()->assertJsonPath('success', true);
+        $this->assertSame([
+            'ថ្ងៃខែឆ្នាំ','លេខសម្គាល់','ឈ្មោះ','ប្រភេទឈប់','Paid/Unpaid','រយៈពេល (ថ្ងៃ)','ចាប់ពីថ្ងៃ','ដលថ្ងៃ',
+            'ផ្សេង','ស្ថានភាព','អនុញ្ញាតិដោយ','ផ្សេងៗ','ថ្ងៃខែស្នើរ','ថ្ងៃខែអនុញ្ញាតិ','ខែ-ឆ្នាំ','សម្គាល់-ខែ-ឆ្នាំ',
+        ], $response->json('headers'));
+        $this->assertCount(31, $response->json('rows'));
+        $this->assertCount(16, $response->json('rows.0'));
+        $this->assertSame('08-11-2026', $response->json('rows.0.0'));
+        $this->assertSame('dara', $response->json('rows.0.1'));
+        $this->assertSame(1, $response->json('rows.0.4'));
+        $this->assertSame('Dara', $response->json('rows.0.10'));
     }
 }

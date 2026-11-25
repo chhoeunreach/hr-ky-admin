@@ -141,6 +141,33 @@ class LeaveController extends Controller
         abort(403);
     }
 
+    public function exportData(Request $request): JsonResponse
+    {
+        if (auth('admin')->user() || Gate::allows('list_leave_request') || Gate::allows('access_admin_leave')) {
+            try {
+                $filterParameters = $this->buildLeaveRequestFilters($request);
+
+                $with = ['leaveType:id,name,leave_allocated', 'leaveRequestedBy:id,name,employee_code,username', 'leaveRequestUpdatedBy:id,name'];
+                $select = ['leave_requests_master.*'];
+                $leaveDetails = $this->leaveService->getAllEmployeeLeaveRequestsForExport($filterParameters, $select, $with);
+                $rows = $this->buildLeaveRequestCopyRows($leaveDetails);
+
+                return response()->json([
+                    'success' => true,
+                    'headers' => array_shift($rows),
+                    'rows' => array_values($rows),
+                ]);
+            } catch (Exception $exception) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $exception->getMessage(),
+                ], 422);
+            }
+        }
+
+        abort(403);
+    }
+
     private function buildLeaveRequestCopyRows($leaveDetails): array
     {
         $rows = [[

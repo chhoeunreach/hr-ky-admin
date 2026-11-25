@@ -5,7 +5,7 @@
         <th style="text-align: center;"><b>លេខសម្គាល់</b></th>
         <th style="text-align: center;"><b>ឈ្មោះ</b></th>
         <th style="text-align: center;"><b>ប្រភេទឈប់</b></th>
-        <th style="text-align: center;"><b>Paid/Unpad</b></th>
+        <th style="text-align: center;"><b>Paid/Unpaid</b></th>
         <th style="text-align: center;"><b>រយៈពេល (ថ្ងៃ)</b></th>
         <th style="text-align: center;"><b>ចាប់ពីថ្ងៃ</b></th>
         <th style="text-align: center;"><b>ដលថ្ងៃ</b></th>
