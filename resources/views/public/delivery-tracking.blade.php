@@ -2,7 +2,7 @@
 <html lang="km">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>តាមដានការដឹកជញ្ជូន (Live Delivery Tracking) | {{ $delivery->tracking_code }}</title>
     
     <!-- Leaflet CSS -->
@@ -18,27 +18,38 @@
             margin: 0;
             padding: 0;
         }
+        html {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+        }
         body {
             font-family: 'Kantumruy Pro', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: #f8fafc;
             color: #1e293b;
             height: 100vh;
-            width: 100vw;
+            height: 100dvh;
+            min-height: 100%;
+            width: 100%;
             overflow: hidden;
             position: relative;
         }
         #map {
+            position: fixed;
+            inset: 0;
             width: 100%;
-            height: 100%;
+            height: 100vh;
+            height: 100dvh;
             z-index: 1;
         }
 
         /* Top Header Bar */
         .top-bar {
             position: absolute;
-            top: 16px;
-            left: 16px;
-            right: 16px;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            right: max(12px, env(safe-area-inset-right));
+            gap: 8px;
             z-index: 1000;
             display: flex;
             justify-content: space-between;
@@ -101,8 +112,8 @@
         /* Re-center floating button */
         .recenter-btn {
             position: absolute;
-            right: 16px;
-            bottom: 270px;
+            bottom: calc(var(--card-height, 270px) + max(24px, env(safe-area-inset-bottom)) + 12px);
+            right: max(12px, env(safe-area-inset-right));
             z-index: 999;
             width: 44px;
             height: 44px;
@@ -125,15 +136,20 @@
         /* Bottom Floating Card */
         .bottom-card {
             position: absolute;
-            bottom: 16px;
-            left: 16px;
-            right: 16px;
+            bottom: max(12px, env(safe-area-inset-bottom));
+            left: max(12px, env(safe-area-inset-left));
+            right: max(12px, env(safe-area-inset-right));
             max-width: 520px;
+            max-height: 64vh;
+            max-height: min(64dvh, 560px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(12px);
             border-radius: 24px;
-            padding: 20px;
+            padding: clamp(12px, 3vw, 20px);
             box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
             z-index: 1000;
             border: 1px solid rgba(226, 232, 240, 0.9);
@@ -365,7 +381,7 @@
             z-index: 2000;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
         }
         .modal-card {
             background: white;
@@ -373,6 +389,9 @@
             padding: 24px;
             max-width: 400px;
             width: 100%;
+            max-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);
+            max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);
+            overflow-y: auto;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -400,6 +419,55 @@
             border-radius: 12px;
             margin: 12px 0;
             border: 1px solid #e2e8f0;
+        }
+
+        @media (max-width: 480px) {
+            .top-bar { gap: 6px; }
+            .brand-badge {
+                min-width: 0;
+                max-width: 46%;
+                padding: 7px 10px;
+                gap: 6px;
+                font-size: 11px;
+                overflow: hidden;
+                white-space: nowrap;
+            }
+            .brand-logo-dot { flex: 0 0 8px; width: 8px; height: 8px; }
+            .brand-badge span:last-child,
+            .status-pill span:last-child {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .status-pill {
+                min-width: 0;
+                max-width: 48%;
+                padding: 7px 10px;
+                font-size: 11px;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            .bottom-card {
+                max-height: 64vh;
+                max-height: min(64dvh, 560px);
+                padding: 13px;
+                border-radius: 18px;
+            }
+            .stepper-container { padding: 0 2px; margin-bottom: 12px; }
+            .step-label { font-size: 9px; }
+            .driver-row { gap: 8px; margin-bottom: 10px; }
+            .driver-info { min-width: 0; gap: 8px; }
+            .driver-name, .driver-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .action-call-btn { flex: 0 0 auto; padding: 8px 10px; font-size: 12px; }
+            .order-meta-grid { gap: 8px; font-size: 11px; }
+            .recenter-btn { width: 40px; height: 40px; }
+            .modal-card { padding: 20px 16px; border-radius: 20px; }
+        }
+
+        @media (max-height: 600px) {
+            .bottom-card { max-height: 46vh; max-height: 46dvh; }
         }
     </style>
 </head>
@@ -540,6 +608,20 @@
             zoomControl: false,
             attributionControl: false
         }).setView([driverLat, driverLng], 15);
+
+        const bottomCard = document.querySelector('.bottom-card');
+        const syncMobileLayout = () => {
+            if (bottomCard) {
+                document.documentElement.style.setProperty('--card-height', `${bottomCard.getBoundingClientRect().height}px`);
+            }
+            map.invalidateSize({ pan: false });
+        };
+        if (bottomCard && 'ResizeObserver' in window) {
+            new ResizeObserver(syncMobileLayout).observe(bottomCard);
+        }
+        window.addEventListener('resize', syncMobileLayout, { passive: true });
+        window.addEventListener('orientationchange', () => setTimeout(syncMobileLayout, 150), { passive: true });
+        requestAnimationFrame(syncMobileLayout);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

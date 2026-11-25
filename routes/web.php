@@ -277,6 +277,13 @@ Route::group([
         Route::put('d-card-print/employees/{employee}', [DCardPrintController::class, 'update'])->name('d-card-print.employees.update');
         Route::delete('d-card-print/employees/{employee}', [DCardPrintController::class, 'destroy'])->name('d-card-print.employees.destroy');
 
+        /** Telegram group routes are controlled by their per-role permissions. */
+        Route::resource('telegram-groups', TelegramGroupController::class)->except(['show', 'destroy']);
+        Route::post('telegram-groups/send-test', [TelegramGroupController::class, 'sendTestMessage'])->name('telegram-groups.send-test');
+        Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
+        Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');
+        Route::get('telegram-groups/delete/{id}', [TelegramGroupController::class, 'delete'])->name('telegram-groups.delete');
+
         Route::group(['middleware' => 'superAdmin'], function () {
 
 
@@ -301,7 +308,7 @@ Route::group([
             Route::post('app-settings/app-version', [AppSettingController::class, 'updateAppVersion'])->name('app-settings.app-version.update');
             Route::post('app-settings/send-update-alert', [AppSettingController::class, 'sendAppUpdateAlert'])->name('app-settings.send-update-alert');
 
-            /** Telegram group route */
+            /** Telegram employee administration routes remain super-admin only. */
             Route::get('telegram-employees', [TelegramEmployeeController::class, 'index'])->name('telegram-employees.index');
             Route::get('telegram-employees/detail/{type}', [TelegramEmployeeController::class, 'detail'])->name('telegram-employees.detail');
             Route::post('telegram-employees/sync-starts', [TelegramEmployeeController::class, 'syncStarts'])->name('telegram-employees.sync-starts');
@@ -309,11 +316,6 @@ Route::group([
             Route::delete('telegram-employees/{employee}/unlink', [TelegramEmployeeController::class, 'unlink'])->name('telegram-employees.unlink');
             Route::post('telegram-employees/{employee}/send', [TelegramEmployeeController::class, 'send'])->name('telegram-employees.send');
             Route::post('telegram-employees/broadcast', [TelegramEmployeeController::class, 'broadcast'])->name('telegram-employees.broadcast');
-            Route::resource('telegram-groups', TelegramGroupController::class)->except(['show', 'destroy']);
-            Route::post('telegram-groups/send-test', [TelegramGroupController::class, 'sendTestMessage'])->name('telegram-groups.send-test');
-            Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
-            Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');
-            Route::get('telegram-groups/delete/{id}', [TelegramGroupController::class, 'delete'])->name('telegram-groups.delete');
 
             /** General settings */
             Route::resource('general-settings', GeneralSettingController::class);
