@@ -249,6 +249,12 @@ class DepartmentController extends Controller
                 $department->save();
             });
             DB::commit();
+
+            if ($request->input('department_modal') === '1') {
+                session()->flash('success', __('message.update_department'));
+                return view($this->view.'common.modal-saved', ['message' => __('message.update_department')]);
+            }
+
             return redirect()
                 ->route('admin.departments.index')
                 ->with('success', __('message.'));

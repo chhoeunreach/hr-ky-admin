@@ -362,7 +362,12 @@ class TelegramEventNotificationTest extends TestCase
 
     public function test_send_test_message_endpoint(): void
     {
-        $admin = Admin::query()->create(['name' => 'Admin Tester']);
+        $admin = Admin::query()->create([
+            'name' => 'Admin Tester',
+            'email' => 'admin_tester@test.com',
+            'username' => 'admin_tester',
+            'password' => bcrypt('password'),
+        ]);
         $this->actingAs($admin, 'admin');
 
         $mockTelegram = $this->createMock(TelegramService::class);

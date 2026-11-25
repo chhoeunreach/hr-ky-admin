@@ -382,6 +382,138 @@ class AttendanceTimeVerificationTest extends TestCase
         $this->assertEquals(11.60, $activeRoute['target_branches'][0]['latitude']);
     }
 
+    public function test_branch_route_check_out_at_target_branch_completes_mission_and_blocks_further_target_scans(): void
+    {
+        $this->actingAs($this->employee, 'api');
+        $this->freeze('2026-11-20 09:00:00');
+
+        DB::table('branches')->insert([
+            'id' => 3,
+            'name' => 'Branch C',
+            'branch_location_latitude' => 11.70,
+            'branch_location_longitude' => 104.98,
+        ]);
+
+        $this->setting('attendance_location_radius', 100, null, true);
+        DB::table('app_settings')->insert(['slug' => 'enable-employee-location', 'status' => 1]);
+
+        $branchCLocation = ['latitude' => 11.70, 'longitude' => 104.98];
+
+        // 1. Without route, scan at Branch C is blocked
+        $this->postJson(self::ENDPOINT, $this->wifi($branchCLocation))->assertForbidden();
+
+        // 2. Insert active branch route for today
+        $entryId = DB::table('daily_entries')->insertGetId([
+            'employee_id' => $this->employee->id,
+            'kind' => 'activity',
+            'title' => 'Mission to Branch C',
+            'details' => json_encode([
+                'fields' => [
+                    'mission_type' => 'branch_route',
+                    'route_id' => '22222222-3333-4444-5555-666666666666',
+                    'origin_branch' => 'Head Office',
+                    'target_branches' => ['Branch C'],
+                    'departure_time' => '08:30',
+                    'arrival_time' => '17:00',
+                    'status' => 'in_progress',
+                ],
+            ]),
+            'occurred_at' => '2026-11-20 08:30:00',
+            'created_at' => '2026-11-20 08:30:00',
+        ]);
+
+        // 3. API endpoint returns active branch route
+        $activeRouteRes = $this->getJson('/api/employees/active-branch-route')->assertOk();
+        $activeRouteRes->assertJsonPath('data.has_active_route', true);
+        $activeRouteRes->assertJsonPath('data.active_route.route_id', '22222222-3333-4444-5555-666666666666');
+
+        // 4. Check-in at Branch C succeeds
+        $inResponse = $this->postJson(self::ENDPOINT, $this->wifi($branchCLocation))->assertOk();
+        $inResponse->assertJsonPath('data.is_branch_route_attendance', true);
+        $inResponse->assertJsonPath('data.matched_branch_name', 'Branch C');
+
+        // 5. Check-out at Branch C at 17:00 with complete_branch_route = true completes the mission
+        $this->freeze('2026-11-20 17:00:00');
+        $outPayload = array_merge($branchCLocation, [
+            'attendance_status_type' => 'checkOut',
+            'complete_branch_route' => true,
+        ]);
+        $outResponse = $this->postJson(self::ENDPOINT, $this->wifi($outPayload))->assertOk();
+        $outResponse->assertJsonPath('data.is_branch_route_attendance', true);
+        $outResponse->assertJsonPath('data.branch_route_completed', true);
+        $outResponse->assertJsonPath('data.completed_branch_route.status', 'completed');
+
+        // 6. DB entry is now completed
+        $updatedEntry = DB::table('daily_entries')->where('id', $entryId)->first();
+        $entryDetails = json_decode($updatedEntry->details, true);
+        $this->assertSame('completed', $entryDetails['fields']['status']);
+        $this->assertSame('17:00', $entryDetails['fields']['actual_arrival_time']);
+        $this->assertTrue($entryDetails['fields']['completed_via_attendance']);
+
+        // 7. Active route endpoint now returns false (mission is closed)
+        $closedRouteRes = $this->getJson('/api/employees/active-branch-route')->assertOk();
+        $closedRouteRes->assertJsonPath('data.has_active_route', false);
+
+        // 8. Attempting to scan again at Branch C is now FORBIDDEN (permissions reverted to Home Branch!)
+        $this->freeze('2026-11-20 17:05:00');
+        $forbiddenRes = $this->postJson(self::ENDPOINT, $this->wifi($branchCLocation))->assertForbidden();
+        $forbiddenRes->assertJsonPath('error_code', 'BRANCH_ROUTE_COMPLETED');
+        $forbiddenRes->assertJsonPath('data.error_type', 'branch_route_completed');
+        $forbiddenRes->assertJsonPath('data.attempted_branch', 'Branch C');
+
+        // 9. Home branch scanning still works (e.g. next morning check-in)
+        $this->freeze('2026-11-21 08:30:00');
+        $homeLocation = ['latitude' => 11.55, 'longitude' => 104.92];
+        $homeResponse = $this->postJson(self::ENDPOINT, $this->wifi($homeLocation))->assertOk();
+        $homeResponse->assertJsonPath('data.is_branch_route_attendance', false);
+        $homeResponse->assertJsonPath('data.matched_branch_id', 1);
+    }
+
+    public function test_geofence_and_accuracy_violations_return_structured_error_payload_for_mobile_alert(): void
+    {
+        $this->actingAs($this->employee, 'api');
+        DB::table('app_settings')->insert(['slug' => 'enable-employee-location', 'status' => 1]);
+        $this->setting('attendance_location_accuracy', 50);
+        $this->setting('attendance_location_radius', 100, null, true);
+
+        // 1. Weak GPS Accuracy returns INSUFFICIENT_GPS_ACCURACY
+        $weakGps = $this->postJson(self::ENDPOINT, $this->wifi([
+            'latitude' => 11.55,
+            'longitude' => 104.92,
+            'accuracy' => 85,
+        ]))->assertForbidden();
+        $weakGps->assertJsonPath('error_code', 'INSUFFICIENT_GPS_ACCURACY');
+        $weakGps->assertJsonPath('data.error_type', 'insufficient_gps_accuracy');
+        $weakGps->assertJsonPath('data.current_accuracy_meters', 85);
+
+        // 2. Out of geofence returns OUT_OF_GEOFENCE with distance
+        $farGps = $this->postJson(self::ENDPOINT, $this->wifi([
+            'latitude' => 11.60,
+            'longitude' => 104.98,
+            'accuracy' => 15,
+        ]))->assertForbidden();
+        $farGps->assertJsonPath('error_code', 'OUT_OF_GEOFENCE');
+        $farGps->assertJsonPath('data.error_type', 'out_of_radius');
+        $this->assertGreaterThan(100, $farGps->json('data.distance_in_meter'));
+
+        // 3. Field worker also strictly respects branch radius when radius is enabled
+        $fieldEmployee = User::query()->create([
+            'name' => 'Field Worker',
+            'company_id' => 1,
+            'branch_id' => 1,
+            'office_time_id' => 1,
+            'workspace_type' => User::FIELD,
+            'allow_holiday_check_in' => true,
+        ]);
+        $this->actingAs($fieldEmployee, 'api');
+        $fieldFarGps = $this->postJson(self::ENDPOINT, $this->wifi([
+            'latitude' => 11.60,
+            'longitude' => 104.98,
+            'accuracy' => 15,
+        ]))->assertForbidden();
+        $fieldFarGps->assertJsonPath('error_code', 'OUT_OF_GEOFENCE');
+    }
+
     private function freeze(string $localTime): void
     {
         Carbon::setTestNow(Carbon::parse($localTime, 'Asia/Phnom_Penh'));

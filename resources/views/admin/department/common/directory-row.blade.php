@@ -63,7 +63,7 @@
         <div class="department-row-actions">
             <button type="button" class="department-icon-button show-department-details" title="{{ __('index.department_view_details') }}" aria-label="{{ __('index.department_view_details') }}"><i data-feather="eye"></i></button>
             @can('edit_department')
-                <a class="department-icon-button" href="{{ route('admin.departments.edit', $value->id) }}" title="{{ __('index.edit') }}" aria-label="{{ __('index.edit') }}"><i data-feather="edit-2"></i></a>
+                <a class="department-icon-button" href="{{ route('admin.departments.edit', $value->id) }}" data-open-department-modal title="{{ __('index.edit') }}" aria-label="{{ __('index.edit') }}"><i data-feather="edit-2"></i></a>
             @endcan
             @can('delete_department')
                 <button type="button" class="department-icon-button text-danger deleteBranch" data-href="{{ route('admin.departments.delete', $value->id) }}" title="{{ __('index.department_delete_button') }}" aria-label="{{ __('index.department_delete_button') }}"><i data-feather="trash-2"></i></button>

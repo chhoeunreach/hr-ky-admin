@@ -13,7 +13,7 @@
             </div>
             <div class="modal-footer">
                 <a class="btn btn-outline-primary me-auto" id="departmentDetailsDefaults" data-open-request-form data-request-modal-title="{{ __('index.department_performance_defaults') }}">{{ __('index.department_performance_defaults') }}</a>
-                @can('edit_department')<a class="btn btn-primary" id="departmentDetailsEdit">{{ __('index.edit') }}</a>@endcan
+                @can('edit_department')<a class="btn btn-primary" id="departmentDetailsEdit" data-open-department-modal>{{ __('index.edit') }}</a>@endcan
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ __('index.close') }}</button>
             </div>
         </div>

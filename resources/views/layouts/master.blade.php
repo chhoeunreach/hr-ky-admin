@@ -2,7 +2,7 @@
     $locale = \Illuminate\Support\Facades\App::getLocale();
     $themeColor = \App\Helpers\AppHelper::getThemeColor();
 @endphp
-@if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1')
+@if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1')
     @section('embedded', '1')
 @endif
 <!DOCTYPE html>
@@ -85,7 +85,7 @@
     @include('admin.section.head_links')
     @include('admin.section.typography')
     @yield('styles')
-    @if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1')
+    @if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1')
         <style>
             .page-wrapper { margin-left: 0 !important; width: 100% !important; }
             .page-content { padding: 1rem !important; margin-top: 0 !important; }

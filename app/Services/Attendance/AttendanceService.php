@@ -3,6 +3,7 @@
 namespace App\Services\Attendance;
 
 use App\Enum\EmployeeAttendanceTypeEnum;
+use App\Exceptions\AttendanceGeofenceException;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Helpers\DateConverter;
@@ -701,18 +702,151 @@ class AttendanceService
         if (
             $latitude === null || $longitude === null || empty($eligibleLocations)
         ) {
-            if ($locationRequired && $user->workspace_type == User::OFFICE && !$forceRadius) {
-                throw new Exception(__('message.attendance_outside'), 403);
+            if ($locationRequired || $forceRadius) {
+                throw new AttendanceGeofenceException(
+                    __('message.attendance_outside'),
+                    403,
+                    'LOCATION_REQUIRED',
+                    [
+                        'error_type' => 'location_required',
+                        'can_retry' => true,
+                    ]
+                );
             }
 
             return $validation;
         }
 
-        if ($user->workspace_type == User::OFFICE && !$withinRadius) {
-            throw new Exception($validation['location_validation_message'], 403);
+        if (!$withinRadius) {
+            $completedTarget = $this->findMatchingCompletedBranchRouteTarget(
+                $userId,
+                (float) $latitude,
+                (float) $longitude,
+                (float) $radius
+            );
+
+            if ($completedTarget) {
+                throw new AttendanceGeofenceException(
+                    __('message.branch_route_already_completed', [
+                        'branch' => $completedTarget['name'],
+                        'home_branch' => $branch?->name ?? 'Home Branch',
+                    ]),
+                    403,
+                    'BRANCH_ROUTE_COMPLETED',
+                    [
+                        'error_type' => 'branch_route_completed',
+                        'attempted_branch' => $completedTarget['name'],
+                        'home_branch' => $branch?->name ?? 'Home Branch',
+                        'distance_in_meter' => $completedTarget['distance'],
+                        'allowed_radius_in_meter' => $radius,
+                        'can_retry' => false,
+                    ]
+                );
+            }
+
+            if ($user->workspace_type == User::OFFICE || $forceRadius || $locationRequired || $radiusEnabled) {
+                throw new AttendanceGeofenceException(
+                    $validation['location_validation_message'],
+                    403,
+                    'OUT_OF_GEOFENCE',
+                    [
+                        'error_type' => 'out_of_radius',
+                        'distance_in_meter' => round($minDistance ?? 0, 1),
+                        'allowed_radius_in_meter' => $radius,
+                        'matched_branch_name' => $matchedBranchName,
+                        'is_branch_route' => $isBranchRouteAttendance,
+                        'can_retry' => true,
+                    ]
+                );
+            }
         }
 
         return $validation;
+    }
+
+    public function findMatchingCompletedBranchRouteTarget(
+        $userId,
+        float $latitude,
+        float $longitude,
+        float $radius,
+        ?Carbon $date = null
+    ): ?array {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('daily_entries')) {
+                return null;
+            }
+
+            $date = $date ? clone $date : Carbon::today();
+            $dateString = $date->toDateString();
+
+            $entries = DB::table('daily_entries')
+                ->where('employee_id', $userId)
+                ->where('kind', 'activity')
+                ->whereNull('archived_at')
+                ->where(function ($q) use ($dateString) {
+                    $q->whereDate('occurred_at', $dateString)
+                        ->orWhere(function ($sub) use ($dateString) {
+                            $sub->whereNull('occurred_at')
+                                ->whereDate('created_at', $dateString);
+                        });
+                })
+                ->orderByDesc('id')
+                ->get(['id', 'title', 'occurred_at', 'details']);
+
+            foreach ($entries as $entry) {
+                $details = is_string($entry->details) ? json_decode($entry->details, true) : (array) $entry->details;
+                $fields = $details['fields'] ?? [];
+
+                if (($fields['mission_type'] ?? null) !== 'branch_route') {
+                    continue;
+                }
+
+                if (($fields['status'] ?? null) !== 'completed') {
+                    continue;
+                }
+
+                $rawTargets = (array) ($fields['target_branches'] ?? []);
+                if (empty($rawTargets) || !\Illuminate\Support\Facades\Schema::hasTable('branches')) {
+                    continue;
+                }
+
+                $branches = \App\Models\Branch::withoutGlobalScope('branch')->where(function ($q) use ($rawTargets) {
+                    foreach ($rawTargets as $target) {
+                        $targetStr = trim((string) $target);
+                        if ($targetStr === '') {
+                            continue;
+                        }
+                        if (is_numeric($targetStr)) {
+                            $q->orWhere('id', (int) $targetStr);
+                        }
+                        $q->orWhere('name', 'like', "%{$targetStr}%");
+                    }
+                })->get(['id', 'name', 'branch_location_latitude', 'branch_location_longitude']);
+
+                foreach ($branches as $b) {
+                    if ($b->branch_location_latitude !== null && $b->branch_location_longitude !== null) {
+                        $dist = $this->calculateDistanceInMeters(
+                            $latitude,
+                            $longitude,
+                            (float) $b->branch_location_latitude,
+                            (float) $b->branch_location_longitude
+                        );
+                        if ($dist <= max($radius * 2, 200)) {
+                            return [
+                                'id' => $b->id,
+                                'name' => $b->name,
+                                'distance' => round($dist, 1),
+                                'route_id' => $entry->id,
+                            ];
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Error checking completed branch route target: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     public function getActiveBranchRouteForEmployee($userId, ?Carbon $date = null): ?array
@@ -747,7 +881,7 @@ class AttendanceService
                     continue;
                 }
 
-                if (($fields['status'] ?? null) === 'cancelled') {
+                if (in_array(($fields['status'] ?? null), ['cancelled', 'completed'], true)) {
                     continue;
                 }
 
@@ -840,6 +974,96 @@ class AttendanceService
         }
 
         return null;
+    }
+
+    public function completeBranchRouteForEmployee(int $userId, ?int $entryId = null, array $meta = []): ?array
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('daily_entries')) {
+                return null;
+            }
+
+            $query = DB::table('daily_entries')
+                ->where('employee_id', $userId)
+                ->where('kind', 'activity')
+                ->whereNull('archived_at');
+
+            if ($entryId) {
+                $entry = $query->where('id', $entryId)->first();
+            } else {
+                $today = Carbon::today()->toDateString();
+                $entry = $query->where(function ($q) use ($today) {
+                    $q->whereDate('occurred_at', $today)
+                        ->orWhere(function ($sub) use ($today) {
+                            $sub->whereNull('occurred_at')
+                                ->whereDate('created_at', $today);
+                        });
+                })->orderByDesc('id')->first();
+            }
+
+            if (!$entry) {
+                return null;
+            }
+
+            $details = is_string($entry->details) ? json_decode($entry->details, true) : (array) $entry->details;
+            $fields = $details['fields'] ?? [];
+
+            if (($fields['mission_type'] ?? null) !== 'branch_route') {
+                return null;
+            }
+
+            $nowTime = Carbon::now()->format('H:i');
+            $nowDateTime = Carbon::now()->toDateTimeString();
+
+            $fields['status'] = 'completed';
+            $fields['arrival_time'] = !empty($fields['arrival_time']) ? $fields['arrival_time'] : $nowTime;
+            $fields['actual_arrival_time'] = $nowTime;
+            $fields['completed_via_attendance'] = true;
+            $fields['completed_at'] = $nowDateTime;
+
+            if (isset($meta['latitude']) && $meta['latitude'] !== null) {
+                $fields['end_latitude'] = (float) $meta['latitude'];
+            }
+            if (isset($meta['longitude']) && $meta['longitude'] !== null) {
+                $fields['end_longitude'] = (float) $meta['longitude'];
+            }
+
+            if (!empty($meta['matched_branch_name'])) {
+                $checkpoints = (array) ($fields['checkpoints_data'] ?? []);
+                $checkpoints[] = [
+                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'branch_name' => $meta['matched_branch_name'],
+                    'action_type' => 'arrival',
+                    'arrived_at' => $nowDateTime,
+                    'latitude' => isset($meta['latitude']) ? (float) $meta['latitude'] : null,
+                    'longitude' => isset($meta['longitude']) ? (float) $meta['longitude'] : null,
+                    'notes' => 'Completed via Check-Out scan at ' . $meta['matched_branch_name'],
+                    'photo_count' => 0,
+                ];
+                $fields['checkpoints_data'] = $checkpoints;
+                $fields['checkpoints_count'] = count($checkpoints);
+            }
+
+            $details['fields'] = $fields;
+
+            DB::table('daily_entries')->where('id', $entry->id)->update([
+                'details' => json_encode($details),
+                'updated_at' => Carbon::now(),
+            ]);
+
+            return [
+                'entry_id' => $entry->id,
+                'route_id' => $fields['route_id'] ?? null,
+                'title' => $entry->title,
+                'status' => 'completed',
+                'matched_branch_name' => $meta['matched_branch_name'] ?? null,
+                'arrival_time' => $fields['arrival_time'],
+                'completed_at' => $nowDateTime,
+            ];
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed completing branch route for employee: ' . $e->getMessage());
+            return null;
+        }
     }
 
     private function calculateDistanceInMeters($lat1, $lon1, $lat2, $lon2): int

@@ -101,6 +101,7 @@ class PostEditFlowTest extends TestCase
         $request->shouldReceive('validated')->once()->andReturn([
             'post_name' => 'Manager', 'branch_id' => ['1', '2'], 'dept_id' => ['10', '11', '20'], 'is_active' => 1,
         ]);
+        $request->shouldReceive('input')->andReturnNull();
         app(PostController::class)->update($request, $post->id);
         $this->assertFalse(session()->has('danger'));
         $this->assertSame(3, Post::count());
@@ -117,6 +118,7 @@ class PostEditFlowTest extends TestCase
         $request->shouldReceive('validated')->once()->andReturn([
             'post_name' => 'Manager', 'branch_id' => ['2'], 'dept_id' => ['20'], 'is_active' => 1,
         ]);
+        $request->shouldReceive('input')->andReturnNull();
         app(PostController::class)->update($request, $post->id);
         $this->assertFalse(session()->has('danger'));
         $this->assertSame(1, Post::count());

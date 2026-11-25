@@ -237,6 +237,10 @@ class ThemeModeController extends Controller
 
     public function config(): array
     {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
+            return self::defaults();
+        }
+
         $value = AppSetting::query()->where('slug', self::SETTING_SLUG)->value('value');
         $stored = is_string($value) ? json_decode($value, true) : null;
         $defaults = self::defaults();
@@ -261,14 +265,75 @@ class ThemeModeController extends Controller
         return $merged;
     }
 
-    private function saveConfig(array $themes): void
+    public function saveConfig(array $themes): void
     {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('app_settings')) {
+            return;
+        }
+
         DB::transaction(function () use ($themes): void {
             AppSetting::query()->updateOrCreate(
                 ['slug' => self::SETTING_SLUG],
                 ['name' => 'App Theme Modes', 'value' => json_encode($themes, JSON_THROW_ON_ERROR), 'status' => 1]
             );
         });
+    }
+
+    public function isThemeAllowedForRole(array $theme, Role $role): bool
+    {
+        $allowedRoles = array_map('strval', (array) ($theme['allowed_roles'] ?? []));
+        if (empty($allowedRoles) || in_array('*', $allowedRoles, true)) {
+            return true;
+        }
+        $roleId = (string) $role->id;
+        $roleSlug = strtolower(trim((string) $role->slug));
+        return in_array($roleId, $allowedRoles, true)
+            || in_array($roleSlug, array_map('strtolower', $allowedRoles), true);
+    }
+
+    public function syncRoleThemes(Role $role, array $allowedThemeKeys): void
+    {
+        $themes = $this->config();
+        $allRoles = Role::query()->where('is_active', 1)->get(['id', 'slug']);
+        $allRoleSlugs = $allRoles->pluck('slug')->map('strtolower')->values()->all();
+        $currentRoleId = (string) $role->id;
+        $currentRoleSlug = strtolower(trim((string) $role->slug));
+
+        foreach ($themes as $key => &$theme) {
+            $isAllowedForThisRole = in_array($key, $allowedThemeKeys, true);
+            $allowedRoles = array_map('strval', (array) ($theme['allowed_roles'] ?? []));
+            $isCurrentlyAllRoles = empty($allowedRoles) || in_array('*', $allowedRoles, true);
+
+            if ($isCurrentlyAllRoles) {
+                if ($isAllowedForThisRole) {
+                    continue;
+                }
+                $newAllowed = array_values(array_filter(
+                    $allRoleSlugs,
+                    fn ($slug) => $slug !== $currentRoleSlug && $slug !== $currentRoleId
+                ));
+                $theme['allowed_roles'] = empty($newAllowed) ? ['none'] : $newAllowed;
+            } else {
+                $filtered = array_values(array_filter(
+                    $allowedRoles,
+                    fn ($r) => strtolower($r) !== $currentRoleSlug && $r !== $currentRoleId && $r !== 'none'
+                ));
+
+                if ($isAllowedForThisRole) {
+                    $filtered[] = $currentRoleSlug;
+                }
+
+                $hasAllRoles = count($allRoleSlugs) > 0 && empty(array_diff($allRoleSlugs, array_map('strtolower', $filtered)));
+                if ($hasAllRoles) {
+                    $theme['allowed_roles'] = [];
+                } else {
+                    $theme['allowed_roles'] = empty($filtered) ? ['none'] : array_values(array_unique($filtered));
+                }
+            }
+        }
+        unset($theme);
+
+        $this->saveConfig($themes);
     }
 
     public static function defaults(): array

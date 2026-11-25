@@ -17,6 +17,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class  RoleController extends Controller
@@ -266,10 +267,19 @@ class  RoleController extends Controller
                     ];
                 }
             }
+            $themeModeController = app(\App\Http\Controllers\Web\ThemeModeController::class);
+            $themeModes = $themeModeController->config();
+            $roleThemeKeys = [];
+            foreach ($themeModes as $key => $theme) {
+                if ($themeModeController->isThemeAllowedForRole($theme, $role)) {
+                    $roleThemeKeys[] = $key;
+                }
+            }
             return view($this->view . 'permission', compact('permissionGroupTypeList',
                 'role',
                 'role_permission', 'isEdit','allRoles', 'mobileMenuOptions',
-                'mobileMenuPermissionOptions', 'mobileLayout', 'allRolesLayouts', 'initialTab'
+                'mobileMenuPermissionOptions', 'mobileLayout', 'allRolesLayouts', 'initialTab',
+                'themeModes', 'roleThemeKeys'
             ));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
@@ -357,6 +367,12 @@ class  RoleController extends Controller
             $initialTab = (string) $request->input('mobile_initial_tab', 'home');
             $mobileLayoutSaved = app(\App\Services\Authorization\MobileRoleLayout::class)
                 ->save((int) $roleId, $placements, $orders, $initialTab);
+
+            if ($request->has('theme_modes_submitted')) {
+                $allowedThemes = (array) $request->input('allowed_themes', []);
+                app(\App\Http\Controllers\Web\ThemeModeController::class)->syncRoleThemes($role, $allowedThemes);
+            }
+
             DB::commit();
             $redirect = redirect()->back()->with('success', __('message.permission_update'));
             if (!$mobileLayoutSaved) {

@@ -1,4 +1,4 @@
-/* Shared screen styles for Asset, Repair and Branch directory modals; print templates keep their own layout. */
+/* Shared screen styles for Asset, Repair, Branch, Department and Post directory modals; print templates keep their own layout. */
 .management-page, .management-modal {
     --management-border: rgba(125, 139, 160, .22);
     --management-muted: var(--bs-secondary-color, #64748b);
@@ -68,11 +68,23 @@
 #branchActionModal .modal-content { height: 100%; }
 #branchActionModal .modal-body { display: flex; flex-direction: column; flex: 1; padding: 0; overflow: hidden; }
 #branchActionModal [data-branch-action-frame] { flex: 1; min-height: 0; height: 100%; }
+#departmentActionModal .modal-dialog { width: calc(100% - 40px); max-width: 1320px; height: calc(100dvh - 40px); }
+#departmentActionModal .modal-content { height: 100%; }
+#departmentActionModal .modal-body { display: flex; flex-direction: column; flex: 1; padding: 0; overflow: hidden; }
+#departmentActionModal [data-department-action-frame] { flex: 1; min-height: 0; height: 100%; }
+#postActionModal .modal-dialog { width: calc(100% - 40px); max-width: 1320px; height: calc(100dvh - 40px); }
+#postActionModal .modal-content { height: 100%; }
+#postActionModal .modal-body { display: flex; flex-direction: column; flex: 1; padding: 0; overflow: hidden; }
+#postActionModal [data-post-action-frame] { flex: 1; min-height: 0; height: 100%; }
 @media (max-width: 991.98px) {
     #assetActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
     #assetActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
     #branchActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
     #branchActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
+    #departmentActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
+    #departmentActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
+    #postActionModal .modal-dialog { width: 100%; height: 100dvh; max-height: 100dvh; margin: 0; }
+    #postActionModal .modal-content { max-height: 100dvh; border-radius: 0; }
     .management-page .assets-toolkit-search { width: 100%; margin-left: 0; flex-wrap: wrap; }
     .management-page .assets-toolkit-search input[type="search"] { width: auto; flex: 1; min-width: 140px; }
 }

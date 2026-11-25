@@ -51,6 +51,7 @@ final class WorkRecordsAdminController
             'employee_id' => 'nullable|integer|min:1', 'department_id' => 'nullable|integer|min:1',
             'branch_id' => 'nullable|integer|min:1', 'reviewer_id' => 'nullable|integer|min:1',
             'search' => 'nullable|string|max:100',
+            'per_page' => 'nullable|in:25,50,100,200,all',
         ]);
         $status = $filters['status'] ?? 'pending';
         $q = $this->submissions->query($actor, true)->join('users as employee', 'employee.id', '=', 'e.employee_id');
@@ -77,11 +78,16 @@ final class WorkRecordsAdminController
         } elseif ($status !== 'unsubmitted') {
             $q->where('e.status', $status);
         }
+        $rowsQuery = $status === 'unsubmitted'
+            ? $this->submissions->missing($actor, $day, $filters)
+            : $q->orderByDesc('submission.report_date')->orderByDesc('e.id');
+        $perPage = $this->resolvePerPage($rowsQuery, $filters['per_page'] ?? null, 25);
         return response()->view('admin.daily-records.submissions', $this->directory->groups($actor, false) + [
             // The submissions view displays the matching total, so use a length-aware
             // paginator here instead of SimplePaginator (which has no total()).
-            'rows' => $status === 'unsubmitted' ? $this->submissions->missing($actor, $day, $filters)->paginate(25)->withQueryString()
-                : $q->orderByDesc('submission.report_date')->orderByDesc('e.id')->paginate(25, [
+            'rows' => $status === 'unsubmitted'
+                ? $rowsQuery->paginate($perPage)->withQueryString()
+                : $rowsQuery->paginate($perPage, [
                     'e.id', 'e.status', 'employee.name as employee', 'submission.report_date', 'submission.version',
                 ])->withQueryString(),
             'filters' => $filters, 'status' => $status, 'day' => $day,
@@ -93,7 +99,7 @@ final class WorkRecordsAdminController
     {
         $actor = $this->actor();
         $filters = $request->validate([
-            'status' => 'nullable|in:completed,cancelled',
+            'status' => 'nullable|in:ongoing,in_progress,completed,cancelled',
             'date' => 'nullable|date_format:Y-m-d',
             'from' => 'nullable|date_format:Y-m-d',
             'to' => 'nullable|date_format:Y-m-d|after_or_equal:from',
@@ -101,6 +107,7 @@ final class WorkRecordsAdminController
             'department_id' => 'nullable|integer|min:1',
             'branch_id' => 'nullable|integer|min:1',
             'search' => 'nullable|string|max:100',
+            'per_page' => 'nullable|in:25,50,100,200,all',
         ]);
         $query = $this->entries->query($actor, true)
             ->join('users as employee', 'employee.id', '=', 'e.employee_id')
@@ -122,7 +129,8 @@ final class WorkRecordsAdminController
         if (isset($filters['status'])) {
             $query->where('e.details->fields->status', $filters['status']);
         }
-        $rows = $query->orderByDesc('e.occurred_at')->orderByDesc('e.id')->paginate(25, [
+        $perPage = $this->resolvePerPage($query, $filters['per_page'] ?? null, 25);
+        $rows = $query->orderByDesc('e.occurred_at')->orderByDesc('e.id')->paginate($perPage, [
             'e.id', 'e.title', 'e.body', 'e.details', 'e.occurred_at', 'e.ended_at', 'e.employee_id',
             'e.department_id', 'e.branch_id', 'employee.name as employee',
         ])->withQueryString();
@@ -163,9 +171,28 @@ final class WorkRecordsAdminController
     public function categories(Request $request)
     {
         $this->actor(RecordAccess::CATEGORIES);
-        $id = $request->validate(['edit' => 'nullable|integer|min:1'])['edit'] ?? null;
+        $filters = $request->validate([
+            'edit' => 'nullable|integer|min:1',
+            'search' => 'nullable|string|max:100',
+            'kind' => 'nullable|in:activity,incident',
+            'is_active' => 'nullable|in:0,1',
+            'per_page' => 'nullable|in:30,50,100,200,all',
+        ]);
+        $id = $filters['edit'] ?? null;
+        $query = DB::table('daily_record_categories')
+            ->when(!empty($filters['search']), function ($query) use ($filters) {
+                $term = '%'.$filters['search'].'%';
+                $query->where(fn ($nested) => $nested->where('name_en', 'like', $term)->orWhere('name_km', 'like', $term));
+            })
+            ->when($filters['kind'] ?? null, fn ($query, $kind) => $query->where('kind', $kind))
+            ->when(($filters['is_active'] ?? null) !== null, function ($query) use ($filters) {
+                $query->where('active', (int) $filters['is_active']);
+            })
+            ->orderBy('kind')->orderBy('parent_id')->orderBy('position')->orderBy('id');
+        $perPage = $this->resolvePerPage($query, $filters['per_page'] ?? null, 30);
         return response()->view('admin.daily-records.categories', [
-            'categories' => DB::table('daily_record_categories')->orderBy('kind')->orderBy('parent_id')->orderBy('position')->orderBy('id')->paginate(30),
+            'categories' => $query->paginate($perPage)->withQueryString(),
+            'filters' => $filters,
             'parents' => DB::table('daily_record_categories')->whereNull('parent_id')->orderBy('name_en')->get(['id', 'kind', 'name_en']),
             'departments' => DB::table('departments')->orderBy('dept_name')->get(['id', 'dept_name']),
             'editing' => $id ? DB::table('daily_record_categories')->find($id) : null,
@@ -178,6 +205,15 @@ final class WorkRecordsAdminController
         $id = $request->validate(['id' => 'nullable|integer|min:1'])['id'] ?? null;
         $id = $this->catalog->save($id, WorkInput::category($request));
         return redirect()->route('admin.daily-records.categories', ['edit' => $id])->with('success', 'Category saved.');
+    }
+
+    private function resolvePerPage($query, mixed $requested, int $default): int
+    {
+        if ((string) ($requested ?? '') === 'all') {
+            return max(1, (clone $query)->count());
+        }
+        $value = filter_var($requested, FILTER_VALIDATE_INT);
+        return $value !== false && $value > 0 ? $value : $default;
     }
 
     private function actor(string $ability = RecordAccess::MANAGE): Admin|User

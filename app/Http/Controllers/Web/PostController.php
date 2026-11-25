@@ -243,6 +243,12 @@ class PostController extends Controller
             }
 
             DB::commit();
+
+            if ($request->input('post_modal') === '1') {
+                session()->flash('success', __('message.post_update'));
+                return view($this->view.'common.modal-saved', ['message' => __('message.post_update')]);
+            }
+
             return redirect()->route('admin.posts.index')->with('success', __('message.post_update'));
         }catch(\Exception $exception){
             DB::rollBack();

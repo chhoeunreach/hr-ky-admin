@@ -78,51 +78,68 @@
         @endforeach
     </div>
 
-    <div class="dr-card">
-        <div class="dr-card-header"><h2 class="dr-card-title"><i class="fa-solid fa-sliders text-primary"></i> {{ __('daily_records.branch_routes_filter') }}</h2></div>
-        <div class="dr-card-body">
-            <form method="get" action="{{ route('admin.daily-records.branch-routes') }}" class="row g-3 align-items-end">
-                <div class="col-sm-6 col-lg-2"><label class="dr-form-label">{{ __('daily_records.status') }}</label>
-                    <select class="dr-form-select" name="status">
-                        <option value="">{{ __('daily_records.all_statuses') }}</option>
-                        <option value="ongoing" @selected(($filters['status'] ?? '') === 'ongoing')>{{ __('daily_records.branch_routes_ongoing') }}</option>
-                        <option value="in_progress" @selected(($filters['status'] ?? '') === 'in_progress')>{{ __('daily_records.branch_routes_in_progress') }}</option>
-                        <option value="completed" @selected(($filters['status'] ?? '') === 'completed')>{{ __('daily_records.branch_routes_completed') }}</option>
-                        <option value="cancelled" @selected(($filters['status'] ?? '') === 'cancelled')>{{ __('daily_records.branch_routes_cancelled') }}</option>
-                    </select>
+    @php
+        $hasRouteFilters = collect($filters ?? [])
+            ->except(['search', 'per_page', 'page'])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->isNotEmpty();
+    @endphp
+    <div class="directory-filter-panel">
+        @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'branchRouteFilterCollapse', 'directoryExpanded' => $hasRouteFilters])
+        <div id="branchRouteFilterCollapse" class="collapse{{ $hasRouteFilters ? ' show' : '' }}">
+            <form class="forms-sample directory-filter-form" action="{{ route('admin.daily-records.branch-routes') }}" id="branchRouteFilterForm" method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-6 col-lg-2">
+                        <label class="form-label" for="routeStatus">{{ __('daily_records.status') }}</label>
+                        <select class="form-select" id="routeStatus" name="status">
+                            <option value="">{{ __('daily_records.all_statuses') }}</option>
+                            <option value="ongoing" @selected(($filters['status'] ?? '') === 'ongoing')>{{ __('daily_records.branch_routes_ongoing') }}</option>
+                            <option value="in_progress" @selected(($filters['status'] ?? '') === 'in_progress')>{{ __('daily_records.branch_routes_in_progress') }}</option>
+                            <option value="completed" @selected(($filters['status'] ?? '') === 'completed')>{{ __('daily_records.branch_routes_completed') }}</option>
+                            <option value="cancelled" @selected(($filters['status'] ?? '') === 'cancelled')>{{ __('daily_records.branch_routes_cancelled') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="routeDepartment">{{ __('daily_records.department') }}</label>
+                        <select class="form-select" id="routeDepartment" name="department_id">
+                            <option value="">{{ __('daily_records.all_departments') }}</option>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->id }}" @selected(($filters['department_id'] ?? null) == $department->id)>{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="routeBranch">{{ __('daily_records.location_branch') }}</label>
+                        <select class="form-select" id="routeBranch" name="branch_id">
+                            <option value="">{{ __('daily_records.all_locations') }}</option>
+                            @foreach ($locations as $location)
+                                <option value="{{ $location->id }}" @selected(($filters['branch_id'] ?? null) == $location->id)>{{ $location->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-2">
+                        <label class="form-label" for="routeDate">{{ __('daily_records.report_date_ict') }}</label>
+                        <input class="form-control" type="date" id="routeDate" name="date" value="{{ $filters['date'] ?? '' }}">
+                    </div>
+                    <div class="col-sm-6 col-lg-2">
+                        <label class="form-label" for="routeFrom">{{ __('daily_records.from_ict') }}</label>
+                        <input class="form-control" type="date" id="routeFrom" name="from" value="{{ $filters['from'] ?? '' }}">
+                    </div>
+                    <div class="col-sm-6 col-lg-2">
+                        <label class="form-label" for="routeTo">{{ __('daily_records.through_ict') }}</label>
+                        <input class="form-control" type="date" id="routeTo" name="to" value="{{ $filters['to'] ?? '' }}">
+                    </div>
                 </div>
-                <div class="col-sm-6 col-lg-3"><label class="dr-form-label">{{ __('daily_records.department') }}</label>
-                    <select class="dr-form-select" name="department_id">
-                        <option value="">{{ __('daily_records.all_departments') }}</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected(($filters['department_id'] ?? null) == $department->id)>{{ $department->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-sm-6 col-lg-3"><label class="dr-form-label">{{ __('daily_records.location_branch') }}</label>
-                    <select class="dr-form-select" name="branch_id">
-                        <option value="">{{ __('daily_records.all_locations') }}</option>
-                        @foreach ($locations as $location)
-                            <option value="{{ $location->id }}" @selected(($filters['branch_id'] ?? null) == $location->id)>{{ $location->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-sm-6 col-lg-2"><label class="dr-form-label">{{ __('daily_records.report_date_ict') }}</label><input class="dr-form-control" type="date" name="date" value="{{ $filters['date'] ?? '' }}"></div>
-                <div class="col-sm-6 col-lg-2"><label class="dr-form-label">{{ __('daily_records.from_ict') }}</label><input class="dr-form-control" type="date" name="from" value="{{ $filters['from'] ?? '' }}"></div>
-                <div class="col-sm-6 col-lg-2"><label class="dr-form-label">{{ __('daily_records.through_ict') }}</label><input class="dr-form-control" type="date" name="to" value="{{ $filters['to'] ?? '' }}"></div>
-                <div class="col-sm-6 col-lg-3"><label class="dr-form-label">{{ __('daily_records.employee_search') }}</label><input class="dr-form-control" name="search" maxlength="100" value="{{ $filters['search'] ?? '' }}" placeholder="{{ __('daily_records.type_employee_name') }}"></div>
-                <div class="col-sm-6 col-lg-1 d-flex gap-2"><button class="dr-btn-primary" type="submit" aria-label="{{ __('daily_records.apply_filters') }}"><i class="fa-solid fa-filter"></i></button><a class="dr-btn-outline" href="{{ route('admin.daily-records.branch-routes') }}" aria-label="{{ __('daily_records.reset_filters') }}"><i class="fa-solid fa-rotate-left"></i></a></div>
+                @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.daily-records.branch-routes')])
             </form>
         </div>
     </div>
 
     <div class="dr-card">
-        <div class="dr-card-header">
-            <div class="d-flex align-items-center gap-2"><h2 class="dr-card-title"><i class="fa-solid fa-list-check text-primary"></i> {{ __('daily_records.branch_routes_list') }}</h2><span class="dr-meta-badge">{{ __('daily_records.total_count', ['count' => $rows->total()]) }}</span></div>
-        </div>
+        @include('admin.section.directory-toolbar', ['directoryTable' => 'branchRouteTable', 'directoryForm' => 'branchRouteFilterForm', 'directorySearch' => 'branchRouteSearch', 'directoryRecords' => $rows, 'directoryTitle' => __('daily_records.branch_route_management'), 'directoryIcon' => 'navigation', 'directoryCanAdd' => false, 'directoryDefaultSize' => '25', 'directoryCurrentSize' => (string) request('per_page', '25'), 'directorySearchKey' => 'search', 'directorySearchInForm' => true, 'directoryLive' => false])
         <div class="dr-card-body p-0"><div class="dr-table-responsive">
-            <table class="dr-table">
-                <thead><tr><th>{{ __('daily_records.employee') }}</th><th>{{ __('daily_records.branch_route') }}</th><th>{{ __('daily_records.reporting_date_ict') }}</th><th>{{ __('daily_records.status') }}</th><th>{{ __('daily_records.branch_route_duration') }}</th><th>{{ __('daily_records.actions') }}</th></tr></thead>
+            <table id="branchRouteTable" class="dr-table">
+                <thead><tr><th>{{ __('daily_records.employee') }}</th><th>{{ __('daily_records.branch_route') }}</th><th>{{ __('daily_records.reporting_date_ict') }}</th><th>{{ __('daily_records.status') }}</th><th>{{ __('daily_records.branch_route_duration') }}</th><th data-directory-actions>{{ __('daily_records.actions') }}</th></tr></thead>
                 <tbody>
                 @forelse ($rows as $row)
                     @php

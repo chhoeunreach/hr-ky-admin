@@ -93,113 +93,99 @@
         @endforeach
     </div>
 
-    {{-- Filter Card --}}
-    <div class="dr-card">
-        <div class="dr-card-header">
-            <h2 class="dr-card-title">
-                <i class="fa-solid fa-sliders text-primary"></i> {{ __('daily_records.filter_submissions') }}
-            </h2>
-        </div>
-        <div class="dr-card-body">
-            <form method="get" action="{{ route('admin.daily-records.submissions') }}" class="row g-3 align-items-end">
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-solid fa-circle-dot me-1"></i> {{ __('daily_records.review_status') }}</label>
-                    <select class="dr-form-select" name="status">
-                        @foreach ([
-                            'pending' => __('daily_records.pending_review'),
-                            'submitted' => __('index.submitted'),
-                            'under_review' => __('daily_records.under_review'),
-                            'returned' => __('daily_records.returned_for_correction'),
-                            'approved' => __('daily_records.kpi_approved'),
-                            'unsubmitted' => __('daily_records.unsubmitted_summaries')
-                        ] as $key => $label)
-                            <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
-                        @endforeach
-                    </select>
+    @php
+        $hasSubmissionFilters = collect($filters ?? [])
+            ->except(['search', 'per_page', 'page'])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->isNotEmpty();
+    @endphp
+    <div class="directory-filter-panel">
+        @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'submissionFilterCollapse', 'directoryExpanded' => $hasSubmissionFilters])
+        <div id="submissionFilterCollapse" class="collapse{{ $hasSubmissionFilters ? ' show' : '' }}">
+            <form class="forms-sample directory-filter-form" action="{{ route('admin.daily-records.submissions') }}" id="submissionFilterForm" method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionStatus"><i class="fa-solid fa-circle-dot me-1"></i> {{ __('daily_records.review_status') }}</label>
+                        <select class="form-select" id="submissionStatus" name="status">
+                            @foreach ([
+                                'pending' => __('daily_records.pending_review'),
+                                'submitted' => __('index.submitted'),
+                                'under_review' => __('daily_records.under_review'),
+                                'returned' => __('daily_records.returned_for_correction'),
+                                'approved' => __('daily_records.kpi_approved'),
+                                'unsubmitted' => __('daily_records.unsubmitted_summaries')
+                            ] as $key => $label)
+                                <option value="{{ $key }}" @selected($status === $key)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionDate"><i class="fa-regular fa-calendar me-1"></i> {{ __('daily_records.report_date_ict') }}</label>
+                        <input class="form-control" type="date" id="submissionDate" name="date" value="{{ $filters['date'] ?? ($status === 'unsubmitted' ? $day : '') }}">
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionReviewer"><i class="fa-solid fa-user-shield me-1"></i> {{ __('daily_records.reviewer_id') }}</label>
+                        <input class="form-control" type="number" min="1" id="submissionReviewer" placeholder="{{ __('daily_records.reviewer_id') }}" name="reviewer_id" value="{{ $filters['reviewer_id'] ?? '' }}">
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionDepartment"><i class="fa-solid fa-building me-1"></i> {{ __('daily_records.department') }}</label>
+                        <select class="form-select" id="submissionDepartment" name="department_id">
+                            <option value="">{{ __('daily_records.all_departments') }}</option>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->id }}" @selected(($filters['department_id'] ?? null) == $department->id)>{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionBranch"><i class="fa-solid fa-location-dot me-1"></i> {{ __('daily_records.location_branch') }}</label>
+                        <select class="form-select" id="submissionBranch" name="branch_id">
+                            <option value="">{{ __('daily_records.all_locations') }}</option>
+                            @foreach ($locations as $location)
+                                <option value="{{ $location->id }}" @selected(($filters['branch_id'] ?? null) == $location->id)>{{ $location->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionFrom"><i class="fa-regular fa-calendar me-1"></i> {{ __('daily_records.from_ict') }}</label>
+                        <input class="form-control" type="date" id="submissionFrom" name="from" value="{{ $filters['from'] ?? '' }}">
+                    </div>
+
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="submissionTo"><i class="fa-regular fa-calendar-check me-1"></i> {{ __('daily_records.through_ict') }}</label>
+                        <input class="form-control" type="date" id="submissionTo" name="to" value="{{ $filters['to'] ?? '' }}">
+                    </div>
                 </div>
 
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-regular fa-calendar me-1"></i> {{ __('daily_records.report_date_ict') }}</label>
-                    <input class="dr-form-control" type="date" name="date" value="{{ $filters['date'] ?? ($status === 'unsubmitted' ? $day : '') }}">
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-solid fa-user me-1"></i> {{ __('daily_records.employee_search') }}</label>
-                    <input class="dr-form-control" name="search" maxlength="100" placeholder="{{ __('daily_records.type_employee_name') }}" value="{{ $filters['search'] ?? '' }}">
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-solid fa-user-shield me-1"></i> {{ __('daily_records.reviewer_id') }}</label>
-                    <input class="dr-form-control" type="number" min="1" placeholder="{{ __('daily_records.reviewer_id') }}" name="reviewer_id" value="{{ $filters['reviewer_id'] ?? '' }}">
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-solid fa-building me-1"></i> {{ __('daily_records.department') }}</label>
-                    <select class="dr-form-select" name="department_id">
-                        <option value="">{{ __('daily_records.all_departments') }}</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected(($filters['department_id'] ?? null) == $department->id)>{{ $department->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-solid fa-location-dot me-1"></i> {{ __('daily_records.location_branch') }}</label>
-                    <select class="dr-form-select" name="branch_id">
-                        <option value="">{{ __('daily_records.all_locations') }}</option>
-                        @foreach ($locations as $location)
-                            <option value="{{ $location->id }}" @selected(($filters['branch_id'] ?? null) == $location->id)>{{ $location->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-regular fa-calendar me-1"></i> {{ __('daily_records.from_ict') }}</label>
-                    <input class="dr-form-control" type="date" name="from" value="{{ $filters['from'] ?? '' }}">
-                </div>
-
-                <div class="col-sm-6 col-lg-3 dr-form-group">
-                    <label class="dr-form-label"><i class="fa-regular fa-calendar-check me-1"></i> {{ __('daily_records.through_ict') }}</label>
-                    <input class="dr-form-control" type="date" name="to" value="{{ $filters['to'] ?? '' }}">
-                </div>
-
-                <div class="col-12 d-flex gap-2 pt-2">
-                    <button class="dr-btn-primary" type="submit">
-                        <i class="fa-solid fa-filter"></i> {{ __('daily_records.apply_filters') }}
-                    </button>
-                    <a class="dr-btn-outline" href="{{ route('admin.daily-records.submissions') }}">
-                        <i class="fa-solid fa-rotate-left"></i> {{ __('daily_records.reset_filters') }}
-                    </a>
-                </div>
+                @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.daily-records.submissions')])
             </form>
         </div>
     </div>
 
     {{-- Submissions Table Card --}}
     <div class="dr-card">
-        <div class="dr-card-header">
-            <div class="d-flex align-items-center gap-2">
-                <h2 class="dr-card-title">
-                    <i class="fa-solid fa-table-list text-primary"></i> {{ __('daily_records.submissions_list') }}
-                </h2>
-                <span class="dr-meta-badge">{{ __('daily_records.total_count', ['count' => $rows->total()]) }}</span>
-            </div>
-            @if ($status === 'unsubmitted')
+        @include('admin.section.directory-toolbar', ['directoryTable' => 'submissionTable', 'directoryForm' => 'submissionFilterForm', 'directorySearch' => 'submissionSearch', 'directoryRecords' => $rows, 'directoryTitle' => __('daily_records.daily_summary_submissions'), 'directoryIcon' => 'calendar', 'directoryCanAdd' => false, 'directoryDefaultSize' => '25', 'directoryCurrentSize' => (string) request('per_page', '25'), 'directorySearchKey' => 'search', 'directorySearchInForm' => true, 'directoryLive' => false])
+        @if ($status === 'unsubmitted')
+            <div class="px-3 py-2 border-bottom">
                 <span class="dr-badge dr-badge-warning">
                     <i class="fa-solid fa-triangle-exclamation me-1"></i> {{ __('daily_records.unsubmitted_notice', ['date' => $day]) }}
                 </span>
-            @endif
-        </div>
+            </div>
+        @endif
         <div class="dr-card-body p-0">
             <div class="dr-table-responsive">
-                <table class="dr-table">
+                <table id="submissionTable" class="dr-table">
                     <thead>
                         <tr>
                             <th>{{ __('daily_records.employee') }}</th>
                             <th>{{ __('daily_records.reporting_date_ict') }}</th>
                             <th>{{ __('daily_records.status') }}</th>
                             <th>{{ $status === 'unsubmitted' ? __('daily_records.eligible_records') : __('daily_records.version') }}</th>
-                            <th class="text-end">{{ __('daily_records.actions') }}</th>
+                            <th class="text-end" data-directory-actions>{{ __('daily_records.actions') }}</th>
                         </tr>
                     </thead>
                     <tbody>

@@ -567,6 +567,80 @@
                             </div>
                         </div>
 
+                        <!-- Section 5: Allowed Mobile Theme Modes -->
+                        @if(isset($themeModes) && count($themeModes) > 0)
+                        <div class="studio-zone-card">
+                            <div class="studio-zone-header">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">
+                                        <span class="me-1">🎨</span> {{ __('index.role_allowed_theme_modes') }}
+                                    </h6>
+                                    <small class="text-muted" style="font-size: 11px;">{{ __('index.role_allowed_theme_modes_desc') }}</small>
+                                </div>
+                                <div class="d-flex align-items-center gap-1">
+                                    <button type="button" class="btn btn-xs btn-outline-primary" id="btn-select-all-themes" style="font-size: 11px; padding: 2px 8px;">
+                                        {{ __('index.select_all_themes') }}
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btn-deselect-all-themes" style="font-size: 11px; padding: 2px 8px;">
+                                        {{ __('index.deselect_all_themes') }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="theme_modes_submitted" value="1" form="role-permission-form">
+
+                            <div class="row g-2" id="role-theme-modes-grid">
+                                @foreach($themeModes as $key => $theme)
+                                    @php
+                                        $isAllowed = in_array($key, $roleThemeKeys ?? [], true);
+                                        $isThemeActive = (bool) ($theme['is_active'] ?? true);
+                                        $isThemeDark = (bool) ($theme['is_dark'] ?? false);
+                                        $themeBg = $theme['background_color'] ?? '#FFFFFF';
+                                        $themePrimary = $theme['primary_color'] ?? '#2563EB';
+                                        $themeSecondary = $theme['secondary_color'] ?? '#475569';
+                                        $themeAccent = $theme['accent_color'] ?? '#FFC107';
+                                    @endphp
+                                    <div class="col-sm-6 col-12">
+                                        <label class="d-flex align-items-center justify-content-between p-2 rounded-3 border role-theme-item h-100 mb-0" 
+                                               style="cursor: pointer; background: {{ $isAllowed ? '#f8faff' : '#ffffff' }}; border-color: {{ $isAllowed ? '#93c5fd' : '#e2e8f0' }} !important; transition: all 0.2s;"
+                                               for="theme_chk_{{ $key }}">
+                                            <div class="d-flex align-items-center gap-2 overflow-hidden">
+                                                <input class="form-check-input role-theme-checkbox mt-0 flex-shrink-0" 
+                                                       type="checkbox" 
+                                                       name="allowed_themes[]" 
+                                                       value="{{ $key }}" 
+                                                       id="theme_chk_{{ $key }}"
+                                                       form="role-permission-form"
+                                                       {{ $isAllowed ? 'checked' : '' }}>
+                                                <div class="text-truncate">
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <strong class="text-dark small text-truncate" style="font-size: 12px;">{{ $theme['name'] }}</strong>
+                                                        <span class="badge rounded-pill {{ $isThemeDark ? 'bg-dark' : 'bg-light text-dark border' }}" style="font-size: 9px; padding: 1px 5px;">
+                                                            {{ $isThemeDark ? __('index.dark_mode') : __('index.light_mode') }}
+                                                        </span>
+                                                        @if(!$isThemeActive)
+                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size: 8px; padding: 1px 4px;" title="{{ __('index.hidden_on_mobile') }}">
+                                                                {{ __('index.hide') }}
+                                                            </span>
+                                                        @endif
+                                                    </div>
+                                                    <code class="text-muted" style="font-size: 10px;">{{ $key }}</code>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Mini Color Palette Swatch (3 dots against background color) -->
+                                            <div class="d-flex align-items-center gap-1 p-1 rounded-pill flex-shrink-0" style="background: {{ $themeBg }}; border: 1px solid rgba(0,0,0,0.15);" title="Palette: {{ $theme['name'] }}">
+                                                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: {{ $themePrimary }}; border: 1px solid rgba(255,255,255,0.6);"></span>
+                                                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: {{ $themeSecondary }}; border: 1px solid rgba(255,255,255,0.6);"></span>
+                                                <span class="rounded-circle d-inline-block" style="width: 10px; height: 10px; background: {{ $themeAccent }}; border: 1px solid rgba(255,255,255,0.6);"></span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
                         <!-- Big Studio Save Button -->
                         <div class="mt-4">
                             <button type="button" class="btn btn-primary btn-lg w-100 shadow py-3 fw-bold fs-6" id="btn-save-studio">
@@ -603,7 +677,7 @@
                                             <span class="fs-5">🏢</span>
                                             <div>
                                                 <strong class="d-block text-dark fw-bold" style="font-size: 12px; line-height: 1.2;">Phnom Penh Branch</strong>
-                                                <small class="text-muted" style="font-size: 9px;">Digital HR · Payment QR</small>
+                                                <small class="text-muted" style="font-size: 9px;">KNEAYERNG · Payment QR</small>
                                             </div>
                                         </div>
                                         <button type="button" class="btn btn-sm btn-light border p-0 rounded-circle d-flex align-items-center justify-content-center" id="btn-close-sidebar" style="width: 24px; height: 24px; font-size: 13px;">×</button>
@@ -1716,6 +1790,48 @@
                     }
                     renderMobilePreview();
 
+                });
+            });
+
+            // Theme Mode Checkbox and Button Interactions
+            const updateThemeCardStyle = function($chk) {
+                const $label = $chk.closest('.role-theme-item');
+                if ($chk.is(':checked')) {
+                    $label.css({
+                        'background': '#f8faff',
+                        'border-color': '#93c5fd'
+                    });
+                } else {
+                    $label.css({
+                        'background': '#ffffff',
+                        'border-color': '#e2e8f0'
+                    });
+                }
+            };
+
+            $(document).on('change', '.role-theme-checkbox', function() {
+                updateThemeCardStyle($(this));
+            });
+
+            $('#btn-select-all-themes').on('click', function() {
+                $('.role-theme-checkbox').prop('checked', true).each(function() {
+                    updateThemeCardStyle($(this));
+                });
+            });
+
+            $('#btn-deselect-all-themes').on('click', function() {
+                $('.role-theme-checkbox').prop('checked', false).each(function() {
+                    updateThemeCardStyle($(this));
+                });
+            });
+
+            // Ensure Theme Mode inputs are synced inside #role-permission-form on submit
+            $('#role-permission-form').on('submit', function() {
+                const $f = $(this);
+                $f.find('input.theme-sync-input').remove();
+                $f.append('<input type="hidden" class="theme-sync-input" name="theme_modes_submitted" value="1">');
+                $('.role-theme-checkbox:checked').each(function() {
+                    $f.append($('<input type="hidden" class="theme-sync-input" name="allowed_themes[]">').val($(this).val()));
                 });
             });
 

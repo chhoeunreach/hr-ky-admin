@@ -204,7 +204,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <p class="text-muted small mb-0">{{ __('index.theme_modes_custom_intro') }}</p>
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addThemeModal">
-                    <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> Add Custom Theme
+                    <i data-feather="plus" class="me-1" style="width:14px;height:14px"></i> {{ __('index.add_custom_theme') }}
                 </button>
             </div>
             @if($customThemes->isEmpty())

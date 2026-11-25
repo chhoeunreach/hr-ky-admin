@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Enum\EmployeeAttendanceTypeEnum;
+use App\Exceptions\AttendanceGeofenceException;
 use App\Helpers\AppHelper;
 use App\Helpers\AttendanceHelper;
 use App\Http\Controllers\Controller;
@@ -346,6 +347,25 @@ class AttendanceApiController extends Controller
         return floor($minutes / 60) . 'h ' . round($minutes - floor($minutes / 60) * 60) . 'm';
     }
 
+    public function activeBranchRoute(Request $request): JsonResponse
+    {
+        try {
+            $userId = getAuthUserCode() ?: Auth::user()?->id;
+            if (!$userId) {
+                return AppHelper::sendErrorResponse(__('message.unauthorized_action'), 401);
+            }
+
+            $activeRoute = $this->attendanceService->getActiveBranchRouteForEmployee((int) $userId);
+
+            return AppHelper::sendSuccessResponse('Active branch route fetched successfully', [
+                'has_active_route' => $activeRoute !== null,
+                'active_route' => $activeRoute,
+            ]);
+        } catch (\Throwable $e) {
+            return AppHelper::sendErrorResponse($e->getMessage(), 500);
+        }
+    }
+
  /**
      * @throws Exception
      */
@@ -410,7 +430,17 @@ class AttendanceApiController extends Controller
                     $maxAccuracy = (float) (AttendanceSetting::where('slug', 'attendance_location_accuracy')
                         ->where('status', 1)->value('value') ?? 1000);
                     if (($validatedData['accuracy'] ?? 0) > $maxAccuracy) {
-                        throw new Exception(__('attendance.location_accuracy', ['meters' => $maxAccuracy]), 403);
+                        throw new AttendanceGeofenceException(
+                            __('attendance.location_accuracy', ['meters' => $maxAccuracy]),
+                            403,
+                            'INSUFFICIENT_GPS_ACCURACY',
+                            [
+                                'error_type' => 'insufficient_gps_accuracy',
+                                'current_accuracy_meters' => (float) ($validatedData['accuracy'] ?? 0),
+                                'max_accuracy_meters' => $maxAccuracy,
+                                'can_retry' => true,
+                            ]
+                        );
                     }
 
                     $locationValidation = $this->attendanceService->resolveBranchLocationValidation(
@@ -421,7 +451,18 @@ class AttendanceApiController extends Controller
                         $locationRequired,
                     );
                     if ($qrNeedsLocation && $locationValidation['within_branch_radius'] !== true) {
-                        throw new Exception(__('attendance.qr_location_required'), 403);
+                        throw new AttendanceGeofenceException(
+                            __('attendance.qr_location_required'),
+                            403,
+                            'OUT_OF_GEOFENCE',
+                            [
+                                'error_type' => 'qr_location_required',
+                                'distance_in_meter' => $locationValidation['distance_to_branch_in_meter'] ?? null,
+                                'allowed_radius_in_meter' => $locationValidation['allowed_branch_radius_in_meter'] ?? null,
+                                'matched_branch_name' => $locationValidation['matched_branch_name'] ?? null,
+                                'can_retry' => true,
+                            ]
+                        );
                     }
                 }
 
@@ -474,7 +515,15 @@ class AttendanceApiController extends Controller
         } catch (Throwable $exception) {
             $status = (int) $exception->getCode();
             if (in_array($status, [400, 403, 409], true)) {
-                return AppHelper::sendErrorResponse($exception->getMessage(), $status);
+                $errorData = method_exists($exception, 'getErrorData') ? $exception->getErrorData() : null;
+                $errorCode = method_exists($exception, 'getErrorCode') ? $exception->getErrorCode() : null;
+                $response = AppHelper::sendErrorResponse($exception->getMessage(), $status, $errorData);
+                if ($errorCode) {
+                    $payload = $response->getData(true);
+                    $payload['error_code'] = $errorCode;
+                    $response->setData($payload);
+                }
+                return $response;
             }
 
             report($exception);
@@ -486,9 +535,34 @@ class AttendanceApiController extends Controller
         }
 
         $type = $this->notificationData['permissionKey'] === 'employee_check_in' ? 'check_in' : 'check_out';
+        $completedRoute = null;
         if (!empty($locationValidation['is_branch_route_attendance'])) {
             $branchName = $locationValidation['matched_branch_name'] ?? 'Target Branch';
             $validatedData['note'] = trim(($validatedData['note'] ?? '') . " [Branch Route: {$branchName}]");
+
+            // Complete active branch route upon check_out at target branch
+            $shouldCompleteRoute = ($type === 'check_out') && $request->boolean('complete_branch_route', true);
+            if ($shouldCompleteRoute && !empty($locationValidation['active_branch_route']['entry_id'])) {
+                $completedRoute = $this->attendanceService->completeBranchRouteForEmployee(
+                    (int) $userDetail->id,
+                    (int) $locationValidation['active_branch_route']['entry_id'],
+                    [
+                        'latitude' => $validatedData['latitude'] ?? null,
+                        'longitude' => $validatedData['longitude'] ?? null,
+                        'matched_branch_name' => $branchName,
+                    ]
+                );
+
+                if ($completedRoute) {
+                    $locationValidation['branch_route_completed'] = true;
+                    $locationValidation['completed_branch_route'] = $completedRoute;
+                    $validatedData['note'] .= ' [Route Completed]';
+                    $customMsg = __('message.attendance_check_out_route_completed', ['branch' => $branchName]);
+                    if ($customMsg && $customMsg !== 'message.attendance_check_out_route_completed') {
+                        $this->displayMessage = $customMsg;
+                    }
+                }
+            }
         }
         $this->storeAttendanceLog($validatedData, $userDetail, $type, $this->attendanceForTelegram->id);
         try {

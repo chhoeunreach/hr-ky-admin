@@ -58,6 +58,11 @@ class AttendanceTelegramNotificationService
                     if (!empty($targetNames)) {
                         $branchName .= ' ➔ ' . implode(', ', $targetNames) . ' (ការងារចេញក្រៅ)';
                     }
+                } elseif (str_contains((string) ($attendance->note ?? ''), 'Branch Route:')) {
+                    preg_match('/\[Branch Route:\s*([^\]]+)\]/', (string) $attendance->note, $matches);
+                    if (!empty($matches[1])) {
+                        $branchName .= ' ➔ ' . trim($matches[1]) . ' (ការងារចេញក្រៅ)';
+                    }
                 }
             } catch (\Throwable) {
             }
@@ -141,6 +146,9 @@ class AttendanceTelegramNotificationService
                     "🛒 ផ្នែក: {$departmentName} \n" .
                     "🕑 ម៉ោងបិទការងារ: {$officeEndTime} \n" .
                     "📊 ស្ថានភាព: {$status}{$timeDifference} \n";
+                if (str_contains((string) ($attendance->note ?? ''), 'Route Completed')) {
+                    $messageText .= "🏁 បេសកកម្ម: បានបញ្ចប់សព្វគ្រប់ \n";
+                }
             }
             $messageText .= "🗺️ ផែនទី: " . ($locationInfo['link'] ?? '');
 

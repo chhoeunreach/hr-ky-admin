@@ -95,11 +95,11 @@ class BranchEditModalTest extends TestCase
             ->assertSee('name="branch_modal" value="1"', false)
             ->assertSee('.page-wrapper { margin-left: 0 !important', false)
             ->assertDontSee('page-breadcrumb', false)
-            ->assertDontSee('sidebar-menu', false);
+            ->assertDontSee('<nav class="sidebar">', false);
 
         $this->get('/_test/branch/1/edit')->assertOk()
             ->assertSee('page-breadcrumb', false)
-            ->assertSee('sidebar-menu', false)
+            ->assertSee('<nav class="sidebar">', false)
             ->assertDontSee('name="branch_modal"', false);
     }
 

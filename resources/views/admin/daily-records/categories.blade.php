@@ -35,31 +35,54 @@
 
     @include('admin.daily-records.workflow-messages')
 
+    @php
+        $hasCategoryFilters = collect($filters ?? [])
+            ->except(['search', 'per_page', 'page', 'edit'])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->isNotEmpty();
+    @endphp
+    <div class="directory-filter-panel">
+        @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'categoryFilterCollapse', 'directoryExpanded' => $hasCategoryFilters])
+        <div id="categoryFilterCollapse" class="collapse{{ $hasCategoryFilters ? ' show' : '' }}">
+            <form class="forms-sample directory-filter-form" action="{{ route('admin.daily-records.categories') }}" id="categoryFilterForm" method="get">
+                <div class="row g-3 align-items-end">
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="categoryKind">{{ __('daily_records.record_type') }}</label>
+                        <select class="form-select" id="categoryKind" name="kind">
+                            <option value="">{{ __('daily_records.all_types') }}</option>
+                            <option value="activity" @selected(($filters['kind'] ?? '') === 'activity')>{{ __('daily_records.type_activity') }}</option>
+                            <option value="incident" @selected(($filters['kind'] ?? '') === 'incident')>{{ __('daily_records.type_incident') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <label class="form-label" for="categoryStatus">{{ __('daily_records.status') }}</label>
+                        <select class="form-select" id="categoryStatus" name="is_active">
+                            <option value="">{{ __('daily_records.all_statuses') }}</option>
+                            <option value="1" @selected(($filters['is_active'] ?? '') === '1')>{{ __('daily_records.active') }}</option>
+                            <option value="0" @selected(($filters['is_active'] ?? '') === '0')>{{ __('daily_records.inactive') }}</option>
+                        </select>
+                    </div>
+                </div>
+                @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.daily-records.categories')])
+            </form>
+        </div>
+    </div>
+
     <div class="row g-3">
         {{-- Categories Table --}}
         <div class="col-lg-7">
             <div class="dr-card">
-                <div class="dr-card-header">
-                    <div class="d-flex align-items-center gap-2">
-                        <h1 class="dr-card-title">
-                            <i class="fa-solid fa-folder-tree text-primary"></i> {{ __('daily_records.categories_and_subcategories') }}
-                        </h1>
-                        <span class="dr-meta-badge">{{ __('daily_records.defined_count', ['count' => $categories->total()]) }}</span>
-                    </div>
-                    <a class="dr-btn-primary btn-sm py-1 px-3 text-decoration-none" href="{{ route('admin.daily-records.categories') }}">
-                        <i class="fa-solid fa-plus"></i> {{ __('daily_records.new_category') }}
-                    </a>
-                </div>
+                @include('admin.section.directory-toolbar', ['directoryTable' => 'categoryTable', 'directoryForm' => 'categoryFilterForm', 'directorySearch' => 'categorySearch', 'directoryRecords' => $categories, 'directoryTitle' => __('daily_records.categories_and_subcategories'), 'directoryIcon' => 'folder', 'directoryCanAdd' => true, 'directoryAddUrl' => route('admin.daily-records.categories'), 'directoryAddLabel' => __('daily_records.new_category'), 'directoryDefaultSize' => '30', 'directoryCurrentSize' => (string) request('per_page', '30'), 'directoryPageSizes' => [30, 50, 100, 200, 'all'], 'directorySearchKey' => 'search', 'directorySearchInForm' => true, 'directoryLive' => false])
                 <div class="dr-card-body p-0">
                     <div class="dr-table-responsive">
-                        <table class="dr-table">
+                        <table id="categoryTable" class="dr-table">
                             <thead>
                                 <tr>
                                     <th>{{ __('daily_records.type') }}</th>
                                     <th>{{ __('daily_records.classification_name') }}</th>
                                     <th>{{ __('daily_records.status_and_privacy') }}</th>
                                     <th class="text-center">{{ __('daily_records.order') }}</th>
-                                    <th class="text-end">{{ __('daily_records.action') }}</th>
+                                    <th class="text-end" data-directory-actions>{{ __('daily_records.action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>

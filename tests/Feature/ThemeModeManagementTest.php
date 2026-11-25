@@ -334,4 +334,36 @@ class ThemeModeManagementTest extends TestCase
         // Still hides forest_green because forest_green is_active is false
         $this->assertNotContains('forest_green', $mgrKeys);
     }
+
+    public function test_sync_role_themes_restricts_and_allows_themes_per_role(): void
+    {
+        $roleStaff = Role::create(['name' => 'Staff', 'slug' => 'staff']);
+        $roleDriver = Role::create(['name' => 'Driver', 'slug' => 'driver']);
+        $roleManager = Role::create(['name' => 'Manager', 'slug' => 'manager']);
+
+        $controller = new ThemeModeController();
+
+        // Initially royal_blue_gold and light are allowed for everyone (allowed_roles == [])
+        $config = $controller->config();
+        $this->assertTrue($controller->isThemeAllowedForRole($config['royal_blue_gold'], $roleStaff));
+        $this->assertTrue($controller->isThemeAllowedForRole($config['royal_blue_gold'], $roleDriver));
+
+        // Now Admin restricts Staff to only 'light' (unchecking royal_blue_gold)
+        $controller->syncRoleThemes($roleStaff, ['light']);
+
+        $updated = $controller->config();
+
+        // royal_blue_gold should no longer be allowed for Staff, but still allowed for Driver and Manager
+        $this->assertFalse($controller->isThemeAllowedForRole($updated['royal_blue_gold'], $roleStaff));
+        $this->assertTrue($controller->isThemeAllowedForRole($updated['royal_blue_gold'], $roleDriver));
+        $this->assertTrue($controller->isThemeAllowedForRole($updated['royal_blue_gold'], $roleManager));
+
+        // 'light' remains allowed for Staff
+        $this->assertTrue($controller->isThemeAllowedForRole($updated['light'], $roleStaff));
+
+        // Now Admin re-grants royal_blue_gold to Staff
+        $controller->syncRoleThemes($roleStaff, ['royal_blue_gold', 'light']);
+        $reupdated = $controller->config();
+        $this->assertTrue($controller->isThemeAllowedForRole($reupdated['royal_blue_gold'], $roleStaff));
+    }
 }

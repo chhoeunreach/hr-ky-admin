@@ -346,6 +346,8 @@ return [
 'attendance_within_branch_radius'=>'វត្តមានស្ថិតក្នុងបរិវេណសាខា (:radius ម៉ែត្រ)',
 'attendance_outside_branch_radius'=>'វត្តមានស្ថិតនៅក្រៅបរិវេណសាខា (:distance ម៉ែត្រ / កំណត់ត្រឹម :radius ម៉ែត្រ)',
 'attendance_within_branch_route_radius'=>'វត្តមានស្ថិតក្នុងបរិវេណ :branch តាមរយៈការងារចេញក្រៅ (:radius ម៉ែត្រ)',
+'attendance_check_out_route_completed'=>'វត្តមានស្កែនចេញ និងបានបញ្ចប់បេសកកម្មនៅ :branch ដោយជោគជ័យ',
+'branch_route_already_completed'=>'បេសកកម្មរបស់អ្នកទៅកាន់ :branch បានបញ្ចប់រួចរាល់ហើយ! មិនអាចស្កែននៅសាខានេះទៀតទេ។ សូមត្រឡប់ទៅស្កែននៅសាខាកំណើត (:home_branch) វិញ។',
 'attendance_not_found'=>'រកមិនឃើញព័ត៌មានវត្តមាន។',
 'invalid_credential'=>'ព័ត៌មានចូលប្រើប្រាស់មិនត្រឹមត្រូវ!',
 'no_record_credentials'=>'ព័ត៌មានចូលប្រើប្រាស់នេះមិនត្រូវនឹងកំណត់ត្រារបស់យើងទេ។',

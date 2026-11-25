@@ -70,6 +70,7 @@ class DepartmentHeadSelectionTest extends TestCase
             'dept_name' => 'Sales', 'address' => 'Office', 'phone' => '123',
             'branch_id' => $branches, 'dept_head_ids' => array_intersect_key($heads, array_flip($branches)), 'is_active' => 1,
         ]);
+        $request->shouldReceive('input')->andReturnNull();
         return $request;
     }
 

@@ -276,6 +276,7 @@
                                             @can('edit_post')
                                                 <li>
                                                     <a href="{{ route('admin.posts.edit', $value->id) }}"
+                                                       data-open-post-modal
                                                        class="btn btn-sm btn-outline-primary rounded-circle p-1 d-flex align-items-center justify-content-center shadow-none"
                                                        style="width: 32px; height: 32px;"
                                                        title="{{ __('index.edit') }}">
@@ -340,9 +341,12 @@
 
         @include('admin.post.show')
 
+        @include('admin.post.common.form-modal')
+
     </section>
 @endsection
 
 @section('scripts')
     @include('admin.post.common.scripts')
+    <script src="{{ asset('assets/js/post-action-modal.js') }}?v={{ filemtime(public_path('assets/js/post-action-modal.js')) }}"></script>
 @endsection

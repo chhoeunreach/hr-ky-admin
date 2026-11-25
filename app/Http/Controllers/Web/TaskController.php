@@ -44,6 +44,8 @@ class  TaskController extends Controller
     {
         $this->authorize('view_task_list');
         try {
+            $search = trim((string) $request->input('search', ''));
+            $requestedPerPage = (string) $request->input('per_page', '');
             $filterParameters = [
                 'task_id' => $request->task_id ?? null,
                 'status' => $request->status ?? null,
@@ -51,6 +53,10 @@ class  TaskController extends Controller
                 'assigned_member' => $request->assigned_member ?? null,
                 'project_id' => $request->project_id ?? null,
                 'branch_id' => $request->branch_id ?? null,
+                'search' => $search !== '' ? $search : null,
+                'per_page' => in_array($requestedPerPage, ['15', '25', '50', '100', '200', 'all'], true)
+                    ? $requestedPerPage
+                    : (string) getRecordPerPage(),
             ];
 
             if(!auth('admin')->check() && auth()->check() && !AppHelper::canAccessAssignedWorkAcrossBranches() && !AppHelper::canAccessAllBranches()){

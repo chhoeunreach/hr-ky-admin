@@ -212,6 +212,8 @@ Route::group([
      */
     Route::post('employees/check-out', [AttendanceApiController::class, 'employeeCheckOut']);
     Route::get('employees/attendance-detail', [AttendanceApiController::class, 'getEmployeeAllAttendanceDetailOfTheMonth']);
+    Route::get('employees/active-branch-route', [AttendanceApiController::class, 'activeBranchRoute']);
+    Route::get('v1/employees/active-branch-route', [AttendanceApiController::class, 'activeBranchRoute']);
     Route::post('employees/attendance',[AttendanceApiController::class, 'employeeAttendance']);
 
     /** Employee 360 Profile Routes */

@@ -227,6 +227,7 @@ return [
         'AttendanceApiController@employeeCheckOut' => ['attendance', 'check_out'],
         'AttendanceApiController@getEmployeeAllAttendanceDetailOfTheMonth' => ['attendance', 'mobile.function.Attendance.getEmployeeAllAttendanceDetailOfTheMonth'],
         'AttendanceApiController@employeeAttendance' => ['attendance', 'mobile.function.Attendance.employeeAttendance'],
+        'AttendanceApiController@activeBranchRoute' => ['attendance', 'mobile.function.Attendance.employeeAttendance'],
         'HrQueueApiController@generateQrPass' => ['attendance', 'mobile.function.Attendance.employeeAttendance'],
         'HrQueueApiController@scanToQueue' => ['attendance', 'mobile.function.Attendance.employeeAttendance'],
         'HrQueueApiController@callNext' => ['payroll-management', 'edit_payroll'],

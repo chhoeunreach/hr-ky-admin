@@ -68,6 +68,8 @@
         @include('admin.department.common.employees-modal')
 
         @include('admin.department.common.delete-modal')
+
+        @include('admin.department.common.form-modal')
     </section>
 @endsection
 
@@ -203,4 +205,5 @@
     <script src="{{ asset('assets/js/department-employees.js') }}?v={{ filemtime(public_path('assets/js/department-employees.js')) }}"></script>
     <script src="{{ asset('assets/js/department-directory.js') }}?v={{ filemtime(public_path('assets/js/department-directory.js')) }}"></script>
     <script src="{{ asset('assets/js/department-table-tools.js') }}?v={{ filemtime(public_path('assets/js/department-table-tools.js')) }}"></script>
+    <script src="{{ asset('assets/js/department-action-modal.js') }}?v={{ filemtime(public_path('assets/js/department-action-modal.js')) }}"></script>
 @endsection

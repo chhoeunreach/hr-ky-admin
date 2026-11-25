@@ -1,5 +1,9 @@
 @extends('layouts.master')
 
+@if(request('post_modal') === '1')
+    @section('embedded', '1')
+@endif
+
 @section('title', __('index.edit_post_title'))
 
 @section('main-content')
@@ -7,6 +11,7 @@
     <section class="content">
         @include('admin.section.flash_message')
 
+        @unless(request('post_modal') === '1')
         <nav class="page-breadcrumb d-flex align-items-center justify-content-between">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">{{ __('index.dashboard') }}</a></li>
@@ -17,6 +22,7 @@
                 <button class="btn btn-sm btn-primary" ><i class="link-icon" data-feather="arrow-left"></i> {{ __('index.button_back') }}</button>
             </a>
         </nav>
+        @endunless
         <div class="card border-0 shadow-sm" style="border-radius: 14px;">
             <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center gap-2">
@@ -33,6 +39,9 @@
                 <form class="forms-sample" action="{{ route('admin.posts.update', $postDetail->id) }}" enctype="multipart/form-data" method="post">
                     @method('PUT')
                     @csrf
+                    @if(request('post_modal') === '1')
+                        <input type="hidden" name="post_modal" value="1">
+                    @endif
                     @include('admin.post.common.form')
                 </form>
             </div>

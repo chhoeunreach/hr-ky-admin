@@ -141,6 +141,15 @@ class RolePermissionSeparationTest extends TestCase
             $t->timestamps();
         });
 
+        Schema::create('app_settings', function (Blueprint $t) {
+            $t->id();
+            $t->string('name');
+            $t->string('slug')->unique();
+            $t->text('value')->nullable();
+            $t->boolean('status')->default(0);
+            $t->timestamps();
+        });
+
         // Seed permission group types
         DB::table('permission_group_types')->insert([
             ['id' => 1, 'name' => 'Web', 'slug' => 'web', 'created_at' => now(), 'updated_at' => now()],
@@ -252,6 +261,44 @@ class RolePermissionSeparationTest extends TestCase
         // Check for search filter and gatekeeper badge
         $response->assertSee('permissionSearchFilter', false);
         $response->assertSee('Gatekeeper (Web Access)');
+
+        // Check for presence of Theme Modes Studio card and checkboxes
+        $response->assertSee('role-theme-modes-grid');
+        $response->assertSee('allowed_themes[]', false);
+        $response->assertSee('btn-select-all-themes', false);
+        $response->assertSee('btn-deselect-all-themes', false);
+    }
+
+    public function test_assign_permissions_syncs_allowed_theme_modes(): void
+    {
+        $admin = Admin::create([
+            'name' => 'Super Admin',
+            'email' => 'admin_theme@test.com',
+            'username' => 'super_theme',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+
+        $role = Role::create([
+            'name' => 'Driver',
+            'slug' => 'driver',
+            'backend_login_authorize' => 0,
+            'is_active' => 1,
+        ]);
+
+        $themeController = app(\App\Http\Controllers\Web\ThemeModeController::class);
+
+        $response = $this->actingAs($admin, 'admin')->put(route('admin.role.assign-permissions', $role->id), [
+            'permission_value' => [],
+            'theme_modes_submitted' => '1',
+            'allowed_themes' => ['sunset', 'amoled'],
+        ]);
+        $response->assertSessionHasNoErrors();
+
+        $config = $themeController->config();
+        $this->assertTrue($themeController->isThemeAllowedForRole($config['sunset'], $role));
+        $this->assertTrue($themeController->isThemeAllowedForRole($config['amoled'], $role));
+        $this->assertFalse($themeController->isThemeAllowedForRole($config['royal_blue_gold'], $role));
     }
 
     public function test_mobile_only_user_without_admin_access_is_blocked_by_middleware(): void

@@ -347,6 +347,8 @@ return [
     'attendance_within_branch_radius'=>'Attendance is within allowed branch perimeter (:radius meters)',
     'attendance_outside_branch_radius'=>'Attendance is outside allowed branch perimeter (:distance meters away / max :radius meters)',
     'attendance_within_branch_route_radius'=>'Attendance is within :branch perimeter via Branch Route (:radius meters)',
+    'attendance_check_out_route_completed'=>'Checked out and successfully completed mission at :branch',
+    'branch_route_already_completed'=>'Your mission to :branch has already been completed. Attendance at this branch is no longer allowed. Please return to your home branch (:home_branch).',
     'attendance_not_found'=>'Attendance Detail Not Found',
     'invalid_credential'=>'Invalid User Name Credentials !',
     'no_record_credentials'=>'These credentials do not match our records.',

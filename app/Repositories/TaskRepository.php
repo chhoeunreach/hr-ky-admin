@@ -11,32 +11,47 @@ class TaskRepository
     public function getAllFilteredTasks($filterParameters,$select,$with): mixed
     {
 
-        return Task::query()->select($select)->with($with)
+        $query = Task::query()->select($select)->with($with)
 
-            ->when(isset($filterParameters['task_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['task_id']), function ($query) use ($filterParameters) {
                 $query->where('id', $filterParameters['task_id']);
             })
-            ->when(isset($filterParameters['status']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['status']), function ($query) use ($filterParameters) {
                 $query->where('status', $filterParameters['status']);
             })
-            ->when(isset($filterParameters['priority']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['priority']), function ($query) use ($filterParameters) {
                 $query->where('priority', $filterParameters['priority']);
             })
-            ->when(isset($filterParameters['branch_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['branch_id']), function ($query) use ($filterParameters) {
                 $query->where('branch_id', $filterParameters['branch_id']);
             })
-            ->when(isset($filterParameters['assigned_member']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['assigned_member']), function ($query) use ($filterParameters) {
                 $query->whereHas('assignedMembers.user',function($subQuery) use ($filterParameters){
                     $subQuery->whereIn('id', $filterParameters['assigned_member']);
                 });
             })
-            ->when(isset($filterParameters['project_id']), function ($query) use ($filterParameters) {
+            ->when(!empty($filterParameters['project_id']), function ($query) use ($filterParameters) {
                 $query->whereHas('project',function($subQuery) use ($filterParameters){
                     $subQuery->where('id', $filterParameters['project_id']);
                 });
             })
-            ->orderBy('end_date','desc')
-            ->paginate( getRecordPerPage());
+            ->when(!empty($filterParameters['search']), function ($query) use ($filterParameters) {
+                $search = '%' . trim($filterParameters['search']) . '%';
+                $query->where('name', 'like', $search);
+            })
+            ->orderBy('end_date','desc');
+
+        $requestedPerPage = $filterParameters['per_page'] ?? null;
+        if ($requestedPerPage === 'all') {
+            $total = (clone $query)->count();
+            return $query->paginate($total > 0 ? $total : 1);
+        }
+        $allowedPerPage = ['15', '25', '50', '100', '200'];
+        $perPage = in_array((string) $requestedPerPage, $allowedPerPage, true)
+            ? (int) $requestedPerPage
+            : getRecordPerPage();
+
+        return $query->paginate($perPage);
     }
 
     public function getAllTaskDetailForPieChart()
