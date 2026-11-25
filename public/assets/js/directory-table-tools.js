@@ -6,6 +6,7 @@
         if (!table || !form) return;
         const status = tools.querySelector('[data-directory-status]'), search = tools.querySelector('input[type=search]');
         const live = tools.dataset.directoryLive === 'true';
+        const exportUrl = tools.dataset.directoryExportUrl;
         const headingCells = [...table.tHead.rows[0].cells];
         const columns = headingCells.map((cell, index) => ({index, label: cell.textContent.trim() || '#', action: cell.hasAttribute('data-directory-actions')})).filter(column => !column.action);
         // The last column contains record actions and remains available at every size.
@@ -176,6 +177,18 @@
             }
             return {headers:visible.map(column => column.label), rows: finalRows};
         };
+        const customExportData = async () => {
+            syncSearch();
+            const url = new URL(exportUrl, location.href);
+            url.search = new URLSearchParams(new FormData(form)).toString();
+            ['action', 'download_excel'].forEach(key => url.searchParams.delete(key));
+            const response = await fetch(url, {credentials:'same-origin', headers:{Accept:'application/json'}});
+            if (!response.ok || response.redirected && new URL(response.url).pathname !== url.pathname) throw new Error('Unable to load export results');
+            const payload = await response.json();
+            if (!payload.success || !Array.isArray(payload.headers) || !Array.isArray(payload.rows)) throw new Error('Invalid export response');
+            const asText = value => value === null || value === undefined ? '' : String(value);
+            return {headers:payload.headers.map(asText), rows:payload.rows.map(row => row.map(asText))};
+        };
         const saveFile = (blob, extension) => {
             const url = URL.createObjectURL(blob), link = document.createElement('a');
             link.href = url; link.download = table.id + '-' + new Date().toISOString().slice(0,10) + '.' + extension;
@@ -202,7 +215,7 @@
             status.hidden = false;status.textContent = tools.dataset.directoryWorking;
             try {
                 if (['print','pdf'].includes(format) && !popup) throw new Error('Popup blocked');
-                const data = await allResults();
+                const data = ['copy','csv','excel'].includes(format) && exportUrl ? await customExportData() : await allResults();
                 if (format === 'copy') {
                     const text = [data.headers, ...data.rows].map(row => row.map(value => safeCell(value.replace(/\r?\n/g,'; ').replace(/\t/g,' '))).join('\t')).join('\n');
                     try {await navigator.clipboard.writeText(text);} catch (_) {

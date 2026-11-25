@@ -13,7 +13,7 @@
         @endif
     @endif
 </div>
-<div class="directory-tools no-print" data-directory-table="{{ $directoryTable }}" data-directory-form="{{ $directoryForm }}" data-directory-live="{{ $directoryLive ? 'true' : 'false' }}" data-directory-search-key="{{ $directorySearchKey }}" data-directory-title="{{ $directoryTitle }}" data-directory-working="{{ __('index.loading') }}" data-directory-failed="{{ __('index.directory_export_failed') }}" data-directory-copied="{{ __('index.directory_copy_success') }}" data-directory-yes="{{ __('index.yes') }}" data-directory-no="{{ __('index.no') }}" data-directory-active="{{ __('index.active') }}" data-directory-inactive="{{ __('index.inactive') }}">
+<div class="directory-tools no-print" data-directory-table="{{ $directoryTable }}" data-directory-form="{{ $directoryForm }}" data-directory-live="{{ $directoryLive ? 'true' : 'false' }}" data-directory-search-key="{{ $directorySearchKey }}" data-directory-title="{{ $directoryTitle }}" data-directory-working="{{ __('index.loading') }}" data-directory-failed="{{ __('index.directory_export_failed') }}" data-directory-copied="{{ __('index.directory_copy_success') }}" data-directory-yes="{{ __('index.yes') }}" data-directory-no="{{ __('index.no') }}" data-directory-active="{{ __('index.active') }}" data-directory-inactive="{{ __('index.inactive') }}" data-directory-export-url="{{ $directoryExportUrl ?? '' }}">
     <div class="directory-entry-control">
         <label for="{{ $directoryPageSizeId ?? 'per_page' }}">{{ __('index.show') }}</label>
         <select id="{{ $directoryPageSizeId ?? 'per_page' }}" name="per_page" form="{{ $directoryForm }}" class="form-select form-select-sm">

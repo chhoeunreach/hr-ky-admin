@@ -584,6 +584,7 @@ Route::group([
         Route::get('leave-request/add', [LeaveController::class, 'addLeaveRequest'])->name('leave-request.add');
         Route::post('leave-request/add', [LeaveController::class, 'saveLeaveRequest'])->name('leave-request.save');
         Route::get('leave-request/copy-export', [LeaveController::class, 'copyExport'])->name('leave-request.copy-export');
+        Route::get('leave-request/export-data', [LeaveController::class, 'exportData'])->name('leave-request.export-data');
         Route::get('leave-request/export', [LeaveController::class, 'export'])->name('leave-request.export');
 
         /** Time Leave Route */
