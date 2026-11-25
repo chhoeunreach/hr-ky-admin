@@ -197,7 +197,7 @@ class HomeHighlightTest extends TestCase
         $this->getJson('/api/home-highlights/'.$otherCompany->id)->assertNotFound();
     }
 
-    public function test_api_requires_mobile_menu_and_view_permissions(): void
+    public function test_api_allows_view_grant_and_denies_menu_only_or_missing_grant(): void
     {
         $this->abilities = [];
         $this->getJson('/api/home-highlights')->assertForbidden();
@@ -205,8 +205,9 @@ class HomeHighlightTest extends TestCase
         $this->abilities = ['mobile.menu.home-highlights'];
         $this->getJson('/api/home-highlights')->assertForbidden();
 
+        // A unique action grant implies its menu (MobilePermissions::allowsMenu).
         $this->abilities = ['home_highlight.view'];
-        $this->getJson('/api/home-highlights')->assertForbidden();
+        $this->getJson('/api/home-highlights')->assertOk();
     }
 
     public function test_api_applies_audience_before_limiting_and_paginates_visible_results(): void

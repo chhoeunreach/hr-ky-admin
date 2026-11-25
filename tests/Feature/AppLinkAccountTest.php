@@ -28,6 +28,11 @@ class AppLinkAccountTest extends TestCase
         parent::setUp();
         DB::purge('sqlite');
         app()->setLocale('en');
+        // Test routes bypass the permission middleware that defines these abilities.
+        \Illuminate\Support\Facades\Gate::define('list_app_link', fn () => true);
+        \Illuminate\Support\Facades\Gate::define('create_app_link', fn () => true);
+        \Illuminate\Support\Facades\Gate::define('edit_app_link', fn () => true);
+        \Illuminate\Support\Facades\Gate::define('delete_app_link', fn () => true);
         \Illuminate\Support\Facades\Schema::create('users', function (\Illuminate\Database\Schema\Blueprint $table) {
             $table->id(); $table->string('name'); $table->string('english_name')->nullable(); $table->string('employee_code')->nullable();
             $table->boolean('is_active')->default(1); $table->integer('branch_id')->nullable(); $table->integer('company_id')->nullable(); $table->softDeletes();

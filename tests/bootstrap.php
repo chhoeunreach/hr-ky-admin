@@ -11,6 +11,8 @@ foreach ([
     putenv($key.'='.$value);
     $_ENV[$key] = $value;
     $_SERVER[$key] = $value;
+    // Tests mutate these (e.g. DB_DATABASE=:memory:); TestCase::tearDown restores them.
+    $GLOBALS['hrky_bootstrap_env'][$key] = $value;
 }
 
 require dirname(__DIR__).'/vendor/autoload.php';

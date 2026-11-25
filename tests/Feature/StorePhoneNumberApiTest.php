@@ -136,6 +136,18 @@ class StorePhoneNumberApiTest extends TestCase
             'is_active' => 1,
         ]);
 
+        // The route is behind MobileFunctionPermission; the role needs the grants.
+        foreach (['list_store_phone', 'mobile.menu.store-phone-numbers'] as $key) {
+            $permission = \App\Models\Permission::firstOrCreate(
+                ['permission_key' => $key],
+                ['name' => $key]
+            );
+            \App\Models\PermissionRole::firstOrCreate([
+                'permission_id' => $permission->id,
+                'role_id' => $role->id,
+            ]);
+        }
+
         return User::factory()->create([
             'name' => 'Test Employee',
             'email' => 'emp@example.test',
