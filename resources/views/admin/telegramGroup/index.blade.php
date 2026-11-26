@@ -24,6 +24,7 @@
             <div id="telegramGroupFilterCollapse" class="collapse{{ $hasTelegramFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-groups.index') }}" id="telegramGroupFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
+                    <input type="hidden" id="filter_per_page" name="per_page" value="{{ $filterParameters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-3 col-md-6">
                             <label for="name" class="form-label">Group Name</label>
@@ -395,8 +396,8 @@
                 const nextCount = doc.querySelector('[data-directory-count="telegramGroupTable"]');
                 if (count && nextCount) count.textContent = nextCount.textContent;
 
-                if (currentPagination && nextPagination) {
-                    currentPagination.innerHTML = nextPagination.innerHTML;
+                if (currentPagination) {
+                    currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
                 }
 
                 document.dispatchEvent(new CustomEvent('directory:updated'));
@@ -418,6 +419,23 @@
                 }
 
                 const params = new URLSearchParams(new FormData(form));
+
+                // Explicitly sync per_page from the directory-toolbar select or hidden input
+                const perPageVal = $('#per_page').val() || document.getElementById('filter_per_page')?.value;
+                if (perPageVal) {
+                    params.set('per_page', perPageVal);
+                    const hiddenPerPage = document.getElementById('filter_per_page');
+                    if (hiddenPerPage) hiddenPerPage.value = perPageVal;
+                }
+
+                // Explicitly sync search from the directory search input
+                const searchVal = document.getElementById('telegramGroupListSearch')?.value;
+                if (searchVal !== undefined && searchVal !== null && searchVal !== '') {
+                    params.set('search', searchVal);
+                    const hiddenSearch = document.getElementById('search');
+                    if (hiddenSearch) hiddenSearch.value = searchVal;
+                }
+
                 const requestUrl = `${form.action}?${params.toString()}`;
                 const requestId = ++telegramListRequestId;
 
@@ -478,6 +496,10 @@
             });
 
             $(document).on('change', '#per_page', function () {
+                const hiddenPerPage = document.getElementById('filter_per_page');
+                if (hiddenPerPage) {
+                    hiddenPerPage.value = this.value;
+                }
                 refreshTelegramGroupList();
             });
 

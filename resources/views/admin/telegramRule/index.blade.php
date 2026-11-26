@@ -30,7 +30,7 @@
         <div class="card mb-3">
             <div class="card-body py-3">
                 <form action="{{ route('admin.telegram-rules.index') }}" method="GET" class="row g-2 align-items-center">
-                    <div class="col-md-4 col-sm-6">
+                    <div class="col-md-3 col-sm-6">
                         <input type="text"
                                name="keyword"
                                class="form-control"
@@ -58,7 +58,16 @@
                             <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>អសកម្ម (Inactive)</option>
                         </select>
                     </div>
-                    <div class="col-md-3 col-sm-8 d-flex">
+                    <div class="col-md-2 col-sm-4">
+                        <select name="per_page" class="form-select select2-basic">
+                            <option value="15" {{ (string)request('per_page', 15) === '15' ? 'selected' : '' }}>15 / ទំព័រ</option>
+                            <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25 / ទំព័រ</option>
+                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 / ទំព័រ</option>
+                            <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 / ទំព័រ</option>
+                            <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>{{ __('index.all') }} (All)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-sm-4 d-flex">
                         <button type="submit" class="btn btn-primary me-2 flex-grow-1">
                             <i class="link-icon" data-feather="filter"></i> {{ __('index.filter') }}
                         </button>
@@ -118,23 +127,23 @@
                                     <td>
                                         @php
                                             $channelIds = (array) ($rule->channel_ids ?? []);
+                                            $validChannels = array_filter(array_map(fn($id) => $channelsById[$id] ?? null, $channelIds));
                                         @endphp
                                         @if(empty($channelIds))
                                             <span class="text-danger small"><i data-feather="alert-triangle"></i> គ្មាន Channel</span>
+                                        @elseif(empty($validChannels))
+                                            <span class="text-danger small"><i data-feather="alert-triangle"></i> Channel ត្រូវបានលុប</span>
                                         @else
-                                            @foreach(array_slice($channelIds, 0, 2) as $chId)
-                                                @php $ch = $channelsById[$chId] ?? null; @endphp
-                                                @if($ch)
-                                                    <span class="badge bg-light text-dark border mb-1">
-                                                        {{ $ch->name }}
-                                                        @if($ch->topic_id)
-                                                            <small class="text-primary">#{{ $ch->topic_id }}</small>
-                                                        @endif
-                                                    </span>
-                                                @endif
+                                            @foreach(array_slice($validChannels, 0, 2) as $ch)
+                                                <span class="badge bg-light text-dark border mb-1">
+                                                    {{ $ch->name }}
+                                                    @if($ch->topic_id)
+                                                        <small class="text-primary">#{{ $ch->topic_id }}</small>
+                                                    @endif
+                                                </span>
                                             @endforeach
-                                            @if(count($channelIds) > 2)
-                                                <span class="badge bg-secondary mb-1">+{{ count($channelIds) - 2 }} ផ្សេងទៀត</span>
+                                            @if(count($validChannels) > 2)
+                                                <span class="badge bg-secondary mb-1">+{{ count($validChannels) - 2 }} ផ្សេងទៀត</span>
                                             @endif
                                         @endif
                                     </td>

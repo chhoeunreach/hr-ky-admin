@@ -41,7 +41,12 @@ class TelegramNotificationRuleController extends Controller
             });
         }
 
-        $perPage = (int) $request->input('per_page', 15);
+        $perPageInput = $request->input('per_page', 15);
+        if ($perPageInput === 'all' || (string) $perPageInput === 'all') {
+            $perPage = max((clone $query)->count(), 1);
+        } else {
+            $perPage = max((int) $perPageInput, 1);
+        }
         $rules = $query->latest('id')->paginate($perPage)->withQueryString();
 
         $channels = TelegramGroup::orderBy('name')->get();

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\TelegramGroup;
+use App\Models\TelegramNotificationRule;
 use App\Repositories\TelegramGroupRepository;
 use App\Requests\Telegram\TelegramGroupRequest;
 use App\Services\TelegramService;
@@ -14,6 +15,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class TelegramGroupController extends Controller
 {
@@ -39,8 +41,16 @@ class TelegramGroupController extends Controller
             ];
             $telegramGroups = $this->telegramGroupRepo->getPaginated($filterParameters);
             $actionOptions = TelegramGroup::actionOptions();
+            $totalChannels = TelegramGroup::count();
+            $totalRules = Schema::hasTable('telegram_notification_rules') ? TelegramNotificationRule::count() : 0;
 
-            return view($this->view . 'index', compact('telegramGroups', 'filterParameters', 'actionOptions'));
+            return view($this->view . 'index', compact(
+                'telegramGroups',
+                'filterParameters',
+                'actionOptions',
+                'totalChannels',
+                'totalRules'
+            ));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());
         }
@@ -350,6 +360,18 @@ class TelegramGroupController extends Controller
 
             DB::beginTransaction();
             $this->telegramGroupRepo->delete($telegramGroup);
+
+            // Clean up deleted channel ID from notification rules
+            if (Schema::hasTable('telegram_notification_rules')) {
+                $rules = TelegramNotificationRule::query()->get();
+                foreach ($rules as $rule) {
+                    if (is_array($rule->channel_ids) && in_array($id, $rule->channel_ids, true)) {
+                        $remaining = array_values(array_filter($rule->channel_ids, fn ($chId) => (int) $chId !== $id));
+                        $rule->update(['channel_ids' => $remaining]);
+                    }
+                }
+            }
+
             DB::commit();
 
             if (request()->ajax() || request()->wantsJson()) {

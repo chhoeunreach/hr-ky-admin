@@ -85,6 +85,11 @@ class TelegramNotificationRule extends Model
             return true;
         }
 
+        // General action fallback (matches all events)
+        if ($this->event_key === TelegramGroup::ACTION_GENERAL || in_array(TelegramGroup::ACTION_GENERAL, $allKeys, true)) {
+            return true;
+        }
+
         // Parent action fallback (e.g. rule has 'leave', event is 'leave_request')
         $parentAction = TelegramGroup::parentActionForEvent($eventKey);
         if ($parentAction !== null && ($this->event_key === $parentAction || in_array($parentAction, $allKeys, true))) {

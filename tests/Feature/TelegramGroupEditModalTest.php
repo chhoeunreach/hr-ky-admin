@@ -298,4 +298,86 @@ class TelegramGroupEditModalTest extends TestCase
 
         $this->assertNull(TelegramGroup::find($group->id));
     }
+
+    public function test_telegram_groups_paginate_all_returns_all_records(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        for ($i = 1; $i <= 15; $i++) {
+            TelegramGroup::create([
+                'name' => "Pagination Group {$i}",
+                'chat_id' => "-100{$i}00000",
+                'is_active' => true,
+            ]);
+        }
+
+        $response = $this->get(route('admin.telegram-groups.index', ['per_page' => 'all']));
+        $response->assertOk();
+
+        $paginator = $response->viewData('telegramGroups');
+        $this->assertGreaterThanOrEqual(15, $paginator->total());
+        $this->assertCount($paginator->total(), $paginator->items(), 'When per_page=all is passed, all records are returned.');
+    }
+
+    public function test_deleting_telegram_group_cleans_up_channel_id_from_rules(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $groupA = TelegramGroup::create([
+            'name' => 'Channel A to be deleted',
+            'chat_id' => '-1001111111',
+            'is_active' => true,
+        ]);
+
+        $groupB = TelegramGroup::create([
+            'name' => 'Channel B to keep',
+            'chat_id' => '-1002222222',
+            'is_active' => true,
+        ]);
+
+        if (!Schema::hasTable('telegram_notification_rules')) {
+            Schema::create('telegram_notification_rules', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->id();
+                $table->string('name');
+                $table->string('event_key', 100);
+                $table->json('event_keys')->nullable();
+                $table->string('branch_scope', 20)->default('all');
+                $table->json('branch_ids')->nullable();
+                $table->json('channel_ids')->nullable();
+                $table->boolean('send_location')->default(true);
+                $table->boolean('send_selfie')->default(true);
+                $table->boolean('is_silent')->default(false);
+                $table->boolean('is_active')->default(true);
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        $rule = \App\Models\TelegramNotificationRule::create([
+            'name' => 'Test Rule for Cleanup',
+            'event_key' => TelegramGroup::EVENT_LEAVE_REQUEST,
+            'branch_scope' => 'all',
+            'channel_ids' => [$groupA->id, $groupB->id],
+            'is_active' => true,
+        ]);
+
+        // Delete groupA
+        $this->getJson(route('admin.telegram-groups.delete', $groupA->id))->assertOk();
+
+        $rule->refresh();
+        $this->assertNotContains($groupA->id, $rule->channel_ids, 'Deleted group ID is automatically cleaned up from rule.');
+        $this->assertContains($groupB->id, $rule->channel_ids, 'Remaining group ID is retained.');
+    }
 }

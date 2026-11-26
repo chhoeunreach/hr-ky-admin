@@ -33,11 +33,13 @@ class TelegramGroupRepository
             ->latest();
 
         $perPage = $filters['per_page'] ?? TelegramGroup::RECORDS_PER_PAGE;
-        if ($perPage === 'all') {
+        if ($perPage === 'all' || (string) $perPage === 'all') {
             $perPage = max((clone $query)->count(), 1);
+        } else {
+            $perPage = max((int) $perPage, 1);
         }
 
-        return $query->paginate((int) $perPage);
+        return $query->paginate((int) $perPage)->withQueryString();
     }
 
     public function find(int $id): ?TelegramGroup
