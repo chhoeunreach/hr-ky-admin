@@ -212,15 +212,20 @@ class TelegramNotificationRuleTest extends TestCase
         $this->assertCount(1, $rule->channel_ids);
         $this->assertTrue($rule->is_silent);
 
-        // 5. Toggle status
+        // 5. Toggle status (HTTP Redirect & AJAX JSON)
         $toggleResponse = $this->get(route('admin.telegram-rules.toggle-status', $rule->id));
         $toggleResponse->assertRedirect();
         $rule->refresh();
         $this->assertFalse($rule->is_active);
 
-        // 6. Delete rule
-        $deleteResponse = $this->get(route('admin.telegram-rules.delete', $rule->id));
-        $deleteResponse->assertRedirect();
+        $toggleAjaxResponse = $this->getJson(route('admin.telegram-rules.toggle-status', $rule->id));
+        $toggleAjaxResponse->assertOk()->assertJson(['status' => true, 'is_active' => true]);
+        $rule->refresh();
+        $this->assertTrue($rule->is_active);
+
+        // 6. Delete rule (AJAX JSON)
+        $deleteAjaxResponse = $this->getJson(route('admin.telegram-rules.delete', $rule->id));
+        $deleteAjaxResponse->assertOk()->assertJson(['status' => true]);
         $this->assertNull(TelegramNotificationRule::find($rule->id));
     }
 

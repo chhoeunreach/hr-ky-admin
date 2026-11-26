@@ -247,10 +247,28 @@
                 $('.directory-filter-toggle[data-bs-target="#telegramGroupFilterCollapse"]').attr('aria-expanded', 'false');
             });
 
+            const showToast = (icon, title) => {
+                if (typeof Swal !== 'undefined') {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: icon || 'success',
+                        title: title
+                    });
+                }
+            };
+
             $(document).on('change', '.toggleStatus', function (event) {
                 event.preventDefault();
-                var status = $(this).prop('checked') === true ? 1 : 0;
-                var href = $(this).attr('href');
+                const checkbox = $(this);
+                const isChecked = checkbox.prop('checked');
+                const href = checkbox.attr('href') || checkbox.data('href');
+
                 Swal.fire({
                     title: '{{ __('index.are_you_sure_change_status') }}',
                     showDenyButton: true,
@@ -260,16 +278,33 @@
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
-                    } else if (result.isDenied) {
-                        (status === 0) ? $(this).prop('checked', true) : $(this).prop('checked', false);
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Status change failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            showToast('success', data.message || '{{ __('message.status_changed') }}');
+                            refreshTelegramGroupList();
+                        })
+                        .catch(err => {
+                            checkbox.prop('checked', !isChecked);
+                            showToast('error', 'Error changing status.');
+                        });
+                    } else {
+                        checkbox.prop('checked', !isChecked);
                     }
                 });
             });
 
             $(document).on('click', '.deleteTelegramGroup', function (event) {
                 event.preventDefault();
-                let href = $(this).data('href');
+                const href = $(this).data('href');
                 Swal.fire({
                     title: 'Are you sure you want to delete this Telegram group?',
                     showDenyButton: true,
@@ -279,14 +314,28 @@
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.status ? 'success' : 'error', data.message || 'Deleted successfully.');
+                            refreshTelegramGroupList();
+                        })
+                        .catch(err => {
+                            showToast('error', 'Failed to delete Telegram group.');
+                        });
                     }
                 });
             });
 
             $(document).on('click', '.sendTelegramTest', function (event) {
                 event.preventDefault();
-                let href = $(this).data('href');
+                const btn = $(this);
+                const href = btn.data('href');
                 Swal.fire({
                     title: 'Send test message to this Telegram group?',
                     showDenyButton: true,
@@ -296,7 +345,24 @@
                     allowOutsideClick: false
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        btn.addClass('disabled');
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.status ? 'success' : 'error', data.message || (data.status ? 'Test sent successfully.' : 'Test failed.'));
+                            refreshTelegramGroupList();
+                        })
+                        .catch(err => {
+                            showToast('error', 'Error sending test message.');
+                        })
+                        .finally(() => {
+                            btn.removeClass('disabled');
+                        });
                     }
                 });
             });

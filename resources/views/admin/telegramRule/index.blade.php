@@ -241,10 +241,27 @@
                 $(".select2-basic").select2({ width: '100%' });
             }
 
+            const showToast = (icon, title) => {
+                if (typeof Swal !== 'undefined') {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    Toast.fire({
+                        icon: icon || 'success',
+                        title: title
+                    });
+                }
+            };
+
             // Test Rule
             $(document).on('click', '.btnTestRule', function (e) {
                 e.preventDefault();
                 let href = $(this).data('href');
+                let btn = $(this);
                 Swal.fire({
                     title: 'ធ្វើតេស្តវិធានការនេះ?',
                     text: 'ប្រព័ន្ធនឹងផ្ញើសារសាកល្បងទៅកាន់ Channels ទាំងអស់ដែលបានភ្ជាប់ក្នុងវិធានការនេះ។',
@@ -254,7 +271,23 @@
                     cancelButtonText: 'បោះបង់'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        btn.addClass('disabled');
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.status ? 'success' : 'error', data.message);
+                        })
+                        .catch(err => {
+                            showToast('error', 'មានបញ្ហាក្នុងការផ្ញើសារសាកល្បង។');
+                        })
+                        .finally(() => {
+                            btn.removeClass('disabled');
+                        });
                     }
                 });
             });
@@ -274,7 +307,23 @@
                     cancelButtonText: 'បោះបង់'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Status change failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            showToast('success', data.message || 'ស្ថានភាពត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ។');
+                        })
+                        .catch(err => {
+                            checkbox.prop('checked', !isChecked);
+                            showToast('error', 'មានបញ្ហាក្នុងការផ្លាស់ប្តូរស្ថានភាព។');
+                        });
                     } else {
                         checkbox.prop('checked', !isChecked);
                     }
@@ -285,6 +334,7 @@
             $(document).on('click', '.btnDeleteRule', function (e) {
                 e.preventDefault();
                 let href = $(this).data('href');
+                let row = $(this).closest('tr');
 
                 Swal.fire({
                     title: 'លុបវិធានការនេះ?',
@@ -296,7 +346,24 @@
                     cancelButtonText: 'បោះបង់'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        window.location.href = href;
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.status ? 'success' : 'error', data.message || 'វិធានការត្រូវបានលុបចេញដោយជោគជ័យ។');
+                            if (data.status) {
+                                row.fadeOut(300, function () {
+                                    row.remove();
+                                });
+                            }
+                        })
+                        .catch(err => {
+                            showToast('error', 'មានបញ្ហាក្នុងការលុបវិធានការ។');
+                        });
                     }
                 });
             });

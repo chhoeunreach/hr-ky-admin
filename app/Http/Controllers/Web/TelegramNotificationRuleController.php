@@ -171,32 +171,72 @@ class TelegramNotificationRuleController extends Controller
             ->with('success', 'វិធានការបញ្ជូនសារត្រូវបានកែប្រែដោយជោគជ័យ (Notification Rule updated successfully).');
     }
 
-    public function delete(int $id): RedirectResponse
+    public function delete(int $id)
     {
         $this->authorize('delete_telegram_group');
 
-        $rule = TelegramNotificationRule::findOrFail($id);
-        $rule->delete();
+        try {
+            $rule = TelegramNotificationRule::findOrFail($id);
+            $rule->delete();
 
-        return redirect()
-            ->back()
-            ->with('success', 'វិធានការបញ្ជូនសារត្រូវបានលុបចេញ (Notification Rule deleted successfully).');
+            $message = 'វិធានការបញ្ជូនសារត្រូវបានលុបចេញ (Notification Rule deleted successfully).';
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => $message,
+                ]);
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', $message);
+        } catch (Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                ], 400);
+            }
+
+            return redirect()->back()->with('danger', $e->getMessage());
+        }
     }
 
-    public function toggleStatus(int $id): RedirectResponse
+    public function toggleStatus(int $id)
     {
         $this->authorize('edit_telegram_group');
 
-        $rule = TelegramNotificationRule::findOrFail($id);
-        $rule->update([
-            'is_active' => ! $rule->is_active,
-        ]);
+        try {
+            $rule = TelegramNotificationRule::findOrFail($id);
+            $rule->update([
+                'is_active' => ! $rule->is_active,
+            ]);
 
-        $statusText = $rule->is_active ? 'បើកដំណើរការ (Activated)' : 'បិទដំណើរការ (Deactivated)';
+            $statusText = $rule->is_active ? 'បើកដំណើរការ (Activated)' : 'បិទដំណើរការ (Deactivated)';
+            $message = "ស្ថានភាពវិធានការត្រូវបានផ្លាស់ប្តូរទៅជា {$statusText}។";
 
-        return redirect()
-            ->back()
-            ->with('success', "ស្ថានភាពវិធានការត្រូវបានផ្លាស់ប្តូរទៅជា {$statusText}។");
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => $message,
+                    'is_active' => $rule->is_active,
+                ]);
+            }
+
+            return redirect()
+                ->back()
+                ->with('success', $message);
+        } catch (Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $e->getMessage(),
+                ], 400);
+            }
+
+            return redirect()->back()->with('danger', $e->getMessage());
+        }
     }
 
     public function syncDefault(Request $request): RedirectResponse
@@ -270,15 +310,30 @@ class TelegramNotificationRuleController extends Controller
 
             if (! $ok) {
                 $errMsg = 'ការធ្វើតេស្តបានបរាជ័យខ្លះ៖ ' . implode(' | ', array_unique($errors));
+
+                if (request()->ajax() || request()->wantsJson()) {
+                    return response()->json(['status' => false, 'message' => $errMsg], 422);
+                }
+
                 return redirect()->back()->with('danger', $errMsg);
             }
 
             $channelCount = count(array_unique($testedChannels));
+            $successMsg = "ការធ្វើតេស្តវិធានការបានជោគជ័យ! សារត្រូវបានផ្ញើទៅកាន់ Channels ចំនួន {$channelCount} ដោយជោគជ័យ។";
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => true, 'message' => $successMsg]);
+            }
+
             return redirect()->back()->with(
                 'success',
-                "ការធ្វើតេស្តវិធានការបានជោគជ័យ! សារត្រូវបានផ្ញើទៅកាន់ Channels ចំនួន {$channelCount} ដោយជោគជ័យ។"
+                $successMsg
             );
         } catch (Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['status' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return redirect()->back()->with('danger', $e->getMessage());
         }
     }

@@ -246,4 +246,56 @@ class TelegramGroupEditModalTest extends TestCase
         $group->refresh();
         $this->assertSame('Plain Update Name', $group->name);
     }
+
+    public function test_toggle_status_via_ajax_returns_json_response(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $group = TelegramGroup::create([
+            'name' => 'Toggle Status Group',
+            'chat_id' => '-1001122334455',
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson(route('admin.telegram-groups.toggle-status', $group->id));
+        $response->assertOk()
+            ->assertJson([
+                'status' => true,
+            ]);
+
+        $group->refresh();
+        $this->assertFalse((bool) $group->is_active);
+    }
+
+    public function test_delete_via_ajax_returns_json_response(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $group = TelegramGroup::create([
+            'name' => 'Group to Delete via AJAX',
+            'chat_id' => '-10099887766',
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson(route('admin.telegram-groups.delete', $group->id));
+        $response->assertOk()
+            ->assertJson([
+                'status' => true,
+                'message' => 'Telegram group deleted successfully.',
+            ]);
+
+        $this->assertNull(TelegramGroup::find($group->id));
+    }
 }

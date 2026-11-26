@@ -136,7 +136,7 @@ class TelegramGroupController extends Controller
         }
     }
 
-    public function toggleStatus(int $id): RedirectResponse
+    public function toggleStatus(int $id)
     {
         $this->authorize('toggle_telegram_group_status');
 
@@ -145,15 +145,29 @@ class TelegramGroupController extends Controller
             $this->telegramGroupRepo->toggleStatus($id);
             DB::commit();
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => __('message.status_changed') ?: 'Status changed successfully.',
+                ]);
+            }
+
             return redirect()->back()->with('success', __('message.status_changed'));
         } catch (Exception $exception) {
             DB::rollBack();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                ], 400);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }
 
-    public function test(int $id, TelegramService $telegramService): RedirectResponse
+    public function test(int $id, TelegramService $telegramService)
     {
         $this->authorize('test_telegram_group');
 
@@ -201,14 +215,35 @@ class TelegramGroupController extends Controller
                     $message .= ' Add this bot to the Telegram group/channel, then send /chatid there and update this Telegram Group chat ID.';
                 }
 
+                if (request()->ajax() || request()->wantsJson()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => $message,
+                    ], 400);
+                }
+
                 return redirect()->back()->with(
                     'danger',
                     $message
                 );
             }
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Telegram test sent successfully.',
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Telegram test sent successfully.');
         } catch (Exception $exception) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                ], 400);
+            }
+
             return redirect()->back()->with('danger', $exception->getMessage());
         }
     }
@@ -303,7 +338,7 @@ class TelegramGroupController extends Controller
         }
     }
 
-    public function delete(int $id): RedirectResponse
+    public function delete(int $id)
     {
         $this->authorize('delete_telegram_group');
 
@@ -317,9 +352,23 @@ class TelegramGroupController extends Controller
             $this->telegramGroupRepo->delete($telegramGroup);
             DB::commit();
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'Telegram group deleted successfully.',
+                ]);
+            }
+
             return redirect()->back()->with('success', 'Telegram group deleted successfully.');
         } catch (Exception $exception) {
             DB::rollBack();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                ], 400);
+            }
 
             return redirect()->back()->with('danger', $exception->getMessage());
         }
