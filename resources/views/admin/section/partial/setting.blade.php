@@ -101,6 +101,12 @@
                             data-href="{{route('admin.telegram-groups.index')}}"
                             class="nav-link {{request()->routeIs('admin.telegram-groups.*') ? 'active' : ''}}">{{ __('index.telegram_groups') }}</a>
                     </li>
+                    <li class="nav-item">
+                        <a
+                            href="{{route('admin.telegram-rules.index')}}"
+                            data-href="{{route('admin.telegram-rules.index')}}"
+                            class="nav-link {{request()->routeIs('admin.telegram-rules.*') ? 'active' : ''}}">{{ __('index.telegram_notification_rules') ?? 'Telegram Rules' }}</a>
+                    </li>
                 @endif
 
                 @can('notification')

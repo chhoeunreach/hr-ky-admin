@@ -100,6 +100,7 @@ use App\Http\Controllers\Web\TrackLocationController;
 use App\Http\Controllers\Web\TelegramEmployeeController;
 use App\Http\Controllers\Web\TelegramNotificationController;
 use App\Http\Controllers\Web\TelegramGroupController;
+use App\Http\Controllers\Web\TelegramNotificationRuleController;
 use App\Http\Controllers\Web\TelegramWebhookController;
 use App\Http\Controllers\Web\TrainerController;
 use App\Http\Controllers\Web\TrainingController;
@@ -283,6 +284,13 @@ Route::group([
         Route::get('telegram-groups/toggle-status/{id}', [TelegramGroupController::class, 'toggleStatus'])->name('telegram-groups.toggle-status');
         Route::get('telegram-groups/test/{id}', [TelegramGroupController::class, 'test'])->name('telegram-groups.test');
         Route::get('telegram-groups/delete/{id}', [TelegramGroupController::class, 'delete'])->name('telegram-groups.delete');
+
+        /** Telegram Notification Rules (Decoupled Event-to-Channel Routing) */
+        Route::resource('telegram-rules', TelegramNotificationRuleController::class)->except(['show', 'destroy']);
+        Route::post('telegram-rules/sync-default', [TelegramNotificationRuleController::class, 'syncDefault'])->name('telegram-rules.sync-default');
+        Route::get('telegram-rules/toggle-status/{id}', [TelegramNotificationRuleController::class, 'toggleStatus'])->name('telegram-rules.toggle-status');
+        Route::get('telegram-rules/test/{id}', [TelegramNotificationRuleController::class, 'testRule'])->name('telegram-rules.test');
+        Route::get('telegram-rules/delete/{id}', [TelegramNotificationRuleController::class, 'delete'])->name('telegram-rules.delete');
 
         Route::group(['middleware' => 'superAdmin'], function () {
 

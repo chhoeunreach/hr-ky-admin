@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\TelegramGroup;
+use App\Models\TelegramNotificationRule;
 use App\Models\User;
 use App\Support\TelegramBotSettings;
 use Illuminate\Http\Client\Response;
@@ -647,56 +648,92 @@ class TelegramService
     private function resolveConfiguredRecipients(string $actionKey, string $branchName, string $departmentName): array
     {
         $defaultRecipients = $this->defaultGroupRecipients();
+        $ruleRecipients = [];
 
+        // 1. Resolve recipients via TelegramNotificationRules (New Decoupled Pub/Sub Architecture)
         try {
-            if (! Schema::hasTable('telegram_groups')) {
-                return $defaultRecipients;
-            }
+            if (Schema::hasTable('telegram_notification_rules')) {
+                $rules = TelegramNotificationRule::query()
+                    ->where('is_active', true)
+                    ->get();
 
-            $groups = TelegramGroup::query()
-                ->where('is_active', true)
-                ->get();
+                foreach ($rules as $rule) {
+                    if (! $rule->matchesEvent($actionKey)) {
+                        continue;
+                    }
+
+                    if (! $rule->matchesBranch($branchName)) {
+                        continue;
+                    }
+
+                    $channels = $rule->channels();
+                    foreach ($channels as $channel) {
+                        if (! $channel->is_active) {
+                            continue;
+                        }
+
+                        $channelRecipients = $this->groupRecipients($channel);
+                        $ruleRecipients = array_merge($ruleRecipients, $channelRecipients);
+                    }
+                }
+            }
+        } catch (\Throwable $exception) {
+            Log::warning('Telegram notification rules lookup failed.', [
+                'actionKey' => $actionKey,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
+        // 2. Resolve recipients via legacy direct TelegramGroups (Backward Compatibility)
+        $legacyRecipients = [];
+        try {
+            if (Schema::hasTable('telegram_groups')) {
+                $groups = TelegramGroup::query()
+                    ->where('is_active', true)
+                    ->get();
+
+                $branchName = Str::lower(trim($branchName));
+                $departmentName = Str::lower(trim($departmentName));
+
+                $alwaysRecipients = [];
+                $routedRecipientsBySpecificity = [];
+                foreach ($groups as $group) {
+                    if (! $this->groupMatchesEvent($group, $actionKey)) {
+                        continue;
+                    }
+
+                    $groupRecipients = $this->groupRecipients($group);
+                    if ($groupRecipients === []) {
+                        continue;
+                    }
+
+                    if ($group->send_for_all) {
+                        $alwaysRecipients = array_merge($alwaysRecipients, $groupRecipients);
+                        continue;
+                    }
+
+                    $specificity = $this->routeMatchSpecificity($group, $branchName, $departmentName);
+                    if ($specificity !== null) {
+                        $routedRecipientsBySpecificity[$specificity] = array_merge($routedRecipientsBySpecificity[$specificity] ?? [], $groupRecipients);
+                    }
+                }
+
+                $legacyRecipients = $alwaysRecipients;
+                if ($routedRecipientsBySpecificity !== []) {
+                    $maxSpecificity = max(array_keys($routedRecipientsBySpecificity));
+                    $legacyRecipients = array_merge($legacyRecipients, $routedRecipientsBySpecificity[$maxSpecificity]);
+                }
+            }
         } catch (\Throwable $exception) {
             Log::warning('Telegram database group lookup failed.', [
                 'actionKey' => $actionKey,
                 'error' => $exception->getMessage(),
             ]);
-            return $defaultRecipients;
         }
 
-        $branchName = Str::lower(trim($branchName));
-        $departmentName = Str::lower(trim($departmentName));
+        $allRecipients = array_merge($ruleRecipients, $legacyRecipients);
 
-        $alwaysRecipients = [];
-        $routedRecipientsBySpecificity = [];
-        foreach ($groups as $group) {
-            if (! $this->groupMatchesEvent($group, $actionKey)) {
-                continue;
-            }
-
-            $groupRecipients = $this->groupRecipients($group);
-            if ($groupRecipients === []) {
-                continue;
-            }
-
-            if ($group->send_for_all) {
-                $alwaysRecipients = array_merge($alwaysRecipients, $groupRecipients);
-                continue;
-            }
-
-            $specificity = $this->routeMatchSpecificity($group, $branchName, $departmentName);
-            if ($specificity !== null) {
-                $routedRecipientsBySpecificity[$specificity] = array_merge($routedRecipientsBySpecificity[$specificity] ?? [], $groupRecipients);
-            }
-        }
-
-        $recipients = $alwaysRecipients;
-        if ($routedRecipientsBySpecificity !== []) {
-            $maxSpecificity = max(array_keys($routedRecipientsBySpecificity));
-            $recipients = array_merge($recipients, $routedRecipientsBySpecificity[$maxSpecificity]);
-        }
-
-        $recipients = array_values(collect($recipients)->unique(function ($r) {
+        $recipients = array_values(collect($allRecipients)->unique(function ($r) {
             return $r['chat_id'] . ':' . ($r['topic_id'] ?? $r['group']?->topic_id ?? '');
         })->all());
 

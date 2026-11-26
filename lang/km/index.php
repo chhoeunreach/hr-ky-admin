@@ -3896,4 +3896,14 @@ return [
     'server_status' => 'ស្ថានភាព Server',
     'server_ok' => 'Server ដំណើរការ',
     'chat' => 'ជជែក',
+
+    /* Telegram Notification Rules */
+    'telegram_channels' => 'បញ្ជី Channels / Groups',
+    'telegram_notification_rules' => 'វិធានការបញ្ជូនសារ (Notification Rules)',
+    'rule_name' => 'ឈ្មោះវិធានការ',
+    'create_rule' => 'បង្កើតវិធានការថ្មី',
+    'target_channels' => 'Channels ទទួលសារ',
+    'select_branches' => 'ជ្រើសរើសសាខា',
+    'branch_scope' => 'វិសាលភាពសាខា',
+    'delivery_options' => 'ជម្រើសបន្ថែមនៃការផ្ញើ',
 ];

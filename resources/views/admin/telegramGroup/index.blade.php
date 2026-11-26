@@ -6,6 +6,7 @@
     <section class="content">
         @include('admin.section.flash_message')
         @include('admin.telegramGroup.common.breadcrumb', ['title' => 'Telegram Groups'])
+        @include('admin.telegramGroup.common.nav-tabs')
 
         @php
             $hasTelegramFilters = collect($filterParameters ?? [])

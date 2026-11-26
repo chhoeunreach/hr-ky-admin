@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             FeatureSeeder::class,
             ThemeSettingSeeder::class,
             TelegramGroupSeeder::class,
+            TelegramNotificationRuleSeeder::class,
             AppLinkSeeder::class,
         ]);
     }
