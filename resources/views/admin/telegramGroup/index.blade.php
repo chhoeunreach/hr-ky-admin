@@ -193,7 +193,10 @@
                                                 @endcan
                                                 @can('edit_telegram_group')
                                                     <li class="me-2">
-                                                        <a href="{{ route('admin.telegram-groups.edit', $telegramGroup->id) }}">
+                                                        <a href="{{ route('admin.telegram-groups.edit', $telegramGroup->id) }}"
+                                                           data-open-telegram-group-modal
+                                                           data-telegram-group-modal-title="{{ __('index.edit') }}: {{ $telegramGroup->name }}"
+                                                           title="{{ __('index.edit') }}">
                                                             <i class="link-icon" data-feather="edit"></i>
                                                         </a>
                                                     </li>
@@ -226,6 +229,8 @@
                 {{ $telegramGroups->appends($_GET)->links() }}
             </div>
         </div>
+
+        @include('admin.telegramGroup.common.form-modal')
     </section>
 @endsection
 
@@ -399,6 +404,9 @@
                     });
             };
 
+            window.refreshTelegramGroupList = refreshTelegramGroupList;
+            document.addEventListener('telegram-group:refresh', refreshTelegramGroupList);
+
             $(document).on('submit', '#telegramGroupFilterForm', function (event) {
                 event.preventDefault();
                 refreshTelegramGroupList();
@@ -479,4 +487,5 @@
             initTelegramListControls();
         });
     </script>
+    <script src="{{ asset('assets/js/telegram-group-action-modal.js') }}"></script>
 @endsection

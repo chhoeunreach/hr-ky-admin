@@ -60,7 +60,7 @@ class TelegramGroupController extends Controller
         return view($this->view . 'create', compact('branches', 'departments', 'actionOptions', 'eventOptions', 'categorizedEvents', 'chatOptions'));
     }
 
-    public function store(TelegramGroupRequest $request): RedirectResponse
+    public function store(TelegramGroupRequest $request)
     {
         $this->authorize('create_telegram_group');
 
@@ -68,6 +68,11 @@ class TelegramGroupController extends Controller
             DB::beginTransaction();
             $this->telegramGroupRepo->store($this->prepareTelegramGroupData($request->validated()));
             DB::commit();
+
+            if ($request->input('telegram_group_modal') === '1') {
+                session()->flash('success', 'Telegram group created successfully.');
+                return view($this->view . 'common.modal-saved', ['message' => 'Telegram group created successfully.']);
+            }
 
             return redirect()
                 ->route('admin.telegram-groups.index')
@@ -102,7 +107,7 @@ class TelegramGroupController extends Controller
         }
     }
 
-    public function update(TelegramGroupRequest $request, int $id): RedirectResponse
+    public function update(TelegramGroupRequest $request, int $id)
     {
         $this->authorize('edit_telegram_group');
 
@@ -115,6 +120,11 @@ class TelegramGroupController extends Controller
             DB::beginTransaction();
             $this->telegramGroupRepo->update($telegramGroup, $this->prepareTelegramGroupData($request->validated()));
             DB::commit();
+
+            if ($request->input('telegram_group_modal') === '1') {
+                session()->flash('success', 'Telegram group updated successfully.');
+                return view('admin.telegramGroup.common.modal-saved', ['message' => 'Telegram group updated successfully.']);
+            }
 
             return redirect()
                 ->route('admin.telegram-groups.index')
