@@ -210,6 +210,8 @@
                                             @can('edit_telegram_group')
                                                 <a href="{{ route('admin.telegram-rules.edit', $rule->id) }}"
                                                    class="btn btn-xs btn-outline-info"
+                                                   data-open-telegram-rule-modal
+                                                   data-telegram-rule-modal-title="{{ __('index.edit') }} វិធានការ: {{ $rule->name }}"
                                                    title="{{ __('index.edit') }}">
                                                     <i class="link-icon" data-feather="edit" style="width: 14px; height: 14px;"></i>
                                                 </a>
@@ -256,6 +258,8 @@
                 {{ $rules->links() }}
             </div>
         </div>
+
+        @include('admin.telegramRule.common.form-modal')
     </section>
 @endsection
 
@@ -608,4 +612,5 @@
             });
         });
     </script>
+    <script src="{{ asset('assets/js/telegram-rule-action-modal.js') }}?v={{ filemtime(public_path('assets/js/telegram-rule-action-modal.js')) }}"></script>
 @endsection

@@ -151,7 +151,7 @@ class TelegramNotificationRuleController extends Controller
         ));
     }
 
-    public function update(Request $request, int $id): RedirectResponse
+    public function update(Request $request, int $id): View|RedirectResponse
     {
         $this->authorize('edit_telegram_group');
 
@@ -179,6 +179,13 @@ class TelegramNotificationRuleController extends Controller
         $validated['is_active'] = $request->boolean('is_active', true);
 
         $rule->update($validated);
+
+        if ($request->input('telegram_rule_modal') === '1' || $request->header('X-Telegram-Rule-Modal') === '1') {
+            return view('admin.telegramRule.common.modal-saved', [
+                'message' => 'វិធានការបញ្ជូនសារត្រូវបានកែប្រែដោយជោគជ័យ (Notification Rule updated successfully).',
+                'rule' => $rule,
+            ]);
+        }
 
         return redirect()
             ->route('admin.telegram-rules.index')

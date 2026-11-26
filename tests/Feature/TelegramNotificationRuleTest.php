@@ -488,4 +488,62 @@ class TelegramNotificationRuleTest extends TestCase
         $this->assertSame(1, $paginator->currentPage());
         $this->assertCount($paginator->total(), $paginator->items());
     }
+
+    public function test_telegram_rule_edit_modal_flow(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $channel = TelegramGroup::create([
+            'name' => 'Channel for Rule Modal',
+            'chat_id' => '-100987654321',
+            'is_active' => true,
+        ]);
+
+        $rule = TelegramNotificationRule::create([
+            'name' => 'Rule for Modal Edit',
+            'event_key' => TelegramGroup::EVENT_LEAVE_REQUEST,
+            'branch_scope' => 'all',
+            'channel_ids' => [$channel->id],
+            'is_active' => true,
+        ]);
+
+        // 1. Index contains trigger and modal markup
+        $indexResponse = $this->get(route('admin.telegram-rules.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('data-open-telegram-rule-modal', false);
+        $indexResponse->assertSee('id="telegramRuleActionModal"', false);
+
+        // 2. Edit with modal query parameter
+        $editModalResponse = $this->get(route('admin.telegram-rules.edit', [
+            'telegram_rule' => $rule->id,
+            'telegram_rule_modal' => '1',
+        ]));
+        $editModalResponse->assertOk();
+        $editModalResponse->assertSee('name="telegram_rule_modal"', false);
+
+        // 3. Update with modal returns modal-saved view
+        $updateModalResponse = $this->put(route('admin.telegram-rules.update', $rule->id), [
+            'name' => 'Rule Modal Updated',
+            'event_key' => TelegramGroup::EVENT_LEAVE_REQUEST,
+            'branch_scope' => 'all',
+            'channel_ids' => [$channel->id],
+            'send_location' => 1,
+            'send_selfie' => 1,
+            'is_silent' => 0,
+            'is_active' => 1,
+            'telegram_rule_modal' => '1',
+        ]);
+        $updateModalResponse->assertOk();
+        $updateModalResponse->assertViewIs('admin.telegramRule.common.modal-saved');
+        $updateModalResponse->assertSee('telegram-rule-action-saved');
+
+        $rule->refresh();
+        $this->assertSame('Rule Modal Updated', $rule->name);
+    }
 }
