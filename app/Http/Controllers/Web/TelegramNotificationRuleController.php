@@ -33,21 +33,29 @@ class TelegramNotificationRuleController extends Controller
             $query->where('is_active', (int) $request->input('is_active'));
         }
 
-        if ($request->filled('keyword')) {
-            $kw = trim($request->input('keyword'));
+        if ($request->filled('keyword') || $request->filled('search')) {
+            $kw = trim($request->input('search', $request->input('keyword')));
             $query->where(function ($q) use ($kw) {
                 $q->where('name', 'like', "%{$kw}%")
                     ->orWhere('description', 'like', "%{$kw}%");
             });
         }
 
-        $perPageInput = $request->input('per_page', 15);
+        $perPageInput = $request->input('per_page', 10);
         if ($perPageInput === 'all' || (string) $perPageInput === 'all') {
             $perPage = max((clone $query)->count(), 1);
+            $rules = $query->latest('id')->paginate((int) $perPage, ['*'], 'page', 1)->withQueryString();
         } else {
             $perPage = max((int) $perPageInput, 1);
+            $rules = $query->latest('id')->paginate((int) $perPage)->withQueryString();
         }
-        $rules = $query->latest('id')->paginate($perPage)->withQueryString();
+
+        $filterParameters = [
+            'search' => $request->input('search', $request->input('keyword', '')),
+            'event_key' => $request->input('event_key'),
+            'is_active' => $request->input('is_active'),
+            'per_page' => (string) $request->input('per_page', '10'),
+        ];
 
         $channels = TelegramGroup::orderBy('name')->get();
         $channelsById = $channels->keyBy('id');
@@ -60,6 +68,7 @@ class TelegramNotificationRuleController extends Controller
 
         return view('admin.telegramRule.index', compact(
             'rules',
+            'filterParameters',
             'channels',
             'channelsById',
             'eventOptions',

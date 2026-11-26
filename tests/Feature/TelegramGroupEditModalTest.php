@@ -323,6 +323,13 @@ class TelegramGroupEditModalTest extends TestCase
         $paginator = $response->viewData('telegramGroups');
         $this->assertGreaterThanOrEqual(15, $paginator->total());
         $this->assertCount($paginator->total(), $paginator->items(), 'When per_page=all is passed, all records are returned.');
+
+        // Test with page=2: should force page 1 and still return all records
+        $responseWithPage = $this->get(route('admin.telegram-groups.index', ['per_page' => 'all', 'page' => 2]));
+        $responseWithPage->assertOk();
+        $paginatorWithPage = $responseWithPage->viewData('telegramGroups');
+        $this->assertSame(1, $paginatorWithPage->currentPage(), 'Page is forced to 1 when per_page=all');
+        $this->assertCount($paginatorWithPage->total(), $paginatorWithPage->items(), 'All items returned even if page=2 is in query.');
     }
 
     public function test_deleting_telegram_group_cleans_up_channel_id_from_rules(): void

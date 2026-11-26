@@ -26,65 +26,78 @@
         {{-- Nav Tabs --}}
         @include('admin.telegramGroup.common.nav-tabs')
 
-        {{-- Filter Panel --}}
-        <div class="card mb-3">
-            <div class="card-body py-3">
-                <form action="{{ route('admin.telegram-rules.index') }}" method="GET" class="row g-2 align-items-center">
-                    <div class="col-md-3 col-sm-6">
-                        <input type="text"
-                               name="keyword"
-                               class="form-control"
-                               placeholder="ស្វែងរកតាមឈ្មោះវិធានការ..."
-                               value="{{ request('keyword') }}">
+        @php
+            $hasRuleFilters = collect($filterParameters ?? [])
+                ->except(['search', 'per_page', 'page'])
+                ->filter(function ($value) {
+                    if (is_array($value)) {
+                        return count(array_filter($value)) > 0;
+                    }
+                    return $value !== null && $value !== '';
+                })
+                ->isNotEmpty();
+        @endphp
+
+        {{-- Directory Filter Panel --}}
+        <div class="directory-filter-panel mb-4">
+            @include('admin.section.directory-filter-heading', ['directoryCollapse' => 'telegramRuleFilterCollapse', 'directoryExpanded' => $hasRuleFilters])
+            <div id="telegramRuleFilterCollapse" class="collapse{{ $hasRuleFilters ? ' show' : '' }}">
+                <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-rules.index') }}" id="telegramRuleFilterForm" method="get">
+                    <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-xl-4 col-md-6">
+                            <label for="event_key" class="form-label">{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</label>
+                            <select class="form-control select2-basic" id="event_key" name="event_key">
+                                <option value="">-- គ្រប់ព្រឹត្តិការណ៍ (All Events) --</option>
+                                @foreach($categorizedEvents as $catKey => $catData)
+                                    <optgroup label="{{ $catData['label'] }}">
+                                        @foreach($catData['events'] as $evtKey => $evtLabel)
+                                            <option value="{{ $evtKey }}" {{ ($filterParameters['event_key'] ?? '') === $evtKey ? 'selected' : '' }}>
+                                                {{ $evtLabel }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-xl-3 col-md-6">
+                            <label for="is_active" class="form-label">{{ __('index.status') }}</label>
+                            <select class="form-control select2-basic" id="is_active" name="is_active">
+                                <option value="">{{ __('index.all') }} {{ __('index.status') }}</option>
+                                <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }} (Active)</option>
+                                <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }} (Inactive)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
-                        <select name="event_key" class="form-select select2-basic">
-                            <option value="">-- គ្រប់ព្រឹត្តិការណ៍ (All Events) --</option>
-                            @foreach($categorizedEvents as $catKey => $catData)
-                                <optgroup label="{{ $catData['label'] }}">
-                                    @foreach($catData['events'] as $evtKey => $evtLabel)
-                                        <option value="{{ $evtKey }}" {{ request('event_key') === $evtKey ? 'selected' : '' }}>
-                                            {{ $evtLabel }}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-2 col-sm-4">
-                        <select name="is_active" class="form-select select2-basic">
-                            <option value="">-- ស្ថានភាព --</option>
-                            <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>សកម្ម (Active)</option>
-                            <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>អសកម្ម (Inactive)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 col-sm-4">
-                        <select name="per_page" class="form-select select2-basic">
-                            <option value="15" {{ (string)request('per_page', 15) === '15' ? 'selected' : '' }}>15 / ទំព័រ</option>
-                            <option value="25" {{ request('per_page') == '25' ? 'selected' : '' }}>25 / ទំព័រ</option>
-                            <option value="50" {{ request('per_page') == '50' ? 'selected' : '' }}>50 / ទំព័រ</option>
-                            <option value="100" {{ request('per_page') == '100' ? 'selected' : '' }}>100 / ទំព័រ</option>
-                            <option value="all" {{ request('per_page') === 'all' ? 'selected' : '' }}>{{ __('index.all') }} (All)</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2 col-sm-4 d-flex">
-                        <button type="submit" class="btn btn-primary me-2 flex-grow-1">
-                            <i class="link-icon" data-feather="filter"></i> {{ __('index.filter') }}
-                        </button>
-                        <a href="{{ route('admin.telegram-rules.index') }}" class="btn btn-outline-secondary">
-                            <i class="link-icon" data-feather="refresh-cw"></i>
-                        </a>
-                    </div>
+
+                    @include('admin.section.directory-filter-actions', ['directoryResetUrl' => route('admin.telegram-rules.index')])
                 </form>
             </div>
         </div>
 
-        {{-- Rules Table Card --}}
-        <div class="card">
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+        {{-- Rules Table Card with Directory Toolbar --}}
+        <div id="telegramRuleListSection">
+            <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0 !important;">
+                @include('admin.section.directory-toolbar', [
+                    'directoryTable' => 'telegramRuleTable',
+                    'directoryForm' => 'telegramRuleFilterForm',
+                    'directorySearch' => 'telegramRuleListSearch',
+                    'directoryRecords' => $rules,
+                    'directoryTitle' => 'Event Notification Rules',
+                    'directoryIcon' => 'bell',
+                    'directoryPermission' => 'create_telegram_group',
+                    'directoryAddUrl' => route('admin.telegram-rules.create'),
+                    'directoryDefaultSize' => '10',
+                    'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
+                    'directoryPageSizes' => [10, 25, 50, 100, 'all'],
+                    'directorySearchKey' => 'search',
+                    'directoryLive' => true,
+                ])
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="telegramRuleTable" class="table mb-0 align-middle">
+                            <thead class="table-light">
                             <tr>
                                 <th>#</th>
                                 <th>{{ __('index.rule_name') ?? 'ឈ្មោះវិធានការ (Rule Name)' }}</th>
@@ -93,10 +106,12 @@
                                 <th>{{ __('index.target_channels') ?? 'Channels ទទួលសារ' }}</th>
                                 <th class="text-center">{{ __('index.options') ?? 'ជម្រើស' }}</th>
                                 <th class="text-center">{{ __('index.status') ?? 'ស្ថានភាព' }}</th>
-                                <th class="text-center">{{ __('index.action') ?? 'សកម្មភាព' }}</th>
+                                @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
+                                    <th class="text-center" data-directory-actions>{{ __('index.action') ?? 'សកម្មភាព' }}</th>
+                                @endcanany
                             </tr>
-                        </thead>
-                        <tbody>
+                            </thead>
+                            <tbody>
                             @forelse($rules as $key => $rule)
                                 <tr>
                                     <td>{{ $rules->firstItem() + $key }}</td>
@@ -160,7 +175,7 @@
                                     </td>
                                     <td class="text-center">
                                         @can('edit_telegram_group')
-                                            <label class="switch">
+                                            <label class="switch mb-0">
                                                 <input class="toggleRuleStatus"
                                                        data-href="{{ route('admin.telegram-rules.toggle-status', $rule->id) }}"
                                                        type="checkbox" {{ $rule->is_active ? 'checked' : '' }}>
@@ -184,8 +199,8 @@
                                                     </a>
                                                     @if($rule->last_test_at)
                                                         <div class="mt-1" style="font-size: 10px;">
-                                                            <span class="badge {{ $rule->last_test_status === 'success' ? 'bg-success' : 'bg-danger' }}"
-                                                                  title="Last tested: {{ $rule->last_test_at }}">
+                                                             <span class="badge {{ $rule->last_test_status === 'success' ? 'bg-success' : 'bg-danger' }}"
+                                                                   title="Last tested: {{ $rule->last_test_at }}">
                                                                 {{ $rule->last_test_status === 'success' ? 'Tested' : 'Failed' }}
                                                             </span>
                                                         </div>
@@ -231,13 +246,14 @@
                                     </td>
                                 </tr>
                             @endforelse
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+            </div>
 
-                <div class="mt-3">
-                    {{ $rules->links() }}
-                </div>
+            <div class="dataTables_paginate mt-4">
+                {{ $rules->links() }}
             </div>
         </div>
     </section>
@@ -250,6 +266,17 @@
                 $(".select2-basic").select2({ width: '100%' });
             }
 
+            const perPageRule = $('#per_page');
+            if (perPageRule.length && !perPageRule.hasClass('select2-hidden-accessible')) {
+                perPageRule.select2({ minimumResultsForSearch: Infinity });
+            }
+
+            $('#telegramRuleFilterCollapse').on('show.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'true');
+            }).on('hide.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'false');
+            });
+
             const showToast = (icon, title) => {
                 if (typeof Swal !== 'undefined') {
                     const Toast = Swal.mixin({
@@ -259,60 +286,219 @@
                         timer: 3000,
                         timerProgressBar: true
                     });
-                    Toast.fire({
-                        icon: icon || 'success',
-                        title: title
-                    });
+                    Toast.fire({ icon: icon, title: title });
+                } else {
+                    alert(title);
                 }
             };
 
-            // Test Rule
-            $(document).on('click', '.btnTestRule', function (e) {
-                e.preventDefault();
-                let href = $(this).data('href');
-                let btn = $(this);
-                Swal.fire({
-                    title: 'ធ្វើតេស្តវិធានការនេះ?',
-                    text: 'ប្រព័ន្ធនឹងផ្ញើសារសាកល្បងទៅកាន់ Channels ទាំងអស់ដែលបានភ្ជាប់ក្នុងវិធានការនេះ។',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonText: 'បាទ/ចាស ផ្ញើតេស្ត',
-                    cancelButtonText: 'បោះបង់'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        btn.addClass('disabled');
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
+            let ruleSearchTimer = null;
+            let ruleListController = null;
+            let ruleListRequestId = 0;
+
+            const replaceTelegramRuleResults = (doc) => {
+                const currentTableBody = document.querySelector('#telegramRuleTable tbody');
+                const nextTableBody = doc.querySelector('#telegramRuleTable tbody');
+                const currentPagination = document.querySelector('#telegramRuleListSection .dataTables_paginate');
+                const nextPagination = doc.querySelector('#telegramRuleListSection .dataTables_paginate');
+
+                if (!currentTableBody || !nextTableBody) {
+                    return false;
+                }
+
+                currentTableBody.innerHTML = nextTableBody.innerHTML;
+
+                const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
+                const nextCount = doc.querySelector('[data-directory-count="telegramRuleTable"]');
+                if (count && nextCount) count.textContent = nextCount.textContent;
+
+                if (currentPagination) {
+                    currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
+                }
+
+                document.dispatchEvent(new CustomEvent('directory:updated'));
+
+                if (window.feather) {
+                    feather.replace();
+                }
+
+                return true;
+            };
+
+            const refreshTelegramRuleList = (options = {}) => {
+                const form = document.getElementById('telegramRuleFilterForm');
+                const listSection = document.getElementById('telegramRuleListSection');
+                const tableBody = document.querySelector('#telegramRuleTable tbody');
+
+                if (!form || !listSection) {
+                    return;
+                }
+
+                const params = new URLSearchParams(new FormData(form));
+
+                // Explicitly sync per_page from the directory-toolbar select
+                const perPageSelect = document.getElementById('per_page');
+                const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
+                if (perPageVal) {
+                    params.set('per_page', perPageVal);
+                }
+
+                // Explicitly sync search from the directory search input
+                const searchVal = document.getElementById('telegramRuleListSearch')?.value;
+                if (searchVal !== undefined && searchVal !== null && searchVal !== '') {
+                    params.set('search', searchVal);
+                    const hiddenSearch = document.getElementById('search');
+                    if (hiddenSearch) hiddenSearch.value = searchVal;
+                }
+
+                // Reset page to 1 when changing page size or filters
+                if (options.resetPage || perPageVal === 'all') {
+                    params.delete('page');
+                    params.set('page', '1');
+                }
+
+                const requestUrl = `${form.action}?${params.toString()}`;
+                const requestId = ++ruleListRequestId;
+
+                if (ruleListController) {
+                    ruleListController.abort();
+                }
+
+                ruleListController = new AbortController();
+
+                if (tableBody) {
+                    tableBody.style.opacity = '0.6';
+                }
+
+                fetch(requestUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    signal: ruleListController.signal
+                })
+                    .then((response) => response.text())
+                    .then((html) => {
+                        if (requestId !== ruleListRequestId) {
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        if (!replaceTelegramRuleResults(doc)) {
+                            console.warn('Block replacement failed to locate target tables');
+                            return;
+                        }
+
+                        window.history.replaceState({}, '', requestUrl);
+                    })
+                    .catch((error) => {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+                        console.warn('Block refresh failed silently without page reload:', error);
+                    })
+                    .finally(() => {
+                        if (requestId === ruleListRequestId) {
+                            if (tableBody) {
+                                tableBody.style.opacity = '1';
                             }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message);
-                        })
-                        .catch(err => {
-                            showToast('error', 'មានបញ្ហាក្នុងការផ្ញើសារសាកល្បង។');
-                        })
-                        .finally(() => {
-                            btn.removeClass('disabled');
-                        });
-                    }
-                });
+                            ruleListController = null;
+                        }
+                    });
+            };
+
+            window.refreshTelegramRuleList = refreshTelegramRuleList;
+
+            $(document).on('submit', '#telegramRuleFilterForm', function (event) {
+                event.preventDefault();
+                refreshTelegramRuleList({ resetPage: true });
             });
 
-            // Toggle Rule Status
+            $(document).on('change', '#per_page', function () {
+                refreshTelegramRuleList({ resetPage: true });
+            });
+
+            $(document).on('input', '#telegramRuleListSearch', function () {
+                const searchInput = document.getElementById('search');
+                if (searchInput) {
+                    searchInput.value = this.value;
+                }
+
+                clearTimeout(ruleSearchTimer);
+                ruleSearchTimer = setTimeout(() => {
+                    refreshTelegramRuleList({ resetPage: true });
+                }, 300);
+            });
+
+            $(document).on('click', '#telegramRuleListSection .pagination a', function (event) {
+                event.preventDefault();
+
+                const tableBody = document.querySelector('#telegramRuleTable tbody');
+                const requestUrl = this.href;
+                const requestId = ++ruleListRequestId;
+
+                if (ruleListController) {
+                    ruleListController.abort();
+                }
+
+                ruleListController = new AbortController();
+
+                if (tableBody) {
+                    tableBody.style.opacity = '0.6';
+                }
+
+                fetch(requestUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    signal: ruleListController.signal
+                })
+                    .then((response) => response.text())
+                    .then((html) => {
+                        if (requestId !== ruleListRequestId) {
+                            return;
+                        }
+
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+
+                        if (!replaceTelegramRuleResults(doc)) {
+                            window.location.href = requestUrl;
+                            return;
+                        }
+
+                        window.history.replaceState({}, '', requestUrl);
+                    })
+                    .catch((error) => {
+                        if (error.name === 'AbortError') {
+                            return;
+                        }
+                        window.location.href = requestUrl;
+                    })
+                    .finally(() => {
+                        if (requestId === ruleListRequestId) {
+                            if (tableBody) {
+                                tableBody.style.opacity = '1';
+                            }
+                            ruleListController = null;
+                        }
+                    });
+            });
+
+            // Toggle Rule Status (Zero-reload AJAX)
             $(document).on('change', '.toggleRuleStatus', function (e) {
                 e.preventDefault();
-                let href = $(this).data('href');
                 let checkbox = $(this);
+                let href = checkbox.data('href');
                 let isChecked = checkbox.prop('checked');
 
                 Swal.fire({
-                    title: 'ផ្លាស់ប្តូរស្ថានភាពវិធានការ?',
+                    title: 'ប្ដូរស្ថានភាពវិធានការ?',
+                    text: 'តើអ្នកចង់' + (isChecked ? 'បើកដំណើរការ (Active)' : 'បិទដំណើរការ (Inactive)') + ' វិធានការនេះឬ?',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'យល់ព្រម',
+                    confirmButtonText: 'បាទ/ចាស',
                     cancelButtonText: 'បោះបង់'
                 }).then((result) => {
                     if (result.isConfirmed) {
@@ -339,7 +525,7 @@
                 });
             });
 
-            // Delete Rule
+            // Delete Rule (Zero-reload AJAX)
             $(document).on('click', '.btnDeleteRule', function (e) {
                 e.preventDefault();
                 let href = $(this).data('href');
@@ -367,11 +553,55 @@
                             if (data.status) {
                                 row.fadeOut(300, function () {
                                     row.remove();
+                                    const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
+                                    if (count) {
+                                        const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
+                                        count.textContent = Math.max(0, cur - 1);
+                                    }
                                 });
                             }
                         })
                         .catch(err => {
                             showToast('error', 'មានបញ្ហាក្នុងការលុបវិធានការ។');
+                        });
+                    }
+                });
+            });
+
+            // Send Test Message (Zero-reload AJAX)
+            $(document).on('click', '.btnTestRule', function (e) {
+                e.preventDefault();
+                let btn = $(this);
+                let href = btn.data('href');
+
+                Swal.fire({
+                    title: 'ផ្ញើសារសាកល្បង (Test)',
+                    text: 'តើអ្នកចង់ផ្ញើសារ Test ទៅកាន់ Telegram Channels នៃវិធានការនេះមែនទេ?',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'ផ្ញើសារ Test',
+                    cancelButtonText: 'បោះបង់'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        btn.addClass('disabled');
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            showToast(data.status ? 'success' : 'error', data.message || 'បានផ្ញើសារ Test រួចរាល់។');
+                            if (data.status) {
+                                refreshTelegramRuleList();
+                            }
+                        })
+                        .catch(err => {
+                            showToast('error', 'មានបញ្ហាក្នុងការផ្ញើសារ Test');
+                        })
+                        .finally(() => {
+                            btn.removeClass('disabled');
                         });
                     }
                 });

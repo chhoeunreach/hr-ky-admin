@@ -24,7 +24,6 @@
             <div id="telegramGroupFilterCollapse" class="collapse{{ $hasTelegramFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-groups.index') }}" id="telegramGroupFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                    <input type="hidden" id="filter_per_page" name="per_page" value="{{ $filterParameters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-3 col-md-6">
                             <label for="name" class="form-label">Group Name</label>
@@ -227,7 +226,7 @@
             </div>
 
             <div class="dataTables_paginate mt-4">
-                {{ $telegramGroups->appends($_GET)->links() }}
+                {{ $telegramGroups->links() }}
             </div>
         </div>
 
@@ -409,7 +408,7 @@
                 return true;
             };
 
-            const refreshTelegramGroupList = () => {
+            const refreshTelegramGroupList = (options = {}) => {
                 const form = document.getElementById('telegramGroupFilterForm');
                 const listSection = document.getElementById('telegramGroupListSection');
                 const tableBody = document.querySelector('#telegramGroupTable tbody');
@@ -420,12 +419,11 @@
 
                 const params = new URLSearchParams(new FormData(form));
 
-                // Explicitly sync per_page from the directory-toolbar select or hidden input
-                const perPageVal = $('#per_page').val() || document.getElementById('filter_per_page')?.value;
+                // Explicitly sync per_page from the directory-toolbar select
+                const perPageSelect = document.getElementById('per_page');
+                const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
                 if (perPageVal) {
                     params.set('per_page', perPageVal);
-                    const hiddenPerPage = document.getElementById('filter_per_page');
-                    if (hiddenPerPage) hiddenPerPage.value = perPageVal;
                 }
 
                 // Explicitly sync search from the directory search input
@@ -434,6 +432,12 @@
                     params.set('search', searchVal);
                     const hiddenSearch = document.getElementById('search');
                     if (hiddenSearch) hiddenSearch.value = searchVal;
+                }
+
+                // Reset page to 1 when changing page size or filters
+                if (options.resetPage || perPageVal === 'all') {
+                    params.delete('page');
+                    params.set('page', '1');
                 }
 
                 const requestUrl = `${form.action}?${params.toString()}`;
@@ -492,15 +496,11 @@
 
             $(document).on('submit', '#telegramGroupFilterForm', function (event) {
                 event.preventDefault();
-                refreshTelegramGroupList();
+                refreshTelegramGroupList({ resetPage: true });
             });
 
             $(document).on('change', '#per_page', function () {
-                const hiddenPerPage = document.getElementById('filter_per_page');
-                if (hiddenPerPage) {
-                    hiddenPerPage.value = this.value;
-                }
-                refreshTelegramGroupList();
+                refreshTelegramGroupList({ resetPage: true });
             });
 
             $(document).on('input', '#telegramGroupListSearch', function () {
@@ -511,7 +511,7 @@
 
                 clearTimeout(telegramSearchTimer);
                 telegramSearchTimer = setTimeout(() => {
-                    refreshTelegramGroupList();
+                    refreshTelegramGroupList({ resetPage: true });
                 }, 300);
             });
 

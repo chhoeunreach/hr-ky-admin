@@ -460,4 +460,32 @@ class TelegramNotificationRuleTest extends TestCase
             'Different branch does not match.'
         );
     }
+
+    public function test_telegram_rules_paginate_all_returns_all_records_and_resets_page(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        for ($i = 1; $i <= 15; $i++) {
+            TelegramNotificationRule::create([
+                'name' => "Rule Pagination {$i}",
+                'event_key' => TelegramGroup::EVENT_LEAVE_REQUEST,
+                'branch_scope' => 'all',
+                'channel_ids' => [1],
+                'is_active' => true,
+            ]);
+        }
+
+        $response = $this->get(route('admin.telegram-rules.index', ['per_page' => 'all', 'page' => 3]));
+        $response->assertOk();
+        $paginator = $response->viewData('rules');
+        $this->assertGreaterThanOrEqual(15, $paginator->total());
+        $this->assertSame(1, $paginator->currentPage());
+        $this->assertCount($paginator->total(), $paginator->items());
+    }
 }
