@@ -5,12 +5,11 @@
     const frame = modal.querySelector('[data-telegram-group-action-frame]');
     const title = modal.querySelector('.modal-title');
     const indexUrl = new URL(modal.dataset.indexUrl, window.location.href);
-    let changed = false;
 
     const modalInstance = () => window.bootstrap.Modal.getOrCreateInstance(modal);
 
     const refreshBlock = () => {
-        // 1. Direct exposed in-place block refresh function
+        // 1. Direct in-place block refresh function
         if (typeof window.refreshTelegramGroupList === 'function') {
             window.refreshTelegramGroupList();
             return true;
@@ -23,13 +22,7 @@
             return true;
         }
 
-        // 3. Form submit trigger
-        const form = document.getElementById('telegramGroupFilterForm');
-        if (form && typeof form.requestSubmit === 'function') {
-            form.requestSubmit();
-            return true;
-        }
-
+        // 3. Custom event
         document.dispatchEvent(new CustomEvent('telegram-group:refresh'));
         return false;
     };
@@ -86,10 +79,6 @@
             const action = new URL(form.action, frame.src);
             if (action.origin !== window.location.origin) return;
 
-            if (form.method.toLowerCase() !== 'get') {
-                changed = true;
-            }
-
             if (!form.querySelector('[name="telegram_group_modal"]')) {
                 const field = child.createElement('input');
                 field.type = 'hidden';
@@ -115,12 +104,12 @@
         });
     });
 
+    // Handle postMessage from saved modal without page reload
     window.addEventListener('message', event => {
         if (event.origin !== window.location.origin || event.source !== frame.contentWindow) return;
         if (event.data?.type === 'telegram-group-action-saved') {
-            changed = true;
             modalInstance().hide();
-            // Refresh table block in-place
+            // Refresh table block in-place via AJAX
             refreshBlock();
             showSavedToast(event.data?.message);
         }
@@ -128,9 +117,5 @@
 
     modal.addEventListener('hidden.bs.modal', () => {
         frame.removeAttribute('src');
-        if (changed) {
-            refreshBlock();
-        }
-        changed = false;
     });
 })();

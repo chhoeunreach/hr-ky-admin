@@ -381,7 +381,7 @@
                         const doc = parser.parseFromString(html, 'text/html');
 
                         if (!replaceTelegramGroupResults(doc)) {
-                            window.location.href = requestUrl;
+                            console.warn('Block replacement failed to locate target tables');
                             return;
                         }
 
@@ -391,8 +391,7 @@
                         if (error.name === 'AbortError') {
                             return;
                         }
-
-                        form.submit();
+                        console.warn('Block refresh failed silently without page reload:', error);
                     })
                     .finally(() => {
                         if (requestId === telegramListRequestId) {
@@ -461,7 +460,7 @@
                         const doc = parser.parseFromString(html, 'text/html');
 
                         if (!replaceTelegramGroupResults(doc)) {
-                            window.location.href = requestUrl;
+                            console.warn('Pagination replacement failed');
                             return;
                         }
 
@@ -471,8 +470,7 @@
                         if (error.name === 'AbortError') {
                             return;
                         }
-
-                        window.location.href = requestUrl;
+                        console.warn('Pagination fetch failed silently:', error);
                     })
                     .finally(() => {
                         if (requestId === telegramListRequestId) {
@@ -487,5 +485,5 @@
             initTelegramListControls();
         });
     </script>
-    <script src="{{ asset('assets/js/telegram-group-action-modal.js') }}"></script>
+    <script src="{{ asset('assets/js/telegram-group-action-modal.js') }}?v={{ filemtime(public_path('assets/js/telegram-group-action-modal.js')) }}"></script>
 @endsection
