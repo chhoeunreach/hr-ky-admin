@@ -31,6 +31,7 @@ class TelegramGroupController extends Controller
 
         try {
             $filterParameters = [
+                'search' => $request->search ?? null,
                 'name' => $request->name ?? null,
                 'action_key' => $request->action_key ?? null,
                 'is_active' => $request->is_active ?? null,
@@ -155,11 +156,20 @@ class TelegramGroupController extends Controller
             $ok = true;
             $errors = [];
             $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id];
+            $topicId = $telegramGroup->topic_id ? (int) $telegramGroup->topic_id : null;
+
+            $testMessage = "🔔 <b>សារសាកល្បងពីប្រព័ន្ធ HR Admin (Telegram Test)</b>\n" .
+                "🏢 ឈ្មោះក្រុម: <b>{$telegramGroup->name}</b>\n" .
+                ($topicId ? "📌 Topic/Thread ID: <code>{$topicId}</code>\n" : '') .
+                "⏱️ ពេលវេលា: " . now()->format('d/m/Y H:i:s') . "\n" .
+                "✅ ដំណើរការតភ្ជាប់ជោគជ័យ (Connected successfully)";
 
             foreach (array_filter($chatIds) as $chatId) {
                 $sent = $telegramService->sendMessage(
                     $chatId,
-                    'Telegram group test from HR Admin: ' . $telegramGroup->name
+                    $testMessage,
+                    'HTML',
+                    $topicId
                 );
 
                 if (! $sent) {
@@ -168,6 +178,11 @@ class TelegramGroupController extends Controller
 
                 $ok = $sent && $ok;
             }
+
+            $telegramGroup->update([
+                'last_tested_at' => now(),
+                'last_test_status' => $ok ? 'success' : 'failed',
+            ]);
 
             if (! $ok) {
                 $message = 'Telegram test failed. ' . implode(' ', array_unique($errors));
@@ -196,11 +211,13 @@ class TelegramGroupController extends Controller
             'chat_ids' => ['nullable', 'array'],
             'chat_ids.*' => ['nullable', 'string', 'max:100'],
             'chat_id' => ['nullable', 'string', 'max:100'],
+            'topic_id' => ['nullable', 'integer', 'min:1'],
             'name' => ['nullable', 'string', 'max:180'],
             'id' => ['nullable', 'integer'],
         ]);
 
         try {
+            $group = null;
             $chatIds = [];
             if (!empty($validated['id'])) {
                 $group = $this->telegramGroupRepo->find((int) $validated['id']);
@@ -221,22 +238,31 @@ class TelegramGroupController extends Controller
                 throw new Exception('សូមបញ្ចូល Chat ID ជាមុនសិន មុននឹងធ្វើតេស្ត។ (Please specify at least one Chat ID).');
             }
 
-            $groupName = $validated['name'] ?? 'HR KY Admin';
+            $topicId = !empty($validated['topic_id']) ? (int) $validated['topic_id'] : ($group?->topic_id ?? null);
+            $groupName = $validated['name'] ?? ($group?->name ?? 'HR KY Admin');
             $ok = true;
             $errors = [];
 
             $testMessage = "🔔 <b>សារសាកល្បងពីប្រព័ន្ធ HR Admin (Telegram Test Message)</b>\n" .
                 "🏢 ឈ្មោះក្រុម: <b>{$groupName}</b>\n" .
+                ($topicId ? "📌 Topic/Thread ID: <code>{$topicId}</code>\n" : '') .
                 "⏱️ ពេលវេលា: " . now()->format('d/m/Y H:i:s') . "\n" .
                 "✅ ប្រព័ន្ធតេឡេក្រាមបានតភ្ជាប់ជោគជ័យ ១០០% (Connected successfully)";
 
             foreach (array_unique($chatIds) as $chatId) {
-                $sent = $telegramService->sendMessage($chatId, $testMessage);
+                $sent = $telegramService->sendMessage($chatId, $testMessage, 'HTML', $topicId);
                 if (!$sent) {
                     $err = $telegramService->lastError() ?: "Failed to send to chat ID {$chatId}.";
                     $errors[] = $err;
                     $ok = false;
                 }
+            }
+
+            if ($group) {
+                $group->update([
+                    'last_tested_at' => now(),
+                    'last_test_status' => $ok ? 'success' : 'failed',
+                ]);
             }
 
             if (!$ok) {

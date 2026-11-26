@@ -67,6 +67,11 @@ class Kernel extends ConsoleKernel
             ->dailyAt('08:00')
             ->withoutOverlapping();
 
+        // Daily morning attendance summary digest at 09:30 AM
+        $schedule->command('telegram:attendance-summary')
+            ->dailyAt('09:30')
+            ->withoutOverlapping();
+
         // Server health watchdog: silent while healthy, alerts when not.
         // Alerts are throttled to once per hour inside the command.
         $schedule->command('errors:telegram-digest --health-only')

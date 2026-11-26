@@ -33,6 +33,7 @@ class TelegramGroup extends Model
     public const EVENT_ATTENDANCE_CHECKIN = 'attendance_checkin';
     public const EVENT_ATTENDANCE_CHECKOUT = 'attendance_checkout';
     public const EVENT_ATTENDANCE_LATE = 'attendance_late';
+    public const EVENT_ATTENDANCE_SUMMARY = 'attendance_summary';
 
     // Branch Route Events (ការងារចេញក្រៅ)
     public const EVENT_BRANCH_ROUTE_SUBMITTED = 'branch_route_submitted';
@@ -88,6 +89,7 @@ class TelegramGroup extends Model
         'name',
         'chat_id',
         'chat_ids',
+        'topic_id',
         'action_key',
         'action_keys',
         'event_keys',
@@ -102,9 +104,12 @@ class TelegramGroup extends Model
         'send_selfie',
         'is_active',
         'description',
+        'last_tested_at',
+        'last_test_status',
     ];
 
     protected $casts = [
+        'topic_id' => 'integer',
         'send_for_all' => 'boolean',
         'send_location' => 'boolean',
         'send_selfie' => 'boolean',
@@ -114,6 +119,7 @@ class TelegramGroup extends Model
         'event_keys' => 'array',
         'branch_ids' => 'array',
         'department_ids' => 'array',
+        'last_tested_at' => 'datetime',
     ];
 
     public static function actionOptions(): array
@@ -147,6 +153,7 @@ class TelegramGroup extends Model
                     self::EVENT_ATTENDANCE_CHECKIN => 'Check In (ចូលធ្វើការ)',
                     self::EVENT_ATTENDANCE_CHECKOUT => 'Check Out (ចេញពីការងារ)',
                     self::EVENT_ATTENDANCE_LATE => 'Late In (ចូលយឺត)',
+                    self::EVENT_ATTENDANCE_SUMMARY => 'Daily Summary (របាយការណ៍សង្ខេបប្រចាំថ្ងៃ)',
                 ],
             ],
             'leave' => [
@@ -259,7 +266,8 @@ class TelegramGroup extends Model
         return match ($eventKey) {
             self::EVENT_ATTENDANCE_CHECKIN,
             self::EVENT_ATTENDANCE_CHECKOUT,
-            self::EVENT_ATTENDANCE_LATE => self::ACTION_ATTENDANCE,
+            self::EVENT_ATTENDANCE_LATE,
+            self::EVENT_ATTENDANCE_SUMMARY => self::ACTION_ATTENDANCE,
 
             self::EVENT_LEAVE_REQUEST,
             self::EVENT_LEAVE_APPROVED,

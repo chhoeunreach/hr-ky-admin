@@ -69,11 +69,12 @@ class TelegramService
         $allOk = true;
         foreach ($recipients as $recipient) {
             $chatId = $recipient['chat_id'];
-            $messageOk = $this->sendMessage($chatId, $messageText, $parseMode);
+            $topicId = $recipient['topic_id'] ?? $recipient['group']?->topic_id;
+            $messageOk = $this->sendMessage($chatId, $messageText, $parseMode, $topicId);
             $allOk = $allOk && $messageOk;
 
             if ($latitude !== null && $longitude !== null && $this->groupSendsLocation($recipient['group'])) {
-                $locationOk = $this->sendLocation($chatId, $latitude, $longitude);
+                $locationOk = $this->sendLocation($chatId, $latitude, $longitude, $topicId);
                 $allOk = $allOk && $locationOk;
             }
         }
@@ -109,13 +110,14 @@ class TelegramService
         $allOk = true;
         foreach ($recipients as $recipient) {
             $chatId = $recipient['chat_id'];
+            $topicId = $recipient['topic_id'] ?? $recipient['group']?->topic_id;
             $messageOk = $this->groupSendsSelfie($recipient['group'])
-                ? $this->sendPhoto($chatId, $photoPath, $caption, $parseMode) !== null
-                : $this->sendMessage($chatId, (string) $caption, $parseMode);
+                ? $this->sendPhoto($chatId, $photoPath, $caption, $parseMode, $topicId) !== null
+                : $this->sendMessage($chatId, (string) $caption, $parseMode, $topicId);
             $allOk = $allOk && $messageOk;
 
             if ($latitude !== null && $longitude !== null && $this->groupSendsLocation($recipient['group'])) {
-                $locationOk = $this->sendLocation($chatId, $latitude, $longitude);
+                $locationOk = $this->sendLocation($chatId, $latitude, $longitude, $topicId);
                 $allOk = $allOk && $locationOk;
             }
         }
@@ -171,7 +173,7 @@ class TelegramService
         return $this->getActionChatIds($actionKey, trim((string) $branchName), trim((string) $departmentName));
     }
 
-    public function sendMessage(string $chatId, string $messageText, ?string $parseMode = null): bool
+    public function sendMessage(string $chatId, string $messageText, ?string $parseMode = null, ?int $messageThreadId = null): bool
     {
         $payload = [
             'chat_id' => $chatId,
@@ -180,6 +182,10 @@ class TelegramService
 
         if ($parseMode !== null) {
             $payload['parse_mode'] = $parseMode;
+        }
+
+        if ($messageThreadId !== null && $messageThreadId > 0) {
+            $payload['message_thread_id'] = $messageThreadId;
         }
 
         $response = $this->post('sendMessage', $payload, ['chatId' => $chatId]);
@@ -386,7 +392,7 @@ class TelegramService
         return $this->sendCommonNotification('Admin/System alert', ['message' => $messageText] + $context);
     }
 
-    public function sendLocation(string $chatId, float $latitude, float $longitude): bool
+    public function sendLocation(string $chatId, float $latitude, float $longitude, ?int $messageThreadId = null): bool
     {
         $payload = [
             'chat_id' => $chatId,
@@ -394,12 +400,16 @@ class TelegramService
             'longitude' => $longitude,
         ];
 
+        if ($messageThreadId !== null && $messageThreadId > 0) {
+            $payload['message_thread_id'] = $messageThreadId;
+        }
+
         $response = $this->post('sendLocation', $payload, ['chatId' => $chatId]);
 
         return $response?->successful() ?? false;
     }
 
-    public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null, ?string $parseMode = null): ?int
+    public function sendPhoto(string $chatId, string $photoPath, ?string $caption = null, ?string $parseMode = null, ?int $messageThreadId = null): ?int
     {
         $botToken = TelegramBotSettings::botToken();
 
@@ -435,6 +445,10 @@ class TelegramService
 
             if ($parseMode !== null) {
                 $payload['parse_mode'] = $parseMode;
+            }
+
+            if ($messageThreadId !== null && $messageThreadId > 0) {
+                $payload['message_thread_id'] = $messageThreadId;
             }
 
             $response = $request->post($url, $payload);
@@ -496,6 +510,10 @@ class TelegramService
 
             if ($parseMode !== null) {
                 $payload['parse_mode'] = $parseMode;
+            }
+
+            if ($messageThreadId !== null && $messageThreadId > 0) {
+                $payload['message_thread_id'] = $messageThreadId;
             }
 
             $response = $request->post($url, $payload);
@@ -678,7 +696,9 @@ class TelegramService
             $recipients = array_merge($recipients, $routedRecipientsBySpecificity[$maxSpecificity]);
         }
 
-        $recipients = array_values(collect($recipients)->unique('chat_id')->all());
+        $recipients = array_values(collect($recipients)->unique(function ($r) {
+            return $r['chat_id'] . ':' . ($r['topic_id'] ?? $r['group']?->topic_id ?? '');
+        })->all());
 
         return $recipients !== [] ? $recipients : $defaultRecipients;
     }
@@ -768,7 +788,11 @@ class TelegramService
     private function groupRecipients(TelegramGroup $group): array
     {
         return array_map(
-            fn (string $chatId): array => ['chat_id' => $chatId, 'group' => $group],
+            fn (string $chatId): array => [
+                'chat_id' => $chatId,
+                'topic_id' => $group->topic_id,
+                'group' => $group,
+            ],
             $this->groupChatIds($group)
         );
     }

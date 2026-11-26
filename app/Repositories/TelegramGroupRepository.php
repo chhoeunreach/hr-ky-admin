@@ -11,6 +11,13 @@ class TelegramGroupRepository
     public function getPaginated(array $filters): LengthAwarePaginator
     {
         $query = TelegramGroup::with(['branch:id,name', 'department:id,dept_name'])
+            ->when(!empty($filters['search']), function ($query) use ($filters) {
+                $search = $filters['search'];
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('chat_id', 'like', '%' . $search . '%');
+                });
+            })
             ->when(!empty($filters['name']), function ($query) use ($filters) {
                 $query->where('name', 'like', '%' . $filters['name'] . '%');
             })

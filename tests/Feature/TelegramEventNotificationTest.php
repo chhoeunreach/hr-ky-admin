@@ -56,8 +56,17 @@ class TelegramEventNotificationTest extends TestCase
                 $table->boolean('send_location')->default(true);
                 $table->boolean('send_selfie')->default(true);
                 $table->boolean('is_active')->default(true);
+                $table->unsignedBigInteger('topic_id')->nullable();
+                $table->timestamp('last_tested_at')->nullable();
+                $table->string('last_test_status', 20)->nullable();
                 $table->text('description')->nullable();
                 $table->timestamps();
+            });
+        } elseif (!Schema::hasColumn('telegram_groups', 'topic_id')) {
+            Schema::table('telegram_groups', function (Blueprint $table) {
+                $table->unsignedBigInteger('topic_id')->nullable();
+                $table->timestamp('last_tested_at')->nullable();
+                $table->string('last_test_status', 20)->nullable();
             });
         }
 
@@ -93,6 +102,34 @@ class TelegramEventNotificationTest extends TestCase
             });
         }
 
+        if (!Schema::hasTable('users')) {
+            Schema::create('users', function (Blueprint $table) {
+                $table->id();
+                $table->string('name')->nullable();
+                $table->unsignedBigInteger('branch_id')->nullable();
+                $table->unsignedBigInteger('department_id')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->softDeletes();
+                $table->timestamps();
+            });
+        } elseif (!Schema::hasColumn('users', 'deleted_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->softDeletes();
+            });
+        }
+
+        if (!Schema::hasTable('attendances')) {
+            Schema::create('attendances', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->date('attendance_date')->nullable();
+                $table->time('check_in_at')->nullable();
+                $table->string('check_in_type')->nullable();
+                $table->string('attendance_status')->nullable();
+                $table->timestamps();
+            });
+        }
+
         if (!Schema::hasTable('theme_settings')) {
             Schema::create('theme_settings', function (Blueprint $table) {
                 $table->id();
@@ -124,6 +161,7 @@ class TelegramEventNotificationTest extends TestCase
         $events = TelegramGroup::eventOptions();
 
         $this->assertArrayHasKey(TelegramGroup::EVENT_ATTENDANCE_CHECKIN, $events);
+        $this->assertArrayHasKey(TelegramGroup::EVENT_ATTENDANCE_SUMMARY, $events);
         $this->assertArrayHasKey(TelegramGroup::EVENT_LEAVE_REQUEST, $events);
         $this->assertArrayHasKey(TelegramGroup::EVENT_LEAVE_APPROVED, $events);
         $this->assertArrayHasKey(TelegramGroup::EVENT_RESIGNATION_REQUEST, $events);
@@ -135,6 +173,8 @@ class TelegramEventNotificationTest extends TestCase
         $this->assertArrayHasKey(TelegramGroup::EVENT_PAYROLL_QUEUE_CALLED, $events);
         $this->assertArrayHasKey(TelegramGroup::EVENT_PAYROLL_QUEUE_SERVED, $events);
         $this->assertArrayHasKey(TelegramGroup::EVENT_SYSTEM_ALERT, $events);
+
+        $this->assertSame(TelegramGroup::ACTION_ATTENDANCE, TelegramGroup::parentActionForEvent(TelegramGroup::EVENT_ATTENDANCE_SUMMARY));
 
         $this->assertSame(TelegramGroup::ACTION_RESIGNATION, TelegramGroup::parentActionForEvent(TelegramGroup::EVENT_RESIGNATION_REQUEST));
         $this->assertSame(TelegramGroup::ACTION_PAYROLL_QUEUE, TelegramGroup::parentActionForEvent(TelegramGroup::EVENT_PAYROLL_QUEUE_CALLED));
@@ -209,6 +249,7 @@ class TelegramEventNotificationTest extends TestCase
         $payload = [
             'name' => 'HR All Events Channel',
             'chat_ids' => ['-100192837465'],
+            'topic_id' => 789,
             'event_keys' => [
                 TelegramGroup::EVENT_LEAVE_REQUEST,
                 TelegramGroup::EVENT_RESIGNATION_REQUEST,
@@ -227,6 +268,7 @@ class TelegramEventNotificationTest extends TestCase
 
         $created = TelegramGroup::where('name', 'HR All Events Channel')->first();
         $this->assertNotNull($created);
+        $this->assertSame(789, (int) $created->topic_id);
         $this->assertContains(TelegramGroup::EVENT_LEAVE_REQUEST, $created->event_keys);
         $this->assertContains(TelegramGroup::EVENT_RESIGNATION_REQUEST, $created->event_keys);
         $this->assertContains(TelegramGroup::EVENT_PAYROLL_QUEUE_CALLED, $created->event_keys);
@@ -238,6 +280,7 @@ class TelegramEventNotificationTest extends TestCase
         $indexResponse = $this->get(route('admin.telegram-groups.index'));
         $indexResponse->assertOk();
         $indexResponse->assertSee('HR All Events Channel');
+        $indexResponse->assertSee('Topic: 789');
 
         // Test edit page renders the categorized events matrix form
         $editResponse = $this->get(route('admin.telegram-groups.edit', $created->id));
@@ -246,6 +289,7 @@ class TelegramEventNotificationTest extends TestCase
         $editResponse->assertSee('btn-select-all-events');
         $editResponse->assertSee('btn-deselect-all-events');
         $editResponse->assertSee(TelegramGroup::EVENT_RESIGNATION_REQUEST);
+        $editResponse->assertSee('value="789"', false);
     }
 
     public function test_telegram_notification_hub_formatters_and_events(): void
@@ -356,8 +400,19 @@ class TelegramEventNotificationTest extends TestCase
         // 9. System Alert
         TelegramNotificationHub::notifySystemAlert('Disk Space Low', 'Disk /var/log is at 95% usage', ['server' => 'app-prod-01']);
 
-        // Assert jobs were dispatched (13 previous + 2 for branch route: origin + target)!
-        Queue::assertPushed(SendTelegramEventNotification::class, 15);
+        // 10. Daily Attendance Summary
+        TelegramNotificationHub::notifyAttendanceSummary([
+            'date' => '26/11/2026',
+            'total_staff' => 50,
+            'present' => 45,
+            'on_time' => 40,
+            'late' => 5,
+            'on_leave' => 3,
+            'absent' => 2,
+        ], 'Main Branch');
+
+        // Assert jobs were dispatched (13 previous + 2 for branch route + 1 attendance summary)!
+        Queue::assertPushed(SendTelegramEventNotification::class, 16);
     }
 
     public function test_send_test_message_endpoint(): void
@@ -373,15 +428,60 @@ class TelegramEventNotificationTest extends TestCase
         $mockTelegram = $this->createMock(TelegramService::class);
         $mockTelegram->expects($this->once())
             ->method('sendMessage')
-            ->with('-100999888', $this->stringContains('HR Admin'))
+            ->with('-100999888', $this->stringContains('HR Admin'), 'HTML', 456)
             ->willReturn(true);
         $this->app->instance(TelegramService::class, $mockTelegram);
 
         $res = $this->postJson(route('admin.telegram-groups.send-test'), [
             'name' => 'Test Group',
             'chat_ids' => ['-100999888'],
+            'topic_id' => 456,
         ]);
 
         $res->assertOk()->assertJsonPath('status', true);
+    }
+
+    public function test_telegram_group_row_test_route_records_status_and_topic(): void
+    {
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $group = TelegramGroup::create([
+            'name' => 'Support Group with Topic',
+            'chat_id' => '-100555666',
+            'topic_id' => 77,
+            'is_active' => true,
+        ]);
+
+        $mockTelegram = $this->createMock(TelegramService::class);
+        $mockTelegram->expects($this->once())
+            ->method('sendMessage')
+            ->with('-100555666', $this->stringContains('Support Group with Topic'), 'HTML', 77)
+            ->willReturn(true);
+        $this->app->instance(TelegramService::class, $mockTelegram);
+
+        $response = $this->get(route('admin.telegram-groups.test', $group->id));
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+
+        $group->refresh();
+        $this->assertSame('success', $group->last_test_status);
+        $this->assertNotNull($group->last_tested_at);
+    }
+
+    public function test_attendance_summary_artisan_command(): void
+    {
+        Queue::fake([SendTelegramEventNotification::class]);
+        config(['services.telegram.bot_token' => 'test-token-active']);
+
+        $this->artisan('telegram:attendance-summary')
+            ->assertSuccessful();
+
+        Queue::assertPushed(SendTelegramEventNotification::class, function (SendTelegramEventNotification $job) {
+            return $job->eventKey === TelegramGroup::EVENT_ATTENDANCE_SUMMARY;
+        });
     }
 }

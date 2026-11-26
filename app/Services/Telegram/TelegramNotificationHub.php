@@ -641,4 +641,42 @@ class TelegramNotificationHub
             $message
         );
     }
+
+    /**
+     * 15. Daily Attendance Summary Digest
+     */
+    public static function notifyAttendanceSummary(array $summaryData, ?string $branchName = null): void
+    {
+        $date = self::escape($summaryData['date'] ?? Carbon::now()->format('d/m/Y'));
+        $branchTitle = $branchName ? self::escape($branchName) : 'គ្រប់សាខា (All Branches)';
+        $totalStaff = (int) ($summaryData['total_staff'] ?? 0);
+        $present = (int) ($summaryData['present'] ?? 0);
+        $onTime = (int) ($summaryData['on_time'] ?? 0);
+        $late = (int) ($summaryData['late'] ?? 0);
+        $onLeave = (int) ($summaryData['on_leave'] ?? 0);
+        $absent = (int) ($summaryData['absent'] ?? 0);
+        $attendanceRate = $totalStaff > 0 ? round(($present / $totalStaff) * 100, 1) : 0;
+        $now = Carbon::now()->format('d/m/Y H:i');
+
+        $message = "📊 <b>របាយការណ៍សង្ខេបវត្តមានប្រចាំថ្ងៃ (Daily Attendance Summary)</b>\n"
+            . "━━━━━━━━━━━━━━━━━━━\n"
+            . "🏢 <b>សាខា:</b> {$branchTitle}\n"
+            . "📅 <b>កាលបរិច្ឆេទ:</b> {$date}\n"
+            . "👥 <b>បុគ្គលិកសរុប:</b> <b>{$totalStaff}</b> នាក់\n"
+            . "───────────────────\n"
+            . "✅ <b>បានចូលធ្វើការ:</b> <b>{$present}</b> នាក់ ({$attendanceRate}%)\n"
+            . "   • 🟢 មកទាន់ពេល: {$onTime} នាក់\n"
+            . "   • 🟡 មកយឺត: {$late} នាក់\n"
+            . "🏖️ <b>សុំច្បាប់សម្រាក:</b> {$onLeave} នាក់\n"
+            . "❌ <b>អវត្តមាន:</b> <b>{$absent}</b> នាក់\n"
+            . "━━━━━━━━━━━━━━━━━━━\n"
+            . "⏰ <b>ចេញរបាយការណ៍នៅម៉ោង:</b> {$now}\n"
+            . "⚡ <i>ប្រព័ន្ធ HR Automation - ផ្ញើដោយស្វ័យប្រវត្តិ</i>";
+
+        self::dispatch(
+            TelegramGroup::EVENT_ATTENDANCE_SUMMARY,
+            $message,
+            $branchName
+        );
+    }
 }

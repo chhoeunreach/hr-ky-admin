@@ -1,11 +1,11 @@
 <div class="row">
-    <div class="col-lg-6 col-md-6 mb-4">
+    <div class="col-lg-4 col-md-6 mb-4">
         <label for="name" class="form-label">Group Name <span style="color: red">*</span></label>
         <input type="text" class="form-control" id="name" name="name" required
-               value="{{ old('name', $telegramGroup->name ?? '') }}">
+               value="{{ old('name', $telegramGroup->name ?? '') }}" placeholder="e.g. KY-HR | HQ | Management">
     </div>
 
-    <div class="col-lg-6 col-md-6 mb-4">
+    <div class="col-lg-5 col-md-6 mb-4">
         <label for="chat_ids" class="form-label">Telegram Chat ID <span style="color: red">*</span></label>
         @php
             $selectedChatIds = old('chat_ids', $telegramGroup->chat_ids ?? (isset($telegramGroup->chat_id) ? [$telegramGroup->chat_id] : []));
@@ -17,7 +17,17 @@
                 <option value="{{ $chatId }}" {{ in_array($chatId, $selectedChatIds, true) ? 'selected' : '' }}>{{ $chatId }}</option>
             @endforeach
         </select>
-        <div class="form-text small">អាចបញ្ចូល Chat ID ដោយផ្ទាល់ រួចចុច Enter ឬ Comma</div>
+        <div class="form-text small">អាចបញ្ចូល Chat ID ដោយផ្ទាល់ រួចចុច Enter ឬ Comma (ឧ. -1001234567890)</div>
+    </div>
+
+    <div class="col-lg-3 col-md-12 mb-4">
+        <label for="topic_id" class="form-label">Topic ID / Thread ID <span class="text-muted small">(ស្រេចចិត្ត)</span></label>
+        <div class="input-group">
+            <span class="input-group-text"><i data-feather="hash" style="width: 14px; height: 14px;"></i></span>
+            <input type="number" class="form-control" id="topic_id" name="topic_id" min="1"
+                   value="{{ old('topic_id', $telegramGroup->topic_id ?? '') }}" placeholder="ឧ. 1, 102 (ទុកទទេបើគ្មាន)">
+        </div>
+        <div class="form-text small">សម្រាប់ Telegram Supergroup ដែលបើក Forum/Topics</div>
     </div>
 
     <div class="col-lg-12 mb-4">
@@ -219,7 +229,8 @@
                     data: {
                         id: id,
                         name: name,
-                        chat_ids: chatIds
+                        chat_ids: chatIds,
+                        topic_id: $('#topic_id').val() || null
                     },
                     success: function (res) {
                         btn.prop('disabled', false).html('<i class="link-icon" data-feather="send"></i> ផ្ញើសារសាកល្បង (Send Test Message)');
