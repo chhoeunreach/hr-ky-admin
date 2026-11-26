@@ -72,6 +72,7 @@ Thumbs.db
 # PHPUnit
 # ===============================
 .phpunit.result.cache
+.phpunit.cache/
 
 # ===============================
 # Misc
