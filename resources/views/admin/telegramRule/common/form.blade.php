@@ -72,58 +72,54 @@
         <small class="text-muted">អាចជ្រើសរើសសាខាមួយ ឬច្រើន។</small>
     </div>
 
-    {{-- Target Telegram Channels (The Core Decoupled Feature!) --}}
+    {{-- Target Telegram Channels (Search & Multi-Select Dropdown) --}}
     <div class="col-12 mb-3">
-        <label class="form-label">
-            <b>{{ __('index.target_channels') ?? 'ទិសដៅទទួលសារ (Target Telegram Channels / Groups)' }}</b> <span class="text-danger">*</span>
-        </label>
-        <div class="card bg-light border p-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="text-muted small">ជ្រើសរើស Channels ឬ Supergroup Topics ដែលត្រូវទទួលដំណឹងនៅពេលមានព្រឹត្តិការណ៍នេះកើតឡើង៖</span>
-                <div>
-                    <button type="button" class="btn btn-xs btn-outline-primary me-1" id="btnSelectAllChannels">ជ្រើសរើសទាំងអស់</button>
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnDeselectAllChannels">ដោះចេញទាំងអស់</button>
-                </div>
-            </div>
-
-            @php
-                $selectedChannels = (array) old('channel_ids', $rule->channel_ids ?? []);
-            @endphp
-
-            @if($channels->isEmpty())
-                <div class="alert alert-warning mb-0">
-                    <i class="link-icon" data-feather="alert-circle"></i>
-                    មិនទាន់មាន Telegram Channel ណាមួយត្រូវបានចុះឈ្មោះឡើយ។ សូមចូលទៅកាន់ទំព័រ
-                    <a href="{{ route('admin.telegram-groups.create') }}" class="alert-link fw-bold">Telegram Channels</a> ដើម្បីបង្កើតមុនសិន។
-                </div>
-            @else
-                <div class="row g-2">
-                    @foreach($channels as $ch)
-                        <div class="col-md-4 col-sm-6">
-                            <div class="border rounded p-2 bg-white channel-item h-100">
-                                <div class="form-check">
-                                    <input class="form-check-input channel-checkbox"
-                                           type="checkbox"
-                                           name="channel_ids[]"
-                                           value="{{ $ch->id }}"
-                                           id="channel_{{ $ch->id }}"
-                                           {{ in_array($ch->id, $selectedChannels) ? 'checked' : '' }}>
-                                    <label class="form-check-label w-100 cursor-pointer" for="channel_{{ $ch->id }}">
-                                        <div class="fw-bold text-dark">{{ $ch->name }}</div>
-                                        <div class="small text-muted">
-                                            Chat ID: <code>{{ $ch->chat_id }}</code>
-                                            @if($ch->topic_id)
-                                                <span class="badge bg-secondary ms-1">#Topic: {{ $ch->topic_id }}</span>
-                                            @endif
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="channel_ids" class="form-label mb-0">
+                <b>{{ __('index.target_channels') ?? 'ទិសដៅទទួលសារ (Target Telegram Channels / Groups)' }}</b> <span class="text-danger">*</span>
+            </label>
+            @if($channels->isNotEmpty())
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-xs btn-outline-primary" id="btnSelectAllChannels">
+                        <i class="link-icon" data-feather="check-square" style="width: 12px; height: 12px;"></i> ជ្រើសរើសទាំងអស់ (Select All)
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnDeselectAllChannels">
+                        <i class="link-icon" data-feather="x-square" style="width: 12px; height: 12px;"></i> ដោះចេញទាំងអស់ (Clear)
+                    </button>
                 </div>
             @endif
         </div>
+
+        @php
+            $selectedChannels = (array) old('channel_ids', $rule->channel_ids ?? []);
+        @endphp
+
+        @if($channels->isEmpty())
+            <div class="alert alert-warning mb-0">
+                <i class="link-icon" data-feather="alert-circle"></i>
+                មិនទាន់មាន Telegram Channel ណាមួយត្រូវបានចុះឈ្មោះឡើយ។ សូមចូលទៅកាន់ទំព័រ
+                <a href="{{ route('admin.telegram-groups.create') }}" class="alert-link fw-bold">Telegram Channels</a> ដើម្បីបង្កើតមុនសិន។
+            </div>
+        @else
+            <select class="form-select @error('channel_ids') is-invalid @enderror"
+                    id="channel_ids"
+                    name="channel_ids[]"
+                    multiple="multiple"
+                    data-placeholder="ស្វែងរក និងជ្រើសរើស Channels ឬ Supergroup Topics..."
+                    required>
+                @foreach($channels as $ch)
+                    <option value="{{ $ch->id }}"
+                            {{ in_array($ch->id, $selectedChannels) ? 'selected' : '' }}>
+                        {{ $ch->name }} (Chat ID: {{ $ch->chat_id }}{{ $ch->topic_id ? ' | #Topic: ' . $ch->topic_id : '' }})
+                    </option>
+                @endforeach
+            </select>
+            <div class="form-text text-muted small mt-1">
+                <i class="link-icon" data-feather="info" style="width: 12px; height: 12px;"></i>
+                អាចវាយបញ្ចូលឈ្មោះ Channel, Chat ID, ឬ Topic ID ដើម្បីស្វែងរក និងជ្រើសរើសបានយ៉ាងរហ័ស។
+            </div>
+        @endif
+
         @error('channel_ids')
             <div class="text-danger small mt-1">{{ $message }}</div>
         @enderror
@@ -216,6 +212,14 @@
             if ($("#branch_ids").length) {
                 $("#branch_ids").select2({ width: '100%', placeholder: 'ជ្រើសរើសសាខា...' });
             }
+            if ($("#channel_ids").length) {
+                $("#channel_ids").select2({
+                    width: '100%',
+                    placeholder: $("#channel_ids").data('placeholder') || 'ស្វែងរក និងជ្រើសរើស Channels ឬ Topics...',
+                    allowClear: true,
+                    closeOnSelect: false
+                });
+            }
 
             // Toggle Specific Branches
             $('input[name="branch_scope"]').on('change', function () {
@@ -228,10 +232,11 @@
 
             // Select All / Deselect All Channels
             $('#btnSelectAllChannels').on('click', function () {
-                $('.channel-checkbox').prop('checked', true);
+                $('#channel_ids > option').prop('selected', true);
+                $('#channel_ids').trigger('change');
             });
             $('#btnDeselectAllChannels').on('click', function () {
-                $('.channel-checkbox').prop('checked', false);
+                $('#channel_ids').val(null).trigger('change');
             });
         });
     </script>
