@@ -647,21 +647,35 @@ class TelegramService
 
     private function resolveConfiguredRecipients(string $actionKey, string $branchName, string $departmentName): array
     {
-        $defaultRecipients = $this->defaultGroupRecipients();
-        $ruleRecipients = [];
-
-        // 1. Resolve recipients via TelegramNotificationRules (New Decoupled Pub/Sub Architecture)
+        // 1. Resolve recipients via TelegramNotificationRules (Single Source of Truth when rules exist)
         try {
-            if (Schema::hasTable('telegram_notification_rules')) {
-                $rules = TelegramNotificationRule::query()
-                    ->where('is_active', true)
-                    ->get();
+            if (Schema::hasTable('telegram_notification_rules') && TelegramNotificationRule::query()->exists()) {
+                $allRules = TelegramNotificationRule::all();
 
-                foreach ($rules as $rule) {
-                    if (! $rule->matchesEvent($actionKey)) {
-                        continue;
-                    }
+                // Find all rules matching this event
+                $matchingRules = $allRules->filter(fn ($rule) => $rule->matchesEvent($actionKey));
 
+                // If rules are defined for this event, but ALL matching rules are inactive,
+                // the user explicitly disabled this notification -> STRICT DO NOT SEND!
+                if ($matchingRules->isNotEmpty() && $matchingRules->where('is_active', true)->isEmpty()) {
+                    Log::info('Telegram notification skipped: Rule for event is explicitly deactivated.', [
+                        'actionKey' => $actionKey,
+                    ]);
+                    return [];
+                }
+
+                // If no rule matches this event at all in the rules architecture -> DO NOT SEND
+                if ($matchingRules->isEmpty()) {
+                    Log::info('Telegram notification skipped: No notification rule defined for event.', [
+                        'actionKey' => $actionKey,
+                    ]);
+                    return [];
+                }
+
+                $activeRules = $matchingRules->where('is_active', true);
+                $ruleRecipients = [];
+
+                foreach ($activeRules as $rule) {
                     if (! $rule->matchesBranch($branchName)) {
                         continue;
                     }
@@ -676,6 +690,11 @@ class TelegramService
                         $ruleRecipients = array_merge($ruleRecipients, $channelRecipients);
                     }
                 }
+
+                // Return unique recipients from active rules. If none match branch or channels are inactive, return empty (silent).
+                return array_values(collect($ruleRecipients)->unique(function ($r) {
+                    return $r['chat_id'] . ':' . ($r['topic_id'] ?? $r['group']?->topic_id ?? '');
+                })->all());
             }
         } catch (\Throwable $exception) {
             Log::warning('Telegram notification rules lookup failed.', [
@@ -684,10 +703,12 @@ class TelegramService
             ]);
         }
 
-        // 2. Resolve recipients via legacy direct TelegramGroups (Backward Compatibility)
+        // 2. Legacy direct TelegramGroups (Backward compatibility ONLY when telegram_notification_rules is empty or missing)
         $legacyRecipients = [];
+        $hasLegacyGroups = false;
         try {
             if (Schema::hasTable('telegram_groups')) {
+                $hasLegacyGroups = TelegramGroup::query()->exists();
                 $groups = TelegramGroup::query()
                     ->where('is_active', true)
                     ->get();
@@ -731,13 +752,20 @@ class TelegramService
             ]);
         }
 
-        $allRecipients = array_merge($ruleRecipients, $legacyRecipients);
-
-        $recipients = array_values(collect($allRecipients)->unique(function ($r) {
+        $recipients = array_values(collect($legacyRecipients)->unique(function ($r) {
             return $r['chat_id'] . ':' . ($r['topic_id'] ?? $r['group']?->topic_id ?? '');
         })->all());
 
-        return $recipients !== [] ? $recipients : $defaultRecipients;
+        if ($recipients !== []) {
+            return $recipients;
+        }
+
+        // Only fall back to .env default if the database has NO groups configured at all
+        if (! $hasLegacyGroups) {
+            return $this->defaultGroupRecipients();
+        }
+
+        return [];
     }
 
     private function defaultGroupRecipients(): array

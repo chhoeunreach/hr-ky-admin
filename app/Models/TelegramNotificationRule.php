@@ -85,9 +85,15 @@ class TelegramNotificationRule extends Model
             return true;
         }
 
-        // Parent action fallback
+        // Parent action fallback (e.g. rule has 'leave', event is 'leave_request')
         $parentAction = TelegramGroup::parentActionForEvent($eventKey);
-        if ($this->event_key === $parentAction || in_array($parentAction, $allKeys, true)) {
+        if ($parentAction !== null && ($this->event_key === $parentAction || in_array($parentAction, $allKeys, true))) {
+            return true;
+        }
+
+        // Child event fallback (e.g. rule has 'leave_request', event is parent 'leave')
+        $ruleParent = TelegramGroup::parentActionForEvent($this->event_key);
+        if ($ruleParent !== null && $ruleParent === $eventKey) {
             return true;
         }
 
@@ -110,9 +116,16 @@ class TelegramNotificationRule extends Model
         }
 
         if ($branchName !== null && trim($branchName) !== '' && !empty($allowedBranchIds)) {
+            // Strip out route markers (e.g., "HQ ➔ Toul Kork (ការងារចេញក្រៅ)") to match base branch name
+            $cleanBranchName = trim(explode('➔', $branchName)[0]);
+            $cleanBranchName = trim(explode('(', $cleanBranchName)[0]);
+
             $matched = Branch::query()
                 ->whereIn('id', $allowedBranchIds)
-                ->whereRaw('LOWER(name) = ?', [Str::lower(trim($branchName))])
+                ->where(function ($query) use ($cleanBranchName, $branchName) {
+                    $query->whereRaw('LOWER(name) = ?', [Str::lower($cleanBranchName)])
+                        ->orWhereRaw('LOWER(name) = ?', [Str::lower(trim($branchName))]);
+                })
                 ->exists();
 
             if ($matched) {

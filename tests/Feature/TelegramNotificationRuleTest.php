@@ -109,6 +109,8 @@ class TelegramNotificationRuleTest extends TestCase
             Schema::create('branches', function (Blueprint $table) {
                 $table->id();
                 $table->string('name')->nullable();
+                $table->unsignedBigInteger('created_by')->nullable();
+                $table->unsignedBigInteger('updated_by')->nullable();
                 $table->timestamps();
             });
         }
@@ -342,5 +344,120 @@ class TelegramNotificationRuleTest extends TestCase
         $summaryRule = TelegramNotificationRule::where('event_key', TelegramGroup::EVENT_ATTENDANCE_SUMMARY)->first();
         $this->assertNotNull($summaryRule, 'Attendance summary digest rule was automatically created');
         $this->assertContains($mgmtChannel->id, $summaryRule->channel_ids);
+    }
+
+    public function test_deactivated_notification_rule_strictly_does_not_send_or_fallback(): void
+    {
+        // 1. Set fallback chat id in config
+        config(['services.telegram.chat_id' => '-1009999999999']);
+
+        // 2. Create a legacy group that would previously catch all events
+        $legacyGroup = TelegramGroup::create([
+            'name' => 'Legacy Catch All Group',
+            'chat_id' => '-1001112223334',
+            'action_key' => TelegramGroup::ACTION_GENERAL,
+            'send_for_all' => true,
+            'is_active' => true,
+        ]);
+
+        // 3. Create a channel for the rule
+        $ruleChannel = TelegramGroup::create([
+            'name' => 'Leave Channel',
+            'chat_id' => '-100555666777',
+            'is_active' => true,
+        ]);
+
+        // 4. Create an INACTIVE rule for leave request
+        $rule = TelegramNotificationRule::create([
+            'name' => 'Disabled Leave Rule',
+            'event_key' => TelegramGroup::EVENT_LEAVE_REQUEST,
+            'branch_scope' => 'all',
+            'channel_ids' => [$ruleChannel->id],
+            'is_active' => false, // USER TURNED THIS OFF!
+        ]);
+
+        $telegramService = app(TelegramService::class);
+        $refMethod = new \ReflectionMethod($telegramService, 'resolveConfiguredRecipients');
+        $refMethod->setAccessible(true);
+
+        $recipients = $refMethod->invoke(
+            $telegramService,
+            TelegramGroup::EVENT_LEAVE_REQUEST,
+            'All Branches',
+            'All Departments'
+        );
+
+        // Strict deactivation: MUST BE EMPTY! No fallback to legacy group, no fallback to .env!
+        $this->assertEmpty($recipients, 'When a notification rule for an event is deactivated, recipients must be strictly empty.');
+    }
+
+    public function test_active_notification_rule_only_sends_to_assigned_channels_and_ignores_other_groups(): void
+    {
+        // Legacy group that has send_for_all = true
+        $legacyGroup = TelegramGroup::create([
+            'name' => 'HQ General Catch-All Group',
+            'chat_id' => '-100111111111',
+            'action_key' => TelegramGroup::ACTION_GENERAL,
+            'send_for_all' => true,
+            'is_active' => true,
+        ]);
+
+        // Dedicated channel
+        $targetChannel = TelegramGroup::create([
+            'name' => 'Dedicated Advance Salary Channel',
+            'chat_id' => '-100888888888',
+            'is_active' => true,
+        ]);
+
+        // Active rule configured ONLY for Advance Salary to $targetChannel
+        TelegramNotificationRule::create([
+            'name' => 'Advance Salary Dedicated Rule',
+            'event_key' => TelegramGroup::EVENT_ADVANCE_SALARY_REQUEST,
+            'branch_scope' => 'all',
+            'channel_ids' => [$targetChannel->id],
+            'is_active' => true,
+        ]);
+
+        $telegramService = app(TelegramService::class);
+        $refMethod = new \ReflectionMethod($telegramService, 'resolveConfiguredRecipients');
+        $refMethod->setAccessible(true);
+
+        $recipients = $refMethod->invoke(
+            $telegramService,
+            TelegramGroup::EVENT_ADVANCE_SALARY_REQUEST,
+            'All Branches',
+            'All Departments'
+        );
+
+        $chatIds = array_column($recipients, 'chat_id');
+        $this->assertContains('-100888888888', $chatIds, 'Target channel receives the event.');
+        $this->assertNotContains('-100111111111', $chatIds, 'Legacy catch-all group is strictly excluded when rules are active.');
+    }
+
+    public function test_branch_route_matching_cleans_auxiliary_text(): void
+    {
+        $branchId = DB::table('branches')->insertGetId([
+            'name' => 'Phnom Penh HQ',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $rule = new TelegramNotificationRule([
+            'branch_scope' => 'specific',
+            'branch_ids' => [$branchId],
+        ]);
+
+        $this->assertTrue(
+            $rule->matchesBranch('Phnom Penh HQ ➔ Toul Kork (ការងារចេញក្រៅ)'),
+            'Branch route formatted name correctly extracts and matches base branch name.'
+        );
+        $this->assertTrue(
+            $rule->matchesBranch('Phnom Penh HQ'),
+            'Exact branch name matches.'
+        );
+        $this->assertFalse(
+            $rule->matchesBranch('Siem Reap Branch'),
+            'Different branch does not match.'
+        );
     }
 }
