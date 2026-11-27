@@ -102,10 +102,23 @@ class TelegramNotificationRuleController extends Controller
     {
         $this->authorize('create_telegram_group');
 
+        $rawEventKeys = $request->input('event_keys');
+        if (empty($rawEventKeys) && $request->filled('event_key')) {
+            $rawEventKeys = (array) $request->input('event_key');
+        }
+        $eventKeys = array_values(array_unique(array_filter((array) $rawEventKeys)));
+        $primaryEventKey = $eventKeys[0] ?? $request->input('event_key');
+
+        $request->merge([
+            'event_keys' => $eventKeys,
+            'event_key' => $primaryEventKey,
+        ]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:191'],
             'event_key' => ['required', 'string', 'max:100'],
-            'event_keys' => ['nullable', 'array'],
+            'event_keys' => ['required', 'array', 'min:1'],
+            'event_keys.*' => ['string', 'max:100'],
             'branch_scope' => ['required', 'in:all,specific'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer'],
@@ -118,6 +131,8 @@ class TelegramNotificationRuleController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $validated['event_keys'] = $eventKeys;
+        $validated['event_key'] = $primaryEventKey;
         $validated['send_location'] = $request->boolean('send_location', true);
         $validated['send_selfie'] = $request->boolean('send_selfie', true);
         $validated['is_silent'] = $request->boolean('is_silent', false);
@@ -157,10 +172,23 @@ class TelegramNotificationRuleController extends Controller
 
         $rule = TelegramNotificationRule::findOrFail($id);
 
+        $rawEventKeys = $request->input('event_keys');
+        if (empty($rawEventKeys) && $request->filled('event_key')) {
+            $rawEventKeys = (array) $request->input('event_key');
+        }
+        $eventKeys = array_values(array_unique(array_filter((array) $rawEventKeys)));
+        $primaryEventKey = $eventKeys[0] ?? $request->input('event_key');
+
+        $request->merge([
+            'event_keys' => $eventKeys,
+            'event_key' => $primaryEventKey,
+        ]);
+
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:191'],
             'event_key' => ['required', 'string', 'max:100'],
-            'event_keys' => ['nullable', 'array'],
+            'event_keys' => ['required', 'array', 'min:1'],
+            'event_keys.*' => ['string', 'max:100'],
             'branch_scope' => ['required', 'in:all,specific'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer'],
@@ -173,6 +201,8 @@ class TelegramNotificationRuleController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $validated['event_keys'] = $eventKeys;
+        $validated['event_key'] = $primaryEventKey;
         $validated['send_location'] = $request->boolean('send_location', true);
         $validated['send_selfie'] = $request->boolean('send_selfie', true);
         $validated['is_silent'] = $request->boolean('is_silent', false);

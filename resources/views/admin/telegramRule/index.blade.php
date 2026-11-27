@@ -122,12 +122,33 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <span class="badge bg-primary mb-1">
-                                            {{ $rule->event_label }}
-                                        </span>
-                                        <div class="small text-muted font-monospace" style="font-size: 11px;">
-                                            <code>{{ $rule->event_key }}</code>
-                                        </div>
+                                        @php
+                                            $ruleEventKeys = $rule->event_keys_list;
+                                        @endphp
+                                        @if(count($ruleEventKeys) > 1)
+                                            <div class="d-flex flex-wrap gap-1 align-items-center">
+                                                @foreach(array_slice($ruleEventKeys, 0, 2) as $ek)
+                                                    <span class="badge bg-primary" style="font-size: 11px;">
+                                                        {{ $eventOptions[$ek] ?? $ek }}
+                                                    </span>
+                                                @endforeach
+                                                @if(count($ruleEventKeys) > 2)
+                                                    <span class="badge bg-secondary" title="{{ implode(', ', array_map(fn($k) => $eventOptions[$k] ?? $k, array_slice($ruleEventKeys, 2))) }}" style="font-size: 11px;">
+                                                        +{{ count($ruleEventKeys) - 2 }} ផ្សេងទៀត
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="small text-muted font-monospace mt-1" style="font-size: 10px;">
+                                                <code>{{ implode(', ', array_slice($ruleEventKeys, 0, 2)) }}@if(count($ruleEventKeys) > 2)...@endif</code>
+                                            </div>
+                                        @else
+                                            <span class="badge bg-primary mb-1">
+                                                {{ $rule->event_label }}
+                                            </span>
+                                            <div class="small text-muted font-monospace" style="font-size: 11px;">
+                                                <code>{{ $rule->event_key }}</code>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         @if($rule->branch_scope === 'all')
@@ -254,8 +275,19 @@
                 </div>
             </div>
 
-            <div class="dataTables_paginate mt-4">
-                {{ $rules->links() }}
+            <div id="telegramRulePaginationArea" class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4">
+                <div class="text-muted small">
+                    @if(($filters['per_page'] ?? '') === 'all')
+                        {{ __('index.showing') }} <strong>{{ __('index.all') }}</strong> ({{ number_format($rules->total()) }} {{ __('index.entries') }})
+                    @elseif($rules->total() > 0)
+                        {{ __('index.showing') }} {{ number_format($rules->firstItem() ?? 1) }} - {{ number_format($rules->lastItem() ?? $rules->total()) }} {{ __('index.of') }} {{ number_format($rules->total()) }} {{ __('index.entries') }}
+                    @else
+                        {{ __('index.no_records_found') }}
+                    @endif
+                </div>
+                <div class="dataTables_paginate">
+                    {{ $rules->links() }}
+                </div>
             </div>
         </div>
 
@@ -303,8 +335,8 @@
             const replaceTelegramRuleResults = (doc) => {
                 const currentTableBody = document.querySelector('#telegramRuleTable tbody');
                 const nextTableBody = doc.querySelector('#telegramRuleTable tbody');
-                const currentPagination = document.querySelector('#telegramRuleListSection .dataTables_paginate');
-                const nextPagination = doc.querySelector('#telegramRuleListSection .dataTables_paginate');
+                const currentPaginationArea = document.querySelector('#telegramRulePaginationArea');
+                const nextPaginationArea = doc.querySelector('#telegramRulePaginationArea');
 
                 if (!currentTableBody || !nextTableBody) {
                     return false;
@@ -316,8 +348,14 @@
                 const nextCount = doc.querySelector('[data-directory-count="telegramRuleTable"]');
                 if (count && nextCount) count.textContent = nextCount.textContent;
 
-                if (currentPagination) {
-                    currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
+                if (currentPaginationArea && nextPaginationArea) {
+                    currentPaginationArea.innerHTML = nextPaginationArea.innerHTML;
+                } else {
+                    const currentPagination = document.querySelector('#telegramRuleListSection .dataTables_paginate');
+                    const nextPagination = doc.querySelector('#telegramRuleListSection .dataTables_paginate');
+                    if (currentPagination) {
+                        currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
+                    }
                 }
 
                 document.dispatchEvent(new CustomEvent('directory:updated'));
@@ -419,7 +457,7 @@
                 refreshTelegramRuleList({ resetPage: true });
             });
 
-            $(document).on('change', '#per_page', function () {
+            $(document).on('change select2:select', '#per_page', function () {
                 refreshTelegramRuleList({ resetPage: true });
             });
 

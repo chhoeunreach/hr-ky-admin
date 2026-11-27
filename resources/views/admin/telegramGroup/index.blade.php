@@ -102,13 +102,27 @@
                                     <td>
                                         @php $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id]; @endphp
                                         @foreach(array_filter($chatIds) as $chatId)
-                                            <span class="badge bg-light text-dark mb-1">{{ $chatId }}</span>
+                                            @php $tgUrl = $telegramGroup->getTelegramUrl($chatId); @endphp
+                                            @if($tgUrl)
+                                                <a href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-light text-primary border text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open in Telegram: {{ $tgUrl }}">
+                                                    <i data-feather="external-link" style="width: 11px; height: 11px;"></i> {{ $chatId }}
+                                                </a>
+                                            @else
+                                                <span class="badge bg-light text-dark mb-1">{{ $chatId }}</span>
+                                            @endif
                                         @endforeach
                                         @if($telegramGroup->topic_id)
                                             <div>
-                                                <span class="badge bg-secondary mb-1" title="Telegram Forum Topic / Message Thread ID">
-                                                    Topic: {{ $telegramGroup->topic_id }}
-                                                </span>
+                                                @php $topicUrl = $telegramGroup->getTelegramTopicUrl(); @endphp
+                                                @if($topicUrl)
+                                                    <a href="{{ $topicUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-secondary text-white text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open Topic #{{ $telegramGroup->topic_id }} in Telegram">
+                                                        <i data-feather="hash" style="width: 11px; height: 11px;"></i> Topic: {{ $telegramGroup->topic_id }}
+                                                    </a>
+                                                @else
+                                                    <span class="badge bg-secondary mb-1" title="Telegram Forum Topic / Message Thread ID">
+                                                        Topic: {{ $telegramGroup->topic_id }}
+                                                    </span>
+                                                @endif
                                             </div>
                                         @endif
                                     </td>
@@ -225,8 +239,19 @@
                 </div>
             </div>
 
-            <div class="dataTables_paginate mt-4">
-                {{ $telegramGroups->links() }}
+            <div id="telegramGroupPaginationArea" class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4">
+                <div class="text-muted small">
+                    @if(($filterParameters['per_page'] ?? '') === 'all')
+                        {{ __('index.showing') }} <strong>{{ __('index.all') }}</strong> ({{ number_format($telegramGroups->total()) }} {{ __('index.entries') }})
+                    @elseif($telegramGroups->total() > 0)
+                        {{ __('index.showing') }} {{ number_format($telegramGroups->firstItem() ?? 1) }} - {{ number_format($telegramGroups->lastItem() ?? $telegramGroups->total()) }} {{ __('index.of') }} {{ number_format($telegramGroups->total()) }} {{ __('index.entries') }}
+                    @else
+                        {{ __('index.no_records_found') }}
+                    @endif
+                </div>
+                <div class="dataTables_paginate">
+                    {{ $telegramGroups->links() }}
+                </div>
             </div>
         </div>
 
@@ -382,8 +407,8 @@
             const replaceTelegramGroupResults = (doc) => {
                 const currentTableBody = document.querySelector('#telegramGroupTable tbody');
                 const nextTableBody = doc.querySelector('#telegramGroupTable tbody');
-                const currentPagination = document.querySelector('#telegramGroupListSection .dataTables_paginate');
-                const nextPagination = doc.querySelector('#telegramGroupListSection .dataTables_paginate');
+                const currentPaginationArea = document.querySelector('#telegramGroupPaginationArea');
+                const nextPaginationArea = doc.querySelector('#telegramGroupPaginationArea');
 
                 if (!currentTableBody || !nextTableBody) {
                     return false;
@@ -395,8 +420,14 @@
                 const nextCount = doc.querySelector('[data-directory-count="telegramGroupTable"]');
                 if (count && nextCount) count.textContent = nextCount.textContent;
 
-                if (currentPagination) {
-                    currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
+                if (currentPaginationArea && nextPaginationArea) {
+                    currentPaginationArea.innerHTML = nextPaginationArea.innerHTML;
+                } else {
+                    const currentPagination = document.querySelector('#telegramGroupListSection .dataTables_paginate');
+                    const nextPagination = doc.querySelector('#telegramGroupListSection .dataTables_paginate');
+                    if (currentPagination) {
+                        currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
+                    }
                 }
 
                 document.dispatchEvent(new CustomEvent('directory:updated'));
@@ -499,7 +530,7 @@
                 refreshTelegramGroupList({ resetPage: true });
             });
 
-            $(document).on('change', '#per_page', function () {
+            $(document).on('change select2:select', '#per_page', function () {
                 refreshTelegramGroupList({ resetPage: true });
             });
 

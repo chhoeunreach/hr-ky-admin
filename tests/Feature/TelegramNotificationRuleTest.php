@@ -546,4 +546,72 @@ class TelegramNotificationRuleTest extends TestCase
         $rule->refresh();
         $this->assertSame('Rule Modal Updated', $rule->name);
     }
+
+    public function test_telegram_rule_multi_select_events_crud_and_matching(): void
+    {
+        Gate::before(fn () => true);
+
+        $admin = Admin::firstOrCreate(
+            ['id' => 1],
+            ['name' => 'Super Admin', 'email' => 'admin@test.com', 'username' => 'superadmin', 'is_active' => true]
+        );
+        $this->actingAs($admin, 'admin');
+
+        $channel = TelegramGroup::create([
+            'name' => 'Multi Event Channel',
+            'chat_id' => '-100555666777',
+            'is_active' => true,
+        ]);
+
+        // 1. Create with multiple events
+        $response = $this->post(route('admin.telegram-rules.store'), [
+            'name' => 'Combined Attendance and Leave Rule',
+            'event_keys' => [TelegramGroup::EVENT_LEAVE_REQUEST, TelegramGroup::EVENT_ATTENDANCE_CHECKIN],
+            'branch_scope' => 'all',
+            'channel_ids' => [$channel->id],
+            'send_location' => 1,
+            'send_selfie' => 1,
+            'is_silent' => 0,
+            'is_active' => 1,
+        ]);
+        $response->assertRedirect(route('admin.telegram-rules.index'));
+
+        $rule = TelegramNotificationRule::where('name', 'Combined Attendance and Leave Rule')->first();
+        $this->assertNotNull($rule);
+        $this->assertCount(2, $rule->event_keys_list);
+        $this->assertTrue($rule->matchesEvent(TelegramGroup::EVENT_LEAVE_REQUEST));
+        $this->assertTrue($rule->matchesEvent(TelegramGroup::EVENT_ATTENDANCE_CHECKIN));
+        $this->assertFalse($rule->matchesEvent(TelegramGroup::EVENT_ADVANCE_SALARY_REQUEST));
+
+        // 2. Index renders multi-event badges
+        $indexResponse = $this->get(route('admin.telegram-rules.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Combined Attendance and Leave Rule');
+
+        // 3. Edit view shows both events selected
+        $editResponse = $this->get(route('admin.telegram-rules.edit', $rule->id));
+        $editResponse->assertOk();
+
+        // 4. Update with three events
+        $updateResponse = $this->put(route('admin.telegram-rules.update', $rule->id), [
+            'name' => 'Combined Three Events Rule',
+            'event_keys' => [
+                TelegramGroup::EVENT_LEAVE_REQUEST,
+                TelegramGroup::EVENT_ATTENDANCE_CHECKIN,
+                TelegramGroup::EVENT_ADVANCE_SALARY_REQUEST,
+            ],
+            'branch_scope' => 'all',
+            'channel_ids' => [$channel->id],
+            'send_location' => 1,
+            'send_selfie' => 1,
+            'is_silent' => 0,
+            'is_active' => 1,
+        ]);
+        $updateResponse->assertRedirect(route('admin.telegram-rules.index'));
+
+        $rule->refresh();
+        $this->assertSame('Combined Three Events Rule', $rule->name);
+        $this->assertCount(3, $rule->event_keys_list);
+        $this->assertTrue($rule->matchesEvent(TelegramGroup::EVENT_ADVANCE_SALARY_REQUEST));
+    }
 }

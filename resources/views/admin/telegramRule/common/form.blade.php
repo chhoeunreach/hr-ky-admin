@@ -14,23 +14,49 @@
         @enderror
     </div>
 
-    {{-- Notification Event --}}
+    {{-- Notification Events (Multi-Select) --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label for="event_key" class="form-label"><b>{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (HR Event)' }}</b> <span class="text-danger">*</span></label>
-        <select class="form-select @error('event_key') is-invalid @enderror" id="event_key" name="event_key" required>
-            <option value="" disabled {{ old('event_key', $rule->event_key ?? '') ? '' : 'selected' }}>-- ជ្រើសរើសព្រឹត្តិការណ៍ (Select Event) --</option>
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="event_keys" class="form-label mb-0">
+                <b>{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (HR Events)' }}</b> <span class="text-danger">*</span>
+            </label>
+            <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-xs btn-outline-primary" id="btnSelectAllEvents">
+                    <i class="link-icon" data-feather="check-square" style="width: 12px; height: 12px;"></i> ជ្រើសរើសទាំងអស់
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-secondary" id="btnDeselectAllEvents">
+                    <i class="link-icon" data-feather="x-square" style="width: 12px; height: 12px;"></i> ដោះចេញ
+                </button>
+            </div>
+        </div>
+        @php
+            $selectedEventKeys = (array) old('event_keys', isset($rule) ? $rule->event_keys_list : []);
+        @endphp
+        <select class="form-select @error('event_keys') is-invalid @enderror @error('event_key') is-invalid @enderror"
+                id="event_keys"
+                name="event_keys[]"
+                multiple="multiple"
+                data-placeholder="ស្វែងរក និងជ្រើសរើសព្រឹត្តិការណ៍មួយ ឬច្រើន..."
+                required>
             @foreach($categorizedEvents as $catKey => $catData)
                 <optgroup label="📁 {{ $catData['label'] }}">
                     @foreach($catData['events'] as $evtKey => $evtLabel)
-                        <option value="{{ $evtKey }}" {{ old('event_key', $rule->event_key ?? '') === $evtKey ? 'selected' : '' }}>
+                        <option value="{{ $evtKey }}" {{ in_array($evtKey, $selectedEventKeys) ? 'selected' : '' }}>
                             {{ $evtLabel }} ({{ $evtKey }})
                         </option>
                     @endforeach
                 </optgroup>
             @endforeach
         </select>
+        <div class="form-text text-muted small mt-1">
+            <i class="link-icon" data-feather="info" style="width: 12px; height: 12px;"></i>
+            អាចជ្រើសរើសព្រឹត្តិការណ៍មួយ ឬច្រើនក្នុងវិធានការតែមួយ (Multi-Select Events)។
+        </div>
+        @error('event_keys')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
         @error('event_key')
-            <div class="invalid-feedback">{{ $message }}</div>
+            <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
 
@@ -206,9 +232,25 @@
     <script>
         $(document).ready(function () {
             // Select2 Init
-            if ($("#event_key").length) {
+            if ($("#event_keys").length) {
+                $("#event_keys").select2({
+                    width: '100%',
+                    placeholder: $("#event_keys").data('placeholder') || 'ជ្រើសរើសព្រឹត្តិការណ៍...',
+                    allowClear: true,
+                    closeOnSelect: false
+                });
+            } else if ($("#event_key").length) {
                 $("#event_key").select2({ width: '100%' });
             }
+
+            // Select All / Deselect All Events
+            $('#btnSelectAllEvents').on('click', function () {
+                $('#event_keys > optgroup > option, #event_keys > option').prop('selected', true);
+                $('#event_keys').trigger('change');
+            });
+            $('#btnDeselectAllEvents').on('click', function () {
+                $('#event_keys').val(null).trigger('change');
+            });
             if ($("#branch_ids").length) {
                 $("#branch_ids").select2({ width: '100%', placeholder: 'ជ្រើសរើសសាខា...' });
             }

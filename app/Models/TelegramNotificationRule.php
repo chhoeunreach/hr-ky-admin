@@ -72,15 +72,26 @@ class TelegramNotificationRule extends Model
     }
 
     /**
+     * All assigned event keys (combining event_keys and event_key).
+     *
+     * @return array<int, string>
+     */
+    public function getEventKeysListAttribute(): array
+    {
+        $keys = is_array($this->event_keys) ? $this->event_keys : [];
+        if (!empty($this->event_key) && !in_array($this->event_key, $keys, true)) {
+            array_unshift($keys, $this->event_key);
+        }
+        return array_values(array_unique(array_filter($keys)));
+    }
+
+    /**
      * Check if this rule matches a given event key or parent action key.
      */
     public function matchesEvent(string $eventKey): bool
     {
-        if ($this->event_key === $eventKey) {
-            return true;
-        }
+        $allKeys = $this->event_keys_list;
 
-        $allKeys = is_array($this->event_keys) ? $this->event_keys : [];
         if (in_array($eventKey, $allKeys, true)) {
             return true;
         }
@@ -97,9 +108,11 @@ class TelegramNotificationRule extends Model
         }
 
         // Child event fallback (e.g. rule has 'leave_request', event is parent 'leave')
-        $ruleParent = TelegramGroup::parentActionForEvent($this->event_key);
-        if ($ruleParent !== null && $ruleParent === $eventKey) {
-            return true;
+        foreach ($allKeys as $k) {
+            $ruleParent = TelegramGroup::parentActionForEvent($k);
+            if ($ruleParent !== null && $ruleParent === $eventKey) {
+                return true;
+            }
         }
 
         return false;
@@ -142,12 +155,22 @@ class TelegramNotificationRule extends Model
     }
 
     /**
-     * Label of the event key.
+     * Label of the event key(s).
      */
     public function getEventLabelAttribute(): string
     {
         $options = TelegramGroup::eventOptions();
+        $keys = $this->event_keys_list;
 
-        return $options[$this->event_key] ?? Str::headline($this->event_key);
+        if (count($keys) > 1) {
+            $labels = array_map(fn ($k) => $options[$k] ?? Str::headline($k), array_slice($keys, 0, 2));
+            $text = implode(', ', $labels);
+            if (count($keys) > 2) {
+                $text .= ' (+' . (count($keys) - 2) . ' ផ្សេងទៀត)';
+            }
+            return $text;
+        }
+
+        return $options[$this->event_key] ?? Str::headline($this->event_key ?? '');
     }
 }

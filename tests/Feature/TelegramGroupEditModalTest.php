@@ -139,7 +139,35 @@ class TelegramGroupEditModalTest extends TestCase
             ->assertSee('window.refreshTelegramGroupList', false)
             ->assertSee('telegram-group:refresh', false)
             ->assertSee('data-directory-refresh', false)
+            ->assertSee('id="telegramGroupPaginationArea"', false)
+            ->assertSee('https://t.me/c/987654321', false)
+            ->assertSee('https://t.me/c/987654321/88', false)
             ->assertSee(route('admin.telegram-groups.edit', $group->id), false);
+    }
+
+    public function test_telegram_url_helper_methods_and_links(): void
+    {
+        $group = new TelegramGroup([
+            'chat_id' => '-1001234567890',
+            'topic_id' => 42,
+        ]);
+
+        $this->assertSame('https://t.me/c/1234567890/42', $group->getTelegramUrl());
+        $this->assertSame('https://t.me/c/1234567890/42', $group->getTelegramTopicUrl());
+
+        // Without topic
+        $groupNoTopic = new TelegramGroup(['chat_id' => '-1001234567890']);
+        $this->assertSame('https://t.me/c/1234567890', $groupNoTopic->getTelegramUrl());
+        $this->assertNull($groupNoTopic->getTelegramTopicUrl());
+
+        // Username handle
+        $groupHandle = new TelegramGroup(['chat_id' => '@hr_notifications', 'topic_id' => 99]);
+        $this->assertSame('https://t.me/hr_notifications/99', $groupHandle->getTelegramUrl());
+        $this->assertSame('https://t.me/hr_notifications/99', $groupHandle->getTelegramTopicUrl());
+
+        // Direct url
+        $groupDirect = new TelegramGroup(['chat_id' => 'https://t.me/+AbCdEfGhIjKlMnOp']);
+        $this->assertSame('https://t.me/+AbCdEfGhIjKlMnOp', $groupDirect->getTelegramUrl());
     }
 
     public function test_edit_with_telegram_group_modal_renders_embedded_form_without_chrome(): void

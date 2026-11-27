@@ -348,6 +348,66 @@ class TelegramGroup extends Model
         };
     }
 
+    /**
+     * Generate a Telegram deep link or join link for a given chat ID and optional topic.
+     *
+     * Supported formats:
+     * - Supergroups / Channels starting with -100: https://t.me/c/<id_without_-100> (and with topic: /<topic_id>)
+     * - Public handles (@username): https://t.me/<username>
+     * - Direct web/invite links (https://t.me/...): return as is
+     */
+    public function getTelegramUrl(?string $chatId = null): ?string
+    {
+        $id = trim((string) ($chatId ?? $this->chat_id));
+        if ($id === '') {
+            return null;
+        }
+
+        if (str_starts_with($id, 'http://') || str_starts_with($id, 'https://')) {
+            return $id;
+        }
+
+        if (str_starts_with($id, '@')) {
+            $handle = ltrim($id, '@');
+            if (!empty($this->topic_id)) {
+                return "https://t.me/{$handle}/{$this->topic_id}";
+            }
+            return "https://t.me/{$handle}";
+        }
+
+        if (preg_match('/^-100(\d+)$/', $id, $matches)) {
+            $stripped = $matches[1];
+            if (!empty($this->topic_id)) {
+                return "https://t.me/c/{$stripped}/{$this->topic_id}";
+            }
+            return "https://t.me/c/{$stripped}";
+        }
+
+        return null;
+    }
+
+    /**
+     * Generate a Telegram deep link specifically for a topic thread.
+     */
+    public function getTelegramTopicUrl(?string $chatId = null, ?int $topicId = null): ?string
+    {
+        $tid = $topicId ?? $this->topic_id;
+        if (empty($tid)) {
+            return null;
+        }
+
+        $id = trim((string) ($chatId ?? $this->chat_id));
+        if (preg_match('/^-100(\d+)$/', $id, $matches)) {
+            return "https://t.me/c/{$matches[1]}/{$tid}";
+        }
+
+        if (str_starts_with($id, '@')) {
+            return "https://t.me/" . ltrim($id, '@') . "/{$tid}";
+        }
+
+        return null;
+    }
+
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class, 'branch_id', 'id');
