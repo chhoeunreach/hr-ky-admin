@@ -44,7 +44,7 @@
             <div id="telegramRuleFilterCollapse" class="collapse{{ $hasRuleFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-rules.index') }}" id="telegramRuleFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                    <input type="hidden" id="rule_per_page_hidden" name="per_page" value="{{ $filters['per_page'] ?? '10' }}">
+                    <input type="hidden" id="rule_per_page_hidden" name="per_page" value="{{ $filterParameters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-4 col-md-6">
                             <label for="event_key" class="form-label">{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</label>
@@ -288,7 +288,7 @@
 
             <div id="telegramRulePaginationArea" class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4">
                 <div class="text-muted small">
-                    @if(($filters['per_page'] ?? '') === 'all')
+                    @if(($filterParameters['per_page'] ?? '') === 'all')
                         {{ __('index.showing') }} <strong>{{ __('index.all') }}</strong> ({{ number_format($rules->total()) }} {{ __('index.entries') }})
                     @elseif($rules->total() > 0)
                         {{ __('index.showing') }} {{ number_format($rules->firstItem() ?? 1) }} - {{ number_format($rules->lastItem() ?? $rules->total()) }} {{ __('index.of') }} {{ number_format($rules->total()) }} {{ __('index.entries') }}
@@ -393,6 +393,7 @@
                 const perPageSelect = document.getElementById('per_page');
                 const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
                 if (perPageVal) {
+                    params.delete('per_page');
                     params.set('per_page', perPageVal);
                     const hiddenRulePerPage = document.getElementById('rule_per_page_hidden');
                     if (hiddenRulePerPage) hiddenRulePerPage.value = perPageVal;
@@ -474,7 +475,7 @@
                 refreshTelegramRuleList({ resetPage: true });
             });
 
-            $(document).on('change', '#per_page', function () {
+            $(document).on('change select2:select', '#per_page', function () {
                 refreshTelegramRuleList({ resetPage: true });
             });
 

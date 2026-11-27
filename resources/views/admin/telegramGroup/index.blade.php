@@ -440,6 +440,7 @@
                 const perPageSelect = document.getElementById('per_page');
                 const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
                 if (perPageVal) {
+                    params.delete('per_page');
                     params.set('per_page', perPageVal);
                     const hiddenPerPage = document.getElementById('per_page_hidden');
                     if (hiddenPerPage) hiddenPerPage.value = perPageVal;
@@ -522,7 +523,7 @@
                 refreshTelegramGroupList({ resetPage: true });
             });
 
-            $(document).on('change', '#per_page', function () {
+            $(document).on('change select2:select', '#per_page', function () {
                 refreshTelegramGroupList({ resetPage: true });
             });
 
