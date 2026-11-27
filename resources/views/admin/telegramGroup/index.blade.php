@@ -76,19 +76,15 @@
                 ])
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table id="telegramGroupTable" class="table mb-0">
-                            <thead>
+                        <table id="telegramGroupTable" class="table mb-0 align-middle">
+                            <thead class="table-light">
                             <tr>
                                 <th>#</th>
-                                <th>Name</th>
-                                <th>Chat ID</th>
-                                <th>Action</th>
-                                <th>Events</th>
-                                <th>Branch</th>
-                                <th>Department</th>
-                                <th class="text-center">All</th>
-                                <th class="text-center">Map</th>
-                                <th class="text-center">Selfie</th>
+                                <th>Channel / Group Name</th>
+                                <th>Telegram Chat ID</th>
+                                <th>Topic ID</th>
+                                <th>Direct Telegram Link</th>
+                                <th class="text-center">Assigned Rules</th>
                                 <th class="text-center">{{ __('index.status') }}</th>
                                 @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
                                     <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
@@ -99,79 +95,68 @@
                             @forelse($telegramGroups as $key => $telegramGroup)
                                 <tr>
                                     <td>{{ (($telegramGroups->currentPage() - 1) * $telegramGroups->perPage()) + (++$key) }}</td>
-                                    <td>{{ $telegramGroup->name }}</td>
                                     <td>
-                                        @php $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id]; @endphp
-                                        @foreach(array_filter($chatIds) as $chatId)
-                                            @php $tgUrl = $telegramGroup->getTelegramUrl($chatId); @endphp
-                                            @if($tgUrl)
-                                                <a href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-light text-primary border text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open in Telegram: {{ $tgUrl }}">
-                                                    <i data-feather="external-link" style="width: 11px; height: 11px;"></i> {{ $chatId }}
-                                                </a>
-                                            @else
-                                                <span class="badge bg-light text-dark mb-1">{{ $chatId }}</span>
-                                            @endif
-                                        @endforeach
-                                        @if($telegramGroup->topic_id)
-                                            <div>
-                                                @php $topicUrl = $telegramGroup->getTelegramTopicUrl(); @endphp
-                                                @if($topicUrl)
-                                                    <a href="{{ $topicUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-secondary text-white text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open Topic #{{ $telegramGroup->topic_id }} in Telegram">
-                                                        <i data-feather="hash" style="width: 11px; height: 11px;"></i> Topic: {{ $telegramGroup->topic_id }}
-                                                    </a>
-                                                @else
-                                                    <span class="badge bg-secondary mb-1" title="Telegram Forum Topic / Message Thread ID">
-                                                        Topic: {{ $telegramGroup->topic_id }}
-                                                    </span>
-                                                @endif
-                                            </div>
+                                        <div class="fw-bold text-dark fs-6">{{ $telegramGroup->name }}</div>
+                                        @if($telegramGroup->description)
+                                            <div class="small text-muted">{{ Str::limit($telegramGroup->description, 60) }}</div>
                                         @endif
                                     </td>
                                     <td>
-                                        @php $actionKeys = array_values(array_filter($telegramGroup->action_keys ?: [$telegramGroup->action_key])); @endphp
-                                        @if(count($actionKeys) > 3)
-                                            @foreach(array_slice($actionKeys, 0, 2) as $actionKey)
-                                                <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
+                                        @php $chatIds = $telegramGroup->chat_ids ?: [$telegramGroup->chat_id]; @endphp
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach(array_filter($chatIds) as $chatId)
+                                                <code class="px-2 py-0.5 bg-light border rounded text-dark font-monospace" style="font-size: 11px;">{{ $chatId }}</code>
                                             @endforeach
-                                            <span class="badge bg-primary mb-1" title="{{ implode(', ', array_map(fn($k) => $actionOptions[$k] ?? $k, $actionKeys)) }}">
-                                                +{{ count($actionKeys) - 2 }} more
-                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if($telegramGroup->topic_id)
+                                            @php $topicUrl = $telegramGroup->getTelegramTopicUrl(); @endphp
+                                            @if($topicUrl)
+                                                <a href="{{ $topicUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-secondary text-white text-decoration-none d-inline-flex align-items-center gap-1" title="Open Topic in Telegram">
+                                                    <i data-feather="hash" style="width: 11px; height: 11px;"></i> Topic: {{ $telegramGroup->topic_id }}
+                                                </a>
+                                            @else
+                                                <span class="badge bg-secondary">Topic: #{{ $telegramGroup->topic_id }}</span>
+                                            @endif
                                         @else
-                                            @foreach($actionKeys as $actionKey)
-                                                <span class="badge bg-info mb-1">{{ $actionOptions[$actionKey] ?? $actionKey }}</span>
-                                            @endforeach
+                                            <span class="text-muted small">—</span>
                                         @endif
                                     </td>
                                     <td>
                                         @php
-                                            $eventKeys = array_values(array_filter($telegramGroup->event_keys ?: (isset($telegramGroup->action_key) ? [$telegramGroup->action_key] : [])));
-                                            $allEventOpts = \App\Models\TelegramGroup::eventOptions();
+                                            $directWebUrl = $telegramGroup->getTelegramUrl();
+                                            $directAppUrl = $telegramGroup->getTelegramAppUrl();
                                         @endphp
-                                        @if(count($eventKeys) > 4)
-                                            @foreach(array_slice($eventKeys, 0, 3) as $eventKey)
-                                                <span class="badge bg-secondary mb-1">{{ $allEventOpts[$eventKey] ?? $eventKey }}</span>
-                                            @endforeach
-                                            <span class="badge bg-primary mb-1" title="{{ implode(', ', array_map(fn($k) => $allEventOpts[$k] ?? $k, $eventKeys)) }}">
-                                                +{{ count($eventKeys) - 3 }} more
-                                            </span>
+                                        @if($directWebUrl)
+                                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                <a href="{{ $directWebUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1" style="border-radius: 6px; font-size: 11px;" title="Open Telegram Web / Direct Link: {{ $directWebUrl }}">
+                                                    <i data-feather="external-link" style="width: 12px; height: 12px;"></i> Open Chat
+                                                </a>
+                                                @if($directAppUrl)
+                                                    <a href="{{ $directAppUrl }}" class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 px-1.5 py-1" style="border-radius: 6px; font-size: 11px;" title="Open in Telegram Desktop / Mobile App (tg://)">
+                                                        <i data-feather="send" style="width: 11px; height: 11px;"></i> App
+                                                    </a>
+                                                @endif
+                                            </div>
+                                            @if($telegramGroup->invite_link)
+                                                <div class="mt-1 font-monospace text-truncate text-muted" style="max-width: 200px; font-size: 10px;" title="{{ $telegramGroup->invite_link }}">
+                                                    {{ $telegramGroup->invite_link }}
+                                                </div>
+                                            @endif
                                         @else
-                                            @foreach($eventKeys as $eventKey)
-                                                <span class="badge bg-secondary mb-1">{{ $allEventOpts[$eventKey] ?? $eventKey }}</span>
-                                            @endforeach
+                                            <span class="text-muted small">No direct link</span>
                                         @endif
                                     </td>
-                                    <td>{{ $telegramGroup->branch_name ?: ($telegramGroup->branch?->name ?? 'All') }}</td>
-                                    <td>{{ $telegramGroup->department_name ?: ($telegramGroup->department?->dept_name ?? 'All') }}</td>
-                                    <td class="text-center">{{ $telegramGroup->send_for_all ? 'Yes' : 'No' }}</td>
                                     <td class="text-center">
-                                        <span class="badge {{ ($telegramGroup->send_location ?? true) ? 'bg-success' : 'bg-secondary' }}">
-                                            {{ ($telegramGroup->send_location ?? true) ? 'Yes' : 'No' }}
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge {{ ($telegramGroup->send_selfie ?? true) ? 'bg-success' : 'bg-secondary' }}">
-                                            {{ ($telegramGroup->send_selfie ?? true) ? 'Yes' : 'No' }}
-                                        </span>
+                                        @php $rCount = $rulesCountByChannel[$telegramGroup->id] ?? 0; @endphp
+                                        @if($rCount > 0)
+                                            <a href="{{ route('admin.telegram-rules.index') }}" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 text-decoration-none px-2 py-1 rounded-pill" title="View notification rules targeting this channel">
+                                                <i data-feather="bell" style="width: 11px; height: 11px;" class="me-1"></i> {{ $rCount }} {{ Str::plural('Rule', $rCount) }}
+                                            </a>
+                                        @else
+                                            <span class="badge bg-light text-muted border px-2 py-1 rounded-pill">0 Rules</span>
+                                        @endif
                                     </td>
                                     <td class="text-center">
                                         @can('toggle_telegram_group_status')

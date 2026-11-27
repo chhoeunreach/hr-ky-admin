@@ -1,241 +1,238 @@
 <div class="row">
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="name" class="form-label">Group Name <span style="color: red">*</span></label>
-        <input type="text" class="form-control" id="name" name="name" required
-               value="{{ old('name', $telegramGroup->name ?? '') }}" placeholder="e.g. KY-HR | HQ | Management">
+    {{-- Group / Channel Name --}}
+    <div class="col-lg-6 col-md-6 mb-3">
+        <label for="name" class="form-label"><b>Group / Channel Name</b> <span class="text-danger">*</span></label>
+        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" required
+               value="{{ old('name', $telegramGroup->name ?? '') }}" placeholder="ឧ. KY-HR | HQ | Management Channel">
+        <div class="form-text small text-muted">ដាក់ឈ្មោះសម្គាល់ Channel ឬ Group ឱ្យងាយស្រួលចំណាំ</div>
+        @error('name')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
     </div>
 
-    <div class="col-lg-5 col-md-6 mb-4">
-        <label for="chat_ids" class="form-label">Telegram Chat ID <span style="color: red">*</span></label>
+    {{-- Telegram Chat ID --}}
+    <div class="col-lg-6 col-md-6 mb-3">
+        <label for="chat_ids" class="form-label"><b>Telegram Chat ID</b> <span class="text-danger">*</span></label>
         @php
             $selectedChatIds = old('chat_ids', $telegramGroup->chat_ids ?? (isset($telegramGroup->chat_id) ? [$telegramGroup->chat_id] : []));
             $selectedChatIds = is_array($selectedChatIds) ? $selectedChatIds : [];
             $chatOptions = array_values(array_unique(array_merge($chatOptions ?? [], $selectedChatIds)));
         @endphp
-        <select class="form-select" id="chat_ids" name="chat_ids[]" multiple required>
+        <select class="form-select @error('chat_ids') is-invalid @enderror" id="chat_ids" name="chat_ids[]" multiple required>
             @foreach($chatOptions as $chatId)
                 <option value="{{ $chatId }}" {{ in_array($chatId, $selectedChatIds, true) ? 'selected' : '' }}>{{ $chatId }}</option>
             @endforeach
         </select>
-        <div class="form-text small">អាចបញ្ចូល Chat ID ដោយផ្ទាល់ រួចចុច Enter ឬ Comma (ឧ. -1001234567890)</div>
+        <div class="form-text small text-muted">បញ្ចូល Chat ID (ឧ. -1001234567890 ឬ @channel_username) រួចចុច Enter</div>
+        @error('chat_ids')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
     </div>
 
-    <div class="col-lg-3 col-md-12 mb-4">
-        <label for="topic_id" class="form-label">Topic ID / Thread ID <span class="text-muted small">(ស្រេចចិត្ត)</span></label>
+    {{-- Direct Telegram Link (Real link can direct) --}}
+    <div class="col-lg-8 col-md-7 mb-3">
+        <label for="invite_link" class="form-label">
+            <b>តំណភ្ជាប់ផ្ទាល់ទៅកាន់ Chat (Direct Link / Invite Link)</b>
+            <span class="text-muted small">(ណែនាំឱ្យបញ្ចូល ដើម្បីចុច Direct ចូលបាន)</span>
+        </label>
         <div class="input-group">
-            <span class="input-group-text"><i data-feather="hash" style="width: 14px; height: 14px;"></i></span>
-            <input type="number" class="form-control" id="topic_id" name="topic_id" min="1"
+            <span class="input-group-text bg-light text-primary">
+                <i data-feather="external-link" style="width: 14px; height: 14px;"></i>
+            </span>
+            <input type="text"
+                   class="form-control @error('invite_link') is-invalid @enderror"
+                   id="invite_link"
+                   name="invite_link"
+                   value="{{ old('invite_link', $telegramGroup->invite_link ?? '') }}"
+                   placeholder="ឧ. https://t.me/+AbCdEfGh ឬ https://t.me/your_channel">
+            <button type="button" class="btn btn-outline-secondary" id="btnTestDirectLink" title="សាកល្បងបើកតំណភ្ជាប់នេះ">
+                <i data-feather="compass" style="width: 14px; height: 14px;"></i> សាកល្បងបើក
+            </button>
+        </div>
+        <div class="form-text small text-muted">
+            បញ្ចូល Link ចូលក្រុម (Invite Link) ឬ Public Username Link ដើម្បីឱ្យ Admin អាចចុច Direct ចូលទៅកាន់ Telegram Chat ផ្ទាល់បានភ្លាមៗ។
+        </div>
+        @error('invite_link')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
+
+    {{-- Topic ID / Thread ID --}}
+    <div class="col-lg-4 col-md-5 mb-3">
+        <label for="topic_id" class="form-label">
+            <b>Topic ID / Thread ID</b>
+            <span class="text-muted small">(ស្រេចចិត្ត)</span>
+        </label>
+        <div class="input-group">
+            <span class="input-group-text bg-light"><i data-feather="hash" style="width: 14px; height: 14px;"></i></span>
+            <input type="number" class="form-control @error('topic_id') is-invalid @enderror" id="topic_id" name="topic_id" min="1"
                    value="{{ old('topic_id', $telegramGroup->topic_id ?? '') }}" placeholder="ឧ. 1, 102 (ទុកទទេបើគ្មាន)">
         </div>
-        <div class="form-text small">សម្រាប់ Telegram Supergroup ដែលបើក Forum/Topics</div>
+        <div class="form-text small text-muted">សម្រាប់ Telegram Supergroup ដែលបើក Topics/Forum</div>
+        @error('topic_id')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
     </div>
 
-    <div class="col-lg-12 mb-4">
-        <div class="card border shadow-none" style="background-color: #fafbfe;">
-            <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center py-2 border-bottom">
-                <div class="d-flex align-items-center">
-                    <i data-feather="bell" class="me-2 text-primary" style="width: 18px; height: 18px;"></i>
-                    <strong class="fs-6">ជ្រើសរើស Actions & Events សម្រាប់ផ្ញើសារ (Notification Events Matrix) <span style="color: red">*</span></strong>
-                </div>
-                <div class="btn-group btn-group-sm mt-2 mt-md-0" role="group">
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="btn-select-all-events">
-                        <i data-feather="check-square" class="me-1" style="width: 14px; height: 14px;"></i> Select All (ជ្រើសទាំងអស់)
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-deselect-all-events">
-                        <i data-feather="square" class="me-1" style="width: 14px; height: 14px;"></i> Clear All (លុបទាំងអស់)
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-3">
-                <p class="text-muted small mb-3">
-                    សូមជ្រើសរើសប្រភេទ Events ឬ Actions ជាក់លាក់ដែលអ្នកចង់ឱ្យ Telegram Group នេះទទួលបានការជូនដំណឹង។ អ្នកអាចធីកតាមក្រុមទាំងមូល ឬជ្រើសរើស Event ដាច់ដោយឡែក។
-                </p>
-
-                <div class="row g-3">
-                    @php
-                        $categorizedOptions = $categorizedEvents ?? \App\Models\TelegramGroup::categorizedEventOptions();
-                        $selectedEvents = old('event_keys', $telegramGroup->event_keys ?? []);
-                        $selectedActions = old('action_keys', $telegramGroup->action_keys ?? (isset($telegramGroup->action_key) ? [$telegramGroup->action_key] : []));
-                        $selectedEvents = is_array($selectedEvents) ? $selectedEvents : [];
-                        $selectedActions = is_array($selectedActions) ? $selectedActions : [];
-                    @endphp
-
-                    @foreach($categorizedOptions as $catKey => $catData)
-                        <div class="col-xl-6 col-lg-12">
-                            <div class="border rounded p-3 h-100 bg-white shadow-sm">
-                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
-                                    <div class="form-check form-switch m-0 d-flex align-items-center gap-2">
-                                        <input class="form-check-input category-toggle" type="checkbox" id="cat_{{ $catKey }}" data-category="{{ $catKey }}">
-                                        <label class="form-check-label fw-bold text-dark cursor-pointer d-flex align-items-center" for="cat_{{ $catKey }}">
-                                            <i data-feather="{{ $catData['icon'] ?? 'folder' }}" class="text-primary me-2" style="width: 16px; height: 16px;"></i>
-                                            {{ $catData['label'] }}
-                                        </label>
-                                    </div>
-                                    <input type="checkbox" name="action_keys[]" value="{{ $catData['action_key'] }}" id="action_{{ $catData['action_key'] }}" class="d-none action-input" {{ in_array($catData['action_key'], $selectedActions, true) ? 'checked' : '' }}>
-                                    <span class="badge bg-secondary cat-badge" id="badge_{{ $catKey }}">0/{{ count($catData['events']) }}</span>
-                                </div>
-                                <div class="row g-2 pt-1">
-                                    @foreach($catData['events'] as $eventKey => $eventLabel)
-                                        <div class="col-md-6 col-12">
-                                            <div class="form-check">
-                                                <input class="form-check-input event-checkbox event-cat-{{ $catKey }}" 
-                                                       type="checkbox" 
-                                                       name="event_keys[]" 
-                                                       value="{{ $eventKey }}" 
-                                                       id="evt_{{ $eventKey }}"
-                                                       data-category="{{ $catKey }}"
-                                                       data-action="{{ $catData['action_key'] }}"
-                                                       {{ in_array($eventKey, $selectedEvents, true) ? 'checked' : '' }}>
-                                                <label class="form-check-label small" for="evt_{{ $eventKey }}">
-                                                    {{ $eventLabel }}
-                                                </label>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+    {{-- Status Toggle --}}
+    <div class="col-lg-4 col-md-6 mb-3">
+        <label class="form-label"><b>{{ __('index.status') }}</b></label>
+        <div class="d-flex align-items-center p-2 border rounded bg-white" style="min-height: 42px;">
+            <div class="form-check form-switch m-0">
+                <input class="form-check-input"
+                       type="checkbox"
+                       id="is_active"
+                       name="is_active"
+                       value="1"
+                       {{ old('is_active', $telegramGroup->is_active ?? true) ? 'checked' : '' }}>
+                <label class="form-check-label fw-bold text-success cursor-pointer" for="is_active">
+                    ដំណើរការ (Active)
+                </label>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="branch_ids" class="form-label">Branch (សាខា)</label>
-        @php
-            $selectedBranches = old('branch_ids', $telegramGroup->branch_ids ?? (isset($telegramGroup->branch_id) ? [$telegramGroup->branch_id] : []));
-            $selectedBranches = is_array($selectedBranches) ? array_map('strval', $selectedBranches) : [];
-        @endphp
-        <select class="form-select" id="branch_ids" name="branch_ids[]" multiple>
-            @foreach($branches as $branch)
-                <option value="{{ $branch->id }}" {{ in_array((string) $branch->id, $selectedBranches, true) ? 'selected' : '' }}>
-                    {{ $branch->name }}
-                </option>
-            @endforeach
-        </select>
-        <div class="form-text small">ទុកទទេ ប្រសិនបើចង់ទទួលគ្រប់សាខា</div>
+    {{-- Description / Notes --}}
+    <div class="col-lg-8 col-md-6 mb-3">
+        <label for="description" class="form-label"><b>កំណត់ចំណាំ (Description / Notes)</b></label>
+        <input type="text" class="form-control" id="description" name="description"
+               value="{{ old('description', $telegramGroup->description ?? '') }}"
+               placeholder="ឧ. ក្រុមទទួលដំណឹងវត្តមាន និងសុំច្បាប់សម្រាប់ថ្នាក់គ្រប់គ្រង">
     </div>
 
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="department_ids" class="form-label">Department (ដេប៉ាតឺម៉ង់)</label>
-        @php
-            $selectedDepartments = old('department_ids', $telegramGroup->department_ids ?? (isset($telegramGroup->department_id) ? [$telegramGroup->department_id] : []));
-            $selectedDepartments = is_array($selectedDepartments) ? array_map('strval', $selectedDepartments) : [];
-        @endphp
-        <select class="form-select" id="department_ids" name="department_ids[]" multiple>
-            @foreach($departments as $department)
-                <option value="{{ $department->id }}" data-branch-id="{{ $department->branch_id }}"
-                    {{ in_array((string) $department->id, $selectedDepartments, true) ? 'selected' : '' }}>
-                    {{ $department->dept_name }}
-                </option>
-            @endforeach
-        </select>
-        <div class="form-text small">ទុកទទេ ប្រសិនបើចង់ទទួលគ្រប់ដេប៉ាតឺម៉ង់</div>
-    </div>
-
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="send_for_all" class="form-label">Send For All (ផ្ញើគ្រប់សាខាដោយមិនកំណត់)</label>
-        <select class="form-select" id="send_for_all" name="send_for_all">
-            <option value="0" {{ (string) old('send_for_all', isset($telegramGroup) ? (int) $telegramGroup->send_for_all : 0) === '0' ? 'selected' : '' }}>No</option>
-            <option value="1" {{ (string) old('send_for_all', isset($telegramGroup) ? (int) $telegramGroup->send_for_all : 0) === '1' ? 'selected' : '' }}>Yes</option>
-        </select>
-    </div>
-
-    <input type="hidden" id="branch_name" name="branch_name" value="{{ old('branch_name', $telegramGroup->branch_name ?? '') }}">
-    <input type="hidden" id="department_name" name="department_name" value="{{ old('department_name', $telegramGroup->department_name ?? '') }}">
-
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="send_location" class="form-label">Send Map (ផ្ញើទីតាំង GPS)</label>
-        <select class="form-select" id="send_location" name="send_location">
-            <option value="1" {{ (string) old('send_location', isset($telegramGroup) ? (int) ($telegramGroup->send_location ?? 1) : 1) === '1' ? 'selected' : '' }}>Yes</option>
-            <option value="0" {{ (string) old('send_location', isset($telegramGroup) ? (int) ($telegramGroup->send_location ?? 1) : 1) === '0' ? 'selected' : '' }}>No</option>
-        </select>
-    </div>
-
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="send_selfie" class="form-label">Send Selfie Photo (ផ្ញើរូបភាព Selfie)</label>
-        <select class="form-select" id="send_selfie" name="send_selfie">
-            <option value="1" {{ (string) old('send_selfie', isset($telegramGroup) ? (int) ($telegramGroup->send_selfie ?? 1) : 1) === '1' ? 'selected' : '' }}>Yes</option>
-            <option value="0" {{ (string) old('send_selfie', isset($telegramGroup) ? (int) ($telegramGroup->send_selfie ?? 1) : 1) === '0' ? 'selected' : '' }}>No</option>
-        </select>
-    </div>
-
-    <div class="col-lg-4 col-md-6 mb-4">
-        <label for="is_active" class="form-label">{{ __('index.status') }}</label>
-        <select class="form-select" id="is_active" name="is_active">
-            <option value="1" {{ (string) old('is_active', isset($telegramGroup) ? (int) $telegramGroup->is_active : 1) === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
-            <option value="0" {{ (string) old('is_active', isset($telegramGroup) ? (int) $telegramGroup->is_active : 1) === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
-        </select>
-    </div>
-
-    <div class="col-lg-12 mb-4">
-        <label for="description" class="form-label">Description (ការពិពណ៌នាបន្ថែម)</label>
-        <textarea class="form-control" id="description" name="description" rows="3" placeholder="បញ្ជាក់អំពីគោលបំណងនៃ Group នេះ...">{{ old('description', $telegramGroup->description ?? '') }}</textarea>
-    </div>
-
-    <div class="col-lg-12 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <button type="submit" class="btn btn-primary">
-                <i class="link-icon" data-feather="save"></i> {{ isset($telegramGroup) ? __('index.update') : __('index.create') }}
-            </button>
-            <a href="{{ route('admin.telegram-groups.index') }}" class="btn btn-secondary ms-2">
-                <i class="link-icon" data-feather="x"></i> {{ __('index.cancel') }}
+    {{-- Info Notice pointing to Notification Rules --}}
+    <div class="col-12 mb-3">
+        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 m-0" style="background-color: #f0f7ff; border-left: 4px solid #0d6efd !important;">
+            <div class="d-flex align-items-center gap-2">
+                <i data-feather="info" class="text-primary" style="width: 20px; height: 20px; min-width: 20px;"></i>
+                <div class="small">
+                    <strong>ការកំណត់ការបញ្ជូនសារ (Notification Events Matrix):</strong>
+                    ប្រភេទ Events និងលក្ខខណ្ឌនៃការផ្ញើសារទាំងអស់ត្រូវបានគ្រប់គ្រងយ៉ាងពេញលេញនៅលើ
+                    <strong>វិធានការបញ្ជូនសារ (Notification Rules)</strong>។
+                </div>
+            </div>
+            <a href="{{ route('admin.telegram-rules.index') }}" class="btn btn-sm btn-outline-primary text-nowrap">
+                <i data-feather="bell" style="width: 13px; height: 13px;"></i> ទៅកាន់វិធានការបញ្ជូនសារ
             </a>
         </div>
-        <div>
-            <button type="button" class="btn btn-outline-info" id="btnSendTestMessage">
-                <i class="link-icon" data-feather="send"></i> ផ្ញើសារសាកល្បង (Send Test Message)
-            </button>
+    </div>
+
+    {{-- Quick Test Message Box --}}
+    <div class="col-12 mb-3">
+        <div class="card border shadow-none bg-light p-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h6 class="mb-1 text-dark fw-bold">
+                        <i data-feather="send" class="text-primary me-1" style="width: 16px; height: 16px;"></i>
+                        ផ្ញើសារសាកល្បងទៅកាន់ Chat ID (Send Test Message)
+                    </h6>
+                    <div class="small text-muted">
+                        ចុចប៊ូតុងនេះដើម្បីផ្ញើសារសាកល្បងភ្លាមៗទៅកាន់ Chat ID ខាងលើ ដើម្បីផ្ទៀងផ្ទាត់ថា Telegram Bot អាចផ្ញើសារចូលបានដោយជោគជ័យ។
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnSendTestChat">
+                    <i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង
+                </button>
+            </div>
         </div>
+    </div>
+
+    {{-- Hidden Backward Compatibility Fields --}}
+    <input type="hidden" name="action_key" value="{{ old('action_key', $telegramGroup->action_key ?? 'general') }}">
+    <input type="hidden" name="send_for_all" value="1">
+    <input type="hidden" name="send_location" value="1">
+    <input type="hidden" name="send_selfie" value="1">
+
+    {{-- Submit Buttons --}}
+    <div class="col-12 mt-2 mb-4">
+        <button type="submit" class="btn btn-primary px-4">
+            <i class="link-icon" data-feather="check-circle"></i>
+            {{ isset($telegramGroup) ? __('index.update') : __('index.save') }}
+        </button>
+        <a href="{{ route('admin.telegram-groups.index') }}" class="btn btn-secondary ms-2">
+            {{ __('index.cancel') }}
+        </a>
     </div>
 </div>
 
 @section('scripts')
     <script>
         $(document).ready(function () {
-            if (typeof feather !== 'undefined') {
-                feather.replace();
-            }
+            // Select2 for chat_ids
+            $('#chat_ids').select2({
+                tags: true,
+                tokenSeparators: [',', ' '],
+                placeholder: 'បញ្ចូល Chat ID រួចចុច Enter...'
+            });
 
-            $('#btnSendTestMessage').on('click', function () {
-                var btn = $(this);
-                var chatIds = $('#chat_ids').val() || [];
-                var name = $('#name').val() || '';
-                var id = '{{ $telegramGroup->id ?? "" }}';
+            // Test Direct Link Button
+            $('#btnTestDirectLink').on('click', function () {
+                var url = $('#invite_link').val().trim();
+                if (!url) {
+                    var chatIds = $('#chat_ids').val() || [];
+                    if (chatIds.length > 0) {
+                        var firstId = String(chatIds[0]).trim();
+                        if (firstId.startsWith('http://') || firstId.startsWith('https://')) {
+                            url = firstId;
+                        } else if (firstId.startsWith('@')) {
+                            url = 'https://t.me/' + firstId.replace('@', '');
+                        } else if (firstId.startsWith('-100')) {
+                            url = 'https://t.me/c/' + firstId.substring(4) + '/1';
+                        }
+                    }
+                }
 
-                if (!chatIds || chatIds.length === 0) {
+                if (url) {
+                    window.open(url, '_blank');
+                } else {
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
-                            icon: 'warning',
-                            title: 'សូមបញ្ចូល Chat ID',
-                            text: 'សូមបញ្ចូលយ៉ាងហោចណាស់មួយ Telegram Chat ID ជាមុនសិន!',
+                            icon: 'info',
+                            title: 'គ្មាន Link សម្រាប់បើក',
+                            text: 'សូមបញ្ចូល Invite Link ឬ Chat ID ជាមុនសិន!',
                             confirmButtonText: 'យល់ព្រម'
                         });
                     } else {
-                        alert('សូមបញ្ចូលយ៉ាងហោចណាស់មួយ Telegram Chat ID ជាមុនសិន!');
+                        alert('សូមបញ្ចូល Invite Link ឬ Chat ID ជាមុនសិន!');
+                    }
+                }
+            });
+
+            // Quick Test Message
+            $('#btnSendTestChat').on('click', function () {
+                var chatIds = $('#chat_ids').val() || [];
+                var topicId = $('#topic_id').val();
+                if (chatIds.length === 0) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'ខ្វះ Chat ID!',
+                            text: 'សូមបញ្ចូល Telegram Chat ID យ៉ាងហោចណាស់មួយសិន!',
+                            confirmButtonText: 'យល់ព្រម'
+                        });
+                    } else {
+                        alert('សូមបញ្ចូល Telegram Chat ID យ៉ាងហោចណាស់មួយសិន!');
                     }
                     return;
                 }
 
-                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> កំពុងផ្ញើសារ...');
+                var btn = $(this);
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> កំពុងផ្ញើ...');
 
                 $.ajax({
-                    url: '{{ route("admin.telegram-groups.send-test") }}',
-                    type: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
+                    url: "{{ route('admin.telegram-groups.send-test') }}",
+                    method: "POST",
                     data: {
-                        id: id,
-                        name: name,
+                        _token: "{{ csrf_token() }}",
                         chat_ids: chatIds,
-                        topic_id: $('#topic_id').val() || null
+                        topic_id: topicId,
+                        name: $('#name').val() || 'Test Channel'
                     },
                     success: function (res) {
-                        btn.prop('disabled', false).html('<i class="link-icon" data-feather="send"></i> ផ្ញើសារសាកល្បង (Send Test Message)');
+                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង');
                         if (typeof feather !== 'undefined') feather.replace();
-                        var msg = res.message || 'សារសាកល្បងត្រូវបានផ្ញើទៅកាន់ Telegram Group ដោយជោគជ័យ!';
+
+                        var msg = (res && res.message) ? res.message : 'សារសាកល្បងត្រូវបានផ្ញើដោយជោគជ័យ!';
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'success',
@@ -248,8 +245,9 @@
                         }
                     },
                     error: function (xhr) {
-                        btn.prop('disabled', false).html('<i class="link-icon" data-feather="send"></i> ផ្ញើសារសាកល្បង (Send Test Message)');
+                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង');
                         if (typeof feather !== 'undefined') feather.replace();
+
                         var err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'ការផ្ញើសារសាកល្បងមិនជោគជ័យ។ សូមពិនិត្យមើល Bot Token និង Chat ID!';
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
@@ -264,108 +262,6 @@
                     }
                 });
             });
-
-            $('#chat_ids').select2({
-                tags: true,
-                tokenSeparators: [',', ' ']
-            });
-            $('#branch_ids').select2({
-                placeholder: 'All Branches'
-            });
-            $('#department_ids').select2({
-                placeholder: 'All Departments'
-            });
-
-            function updateCategoryState(catKey) {
-                var total = $('.event-cat-' + catKey).length;
-                var checked = $('.event-cat-' + catKey + ':checked').length;
-                var $catToggle = $('#cat_' + catKey);
-                var $badge = $('#badge_' + catKey);
-
-                $badge.text(checked + '/' + total);
-                if (checked === total && total > 0) {
-                    $catToggle.prop('checked', true);
-                    $catToggle.prop('indeterminate', false);
-                    $badge.removeClass('bg-secondary bg-warning').addClass('bg-success');
-                } else if (checked > 0) {
-                    $catToggle.prop('checked', false);
-                    $catToggle.prop('indeterminate', true);
-                    $badge.removeClass('bg-secondary bg-success').addClass('bg-warning text-dark');
-                } else {
-                    $catToggle.prop('checked', false);
-                    $catToggle.prop('indeterminate', false);
-                    $badge.removeClass('bg-success bg-warning text-dark').addClass('bg-secondary');
-                }
-
-                var $actionInput = $('.event-cat-' + catKey).first().data('action');
-                if ($actionInput) {
-                    $('#action_' + $actionInput).prop('checked', checked > 0);
-                }
-            }
-
-            function updateAllCategories() {
-                $('.category-toggle').each(function () {
-                    var catKey = $(this).data('category');
-                    updateCategoryState(catKey);
-                });
-            }
-
-            $('.category-toggle').on('change', function () {
-                var catKey = $(this).data('category');
-                var isChecked = $(this).is(':checked');
-                $('.event-cat-' + catKey).prop('checked', isChecked);
-                updateCategoryState(catKey);
-            });
-
-            $('.event-checkbox').on('change', function () {
-                var catKey = $(this).data('category');
-                updateCategoryState(catKey);
-            });
-
-            $('#btn-select-all-events').on('click', function () {
-                $('.event-checkbox').prop('checked', true);
-                $('.category-toggle').prop('checked', true).prop('indeterminate', false);
-                $('.action-input').prop('checked', true);
-                updateAllCategories();
-            });
-
-            $('#btn-deselect-all-events').on('click', function () {
-                $('.event-checkbox').prop('checked', false);
-                $('.category-toggle').prop('checked', false).prop('indeterminate', false);
-                $('.action-input').prop('checked', false);
-                updateAllCategories();
-            });
-
-            updateAllCategories();
-
-            function filterDepartments() {
-                var branchIds = $('#branch_ids').val() || [];
-                $('#department_ids option').each(function () {
-                    var optionBranchId = $(this).data('branch-id');
-                    if (!optionBranchId || branchIds.length === 0 || branchIds.includes(String(optionBranchId))) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            }
-
-            $('#branch_ids').on('change', function () {
-                filterDepartments();
-                var selectedBranchNames = $('#branch_ids option:selected').map(function () {
-                    return $(this).text().trim();
-                }).get();
-                $('#branch_name').val(selectedBranchNames.join(','));
-            });
-
-            $('#department_ids').on('change', function () {
-                var selectedDepartmentNames = $('#department_ids option:selected').map(function () {
-                    return $(this).text().trim();
-                }).get();
-                $('#department_name').val(selectedDepartmentNames.join(','));
-            });
-
-            filterDepartments();
         });
     </script>
 @endsection

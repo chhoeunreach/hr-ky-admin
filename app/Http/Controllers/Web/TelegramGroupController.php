@@ -44,12 +44,25 @@ class TelegramGroupController extends Controller
             $totalChannels = TelegramGroup::count();
             $totalRules = Schema::hasTable('telegram_notification_rules') ? TelegramNotificationRule::count() : 0;
 
+            // Map active notification rules count for each channel
+            $rulesCountByChannel = [];
+            if (Schema::hasTable('telegram_notification_rules')) {
+                $allRules = TelegramNotificationRule::all(['id', 'name', 'channel_ids', 'is_active']);
+                foreach ($allRules as $rule) {
+                    $chIds = (array) ($rule->channel_ids ?? []);
+                    foreach ($chIds as $chId) {
+                        $rulesCountByChannel[$chId] = ($rulesCountByChannel[$chId] ?? 0) + 1;
+                    }
+                }
+            }
+
             return view($this->view . 'index', compact(
                 'telegramGroups',
                 'filterParameters',
                 'actionOptions',
                 'totalChannels',
-                'totalRules'
+                'totalRules',
+                'rulesCountByChannel'
             ));
         } catch (Exception $exception) {
             return redirect()->back()->with('danger', $exception->getMessage());

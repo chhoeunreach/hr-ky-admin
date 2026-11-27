@@ -172,12 +172,22 @@
                                             <span class="text-danger small"><i data-feather="alert-triangle"></i> Channel ត្រូវបានលុប</span>
                                         @else
                                             @foreach(array_slice($validChannels, 0, 2) as $ch)
-                                                <span class="badge bg-light text-dark border mb-1">
-                                                    {{ $ch->name }}
-                                                    @if($ch->topic_id)
-                                                        <small class="text-primary">#{{ $ch->topic_id }}</small>
-                                                    @endif
-                                                </span>
+                                                @php $chUrl = $ch->getTelegramUrl(); @endphp
+                                                @if($chUrl)
+                                                    <a href="{{ $chUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-light text-primary border text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open {{ $ch->name }} in Telegram: {{ $chUrl }}">
+                                                        <i data-feather="external-link" style="width: 10px; height: 10px;"></i> {{ $ch->name }}
+                                                        @if($ch->topic_id)
+                                                            <small class="text-muted">#{{ $ch->topic_id }}</small>
+                                                        @endif
+                                                    </a>
+                                                @else
+                                                    <span class="badge bg-light text-dark border mb-1">
+                                                        {{ $ch->name }}
+                                                        @if($ch->topic_id)
+                                                            <small class="text-primary">#{{ $ch->topic_id }}</small>
+                                                        @endif
+                                                    </span>
+                                                @endif
                                             @endforeach
                                             @if(count($validChannels) > 2)
                                                 <span class="badge bg-secondary mb-1">+{{ count($validChannels) - 2 }} ផ្សេងទៀត</span>

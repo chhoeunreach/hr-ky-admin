@@ -19,6 +19,7 @@ class TelegramGroupRequest extends FormRequest
             'chat_ids' => ['required', 'array', 'min:1'],
             'chat_ids.*' => ['required', 'string', 'max:255'],
             'topic_id' => ['nullable', 'integer', 'min:1'],
+            'invite_link' => ['nullable', 'string', 'max:255'],
             'action_key' => ['nullable', 'string', 'max:100', 'regex:/^[a-z0-9_\-]+$/'],
             'action_keys' => ['nullable', 'array'],
             'action_keys.*' => ['string', 'max:100', 'regex:/^[a-z0-9_\-]+$/'],

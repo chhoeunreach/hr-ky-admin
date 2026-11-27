@@ -90,6 +90,7 @@ class TelegramGroup extends Model
         'chat_id',
         'chat_ids',
         'topic_id',
+        'invite_link',
         'action_key',
         'action_keys',
         'event_keys',
@@ -352,12 +353,22 @@ class TelegramGroup extends Model
      * Generate a Telegram deep link or join link for a given chat ID and optional topic.
      *
      * Supported formats:
+     * - Direct invite link (invite_link): returned directly
      * - Supergroups / Channels starting with -100: https://t.me/c/<id_without_-100> (and with topic: /<topic_id>)
      * - Public handles (@username): https://t.me/<username>
      * - Direct web/invite links (https://t.me/...): return as is
      */
     public function getTelegramUrl(?string $chatId = null): ?string
     {
+        // 1. If explicit invite_link is set on this group and default chat requested, prioritize real direct link
+        if (!empty($this->invite_link) && ($chatId === null || $chatId === $this->chat_id)) {
+            $inv = trim($this->invite_link);
+            if (!empty($this->topic_id) && !str_contains($inv, '/' . $this->topic_id) && !str_contains($inv, '+')) {
+                return rtrim($inv, '/') . '/' . $this->topic_id;
+            }
+            return $inv;
+        }
+
         $id = trim((string) ($chatId ?? $this->chat_id));
         if ($id === '') {
             return null;
@@ -391,17 +402,44 @@ class TelegramGroup extends Model
      */
     public function getTelegramAppUrl(?string $chatId = null): ?string
     {
+        if (!empty($this->invite_link) && ($chatId === null || $chatId === $this->chat_id)) {
+            $inv = trim($this->invite_link);
+            if (preg_match('#t\.me/\+([A-Za-z0-9_-]+)#', $inv, $m)) {
+                return 'tg://join?invite=' . $m[1];
+            }
+            if (preg_match('#t\.me/joinchat/([A-Za-z0-9_-]+)#', $inv, $m)) {
+                return 'tg://join?invite=' . $m[1];
+            }
+            if (preg_match('#t\.me/([A-Za-z0-9_]+)#', $inv, $m)) {
+                return 'tg://resolve?domain=' . $m[1];
+            }
+        }
+
         $id = trim((string) ($chatId ?? $this->chat_id));
         if ($id === '') {
             return null;
         }
 
         if (str_starts_with($id, 'http://') || str_starts_with($id, 'https://')) {
+            if (preg_match('#t\.me/\+([A-Za-z0-9_-]+)#', $id, $m)) {
+                return 'tg://join?invite=' . $m[1];
+            }
+            if (preg_match('#t\.me/([A-Za-z0-9_]+)#', $id, $m)) {
+                return 'tg://resolve?domain=' . $m[1];
+            }
             return $id;
         }
 
         if (str_starts_with($id, '@')) {
             return 'tg://resolve?domain=' . ltrim($id, '@');
+        }
+
+        if (preg_match('/^-100(\d+)$/', $id, $matches)) {
+            $stripped = $matches[1];
+            if (!empty($this->topic_id)) {
+                return "tg://openmessage?chat_id={$id}&message_id={$this->topic_id}";
+            }
+            return "tg://openmessage?chat_id={$id}";
         }
 
         if (!empty($this->topic_id)) {
