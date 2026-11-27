@@ -155,15 +155,20 @@ class TelegramGroupEditModalTest extends TestCase
         $this->assertSame('https://t.me/c/1234567890/42', $group->getTelegramUrl());
         $this->assertSame('https://t.me/c/1234567890/42', $group->getTelegramTopicUrl());
 
-        // Without topic
+        // Without topic (includes /1 to prevent @c not found routing error in Telegram web/clients)
         $groupNoTopic = new TelegramGroup(['chat_id' => '-1001234567890']);
-        $this->assertSame('https://t.me/c/1234567890', $groupNoTopic->getTelegramUrl());
+        $this->assertSame('https://t.me/c/1234567890/1', $groupNoTopic->getTelegramUrl());
+        $this->assertSame('tg://openmessage?chat_id=-1001234567890', $groupNoTopic->getTelegramAppUrl());
         $this->assertNull($groupNoTopic->getTelegramTopicUrl());
+
+        // With topic app url
+        $this->assertSame('tg://openmessage?chat_id=-1001234567890&message_id=42', $group->getTelegramAppUrl());
 
         // Username handle
         $groupHandle = new TelegramGroup(['chat_id' => '@hr_notifications', 'topic_id' => 99]);
         $this->assertSame('https://t.me/hr_notifications/99', $groupHandle->getTelegramUrl());
         $this->assertSame('https://t.me/hr_notifications/99', $groupHandle->getTelegramTopicUrl());
+        $this->assertSame('tg://resolve?domain=hr_notifications', $groupHandle->getTelegramAppUrl());
 
         // Direct url
         $groupDirect = new TelegramGroup(['chat_id' => 'https://t.me/+AbCdEfGhIjKlMnOp']);

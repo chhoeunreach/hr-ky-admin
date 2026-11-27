@@ -380,10 +380,35 @@ class TelegramGroup extends Model
             if (!empty($this->topic_id)) {
                 return "https://t.me/c/{$stripped}/{$this->topic_id}";
             }
-            return "https://t.me/c/{$stripped}";
+            return "https://t.me/c/{$stripped}/1";
         }
 
         return null;
+    }
+
+    /**
+     * Generate native Telegram app protocol link (tg://) to open Telegram client directly.
+     */
+    public function getTelegramAppUrl(?string $chatId = null): ?string
+    {
+        $id = trim((string) ($chatId ?? $this->chat_id));
+        if ($id === '') {
+            return null;
+        }
+
+        if (str_starts_with($id, 'http://') || str_starts_with($id, 'https://')) {
+            return $id;
+        }
+
+        if (str_starts_with($id, '@')) {
+            return 'tg://resolve?domain=' . ltrim($id, '@');
+        }
+
+        if (!empty($this->topic_id)) {
+            return "tg://openmessage?chat_id={$id}&message_id={$this->topic_id}";
+        }
+
+        return "tg://openmessage?chat_id={$id}";
     }
 
     /**

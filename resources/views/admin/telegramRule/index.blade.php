@@ -44,6 +44,7 @@
             <div id="telegramRuleFilterCollapse" class="collapse{{ $hasRuleFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-rules.index') }}" id="telegramRuleFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
+                    <input type="hidden" id="rule_per_page_hidden" name="per_page" value="{{ $filters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-4 col-md-6">
                             <label for="event_key" class="form-label">{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</label>
@@ -383,6 +384,8 @@
                 const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
                 if (perPageVal) {
                     params.set('per_page', perPageVal);
+                    const hiddenRulePerPage = document.getElementById('rule_per_page_hidden');
+                    if (hiddenRulePerPage) hiddenRulePerPage.value = perPageVal;
                 }
 
                 // Explicitly sync search from the directory search input
@@ -418,7 +421,10 @@
                     },
                     signal: ruleListController.signal
                 })
-                    .then((response) => response.text())
+                    .then((response) => {
+                        if (!response.ok) throw new Error('Fetch failed with status ' + response.status);
+                        return response.text();
+                    })
                     .then((html) => {
                         if (requestId !== ruleListRequestId) {
                             return;
@@ -428,7 +434,7 @@
                         const doc = parser.parseFromString(html, 'text/html');
 
                         if (!replaceTelegramRuleResults(doc)) {
-                            console.warn('Block replacement failed to locate target tables');
+                            window.location.href = requestUrl;
                             return;
                         }
 
@@ -438,7 +444,8 @@
                         if (error.name === 'AbortError') {
                             return;
                         }
-                        console.warn('Block refresh failed silently without page reload:', error);
+                        console.warn('Block refresh failed, falling back to page reload:', error);
+                        window.location.href = requestUrl;
                     })
                     .finally(() => {
                         if (requestId === ruleListRequestId) {
@@ -457,7 +464,7 @@
                 refreshTelegramRuleList({ resetPage: true });
             });
 
-            $(document).on('change select2:select', '#per_page', function () {
+            $(document).on('change', '#per_page', function () {
                 refreshTelegramRuleList({ resetPage: true });
             });
 
