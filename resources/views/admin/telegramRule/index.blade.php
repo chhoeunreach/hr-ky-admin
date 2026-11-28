@@ -116,7 +116,7 @@
                             </thead>
                             <tbody>
                             @forelse($rules as $key => $rule)
-                                <tr>
+                                <tr id="telegram-rule-row-{{ $rule->id }}" data-id="{{ $rule->id }}">
                                     <td>{{ $rules->firstItem() + $key }}</td>
                                     <td>
                                         <div class="fw-bold text-dark">{{ $rule->name }}</div>
@@ -341,8 +341,65 @@
                 }
             };
 
+            // In-place partial refresh of the Notification Rules block (No full page reload!)
+            window.refreshTelegramRuleBlock = function (highlightId) {
+                const listSection = document.getElementById('telegramRuleListSection');
+                if (!listSection) {
+                    window.location.reload();
+                    return;
+                }
+                listSection.style.transition = 'opacity 0.2s';
+                listSection.style.opacity = '0.5';
+
+                fetch(window.location.href, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to refresh list');
+                    return response.text();
+                })
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newSection = doc.getElementById('telegramRuleListSection');
+                    if (newSection) {
+                        listSection.innerHTML = newSection.innerHTML;
+                        listSection.style.opacity = '1';
+
+                        if (typeof feather !== 'undefined') feather.replace();
+
+                        const perPageRule = $('#per_page');
+                        if (perPageRule.length && !perPageRule.hasClass('select2-hidden-accessible')) {
+                            perPageRule.select2({ minimumResultsForSearch: Infinity });
+                        }
+
+                        if (highlightId) {
+                            const updatedRow = document.getElementById('telegram-rule-row-' + highlightId);
+                            if (updatedRow) {
+                                updatedRow.classList.add('table-success');
+                                updatedRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                setTimeout(() => {
+                                    updatedRow.classList.remove('table-success');
+                                }, 2500);
+                            }
+                        }
+                    } else {
+                        window.location.reload();
+                    }
+                })
+                .catch(() => {
+                    window.location.reload();
+                });
+            };
+
             document.addEventListener('telegram-rule:refresh', function () {
-                window.location.reload();
+                if (typeof window.refreshTelegramRuleBlock === 'function') {
+                    window.refreshTelegramRuleBlock();
+                } else {
+                    window.location.reload();
+                }
             });
 
             // Toggle Rule Status (Zero-reload AJAX)
@@ -387,13 +444,13 @@
             // Delete Rule (Zero-reload AJAX)
             $(document).on('click', '.btnDeleteRule', function (e) {
                 e.preventDefault();
-                let href = $(this).data('href');
+                let href = $(this).data('href') || $(this).attr('data-href');
                 let row = $(this).closest('tr');
 
                 Swal.fire({
                     title: '{{ __('index.delete') }}',
                     text: '{{ __('index.confirm_delete_telegram_rule') }}',
-                    icon: 'error',
+                    icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
                     confirmButtonText: '{{ __('index.yes') }}',
@@ -410,12 +467,17 @@
                         .then(data => {
                             showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_rule_deleted') }}');
                             if (data.status) {
-                                row.fadeOut(300, function () {
+                                row.css('background-color', '#fee2e2').fadeOut(300, function () {
                                     row.remove();
                                     const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
                                     if (count) {
                                         const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
                                         count.textContent = Math.max(0, cur - 1);
+                                    }
+                                    if ($('#telegramRuleTable tbody tr').length === 0) {
+                                        if (typeof window.refreshTelegramRuleBlock === 'function') {
+                                            window.refreshTelegramRuleBlock();
+                                        }
                                     }
                                 });
                             }
@@ -431,7 +493,9 @@
             $(document).on('click', '.btnTestRule', function (e) {
                 e.preventDefault();
                 let btn = $(this);
-                let href = btn.data('href');
+                let href = btn.data('href') || btn.attr('data-href');
+                let row = btn.closest('tr');
+                let ruleId = row.data('id');
 
                 Swal.fire({
                     title: '{{ __('index.send_test') }}',
@@ -452,8 +516,8 @@
                         .then(response => response.json())
                         .then(data => {
                             showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_test_sent') }}');
-                            if (data.status) {
-                                setTimeout(() => window.location.reload(), 1000);
+                            if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
+                                window.refreshTelegramRuleBlock(ruleId);
                             }
                         })
                         .catch(err => {

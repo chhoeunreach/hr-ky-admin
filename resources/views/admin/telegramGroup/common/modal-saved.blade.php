@@ -6,12 +6,13 @@
 </head>
 <body>
     <p>{{ $message }}</p>
-    <a href="javascript:void(0)" data-index-url="{{ route('admin.telegram-groups.index') }}" onclick="if(window.parent!==window)window.parent.postMessage({type:'telegram-group-action-saved',message:@json($message)},window.location.origin);">{{ __('index.close') ?? 'Close' }}</a>
+    <a href="javascript:void(0)" data-index-url="{{ route('admin.telegram-groups.index') }}" onclick="if(window.parent!==window)window.parent.postMessage({type:'telegram-group-action-saved',message:@json($message),id:@json($id ?? null)},window.location.origin);">{{ __('index.close') ?? 'Close' }}</a>
     <script>
         if (window.parent !== window) {
             window.parent.postMessage({
                 type: 'telegram-group-action-saved',
-                message: @json($message)
+                message: @json($message),
+                id: @json($id ?? null)
             }, window.location.origin);
         }
     </script>

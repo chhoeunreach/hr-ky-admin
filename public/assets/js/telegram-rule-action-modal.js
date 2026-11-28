@@ -121,8 +121,10 @@
 
         modalInstance().hide();
         showSavedToast(event.data.message);
-        setTimeout(() => {
-            window.location.reload();
-        }, 600);
+        if (typeof window.refreshTelegramRuleBlock === 'function') {
+            window.refreshTelegramRuleBlock(event.data?.id);
+        } else {
+            refreshBlock();
+        }
     });
 })();

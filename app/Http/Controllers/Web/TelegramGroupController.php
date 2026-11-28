@@ -89,17 +89,18 @@ class TelegramGroupController extends Controller
 
         try {
             DB::beginTransaction();
-            $this->telegramGroupRepo->store($this->prepareTelegramGroupData($request->validated()));
+            $record = $this->telegramGroupRepo->store($this->prepareTelegramGroupData($request->validated()));
             DB::commit();
 
             if ($request->input('telegram_group_modal') === '1') {
-                session()->flash('success', 'Telegram group created successfully.');
-                return view($this->view . 'common.modal-saved', ['message' => 'Telegram group created successfully.']);
+                $msg = __('index.telegram_group_created');
+                session()->flash('success', $msg);
+                return view($this->view . 'common.modal-saved', ['message' => $msg, 'id' => $record->id ?? null]);
             }
 
             return redirect()
                 ->route('admin.telegram-groups.index')
-                ->with('success', 'Telegram group created successfully.');
+                ->with('success', __('index.telegram_group_created'));
         } catch (Exception $exception) {
             DB::rollBack();
 
@@ -145,13 +146,14 @@ class TelegramGroupController extends Controller
             DB::commit();
 
             if ($request->input('telegram_group_modal') === '1') {
-                session()->flash('success', 'Telegram group updated successfully.');
-                return view('admin.telegramGroup.common.modal-saved', ['message' => 'Telegram group updated successfully.']);
+                $msg = __('index.telegram_group_updated');
+                session()->flash('success', $msg);
+                return view('admin.telegramGroup.common.modal-saved', ['message' => $msg, 'id' => $telegramGroup->id]);
             }
 
             return redirect()
                 ->route('admin.telegram-groups.index')
-                ->with('success', 'Telegram group updated successfully.');
+                ->with('success', __('index.telegram_group_updated'));
         } catch (Exception $exception) {
             DB::rollBack();
 

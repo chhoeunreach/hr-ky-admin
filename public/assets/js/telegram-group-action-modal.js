@@ -117,15 +117,17 @@
         });
     });
 
-    // Handle postMessage from saved modal with clean reload
+    // Handle postMessage from saved modal with seamless in-place block refresh
     window.addEventListener('message', event => {
         if (event.origin !== window.location.origin) return;
         if (event.data?.type === 'telegram-group-action-saved') {
             modalInstance().hide();
             showSavedToast(event.data?.message);
-            setTimeout(() => {
-                window.location.reload();
-            }, 600);
+            if (typeof window.refreshTelegramGroupBlock === 'function') {
+                window.refreshTelegramGroupBlock(event.data?.id);
+            } else {
+                refreshBlock();
+            }
         }
     });
 
