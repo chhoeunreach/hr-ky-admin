@@ -138,7 +138,15 @@ class TelegramNotificationRuleController extends Controller
         $validated['is_silent'] = $request->boolean('is_silent', false);
         $validated['is_active'] = $request->boolean('is_active', true);
 
-        TelegramNotificationRule::create($validated);
+        $rule = TelegramNotificationRule::create($validated);
+
+        if ($request->input('telegram_rule_modal') === '1' || $request->header('X-Telegram-Rule-Modal') === '1') {
+            session()->flash('success', 'វិធានការបញ្ជូនសារថ្មីត្រូវបានបង្កើតដោយជោគជ័យ (Notification Rule created successfully).');
+            return view('admin.telegramRule.common.modal-saved', [
+                'message' => 'វិធានការបញ្ជូនសារថ្មីត្រូវបានបង្កើតដោយជោគជ័យ (Notification Rule created successfully).',
+                'rule' => $rule,
+            ]);
+        }
 
         return redirect()
             ->route('admin.telegram-rules.index')

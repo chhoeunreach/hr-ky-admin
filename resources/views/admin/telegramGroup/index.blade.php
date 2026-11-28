@@ -2,6 +2,16 @@
 
 @section('title', 'Telegram Groups')
 
+@section('button')
+    @can('create_telegram_group')
+        <a href="{{ route('admin.telegram-groups.create') }}" data-open-telegram-group-modal data-telegram-group-modal-title="{{ __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group ថ្មី' }}">
+            <button class="btn btn-sm btn-primary">
+                <i class="link-icon" data-feather="plus"></i> {{ __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group' }}
+            </button>
+        </a>
+    @endcan
+@endsection
+
 @section('main-content')
     <section class="content">
         @include('admin.section.flash_message')
@@ -67,6 +77,9 @@
                     'directoryIcon' => 'send',
                     'directoryPermission' => 'create_telegram_group',
                     'directoryAddUrl' => route('admin.telegram-groups.create'),
+                    'directoryAddTelegramGroupModal' => true,
+                    'directoryAddModalTitle' => __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group ថ្មី',
+                    'directoryAddLabel' => __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group',
                     'directoryDefaultSize' => '10',
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],

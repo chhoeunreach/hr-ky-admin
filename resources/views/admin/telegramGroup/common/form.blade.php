@@ -144,14 +144,14 @@
     <input type="hidden" name="send_selfie" value="1">
 
     {{-- Submit Buttons --}}
-    <div class="col-12 mt-2 mb-4">
+    <div class="col-12 mt-3 mb-3 d-flex align-items-center gap-2">
         <button type="submit" class="btn btn-primary px-4">
             <i class="link-icon" data-feather="check-circle"></i>
             {{ isset($telegramGroup) ? __('index.update') : __('index.save') }}
         </button>
-        <a href="{{ route('admin.telegram-groups.index') }}" class="btn btn-secondary ms-2">
+        <button type="button" class="btn btn-secondary px-3" onclick="if(window.parent !== window){try{window.parent.bootstrap.Modal.getInstance(window.parent.document.getElementById('telegramGroupActionModal')).hide();}catch(e){window.location.href='{{ route('admin.telegram-groups.index') }}';}}else{window.location.href='{{ route('admin.telegram-groups.index') }}';}">
             {{ __('index.cancel') }}
-        </a>
+        </button>
     </div>
 </div>
 

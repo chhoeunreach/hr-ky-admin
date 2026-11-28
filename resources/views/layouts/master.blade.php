@@ -2,7 +2,7 @@
     $locale = \Illuminate\Support\Facades\App::getLocale();
     $themeColor = \App\Helpers\AppHelper::getThemeColor();
 @endphp
-@if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1' || request('telegram_group_modal') === '1')
+@if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1' || request('telegram_group_modal') === '1' || request('telegram_rule_modal') === '1')
     @section('embedded', '1')
 @endif
 <!DOCTYPE html>
@@ -85,11 +85,13 @@
     @include('admin.section.head_links')
     @include('admin.section.typography')
     @yield('styles')
-    @if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1' || request('telegram_group_modal') === '1')
+    @if(request('asset_modal') === '1' || request('employee_modal') === '1' || request('branch_modal') === '1' || request('department_modal') === '1' || request('post_modal') === '1' || request('telegram_group_modal') === '1' || request('telegram_rule_modal') === '1')
         <style>
-            .page-wrapper { margin-left: 0 !important; width: 100% !important; }
-            .page-content { padding: 1rem !important; margin-top: 0 !important; }
+            .page-wrapper { margin-left: 0 !important; width: 100% !important; background: transparent !important; }
+            .page-content { padding: 0.75rem 1rem !important; margin-top: 0 !important; background: transparent !important; }
             .content { margin: 0 !important; }
+            .card { border: 0 !important; box-shadow: none !important; background: transparent !important; }
+            .card-body { padding: 0 !important; }
         </style>
     @endif
 </head>
@@ -104,13 +106,13 @@
     @else
         @include('admin.section.sidebar')
     @endif
-    <div class="page-wrapper">
+    <div class="page-wrapper @hasSection('embedded') full-page @endif" @hasSection('embedded') style="margin-left: 0 !important; width: 100% !important; min-width: 0 !important; padding: 0 !important; background: #fff !important;" @endif>
         @hasSection('embedded')
         @else
             @include('admin.section.nav')
         @endif
 
-        <div class="page-content">
+        <div class="page-content @hasSection('embedded') p-3 m-0 @endif" @hasSection('embedded') style="margin-left: 0 !important; width: 100% !important; padding: 18px 24px !important; min-height: auto !important; background: #fff !important;" @endif>
             @hasSection('embedded')
             @else
                 @include('admin.section.page_header')

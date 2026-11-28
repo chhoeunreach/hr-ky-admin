@@ -18,8 +18,8 @@
         @unless(request('telegram_rule_modal') === '1')
             @include('admin.telegramRule.common.breadcrumb', ['title' => __('index.edit')])
         @endunless
-        <div class="card">
-            <div class="card-body pb-0">
+        <div class="card @if(request('telegram_rule_modal') === '1') border-0 shadow-none bg-transparent @endif">
+            <div class="card-body @if(request('telegram_rule_modal') === '1') p-0 @else pb-0 @endif">
                 <form class="forms-sample" action="{{ route('admin.telegram-rules.update', $rule->id) }}" method="POST">
                     @csrf
                     @method('PUT')

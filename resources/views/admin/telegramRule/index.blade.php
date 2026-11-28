@@ -10,7 +10,7 @@
                 <i class="link-icon" data-feather="refresh-cw"></i> ទាញទិន្នន័យដើមពី Chat IDs
             </button>
         </form>
-        <a href="{{ route('admin.telegram-rules.create') }}">
+        <a href="{{ route('admin.telegram-rules.create') }}" data-open-telegram-rule-modal data-telegram-rule-modal-title="{{ __('index.create_rule') ?? 'បង្កើតវិធានការថ្មី' }}">
             <button class="btn btn-sm btn-primary">
                 <i class="link-icon" data-feather="plus"></i> {{ __('index.create_rule') ?? 'បង្កើតវិធានការថ្មី' }}
             </button>
@@ -88,6 +88,9 @@
                     'directoryIcon' => 'bell',
                     'directoryPermission' => 'create_telegram_group',
                     'directoryAddUrl' => route('admin.telegram-rules.create'),
+                    'directoryAddTelegramRuleModal' => true,
+                    'directoryAddModalTitle' => __('index.add_telegram_rule') ?? 'បង្កើតវិធានការថ្មី (Create Notification Rule)',
+                    'directoryAddLabel' => __('index.add_telegram_rule') ?? 'បន្ថែមវិធានការថ្មី',
                     'directoryDefaultSize' => '10',
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],

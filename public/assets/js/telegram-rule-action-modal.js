@@ -72,6 +72,19 @@
         }
         if (!child) return;
 
+        try {
+            const style = child.createElement('style');
+            style.textContent = `
+                html, body { background: #fff !important; }
+                .main-wrapper { min-height: 0 !important; }
+                .page-wrapper { margin-left: 0 !important; width: 100% !important; min-width: 0 !important; padding: 0 !important; }
+                .page-content { padding: 18px 24px !important; margin: 0 !important; min-height: auto !important; }
+                .card { border: none !important; box-shadow: none !important; background: transparent !important; }
+                .card-body { padding: 0 !important; }
+            `;
+            child.head.appendChild(style);
+        } catch (_) {}
+
         child.addEventListener('submit', event => {
             const form = event.target;
             const action = new URL(form.action, frame.src);
@@ -108,6 +121,8 @@
 
         modalInstance().hide();
         showSavedToast(event.data.message);
-        refreshBlock();
+        setTimeout(() => {
+            window.location.reload();
+        }, 600);
     });
 })();

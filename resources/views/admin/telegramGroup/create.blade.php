@@ -18,8 +18,8 @@
         @unless(request('telegram_group_modal') === '1')
             @include('admin.telegramGroup.common.breadcrumb', ['title' => __('index.create')])
         @endunless
-        <div class="card">
-            <div class="card-body pb-0">
+        <div class="card @if(request('telegram_group_modal') === '1') border-0 shadow-none bg-transparent @endif">
+            <div class="card-body @if(request('telegram_group_modal') === '1') p-0 @else pb-0 @endif">
                 <form class="forms-sample" action="{{ route('admin.telegram-groups.store') }}" method="POST">
                     @csrf
                     @if(request('telegram_group_modal') === '1')

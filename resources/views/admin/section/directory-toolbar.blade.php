@@ -9,7 +9,7 @@
         @if($directoryAddModal ?? false)
             <button type="button" class="directory-add border-0" data-bs-toggle="modal" data-bs-target="#{{ $directoryAddModal }}"><i data-feather="plus"></i>{{ $directoryAddLabel ?? __('index.add') }}</button>
         @else
-            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif @if($directoryAddNoticeModal ?? false) data-open-notice-form @endif @if($directoryAddRequestForm ?? false) data-open-request-form @endif @if($directoryAddEmployeeForm ?? false) data-open-employee-form @endif @if($directoryAddModalTitle ?? false) data-request-modal-title="{{ $directoryAddModalTitle }}" @endif><i data-feather="plus"></i>{{ $directoryAddLabel ?? __('index.add') }}</a>
+            <a class="directory-add" href="{{ $directoryAddUrl }}" @if($directoryAddRequestModal ?? false) data-open-leave-request-form @endif @if($directoryAddNoticeModal ?? false) data-open-notice-form @endif @if($directoryAddRequestForm ?? false) data-open-request-form @endif @if($directoryAddEmployeeForm ?? false) data-open-employee-form @endif @if($directoryAddTelegramGroupModal ?? false) data-open-telegram-group-modal data-telegram-group-modal-title="{{ $directoryAddModalTitle ?? $directoryAddLabel ?? 'បន្ថែម Channel/Group ថ្មី' }}" @endif @if($directoryAddTelegramRuleModal ?? false) data-open-telegram-rule-modal data-telegram-rule-modal-title="{{ $directoryAddModalTitle ?? $directoryAddLabel ?? 'បន្ថែមវិធានការថ្មី' }}" @endif @if($directoryAddModalTitle ?? false) data-request-modal-title="{{ $directoryAddModalTitle }}" @endif><i data-feather="plus"></i>{{ $directoryAddLabel ?? __('index.add') }}</a>
         @endif
     @endif
 </div>
