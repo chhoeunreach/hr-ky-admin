@@ -174,22 +174,29 @@
                                             <span class="text-danger small"><i data-feather="alert-triangle"></i> {{ __('index.channel_deleted') }}</span>
                                         @else
                                             @foreach(array_slice($validChannels, 0, 2) as $ch)
-                                                @php $chUrl = $ch->getTelegramUrl(); @endphp
-                                                @if($chUrl)
-                                                    <a href="{{ $chUrl }}" target="_blank" rel="noopener noreferrer" class="badge bg-light text-primary border text-decoration-none mb-1 d-inline-flex align-items-center gap-1" title="Open {{ $ch->name }} in Telegram: {{ $chUrl }}">
-                                                        <i data-feather="external-link" style="width: 10px; height: 10px;"></i> {{ $ch->name }}
-                                                        @if($ch->topic_id)
-                                                            <small class="text-muted">#{{ $ch->topic_id }}</small>
-                                                        @endif
-                                                    </a>
-                                                @else
-                                                    <span class="badge bg-light text-dark border mb-1">
-                                                        {{ $ch->name }}
-                                                        @if($ch->topic_id)
-                                                            <small class="text-primary">#{{ $ch->topic_id }}</small>
-                                                        @endif
-                                                    </span>
-                                                @endif
+                                                @php
+                                                    $chUrl = $ch->getTelegramUrl();
+                                                    $chAppUrl = $ch->getTelegramAppUrl();
+                                                @endphp
+                                                <button type="button"
+                                                        class="badge bg-light text-primary border text-decoration-none mb-1 d-inline-flex align-items-center gap-1 openTelegramChatModalBtn"
+                                                        style="cursor: pointer;"
+                                                        data-chat-name="{{ $ch->name }}"
+                                                        data-chat-id="{{ $ch->chat_id }}"
+                                                        data-topic-id="{{ $ch->topic_id ?? '' }}"
+                                                        data-invite-link="{{ $ch->invite_link ?? '' }}"
+                                                        data-web-url="{{ $chUrl ?? '' }}"
+                                                        data-app-url="{{ $chAppUrl ?? '' }}"
+                                                        data-test-url="{{ route('admin.telegram-groups.test', $ch->id) }}"
+                                                        data-group-id="{{ $ch->id }}"
+                                                        data-is-active="{{ $ch->is_active ? '1' : '0' }}"
+                                                        onclick="window.openTelegramChatModal && window.openTelegramChatModal(this, event); return false;"
+                                                        title="{{ __('index.open_chat') }}: {{ $ch->name }}">
+                                                    <i data-feather="message-circle" style="width: 10px; height: 10px;"></i> {{ $ch->name }}
+                                                    @if($ch->topic_id)
+                                                        <small class="text-muted">#{{ $ch->topic_id }}</small>
+                                                    @endif
+                                                </button>
                                             @endforeach
                                             @if(count($validChannels) > 2)
                                                 <span class="badge bg-secondary mb-1">+{{ count($validChannels) - 2 }} {{ __('index.more') }}</span>
@@ -308,6 +315,7 @@
         </div>
 
         @include('admin.telegramRule.common.form-modal')
+        @include('admin.telegramGroup.common.chat-modal')
     </section>
 @endsection
 
@@ -331,7 +339,10 @@
                 testSent: @json(__('index.telegram_test_sent')),
                 testFailed: @json(__('index.telegram_test_failed')),
                 requestFailed: @json(__('index.dialog_request_failed')),
-                failedToDelete: @json(__('index.failed_to_delete') ?: 'មិនអាចលុបបានទេ')
+                failedToDelete: @json(__('index.failed_to_delete') ?: 'មិនអាចលុបបានទេ'),
+                active: @json(__('index.active')),
+                inactive: @json(__('index.inactive')),
+                copiedToClipboard: @json(__('index.copied_to_clipboard') ?: 'បានចម្លងរួចរាល់')
             };
 
             const showToast = function (icon, title) {
@@ -606,6 +617,117 @@
                     window.location.reload();
                 });
             };
+
+            // Copy helper with fallback
+            window.copyTelegramText = function (text, successMsg) {
+                if (!text) return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        showToast('success', successMsg || I18N.copiedToClipboard);
+                    }).catch(function () {
+                        window.prompt(successMsg || 'Copy:', text);
+                    });
+                } else {
+                    window.prompt(successMsg || 'Copy:', text);
+                }
+            };
+
+            // Open Telegram Chat Modal
+            window.openTelegramChatModal = function (triggerEl, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const el = $(triggerEl);
+                const chatName = el.attr('data-chat-name') || '';
+                const chatId = el.attr('data-chat-id') || '';
+                const topicId = el.attr('data-topic-id') || '';
+                const inviteLink = el.attr('data-invite-link') || '';
+                const webUrl = el.attr('data-web-url') || '';
+                const appUrl = el.attr('data-app-url') || '';
+                const testUrl = el.attr('data-test-url') || '';
+                const groupId = el.attr('data-group-id') || '';
+                const isActive = el.attr('data-is-active') === '1';
+
+                $('#telegramChatModalTitle').text(chatName ? chatName : @json(__('index.telegram_channel_or_group')));
+                $('#telegramChatModalName').text(chatName || '—');
+                $('#telegramChatModalChatId').text(chatId || '—');
+
+                const statusBadge = $('#telegramChatModalStatusBadge');
+                if (isActive) {
+                    statusBadge.removeClass('bg-danger').addClass('bg-success').text(I18N.active);
+                } else {
+                    statusBadge.removeClass('bg-success').addClass('bg-danger').text(I18N.inactive);
+                }
+
+                const topicBadge = $('#telegramChatModalTopicBadge');
+                if (topicId) {
+                    topicBadge.text('Topic #' + topicId).removeClass('d-none');
+                } else {
+                    topicBadge.addClass('d-none');
+                }
+
+                const inviteWrap = $('#telegramChatModalInviteWrap');
+                const inviteLinkEl = $('#telegramChatModalInviteLink');
+                if (inviteLink) {
+                    inviteLinkEl.text(inviteLink).attr('href', inviteLink);
+                    inviteWrap.removeClass('d-none');
+                } else {
+                    inviteWrap.addClass('d-none');
+                }
+
+                const openWebBtn = $('#telegramChatOpenWebBtn');
+                if (webUrl) {
+                    openWebBtn.attr('href', webUrl).removeClass('d-none');
+                } else {
+                    openWebBtn.addClass('d-none');
+                }
+
+                const openAppBtn = $('#telegramChatOpenAppBtn');
+                if (appUrl) {
+                    openAppBtn.attr('href', appUrl).removeClass('d-none');
+                } else {
+                    openAppBtn.addClass('d-none');
+                }
+
+                const testBtn = $('#telegramChatModalSendTestBtn');
+                if (testUrl) {
+                    testBtn.attr('data-test-url', testUrl).attr('data-group-id', groupId).removeClass('d-none');
+                } else {
+                    testBtn.addClass('d-none');
+                }
+
+                // Modal iFrame loading
+                const iframe = document.getElementById('telegramChatModalIframe');
+                const loader = document.getElementById('telegramChatIframeLoader');
+                if (iframe) {
+                    if (webUrl) {
+                        if (loader) loader.style.display = 'block';
+                        iframe.style.opacity = '0';
+                        iframe.src = webUrl;
+                        iframe.onload = function () {
+                            if (loader) loader.style.display = 'none';
+                            iframe.style.opacity = '1';
+                        };
+                    } else {
+                        iframe.src = 'about:blank';
+                        if (loader) loader.style.display = 'none';
+                    }
+                }
+
+                const modalEl = document.getElementById('telegramChatModal');
+                if (modalEl) {
+                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modalInstance.show();
+                    } else {
+                        $(modalEl).modal('show');
+                    }
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+                }
+            };
         })();
 
         $(document).ready(function () {
@@ -633,6 +755,71 @@
             });
             $(document).on('change', '.toggleRuleStatus', function (e) {
                 window.toggleTelegramRuleStatus(this, e);
+            });
+
+            // Delegated click listeners for Chat Modal
+            $(document).on('click', '.openTelegramChatModalBtn', function (event) {
+                window.openTelegramChatModal(this, event);
+            });
+
+            // Copy Chat ID in modal
+            $(document).on('click', '#telegramChatModalCopyChatIdBtn', function () {
+                const text = $('#telegramChatModalChatId').text().trim();
+                if (text && text !== '—') {
+                    window.copyTelegramText(text, I18N.copiedToClipboard);
+                }
+            });
+
+            // Copy Invite Link in modal
+            $(document).on('click', '#telegramChatModalCopyLinkBtn', function () {
+                const text = $('#telegramChatModalInviteLink').text().trim();
+                if (text) {
+                    window.copyTelegramText(text, I18N.copiedToClipboard);
+                }
+            });
+
+            // Send Test inside modal
+            $(document).on('click', '#telegramChatModalSendTestBtn', function (event) {
+                const btn = $(this);
+                const testUrl = btn.attr('data-test-url');
+                const groupId = btn.attr('data-group-id');
+                if (!testUrl || btn.data('is-testing')) return;
+
+                btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
+                const originalHtml = btn.html();
+                btn.html('<span class="spinner-border spinner-border-sm me-1" role="status"></span> ' + @json(__('index.sending') ?: 'កំពុងផ្ញើ...'));
+
+                fetch(testUrl, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    showToast(data.status ? 'success' : 'error', data.message || (data.status ? I18N.testSent : I18N.testFailed));
+                    if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
+                        window.refreshTelegramRuleBlock();
+                    }
+                })
+                .catch(err => {
+                    showToast('error', 'Error sending test message.');
+                })
+                .finally(() => {
+                    btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '').html(originalHtml);
+                    if (typeof feather !== 'undefined') feather.replace();
+                });
+            });
+
+            // Clear iframe on modal close to release resources
+            $('#telegramChatModal').on('hidden.bs.modal', function () {
+                const iframe = document.getElementById('telegramChatModalIframe');
+                if (iframe) {
+                    iframe.src = 'about:blank';
+                }
+                const loader = document.getElementById('telegramChatIframeLoader');
+                if (loader) loader.style.display = 'block';
             });
 
             document.addEventListener('telegram-rule:refresh', function () {

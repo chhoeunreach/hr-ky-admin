@@ -3937,4 +3937,12 @@ return [
     'failed_to_delete' => 'Failed to delete',
     'delete_confirm_button' => 'Delete',
     'deny_button' => 'Deny',
+    'open_in_telegram_web' => 'Open in Telegram Web',
+    'open_in_telegram_app' => 'Open in Telegram App',
+    'copy_link' => 'Copy Link',
+    'copy_chat_id' => 'Copy Chat ID',
+    'copied_to_clipboard' => 'Copied to clipboard',
+    'telegram_web_preview' => 'Telegram Web Preview',
+    'telegram_iframe_hint' => 'If restricted by browser, click "Open in Telegram Web" or "Open in Telegram App" above.',
+    'telegram_chat_details' => 'Telegram Chat Details',
 ];

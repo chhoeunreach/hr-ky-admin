@@ -4003,4 +4003,12 @@ return [
     'failed_to_delete' => 'មិនអាចលុបបានទេ',
     'delete_confirm_button' => 'លុប',
     'deny_button' => 'បដិសេធ',
+    'open_in_telegram_web' => 'បើកក្នុង Telegram Web',
+    'open_in_telegram_app' => 'បើកតាមកម្មវិធី Telegram',
+    'copy_link' => 'ចម្លង Link',
+    'copy_chat_id' => 'ចម្លង Chat ID',
+    'copied_to_clipboard' => 'បានចម្លងរួចរាល់',
+    'telegram_web_preview' => 'ការបង្ហាញ Telegram Web',
+    'telegram_iframe_hint' => 'ប្រសិនបើ Browser រារាំង សូមចុចប៊ូតុង "បើកក្នុង Telegram Web" ឬ "បើកតាមកម្មវិធី Telegram" ខាងលើ។',
+    'telegram_chat_details' => 'ព័ត៌មានលម្អិត Chat',
 ];
