@@ -173,7 +173,10 @@
                                     <td class="text-center">
                                         @can('toggle_telegram_group_status')
                                             <label class="switch">
-                                                <input class="toggleStatus" href="{{ route('admin.telegram-groups.toggle-status', $telegramGroup->id) }}"
+                                                <input class="toggleStatus"
+                                                       data-href="{{ route('admin.telegram-groups.toggle-status', $telegramGroup->id) }}"
+                                                       href="{{ route('admin.telegram-groups.toggle-status', $telegramGroup->id) }}"
+                                                       onchange="window.toggleTelegramGroupStatus && window.toggleTelegramGroupStatus(this, event);"
                                                        type="checkbox" {{ $telegramGroup->is_active ? 'checked' : '' }}>
                                                 <span class="slider round"></span>
                                             </label>
@@ -191,8 +194,9 @@
                                                         <a href="javascript:void(0)"
                                                            class="btn btn-xs btn-outline-primary sendTelegramTest"
                                                            data-href="{{ route('admin.telegram-groups.test', $telegramGroup->id) }}"
+                                                           onclick="window.sendTelegramGroupTest && window.sendTelegramGroupTest(this, event); return false;"
                                                            title="{{ __('index.send_test') }}">
-                                                            <i class="link-icon" data-feather="send" style="width: 13px; height: 13px;"></i> {{ __('index.send_test') }}
+                                                            <i class="link-icon" data-feather="send" style="width: 13px; height: 13px; pointer-events: none;"></i> {{ __('index.send_test') }}
                                                         </a>
                                                         @if($telegramGroup->last_tested_at)
                                                             <div class="mt-1" style="font-size: 10px;">
@@ -210,15 +214,16 @@
                                                        data-open-telegram-group-modal
                                                        data-telegram-group-modal-title="{{ __('index.edit') }}: {{ $telegramGroup->name }}"
                                                        title="{{ __('index.edit') }}">
-                                                        <i class="link-icon" data-feather="edit" style="width: 13px; height: 13px;"></i>
+                                                        <i class="link-icon" data-feather="edit" style="width: 13px; height: 13px; pointer-events: none;"></i>
                                                     </a>
                                                 @endcan
                                                 @can('delete_telegram_group')
                                                     <a href="javascript:void(0)"
                                                        class="btn btn-xs btn-outline-danger deleteTelegramGroup"
                                                        data-href="{{ route('admin.telegram-groups.delete', $telegramGroup->id) }}"
+                                                       onclick="window.deleteTelegramGroupItem && window.deleteTelegramGroupItem(this, event); return false;"
                                                        title="{{ __('index.delete') }}">
-                                                        <i class="link-icon" data-feather="trash-2" style="width: 13px; height: 13px;"></i>
+                                                        <i class="link-icon" data-feather="trash-2" style="width: 13px; height: 13px; pointer-events: none;"></i>
                                                     </a>
                                                 @endcan
                                             </div>
@@ -284,7 +289,36 @@
                         icon: icon || 'success',
                         title: title
                     });
+                } else if (typeof toastr !== 'undefined') {
+                    toastr[icon || 'success'](title);
+                } else {
+                    alert(title);
                 }
+            };
+
+            // Multi-tier confirmation dialog
+            window.askTelegramGroupConfirm = function (title, message, isDestructive) {
+                if (window.AppDialog && typeof window.AppDialog.confirm === 'function') {
+                    return window.AppDialog.confirm(message, {
+                        title: title,
+                        icon: isDestructive ? 'warning' : 'question',
+                        confirmButtonText: '{{ __('index.yes') }}',
+                        cancelButtonText: '{{ __('index.no') }}'
+                    });
+                }
+                if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                    return Swal.fire({
+                        title: title,
+                        text: message,
+                        icon: isDestructive ? 'warning' : 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: isDestructive ? '#d33' : '#0b5fff',
+                        confirmButtonText: '{{ __('index.yes') }}',
+                        cancelButtonText: '{{ __('index.no') }}',
+                        allowOutsideClick: false
+                    }).then(res => res.isConfirmed);
+                }
+                return Promise.resolve(window.confirm(message || title));
             };
 
             // In-place partial refresh of the Channels / Groups block (No full page reload!)
@@ -340,25 +374,134 @@
                 });
             };
 
-            // Toggle Status (Zero-reload AJAX)
-            $(document).on('change', '.toggleStatus', function (event) {
-                event.preventDefault();
-                const checkbox = $(this);
-                const isChecked = checkbox.prop('checked');
-                const href = checkbox.attr('href') || checkbox.data('href');
+            // Direct Global Delete Handler (Zero-reload AJAX with row removal)
+            window.deleteTelegramGroupItem = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const btn = $(el);
+                if (btn.data('is-deleting')) return false;
 
-                Swal.fire({
-                    title: '{{ __('index.are_you_sure_change_status') }}',
-                    showCancelButton: true,
-                    confirmButtonText: `{{ __('index.yes') }}`,
-                    cancelButtonText: `{{ __('index.no') }}`,
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
+                const href = btn.attr('data-href') || btn.data('href');
+                const row = btn.closest('tr');
+                if (!href) return false;
+
+                const confirmTitle = '{{ __('index.delete') }}';
+                const confirmText = '{{ __('index.confirm_delete_telegram_group') }}';
+
+                window.askTelegramGroupConfirm(confirmTitle, confirmText, true).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => {
+                                throw new Error(err.message || 'Delete failed');
+                            }).catch(e => {
+                                throw new Error(e.message || 'Failed with status ' + response.status);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_group_deleted') }}');
+                        if (data.status) {
+                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
+                                row.remove();
+                                const countEl = document.querySelector('[data-directory-count="telegramGroupTable"]');
+                                if (countEl) {
+                                    const cur = parseInt(countEl.textContent.replace(/,/g, ''), 10) || 0;
+                                    countEl.textContent = Math.max(0, cur - 1);
+                                }
+                                if ($('#telegramGroupTable tbody tr').length === 0) {
+                                    if (typeof window.refreshTelegramGroupBlock === 'function') {
+                                        window.refreshTelegramGroupBlock();
+                                    }
+                                }
+                            });
+                        } else {
+                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        }
+                    })
+                    .catch(err => {
+                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        showToast('error', err.message || 'Failed to delete Telegram group.');
+                    });
+                });
+
+                return false;
+            };
+
+            // Direct Global Send Test Handler (Zero-reload AJAX with badge update)
+            window.sendTelegramGroupTest = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const btn = $(el);
+                if (btn.data('is-testing')) return false;
+
+                const href = btn.attr('data-href') || btn.data('href');
+                const row = btn.closest('tr');
+                const groupId = row.data('id');
+                if (!href) return false;
+
+                const confirmTitle = '{{ __('index.send_test') }}';
+                const confirmText = '{{ __('index.confirm_test_telegram_group') }}';
+
+                window.askTelegramGroupConfirm(confirmTitle, confirmText, false).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || (data.status ? '{{ __('index.telegram_test_sent') }}' : '{{ __('index.telegram_test_failed') }}'));
+                        if (data.status && typeof window.refreshTelegramGroupBlock === 'function') {
+                            window.refreshTelegramGroupBlock(groupId);
+                        }
+                    })
+                    .catch(err => {
+                        showToast('error', 'Error sending test message.');
+                    })
+                    .finally(() => {
+                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
+                    });
+                });
+
+                return false;
+            };
+
+            // Direct Global Toggle Status Handler
+            window.toggleTelegramGroupStatus = function (checkboxEl, event) {
+                const checkbox = $(checkboxEl);
+                const isChecked = checkbox.prop('checked');
+                const href = checkbox.attr('data-href') || checkbox.attr('href');
+                if (!href) return;
+
+                window.askTelegramGroupConfirm('{{ __('index.status') }}', '{{ __('index.are_you_sure_change_status') }}', false).then(confirmed => {
+                    if (confirmed) {
                         fetch(href, {
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                             }
                         })
                         .then(response => {
@@ -376,111 +519,17 @@
                         checkbox.prop('checked', !isChecked);
                     }
                 });
-            });
+            };
 
-            // Delete Telegram Group (Smooth in-place row removal with Zero page reload)
+            // Delegated click listeners (Fallback)
             $(document).on('click', '.deleteTelegramGroup', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const btn = $(this);
-                const href = btn.data('href') || btn.attr('data-href');
-                const row = btn.closest('tr');
-
-                if (!href) return;
-
-                Swal.fire({
-                    title: '{{ __('index.delete') }}',
-                    text: '{{ __('index.confirm_delete_telegram_group') }}',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: '{{ __('index.yes') }}',
-                    cancelButtonText: '{{ __('index.no') }}',
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        btn.addClass('disabled');
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                return response.json().then(err => { throw new Error(err.message || 'Delete failed'); });
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_group_deleted') }}');
-                            if (data.status) {
-                                row.css('background-color', '#fee2e2').fadeOut(400, function () {
-                                    row.remove();
-                                    const countEl = document.querySelector('[data-directory-count="telegramGroupTable"]');
-                                    if (countEl) {
-                                        const cur = parseInt(countEl.textContent.replace(/,/g, ''), 10) || 0;
-                                        countEl.textContent = Math.max(0, cur - 1);
-                                    }
-                                    if ($('#telegramGroupTable tbody tr').length === 0) {
-                                        if (typeof window.refreshTelegramGroupBlock === 'function') {
-                                            window.refreshTelegramGroupBlock();
-                                        }
-                                    }
-                                });
-                            }
-                        })
-                        .catch(err => {
-                            showToast('error', err.message || 'Failed to delete Telegram group.');
-                        })
-                        .finally(() => {
-                            btn.removeClass('disabled');
-                        });
-                    }
-                });
+                window.deleteTelegramGroupItem(this, event);
             });
-
-            // Send Quick Test (Zero-reload AJAX with badge update)
             $(document).on('click', '.sendTelegramTest', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                const btn = $(this);
-                const href = btn.data('href') || btn.attr('data-href');
-                const row = btn.closest('tr');
-                const groupId = row.data('id');
-
-                Swal.fire({
-                    title: '{{ __('index.send_test') }}',
-                    text: '{{ __('index.confirm_test_telegram_group') }}',
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonText: `{{ __('index.yes') }}`,
-                    cancelButtonText: `{{ __('index.no') }}`,
-                    allowOutsideClick: false
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        btn.addClass('disabled');
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || (data.status ? '{{ __('index.telegram_test_sent') }}' : '{{ __('index.telegram_test_failed') }}'));
-                            if (data.status && typeof window.refreshTelegramGroupBlock === 'function') {
-                                window.refreshTelegramGroupBlock(groupId);
-                            }
-                        })
-                        .catch(err => {
-                            showToast('error', 'Error sending test message.');
-                        })
-                        .finally(() => {
-                            btn.removeClass('disabled');
-                        });
-                    }
-                });
+                window.sendTelegramGroupTest(this, event);
+            });
+            $(document).on('change', '.toggleStatus', function (event) {
+                window.toggleTelegramGroupStatus(this, event);
             });
 
             const perPage = $('#per_page');
@@ -496,7 +545,6 @@
                 }
             });
         });
-    </script>
     </script>
     <script src="{{ asset('assets/js/telegram-group-action-modal.js') }}?v={{ filemtime(public_path('assets/js/telegram-group-action-modal.js')) }}"></script>
 @endsection

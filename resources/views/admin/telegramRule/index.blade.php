@@ -212,6 +212,7 @@
                                             <label class="switch mb-0">
                                                 <input class="toggleRuleStatus"
                                                        data-href="{{ route('admin.telegram-rules.toggle-status', $rule->id) }}"
+                                                       onchange="window.toggleTelegramRuleStatus && window.toggleTelegramRuleStatus(this, event);"
                                                        type="checkbox" {{ $rule->is_active ? 'checked' : '' }}>
                                                 <span class="slider round"></span>
                                             </label>
@@ -228,8 +229,9 @@
                                                     <a href="javascript:void(0)"
                                                        data-href="{{ route('admin.telegram-rules.test', $rule->id) }}"
                                                        class="btn btn-xs btn-outline-primary btnTestRule"
+                                                       onclick="window.sendTelegramRuleTest && window.sendTelegramRuleTest(this, event); return false;"
                                                        title="{{ __('index.send_test') }}">
-                                                        <i class="link-icon" data-feather="send" style="width: 14px; height: 14px;"></i> {{ __('index.send_test') }}
+                                                        <i class="link-icon" data-feather="send" style="width: 14px; height: 14px; pointer-events: none;"></i> {{ __('index.send_test') }}
                                                     </a>
                                                     @if($rule->last_test_at)
                                                         <div class="mt-1" style="font-size: 10px;">
@@ -247,15 +249,16 @@
                                                    data-open-telegram-rule-modal
                                                    data-telegram-rule-modal-title="{{ __('index.edit') }}: {{ $rule->name }}"
                                                    title="{{ __('index.edit') }}">
-                                                    <i class="link-icon" data-feather="edit" style="width: 14px; height: 14px;"></i>
+                                                    <i class="link-icon" data-feather="edit" style="width: 14px; height: 14px; pointer-events: none;"></i>
                                                 </a>
                                             @endcan
                                             @can('delete_telegram_group')
                                                 <a href="javascript:void(0)"
                                                    data-href="{{ route('admin.telegram-rules.delete', $rule->id) }}"
                                                    class="btn btn-xs btn-outline-danger btnDeleteRule"
+                                                   onclick="window.deleteTelegramRuleItem && window.deleteTelegramRuleItem(this, event); return false;"
                                                    title="{{ __('index.delete') }}">
-                                                    <i class="link-icon" data-feather="trash-2" style="width: 14px; height: 14px;"></i>
+                                                    <i class="link-icon" data-feather="trash-2" style="width: 14px; height: 14px; pointer-events: none;"></i>
                                                 </a>
                                             @endcan
                                         </div>
@@ -402,26 +405,45 @@
                 }
             });
 
+            // Multi-tier confirmation dialog
+            window.askTelegramRuleConfirm = function (title, message, isDestructive) {
+                if (window.AppDialog && typeof window.AppDialog.confirm === 'function') {
+                    return window.AppDialog.confirm(message, {
+                        title: title,
+                        icon: isDestructive ? 'warning' : 'question',
+                        confirmButtonText: '{{ __('index.yes') }}',
+                        cancelButtonText: '{{ __('index.no') }}'
+                    });
+                }
+                if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                    return Swal.fire({
+                        title: title,
+                        text: message,
+                        icon: isDestructive ? 'warning' : 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: isDestructive ? '#d33' : '#0b5fff',
+                        confirmButtonText: '{{ __('index.yes') }}',
+                        cancelButtonText: '{{ __('index.no') }}',
+                        allowOutsideClick: false
+                    }).then(res => res.isConfirmed);
+                }
+                return Promise.resolve(window.confirm(message || title));
+            };
+
             // Toggle Rule Status (Zero-reload AJAX)
-            $(document).on('change', '.toggleRuleStatus', function (e) {
-                e.preventDefault();
-                let checkbox = $(this);
+            window.toggleTelegramRuleStatus = function (checkboxEl, event) {
+                let checkbox = $(checkboxEl);
                 let href = checkbox.data('href');
                 let isChecked = checkbox.prop('checked');
+                if (!href) return;
 
-                Swal.fire({
-                    title: '{{ __('index.confirm_change_rule_status') }}',
-                    text: '{{ __('index.are_you_sure_change_status') }}',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __('index.yes') }}',
-                    cancelButtonText: '{{ __('index.no') }}'
-                }).then((result) => {
-                    if (result.isConfirmed) {
+                window.askTelegramRuleConfirm('{{ __('index.status') }}', '{{ __('index.are_you_sure_change_status') }}', false).then(confirmed => {
+                    if (confirmed) {
                         fetch(href, {
                             headers: {
                                 'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                             }
                         })
                         .then(response => {
@@ -439,95 +461,122 @@
                         checkbox.prop('checked', !isChecked);
                     }
                 });
-            });
+            };
 
-            // Delete Rule (Zero-reload AJAX)
-            $(document).on('click', '.btnDeleteRule', function (e) {
-                e.preventDefault();
-                let href = $(this).data('href') || $(this).attr('data-href');
-                let row = $(this).closest('tr');
+            // Delete Rule (Zero-reload AJAX with row removal)
+            window.deleteTelegramRuleItem = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                let btn = $(el);
+                if (btn.data('is-deleting')) return false;
 
-                Swal.fire({
-                    title: '{{ __('index.delete') }}',
-                    text: '{{ __('index.confirm_delete_telegram_rule') }}',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: '{{ __('index.yes') }}',
-                    cancelButtonText: '{{ __('index.no') }}'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_rule_deleted') }}');
-                            if (data.status) {
-                                row.css('background-color', '#fee2e2').fadeOut(300, function () {
-                                    row.remove();
-                                    const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
-                                    if (count) {
-                                        const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
-                                        count.textContent = Math.max(0, cur - 1);
+                let href = btn.data('href') || btn.attr('data-href');
+                let row = btn.closest('tr');
+                if (!href) return false;
+
+                const confirmTitle = '{{ __('index.delete') }}';
+                const confirmText = '{{ __('index.confirm_delete_telegram_rule') }}';
+
+                window.askTelegramRuleConfirm(confirmTitle, confirmText, true).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_rule_deleted') }}');
+                        if (data.status) {
+                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
+                                row.remove();
+                                const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
+                                if (count) {
+                                    const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
+                                    count.textContent = Math.max(0, cur - 1);
+                                }
+                                if ($('#telegramRuleTable tbody tr').length === 0) {
+                                    if (typeof window.refreshTelegramRuleBlock === 'function') {
+                                        window.refreshTelegramRuleBlock();
                                     }
-                                    if ($('#telegramRuleTable tbody tr').length === 0) {
-                                        if (typeof window.refreshTelegramRuleBlock === 'function') {
-                                            window.refreshTelegramRuleBlock();
-                                        }
-                                    }
-                                });
-                            }
-                        })
-                        .catch(err => {
-                            showToast('error', 'Failed to delete rule.');
-                        });
-                    }
+                                }
+                            });
+                        } else {
+                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        }
+                    })
+                    .catch(err => {
+                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        showToast('error', 'Failed to delete rule.');
+                    });
                 });
-            });
+
+                return false;
+            };
 
             // Send Test Message (Zero-reload AJAX)
-            $(document).on('click', '.btnTestRule', function (e) {
-                e.preventDefault();
-                let btn = $(this);
+            window.sendTelegramRuleTest = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                let btn = $(el);
+                if (btn.data('is-testing')) return false;
+
                 let href = btn.data('href') || btn.attr('data-href');
                 let row = btn.closest('tr');
                 let ruleId = row.data('id');
+                if (!href) return false;
 
-                Swal.fire({
-                    title: '{{ __('index.send_test') }}',
-                    text: '{{ __('index.confirm_test_telegram_rule') }}',
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonText: '{{ __('index.yes') }}',
-                    cancelButtonText: '{{ __('index.no') }}'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        btn.addClass('disabled');
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_test_sent') }}');
-                            if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
-                                window.refreshTelegramRuleBlock(ruleId);
-                            }
-                        })
-                        .catch(err => {
-                            showToast('error', '{{ __('index.telegram_test_failed') }}');
-                        })
-                        .finally(() => {
-                            btn.removeClass('disabled');
-                        });
-                    }
+                const confirmTitle = '{{ __('index.send_test') }}';
+                const confirmText = '{{ __('index.confirm_test_telegram_rule') }}';
+
+                window.askTelegramRuleConfirm(confirmTitle, confirmText, false).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_test_sent') }}');
+                        if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
+                            window.refreshTelegramRuleBlock(ruleId);
+                        }
+                    })
+                    .catch(err => {
+                        showToast('error', '{{ __('index.telegram_test_failed') }}');
+                    })
+                    .finally(() => {
+                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
+                    });
                 });
+
+                return false;
+            };
+
+            // Delegated click listeners (Fallback)
+            $(document).on('click', '.btnDeleteRule', function (e) {
+                window.deleteTelegramRuleItem(this, e);
+            });
+            $(document).on('click', '.btnTestRule', function (e) {
+                window.sendTelegramRuleTest(this, e);
+            });
+            $(document).on('change', '.toggleRuleStatus', function (e) {
+                window.toggleTelegramRuleStatus(this, e);
             });
         });
     </script>

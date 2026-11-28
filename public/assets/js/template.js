@@ -97,8 +97,6 @@
 
     // close sidebar when click outside on mobile/table
     $(document).on('click touchstart', function(e){
-      e.stopPropagation();
-
       // closing of sidebar menu when clicking outside of it
       if (!$(e.target).closest('.sidebar-toggler').length) {
         let sidebar = $(e.target).closest('.sidebar').length;
