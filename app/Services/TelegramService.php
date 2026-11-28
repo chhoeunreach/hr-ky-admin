@@ -680,6 +680,10 @@ class TelegramService
                         continue;
                     }
 
+                    if (! $rule->matchesDepartment($departmentName)) {
+                        continue;
+                    }
+
                     $channels = $rule->channels();
                     foreach ($channels as $channel) {
                         if (! $channel->is_active) {

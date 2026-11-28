@@ -212,6 +212,47 @@
         <small class="text-muted">{{ __('index.select_branches_hint') }}</small>
     </div>
 
+    {{-- Department Field (Optional / Specific Departments) --}}
+    <div class="col-lg-6 col-md-6 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="department_ids" class="form-label mb-0">
+                <b>{{ __('index.department') }}</b>
+                <span class="text-muted small fw-normal">({{ __('index.optional') }})</span>
+            </label>
+            @if(isset($departments) && $departments->isNotEmpty())
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-xs btn-outline-primary" id="btnSelectAllDepts">
+                        <i class="link-icon" data-feather="check-square" style="width: 11px; height: 11px;"></i> {{ __('index.select_all') }}
+                    </button>
+                    <button type="button" class="btn btn-xs btn-outline-secondary" id="btnDeselectAllDepts">
+                        <i class="link-icon" data-feather="x-square" style="width: 11px; height: 11px;"></i> {{ __('index.clear_all') }}
+                    </button>
+                </div>
+            @endif
+        </div>
+        @php
+            $selectedDepts = (array) old('department_ids', $rule->department_ids ?? []);
+        @endphp
+        <select class="form-select @error('department_ids') is-invalid @enderror"
+                id="department_ids"
+                name="department_ids[]"
+                multiple="multiple"
+                data-placeholder="{{ __('index.select_departments') }}">
+            @foreach($departments as $dept)
+                <option value="{{ $dept->id }}" {{ in_array($dept->id, $selectedDepts) ? 'selected' : '' }}>
+                    {{ $dept->dept_name }}
+                </option>
+            @endforeach
+        </select>
+        <div class="form-text text-muted small mt-1">
+            <i class="link-icon" data-feather="info" style="width: 12px; height: 12px;"></i>
+            {{ __('index.department_rule_hint') }}
+        </div>
+        @error('department_ids')
+            <div class="text-danger small mt-1 fw-semibold">{{ $message }}</div>
+        @enderror
+    </div>
+
     {{-- Delivery Options --}}
     <div class="col-lg-6 col-md-6 mb-3">
         <label class="form-label"><b>{{ __('index.delivery_options') }}</b></label>
@@ -278,6 +319,23 @@
             if ($("#branch_ids").length) {
                 $("#branch_ids").select2({ width: '100%', placeholder: '{{ __('index.select_branches') }}...' });
             }
+            if ($("#department_ids").length) {
+                $("#department_ids").select2({
+                    width: '100%',
+                    placeholder: $("#department_ids").data('placeholder') || '{{ __('index.select_departments') }}',
+                    allowClear: true,
+                    closeOnSelect: false
+                });
+            }
+
+            // Select All / Deselect All Departments
+            $('#btnSelectAllDepts').on('click', function () {
+                $('#department_ids > option').prop('selected', true);
+                $('#department_ids').trigger('change');
+            });
+            $('#btnDeselectAllDepts').on('click', function () {
+                $('#department_ids').val(null).trigger('change');
+            });
 
             // Toggle Specific Branches
             $('input[name="branch_scope"]').on('change', function () {

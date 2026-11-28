@@ -119,6 +119,39 @@ class TelegramNotificationRule extends Model
     }
 
     /**
+     * Check if this rule matches a given department name or department ID.
+     */
+    public function matchesDepartment(?string $departmentName, ?int $departmentId = null): bool
+    {
+        $allowedDepartmentIds = is_array($this->department_ids) ? array_map('intval', array_filter($this->department_ids)) : [];
+
+        // If no specific departments are configured, rule applies to all departments
+        if (empty($allowedDepartmentIds)) {
+            return true;
+        }
+
+        if ($departmentId !== null && in_array((int) $departmentId, $allowedDepartmentIds, true)) {
+            return true;
+        }
+
+        if ($departmentName !== null && trim($departmentName) !== '' && !empty($allowedDepartmentIds)) {
+            $cleanName = trim($departmentName);
+            $matched = Department::query()
+                ->whereIn('id', $allowedDepartmentIds)
+                ->where(function ($query) use ($cleanName) {
+                    $query->whereRaw('LOWER(dept_name) = ?', [Str::lower($cleanName)]);
+                })
+                ->exists();
+
+            if ($matched) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Check if this rule matches a given branch name or branch ID.
      */
     public function matchesBranch(?string $branchName, ?int $branchId = null): bool

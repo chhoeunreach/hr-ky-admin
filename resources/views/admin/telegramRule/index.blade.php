@@ -162,6 +162,19 @@
                                                 <div class="small text-muted mt-1">{{ count($rule->branch_ids) }} {{ __('index.branches') }}</div>
                                             @endif
                                         @endif
+                                        @if(!empty($rule->department_ids))
+                                            @php
+                                                $ruleDeptIds = (array) $rule->department_ids;
+                                                $ruleDeptNames = isset($departmentsById)
+                                                    ? array_filter(array_map(fn($did) => $departmentsById[$did]->dept_name ?? null, $ruleDeptIds))
+                                                    : [];
+                                            @endphp
+                                            <div class="mt-1">
+                                                <span class="badge bg-light text-dark border" style="font-size: 10px;" title="{{ implode(', ', $ruleDeptNames) ?: (count($ruleDeptIds) . ' ' . __('index.departments')) }}">
+                                                    📁 {{ count($ruleDeptIds) }} {{ __('index.departments') }}
+                                                </span>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         @php

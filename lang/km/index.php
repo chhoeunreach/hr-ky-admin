@@ -4011,4 +4011,7 @@ return [
     'telegram_web_preview' => 'ការបង្ហាញ Telegram Web',
     'telegram_iframe_hint' => 'ប្រសិនបើ Browser រារាំង សូមចុចប៊ូតុង "បើកក្នុង Telegram Web" ឬ "បើកតាមកម្មវិធី Telegram" ខាងលើ។',
     'telegram_chat_details' => 'ព័ត៌មានលម្អិត Chat',
+    'departments' => 'នាយកដ្ឋាន',
+    'select_departments' => 'ស្វែងរក និងជ្រើសរើសនាយកដ្ឋាន / ផ្នែក...',
+    'department_rule_hint' => 'ជ្រើសរើសនាយកដ្ឋានជាក់លាក់ដែលត្រូវទទួលការជូនដំណឹង (ទុកទទេ ប្រសិនបើចង់ឱ្យអនុវត្តគ្រប់នាយកដ្ឋានទាំងអស់)។',
 ];

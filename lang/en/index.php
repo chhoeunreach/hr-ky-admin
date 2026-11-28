@@ -3945,4 +3945,7 @@ return [
     'telegram_web_preview' => 'Telegram Web Preview',
     'telegram_iframe_hint' => 'If restricted by browser, click "Open in Telegram Web" or "Open in Telegram App" above.',
     'telegram_chat_details' => 'Telegram Chat Details',
+    'departments' => 'Departments',
+    'select_departments' => 'Search and select departments...',
+    'department_rule_hint' => 'Select specific departments to receive alerts (leave empty to apply to all departments).',
 ];

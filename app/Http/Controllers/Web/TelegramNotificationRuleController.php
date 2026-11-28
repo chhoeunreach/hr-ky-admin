@@ -61,6 +61,8 @@ class TelegramNotificationRuleController extends Controller
         $channelsById = $channels->keyBy('id');
         $eventOptions = TelegramGroup::eventOptions();
         $categorizedEvents = TelegramGroup::categorizedEventOptions();
+        $departments = Schema::hasTable('departments') ? Department::orderBy('dept_name')->get() : collect();
+        $departmentsById = $departments->keyBy('id');
 
         $totalRules = TelegramNotificationRule::count();
         $activeRules = TelegramNotificationRule::where('is_active', true)->count();
@@ -73,6 +75,8 @@ class TelegramNotificationRuleController extends Controller
             'channelsById',
             'eventOptions',
             'categorizedEvents',
+            'departments',
+            'departmentsById',
             'totalRules',
             'activeRules',
             'totalChannels'
@@ -122,6 +126,8 @@ class TelegramNotificationRuleController extends Controller
             'branch_scope' => ['required', 'in:all,specific'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['integer'],
             'channel_ids' => ['required', 'array', 'min:1'],
             'channel_ids.*' => ['integer'],
             'send_location' => ['nullable', 'boolean'],
@@ -133,6 +139,12 @@ class TelegramNotificationRuleController extends Controller
 
         $validated['event_keys'] = $eventKeys;
         $validated['event_key'] = $primaryEventKey;
+        $validated['branch_ids'] = ($request->input('branch_scope') === 'specific' && !empty($request->input('branch_ids')))
+            ? array_values(array_map('intval', array_filter($request->input('branch_ids'))))
+            : null;
+        $validated['department_ids'] = !empty($request->input('department_ids'))
+            ? array_values(array_map('intval', array_filter($request->input('department_ids'))))
+            : null;
         $validated['send_location'] = $request->boolean('send_location', true);
         $validated['send_selfie'] = $request->boolean('send_selfie', true);
         $validated['is_silent'] = $request->boolean('is_silent', false);
@@ -208,6 +220,8 @@ class TelegramNotificationRuleController extends Controller
             'branch_scope' => ['required', 'in:all,specific'],
             'branch_ids' => ['nullable', 'array'],
             'branch_ids.*' => ['integer'],
+            'department_ids' => ['nullable', 'array'],
+            'department_ids.*' => ['integer'],
             'channel_ids' => ['required', 'array', 'min:1'],
             'channel_ids.*' => ['integer'],
             'send_location' => ['nullable', 'boolean'],
@@ -219,6 +233,12 @@ class TelegramNotificationRuleController extends Controller
 
         $validated['event_keys'] = $eventKeys;
         $validated['event_key'] = $primaryEventKey;
+        $validated['branch_ids'] = ($request->input('branch_scope') === 'specific' && !empty($request->input('branch_ids')))
+            ? array_values(array_map('intval', array_filter($request->input('branch_ids'))))
+            : null;
+        $validated['department_ids'] = !empty($request->input('department_ids'))
+            ? array_values(array_map('intval', array_filter($request->input('department_ids'))))
+            : null;
         $validated['send_location'] = $request->boolean('send_location', true);
         $validated['send_selfie'] = $request->boolean('send_selfie', true);
         $validated['is_silent'] = $request->boolean('is_silent', false);
