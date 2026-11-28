@@ -98,7 +98,7 @@ class TelegramNotificationRuleController extends Controller
         ));
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request)
     {
         $this->authorize('create_telegram_group');
 
@@ -148,6 +148,14 @@ class TelegramNotificationRuleController extends Controller
             ]);
         }
 
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'វិធានការបញ្ជូនសារថ្មីត្រូវបានបង្កើតដោយជោគជ័យ (Notification Rule created successfully).',
+                'rule' => $rule,
+            ]);
+        }
+
         return redirect()
             ->route('admin.telegram-rules.index')
             ->with('success', 'វិធានការបញ្ជូនសារថ្មីត្រូវបានបង្កើតដោយជោគជ័យ (Notification Rule created successfully).');
@@ -174,7 +182,7 @@ class TelegramNotificationRuleController extends Controller
         ));
     }
 
-    public function update(Request $request, int $id): View|RedirectResponse
+    public function update(Request $request, int $id)
     {
         $this->authorize('edit_telegram_group');
 
@@ -219,7 +227,16 @@ class TelegramNotificationRuleController extends Controller
         $rule->update($validated);
 
         if ($request->input('telegram_rule_modal') === '1' || $request->header('X-Telegram-Rule-Modal') === '1') {
+            session()->flash('success', 'វិធានការបញ្ជូនសារត្រូវបានកែប្រែដោយជោគជ័យ (Notification Rule updated successfully).');
             return view('admin.telegramRule.common.modal-saved', [
+                'message' => 'វិធានការបញ្ជូនសារត្រូវបានកែប្រែដោយជោគជ័យ (Notification Rule updated successfully).',
+                'rule' => $rule,
+            ]);
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => true,
                 'message' => 'វិធានការបញ្ជូនសារត្រូវបានកែប្រែដោយជោគជ័យ (Notification Rule updated successfully).',
                 'rule' => $rule,
             ]);
@@ -318,7 +335,7 @@ class TelegramNotificationRuleController extends Controller
             ->with('info', 'វិធានការទាំងអស់ត្រូវបានបង្កើតរួចរាល់ហើយ គ្មានទិន្នន័យថ្មីដែលត្រូវបង្កើតបន្ថែមទេ។ (All rules are already up to date).');
     }
 
-    public function testRule(int $id, TelegramService $telegramService): RedirectResponse
+    public function testRule(int $id, TelegramService $telegramService)
     {
         $this->authorize('test_telegram_group');
 
