@@ -370,7 +370,7 @@ class TelegramGroupController extends Controller
         try {
             $telegramGroup = $this->telegramGroupRepo->find($id);
             if (! $telegramGroup) {
-                throw new Exception('Telegram group not found.', 404);
+                throw new Exception(__('index.telegram_group_not_found') ?: 'Telegram channel/group not found.', 404);
             }
 
             DB::beginTransaction();
@@ -389,14 +389,16 @@ class TelegramGroupController extends Controller
 
             DB::commit();
 
+            $message = __('index.telegram_group_deleted') ?: 'Telegram group deleted successfully.';
+
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'status' => true,
-                    'message' => 'Telegram group deleted successfully.',
+                    'message' => $message,
                 ]);
             }
 
-            return redirect()->back()->with('success', 'Telegram group deleted successfully.');
+            return redirect()->back()->with('success', $message);
         } catch (Exception $exception) {
             DB::rollBack();
 

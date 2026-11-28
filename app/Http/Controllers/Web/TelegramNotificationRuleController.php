@@ -235,10 +235,13 @@ class TelegramNotificationRuleController extends Controller
         $this->authorize('delete_telegram_group');
 
         try {
-            $rule = TelegramNotificationRule::findOrFail($id);
+            $rule = TelegramNotificationRule::find($id);
+            if (! $rule) {
+                throw new Exception(__('index.telegram_rule_not_found') ?: 'Notification rule not found.', 404);
+            }
             $rule->delete();
 
-            $message = 'វិធានការបញ្ជូនសារត្រូវបានលុបចេញ (Notification Rule deleted successfully).';
+            $message = __('index.telegram_rule_deleted') ?: 'វិធានការបញ្ជូនសារត្រូវបានលុបចេញ (Notification Rule deleted successfully).';
 
             if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([

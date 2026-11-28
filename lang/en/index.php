@@ -3932,4 +3932,9 @@ return [
     'ok' => 'OK',
     'sending' => 'Sending...',
     'success' => 'Success',
+    'telegram_group_not_found' => 'Telegram channel/group not found.',
+    'telegram_rule_not_found' => 'Notification rule not found.',
+    'failed_to_delete' => 'Failed to delete',
+    'delete_confirm_button' => 'Delete',
+    'deny_button' => 'Deny',
 ];

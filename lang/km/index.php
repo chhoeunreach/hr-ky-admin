@@ -3998,4 +3998,9 @@ return [
     'ok' => 'យល់ព្រម',
     'sending' => 'កំពុងផ្ញើ...',
     'success' => 'ជោគជ័យ',
+    'telegram_group_not_found' => 'រកមិនឃើញ Telegram Channel/Group នេះឡើយ។',
+    'telegram_rule_not_found' => 'រកមិនឃើញវិធានការបញ្ជូនសារនេះឡើយ។',
+    'failed_to_delete' => 'មិនអាចលុបបានទេ',
+    'delete_confirm_button' => 'លុប',
+    'deny_button' => 'បដិសេធ',
 ];

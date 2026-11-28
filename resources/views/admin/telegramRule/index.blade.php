@@ -313,23 +313,28 @@
 
 @section('scripts')
     <script>
-        $(document).ready(function () {
-            if ($(".select2-basic").length) {
-                $(".select2-basic").select2({ width: '100%' });
-            }
+        (function () {
+            const I18N = {
+                confirmTitle: @json(__('index.dialog_delete_title') ?: __('index.delete')),
+                confirmDeleteRule: @json(__('index.confirm_delete_telegram_rule')),
+                btnDelete: @json(__('index.delete_confirm_button') ?: 'លុប'),
+                btnDeny: @json(__('index.deny_button') ?: 'បដិសេធ'),
+                btnYes: @json(__('index.yes')),
+                btnNo: @json(__('index.no')),
+                btnOk: @json(__('index.ok')),
+                sendTestTitle: @json(__('index.send_test')),
+                confirmTestRule: @json(__('index.confirm_test_telegram_rule')),
+                statusTitle: @json(__('index.status')),
+                confirmStatusChange: @json(__('index.are_you_sure_change_status')),
+                statusChanged: @json(__('message.status_changed')),
+                ruleDeleted: @json(__('index.telegram_rule_deleted')),
+                testSent: @json(__('index.telegram_test_sent')),
+                testFailed: @json(__('index.telegram_test_failed')),
+                requestFailed: @json(__('index.dialog_request_failed')),
+                failedToDelete: @json(__('index.failed_to_delete') ?: 'មិនអាចលុបបានទេ')
+            };
 
-            const perPageRule = $('#per_page');
-            if (perPageRule.length && !perPageRule.hasClass('select2-hidden-accessible')) {
-                perPageRule.select2({ minimumResultsForSearch: Infinity });
-            }
-
-            $('#telegramRuleFilterCollapse').on('show.bs.collapse', function () {
-                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'true');
-            }).on('hide.bs.collapse', function () {
-                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'false');
-            });
-
-            const showToast = (icon, title) => {
+            const showToast = function (icon, title) {
                 if (typeof Swal !== 'undefined') {
                     const Toast = Swal.mixin({
                         toast: true,
@@ -338,13 +343,218 @@
                         timer: 3000,
                         timerProgressBar: true
                     });
-                    Toast.fire({ icon: icon, title: title });
+                    Toast.fire({
+                        icon: icon || 'success',
+                        title: title
+                    });
+                } else if (typeof toastr !== 'undefined') {
+                    toastr[icon || 'success'](title);
                 } else {
                     alert(title);
                 }
             };
 
-            // In-place partial refresh of the Notification Rules block (No full page reload!)
+            // Multi-tier confirmation dialog
+            window.askTelegramRuleConfirm = function (title, message, isDestructive, confirmLabel, cancelLabel) {
+                const btnConfirm = confirmLabel || (isDestructive ? I18N.btnDelete : I18N.btnYes);
+                const btnCancel = cancelLabel || (isDestructive ? I18N.btnDeny : I18N.btnNo);
+
+                if (window.AppDialog && typeof window.AppDialog.confirm === 'function') {
+                    return window.AppDialog.confirm(message, {
+                        title: title,
+                        icon: isDestructive ? 'warning' : 'question',
+                        confirmButtonText: btnConfirm,
+                        cancelButtonText: btnCancel
+                    });
+                }
+                if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
+                    return Swal.fire({
+                        title: title,
+                        text: message,
+                        icon: isDestructive ? 'warning' : 'info',
+                        showCancelButton: true,
+                        confirmButtonColor: isDestructive ? '#d33' : '#0b5fff',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: btnConfirm,
+                        cancelButtonText: btnCancel,
+                        allowOutsideClick: false
+                    }).then(res => res.isConfirmed);
+                }
+                return Promise.resolve(window.confirm(message || title));
+            };
+
+            // Toggle Rule Status (Zero-reload AJAX)
+            window.toggleTelegramRuleStatus = function (checkboxEl, event) {
+                let checkbox = $(checkboxEl);
+                let href = checkbox.data('href');
+                let isChecked = checkbox.prop('checked');
+                if (!href) return;
+
+                window.askTelegramRuleConfirm(I18N.statusTitle, I18N.confirmStatusChange, false).then(confirmed => {
+                    if (confirmed) {
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Status change failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            showToast('success', data.message || I18N.statusChanged);
+                        })
+                        .catch(err => {
+                            checkbox.prop('checked', !isChecked);
+                            showToast('error', 'Error changing status.');
+                        });
+                    } else {
+                        checkbox.prop('checked', !isChecked);
+                    }
+                });
+            };
+
+            // Delete Rule (Zero-reload AJAX with row removal)
+            window.deleteTelegramRuleItem = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                let btn = $(el);
+                if (btn.data('is-deleting')) return false;
+
+                let href = btn.data('href') || btn.attr('data-href');
+                let row = btn.closest('tr');
+                if (!href) return false;
+
+                window.askTelegramRuleConfirm(
+                    I18N.confirmTitle,
+                    I18N.confirmDeleteRule,
+                    true,
+                    I18N.btnDelete,
+                    I18N.btnDeny
+                ).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => {
+                        return response.json().then(data => {
+                            if (!response.ok) {
+                                throw new Error(data.message || I18N.requestFailed);
+                            }
+                            return data;
+                        }).catch(err => {
+                            if (!response.ok) {
+                                throw new Error(err.message || ('Server error: ' + response.status));
+                            }
+                            throw err;
+                        });
+                    })
+                    .then(data => {
+                        if (data.status) {
+                            showToast('success', data.message || I18N.ruleDeleted);
+                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
+                                row.remove();
+                                const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
+                                if (count) {
+                                    const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
+                                    count.textContent = Math.max(0, cur - 1);
+                                }
+                                if ($('#telegramRuleTable tbody tr').length === 0) {
+                                    if (typeof window.refreshTelegramRuleBlock === 'function') {
+                                        window.refreshTelegramRuleBlock();
+                                    }
+                                }
+                            });
+                        } else {
+                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                            const reason = data.message || I18N.requestFailed;
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: I18N.failedToDelete,
+                                    text: reason,
+                                    confirmButtonText: I18N.btnOk
+                                });
+                            } else {
+                                alert(I18N.failedToDelete + ': ' + reason);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        const errorMsg = err.message || I18N.requestFailed;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: I18N.failedToDelete,
+                                text: errorMsg,
+                                confirmButtonText: I18N.btnOk
+                            });
+                        } else {
+                            alert(I18N.failedToDelete + ': ' + errorMsg);
+                        }
+                    });
+                });
+
+                return false;
+            };
+
+            // Send Test Message (Zero-reload AJAX)
+            window.sendTelegramRuleTest = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                let btn = $(el);
+                if (btn.data('is-testing')) return false;
+
+                let href = btn.data('href') || btn.attr('data-href');
+                let row = btn.closest('tr');
+                let ruleId = row.data('id');
+                if (!href) return false;
+
+                window.askTelegramRuleConfirm(I18N.sendTestTitle, I18N.confirmTestRule, false).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || (data.status ? I18N.testSent : I18N.testFailed));
+                        if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
+                            window.refreshTelegramRuleBlock(ruleId);
+                        }
+                    })
+                    .catch(err => {
+                        showToast('error', I18N.testFailed);
+                    })
+                    .finally(() => {
+                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
+                    });
+                });
+
+                return false;
+            };
+
+            // In-place partial refresh of the Rules block (No full page reload!)
             window.refreshTelegramRuleBlock = function (highlightId) {
                 const listSection = document.getElementById('telegramRuleListSection');
                 if (!listSection) {
@@ -396,177 +606,23 @@
                     window.location.reload();
                 });
             };
+        })();
 
-            document.addEventListener('telegram-rule:refresh', function () {
-                if (typeof window.refreshTelegramRuleBlock === 'function') {
-                    window.refreshTelegramRuleBlock();
-                } else {
-                    window.location.reload();
-                }
+        $(document).ready(function () {
+            if ($(".select2-basic").length) {
+                $(".select2-basic").select2({ width: '100%' });
+            }
+
+            const perPageRule = $('#per_page');
+            if (perPageRule.length && !perPageRule.hasClass('select2-hidden-accessible')) {
+                perPageRule.select2({ minimumResultsForSearch: Infinity });
+            }
+
+            $('#telegramRuleFilterCollapse').on('show.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'true');
+            }).on('hide.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramRuleFilterCollapse"]').attr('aria-expanded', 'false');
             });
-
-            // Multi-tier confirmation dialog
-            window.askTelegramRuleConfirm = function (title, message, isDestructive) {
-                if (window.AppDialog && typeof window.AppDialog.confirm === 'function') {
-                    return window.AppDialog.confirm(message, {
-                        title: title,
-                        icon: isDestructive ? 'warning' : 'question',
-                        confirmButtonText: '{{ __('index.yes') }}',
-                        cancelButtonText: '{{ __('index.no') }}'
-                    });
-                }
-                if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
-                    return Swal.fire({
-                        title: title,
-                        text: message,
-                        icon: isDestructive ? 'warning' : 'info',
-                        showCancelButton: true,
-                        confirmButtonColor: isDestructive ? '#d33' : '#0b5fff',
-                        confirmButtonText: '{{ __('index.yes') }}',
-                        cancelButtonText: '{{ __('index.no') }}',
-                        allowOutsideClick: false
-                    }).then(res => res.isConfirmed);
-                }
-                return Promise.resolve(window.confirm(message || title));
-            };
-
-            // Toggle Rule Status (Zero-reload AJAX)
-            window.toggleTelegramRuleStatus = function (checkboxEl, event) {
-                let checkbox = $(checkboxEl);
-                let href = checkbox.data('href');
-                let isChecked = checkbox.prop('checked');
-                if (!href) return;
-
-                window.askTelegramRuleConfirm('{{ __('index.status') }}', '{{ __('index.are_you_sure_change_status') }}', false).then(confirmed => {
-                    if (confirmed) {
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                            }
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error('Status change failed');
-                            return response.json();
-                        })
-                        .then(data => {
-                            showToast('success', data.message || '{{ __('message.status_changed') }}');
-                        })
-                        .catch(err => {
-                            checkbox.prop('checked', !isChecked);
-                            showToast('error', 'Error changing status.');
-                        });
-                    } else {
-                        checkbox.prop('checked', !isChecked);
-                    }
-                });
-            };
-
-            // Delete Rule (Zero-reload AJAX with row removal)
-            window.deleteTelegramRuleItem = function (el, event) {
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                let btn = $(el);
-                if (btn.data('is-deleting')) return false;
-
-                let href = btn.data('href') || btn.attr('data-href');
-                let row = btn.closest('tr');
-                if (!href) return false;
-
-                const confirmTitle = '{{ __('index.delete') }}';
-                const confirmText = '{{ __('index.confirm_delete_telegram_rule') }}';
-
-                window.askTelegramRuleConfirm(confirmTitle, confirmText, true).then(confirmed => {
-                    if (!confirmed) return;
-
-                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
-
-                    fetch(href, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_rule_deleted') }}');
-                        if (data.status) {
-                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
-                                row.remove();
-                                const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
-                                if (count) {
-                                    const cur = parseInt(count.textContent.replace(/,/g, ''), 10) || 0;
-                                    count.textContent = Math.max(0, cur - 1);
-                                }
-                                if ($('#telegramRuleTable tbody tr').length === 0) {
-                                    if (typeof window.refreshTelegramRuleBlock === 'function') {
-                                        window.refreshTelegramRuleBlock();
-                                    }
-                                }
-                            });
-                        } else {
-                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
-                        }
-                    })
-                    .catch(err => {
-                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
-                        showToast('error', 'Failed to delete rule.');
-                    });
-                });
-
-                return false;
-            };
-
-            // Send Test Message (Zero-reload AJAX)
-            window.sendTelegramRuleTest = function (el, event) {
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                let btn = $(el);
-                if (btn.data('is-testing')) return false;
-
-                let href = btn.data('href') || btn.attr('data-href');
-                let row = btn.closest('tr');
-                let ruleId = row.data('id');
-                if (!href) return false;
-
-                const confirmTitle = '{{ __('index.send_test') }}';
-                const confirmText = '{{ __('index.confirm_test_telegram_rule') }}';
-
-                window.askTelegramRuleConfirm(confirmTitle, confirmText, false).then(confirmed => {
-                    if (!confirmed) return;
-
-                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
-
-                    fetch(href, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_test_sent') }}');
-                        if (data.status && typeof window.refreshTelegramRuleBlock === 'function') {
-                            window.refreshTelegramRuleBlock(ruleId);
-                        }
-                    })
-                    .catch(err => {
-                        showToast('error', '{{ __('index.telegram_test_failed') }}');
-                    })
-                    .finally(() => {
-                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
-                    });
-                });
-
-                return false;
-            };
 
             // Delegated click listeners (Fallback)
             $(document).on('click', '.btnDeleteRule', function (e) {
@@ -577,6 +633,14 @@
             });
             $(document).on('change', '.toggleRuleStatus', function (e) {
                 window.toggleTelegramRuleStatus(this, e);
+            });
+
+            document.addEventListener('telegram-rule:refresh', function () {
+                if (typeof window.refreshTelegramRuleBlock === 'function') {
+                    window.refreshTelegramRuleBlock();
+                } else {
+                    window.location.reload();
+                }
             });
         });
     </script>

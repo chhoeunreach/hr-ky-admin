@@ -265,18 +265,28 @@
 
 @section('scripts')
     <script>
-        $(document).ready(function () {
-            $("#action_key").select2({ width: '100%' });
-            $("#is_active").select2({ width: '100%' });
-            $("#per_page").select2({ minimumResultsForSearch: Infinity });
+        (function () {
+            const I18N = {
+                confirmTitle: @json(__('index.dialog_delete_title') ?: __('index.delete')),
+                confirmDeleteGroup: @json(__('index.confirm_delete_telegram_group')),
+                btnDelete: @json(__('index.delete_confirm_button') ?: 'លុប'),
+                btnDeny: @json(__('index.deny_button') ?: 'បដិសេធ'),
+                btnYes: @json(__('index.yes')),
+                btnNo: @json(__('index.no')),
+                btnOk: @json(__('index.ok')),
+                sendTestTitle: @json(__('index.send_test')),
+                confirmTestGroup: @json(__('index.confirm_test_telegram_group')),
+                statusTitle: @json(__('index.status')),
+                confirmStatusChange: @json(__('index.are_you_sure_change_status')),
+                statusChanged: @json(__('message.status_changed')),
+                groupDeleted: @json(__('index.telegram_group_deleted')),
+                testSent: @json(__('index.telegram_test_sent')),
+                testFailed: @json(__('index.telegram_test_failed')),
+                requestFailed: @json(__('index.dialog_request_failed')),
+                failedToDelete: @json(__('index.failed_to_delete') ?: 'មិនអាចលុបបានទេ')
+            };
 
-            $('#telegramGroupFilterCollapse').on('show.bs.collapse', function () {
-                $('.directory-filter-toggle[data-bs-target="#telegramGroupFilterCollapse"]').attr('aria-expanded', 'true');
-            }).on('hide.bs.collapse', function () {
-                $('.directory-filter-toggle[data-bs-target="#telegramGroupFilterCollapse"]').attr('aria-expanded', 'false');
-            });
-
-            const showToast = (icon, title) => {
+            const showToast = function (icon, title) {
                 if (typeof Swal !== 'undefined') {
                     const Toast = Swal.mixin({
                         toast: true,
@@ -297,13 +307,16 @@
             };
 
             // Multi-tier confirmation dialog
-            window.askTelegramGroupConfirm = function (title, message, isDestructive) {
+            window.askTelegramGroupConfirm = function (title, message, isDestructive, confirmLabel, cancelLabel) {
+                const btnConfirm = confirmLabel || (isDestructive ? I18N.btnDelete : I18N.btnYes);
+                const btnCancel = cancelLabel || (isDestructive ? I18N.btnDeny : I18N.btnNo);
+
                 if (window.AppDialog && typeof window.AppDialog.confirm === 'function') {
                     return window.AppDialog.confirm(message, {
                         title: title,
                         icon: isDestructive ? 'warning' : 'question',
-                        confirmButtonText: '{{ __('index.yes') }}',
-                        cancelButtonText: '{{ __('index.no') }}'
+                        confirmButtonText: btnConfirm,
+                        cancelButtonText: btnCancel
                     });
                 }
                 if (typeof Swal !== 'undefined' && typeof Swal.fire === 'function') {
@@ -313,12 +326,184 @@
                         icon: isDestructive ? 'warning' : 'info',
                         showCancelButton: true,
                         confirmButtonColor: isDestructive ? '#d33' : '#0b5fff',
-                        confirmButtonText: '{{ __('index.yes') }}',
-                        cancelButtonText: '{{ __('index.no') }}',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: btnConfirm,
+                        cancelButtonText: btnCancel,
                         allowOutsideClick: false
                     }).then(res => res.isConfirmed);
                 }
                 return Promise.resolve(window.confirm(message || title));
+            };
+
+            // Direct Global Delete Handler (Zero-reload AJAX with row removal)
+            window.deleteTelegramGroupItem = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const btn = $(el);
+                if (btn.data('is-deleting')) return false;
+
+                const href = btn.attr('data-href') || btn.data('href');
+                const row = btn.closest('tr');
+                if (!href) return false;
+
+                window.askTelegramGroupConfirm(
+                    I18N.confirmTitle,
+                    I18N.confirmDeleteGroup,
+                    true,
+                    I18N.btnDelete,
+                    I18N.btnDeny
+                ).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => {
+                        return response.json().then(data => {
+                            if (!response.ok) {
+                                throw new Error(data.message || I18N.requestFailed);
+                            }
+                            return data;
+                        }).catch(err => {
+                            if (!response.ok) {
+                                throw new Error(err.message || ('Server error: ' + response.status));
+                            }
+                            throw err;
+                        });
+                    })
+                    .then(data => {
+                        if (data.status) {
+                            showToast('success', data.message || I18N.groupDeleted);
+                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
+                                row.remove();
+                                const countEl = document.querySelector('[data-directory-count="telegramGroupTable"]');
+                                if (countEl) {
+                                    const cur = parseInt(countEl.textContent.replace(/,/g, ''), 10) || 0;
+                                    countEl.textContent = Math.max(0, cur - 1);
+                                }
+                                if ($('#telegramGroupTable tbody tr').length === 0) {
+                                    if (typeof window.refreshTelegramGroupBlock === 'function') {
+                                        window.refreshTelegramGroupBlock();
+                                    }
+                                }
+                            });
+                        } else {
+                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                            const reason = data.message || I18N.requestFailed;
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: I18N.failedToDelete,
+                                    text: reason,
+                                    confirmButtonText: I18N.btnOk
+                                });
+                            } else {
+                                alert(I18N.failedToDelete + ': ' + reason);
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
+                        const errorMsg = err.message || I18N.requestFailed;
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: I18N.failedToDelete,
+                                text: errorMsg,
+                                confirmButtonText: I18N.btnOk
+                            });
+                        } else {
+                            alert(I18N.failedToDelete + ': ' + errorMsg);
+                        }
+                    });
+                });
+
+                return false;
+            };
+
+            // Direct Global Send Test Handler (Zero-reload AJAX with badge update)
+            window.sendTelegramGroupTest = function (el, event) {
+                if (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                const btn = $(el);
+                if (btn.data('is-testing')) return false;
+
+                const href = btn.attr('data-href') || btn.data('href');
+                const row = btn.closest('tr');
+                const groupId = row.data('id');
+                if (!href) return false;
+
+                window.askTelegramGroupConfirm(I18N.sendTestTitle, I18N.confirmTestGroup, false).then(confirmed => {
+                    if (!confirmed) return;
+
+                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
+
+                    fetch(href, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        showToast(data.status ? 'success' : 'error', data.message || (data.status ? I18N.testSent : I18N.testFailed));
+                        if (data.status && typeof window.refreshTelegramGroupBlock === 'function') {
+                            window.refreshTelegramGroupBlock(groupId);
+                        }
+                    })
+                    .catch(err => {
+                        showToast('error', 'Error sending test message.');
+                    })
+                    .finally(() => {
+                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
+                    });
+                });
+
+                return false;
+            };
+
+            // Direct Global Toggle Status Handler
+            window.toggleTelegramGroupStatus = function (checkboxEl, event) {
+                const checkbox = $(checkboxEl);
+                const isChecked = checkbox.prop('checked');
+                const href = checkbox.attr('data-href') || checkbox.attr('href');
+                if (!href) return;
+
+                window.askTelegramGroupConfirm(I18N.statusTitle, I18N.confirmStatusChange, false).then(confirmed => {
+                    if (confirmed) {
+                        fetch(href, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Status change failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            showToast('success', data.message || I18N.statusChanged);
+                        })
+                        .catch(err => {
+                            checkbox.prop('checked', !isChecked);
+                            showToast('error', 'Error changing status.');
+                        });
+                    } else {
+                        checkbox.prop('checked', !isChecked);
+                    }
+                });
             };
 
             // In-place partial refresh of the Channels / Groups block (No full page reload!)
@@ -373,153 +558,18 @@
                     window.location.reload();
                 });
             };
+        })();
 
-            // Direct Global Delete Handler (Zero-reload AJAX with row removal)
-            window.deleteTelegramGroupItem = function (el, event) {
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                const btn = $(el);
-                if (btn.data('is-deleting')) return false;
+        $(document).ready(function () {
+            $("#action_key").select2({ width: '100%' });
+            $("#is_active").select2({ width: '100%' });
+            $("#per_page").select2({ minimumResultsForSearch: Infinity });
 
-                const href = btn.attr('data-href') || btn.data('href');
-                const row = btn.closest('tr');
-                if (!href) return false;
-
-                const confirmTitle = '{{ __('index.delete') }}';
-                const confirmText = '{{ __('index.confirm_delete_telegram_group') }}';
-
-                window.askTelegramGroupConfirm(confirmTitle, confirmText, true).then(confirmed => {
-                    if (!confirmed) return;
-
-                    btn.data('is-deleting', true).addClass('disabled').css('pointer-events', 'none');
-
-                    fetch(href, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => {
-                                throw new Error(err.message || 'Delete failed');
-                            }).catch(e => {
-                                throw new Error(e.message || 'Failed with status ' + response.status);
-                            });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_group_deleted') }}');
-                        if (data.status) {
-                            row.css('background-color', '#fee2e2').fadeOut(350, function () {
-                                row.remove();
-                                const countEl = document.querySelector('[data-directory-count="telegramGroupTable"]');
-                                if (countEl) {
-                                    const cur = parseInt(countEl.textContent.replace(/,/g, ''), 10) || 0;
-                                    countEl.textContent = Math.max(0, cur - 1);
-                                }
-                                if ($('#telegramGroupTable tbody tr').length === 0) {
-                                    if (typeof window.refreshTelegramGroupBlock === 'function') {
-                                        window.refreshTelegramGroupBlock();
-                                    }
-                                }
-                            });
-                        } else {
-                            btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
-                        }
-                    })
-                    .catch(err => {
-                        btn.data('is-deleting', false).removeClass('disabled').css('pointer-events', '');
-                        showToast('error', err.message || 'Failed to delete Telegram group.');
-                    });
-                });
-
-                return false;
-            };
-
-            // Direct Global Send Test Handler (Zero-reload AJAX with badge update)
-            window.sendTelegramGroupTest = function (el, event) {
-                if (event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                const btn = $(el);
-                if (btn.data('is-testing')) return false;
-
-                const href = btn.attr('data-href') || btn.data('href');
-                const row = btn.closest('tr');
-                const groupId = row.data('id');
-                if (!href) return false;
-
-                const confirmTitle = '{{ __('index.send_test') }}';
-                const confirmText = '{{ __('index.confirm_test_telegram_group') }}';
-
-                window.askTelegramGroupConfirm(confirmTitle, confirmText, false).then(confirmed => {
-                    if (!confirmed) return;
-
-                    btn.data('is-testing', true).addClass('disabled').css('pointer-events', 'none');
-
-                    fetch(href, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        showToast(data.status ? 'success' : 'error', data.message || (data.status ? '{{ __('index.telegram_test_sent') }}' : '{{ __('index.telegram_test_failed') }}'));
-                        if (data.status && typeof window.refreshTelegramGroupBlock === 'function') {
-                            window.refreshTelegramGroupBlock(groupId);
-                        }
-                    })
-                    .catch(err => {
-                        showToast('error', 'Error sending test message.');
-                    })
-                    .finally(() => {
-                        btn.data('is-testing', false).removeClass('disabled').css('pointer-events', '');
-                    });
-                });
-
-                return false;
-            };
-
-            // Direct Global Toggle Status Handler
-            window.toggleTelegramGroupStatus = function (checkboxEl, event) {
-                const checkbox = $(checkboxEl);
-                const isChecked = checkbox.prop('checked');
-                const href = checkbox.attr('data-href') || checkbox.attr('href');
-                if (!href) return;
-
-                window.askTelegramGroupConfirm('{{ __('index.status') }}', '{{ __('index.are_you_sure_change_status') }}', false).then(confirmed => {
-                    if (confirmed) {
-                        fetch(href, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                            }
-                        })
-                        .then(response => {
-                            if (!response.ok) throw new Error('Status change failed');
-                            return response.json();
-                        })
-                        .then(data => {
-                            showToast('success', data.message || '{{ __('message.status_changed') }}');
-                        })
-                        .catch(err => {
-                            checkbox.prop('checked', !isChecked);
-                            showToast('error', 'Error changing status.');
-                        });
-                    } else {
-                        checkbox.prop('checked', !isChecked);
-                    }
-                });
-            };
+            $('#telegramGroupFilterCollapse').on('show.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramGroupFilterCollapse"]').attr('aria-expanded', 'true');
+            }).on('hide.bs.collapse', function () {
+                $('.directory-filter-toggle[data-bs-target="#telegramGroupFilterCollapse"]').attr('aria-expanded', 'false');
+            });
 
             // Delegated click listeners (Fallback)
             $(document).on('click', '.deleteTelegramGroup', function (event) {
