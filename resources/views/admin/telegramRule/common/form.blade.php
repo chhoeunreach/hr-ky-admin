@@ -1,13 +1,13 @@
 <div class="row">
     {{-- Rule Name --}}
     <div class="col-lg-7 col-md-6 mb-3">
-        <label for="name" class="form-label"><b>{{ __('index.rule_name') ?? 'ឈ្មោះវិធានការ (Rule Name)' }}</b> <span class="text-danger">*</span></label>
+        <label for="name" class="form-label"><b>{{ __('index.rule_name') }}</b> <span class="text-danger">*</span></label>
         <input type="text"
                class="form-control @error('name') is-invalid @enderror"
                id="name"
                name="name"
                value="{{ old('name', $rule->name ?? '') }}"
-               placeholder="ឧ. ជូនដំណឹងសុំច្បាប់ និងវត្តមានប្រចាំថ្ងៃ សាខាទួលគោក"
+               placeholder="{{ __('index.rule_name_placeholder') }}"
                required>
         @error('name')
             <div class="invalid-feedback">{{ $message }}</div>
@@ -16,7 +16,7 @@
 
     {{-- Active Status & Silent Mode in top row --}}
     <div class="col-lg-5 col-md-6 mb-3">
-        <label class="form-label"><b>{{ __('index.status') ?? 'ស្ថានភាពដំណើរការ (Status)' }}</b></label>
+        <label class="form-label"><b>{{ __('index.status') }}</b></label>
         <div class="d-flex align-items-center gap-3 p-2 border rounded bg-white" style="min-height: 42px;">
             <div class="form-check form-switch m-0">
                 <input class="form-check-input"
@@ -26,7 +26,7 @@
                        value="1"
                        {{ old('is_active', $rule->is_active ?? true) ? 'checked' : '' }}>
                 <label class="form-check-label fw-bold text-success cursor-pointer" for="is_active">
-                    ដំណើរការ (Active)
+                    {{ __('index.active') }}
                 </label>
             </div>
             <div class="vr"></div>
@@ -38,7 +38,7 @@
                        value="1"
                        {{ old('is_silent', $rule->is_silent ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label text-muted cursor-pointer small" for="is_silent">
-                    🔕 ស្ងាត់ (Silent Alert)
+                    🔕 {{ __('index.silent_alert') }}
                 </label>
             </div>
         </div>
@@ -50,20 +50,20 @@
             <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center py-2.5 border-bottom">
                 <div class="d-flex align-items-center">
                     <i data-feather="bell" class="me-2 text-primary" style="width: 20px; height: 20px;"></i>
-                    <strong class="fs-6">ជ្រើសរើស Actions & Events សម្រាប់ផ្ញើសារ (Notification Events Matrix) <span class="text-danger">*</span></strong>
+                    <strong class="fs-6">{{ __('index.notification_events_matrix') }} <span class="text-danger">*</span></strong>
                 </div>
                 <div class="btn-group btn-group-sm mt-2 mt-md-0" role="group">
                     <button type="button" class="btn btn-outline-primary btn-sm" id="btn-select-all-events">
-                        <i data-feather="check-square" class="me-1" style="width: 14px; height: 14px;"></i> Select All (ជ្រើសទាំងអស់)
+                        <i data-feather="check-square" class="me-1" style="width: 14px; height: 14px;"></i> {{ __('index.select_all') }}
                     </button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-deselect-all-events">
-                        <i data-feather="square" class="me-1" style="width: 14px; height: 14px;"></i> Clear All (លុបទាំងអស់)
+                        <i data-feather="square" class="me-1" style="width: 14px; height: 14px;"></i> {{ __('index.clear_all') }}
                     </button>
                 </div>
             </div>
             <div class="card-body p-3">
                 <p class="text-muted small mb-3">
-                    សូមជ្រើសរើសប្រភេទ Events ឬ Actions ជាក់លាក់ដែលអ្នកចង់ឱ្យវិធានការនេះចាប់យក និងផ្ញើសារជូនដំណឹងទៅកាន់ Telegram Channels គោលដៅ។ អ្នកអាចធីកតាមក្រុមទាំងមូល ឬជ្រើសរើស Event នីមួយៗដាច់ដោយឡែក។
+                    {{ __('index.notification_events_matrix_subtitle') }}
                 </p>
 
                 @php
@@ -126,15 +126,15 @@
     <div class="col-12 mb-3">
         <div class="d-flex justify-content-between align-items-center mb-1">
             <label for="channel_ids" class="form-label mb-0">
-                <b>{{ __('index.target_channels') ?? 'ទិសដៅទទួលសារ (Target Telegram Channels / Groups)' }}</b> <span class="text-danger">*</span>
+                <b>{{ __('index.target_channels') }}</b> <span class="text-danger">*</span>
             </label>
             @if($channels->isNotEmpty())
                 <div class="btn-group btn-group-sm">
                     <button type="button" class="btn btn-xs btn-outline-primary" id="btnSelectAllChannels">
-                        <i class="link-icon" data-feather="check-square" style="width: 12px; height: 12px;"></i> ជ្រើសរើសទាំងអស់ (Select All)
+                        <i class="link-icon" data-feather="check-square" style="width: 12px; height: 12px;"></i> {{ __('index.select_all') }}
                     </button>
                     <button type="button" class="btn btn-xs btn-outline-secondary" id="btnDeselectAllChannels">
-                        <i class="link-icon" data-feather="x-square" style="width: 12px; height: 12px;"></i> ដោះចេញទាំងអស់ (Clear)
+                        <i class="link-icon" data-feather="x-square" style="width: 12px; height: 12px;"></i> {{ __('index.clear_all') }}
                     </button>
                 </div>
             @endif
@@ -147,15 +147,14 @@
         @if($channels->isEmpty())
             <div class="alert alert-warning mb-0">
                 <i class="link-icon" data-feather="alert-circle"></i>
-                មិនទាន់មាន Telegram Channel ណាមួយត្រូវបានចុះឈ្មោះឡើយ។ សូមចូលទៅកាន់ទំព័រ
-                <a href="{{ route('admin.telegram-groups.create') }}" class="alert-link fw-bold">Telegram Channels</a> ដើម្បីបង្កើតមុនសិន។
+                {{ __('index.no_channel') }}. <a href="{{ route('admin.telegram-groups.create') }}" class="alert-link fw-bold">{{ __('index.add_telegram_group') }}</a>
             </div>
         @else
             <select class="form-select @error('channel_ids') is-invalid @enderror"
                     id="channel_ids"
                     name="channel_ids[]"
                     multiple="multiple"
-                    data-placeholder="ស្វែងរក និងជ្រើសរើស Channels ឬ Supergroup Topics..."
+                    data-placeholder="{{ __('index.select_target_channels') }}"
                     required>
                 @foreach($channels as $ch)
                     <option value="{{ $ch->id }}"
@@ -166,7 +165,7 @@
             </select>
             <div class="form-text text-muted small mt-1">
                 <i class="link-icon" data-feather="info" style="width: 12px; height: 12px;"></i>
-                អាចវាយបញ្ចូលឈ្មោះ Channel, Chat ID, ឬ Topic ID ដើម្បីស្វែងរក និងជ្រើសរើសបានយ៉ាងរហ័ស។
+                {{ __('index.target_channels_hint') }}
             </div>
         @endif
 
@@ -177,7 +176,7 @@
 
     {{-- Branch Scope --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label class="form-label"><b>{{ __('index.branch_scope') ?? 'វិសាលភាពសាខា (Branch Scope)' }}</b> <span class="text-danger">*</span></label>
+        <label class="form-label"><b>{{ __('index.branch_scope') }}</b> <span class="text-danger">*</span></label>
         @php
             $currentScope = old('branch_scope', $rule->branch_scope ?? 'all');
         @endphp
@@ -185,13 +184,13 @@
             <div class="form-check me-4">
                 <input class="form-check-input" type="radio" name="branch_scope" id="scope_all" value="all" {{ $currentScope === 'all' ? 'checked' : '' }}>
                 <label class="form-check-label cursor-pointer" for="scope_all">
-                    🌐 គ្រប់សាខាទាំងអស់ (All Branches)
+                    🌐 {{ __('index.all_branches') }}
                 </label>
             </div>
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="branch_scope" id="scope_specific" value="specific" {{ $currentScope === 'specific' ? 'checked' : '' }}>
                 <label class="form-check-label cursor-pointer" for="scope_specific">
-                    🏢 សាខាជាក់លាក់ (Specific Branches)
+                    🏢 {{ __('index.specific_branches') }}
                 </label>
             </div>
         </div>
@@ -199,7 +198,7 @@
 
     {{-- Specific Branches Multi-select (Hidden if scope is 'all') --}}
     <div class="col-lg-6 col-md-6 mb-3" id="specificBranchesContainer" style="{{ $currentScope === 'specific' ? '' : 'display: none;' }}">
-        <label for="branch_ids" class="form-label"><b>{{ __('index.select_branches') ?? 'ជ្រើសរើសសាខា (Select Branches)' }}</b></label>
+        <label for="branch_ids" class="form-label"><b>{{ __('index.select_branches') }}</b></label>
         @php
             $selectedBranches = (array) old('branch_ids', $rule->branch_ids ?? []);
         @endphp
@@ -210,12 +209,12 @@
                 </option>
             @endforeach
         </select>
-        <small class="text-muted">អាចជ្រើសរើសសាខាមួយ ឬច្រើន។</small>
+        <small class="text-muted">{{ __('index.select_branches_hint') }}</small>
     </div>
 
     {{-- Delivery Options --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label class="form-label"><b>{{ __('index.delivery_options') ?? 'ជម្រើសបន្ថែមនៃការផ្ញើ (Delivery Options)' }}</b></label>
+        <label class="form-label"><b>{{ __('index.delivery_options') }}</b></label>
         <div class="border rounded p-3 bg-white">
             <div class="form-check form-switch mb-2">
                 <input class="form-check-input"
@@ -225,7 +224,7 @@
                        value="1"
                        {{ old('send_location', $rule->send_location ?? true) ? 'checked' : '' }}>
                 <label class="form-check-label cursor-pointer" for="send_location">
-                    📍 ផ្ញើផែនទី GPS (Send Location Pin)
+                    📍 {{ __('index.send_location_pin') }}
                 </label>
             </div>
             <div class="form-check form-switch mb-0">
@@ -236,7 +235,7 @@
                        value="1"
                        {{ old('send_selfie', $rule->send_selfie ?? true) ? 'checked' : '' }}>
                 <label class="form-check-label cursor-pointer" for="send_selfie">
-                    📷 ផ្ញើរូបថត Selfie (Send Photo)
+                    📷 {{ __('index.send_photo_selfie') }}
                 </label>
             </div>
         </div>
@@ -244,12 +243,12 @@
 
     {{-- Description Notes --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label for="description" class="form-label"><b>{{ __('index.description') ?? 'កំណត់ចំណាំ (Description)' }}</b></label>
+        <label for="description" class="form-label"><b>{{ __('index.description') }}</b></label>
         <textarea class="form-control"
                   id="description"
                   name="description"
                   rows="3"
-                  placeholder="ពិពណ៌នាបន្ថែមអំពីគោលបំណងនៃវិធានការនេះ...">{{ old('description', $rule->description ?? '') }}</textarea>
+                  placeholder="{{ __('index.rule_desc_placeholder') }}">{{ old('description', $rule->description ?? '') }}</textarea>
     </div>
 
     {{-- Submit Buttons --}}
@@ -271,13 +270,13 @@
             if ($("#channel_ids").length) {
                 $("#channel_ids").select2({
                     width: '100%',
-                    placeholder: $("#channel_ids").data('placeholder') || 'ស្វែងរក និងជ្រើសរើស Channels ឬ Topics...',
+                    placeholder: $("#channel_ids").data('placeholder') || '{{ __('index.select_target_channels') }}',
                     allowClear: true,
                     closeOnSelect: false
                 });
             }
             if ($("#branch_ids").length) {
-                $("#branch_ids").select2({ width: '100%', placeholder: 'ជ្រើសរើសសាខា...' });
+                $("#branch_ids").select2({ width: '100%', placeholder: '{{ __('index.select_branches') }}...' });
             }
 
             // Toggle Specific Branches

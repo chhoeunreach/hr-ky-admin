@@ -145,7 +145,7 @@ class TelegramGroup extends Model
 
     public static function categorizedEventOptions(): array
     {
-        return [
+        $categories = [
             'attendance' => [
                 'action_key' => self::ACTION_ATTENDANCE,
                 'label' => 'វត្តមាន (Attendance)',
@@ -248,6 +248,16 @@ class TelegramGroup extends Model
                 ],
             ],
         ];
+
+        foreach ($categories as $catKey => &$catInfo) {
+            $langKey = 'index.category_' . $catKey;
+            if (function_exists('trans') && trans()->has($langKey)) {
+                $catInfo['label'] = __($langKey);
+            }
+        }
+        unset($catInfo);
+
+        return $categories;
     }
 
     public static function eventOptions(): array

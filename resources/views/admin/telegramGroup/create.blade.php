@@ -4,7 +4,7 @@
     @section('embedded', '1')
 @endif
 
-@section('title', 'Create Telegram Group')
+@section('title', __('index.add_telegram_group'))
 
 @section('button')
     <a href="{{ route('admin.telegram-groups.index') }}">

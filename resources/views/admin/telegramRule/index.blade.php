@@ -1,18 +1,18 @@
 @extends('layouts.master')
 
-@section('title', 'Telegram Notification Rules')
+@section('title', __('index.telegram_notification_rules'))
 
 @section('button')
     @can('create_telegram_group')
         <form action="{{ route('admin.telegram-rules.sync-default') }}" method="POST" class="d-inline me-1">
             @csrf
-            <button type="submit" class="btn btn-sm btn-outline-primary" title="បង្កើតវិធានការដើមស្វ័យប្រវត្តពី Chat IDs ដែលមានស្រាប់">
-                <i class="link-icon" data-feather="refresh-cw"></i> ទាញទិន្នន័យដើមពី Chat IDs
+            <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ __('index.sync_default_rules_hint') }}">
+                <i class="link-icon" data-feather="refresh-cw"></i> {{ __('index.sync_default_rules') }}
             </button>
         </form>
-        <a href="{{ route('admin.telegram-rules.create') }}" data-open-telegram-rule-modal data-telegram-rule-modal-title="{{ __('index.create_rule') ?? 'បង្កើតវិធានការថ្មី' }}">
+        <a href="{{ route('admin.telegram-rules.create') }}" data-open-telegram-rule-modal data-telegram-rule-modal-title="{{ __('index.add_telegram_rule') }}">
             <button class="btn btn-sm btn-primary">
-                <i class="link-icon" data-feather="plus"></i> {{ __('index.create_rule') ?? 'បង្កើតវិធានការថ្មី' }}
+                <i class="link-icon" data-feather="plus"></i> {{ __('index.add_telegram_rule') }}
             </button>
         </a>
     @endcan
@@ -21,7 +21,7 @@
 @section('main-content')
     <section class="content">
         @include('admin.section.flash_message')
-        @include('admin.telegramRule.common.breadcrumb', ['title' => 'Event Notification Rules'])
+        @include('admin.telegramRule.common.breadcrumb', ['title' => __('index.telegram_notification_rules')])
 
         {{-- Nav Tabs --}}
         @include('admin.telegramGroup.common.nav-tabs')
@@ -46,9 +46,9 @@
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-4 col-md-6">
-                            <label for="event_key" class="form-label">{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</label>
+                            <label for="event_key" class="form-label">{{ __('index.event') }}</label>
                             <select class="form-control select2-basic" id="event_key" name="event_key">
-                                <option value="">-- គ្រប់ព្រឹត្តិការណ៍ (All Events) --</option>
+                                <option value="">-- {{ __('index.all_events') }} --</option>
                                 @foreach($categorizedEvents as $catKey => $catData)
                                     <optgroup label="{{ $catData['label'] }}">
                                         @foreach($catData['events'] as $evtKey => $evtLabel)
@@ -65,8 +65,8 @@
                             <label for="is_active" class="form-label">{{ __('index.status') }}</label>
                             <select class="form-control select2-basic" id="is_active" name="is_active">
                                 <option value="">{{ __('index.all') }} {{ __('index.status') }}</option>
-                                <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }} (Active)</option>
-                                <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }} (Inactive)</option>
+                                <option value="1" {{ (string)($filterParameters['is_active'] ?? '') === '1' ? 'selected' : '' }}>{{ __('index.active') }}</option>
+                                <option value="0" {{ (string)($filterParameters['is_active'] ?? '') === '0' ? 'selected' : '' }}>{{ __('index.inactive') }}</option>
                             </select>
                         </div>
                     </div>
@@ -84,13 +84,13 @@
                     'directoryForm' => 'telegramRuleFilterForm',
                     'directorySearch' => 'telegramRuleListSearch',
                     'directoryRecords' => $rules,
-                    'directoryTitle' => 'Event Notification Rules',
+                    'directoryTitle' => __('index.telegram_notification_rules'),
                     'directoryIcon' => 'bell',
                     'directoryPermission' => 'create_telegram_group',
                     'directoryAddUrl' => route('admin.telegram-rules.create'),
                     'directoryAddTelegramRuleModal' => true,
-                    'directoryAddModalTitle' => __('index.add_telegram_rule') ?? 'បង្កើតវិធានការថ្មី (Create Notification Rule)',
-                    'directoryAddLabel' => __('index.add_telegram_rule') ?? 'បន្ថែមវិធានការថ្មី',
+                    'directoryAddModalTitle' => __('index.add_telegram_rule'),
+                    'directoryAddLabel' => __('index.add_telegram_rule'),
                     'directoryDefaultSize' => '10',
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],
@@ -103,14 +103,14 @@
                             <thead class="table-light">
                             <tr>
                                 <th>#</th>
-                                <th>{{ __('index.rule_name') ?? 'ឈ្មោះវិធានការ (Rule Name)' }}</th>
-                                <th>{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</th>
-                                <th>{{ __('index.branch_scope') ?? 'វិសាលភាព (Scope)' }}</th>
-                                <th>{{ __('index.target_channels') ?? 'Channels ទទួលសារ' }}</th>
-                                <th class="text-center">{{ __('index.options') ?? 'ជម្រើស' }}</th>
-                                <th class="text-center">{{ __('index.status') ?? 'ស្ថានភាព' }}</th>
+                                <th>{{ __('index.rule_name') }}</th>
+                                <th>{{ __('index.event') }}</th>
+                                <th>{{ __('index.branch_scope') }}</th>
+                                <th>{{ __('index.target_channels') }}</th>
+                                <th class="text-center">{{ __('index.delivery_options') }}</th>
+                                <th class="text-center">{{ __('index.status') }}</th>
                                 @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
-                                    <th class="text-center" data-directory-actions>{{ __('index.action') ?? 'សកម្មភាព' }}</th>
+                                    <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
                                 @endcanany
                             </tr>
                             </thead>
@@ -137,7 +137,7 @@
                                                 @endforeach
                                                 @if(count($ruleEventKeys) > 2)
                                                     <span class="badge bg-secondary" title="{{ implode(', ', array_map(fn($k) => $eventOptions[$k] ?? $k, array_slice($ruleEventKeys, 2))) }}" style="font-size: 11px;">
-                                                        +{{ count($ruleEventKeys) - 2 }} ផ្សេងទៀត
+                                                        +{{ count($ruleEventKeys) - 2 }} {{ __('index.more') }}
                                                     </span>
                                                 @endif
                                             </div>
@@ -155,11 +155,11 @@
                                     </td>
                                     <td>
                                         @if($rule->branch_scope === 'all')
-                                            <span class="badge bg-info">🌐 គ្រប់សាខា (All)</span>
+                                            <span class="badge bg-info">🌐 {{ __('index.all_branches') }}</span>
                                         @else
-                                            <span class="badge bg-warning text-dark">🏢 សាខាជាក់លាក់ (Specific)</span>
+                                            <span class="badge bg-warning text-dark">🏢 {{ __('index.specific_branches') }}</span>
                                             @if(!empty($rule->branch_ids))
-                                                <div class="small text-muted mt-1">{{ count($rule->branch_ids) }} សាខា</div>
+                                                <div class="small text-muted mt-1">{{ count($rule->branch_ids) }} {{ __('index.branches') }}</div>
                                             @endif
                                         @endif
                                     </td>
@@ -169,9 +169,9 @@
                                             $validChannels = array_filter(array_map(fn($id) => $channelsById[$id] ?? null, $channelIds));
                                         @endphp
                                         @if(empty($channelIds))
-                                            <span class="text-danger small"><i data-feather="alert-triangle"></i> គ្មាន Channel</span>
+                                            <span class="text-danger small"><i data-feather="alert-triangle"></i> {{ __('index.no_channel') }}</span>
                                         @elseif(empty($validChannels))
-                                            <span class="text-danger small"><i data-feather="alert-triangle"></i> Channel ត្រូវបានលុប</span>
+                                            <span class="text-danger small"><i data-feather="alert-triangle"></i> {{ __('index.channel_deleted') }}</span>
                                         @else
                                             @foreach(array_slice($validChannels, 0, 2) as $ch)
                                                 @php $chUrl = $ch->getTelegramUrl(); @endphp
@@ -192,19 +192,19 @@
                                                 @endif
                                             @endforeach
                                             @if(count($validChannels) > 2)
-                                                <span class="badge bg-secondary mb-1">+{{ count($validChannels) - 2 }} ផ្សេងទៀត</span>
+                                                <span class="badge bg-secondary mb-1">+{{ count($validChannels) - 2 }} {{ __('index.more') }}</span>
                                             @endif
                                         @endif
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge {{ $rule->send_location ? 'bg-success' : 'bg-secondary' }}" title="Send Location Map">
-                                            📍 Map
+                                        <span class="badge {{ $rule->send_location ? 'bg-success' : 'bg-secondary' }}" title="{{ __('index.send_location_pin') }}">
+                                            📍 {{ __('index.map') }}
                                         </span>
-                                        <span class="badge {{ $rule->send_selfie ? 'bg-success' : 'bg-secondary' }}" title="Send Selfie Photo">
-                                            📷 Photo
+                                        <span class="badge {{ $rule->send_selfie ? 'bg-success' : 'bg-secondary' }}" title="{{ __('index.send_photo_selfie') }}">
+                                            📷 {{ __('index.photo') }}
                                         </span>
                                         @if($rule->is_silent)
-                                            <span class="badge bg-dark" title="Silent Alert">🔕 Silent</span>
+                                            <span class="badge bg-dark" title="{{ __('index.silent_alert') }}">🔕 {{ __('index.silent_alert') }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">
@@ -217,7 +217,7 @@
                                             </label>
                                         @else
                                             <span class="badge {{ $rule->is_active ? 'bg-success' : 'bg-secondary' }}">
-                                                {{ $rule->is_active ? 'Active' : 'Inactive' }}
+                                                {{ $rule->is_active ? __('index.active') : __('index.inactive') }}
                                             </span>
                                         @endcan
                                     </td>
@@ -228,14 +228,14 @@
                                                     <a href="javascript:void(0)"
                                                        data-href="{{ route('admin.telegram-rules.test', $rule->id) }}"
                                                        class="btn btn-xs btn-outline-primary btnTestRule"
-                                                       title="ធ្វើតេស្តផ្ញើសារសាកល្បងទៅ Channels">
-                                                        <i class="link-icon" data-feather="send" style="width: 14px; height: 14px;"></i> Test
+                                                       title="{{ __('index.send_test') }}">
+                                                        <i class="link-icon" data-feather="send" style="width: 14px; height: 14px;"></i> {{ __('index.send_test') }}
                                                     </a>
                                                     @if($rule->last_test_at)
                                                         <div class="mt-1" style="font-size: 10px;">
                                                              <span class="badge {{ $rule->last_test_status === 'success' ? 'bg-success' : 'bg-danger' }}"
-                                                                   title="Last tested: {{ $rule->last_test_at }}">
-                                                                {{ $rule->last_test_status === 'success' ? 'Tested' : 'Failed' }}
+                                                                   title="{{ __('index.tested') }}: {{ $rule->last_test_at }}">
+                                                                {{ $rule->last_test_status === 'success' ? __('index.tested') : __('index.failed') }}
                                                             </span>
                                                         </div>
                                                     @endif
@@ -245,7 +245,7 @@
                                                 <a href="{{ route('admin.telegram-rules.edit', $rule->id) }}"
                                                    class="btn btn-xs btn-outline-info"
                                                    data-open-telegram-rule-modal
-                                                   data-telegram-rule-modal-title="{{ __('index.edit') }} វិធានការ: {{ $rule->name }}"
+                                                   data-telegram-rule-modal-title="{{ __('index.edit') }}: {{ $rule->name }}"
                                                    title="{{ __('index.edit') }}">
                                                     <i class="link-icon" data-feather="edit" style="width: 14px; height: 14px;"></i>
                                                 </a>
@@ -265,17 +265,17 @@
                                 <tr>
                                     <td colspan="8" class="text-center py-4 text-muted">
                                         <div class="mb-2"><i data-feather="inbox" style="width: 36px; height: 36px; stroke-width: 1.5;"></i></div>
-                                        <div>មិនទាន់មានវិធានការបញ្ជូនសារនៅឡើយទេ។ (No notification rules found).</div>
+                                        <div>{{ __('index.no_rules_found') }}</div>
                                         @can('create_telegram_group')
                                             <div class="mt-3">
                                                 <form action="{{ route('admin.telegram-rules.sync-default') }}" method="POST" class="d-inline me-2">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                                        <i class="link-icon" data-feather="download-cloud"></i> បង្កើតវិធានការដើមពី Chat IDs ដែលមានស្រាប់
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary" title="{{ __('index.sync_default_rules_hint') }}">
+                                                        <i class="link-icon" data-feather="download-cloud"></i> {{ __('index.sync_default_rules') }}
                                                     </button>
                                                 </form>
                                                 <a href="{{ route('admin.telegram-rules.create') }}" class="btn btn-sm btn-primary">
-                                                    <i class="link-icon" data-feather="plus"></i> បង្កើតវិធានការដំបូង
+                                                    <i class="link-icon" data-feather="plus"></i> {{ __('index.create_first_rule') }}
                                                 </a>
                                             </div>
                                         @endcan
@@ -353,12 +353,12 @@
                 let isChecked = checkbox.prop('checked');
 
                 Swal.fire({
-                    title: 'ប្ដូរស្ថានភាពវិធានការ?',
-                    text: 'តើអ្នកចង់' + (isChecked ? 'បើកដំណើរការ (Active)' : 'បិទដំណើរការ (Inactive)') + ' វិធានការនេះឬ?',
+                    title: '{{ __('index.confirm_change_rule_status') }}',
+                    text: '{{ __('index.are_you_sure_change_status') }}',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonText: 'បាទ/ចាស',
-                    cancelButtonText: 'បោះបង់'
+                    confirmButtonText: '{{ __('index.yes') }}',
+                    cancelButtonText: '{{ __('index.no') }}'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         fetch(href, {
@@ -372,11 +372,11 @@
                             return response.json();
                         })
                         .then(data => {
-                            showToast('success', data.message || 'ស្ថានភាពត្រូវបានផ្លាស់ប្តូរដោយជោគជ័យ។');
+                            showToast('success', data.message || '{{ __('message.status_changed') }}');
                         })
                         .catch(err => {
                             checkbox.prop('checked', !isChecked);
-                            showToast('error', 'មានបញ្ហាក្នុងការផ្លាស់ប្តូរស្ថានភាព។');
+                            showToast('error', 'Error changing status.');
                         });
                     } else {
                         checkbox.prop('checked', !isChecked);
@@ -391,13 +391,13 @@
                 let row = $(this).closest('tr');
 
                 Swal.fire({
-                    title: 'លុបវិធានការនេះ?',
-                    text: 'តើអ្នកប្រាកដជាចង់លុបវិធានការបញ្ជូនសារនេះចេញមែនទេ? សកម្មភាពនេះមិនអាចត្រឡប់វិញបានឡើយ។',
+                    title: '{{ __('index.delete') }}',
+                    text: '{{ __('index.confirm_delete_telegram_rule') }}',
                     icon: 'error',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
-                    confirmButtonText: 'បាទ/ចាស លុបចេញ',
-                    cancelButtonText: 'បោះបង់'
+                    confirmButtonText: '{{ __('index.yes') }}',
+                    cancelButtonText: '{{ __('index.no') }}'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         fetch(href, {
@@ -408,7 +408,7 @@
                         })
                         .then(response => response.json())
                         .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || 'វិធានការត្រូវបានលុបចេញដោយជោគជ័យ។');
+                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_rule_deleted') }}');
                             if (data.status) {
                                 row.fadeOut(300, function () {
                                     row.remove();
@@ -421,7 +421,7 @@
                             }
                         })
                         .catch(err => {
-                            showToast('error', 'មានបញ្ហាក្នុងការលុបវិធានការ។');
+                            showToast('error', 'Failed to delete rule.');
                         });
                     }
                 });
@@ -434,12 +434,12 @@
                 let href = btn.data('href');
 
                 Swal.fire({
-                    title: 'ផ្ញើសារសាកល្បង (Test)',
-                    text: 'តើអ្នកចង់ផ្ញើសារ Test ទៅកាន់ Telegram Channels នៃវិធានការនេះមែនទេ?',
+                    title: '{{ __('index.send_test') }}',
+                    text: '{{ __('index.confirm_test_telegram_rule') }}',
                     icon: 'info',
                     showCancelButton: true,
-                    confirmButtonText: 'ផ្ញើសារ Test',
-                    cancelButtonText: 'បោះបង់'
+                    confirmButtonText: '{{ __('index.yes') }}',
+                    cancelButtonText: '{{ __('index.no') }}'
                 }).then((result) => {
                     if (result.isConfirmed) {
                         btn.addClass('disabled');
@@ -451,13 +451,13 @@
                         })
                         .then(response => response.json())
                         .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || 'បានផ្ញើសារ Test រួចរាល់។');
+                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_test_sent') }}');
                             if (data.status) {
                                 setTimeout(() => window.location.reload(), 1000);
                             }
                         })
                         .catch(err => {
-                            showToast('error', 'មានបញ្ហាក្នុងការផ្ញើសារ Test');
+                            showToast('error', '{{ __('index.telegram_test_failed') }}');
                         })
                         .finally(() => {
                             btn.removeClass('disabled');

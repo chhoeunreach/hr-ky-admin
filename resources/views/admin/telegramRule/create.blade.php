@@ -4,7 +4,7 @@
     @section('embedded', '1')
 @endif
 
-@section('title', 'Create Notification Rule')
+@section('title', __('index.add_telegram_rule'))
 
 @section('button')
     <a href="{{ route('admin.telegram-rules.index') }}">

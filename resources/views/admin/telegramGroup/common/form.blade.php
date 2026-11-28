@@ -1,10 +1,10 @@
 <div class="row">
     {{-- Group / Channel Name --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label for="name" class="form-label"><b>Group / Channel Name</b> <span class="text-danger">*</span></label>
+        <label for="name" class="form-label"><b>{{ __('index.channel_or_group_name') }}</b> <span class="text-danger">*</span></label>
         <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" required
-               value="{{ old('name', $telegramGroup->name ?? '') }}" placeholder="ឧ. KY-HR | HQ | Management Channel">
-        <div class="form-text small text-muted">ដាក់ឈ្មោះសម្គាល់ Channel ឬ Group ឱ្យងាយស្រួលចំណាំ</div>
+               value="{{ old('name', $telegramGroup->name ?? '') }}" placeholder="{{ __('index.channel_or_group_name_placeholder') }}">
+        <div class="form-text small text-muted">{{ __('index.channel_or_group_name_hint') }}</div>
         @error('name')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
@@ -12,7 +12,7 @@
 
     {{-- Telegram Chat ID --}}
     <div class="col-lg-6 col-md-6 mb-3">
-        <label for="chat_ids" class="form-label"><b>Telegram Chat ID</b> <span class="text-danger">*</span></label>
+        <label for="chat_ids" class="form-label"><b>{{ __('index.telegram_chat_id') }}</b> <span class="text-danger">*</span></label>
         @php
             $selectedChatIds = old('chat_ids', $telegramGroup->chat_ids ?? (isset($telegramGroup->chat_id) ? [$telegramGroup->chat_id] : []));
             $selectedChatIds = is_array($selectedChatIds) ? $selectedChatIds : [];
@@ -23,7 +23,7 @@
                 <option value="{{ $chatId }}" {{ in_array($chatId, $selectedChatIds, true) ? 'selected' : '' }}>{{ $chatId }}</option>
             @endforeach
         </select>
-        <div class="form-text small text-muted">បញ្ចូល Chat ID (ឧ. -1001234567890 ឬ @channel_username) រួចចុច Enter</div>
+        <div class="form-text small text-muted">{{ __('index.telegram_chat_id_hint') }}</div>
         @error('chat_ids')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
@@ -32,8 +32,8 @@
     {{-- Direct Telegram Link (Real link can direct) --}}
     <div class="col-lg-8 col-md-7 mb-3">
         <label for="invite_link" class="form-label">
-            <b>តំណភ្ជាប់ផ្ទាល់ទៅកាន់ Chat (Direct Link / Invite Link)</b>
-            <span class="text-muted small">(ណែនាំឱ្យបញ្ចូល ដើម្បីចុច Direct ចូលបាន)</span>
+            <b>{{ __('index.direct_telegram_link') }} ({{ __('index.invite_link') }})</b>
+            <span class="text-muted small">{{ __('index.invite_link_optional_hint') }}</span>
         </label>
         <div class="input-group">
             <span class="input-group-text bg-light text-primary">
@@ -44,13 +44,13 @@
                    id="invite_link"
                    name="invite_link"
                    value="{{ old('invite_link', $telegramGroup->invite_link ?? '') }}"
-                   placeholder="ឧ. https://t.me/+AbCdEfGh ឬ https://t.me/your_channel">
-            <button type="button" class="btn btn-outline-secondary" id="btnTestDirectLink" title="សាកល្បងបើកតំណភ្ជាប់នេះ">
-                <i data-feather="compass" style="width: 14px; height: 14px;"></i> សាកល្បងបើក
+                   placeholder="{{ __('index.invite_link_placeholder') }}">
+            <button type="button" class="btn btn-outline-secondary" id="btnTestDirectLink" title="{{ __('index.test_direct_link') }}">
+                <i data-feather="compass" style="width: 14px; height: 14px;"></i> {{ __('index.test_direct_link') }}
             </button>
         </div>
         <div class="form-text small text-muted">
-            បញ្ចូល Link ចូលក្រុម (Invite Link) ឬ Public Username Link ដើម្បីឱ្យ Admin អាចចុច Direct ចូលទៅកាន់ Telegram Chat ផ្ទាល់បានភ្លាមៗ។
+            {{ __('index.invite_link_hint') }}
         </div>
         @error('invite_link')
             <div class="invalid-feedback d-block">{{ $message }}</div>
@@ -60,15 +60,15 @@
     {{-- Topic ID / Thread ID --}}
     <div class="col-lg-4 col-md-5 mb-3">
         <label for="topic_id" class="form-label">
-            <b>Topic ID / Thread ID</b>
-            <span class="text-muted small">(ស្រេចចិត្ត)</span>
+            <b>{{ __('index.topic_id') }}</b>
+            <span class="text-muted small">({{ __('index.optional') }})</span>
         </label>
         <div class="input-group">
             <span class="input-group-text bg-light"><i data-feather="hash" style="width: 14px; height: 14px;"></i></span>
             <input type="number" class="form-control @error('topic_id') is-invalid @enderror" id="topic_id" name="topic_id" min="1"
-                   value="{{ old('topic_id', $telegramGroup->topic_id ?? '') }}" placeholder="ឧ. 1, 102 (ទុកទទេបើគ្មាន)">
+                   value="{{ old('topic_id', $telegramGroup->topic_id ?? '') }}" placeholder="{{ __('index.topic_id_placeholder') }}">
         </div>
-        <div class="form-text small text-muted">សម្រាប់ Telegram Supergroup ដែលបើក Topics/Forum</div>
+        <div class="form-text small text-muted">{{ __('index.topic_id_hint') }}</div>
         @error('topic_id')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
@@ -86,7 +86,7 @@
                        value="1"
                        {{ old('is_active', $telegramGroup->is_active ?? true) ? 'checked' : '' }}>
                 <label class="form-check-label fw-bold text-success cursor-pointer" for="is_active">
-                    ដំណើរការ (Active)
+                    {{ __('index.active') }}
                 </label>
             </div>
         </div>
@@ -94,10 +94,10 @@
 
     {{-- Description / Notes --}}
     <div class="col-lg-8 col-md-6 mb-3">
-        <label for="description" class="form-label"><b>កំណត់ចំណាំ (Description / Notes)</b></label>
+        <label for="description" class="form-label"><b>{{ __('index.description') }}</b></label>
         <input type="text" class="form-control" id="description" name="description"
                value="{{ old('description', $telegramGroup->description ?? '') }}"
-               placeholder="ឧ. ក្រុមទទួលដំណឹងវត្តមាន និងសុំច្បាប់សម្រាប់ថ្នាក់គ្រប់គ្រង">
+               placeholder="{{ __('index.telegram_group_desc_placeholder') }}">
     </div>
 
     {{-- Info Notice pointing to Notification Rules --}}
@@ -106,13 +106,12 @@
             <div class="d-flex align-items-center gap-2">
                 <i data-feather="info" class="text-primary" style="width: 20px; height: 20px; min-width: 20px;"></i>
                 <div class="small">
-                    <strong>ការកំណត់ការបញ្ជូនសារ (Notification Events Matrix):</strong>
-                    ប្រភេទ Events និងលក្ខខណ្ឌនៃការផ្ញើសារទាំងអស់ត្រូវបានគ្រប់គ្រងយ៉ាងពេញលេញនៅលើ
-                    <strong>វិធានការបញ្ជូនសារ (Notification Rules)</strong>។
+                    <strong>{{ __('index.notification_events_matrix') }}:</strong>
+                    {{ __('index.notification_matrix_notice') }}
                 </div>
             </div>
             <a href="{{ route('admin.telegram-rules.index') }}" class="btn btn-sm btn-outline-primary text-nowrap">
-                <i data-feather="bell" style="width: 13px; height: 13px;"></i> ទៅកាន់វិធានការបញ្ជូនសារ
+                <i data-feather="bell" style="width: 13px; height: 13px;"></i> {{ __('index.go_to_notification_rules') }}
             </a>
         </div>
     </div>
@@ -124,14 +123,14 @@
                 <div>
                     <h6 class="mb-1 text-dark fw-bold">
                         <i data-feather="send" class="text-primary me-1" style="width: 16px; height: 16px;"></i>
-                        ផ្ញើសារសាកល្បងទៅកាន់ Chat ID (Send Test Message)
+                        {{ __('index.send_test_message') }}
                     </h6>
                     <div class="small text-muted">
-                        ចុចប៊ូតុងនេះដើម្បីផ្ញើសារសាកល្បងភ្លាមៗទៅកាន់ Chat ID ខាងលើ ដើម្បីផ្ទៀងផ្ទាត់ថា Telegram Bot អាចផ្ញើសារចូលបានដោយជោគជ័យ។
+                        {{ __('index.send_test_chat_hint') }}
                     </div>
                 </div>
                 <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btnSendTestChat">
-                    <i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង
+                    <i data-feather="send" style="width: 14px; height: 14px;"></i> {{ __('index.send_test') }}
                 </button>
             </div>
         </div>
@@ -162,7 +161,7 @@
             $('#chat_ids').select2({
                 tags: true,
                 tokenSeparators: [',', ' '],
-                placeholder: 'បញ្ចូល Chat ID រួចចុច Enter...'
+                placeholder: '{{ __('index.telegram_chat_id_hint') }}'
             });
 
             // Test Direct Link Button
@@ -188,12 +187,12 @@
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'info',
-                            title: 'គ្មាន Link សម្រាប់បើក',
-                            text: 'សូមបញ្ចូល Invite Link ឬ Chat ID ជាមុនសិន!',
-                            confirmButtonText: 'យល់ព្រម'
+                            title: '{{ __('index.no_direct_link') }}',
+                            text: '{{ __('index.invite_link_hint') }}',
+                            confirmButtonText: '{{ __('index.ok') }}'
                         });
                     } else {
-                        alert('សូមបញ្ចូល Invite Link ឬ Chat ID ជាមុនសិន!');
+                        alert('{{ __('index.invite_link_hint') }}');
                     }
                 }
             });
@@ -206,18 +205,18 @@
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'ខ្វះ Chat ID!',
-                            text: 'សូមបញ្ចូល Telegram Chat ID យ៉ាងហោចណាស់មួយសិន!',
-                            confirmButtonText: 'យល់ព្រម'
+                            title: '{{ __('index.telegram_chat_id') }}',
+                            text: '{{ __('index.telegram_chat_id_hint') }}',
+                            confirmButtonText: '{{ __('index.ok') }}'
                         });
                     } else {
-                        alert('សូមបញ្ចូល Telegram Chat ID យ៉ាងហោចណាស់មួយសិន!');
+                        alert('{{ __('index.telegram_chat_id_hint') }}');
                     }
                     return;
                 }
 
                 var btn = $(this);
-                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> កំពុងផ្ញើ...');
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> {{ __('index.sending') }}');
 
                 $.ajax({
                     url: "{{ route('admin.telegram-groups.send-test') }}",
@@ -229,32 +228,32 @@
                         name: $('#name').val() || 'Test Channel'
                     },
                     success: function (res) {
-                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង');
+                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> {{ __('index.send_test') }}');
                         if (typeof feather !== 'undefined') feather.replace();
 
-                        var msg = (res && res.message) ? res.message : 'សារសាកល្បងត្រូវបានផ្ញើដោយជោគជ័យ!';
+                        var msg = (res && res.message) ? res.message : '{{ __('index.telegram_test_sent') }}';
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'success',
-                                title: 'ជោគជ័យ!',
+                                title: '{{ __('index.success') }}',
                                 text: msg,
-                                confirmButtonText: 'យល់ព្រម'
+                                confirmButtonText: '{{ __('index.ok') }}'
                             });
                         } else {
                             alert(msg);
                         }
                     },
                     error: function (xhr) {
-                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> ផ្ញើសារសាកល្បង');
+                        btn.prop('disabled', false).html('<i data-feather="send" style="width: 14px; height: 14px;"></i> {{ __('index.send_test') }}');
                         if (typeof feather !== 'undefined') feather.replace();
 
-                        var err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'ការផ្ញើសារសាកល្បងមិនជោគជ័យ។ សូមពិនិត្យមើល Bot Token និង Chat ID!';
+                        var err = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : '{{ __('index.telegram_test_failed') }}';
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({
                                 icon: 'error',
-                                title: 'បរាជ័យ!',
+                                title: '{{ __('index.failed') }}',
                                 text: err,
-                                confirmButtonText: 'យល់ព្រម'
+                                confirmButtonText: '{{ __('index.ok') }}'
                             });
                         } else {
                             alert(err);

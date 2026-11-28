@@ -1,12 +1,12 @@
 @extends('layouts.master')
 
-@section('title', 'Telegram Groups')
+@section('title', __('index.telegram_channel_or_group_lists'))
 
 @section('button')
     @can('create_telegram_group')
-        <a href="{{ route('admin.telegram-groups.create') }}" data-open-telegram-group-modal data-telegram-group-modal-title="{{ __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group ថ្មី' }}">
+        <a href="{{ route('admin.telegram-groups.create') }}" data-open-telegram-group-modal data-telegram-group-modal-title="{{ __('index.add_telegram_group') }}">
             <button class="btn btn-sm btn-primary">
-                <i class="link-icon" data-feather="plus"></i> {{ __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group' }}
+                <i class="link-icon" data-feather="plus"></i> {{ __('index.add_telegram_group') }}
             </button>
         </a>
     @endcan
@@ -15,7 +15,7 @@
 @section('main-content')
     <section class="content">
         @include('admin.section.flash_message')
-        @include('admin.telegramGroup.common.breadcrumb', ['title' => 'Telegram Groups'])
+        @include('admin.telegramGroup.common.breadcrumb', ['title' => __('index.telegram_channel_or_group_lists')])
         @include('admin.telegramGroup.common.nav-tabs')
 
         @php
@@ -36,15 +36,15 @@
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-3 col-md-6">
-                            <label for="name" class="form-label">Group Name</label>
-                            <input type="text" id="name" name="name" placeholder="Search by group name"
+                            <label for="name" class="form-label">{{ __('index.channel_or_group_name') }}</label>
+                            <input type="text" id="name" name="name" placeholder="{{ __('index.channel_or_group_name') }}"
                                    value="{{ $filterParameters['name'] ?? '' }}" class="form-control">
                         </div>
 
                         <div class="col-xl-3 col-md-6">
-                            <label for="action_key" class="form-label">Action</label>
+                            <label for="action_key" class="form-label">{{ __('index.action') }}</label>
                             <select class="form-control" id="action_key" name="action_key">
-                                <option value="">All Actions</option>
+                                <option value="">{{ __('index.all_actions') }}</option>
                                 @foreach($actionOptions as $key => $label)
                                     <option value="{{ $key }}" {{ ($filterParameters['action_key'] ?? '') === $key ? 'selected' : '' }}>{{ $label }}</option>
                                 @endforeach
@@ -73,13 +73,13 @@
                     'directoryForm' => 'telegramGroupFilterForm',
                     'directorySearch' => 'telegramGroupListSearch',
                     'directoryRecords' => $telegramGroups,
-                    'directoryTitle' => 'Telegram Groups',
+                    'directoryTitle' => __('index.telegram_channel_or_group_lists'),
                     'directoryIcon' => 'send',
                     'directoryPermission' => 'create_telegram_group',
                     'directoryAddUrl' => route('admin.telegram-groups.create'),
                     'directoryAddTelegramGroupModal' => true,
-                    'directoryAddModalTitle' => __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group ថ្មី',
-                    'directoryAddLabel' => __('index.add_telegram_group') ?? 'បន្ថែម Channel/Group',
+                    'directoryAddModalTitle' => __('index.add_telegram_group'),
+                    'directoryAddLabel' => __('index.add_telegram_group'),
                     'directoryDefaultSize' => '10',
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],
@@ -92,11 +92,11 @@
                             <thead class="table-light">
                             <tr>
                                 <th>#</th>
-                                <th>Channel / Group Name</th>
-                                <th>Telegram Chat ID</th>
-                                <th>Topic ID</th>
-                                <th>Direct Telegram Link</th>
-                                <th class="text-center">Assigned Rules</th>
+                                <th>{{ __('index.channel_or_group_name') }}</th>
+                                <th>{{ __('index.telegram_chat_id') }}</th>
+                                <th>{{ __('index.topic_id') }}</th>
+                                <th>{{ __('index.direct_telegram_link') }}</th>
+                                <th class="text-center">{{ __('index.assigned_rules') }}</th>
                                 <th class="text-center">{{ __('index.status') }}</th>
                                 @canany(['edit_telegram_group','delete_telegram_group','test_telegram_group'])
                                     <th class="text-center" data-directory-actions>{{ __('index.action') }}</th>
@@ -142,12 +142,12 @@
                                         @endphp
                                         @if($directWebUrl)
                                             <div class="d-flex align-items-center gap-1 flex-wrap">
-                                                <a href="{{ $directWebUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1" style="border-radius: 6px; font-size: 11px;" title="Open Telegram Web / Direct Link: {{ $directWebUrl }}">
-                                                    <i data-feather="external-link" style="width: 12px; height: 12px;"></i> Open Chat
+                                                <a href="{{ $directWebUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1" style="border-radius: 6px; font-size: 11px;" title="{{ __('index.open_chat') }}: {{ $directWebUrl }}">
+                                                    <i data-feather="external-link" style="width: 12px; height: 12px;"></i> {{ __('index.open_chat') }}
                                                 </a>
                                                 @if($directAppUrl)
-                                                    <a href="{{ $directAppUrl }}" class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 px-1.5 py-1" style="border-radius: 6px; font-size: 11px;" title="Open in Telegram Desktop / Mobile App (tg://)">
-                                                        <i data-feather="send" style="width: 11px; height: 11px;"></i> App
+                                                    <a href="{{ $directAppUrl }}" class="btn btn-xs btn-outline-secondary d-inline-flex align-items-center gap-1 px-1.5 py-1" style="border-radius: 6px; font-size: 11px;" title="{{ __('index.telegram_app') }} (tg://)">
+                                                        <i data-feather="send" style="width: 11px; height: 11px;"></i> {{ __('index.telegram_app') }}
                                                     </a>
                                                 @endif
                                             </div>
@@ -157,17 +157,17 @@
                                                 </div>
                                             @endif
                                         @else
-                                            <span class="text-muted small">No direct link</span>
+                                            <span class="text-muted small">{{ __('index.no_direct_link') }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">
                                         @php $rCount = $rulesCountByChannel[$telegramGroup->id] ?? 0; @endphp
                                         @if($rCount > 0)
-                                            <a href="{{ route('admin.telegram-rules.index') }}" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 text-decoration-none px-2 py-1 rounded-pill" title="View notification rules targeting this channel">
-                                                <i data-feather="bell" style="width: 11px; height: 11px;" class="me-1"></i> {{ $rCount }} {{ Str::plural('Rule', $rCount) }}
+                                            <a href="{{ route('admin.telegram-rules.index') }}" class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 text-decoration-none px-2 py-1 rounded-pill" title="{{ __('index.assigned_rules') }}">
+                                                <i data-feather="bell" style="width: 11px; height: 11px;" class="me-1"></i> {{ $rCount }} {{ __('index.rules') }}
                                             </a>
                                         @else
-                                            <span class="badge bg-light text-muted border px-2 py-1 rounded-pill">0 Rules</span>
+                                            <span class="badge bg-light text-muted border px-2 py-1 rounded-pill">0 {{ __('index.rules') }}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">
@@ -191,13 +191,13 @@
                                                         <a class="btn btn-sm btn-outline-primary sendTelegramTest"
                                                            data-href="{{ route('admin.telegram-groups.test', $telegramGroup->id) }}"
                                                            href="javascript:void(0)">
-                                                            <i class="link-icon" data-feather="send"></i> Send Test
+                                                            <i class="link-icon" data-feather="send"></i> {{ __('index.send_test') }}
                                                         </a>
                                                         @if($telegramGroup->last_tested_at)
                                                             <div class="mt-1">
-                                                                <span class="badge {{ $telegramGroup->last_test_status === 'success' ? 'bg-success' : 'bg-danger' }}"
-                                                                      title="Last tested: {{ $telegramGroup->last_tested_at }}">
-                                                                    {{ $telegramGroup->last_test_status === 'success' ? 'Tested' : 'Failed' }}
+                                                                 <span class="badge {{ $telegramGroup->last_test_status === 'success' ? 'bg-success' : 'bg-danger' }}"
+                                                                       title="{{ __('index.tested') }}: {{ $telegramGroup->last_tested_at }}">
+                                                                    {{ $telegramGroup->last_test_status === 'success' ? __('index.tested') : __('index.failed') }}
                                                                 </span>
                                                             </div>
                                                         @endif
@@ -295,8 +295,8 @@
                 Swal.fire({
                     title: '{{ __('index.are_you_sure_change_status') }}',
                     showDenyButton: true,
-                    confirmButtonText: `Yes`,
-                    denyButtonText: `No`,
+                    confirmButtonText: `{{ __('index.yes') }}`,
+                    denyButtonText: `{{ __('index.no') }}`,
                     padding: '10px 50px 10px 50px',
                     allowOutsideClick: false
                 }).then((result) => {
@@ -329,10 +329,10 @@
                 event.preventDefault();
                 const href = $(this).data('href');
                 Swal.fire({
-                    title: 'Are you sure you want to delete this Telegram group?',
+                    title: '{{ __('index.confirm_delete_telegram_group') }}',
                     showDenyButton: true,
-                    confirmButtonText: `Yes`,
-                    denyButtonText: `No`,
+                    confirmButtonText: `{{ __('index.yes') }}`,
+                    denyButtonText: `{{ __('index.no') }}`,
                     padding: '10px 50px 10px 50px',
                     allowOutsideClick: false
                 }).then((result) => {
@@ -345,7 +345,7 @@
                         })
                         .then(response => response.json())
                         .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || 'Deleted successfully.');
+                            showToast(data.status ? 'success' : 'error', data.message || '{{ __('index.telegram_group_deleted') }}');
                             if (data.status) {
                                 setTimeout(() => window.location.reload(), 500);
                             }
@@ -362,10 +362,10 @@
                 const btn = $(this);
                 const href = btn.data('href');
                 Swal.fire({
-                    title: 'Send test message to this Telegram group?',
+                    title: '{{ __('index.confirm_test_telegram_group') }}',
                     showDenyButton: true,
-                    confirmButtonText: `Yes`,
-                    denyButtonText: `No`,
+                    confirmButtonText: `{{ __('index.yes') }}`,
+                    denyButtonText: `{{ __('index.no') }}`,
                     padding: '10px 50px 10px 50px',
                     allowOutsideClick: false
                 }).then((result) => {
@@ -379,7 +379,7 @@
                         })
                         .then(response => response.json())
                         .then(data => {
-                            showToast(data.status ? 'success' : 'error', data.message || (data.status ? 'Test sent successfully.' : 'Test failed.'));
+                            showToast(data.status ? 'success' : 'error', data.message || (data.status ? '{{ __('index.telegram_test_sent') }}' : '{{ __('index.telegram_test_failed') }}'));
                             if (data.status) {
                                 setTimeout(() => window.location.reload(), 1000);
                             }
