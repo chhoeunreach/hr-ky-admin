@@ -132,10 +132,28 @@
         };
         const submit = () => {
             if (!syncSearch()) {const input = document.createElement('input'); input.type = 'hidden'; input.name = tools.dataset.directorySearchKey; input.value = search.value; form.append(input);}
-            form.requestSubmit();
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                form.submit();
+            }
         };
         if (!live) {
-            tools.querySelector('[name="per_page"]').addEventListener('change', submit);
+            const perPageEl = tools.querySelector('[name="per_page"]');
+            if (perPageEl) {
+                let submittingPerPage = false;
+                const onPerPageChange = () => {
+                    if (submittingPerPage) return;
+                    submittingPerPage = true;
+                    const pageInput = form.querySelector('[name="page"]');
+                    if (pageInput) pageInput.value = '1';
+                    submit();
+                };
+                perPageEl.addEventListener('change', onPerPageChange);
+                if (window.jQuery) {
+                    window.jQuery(perPageEl).on('select2:select', onPerPageChange);
+                }
+            }
             search.addEventListener('keydown', event => {if (event.key === 'Enter') {event.preventDefault(); submit();}});
             search.addEventListener('search', submit);
         }

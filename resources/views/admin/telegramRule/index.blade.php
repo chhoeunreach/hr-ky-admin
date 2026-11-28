@@ -44,7 +44,6 @@
             <div id="telegramRuleFilterCollapse" class="collapse{{ $hasRuleFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-rules.index') }}" id="telegramRuleFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                    <input type="hidden" id="rule_per_page_hidden" name="per_page" value="{{ $filterParameters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-4 col-md-6">
                             <label for="event_key" class="form-label">{{ __('index.event') ?? 'ព្រឹត្តិការណ៍ (Event)' }}</label>
@@ -93,7 +92,7 @@
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],
                     'directorySearchKey' => 'search',
-                    'directoryLive' => true,
+                    'directoryLive' => false,
                 ])
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -297,7 +296,7 @@
                     @endif
                 </div>
                 <div class="dataTables_paginate">
-                    {{ $rules->links() }}
+                    {{ $rules->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>
@@ -339,211 +338,8 @@
                 }
             };
 
-            let ruleSearchTimer = null;
-            let ruleListController = null;
-            let ruleListRequestId = 0;
-
-            const replaceTelegramRuleResults = (doc) => {
-                const currentTableBody = document.querySelector('#telegramRuleTable tbody');
-                const nextTableBody = doc.querySelector('#telegramRuleTable tbody');
-                const currentPaginationArea = document.querySelector('#telegramRulePaginationArea');
-                const nextPaginationArea = doc.querySelector('#telegramRulePaginationArea');
-
-                if (!currentTableBody || !nextTableBody) {
-                    return false;
-                }
-
-                currentTableBody.innerHTML = nextTableBody.innerHTML;
-
-                const count = document.querySelector('[data-directory-count="telegramRuleTable"]');
-                const nextCount = doc.querySelector('[data-directory-count="telegramRuleTable"]');
-                if (count && nextCount) count.textContent = nextCount.textContent;
-
-                if (currentPaginationArea && nextPaginationArea) {
-                    currentPaginationArea.innerHTML = nextPaginationArea.innerHTML;
-                } else {
-                    const currentPagination = document.querySelector('#telegramRuleListSection .dataTables_paginate');
-                    const nextPagination = doc.querySelector('#telegramRuleListSection .dataTables_paginate');
-                    if (currentPagination) {
-                        currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
-                    }
-                }
-
-                document.dispatchEvent(new CustomEvent('directory:updated'));
-
-                if (window.feather) {
-                    feather.replace();
-                }
-
-                return true;
-            };
-
-            const refreshTelegramRuleList = (options = {}) => {
-                const form = document.getElementById('telegramRuleFilterForm');
-                const listSection = document.getElementById('telegramRuleListSection');
-                const tableBody = document.querySelector('#telegramRuleTable tbody');
-
-                if (!form || !listSection) {
-                    return;
-                }
-
-                const params = new URLSearchParams(new FormData(form));
-
-                // Explicitly sync per_page from the directory-toolbar select
-                const perPageSelect = document.getElementById('per_page');
-                const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
-                if (perPageVal) {
-                    params.delete('per_page');
-                    params.set('per_page', perPageVal);
-                    const hiddenRulePerPage = document.getElementById('rule_per_page_hidden');
-                    if (hiddenRulePerPage) hiddenRulePerPage.value = perPageVal;
-                }
-
-                // Explicitly sync search from the directory search input
-                const searchVal = document.getElementById('telegramRuleListSearch')?.value;
-                if (searchVal !== undefined && searchVal !== null && searchVal !== '') {
-                    params.set('search', searchVal);
-                    const hiddenSearch = document.getElementById('search');
-                    if (hiddenSearch) hiddenSearch.value = searchVal;
-                }
-
-                // Reset page to 1 when changing page size or filters
-                if (options.resetPage || perPageVal === 'all') {
-                    params.delete('page');
-                    params.set('page', '1');
-                }
-
-                const requestUrl = `${form.action}?${params.toString()}`;
-                const requestId = ++ruleListRequestId;
-
-                if (ruleListController) {
-                    ruleListController.abort();
-                }
-
-                ruleListController = new AbortController();
-
-                if (tableBody) {
-                    tableBody.style.opacity = '0.6';
-                }
-
-                fetch(requestUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    signal: ruleListController.signal
-                })
-                    .then((response) => {
-                        if (!response.ok) throw new Error('Fetch failed with status ' + response.status);
-                        return response.text();
-                    })
-                    .then((html) => {
-                        if (requestId !== ruleListRequestId) {
-                            return;
-                        }
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        if (!replaceTelegramRuleResults(doc)) {
-                            window.location.href = requestUrl;
-                            return;
-                        }
-
-                        window.history.replaceState({}, '', requestUrl);
-                    })
-                    .catch((error) => {
-                        if (error.name === 'AbortError') {
-                            return;
-                        }
-                        console.warn('Block refresh failed, falling back to page reload:', error);
-                        window.location.href = requestUrl;
-                    })
-                    .finally(() => {
-                        if (requestId === ruleListRequestId) {
-                            if (tableBody) {
-                                tableBody.style.opacity = '1';
-                            }
-                            ruleListController = null;
-                        }
-                    });
-            };
-
-            window.refreshTelegramRuleList = refreshTelegramRuleList;
-
-            $(document).on('submit', '#telegramRuleFilterForm', function (event) {
-                event.preventDefault();
-                refreshTelegramRuleList({ resetPage: true });
-            });
-
-            $(document).on('change select2:select', '#per_page', function () {
-                refreshTelegramRuleList({ resetPage: true });
-            });
-
-            $(document).on('input', '#telegramRuleListSearch', function () {
-                const searchInput = document.getElementById('search');
-                if (searchInput) {
-                    searchInput.value = this.value;
-                }
-
-                clearTimeout(ruleSearchTimer);
-                ruleSearchTimer = setTimeout(() => {
-                    refreshTelegramRuleList({ resetPage: true });
-                }, 300);
-            });
-
-            $(document).on('click', '#telegramRuleListSection .pagination a', function (event) {
-                event.preventDefault();
-
-                const tableBody = document.querySelector('#telegramRuleTable tbody');
-                const requestUrl = this.href;
-                const requestId = ++ruleListRequestId;
-
-                if (ruleListController) {
-                    ruleListController.abort();
-                }
-
-                ruleListController = new AbortController();
-
-                if (tableBody) {
-                    tableBody.style.opacity = '0.6';
-                }
-
-                fetch(requestUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    signal: ruleListController.signal
-                })
-                    .then((response) => response.text())
-                    .then((html) => {
-                        if (requestId !== ruleListRequestId) {
-                            return;
-                        }
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        if (!replaceTelegramRuleResults(doc)) {
-                            window.location.href = requestUrl;
-                            return;
-                        }
-
-                        window.history.replaceState({}, '', requestUrl);
-                    })
-                    .catch((error) => {
-                        if (error.name === 'AbortError') {
-                            return;
-                        }
-                        window.location.href = requestUrl;
-                    })
-                    .finally(() => {
-                        if (requestId === ruleListRequestId) {
-                            if (tableBody) {
-                                tableBody.style.opacity = '1';
-                            }
-                            ruleListController = null;
-                        }
-                    });
+            document.addEventListener('telegram-rule:refresh', function () {
+                window.location.reload();
             });
 
             // Toggle Rule Status (Zero-reload AJAX)
@@ -654,7 +450,7 @@
                         .then(data => {
                             showToast(data.status ? 'success' : 'error', data.message || 'បានផ្ញើសារ Test រួចរាល់។');
                             if (data.status) {
-                                refreshTelegramRuleList();
+                                setTimeout(() => window.location.reload(), 1000);
                             }
                         })
                         .catch(err => {

@@ -24,7 +24,6 @@
             <div id="telegramGroupFilterCollapse" class="collapse{{ $hasTelegramFilters ? ' show' : '' }}">
                 <form class="forms-sample directory-filter-form" action="{{ route('admin.telegram-groups.index') }}" id="telegramGroupFilterForm" method="get">
                     <input type="hidden" id="search" name="search" value="{{ $filterParameters['search'] ?? '' }}">
-                    <input type="hidden" id="per_page_hidden" name="per_page" value="{{ $filterParameters['per_page'] ?? '10' }}">
                     <div class="row g-3 align-items-end">
                         <div class="col-xl-3 col-md-6">
                             <label for="name" class="form-label">Group Name</label>
@@ -72,7 +71,7 @@
                     'directoryCurrentSize' => (string) ($filterParameters['per_page'] ?? '10'),
                     'directoryPageSizes' => [10, 25, 50, 100, 'all'],
                     'directorySearchKey' => 'search',
-                    'directoryLive' => true,
+                    'directoryLive' => false,
                 ])
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -236,7 +235,7 @@
                     @endif
                 </div>
                 <div class="dataTables_paginate">
-                    {{ $telegramGroups->links() }}
+                    {{ $telegramGroups->appends(request()->query())->links() }}
                 </div>
             </div>
         </div>
@@ -301,7 +300,7 @@
                         })
                         .then(data => {
                             showToast('success', data.message || '{{ __('message.status_changed') }}');
-                            refreshTelegramGroupList();
+                            setTimeout(() => window.location.reload(), 500);
                         })
                         .catch(err => {
                             checkbox.prop('checked', !isChecked);
@@ -334,7 +333,9 @@
                         .then(response => response.json())
                         .then(data => {
                             showToast(data.status ? 'success' : 'error', data.message || 'Deleted successfully.');
-                            refreshTelegramGroupList();
+                            if (data.status) {
+                                setTimeout(() => window.location.reload(), 500);
+                            }
                         })
                         .catch(err => {
                             showToast('error', 'Failed to delete Telegram group.');
@@ -366,7 +367,9 @@
                         .then(response => response.json())
                         .then(data => {
                             showToast(data.status ? 'success' : 'error', data.message || (data.status ? 'Test sent successfully.' : 'Test failed.'));
-                            refreshTelegramGroupList();
+                            if (data.status) {
+                                setTimeout(() => window.location.reload(), 1000);
+                            }
                         })
                         .catch(err => {
                             showToast('error', 'Error sending test message.');
@@ -378,223 +381,14 @@
                 });
             });
 
-            let telegramSearchTimer = null;
-            let telegramListController = null;
-            let telegramListRequestId = 0;
+            const perPage = $('#per_page');
+            if (perPage.length && !perPage.hasClass('select2-hidden-accessible')) {
+                perPage.select2({ minimumResultsForSearch: Infinity });
+            }
 
-            const initTelegramListControls = () => {
-                const perPage = $('#per_page');
-
-                if (perPage.length && !perPage.hasClass('select2-hidden-accessible')) {
-                    perPage.select2({ minimumResultsForSearch: Infinity });
-                }
-            };
-
-            const replaceTelegramGroupResults = (doc) => {
-                const currentTableBody = document.querySelector('#telegramGroupTable tbody');
-                const nextTableBody = doc.querySelector('#telegramGroupTable tbody');
-                const currentPaginationArea = document.querySelector('#telegramGroupPaginationArea');
-                const nextPaginationArea = doc.querySelector('#telegramGroupPaginationArea');
-
-                if (!currentTableBody || !nextTableBody) {
-                    return false;
-                }
-
-                currentTableBody.innerHTML = nextTableBody.innerHTML;
-
-                const count = document.querySelector('[data-directory-count="telegramGroupTable"]');
-                const nextCount = doc.querySelector('[data-directory-count="telegramGroupTable"]');
-                if (count && nextCount) count.textContent = nextCount.textContent;
-
-                if (currentPaginationArea && nextPaginationArea) {
-                    currentPaginationArea.innerHTML = nextPaginationArea.innerHTML;
-                } else {
-                    const currentPagination = document.querySelector('#telegramGroupListSection .dataTables_paginate');
-                    const nextPagination = doc.querySelector('#telegramGroupListSection .dataTables_paginate');
-                    if (currentPagination) {
-                        currentPagination.innerHTML = nextPagination ? nextPagination.innerHTML : '';
-                    }
-                }
-
-                document.dispatchEvent(new CustomEvent('directory:updated'));
-
-                if (window.feather) {
-                    feather.replace();
-                }
-
-                return true;
-            };
-
-            const refreshTelegramGroupList = (options = {}) => {
-                const form = document.getElementById('telegramGroupFilterForm');
-                const listSection = document.getElementById('telegramGroupListSection');
-                const tableBody = document.querySelector('#telegramGroupTable tbody');
-
-                if (!form || !listSection) {
-                    return;
-                }
-
-                const params = new URLSearchParams(new FormData(form));
-
-                // Explicitly sync per_page from the directory-toolbar select
-                const perPageSelect = document.getElementById('per_page');
-                const perPageVal = perPageSelect ? perPageSelect.value : $('#per_page').val();
-                if (perPageVal) {
-                    params.delete('per_page');
-                    params.set('per_page', perPageVal);
-                    const hiddenPerPage = document.getElementById('per_page_hidden');
-                    if (hiddenPerPage) hiddenPerPage.value = perPageVal;
-                }
-
-                // Explicitly sync search from the directory search input
-                const searchVal = document.getElementById('telegramGroupListSearch')?.value;
-                if (searchVal !== undefined && searchVal !== null && searchVal !== '') {
-                    params.set('search', searchVal);
-                    const hiddenSearch = document.getElementById('search');
-                    if (hiddenSearch) hiddenSearch.value = searchVal;
-                }
-
-                // Reset page to 1 when changing page size or filters
-                if (options.resetPage || perPageVal === 'all') {
-                    params.delete('page');
-                    params.set('page', '1');
-                }
-
-                const requestUrl = `${form.action}?${params.toString()}`;
-                const requestId = ++telegramListRequestId;
-
-                if (telegramListController) {
-                    telegramListController.abort();
-                }
-
-                telegramListController = new AbortController();
-
-                if (tableBody) {
-                    tableBody.style.opacity = '0.6';
-                }
-
-                fetch(requestUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    signal: telegramListController.signal
-                })
-                    .then((response) => {
-                        if (!response.ok) throw new Error('Fetch failed with status ' + response.status);
-                        return response.text();
-                    })
-                    .then((html) => {
-                        if (requestId !== telegramListRequestId) {
-                            return;
-                        }
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        if (!replaceTelegramGroupResults(doc)) {
-                            window.location.href = requestUrl;
-                            return;
-                        }
-
-                        window.history.replaceState({}, '', requestUrl);
-                    })
-                    .catch((error) => {
-                        if (error.name === 'AbortError') {
-                            return;
-                        }
-                        console.warn('Block refresh failed, falling back to page reload:', error);
-                        window.location.href = requestUrl;
-                    })
-                    .finally(() => {
-                        if (requestId === telegramListRequestId) {
-                            if (tableBody) {
-                                tableBody.style.opacity = '1';
-                            }
-                            telegramListController = null;
-                        }
-                    });
-            };
-
-            window.refreshTelegramGroupList = refreshTelegramGroupList;
-            document.addEventListener('telegram-group:refresh', refreshTelegramGroupList);
-
-            $(document).on('submit', '#telegramGroupFilterForm', function (event) {
-                event.preventDefault();
-                refreshTelegramGroupList({ resetPage: true });
+            document.addEventListener('telegram-group:refresh', function () {
+                window.location.reload();
             });
-
-            $(document).on('change select2:select', '#per_page', function () {
-                refreshTelegramGroupList({ resetPage: true });
-            });
-
-            $(document).on('input', '#telegramGroupListSearch', function () {
-                const searchInput = document.getElementById('search');
-                if (searchInput) {
-                    searchInput.value = this.value;
-                }
-
-                clearTimeout(telegramSearchTimer);
-                telegramSearchTimer = setTimeout(() => {
-                    refreshTelegramGroupList({ resetPage: true });
-                }, 300);
-            });
-
-            $(document).on('click', '#telegramGroupListSection .pagination a', function (event) {
-                event.preventDefault();
-
-                const tableBody = document.querySelector('#telegramGroupTable tbody');
-                const requestUrl = this.href;
-                const requestId = ++telegramListRequestId;
-
-                if (telegramListController) {
-                    telegramListController.abort();
-                }
-
-                telegramListController = new AbortController();
-
-                if (tableBody) {
-                    tableBody.style.opacity = '0.6';
-                }
-
-                fetch(requestUrl, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    signal: telegramListController.signal
-                })
-                    .then((response) => response.text())
-                    .then((html) => {
-                        if (requestId !== telegramListRequestId) {
-                            return;
-                        }
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-
-                        if (!replaceTelegramGroupResults(doc)) {
-                            console.warn('Pagination replacement failed');
-                            return;
-                        }
-
-                        window.history.replaceState({}, '', requestUrl);
-                    })
-                    .catch((error) => {
-                        if (error.name === 'AbortError') {
-                            return;
-                        }
-                        console.warn('Pagination fetch failed silently:', error);
-                    })
-                    .finally(() => {
-                        if (requestId === telegramListRequestId) {
-                            if (tableBody) {
-                                tableBody.style.opacity = '1';
-                            }
-                            telegramListController = null;
-                        }
-                    });
-            });
-
-            initTelegramListControls();
         });
     </script>
     <script src="{{ asset('assets/js/telegram-group-action-modal.js') }}?v={{ filemtime(public_path('assets/js/telegram-group-action-modal.js')) }}"></script>
